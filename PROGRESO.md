@@ -34,6 +34,66 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-08 — FASE V, olas 1 y 2: el andamio (V2-A), el Golden Road en el motor (GR-m) y el director de escena (V2-B), en `v-integracion` (PLAN.md §V.7)
+
+**Lo que decidió el usuario** (2026-10-07, textual en PLAN.md §V.1): *"Escenario + un panel"*, *"Una página por split"*,
+el escalón en el cierre de año y *"un logro difícil (porque hasta ahora en la vida real nadie lo consiguió) que sea el
+golden road"*, que es *"Todo el año"* y un *"Logro aparte"*. Con eso se re-escribió la FASE V (`2cd2192`).
+
+**V2-A, el andamio sin cambio visual** (`43265ab`, `f8258b8`, `bc4e6b4`; worker Sonnet, sin revisor):
+- `src/dev/recorrido.mjs`: el re-juego de K6 versionado, que mide por parada lo que pide §V.8.
+- El CSS partido en una hoja por familia (cierra D50). Las capturas antes y después salen idénticas byte a byte y quedan las mismas reglas
+  (sin cambio visual).
+- El flujo del minijuego sale de `app.js` a `src/ui/paradas/minijuego.js`, con los tres checks que leían `app.js`
+  como texto re-apuntados en el mismo commit. El supervisor leyó ese diff.
+- La línea de base (`1c1a6e0`) la midió el supervisor con `recorrido.mjs`: seeds 25/39/152 a 1440×900 y 390×844 sobre
+  la UI de hoy. Las metas de §V.8 se fijaron con ella.
+
+**GR-m, el Golden Road en el motor** (`b4c2add`; worker Sonnet xhigh + revisor Opus + correcciones):
+- `registro.porSplit[]`, escrito en `systems/rendimiento.js` sin `rng`.
+- `esGoldenRoad`/`goldenRoads` en `core/registro.js`, `seguimientoGoldenRoad` en `core/vistaDeCarrera.js` y
+  `escalonDeCarrera` en `core/puntaje.js` (con `nivelDeCarrera` usándola y la misma salida).
+- Guardado `VERSION` 15 con `migrarDe14`. `HUELLA_JUEGO` 79304237 'K6d' sin cambio.
+- El revisor encontró que el check comparaba la fila consigo misma y lo cambió para que lea `temporada.posicion`; un
+  mutante ahora lo pone en rojo.
+- **La frecuencia, medida por el supervisor** (`simulate.js 1500 60 <bot> --bloque=goldenRoad` sobre la rama de GR-m, `899efe7`):
+
+| Bot | Carreras con al menos un Golden Road | Años con Golden Road |
+|---|---|---|
+| criterio | 39 de 1500 (2,6%) | 44 |
+| equilibrado | 15 de 1500 (1,0%) | 15 |
+| malas | 4 de 1500 (0,3%) | 6 |
+
+  Raro pero posible, que es lo que se buscaba: el motor no se toca para moverlo (§V.6).
+
+**V2-B, el director de escena** (`7300f0d`; worker Opus xhigh + revisor Opus + correcciones de un Sonnet):
+- `.shell[data-pieza]` lo escribe solo `revelar` (`src/ui/escena.js`); las piezas salen de `src/ui/core/escena.js`,
+  que es puro. Reemplaza los toggles de `hidden` de `app.js`, `body[data-legado]` y dos `:has()`.
+- El store `vista` lo escribe solo el director al terminar los beats. Ficha, topbar, luz de estudio, riel y marcador de
+  serie se pintan desde ahí, y el resultado ya no se adelanta (D89).
+- La página por split, con su tarjeta de cierre (`components/cierre.js`), y el marcador de retomar `lolcs-vista`.
+- `src/ui/teclado.js`: Enter y Espacio en el inicio ya no borran la guardada (D86); en la final, Enter sobre "Copiar" y
+  Esc ya no disparan "Nueva carrera" (D87); en el mercado, 1-4 llevan el foco al "Firmar" de la oferta y Enter firma
+  (D46).
+- El check `V2 escena` (`checkLento`, 20 seeds × 60 splits): en cada pausa del motor, la pieza es la esperada para su
+  tipo, también después de `deserializar(serializar())`.
+
+**Lo que corrigió la revisión de V2-B:**
+- El check aceptaba cualquier pieza de parada. Con el mutante del revisor (el sistema antes que la presentación), el mapa
+  decisivo de la serie salía como "partido" y el minijuego no aparecía, y el check quedaba en verde. Ahora compara con
+  una tabla propia y ese mutante da FAIL.
+- 1-4 en el mercado **firmaban** la oferta con una tecla que no se veía y sin confirmar (el revisor lo reprodujo en el
+  navegador). Ahora la tecla enfoca, el número se ve y Enter firma.
+- "Split anterior" se decidía con la velocidad del momento de abrir la página siguiente. Ahora se decide con si la
+  tarjeta de cierre se llegó a ver.
+- Al retomar entre splits se perdía la tarjeta de cierre. Ahora se reabre, aunque todavía no se llega a ver (D97, para V4).
+
+**D96 no era del juego**: lo tiraba el bot de `recorrido.mjs`. El revisor lo verificó sin bot y quedó cerrada.
+
+**Verificado por el supervisor sobre `7300f0d`**: `validate.js --rapido` 372 OK / 0 FAIL / 181 SKIP, más `--solo="V2 escena"` OK, (los lentos salteados) y
+`build.js` OK. La validación completa, `simulate.js 1000` y el determinismo se corren al cierre de la fase, sobre la
+rama entera.
+
 ### 2026-10-07 — Cierre de K6d y de FASE K: las cuatro metas re-basadas, K6 re-jugado y el merge a `fase-9r` (PLAN.md "K6d — el cierre", pasos 3-6)
 
 **Lo que decidió el usuario** (textual, PLAN.md §K6d):
