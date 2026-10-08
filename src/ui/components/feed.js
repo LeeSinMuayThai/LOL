@@ -10,8 +10,7 @@
 // inline en el `.map()` de `renderFeed` — `reproductor.js` necesita crear el
 // MISMO nodo uno por uno, a su propio ritmo, en vez de todos juntos en un
 // `replaceChildren`.
-import METAS from '../../data/metas.json' with { type: 'json' };
-import { acentoDeLog, nombreVisibleDeLiga, rotuloDeDecision } from '../formatoUi.js';
+import { acentoDeLog, nombreVisibleDeLiga } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
 import { etiquetaRol } from '../../data/roles.js';
 import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
@@ -371,41 +370,4 @@ export function renderPagina(contenedor, state, { desde = 0, hasta = state.logs.
 // últimos `limite` beats, la misma ventana que `renderFeed`.
 export function desdeDeUltimosBeats(logs, limite = LIMITE_FEED) {
   return inicioDeVentana(logs, logs.length, limite);
-}
-
-// FASE V (V2-B): si se ve o no lo dice la pieza del escenario (`data-piezas` de `index.html`, `shell.css`), no esta
-// función: en la final, `#summary` y `#metaPill` no son parte de la pieza.
-export function renderLowerThird(summary, metaPill, state, { modo, decision } = {}) {
-  if (!summary || !metaPill) return;
-
-  if (state?.terminado && state.tarjeta) {
-    metaPill.textContent = '';
-    return;
-  }
-
-  const regimenObj = METAS.find((m) => m.id === state?.meta?.regimen);
-  const seed = state?.seed;
-  if (regimenObj && seed != null) {
-    metaPill.textContent = `${regimenObj.nombre} · seed ${seed}`;
-  } else if (seed != null) {
-    metaPill.textContent = `seed ${seed}`;
-  } else {
-    metaPill.textContent = '';
-  }
-
-  if (modo === 'minijuego') {
-    summary.textContent = 'EN EL MAPA';
-    return;
-  }
-  if (modo === 'mercado') {
-    summary.textContent = decision?.titulo ?? 'Ventana de pases';
-    return;
-  }
-  if (modo === 'decision' && decision) {
-    summary.textContent = rotuloDeDecision(decision, state).label;
-    return;
-  }
-
-  const ultimo = [...(state?.logs ?? [])].reverse().find(formaBeat);
-  summary.textContent = ultimo?.cuerpo ?? ultimo?.message ?? 'Split en curso';
 }

@@ -7,19 +7,16 @@
 // shell desde JS habría significado que una carrera desatendida se puede
 // quedar con la página en blanco por un fallo de montaje. Esto no puede.
 //
-// Cero acceso a `estado`/`rng`/`modulos`: esos viven en el closure del
-// <script> del controlador, y no se exponen (T1 no toca el controlador).
-// Por eso el topbar es chrome estático en esta fase — el punto vivo del
-// split llega en T2, que sí reescribe cómo se pinta la ficha.
+// Cero acceso a `estado`/`rng`/`modulos`: esos viven en el controlador
+// (`app.js`). Desde V2-C acá quedan el clic audible, la luz de estudio (que
+// `app.js` llama con la `vista`) y el teclado; la topbar y el ticker se fueron
+// (la franja es `franja.js`).
 
 import * as sonido from './sonido.js';
 import { ventanaVisibleDe } from '../core/vistaDeCarrera.js';
 // El teclado (FASE V, V2-B) vive en su propio módulo y sigue colgado de esta raíz aparte: si el controlador explota, las
 // teclas siguen andando sobre lo que haya en pantalla.
 import './teclado.js';
-
-const logList = document.getElementById('logList');
-const ticker = document.getElementById('ticker');
 
 // --- El click, en cualquier botón (T3) --------------------------------
 // Delegado en `document`, no un listener por botón: el shell no conoce (ni
@@ -67,35 +64,4 @@ export function limpiarEstudio() {
   delete body.dataset.ventana;
   delete body.dataset.serie;
   delete body.dataset.peligro;
-}
-
-// --- El ticker: la última línea de #logList, en marquesina -----------------
-// V2-B: `#logList` es la página del split (`renderPagina`), en orden
-// cronológico: lo más reciente es el ÚLTIMO renglón que viene del motor (los
-// sintéticos —la tarjeta de cierre, la línea "Split anterior"— no cuentan).
-function ultimoRenglon(lista) {
-  let item = lista.lastElementChild;
-  while (item && item.dataset.sintetico !== undefined) item = item.previousElementSibling;
-  return item;
-}
-function textoDeTicker(item) {
-  if (!item) return '';
-  const titulo = item.querySelector('.log-titulo');
-  if (!titulo) return item.textContent.trim();
-  const cuerpo = titulo.nextElementSibling;
-  return cuerpo ? `${titulo.textContent} — ${cuerpo.textContent}` : titulo.textContent;
-}
-
-if (logList && ticker) {
-  const actualizarTicker = () => {
-    const texto = textoDeTicker(ultimoRenglon(logList)) || 'En vivo.';
-    const pista = document.createElement('div');
-    pista.className = 'ticker-pista';
-    const a = document.createElement('span');
-    a.textContent = texto;
-    pista.append(a, a.cloneNode(true));
-    ticker.replaceChildren(pista);
-  };
-  new MutationObserver(actualizarTicker).observe(logList, { childList: true });
-  actualizarTicker();
 }

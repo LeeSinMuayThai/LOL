@@ -529,9 +529,11 @@ async function clicConRegla4(clic) {
   await velocidadUno();
   await page.waitForTimeout(ESPERA_COUNTUP_MS);
   await page.evaluate(() => {
-    // textContent, no innerText: el contenido, no lo que el CSS deja ver (a <= 639 px la ficha se compacta durante la
-    // parada y vuelve entera en el relato: eso no es un cambio de lo que dice).
-    const leer = () => `${document.querySelector('.topbar')?.textContent ?? ''}\n${document.querySelector('#fichaContainer')?.textContent ?? ''}`;
+    // textContent, no innerText: el contenido, no lo que el CSS deja ver (a <= 639 px la ficha se compactaba durante la
+    // parada y volvia entera en el relato: eso no es un cambio de lo que dice). V2-C: la franja y el acompañante (antes,
+    // la topbar y la ficha del riel; quedan como respaldo para medir una UI anterior).
+    const texto = (s) => document.querySelector(s)?.textContent ?? '';
+    const leer = () => `${texto('.franja') || texto('.topbar')}\n${texto('#acompanante') || texto('#fichaContainer')}`;
     const lista = document.querySelector('#logList');
     const r = { antes: leer(), muestras: [], primero: lista.firstElementChild?.textContent.slice(0, 120) ?? '', n: lista.children.length, cerrada: false };
     r.iv = setInterval(() => {
@@ -571,11 +573,25 @@ function tipoDeParada(pieza, titulo, opts, extras = {}) {
   return 'decision';
 }
 
+// V2-C: la ficha ya no esta siempre a la vista (vive en el cuarto Vos y, a veces, en el acompañante). La politica lee de
+// ella la edad y la liga (para el tier de las ofertas): sale de la linea de contexto de la ficha (`lineaDeContextoFicha`,
+// org · liga · año · edad) sobre la carrera guardada, que en una parada es el estado de la parada. TOPBAR es la franja.
 async function snapshot() {
-  return page.evaluate(() => {
+  return page.evaluate(async () => {
     const g = (s) => document.querySelector(s)?.innerText ?? '';
     const h = (s) => { const e = document.querySelector(s); return e && e.checkVisibility({ checkVisibilityCSS: true }) ? g(s) : ''; };
-    return `TOPBAR: ${g('#topbarEstado')}\nFICHA: ${g('#fichaContainer').slice(0, 900)}\nSUMMARY: ${g('#summary')} // ${g('#metaPill')}\nSERIE: ${h('#serieContexto')}\nPREVIA: ${h('#previa')}\nDECISION: ${h('#decision')}\nMINI: ${h('#minijuego')}\nMERCADO: ${h('#mercado')}\nLOG: ${g('#logList').slice(0, 4000)}`;
+    let ficha = g('#fichaContainer').slice(0, 900);
+    if (!document.querySelector('#fichaContainer')) {
+      try {
+        const [{ cargarCarreraGuardada }, { lineaDeContextoFicha }] = await Promise.all([
+          import('/src/ui/almacenamiento.js'), import('/src/ui/components/ficha.js')
+        ]);
+        const datos = cargarCarreraGuardada();
+        ficha = datos?.state ? lineaDeContextoFicha(datos.state) : '';
+      } catch { ficha = ''; }
+    }
+    const franja = document.querySelector('#franjaEstado')?.textContent ?? g('#topbarEstado');
+    return `TOPBAR: ${franja}\nFICHA: ${ficha}\nSERIE: ${h('#serieContexto')}\nPREVIA: ${h('#previa')}\nDECISION: ${h('#decision')}\nMINI: ${h('#minijuego')}\nMERCADO: ${h('#mercado')}\nLOG: ${g('#logList').slice(0, 4000)}`;
   });
 }
 const edadDe = (snap) => +((snap.match(/(\d{2}) años/) || [])[1] || 0);

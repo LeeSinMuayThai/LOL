@@ -6,8 +6,8 @@
 // `state` al chrome global, porque era el único sitio fuera de este closure
 // que lo tenía a mano). Acá `estado` pasa a vivir en un `store` (`core/store.js`)
 // que sí se puede pasar a cualquier pantalla nueva — y con eso disponible,
-// `actualizarTopbar`/`aplicarEstudio` se llaman desde acá, en el mismo punto
-// donde se pinta la ficha, no desde adentro de la ficha.
+// el chrome (desde V2-C: la franja, el acompañante y la luz de estudio) se pinta
+// desde acá, no desde adentro de la ficha.
 //
 // `index.html` sigue siendo el único lugar donde se declara el DOM del
 // juego (regla de la fase T: "si algo de acá explota, el juego de abajo
@@ -30,6 +30,7 @@ import { VERSION_JUEGO } from '../data/version.js';
 import { iniciarDesafio } from '../core/desafio.js';
 import { interpretarSeed } from '../core/numeros.js';
 import { previaDeDecision } from '../core/previaDePartido.js';
+import { fichaCompleta } from '../core/ficha.js';
 
 export function iniciar() {
   const shellEl = document.querySelector('.shell');
@@ -49,9 +50,6 @@ export function iniciar() {
 
   const runButton = document.getElementById('run');
   const nuevaCarreraBtn = document.getElementById('nuevaCarrera');
-  const fichaContainer = document.getElementById('fichaContainer');
-  const summary = document.getElementById('summary');
-  const metaPill = document.getElementById('metaPill');
   const logList = document.getElementById('logList');
   const decisionPanel = document.getElementById('decision');
   const decisionTitle = document.getElementById('decisionTitle');
@@ -119,9 +117,10 @@ export function iniciar() {
   const store = crearStore(null);
   // FASE V (V2-B; PLAN.md §V.5 "Dos stores"): `vista` es lo que la pantalla YA contó. La escribe solo el director de
   // escena (`escena.revelar`): al terminar los beats de cada llamada al pipeline, al retomar, al arrancar una carrera y
-  // en la final. Ficha, topbar, luz de estudio, riel derecho y marcador de serie se pintan desde acá
-  // (`pintarDesdeVista`), nunca desde `store`: mientras el relato cuenta un split, la ficha sigue en el estado de antes
-  // (regla 4 de §V.3, D89: antes se pintaban con el estado final ANTES de los beats y adelantaban el resultado).
+  // en la final. La franja, el acompañante, la luz de estudio y el marcador de serie se pintan desde acá
+  // (`pintarDesdeVista`), y los cuartos la leen al abrirse; nunca desde `store`: mientras el relato cuenta un split, la
+  // pantalla sigue en el estado de antes (regla 4 de §V.3, D89: antes se pintaban con el estado final ANTES de los beats y
+  // adelantaban el resultado).
   const vista = crearStore(null);
   const escena = crearEscena({ shell: shellEl, vista });
   vista.suscribir(pintarDesdeVista);
@@ -233,7 +232,9 @@ export function iniciar() {
         rngUi,
         responder,
         pintarPrevia,
-        lowerThird: (modo, decision, estadoDeLaBarra = estado) => ui.renderLowerThird(summary, metaPill, estadoDeLaBarra, { modo, decision }),
+        // V2-C: la barra de abajo (`#summary`/`#metaPill`, con su "EN EL MAPA") se fue con el layout viejo. Las familias
+        // todavía la llaman (`paradas/`, de V3): no hace nada.
+        lowerThird: () => {},
         elementos: { decision: decisionElements, mercado: mercadoElements },
         contenedores: { decision: decisionPanel, partido: decisionPanel, mercado: mercadoPanel, minijuego: minijuegoPanel }
       })
@@ -267,7 +268,6 @@ export function iniciar() {
   function mostrarFinal(state) {
     escena.revelar(state, {
       pintar: () => {
-        ui.renderLowerThird(summary, metaPill, state);
         if (state.terminado && state.tarjeta) {
           ui.renderTarjeta(tarjetaPanel, state, modulos, { lineaHistorial: registrarEnHistorial(state) });
         }
@@ -286,20 +286,19 @@ export function iniciar() {
     ui.renderHistorial(historialEl, historial, { etiquetaRol: modulos.etiquetaRol, version: VERSION_JUEGO });
   }
 
-  // Lo que se pinta desde `vista` (FASE V, V2-B): la ficha y el chrome global (topbar, luz de estudio, riel derecho,
-  // marcador de la serie). Antes era `pintarChrome`, llamado con el estado del motor ANTES de los beats (D89). Con la
-  // `vista` en `null` (el inicio) se limpia.
+  // Lo que se pinta desde `vista` (FASE V, V2-B; V2-C): la franja, el acompañante, la luz de estudio y el marcador de la
+  // serie. Antes era `pintarChrome`, llamado con el estado del motor ANTES de los beats (D89). Con la `vista` en `null`
+  // (el inicio) se limpia. La ficha ya no está siempre a la vista: vive en el cuarto Vos y, en el escritorio, en el
+  // acompañante cuando le toca.
   function pintarDesdeVista(estado) {
     franja?.pintar(estado);
     // La pieza ya es la nueva: el director la escribe antes que la `vista`.
     acompanante?.pintar(estado, escena.pieza());
     if (!estado) {
-      fichaContainer.replaceChildren();
       limpiarEstudio();
       return;
     }
-    const ficha = ui.renderFicha(fichaContainer, estado, modulos);
-    aplicarEstudio(estado, ficha);
+    aplicarEstudio(estado, fichaCompleta(estado));
     ui.renderSerieContexto(serieContextoEl, estado);
   }
 
@@ -417,7 +416,6 @@ export function iniciar() {
     }
     if (!estadoActual.terminado) {
       escena.revelar(estadoActual);
-      ui.renderLowerThird(summary, metaPill, estadoActual);
     }
     return false;
   }
@@ -530,13 +528,21 @@ export function iniciar() {
   }
 
   function mostrarAvisoDeGuardado() {
-    if (setupPanel.querySelector('.setup-aviso')) {
+    mostrarAviso(TEXTO_AVISO_DE_GUARDADO);
+  }
+
+  // V2-C: el mismo lugar sirve para el error al arrancar una carrera, que antes se escribía en `#summary` (dentro de
+  // `#carrera`, escondido en el inicio: el jugador no lo veía).
+  function mostrarAviso(texto) {
+    const existente = setupPanel.querySelector('.setup-aviso');
+    if (existente) {
+      existente.textContent = texto;
       return;
     }
     const aviso = document.createElement('p');
     aviso.className = 'setup-aviso';
     aviso.setAttribute('role', 'status');
-    aviso.textContent = TEXTO_AVISO_DE_GUARDADO;
+    aviso.textContent = texto;
     const subtitulo = setupPanel.querySelector('.subtitle');
     if (subtitulo) {
       subtitulo.before(aviso);
@@ -555,8 +561,6 @@ export function iniciar() {
       boton.disabled = true;
     }
     tarjetaPanel.replaceChildren();
-    summary.textContent = 'Arrancando la carrera...';
-    metaPill.textContent = '';
     logList.innerHTML = '';
 
     try {
@@ -608,15 +612,11 @@ export function iniciar() {
       await avanzar();
     } catch (error) {
       const esArchivoLocal = location.protocol === 'file:';
-      summary.textContent = esArchivoLocal
-        ? 'Este juego usa módulos ES y no puede correr abriendo el HTML directo con doble clic.'
-        : 'No se pudo cargar el juego.';
-      metaPill.textContent = esArchivoLocal
-        ? 'Corré "npm start" en la terminal y abrí la URL que te muestra (http://localhost:8000).'
-        : 'Revisa la consola del navegador.';
-      logList.innerHTML = `<div class="log-item">${error.message}</div>`;
       console.error(error);
       escena.revelar(null);
+      mostrarAviso(esArchivoLocal
+        ? 'Este juego usa módulos ES y no puede correr abriendo el HTML directo con doble clic: corré "npm start" en la terminal y abrí la URL que te muestra (http://localhost:8000).'
+        : `No se pudo cargar el juego (${error.message}). Revisá la consola del navegador.`);
       runButton.disabled = false;
       for (const boton of desafioDia.querySelectorAll('button')) {
         boton.disabled = false;
@@ -625,8 +625,8 @@ export function iniciar() {
   }
 
   function volverAlInicio() {
-    // La pieza `inicio` esconde el escenario de la carrera y los dos rieles (antes, `hidden` en cada panel del riel
-    // derecho, en el marcador y en el escenario); la `vista` en `null` limpia la ficha, la topbar y la luz de estudio.
+    // La pieza `inicio` esconde el escenario de la carrera (antes, `hidden` en cada panel del riel derecho, en el marcador
+    // y en el escenario); la `vista` en `null` limpia la franja, el acompañante y la luz de estudio.
     escena.revelar(null);
     // Ya se borró en `reproducirLlamada` cuando `estado.terminado`
     // se puso en true — esto es la red de seguridad, no el borrado
@@ -696,7 +696,6 @@ export function iniciar() {
         anterior: pagina.anterior,
         cierre: reabreElCierre ? pagina.ultimoCierre : null
       });
-      ui.renderLowerThird(summary, metaPill, estadoRetomado);
 
       if (estadoRetomado.pendiente) {
         mostrarLaParada(estadoRetomado);

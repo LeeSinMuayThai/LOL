@@ -1,15 +1,16 @@
 /* ==========================================================================
-   SHELL — la grilla de dos zonas, el topbar, el ticker (fase T1)
+   SHELL — la franja, el escenario de una columna y el acompañante
+   (fase T1; reescrito en FASE V, V2-C — PLAN.md §V.4)
 
-   `PLAN.md` "T1 — El shell de transmisión": dos columnas, no tres — el riel
-   derecho es la fila de paneles de T5, y hoy no hay con qué llenarlo. El
-   topbar es chrome estático en esta fase (el punto vivo del split llega en
-   T2); acá solo va su forma.
+   La franja arriba (≤ 64 px), el escenario con UNA pieza a la vista (~720 px,
+   centrado) y, desde 1180 px, un solo panel al costado: el acompañante. Lo
+   demás vive en los cuartos (estilos/cuartos.css). Salieron los dos rieles,
+   la topbar y el ticker.
    ========================================================================== */
 
 /* T0 dejaba el padding en `body` para centrar el `.panel` único de antes.
-   El shell ahora es full-bleed (el topbar va a sangre) y cada zona pone su
-   propio padding — si `body` sigue sumando el suyo, todo queda corrido. */
+   El shell es full-bleed (la franja va a sangre) y cada zona pone su propio
+   padding — si `body` sigue sumando el suyo, todo queda corrido. */
 body { padding: 0; }
 
 .shell {
@@ -97,7 +98,8 @@ body { padding: 0; }
   min-width: 0;
   flex: 0 1 auto;
 }
-.franja-quien { color: var(--ink); }
+.franja-quien { color: var(--ink); flex-shrink: 0; max-width: 16em; }
+.franja-org { flex-shrink: 2; }
 .franja-quien .rol-marca { font-size: 16px; }
 .franja-cuando { color: var(--ice); font-variant-numeric: tabular-nums; }
 .franja-texto {
@@ -177,6 +179,17 @@ body { padding: 0; }
 /* Inertes hasta que cargan los módulos: que se vean apagados, no rotos. */
 .franja-toggle:disabled { opacity: 0.3; cursor: default; }
 
+/* Entre 900 y 1279 px la barra de cuartos come lugar: el club queda en su chip (el nombre, en su `title`), sin pips ni
+   nombre de la banda (el color la dice), y la ayuda se abre con `?`. */
+@media (min-width: 900px) and (max-width: 1279px) {
+  .franja { gap: var(--s-3); }
+  .franja-estado { gap: var(--s-3); }
+  .franja-org .org-chip + .franja-texto,
+  .franja-pips,
+  .franja-nivel-banda,
+  #ayudaTeclas { display: none; }
+}
+
 /* El celular y la tableta: dos líneas. Arriba quién sos y tu número; abajo tu club y cuándo. */
 @media (max-width: 899px) {
   .franja {
@@ -209,23 +222,57 @@ body { padding: 0; }
   .franja-toggle { min-width: 36px; padding: var(--s-1) var(--s-2); }
 }
 
-/* --- El cuerpo: riel + escenario ----------------------------------------- */
+/* --- El cuerpo: el escenario y el acompañante (V2-C) -----------------------
+   Una columna de ~720 px, centrada, con UNA pieza a la vista. Desde 1180 px
+   se le suma un solo panel al costado (el acompañante) cuando la pieza tiene
+   contexto; sin él (`[hidden]`), el escenario queda centrado solo. Flex y no
+   grilla: sin `:has()` ni columnas fantasma (antes, tres columnas de 260 |
+   1fr | 280 dejaban el escenario en ~264 px entre 900 y 1179 px: D88). */
 
 .shell-cuerpo {
   flex: 1 1 auto;
-  display: grid;
-  grid-template-columns: var(--riel-izq) 1fr;
-  align-items: start;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
   gap: var(--s-5);
   padding: var(--s-5);
 }
-/* T1 dejó la grilla en dos columnas a propósito: "un panel vacío es peor
-   que un panel ausente", y el riel derecho no tenía con qué llenarse
-   todavía. T5 le suma la tercera columna, pero solo cuando de verdad hay
-   algo — `:has()` lo resuelve sin que el controlador tenga que togglear
-   una clase en cada render. */
-.shell-cuerpo:has(.acompanante:not([hidden])) {
-  grid-template-columns: var(--riel-izq) 1fr var(--riel-der);
+
+.escenario {
+  flex: 0 1 var(--escenario-columna);
+  min-width: 0;
+  max-width: var(--escenario-columna);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-5);
+}
+/* El inicio (el draft) es un formulario ancho: no es una parada, no se rediseña acá. */
+.shell[data-pieza="inicio"] .escenario {
+  flex-basis: var(--escenario-inicio);
+  max-width: var(--escenario-inicio);
+}
+/* `#setup`/`#carrera` traen su propio `.panel` (chaflán, sombra); acá solo
+   se les saca el centrado de 1080px que tenía sentido cuando `.panel` era
+   el único contenedor de la página entera — ahora el ancho lo da la
+   columna. Especificidad natural por anidamiento, sin !important. */
+.escenario .panel { max-width: none; margin: 0; }
+
+/* El acompañante: solo existe a la vista desde 1180 px (el corte de siempre),
+   pegado bajo la franja mientras el escenario corre. */
+.acompanante { display: none; }
+@media (min-width: 1180px) {
+  .acompanante {
+    flex: 0 0 var(--acompanante-ancho);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+    position: sticky;
+    top: calc(var(--franja-alto-real, var(--franja-alto)) + var(--s-5));
+    max-height: calc(100vh - var(--franja-alto-real, var(--franja-alto)) - 2 * var(--s-5));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
 }
 
 /* --- Las piezas del escenario (FASE V, V2-B; PLAN.md §V.4) ---------------
@@ -243,87 +290,6 @@ body { padding: 0; }
 .shell[data-pieza="minijuego"] .escenario [data-piezas]:not([data-piezas~="minijuego"]),
 .shell[data-pieza="final"] .escenario [data-piezas]:not([data-piezas~="final"]) { display: none; }
 
-/* El inicio: sin rieles. Un riel fantasma de 320px hace que el draft se lea
-   como un formulario al costado: el escenario va a sangre (antes:
-   `:has(#fichaContainer:empty)`). La variante con `:has()` empata la
-   especificidad de la regla de tres columnas de arriba. */
-.shell[data-pieza="inicio"] .shell-cuerpo,
-.shell[data-pieza="inicio"] .shell-cuerpo:has(.acompanante:not([hidden])) {
-  grid-template-columns: minmax(0, 1fr);
-}
-.shell[data-pieza="inicio"] .riel,
-.shell[data-pieza="inicio"] .acompanante { display: none; }
-.shell[data-pieza="inicio"] .escenario {
-  grid-column: 1;
-  max-width: 1180px;
-  margin-inline: auto;
-}
-
-.riel { grid-column: 1; min-width: 0; }
-
-.acompanante {
-  grid-column: 3;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-4);
-}
-
-.escenario {
-  grid-column: 2;
-  min-width: 0;
-  max-width: var(--escenario-max);
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-5);
-}
-/* `#setup`/`#carrera` traen su propio `.panel` (chaflán, sombra); acá solo
-   se les saca el centrado de 1080px que tenía sentido cuando `.panel` era
-   el único contenedor de la página entera — ahora el ancho lo da la
-   columna del grid. Especificidad natural por anidamiento, sin !important. */
-.escenario .panel { max-width: none; margin: 0; }
-
-/* --- El ticker ------------------------------------------------------------ */
-
-.ticker {
-  height: 36px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  background-color: var(--bg-chrome);
-  background-image: repeating-linear-gradient(
-    0deg,
-    var(--scanline) 0 1px,
-    transparent 1px 3px
-  );
-  border-top: 1px solid var(--line);
-  color: var(--ice);
-  font-family: var(--font-display);
-  font-size: var(--fs-1);
-  font-weight: 600;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-}
-.ticker-pista {
-  display: flex;
-  gap: var(--s-8);
-  width: max-content;
-  padding-left: var(--s-5);
-  animation: ticker-marquee 18s linear infinite;
-}
-.ticker:hover .ticker-pista { animation-play-state: paused; }
-@keyframes ticker-marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ticker-pista { animation-name: none !important; }
-  .ticker { background-image: none; }
-}
-
 /* Luz de estudio: pisa `--horizon` del body (base.css lo consume). */
 body[data-fase="amateur"] { --horizon: var(--horizon-amateur); }
 body[data-ventana="playoffs"],
@@ -331,127 +297,21 @@ body[data-ventana="internacional"],
 body[data-serie="on"] { --horizon: var(--gold-horizon); }
 body[data-peligro="on"] { --horizon: var(--danger-horizon); }
 
-/* La final (antes `body[data-legado="on"]`): la ficha al costado y la
-   tarjeta, sin riel derecho. El feed, la barra de abajo y el marcador no son
-   parte de la pieza (`data-piezas`). */
-.shell[data-pieza="final"] .shell-cuerpo,
-.shell[data-pieza="final"] .shell-cuerpo:has(.acompanante:not([hidden])) {
-  grid-template-columns: var(--riel-izq) 1fr;
-}
-.shell[data-pieza="final"] .acompanante { display: none; }
+/* La final (antes `body[data-legado="on"]`): la tarjeta sola, centrada. El
+   feed y el marcador no son parte de la pieza (`data-piezas`). */
 .shell[data-pieza="final"] .tarjeta { margin-top: 0; }
-@media (max-width: 899px) {
-  .shell[data-pieza="final"] .riel { display: none; }
-}
 
 /* ==========================================================================
-   Breakpoints (PLAN.md T1). `tokens.css` ya reajusta --riel-izq y la escala
-   tipográfica en estos mismos cortes — acá solo cambia la estructura.
+   Breakpoints. `tokens.css` reajusta las medidas que son token en estos
+   mismos cortes; acá solo cambia la estructura (la de la franja y la barra
+   de cuartos está en su sección y en cuartos.css).
    ========================================================================== */
 
-/* 900–1179: una sola columna angosta todavía alcanza para el riel fijo. */
-
-/* 640–899: una columna. La ficha se vuelve una barra HUD compacta y
-   pegajosa arriba — CSS puro, sin JS: el shell no necesita saber en qué
-   ancho está. */
 @media (max-width: 899px) {
-  /* La versión `:has()` de la regla de arriba tiene más especificidad que
-     un `.shell-cuerpo` a secas (dos "clases" contra una) — sin repetir el
-     mismo `:has()` acá, esa regla le gana a ÉSTA aunque esté adentro de un
-     media query más específico en ancho. Es la misma trampa de
-     especificidad que ya apareció en T0b con los botones. */
-  .shell-cuerpo,
-  .shell-cuerpo:has(.acompanante:not([hidden])) {
-    grid-template-columns: 1fr;
-    padding: var(--s-4);
-    gap: var(--s-4);
-  }
-  /* La tarjeta final (`.shell[data-pieza="final"]`, antes `data-legado`) tiene su propia regla de columnas
-     más arriba (`var(--riel-izq) 1fr`, pensada para escritorio con la ficha al
-     costado) y por especificidad le ganaba a la de una columna de acá: en un
-     celular el escenario quedaba clavado en la primera columna — 260px, el
-     ancho de `--riel-izq` — con el resto de la pantalla vacío. Medido en
-     Chromium a 360px: la tarjeta medía 226px de ancho contra 294px con este
-     override (unos 90px de pantalla sin usar); a 320px, 226px contra 254px.
-     Esto arregla SOLO eso. El desborde horizontal de la tarjeta (384px a
-     360px, H4 de la revisión de K0-B) no depende de este override: a 360px
-     `scrollWidth` queda igual al ancho de la pantalla con y sin él. Lo
-     evitan el `overflow-wrap` y el cartel más chico de `.tarjeta-veredicto`
-     en pantallas.css. Mismos selectores que la regla de arriba, para empatar
-     la especificidad; gana por orden. */
-  .shell[data-pieza="final"] .shell-cuerpo,
-  .shell[data-pieza="final"] .shell-cuerpo:has(.acompanante:not([hidden])) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .riel {
-    grid-column: 1;
-    position: sticky;
-    /* `--topbar-alto-real` la publica app.js (ResizeObserver sobre .topbar): en
-       ≤639px la topbar mide 56 (1 fila), 64 (2) u 86px (3, a 320px). */
-    top: var(--franja-alto-real, var(--franja-alto));
-    z-index: 90;
-    background: var(--bg-void);
-    padding-bottom: var(--s-2);
-  }
-  .escenario { grid-column: 1; max-width: none; }
-  .acompanante { grid-column: 1; }
+  .shell-cuerpo { padding: var(--s-4); gap: var(--s-4); }
 }
 
 @media (max-width: 639px) {
   .shell-cuerpo { padding: var(--s-3); }
   .escenario .panel { padding: var(--s-5) var(--s-4); }
-  .ticker { padding: 0 var(--s-3); }
-}
-
-/* K4 (revisión del navegador): a 375px la ficha pegada arriba (`.riel`, sticky desde 899px) ocupaba ~300 de 812px
-   mientras había una decisión o un minijuego en pantalla, y la pausa quedaba abajo del pliegue. Con una pausa
-   visible y pantalla angosta, la ficha se achica a UNA línea: el nivel chico y nombre · contexto con elipsis; el
-   resto (marcas, ranked, pool, contrato, historia) vuelve al cerrar la pausa. Solo CSS: escritorio no cambia.
-   V2-B: "una pausa visible" es la pieza (`decision`, `partido` o `minijuego`), no `:has(#decision:not([hidden]))`. */
-@media (max-width: 639px) {
-  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-card {
-    padding: var(--s-1) var(--s-3);
-  }
-  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-card > :not(.ficha-encabezado),
-  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-encabezado > :not(.ficha-nivel):not(.ficha-identidad),
-  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-nivel-label,
-  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-estado-linea,
-  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-perfil {
-    display: none;
-  }
-  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-encabezado { gap: var(--s-2); }
-  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-nivel {
-    min-width: 0;
-    padding: var(--s-1) var(--s-2);
-  }
-  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-nivel-numero { font-size: var(--fs-3); }
-  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-identidad {
-    display: flex;
-    align-items: baseline;
-    gap: var(--s-2);
-    white-space: nowrap;
-  }
-  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-nombre-linea {
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: var(--fs-2);
-  }
-  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-contexto-linea {
-    flex: 1 1 0;
-    min-width: 0;
-    margin-top: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: var(--fs-1);
-  }
-}
-
-/* V2-C (paso 3, provisorio hasta el layout de una columna): el acompañante solo existe desde 1180 px. */
-@media (min-width: 900px) and (max-width: 1179px) {
-  .shell-cuerpo:has(.acompanante:not([hidden])) { grid-template-columns: var(--riel-izq) 1fr; }
-}
-@media (max-width: 1179px) {
-  .acompanante { display: none; }
 }

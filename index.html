@@ -34,7 +34,7 @@
     <link rel="stylesheet" href="./src/ui/estilos/tarjeta.css" />
     <link rel="stylesheet" href="./src/ui/estilos/paneles.css" />
     <link rel="stylesheet" href="./src/ui/estilos/serie.css" />
-    <!-- El shell de transmisión (fase T1): grilla de dos zonas, topbar, ticker. -->
+    <!-- El shell (fase T1; V2-C): la franja, el escenario de una columna y el acompañante. -->
     <link rel="stylesheet" href="./src/ui/estilos/shell.css" />
     <link rel="stylesheet" href="./src/ui/estilos/iconos.css" />
     <link rel="stylesheet" href="./src/ui/estilos/hud.css" />
@@ -67,11 +67,8 @@
         </div>
       </header>
 
+      <!-- El cuerpo (V2-C): el escenario, una columna con UNA pieza a la vista, y el acompañante al costado. -->
       <div class="shell-cuerpo">
-        <aside class="riel" aria-label="Tu ficha">
-          <div id="fichaContainer" class="ficha-card"></div>
-        </aside>
-
         <div class="escenario" id="escenario">
           <div id="setup" class="panel" data-piezas="inicio">
             <h1 class="solo-lectores">Un Split Más</h1>
@@ -120,8 +117,6 @@
           <!-- FASE V (V2-B): qué nodo se ve lo decide `.shell[data-pieza]` (lo escribe solo src/ui/escena.js) contra el
                `data-piezas` de cada nodo (estilos/shell.css). Una pieza puede ser varios nodos. -->
           <div id="carrera" class="panel" data-piezas="relato decision partido mercado minijuego final">
-            <div id="summary" class="summary" data-piezas="relato decision partido mercado minijuego">Aún no empezaste tu carrera.</div>
-            <div id="metaPill" class="meta-pill" data-piezas="relato decision partido mercado minijuego"></div>
             <!-- V2-C: debajo de 1180 px (sin acompañante), abre el cuarto con el contexto de la parada (src/ui/acompanante.js). -->
             <button id="verContexto" type="button" class="ver-contexto" data-piezas="decision partido mercado" hidden></button>
 
@@ -166,8 +161,6 @@
              src/ui/acompanante.js desde la `vista`; `data-acompanante` dice qué muestra (vacío: nada, y no ocupa lugar). -->
         <aside id="acompanante" class="acompanante" aria-label="Contexto de la parada" data-acompanante="" hidden></aside>
       </div>
-
-      <footer class="ticker" id="ticker" aria-hidden="true"></footer>
 
       <!-- Los cuartos (V2-C; PLAN.md §V.4): un solo diálogo modal (showModal: foco atrapado, fondo inerte, Esc nativo).
            Las pestañas son copias de #cuartosBarra; el cuerpo se pinta solo al abrirse, desde la `vista` (src/ui/cuartos.js). -->
