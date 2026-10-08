@@ -107,13 +107,21 @@ export function crearFranja({ franja, estadoEl, etiquetaRol, fotoDeLaPagina }) {
     const cuando = span('franja-cuando');
     cuando.append(span('franja-texto', [
       estado.age != null ? `${estado.age} años` : null,
-      estado.calendario?.etiqueta,
-      ventana
+      estado.calendario?.etiqueta
     ].filter(Boolean).join(' · ')));
+    // La ventana va aparte: en el celular es lo único del renglón que se acorta (con "…") si no entra; el nombre del club,
+    // la edad y el año no se cortan.
+    if (ventana) cuando.append(span('franja-texto franja-ventana', ` · ${ventana}`));
     const pips = estado.phase === 'retirado' ? null : crearPips(estado);
     if (pips) cuando.append(pips);
 
-    estadoEl.replaceChildren(...[quien, club, cuando, crearNumero(estado, fotoDeLaPagina?.() ?? null)].filter(Boolean));
+    // Dos líneas (en el celular; en el escritorio `.franja-linea` es `display: contents` y todo corre en una): primero lo
+    // que dice quién sos, después tu club, el momento y tu número.
+    const primera = span('franja-linea franja-linea--1');
+    primera.append(quien);
+    const segunda = span('franja-linea franja-linea--2');
+    segunda.append(...[club, cuando, crearNumero(estado, fotoDeLaPagina?.() ?? null)].filter(Boolean));
+    estadoEl.replaceChildren(primera, segunda);
   }
 
   return { pintar };

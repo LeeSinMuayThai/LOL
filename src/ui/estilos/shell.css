@@ -89,6 +89,9 @@ body { padding: 0; }
   white-space: nowrap;
   color: var(--ink-dim);
 }
+/* Las dos líneas de la franja (franja.js): en el escritorio y la tableta no existen (`display: contents`); en el celular
+   son las dos filas de la franja (más abajo). */
+.franja-linea { display: contents; }
 .franja-quien,
 .franja-org,
 .franja-cuando {
@@ -101,7 +104,10 @@ body { padding: 0; }
 .franja-quien { color: var(--ink); flex-shrink: 0; max-width: 16em; }
 .franja-org { flex-shrink: 2; }
 .franja-quien .rol-marca { font-size: 16px; }
-.franja-cuando { color: var(--ice); font-variant-numeric: tabular-nums; }
+.franja-cuando { color: var(--ice); font-variant-numeric: tabular-nums; gap: 0; }
+.franja-cuando .franja-texto { flex: 0 1 auto; }
+.franja-cuando .franja-ventana { white-space: pre; }
+.franja-pips { margin-left: var(--s-2); }
 .franja-texto {
   min-width: 0;
   overflow: hidden;
@@ -220,6 +226,46 @@ body { padding: 0; }
   .franja-nivel-banda,
   .franja-pips { display: none; }
   .franja-toggle { min-width: 36px; padding: var(--s-1) var(--s-2); }
+
+  /* Dos filas. Arriba, quién sos (handle de hasta 16 caracteres · rol) y los controles; abajo, el club, el momento y tu
+     número, que ocupa todo el ancho: ahí el club y la edad no se cortan, y lo único que se acorta es la ventana ("Temporada
+     regular") y, si el club es larguísimo, su nombre. Antes los controles y la caja del nivel con el ▲ le dejaban al
+     handle ~120 px y salía "WWW…". */
+  .franja {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "arriba controles"
+      "abajo abajo";
+    align-items: center;
+    column-gap: var(--s-2);
+    row-gap: 2px;
+  }
+  .franja-lockup { grid-area: arriba; }
+  .franja-estado { display: contents; }
+  .franja-controles { grid-area: controles; margin-left: 0; }
+  .franja-linea {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+  .franja-linea--1 { grid-area: arriba; }
+  .franja-linea--2 { grid-area: abajo; }
+  .franja-linea--1 .franja-quien { max-width: none; flex: 0 1 auto; }
+  /* El renglón de abajo reparte el lugar así: la edad y el año y tu número no se achican; si falta lugar se achica primero
+     la ventana (shrink 100, hasta "…"). El club no se achica salvo que sea larguísimo (tope: 62% del ancho). `.franja-cuando` se deshace para que la edad y
+     la ventana sean ítems del mismo renglón. */
+  .franja-linea--2 .franja-cuando { display: contents; font-size: var(--fs-1); }
+  .franja-linea--2 .franja-org { flex: 0 0 auto; max-width: 62%; margin-right: var(--s-3); font-size: var(--fs-1); }
+  .franja-linea--2 .franja-cuando .franja-texto { flex: 0 0 auto; font-size: var(--fs-1); color: var(--ice); }
+  .franja-linea--2 .franja-cuando .franja-ventana { flex: 0 100 auto; margin-right: var(--s-3); }
+  .franja-linea--2 .franja-nivel { margin-left: auto; padding: 2px var(--s-2); }
+  .franja-linea--2 .franja-nivel { gap: var(--s-1); }
+  .franja-linea--2 .franja-nivel-numero { font-size: var(--fs-4); }
+  .franja-linea--2 .franja-nivel-rango { font-size: var(--fs-1); }
+  .franja-linea--2 .franja-nivel-rango + .franja-delta { font-size: var(--fs-0); }
+}
+}
 }
 
 /* --- El cuerpo: el escenario y el acompañante (V2-C) -----------------------
