@@ -16,8 +16,7 @@ import { porcentaje } from '../../core/formato.js';
 //   rngUi         el RNG de la interfaz (el que ponen los minijuegos; el motor no lo ve).
 //   responder     manda la respuesta de la pausa al motor ({ resultado } o { resultado, charla }).
 //   renderPrevia  pinta la previa del partido (K2d) y devuelve la previa (o null).
-//   renderBarra   repinta la barra de abajo (lower third) en modo minijuego.
-export function mostrar(contenedor, decision, { estado, rngUi, responder, renderPrevia, renderBarra }) {
+export function mostrar(contenedor, decision, { estado, rngUi, responder, renderPrevia }) {
   const estadoActual = estado;
   const minijuegoTitle = contenedor.querySelector('#minijuegoTitle');
   const minijuegoDesc = contenedor.querySelector('#minijuegoDesc');
@@ -58,7 +57,6 @@ export function mostrar(contenedor, decision, { estado, rngUi, responder, render
       eleccion.appendChild(boton);
     });
     minijuegoWidget.appendChild(eleccion);
-    renderBarra(estadoActual);
     return;
   }
   montarMinijuego(false);
@@ -84,7 +82,6 @@ export function mostrar(contenedor, decision, { estado, rngUi, responder, render
     }, { once: true });
     espera.append(nota, boton);
     minijuegoWidget.appendChild(espera);
-    renderBarra(estadoActual);
     traerAlaVista(minijuegoWidget);
   }
 
@@ -129,11 +126,9 @@ export function mostrar(contenedor, decision, { estado, rngUi, responder, render
             : 'Te firman: sacaste ' + laPrueba.sacaste + '% y la vara era ' + laPrueba.vara + '%.')
           : 'No llegaste: te faltó ' + laPrueba.falta + '% (sacaste ' + laPrueba.sacaste + '%, la vara era ' + laPrueba.vara + '%).') + '</div>' : '')
         + '</div>';
-      renderBarra(estadoActual);
       setTimeout(() => responder(decision.datos.charla?.disponible ? { resultado, charla } : { resultado }), 1600);
     }, rngUi, decision.datos);
 
-    renderBarra(estadoActual);
     traerAlaVista(minijuegoWidget);
   }
 }

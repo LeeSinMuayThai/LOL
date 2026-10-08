@@ -19,9 +19,8 @@
 //   - mantiene los ids que lee `src/dev/recorrido.mjs` o lo actualiza en el mismo commit;
 //   - en `formatoUi.js` y `tokens.css`, solo agrega al final.
 // `ctx` trae lo que la familia necesita del controlador (`estado`, `responder`, `ui`, `pintarPrevia`, `rngUi`, los
-// elementos de su contenedor): la familia no importa `app.js`. (`lowerThird` sigue en `ctx` y no hace nada desde V2-C:
-// la barra de abajo se fue; la familia que lo llama puede dejar de hacerlo.) El `acompanante` de la familia reemplaza al
-// stub de su tipo en `ui/acompanante.js`.
+// elementos de su contenedor): la familia no importa `app.js`. (La barra de abajo, `lowerThird`, se fue con V2-C y salió
+// de `ctx`.) El `acompanante` de la familia reemplaza al stub de su tipo en `ui/acompanante.js`.
 // ---------------------------------------------------------------------------------------------------------------------
 import { piezaDe, PIEZAS_DE_PARADA } from './core/escena.js';
 

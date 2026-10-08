@@ -74,7 +74,7 @@
 }
 .decision[data-peso="ambiente"]::before { display: none; }
 
-/* La pestaña de lower-third (T0b): dice qué es el panel antes de que el
+/* La pestaña de categoría (T0b): dice qué es el panel antes de que el
    jugador lea una sola palabra del contenido. `.decision` la arma en JS
    (`decision.js`, T4) con `data-tab-label`/`--tab-color`; `.mercado`/
    `.minijuego` se quedan con el texto fijo — no vienen de un evento

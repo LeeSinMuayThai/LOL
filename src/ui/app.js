@@ -232,9 +232,6 @@ export function iniciar() {
         rngUi,
         responder,
         pintarPrevia,
-        // V2-C: la barra de abajo (`#summary`/`#metaPill`, con su "EN EL MAPA") se fue con el layout viejo. Las familias
-        // todavía la llaman (`paradas/`, de V3): no hace nada.
-        lowerThird: () => {},
         elementos: { decision: decisionElements, mercado: mercadoElements },
         contenedores: { decision: decisionPanel, partido: decisionPanel, mercado: mercadoPanel, minijuego: minijuegoPanel }
       })

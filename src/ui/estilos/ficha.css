@@ -5,8 +5,8 @@
    3. LA FICHA (PLAN.md §8.6)
    ========================================================================== */
 
-/* Lower-third, como `.summary`/`.log-item`: la ficha es el HUD permanente
-   (T2 la vuelve el riel izquierdo), no una tarjeta más entre las demás. */
+/* La ficha vive en el cuarto Vos y, en el escritorio, en el acompañante cuando le toca (V2-C): no es una tarjeta más del
+   relato. */
 .ficha-card {
   position: relative;
   margin-top: var(--s-1);
