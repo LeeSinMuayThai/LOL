@@ -157,27 +157,32 @@ function construirTarjeta(oferta, onElegir, onNegociar, previo = {}) {
 
   card.appendChild(sueldoEl('mercado-card-salario', oferta.salarioAnualUSD, previo.salario));
 
-  // Los mismos campos, en el mismo orden, en todas las ofertas: liga y años, dónde queda el plantel, tu jerarquía allá.
+  // Los mismos campos, en el mismo orden y en las mismas dos líneas, en todas las ofertas: (1) liga y años y dónde queda el
+  // plantel; (2) tu jerarquía allá, lo que falta para el hito (una renovación) y el estado de la negociación.
   const datos = document.createElement('div');
   datos.className = 'mercado-card-datos';
-  datos.appendChild(span('mercado-card-liga', ligaYAnios(oferta.liga, oferta.anios)));
+  const linea1 = document.createElement('div');
+  linea1.className = 'mercado-card-linea';
+  linea1.appendChild(span('mercado-card-liga', ligaYAnios(oferta.liga, oferta.anios)));
   const lineaPlantel = lineaDePlantelDeOferta(oferta);
   if (lineaPlantel) {
-    datos.appendChild(span('mercado-card-plantel', lineaPlantel));
+    linea1.appendChild(span('mercado-card-plantel', lineaPlantel));
   }
-  datos.appendChild(span('mercado-card-jerarquia', jerarquiaTexto(oferta.proyeccionJerarquia)));
+  const linea2 = document.createElement('div');
+  linea2.className = 'mercado-card-linea';
+  linea2.appendChild(span('mercado-card-jerarquia', jerarquiaTexto(oferta.proyeccionJerarquia)));
   const lineaHito = lineaDeHitoDeOferta(oferta);
   if (lineaHito) {
-    datos.appendChild(span('mercado-card-hito', lineaHito));
+    linea2.appendChild(span('mercado-card-hito', lineaHito));
   }
-  // Lo que avisa el estado de la negociación (una oferta recién tocada), junto a los datos.
   const neg = oferta.negociacion ?? { escalones: 0, clausula: false };
   if (neg.escalones > 0) {
-    datos.appendChild(span('mercado-card-neg', `Pediste más ${neg.escalones}×`));
+    linea2.appendChild(span('mercado-card-neg', `Pediste más ${neg.escalones}×`));
   }
   if (neg.clausula) {
-    datos.appendChild(span('mercado-card-neg', 'Con cláusula de salida'));
+    linea2.appendChild(span('mercado-card-neg', 'Con cláusula de salida'));
   }
+  datos.append(linea1, linea2);
   card.appendChild(datos);
 
   // "Firmar" es la acción primaria y el PRIMER botón de la tarjeta (`paradas/mercado.js` le pone el atajo y el número).
@@ -250,12 +255,15 @@ function construirTarjetaTraspaso(opcion, onElegir, previo = {}) {
   const datos = document.createElement('div');
   datos.className = 'mercado-card-datos';
   if (conDatos) {
-    datos.appendChild(span('mercado-card-liga', ligaYAnios(opcion.liga, opcion.anios)));
+    const linea = document.createElement('div');
+    linea.className = 'mercado-card-linea';
+    linea.appendChild(span('mercado-card-liga', ligaYAnios(opcion.liga, opcion.anios)));
     if (opcion.proyeccionJerarquia) {
-      datos.appendChild(span('mercado-card-jerarquia', jerarquiaTexto(opcion.proyeccionJerarquia)));
+      linea.appendChild(span('mercado-card-jerarquia', jerarquiaTexto(opcion.proyeccionJerarquia)));
     }
+    datos.appendChild(linea);
   }
-  datos.appendChild(span('mercado-card-picks', opcion.descripcion));
+  datos.appendChild(fila('mercado-card-picks', opcion.descripcion));
   card.appendChild(datos);
 
   const acciones = document.createElement('div');
