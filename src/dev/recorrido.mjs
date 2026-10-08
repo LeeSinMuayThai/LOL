@@ -452,8 +452,9 @@ async function retomar(pieza) {
 
 // ---------- V2-B: el teclado y la regla 4 ----------
 const teclado = { continuarEnter: null, mercado1: null, copiarEnterFinal: null, escFinal: null };
-// "1" en el mercado: un listener de captura en `window` se queda con el primer clic (y lo frena antes de que llegue al
-// boton), para ver a QUE le hizo clic la tecla sin cambiar la carrera.
+// "1" en el mercado (V2-B): lleva el FOCO al "Firmar" de la oferta 1 y NO firma; Enter sobre ese boton si. Un listener de
+// captura en `window` se queda con el primer clic (y lo frena antes de que llegue al boton), para ver si la tecla hizo clic
+// y a QUE: el de "1" tiene que ser ninguno, y el de Enter el "Firmar" de la oferta 1, sin cambiar la carrera.
 async function probarUnoEnElMercado() {
   if (SIN_TECLADO) return;
   await page.evaluate(() => {
@@ -473,9 +474,21 @@ async function probarUnoEnElMercado() {
   });
   await page.keyboard.press('1');
   await page.waitForTimeout(100);
+  const clicDeUno = await page.evaluate(() => window.__clicDeLaTecla);
+  const foco = await page.evaluate(() => {
+    const a = document.activeElement;
+    const card = a?.closest('.mercado-card');
+    return { texto: a?.innerText?.trim() ?? null, carta: card ? [...card.parentElement.children].indexOf(card) : null };
+  });
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(100);
   const clic = await page.evaluate(() => window.__clicDeLaTecla);
   const sigue = await piezaVisible(page);
-  teclado.mercado1 = { ok: !!clic && clic.carta === 0 && /Firmar/i.test(clic.texto ?? '') && sigue === 'mercado', clic };
+  teclado.mercado1 = {
+    ok: !clicDeUno && foco.carta === 0 && /Firmar/i.test(foco.texto ?? '')
+      && !!clic && clic.carta === 0 && /Firmar/i.test(clic.texto ?? '') && sigue === 'mercado',
+    clicDeUno, foco, clic
+  };
 }
 // En la final: Enter sobre "Copiar..." no se va de la final (D87), y Esc no hace nada.
 async function probarTecladoEnLaFinal() {

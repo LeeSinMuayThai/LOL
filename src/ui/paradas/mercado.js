@@ -1,6 +1,8 @@
 // El mercado (FASE V, V2-B): el envoltorio de familia sobre el renderer de hoy (`components/mercado.js`, de V3c, que no
-// se edita acá). Marca `data-foco` en el título y `data-atajo="n"` en el PRIMER botón ("Firmar") de cada oferta: con eso
-// 1-4 firman la oferta n (D46: antes el atajo hacía clic en la tarjeta, que no es un botón, y no pasaba nada).
+// se edita acá). Marca `data-foco` en el título y `data-atajo="n"` en el PRIMER botón ("Firmar") de cada oferta, con
+// `data-atajo-foco`: 1-4 LLEVAN EL FOCO al "Firmar" de la oferta n y no firman (PLAN.md V3c: "1-n eligen y Enter firma"; un
+// contrato de años no se firma con una tecla suelta). Enter sobre el botón con foco firma, por su acción nativa. El número se
+// ve en la tarjeta (`.mercado-atajo`), a la izquierda del botón.
 import { marcarFoco, marcarAtajo } from '../escena.js';
 
 // Hasta cuántas ofertas tienen atajo (las teclas 1-4 del teclado).
@@ -19,7 +21,16 @@ export function mostrar(contenedor, decision, ctx) {
   lowerThird('mercado', decision);
   marcarFoco(elementos.mercado.mercadoTitle);
   [...elementos.mercado.mercadoGrid.children].slice(0, OFERTAS_CON_ATAJO).forEach((oferta, i) => {
-    marcarAtajo(oferta.querySelector('button'), i + 1);
+    const firmar = oferta.querySelector('button');
+    if (!firmar) return;
+    marcarAtajo(firmar, i + 1);
+    firmar.dataset.atajoFoco = '';
+    firmar.setAttribute('aria-keyshortcuts', String(i + 1));
+    const numero = document.createElement('span');
+    numero.className = 'mercado-atajo';
+    numero.setAttribute('aria-hidden', 'true');
+    numero.textContent = String(i + 1);
+    firmar.before(numero);
   });
   return contenedor;
 }

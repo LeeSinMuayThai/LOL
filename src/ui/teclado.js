@@ -9,8 +9,9 @@
 //     "Continuar" arrancaba una carrera nueva y BORRABA la guardada (D86), y Enter sobre "Copiar…" de la tarjeta final
 //     volvía al inicio (D87). Se borró;
 //   - Espacio con el foco en el body o en un encabezado, durante el relato → saltea un beat;
-//   - 1-4 → clic en `[data-atajo=n]` de la pieza activa (decisión, partido o mercado; nunca en el minijuego, que es dueño
-//     de sus teclas: 1-5, Q/W/E/R, A/D, A/S — `components/minijuegos/comun.js`);
+//   - 1-4 → clic en `[data-atajo=n]` de la pieza activa (decisión o partido; nunca en el minijuego, que es dueño de sus
+//     teclas: 1-5, Q/W/E/R, A/D, A/S — `components/minijuegos/comun.js`). Si el elemento marcado trae `data-atajo-foco`
+//     (el "Firmar" del mercado), la tecla solo le lleva el FOCO — con el scroll mínimo para verlo — y Enter hace el resto;
 //   - Esc nunca navega: cierra el desplegable "Avanzado" del inicio y nada más (en la final no hace nada: D87).
 import { saltarBeat, velocidadActual } from './reproductor.js';
 
@@ -75,7 +76,12 @@ document.addEventListener('keydown', (evento) => {
     const boton = atajoDeLaPieza(evento.key);
     if (boton) {
       evento.preventDefault();
-      boton.click();
+      if (boton.hasAttribute('data-atajo-foco')) {
+        boton.focus({ preventScroll: true });
+        boton.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      } else {
+        boton.click();
+      }
     }
     return;
   }
