@@ -101,7 +101,20 @@ const ETIQUETAS_BRACKET = {
   semis: 'SEMI',
   final: 'FINAL'
 };
-let seriePrevia = { a: 0, b: 0 };
+
+// D95 (V3b): lo que cada contenedor ya mostró (el marcador desde el que arranca el `countUp`) y si su desplegable está
+// abierto. Era una variable de módulo: con el tablero pintado en dos contenedores (el escenario y el acompañante) cada uno
+// arrancaba del valor que había dejado el otro. Por contenedor, el escenario anima desde SU marcador y el acompañante (que
+// se rehace entero en cada pintada, sin memoria) no anima.
+const memoria = new WeakMap();
+function memoriaDe(container) {
+  let m = memoria.get(container);
+  if (!m) {
+    m = { previo: { a: 0, b: 0 }, abierto: false };
+    memoria.set(container, m);
+  }
+  return m;
+}
 
 // K5-A: una serie del Mundial (`ronda: 'internacional'` con su `etapa`) muestra el bracket del Mundial, no el doméstico.
 export function crearBarraBracket(rondaActual, { esPostSerie = false, gano = false, etapa = null } = {}) {
@@ -228,126 +241,60 @@ export function crearTarjetaResultadoSerie(entry, state) {
   return item;
 }
 
-// K6a-U: el Swiss del Mundial no es una serie (no hay mapas ni Fearless): es una tabla de 16 donde jugás hasta tres
-// victorias o tres derrotas. El panel dice eso, con tu récord y las rondas que llevás, en vez de dejar la final doméstica.
-function renderSwissDelMundial(container, state) {
-  const t = state.internacional;
-  container.hidden = false;
-  container.replaceChildren();
-  seriePrevia = { a: 0, b: 0 };
+// --- El tablero de la serie (FASE V, V3b) ------------------------------------------------------------------------------
+//
+// Dos formas del mismo tablero, las dos desde `renderSerieContexto`:
+//  - la del ESCENARIO (`#serieContexto`, la que pinta `app.js` desde la `vista`): UNA línea —rival, marcador, mapa n de N y, si
+//    hay Fearless, cuántos campeones te quedan— y el bracket, el camino, los cierres y el Fearless entero detrás de un
+//    desplegable ("lo demás, a un toque"). Debajo de la decisión, nunca antes del título (regla 2 de §V.3).
+//  - la COMPLETA (`{ completo: true }`, la del acompañante desde 1180 px): el tablero entero, abierto. Ahí el desplegable del
+//    escenario no repite la línea (`estilos/serie.css`), para que nada aparezca dos veces.
+// Las dos leen el mismo `state` (la `vista`: lo que el relato ya contó) y nada del motor.
 
-  const bracket = document.createElement('div');
-  bracket.className = 'serie-bracket';
-  [['MUNDIAL · SWISS', ' serie-bracket-paso--actual'], ['CUARTOS', ''], ['SEMI', ''], ['FINAL', '']].forEach(([rotulo, mod]) => {
-    const paso = document.createElement('span');
-    paso.className = `serie-bracket-paso${mod}`;
-    paso.textContent = rotulo;
-    bracket.appendChild(paso);
-  });
-  container.appendChild(bracket);
-
-  const record = t.swiss.record[t.jugador] ?? { v: 0, d: 0 };
-  const resumen = document.createElement('div');
-  resumen.className = 'serie-swiss-resumen';
-  const propia = state.career.currentOrg ?? state.player.name;
-  resumen.append(crearOrgChip(propia, { size: 36 }));
-  const texto = document.createElement('span');
-  texto.className = 'serie-lado-nombre';
-  texto.textContent = `${propia} · récord ${record.v}-${record.d} en el Swiss`;
-  resumen.appendChild(texto);
-  container.appendChild(resumen);
-
-  // Tus rondas hasta acá, con el rival de cada una, y la que se está por jugar.
-  const camino = document.createElement('div');
-  camino.className = 'serie-camino';
-  const propias = t.swiss.rondas.map((ronda) => ronda.find((p) => p.propio)).filter(Boolean);
-  propias.forEach((partido, i) => {
-    const gano = partido.ganador === t.jugador;
-    const rival = partido.a === t.jugador ? partido.b : partido.a;
-    const paso = document.createElement('div');
-    paso.className = `serie-mapa serie-mapa--${gano ? 'ganado' : 'perdido'}`;
-    const n = document.createElement('span');
-    n.className = 'serie-mapa-n';
-    n.textContent = `R${i + 1}`;
-    const c = document.createElement('span');
-    c.className = 'serie-mapa-c';
-    c.textContent = `${gano ? 'G' : 'P'} · ${rival}`;
-    paso.append(n, c);
-    camino.appendChild(paso);
-  });
-  const pendiente = document.createElement('div');
-  pendiente.className = 'serie-mapa';
-  const nPend = document.createElement('span');
-  nPend.className = 'serie-mapa-n';
-  nPend.textContent = `R${propias.length + 1}`;
-  const cPend = document.createElement('span');
-  cPend.className = 'serie-mapa-c';
-  cPend.textContent = t.partidoEnCurso ? `vs ${t.partidoEnCurso.rival}` : '—';
-  pendiente.append(nPend, cPend);
-  camino.appendChild(pendiente);
-  container.appendChild(camino);
+function campeonesLibres(serie, state) {
+  const quemados = new Set(serie.quemados ?? []);
+  return (state.player.championPool ?? []).filter((campeon) => !quemados.has(campeon.name)).length;
 }
 
-export function renderSerieContexto(container, state) {
+function texto(clase, contenido, etiqueta = 'span') {
+  const el = document.createElement(etiqueta);
+  el.className = clase;
+  el.textContent = contenido;
+  return el;
+}
+
+// Las partes del tablero de una serie. `conMarcador`: el marcador grande (el del tablero completo); en el escenario va en la línea.
+function partesDeLaSerie(state, { conMarcador, esPostSerie, ganoSerie, marcador = null }) {
   const { serie } = state;
-  const ultimoLog = state?.logs?.[state.logs.length - 1];
-  const esPostSerie = Boolean(serie?.postSerie) || Boolean(ultimoLog?.postSerie);
-
-  // K6a-U: qué muestra el panel lo decide `tableroDeSerie` (core/vistaDeCarrera.js): la serie, el Swiss del Mundial o nada.
-  const tablero = tableroDeSerie(state);
-  if (tablero === 'swiss') {
-    renderSwissDelMundial(container, state);
-    return;
-  }
-  if (tablero === null) {
-    container.hidden = true;
-    seriePrevia = { a: 0, b: 0 };
-    return;
-  }
-
-  container.hidden = false;
-  container.replaceChildren();
-
-  const ganoSerie = (serie.marcador?.[0] ?? 0) > (serie.marcador?.[1] ?? 0);
-  const bracket = crearBarraBracket(serie.ronda, { esPostSerie, gano: ganoSerie, etapa: serie.etapa ?? null });
-  container.appendChild(bracket);
+  const partes = [];
+  partes.push(crearBarraBracket(serie.ronda, { esPostSerie, gano: ganoSerie, etapa: serie.etapa ?? null }));
 
   const propia = state.career.currentOrg ?? state.player.name;
   const rivalNombre = serie.rival?.org ?? 'Rival';
   const slots = Math.max(serie.formato || 0, serie.mapas.length, 1);
 
-  const score = document.createElement('div');
-  score.className = 'serie-scoreboard';
+  if (conMarcador) {
+    const score = document.createElement('div');
+    score.className = 'serie-scoreboard';
 
-  const ladoPropio = document.createElement('div');
-  ladoPropio.className = 'serie-lado';
-  ladoPropio.append(crearOrgChip(propia, { size: 36 }));
-  const nomP = document.createElement('span');
-  nomP.className = 'serie-lado-nombre';
-  nomP.textContent = propia;
-  ladoPropio.appendChild(nomP);
+    const ladoPropio = document.createElement('div');
+    ladoPropio.className = 'serie-lado';
+    ladoPropio.append(crearOrgChip(propia, { size: 36 }), texto('serie-lado-nombre', propia));
 
-  const nums = document.createElement('div');
-  nums.className = 'serie-score';
-  const a = document.createElement('span');
-  const b = document.createElement('span');
-  const sep = document.createElement('span');
-  sep.className = 'serie-score-sep';
-  sep.textContent = '–';
-  countUp(a, seriePrevia.a, serie.marcador[0], { dur: 220 });
-  countUp(b, seriePrevia.b, serie.marcador[1], { dur: 220 });
-  seriePrevia = { a: serie.marcador[0], b: serie.marcador[1] };
-  nums.append(a, sep, b);
+    const nums = document.createElement('div');
+    nums.className = 'serie-score';
+    const a = document.createElement('span');
+    const b = document.createElement('span');
+    marcador(a, b);
+    nums.append(a, texto('serie-score-sep', '–'), b);
 
-  const ladoRival = document.createElement('div');
-  ladoRival.className = 'serie-lado serie-lado--rival';
-  const nomR = document.createElement('span');
-  nomR.className = 'serie-lado-nombre';
-  nomR.textContent = rivalNombre;
-  ladoRival.append(nomR, crearOrgChip(rivalNombre, { size: 36 }));
+    const ladoRival = document.createElement('div');
+    ladoRival.className = 'serie-lado serie-lado--rival';
+    ladoRival.append(texto('serie-lado-nombre', rivalNombre), crearOrgChip(rivalNombre, { size: 36 }));
 
-  score.append(ladoPropio, nums, ladoRival);
-  container.appendChild(score);
+    score.append(ladoPropio, nums, ladoRival);
+    partes.push(score);
+  }
 
   const camino = document.createElement('div');
   camino.className = 'serie-camino';
@@ -357,19 +304,16 @@ export function renderSerieContexto(container, state) {
     paso.className = 'serie-mapa' + (mapa
       ? ` serie-mapa--${mapa.resultado === 'W' ? 'ganado' : 'perdido'}`
       : '');
-    const n = document.createElement('span');
-    n.className = 'serie-mapa-n';
-    n.textContent = `M${i + 1}`;
-    const c = document.createElement('span');
-    c.className = 'serie-mapa-c';
-    c.textContent = mapa ? (mapa.marcador ? `${mapa.campeon} (${mapa.marcador})` : mapa.campeon) : '—';
-    paso.append(n, c);
+    paso.append(
+      texto('serie-mapa-n', `M${i + 1}`),
+      texto('serie-mapa-c', mapa ? (mapa.marcador ? `${mapa.campeon} (${mapa.marcador})` : mapa.campeon) : '—')
+    );
     if (mapa?.cierre) {
       paso.title = mapa.cierre;
     }
     camino.appendChild(paso);
   }
-  container.appendChild(camino);
+  partes.push(camino);
 
   if (esPostSerie && serie.mapas.length > 0) {
     const cierres = document.createElement('div');
@@ -377,16 +321,13 @@ export function renderSerieContexto(container, state) {
     for (const m of serie.mapas) {
       const fila = document.createElement('div');
       fila.className = `serie-cierre-item serie-cierre-item--${m.resultado === 'W' ? 'ganado' : 'perdido'}`;
-      const tag = document.createElement('span');
-      tag.className = 'serie-cierre-tag';
-      tag.textContent = `M${m.mapa} [${m.resultado} ${m.marcador}] ${m.campeon}`;
-      const texto = document.createElement('span');
-      texto.className = 'serie-cierre-texto';
-      texto.textContent = m.cierre ? ` — ${m.cierre}` : '';
-      fila.append(tag, texto);
+      fila.append(
+        texto('serie-cierre-tag', `M${m.mapa} [${m.resultado} ${m.marcador}] ${m.campeon}`),
+        texto('serie-cierre-texto', m.cierre ? ` — ${m.cierre}` : '')
+      );
       cierres.appendChild(fila);
     }
-    container.appendChild(cierres);
+    partes.push(cierres);
   }
 
   const quemados = serie.quemados ?? [];
@@ -394,9 +335,6 @@ export function renderSerieContexto(container, state) {
   if (quemados.length > 0 || pool.length > 0) {
     const fearless = document.createElement('div');
     fearless.className = 'serie-fearless';
-    const titulo = document.createElement('div');
-    titulo.className = 'serie-fearless-titulo';
-    titulo.textContent = 'Fearless';
     const grid = document.createElement('div');
     grid.className = 'serie-fearless-grid';
     const vistos = new Set();
@@ -408,7 +346,166 @@ export function renderSerieContexto(container, state) {
       if (vistos.has(campeon.name)) continue;
       grid.appendChild(crearCampeonTile(campeon, { size: 'mini' }));
     }
-    fearless.append(titulo, grid);
-    container.appendChild(fearless);
+    fearless.append(texto('serie-fearless-titulo', 'Fearless', 'div'), grid);
+    partes.push(fearless);
   }
+  return partes;
+}
+
+// La línea del escenario: rival, marcador, mapa n de N, Fearless. Nada que el relato no haya contado (sale de la `vista`).
+function lineaDeLaSerie(state, { esPostSerie, marcador }) {
+  const { serie } = state;
+  const propia = state.career.currentOrg ?? state.player.name;
+  const rivalNombre = serie.rival?.org ?? 'Rival';
+  const slots = Math.max(serie.formato || 0, serie.mapas.length, 1);
+
+  const duelo = texto('serie-linea-duelo', '');
+  const a = document.createElement('span');
+  const b = document.createElement('span');
+  marcador(a, b);
+  const nums = texto('serie-linea-score', '');
+  nums.append(a, texto('serie-score-sep', '–'), b);
+  duelo.append(
+    crearOrgChip(propia, { size: 20 }), nums,
+    crearOrgChip(rivalNombre, { size: 20 }), texto('serie-linea-rival', rivalNombre)
+  );
+
+  const datos = [];
+  datos.push(texto('serie-linea-dato', esPostSerie ? 'Serie cerrada' : `Mapa ${Math.min(serie.mapas.length + 1, slots)} de ${slots}`));
+  const hayFearless = (serie.quemados ?? []).length > 0 || (state.player.championPool ?? []).length > 0;
+  if (hayFearless && !esPostSerie) {
+    const libres = campeonesLibres(serie, state);
+    datos.push(texto(
+      'serie-linea-dato',
+      libres === 0 ? 'Fearless · no te queda ninguno' : `Fearless · te ${libres === 1 ? 'queda' : 'quedan'} ${libres}`
+    ));
+  }
+  return [duelo, ...datos];
+}
+
+// El desplegable del escenario: la línea es el `summary`; lo demás, detrás. Recuerda si lo abriste (la `vista` se repinta en
+// cada beat: sin esto se cerraba solo, como "Más datos" de la ficha, D95).
+function desplegable(container, memoria, linea, cuerpo) {
+  const detalles = document.createElement('details');
+  detalles.className = 'serie-resumen';
+  detalles.open = memoria.abierto;
+  detalles.addEventListener('toggle', () => { memoria.abierto = detalles.open; });
+  const resumen = document.createElement('summary');
+  resumen.className = 'serie-linea';
+  resumen.append(...linea, texto('serie-linea-mas', 'Camino'));
+  const detalle = document.createElement('div');
+  detalle.className = 'serie-detalle';
+  detalle.append(...cuerpo);
+  detalles.append(resumen, detalle);
+  container.replaceChildren(detalles);
+}
+
+// K6a-U: el Swiss del Mundial no es una serie (no hay mapas ni Fearless): es una tabla de 16 donde jugás hasta tres
+// victorias o tres derrotas. El panel dice eso, con tu récord y las rondas que llevás, en vez de dejar la final doméstica.
+function partesDelSwiss(state, { conResumen }) {
+  const t = state.internacional;
+  const partes = [];
+
+  const bracket = document.createElement('div');
+  bracket.className = 'serie-bracket';
+  [['MUNDIAL · SWISS', ' serie-bracket-paso--actual'], ['CUARTOS', ''], ['SEMI', ''], ['FINAL', '']].forEach(([rotulo, mod]) => {
+    bracket.appendChild(texto(`serie-bracket-paso${mod}`, rotulo));
+  });
+  partes.push(bracket);
+
+  const record = t.swiss.record[t.jugador] ?? { v: 0, d: 0 };
+  const propia = state.career.currentOrg ?? state.player.name;
+  if (conResumen) {
+    const resumen = document.createElement('div');
+    resumen.className = 'serie-swiss-resumen';
+    resumen.append(crearOrgChip(propia, { size: 36 }), texto('serie-lado-nombre', `${propia} · récord ${record.v}-${record.d} en el Swiss`));
+    partes.push(resumen);
+  }
+
+  // Tus rondas hasta acá, con el rival de cada una, y la que se está por jugar.
+  const camino = document.createElement('div');
+  camino.className = 'serie-camino';
+  const propias = t.swiss.rondas.map((ronda) => ronda.find((p) => p.propio)).filter(Boolean);
+  propias.forEach((partido, i) => {
+    const gano = partido.ganador === t.jugador;
+    const rival = partido.a === t.jugador ? partido.b : partido.a;
+    const paso = document.createElement('div');
+    paso.className = `serie-mapa serie-mapa--${gano ? 'ganado' : 'perdido'}`;
+    paso.append(texto('serie-mapa-n', `R${i + 1}`), texto('serie-mapa-c', `${gano ? 'G' : 'P'} · ${rival}`));
+    camino.appendChild(paso);
+  });
+  const pendiente = document.createElement('div');
+  pendiente.className = 'serie-mapa';
+  pendiente.append(
+    texto('serie-mapa-n', `R${propias.length + 1}`),
+    texto('serie-mapa-c', t.partidoEnCurso ? `vs ${t.partidoEnCurso.rival}` : '—')
+  );
+  camino.appendChild(pendiente);
+  partes.push(camino);
+  return { partes, record, propia, ronda: propias.length + 1 };
+}
+
+function renderSwissDelMundial(container, state, { completo }) {
+  const m = memoriaDe(container);
+  container.hidden = false;
+  m.previo = { a: 0, b: 0 };
+  if (completo) {
+    container.replaceChildren(...partesDelSwiss(state, { conResumen: true }).partes);
+    return;
+  }
+  const { partes, record, propia, ronda } = partesDelSwiss(state, { conResumen: false });
+  const rival = state.internacional.partidoEnCurso?.rival;
+  const duelo = texto('serie-linea-duelo', '');
+  duelo.append(crearOrgChip(propia, { size: 20 }), texto('serie-linea-rival', 'Swiss del Mundial'));
+  desplegable(container, m, [
+    duelo,
+    texto('serie-linea-dato', `Récord ${record.v}-${record.d}`),
+    texto('serie-linea-dato', rival ? `Ronda ${ronda} vs ${rival}` : `Ronda ${ronda}`)
+  ], partes);
+}
+
+// `completo`: el tablero entero y abierto (el del acompañante). Sin él, la línea del escenario con el resto detrás de un
+// desplegable. `container` es el nodo que se repinta: el estado por contenedor (marcador anterior, desplegable abierto) vive
+// en un `WeakMap` (D95).
+export function renderSerieContexto(container, state, { completo = false } = {}) {
+  const { serie } = state;
+  const ultimoLog = state?.logs?.[state.logs.length - 1];
+  const esPostSerie = Boolean(serie?.postSerie) || Boolean(ultimoLog?.postSerie);
+  const m = memoriaDe(container);
+
+  // K6a-U: qué muestra el panel lo decide `tableroDeSerie` (core/vistaDeCarrera.js): la serie, el Swiss del Mundial o nada.
+  const tablero = tableroDeSerie(state);
+  if (tablero === 'swiss') {
+    renderSwissDelMundial(container, state, { completo });
+    return;
+  }
+  if (tablero === null) {
+    container.hidden = true;
+    m.previo = { a: 0, b: 0 };
+    return;
+  }
+
+  container.hidden = false;
+  const ganoSerie = (serie.marcador?.[0] ?? 0) > (serie.marcador?.[1] ?? 0);
+
+  // El marcador anima desde lo que ESTE contenedor ya mostró; el tablero completo (el del acompañante, que se rehace entero en
+  // cada pintada) no anima: pinta el número.
+  const previo = completo ? { a: serie.marcador[0], b: serie.marcador[1] } : m.previo;
+  const marcador = (a, b) => {
+    countUp(a, previo.a, serie.marcador[0], { dur: 220 });
+    countUp(b, previo.b, serie.marcador[1], { dur: 220 });
+  };
+  if (!completo) {
+    m.previo = { a: serie.marcador[0], b: serie.marcador[1] };
+  }
+
+  if (completo) {
+    container.replaceChildren(...partesDeLaSerie(state, { conMarcador: true, esPostSerie, ganoSerie, marcador }));
+    return;
+  }
+  desplegable(
+    container, m,
+    lineaDeLaSerie(state, { esPostSerie, marcador }),
+    partesDeLaSerie(state, { conMarcador: false, esPostSerie, ganoSerie })
+  );
 }

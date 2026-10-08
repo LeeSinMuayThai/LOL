@@ -95,6 +95,11 @@ export function rotuloDeDecision(decision, state) {
   if (motivo === 'burnout_pro') {
     return { label: 'La cabeza', token: 'salud' };
   }
+  // D92 (V3b): el 2-2 del Swiss del Mundial (`systems/internacional.js`, `construirDecisionSwiss`) es un partido: sin esta rama salía
+  // con la pestaña por defecto, "Decisión".
+  if (motivo === 'swiss') {
+    return { label: 'Partido', token: 'partido' };
+  }
   if (state?.serie?.activa || state?.career?.temporada?.fechaEnCurso) {
     return { label: 'Partido', token: 'partido' };
   }

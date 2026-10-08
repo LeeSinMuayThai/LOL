@@ -9,7 +9,7 @@
 // escenario se centra). Debajo de 1180 px no hay aside: en una parada con cuarto equivalente, el chip "ver contexto"
 // (`#verContexto`, un nodo del escenario con `data-piezas` de las piezas de parada) abre ese cuarto.
 import { acompananteDe } from './core/escena.js';
-import { previaDeDecision } from '../core/previaDePartido.js';
+import { acompanante as acompanantePartido } from './paradas/partido.js';
 import { pintar as pintarCarrera } from './cuartos/carrera.js';
 import { TITULOS_DE_CUARTOS } from './cuartos.js';
 import { crearTexto } from './cuartos/comun.js';
@@ -58,27 +58,14 @@ const STUBS = {
     }
     caja.appendChild(mundo.hidden ? crearTexto('cuarto-vacio', 'Todavía no se cerró ningún fichaje este offseason.') : mundo);
   },
-  serie(caja, estado, { ui }) {
-    const tablero = contenedor('serie-contexto');
-    caja.appendChild(tablero);
-    ui.renderSerieContexto(tablero, estado);
-  },
-  previa(caja, estado, { ui }) {
-    const previa = contenedor('previa');
-    caja.appendChild(previa);
-    let datos = null;
-    try {
-      datos = estado.pendiente?.decision ? previaDeDecision(estado, estado.pendiente.decision) : null;
-    } catch (error) {
-      console.error('No se pudo armar la previa del acompañante:', error);
-    }
-    ui.renderPrevia(previa, datos);
-  },
+  // V3b: el tablero de la serie, el Swiss y la previa completa son de la familia del partido (paradas/partido.js).
+  serie: acompanantePartido,
+  previa: acompanantePartido,
   carrera(caja, estado) {
     pintarCarrera(caja, estado);
   }
 };
-STUBS.swiss = STUBS.serie;
+STUBS.swiss = acompanantePartido;
 
 // `aside`: `#acompanante`. `chip`: `#verContexto`. `contexto`: `{ ui, modulos }`. `abrirCuarto(id)`: el de los cuartos.
 export function crearAcompanante({ aside, chip, contexto, abrirCuarto }) {
