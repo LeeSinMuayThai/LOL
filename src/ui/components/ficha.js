@@ -81,7 +81,7 @@ const memoriaDeFicha = new WeakMap();
 function memoriaDe(dueno, state) {
   let memoria = memoriaDeFicha.get(dueno);
   if (!memoria || memoria.seed !== state.seed) {
-    memoria = { seed: state.seed, nivel: null, lp: null, abiertos: new Map() };
+    memoria = { seed: state.seed, nivel: null, lp: null, escalon: null, abiertos: new Map() };
     memoriaDeFicha.set(dueno, memoria);
   }
   return memoria;
@@ -127,11 +127,11 @@ export function filaHistoria(fila, anioDeCierre = null) {
   item.appendChild(crearOrgChip(fila.org, { size: 16 }));
   const texto = document.createElement('span');
   const hasta = fila.hastaAnio ?? anioDeCierre;
-  const rango = hasta ? `${fila.desdeAnio}–${hasta}` : `${fila.desdeAnio}`;
+  const rango = hasta && hasta !== fila.desdeAnio ? `${fila.desdeAnio}–${hasta}` : `${fila.desdeAnio}`;
   const titulos = fila.titulos.length > 0
     ? ` · ${fila.titulos.map((t) => `${NOMBRE_DE_LIGA[t.nombre] ?? t.nombre} ${t.anio}`).join(', ')}`
     : '';
-  texto.textContent = `${fila.org} — ${fila.splits} splits · ${fila.fechasG}-${fila.fechasP} · ${rango}${titulos}`;
+  texto.textContent = `${fila.org} — ${fila.splits} ${plural(fila.splits, 'split', 'splits')} · ${fila.fechasG}-${fila.fechasP} · ${rango}${titulos}`;
   item.appendChild(texto);
   return item;
 }
@@ -186,8 +186,12 @@ function crearRankedHero(state, modulos, memoria) {
   num.className = 'num';
   // Sin valor anterior en este contenedor (la primera vez que se pinta) no hay delta que mostrar: sale el valor, sin contar
   // desde 0 (`countUp` toma el `null` como 0).
-  num.textContent = String(memoria.lp ?? ranked.lp);
-  countUp(num, memoria.lp ?? ranked.lp, ranked.lp);
+  // D100: los LP son los de la DIVISION. Si cambio el tier o la division respecto del render anterior (Oro II 27 -> Oro I 15),
+  // contar desde el valor viejo hace que el numero baje mientras el rango sube: el numero aparece ya en su valor final.
+  const escalon = `${ranked.tier}|${ranked.division ?? ''}`;
+  const desde = memoria.escalon === escalon ? (memoria.lp ?? ranked.lp) : ranked.lp;
+  num.textContent = String(desde);
+  countUp(num, desde, ranked.lp);
   lpEl.append(num, document.createTextNode(sufijo));
 
   const pista = document.createElement('div');
@@ -199,6 +203,7 @@ function crearRankedHero(state, modulos, memoria) {
 
   wrap.append(nombre, lpEl, pista);
   memoria.lp = ranked.lp;
+  memoria.escalon = escalon;
   return wrap;
 }
 
@@ -411,7 +416,7 @@ function crearTotales(registro) {
   const totales = document.createElement('div');
   totales.className = 'ficha-totales';
   const partidos = registro.fechasGanadas + registro.fechasPerdidas + registro.mapasGanados + registro.mapasPerdidos;
-  totales.textContent = `${registro.splitsJugados} splits · ${partidos} partidos · ${registro.titulos.length} ${plural(registro.titulos.length, 'título', 'títulos')}`;
+  totales.textContent = `${registro.splitsJugados} ${plural(registro.splitsJugados, 'split', 'splits')} · ${partidos} ${plural(partidos, 'partido', 'partidos')} · ${registro.titulos.length} ${plural(registro.titulos.length, 'título', 'títulos')}`;
   return totales;
 }
 
