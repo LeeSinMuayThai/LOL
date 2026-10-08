@@ -181,15 +181,32 @@ body { padding: 0; }
   grid-template-columns: var(--riel-izq) 1fr var(--riel-der);
 }
 
-/* Setup: la ficha está vacía. Un riel fantasma de 320px hace que el draft
-   se lea como un formulario al costado. Sin ficha, el escenario va a sangre. */
-.shell-cuerpo:has(#fichaContainer:empty),
-.shell-cuerpo:has(#fichaContainer:empty):has(.riel-der > .panel-contexto:not([hidden])) {
+/* --- Las piezas del escenario (FASE V, V2-B; PLAN.md §V.4) ---------------
+   `.shell[data-pieza]` lo escribe solo el director (src/ui/escena.js); cada
+   nodo del escenario dice en qué piezas se ve (`data-piezas` en index.html).
+   Una regla por pieza esconde lo que no es suyo, sin pisar el `display` de lo
+   que sí: el `hidden` propio de cada renderer sigue mandando por
+   `[hidden] { display: none !important }` (base.css). Reemplaza a los `hidden`
+   que app.js prendía y apagaba panel por panel. */
+.shell[data-pieza="inicio"] .escenario [data-piezas]:not([data-piezas~="inicio"]),
+.shell[data-pieza="relato"] .escenario [data-piezas]:not([data-piezas~="relato"]),
+.shell[data-pieza="decision"] .escenario [data-piezas]:not([data-piezas~="decision"]),
+.shell[data-pieza="partido"] .escenario [data-piezas]:not([data-piezas~="partido"]),
+.shell[data-pieza="mercado"] .escenario [data-piezas]:not([data-piezas~="mercado"]),
+.shell[data-pieza="minijuego"] .escenario [data-piezas]:not([data-piezas~="minijuego"]),
+.shell[data-pieza="final"] .escenario [data-piezas]:not([data-piezas~="final"]) { display: none; }
+
+/* El inicio: sin rieles. Un riel fantasma de 320px hace que el draft se lea
+   como un formulario al costado: el escenario va a sangre (antes:
+   `:has(#fichaContainer:empty)`). La variante con `:has()` empata la
+   especificidad de la regla de tres columnas de arriba. */
+.shell[data-pieza="inicio"] .shell-cuerpo,
+.shell[data-pieza="inicio"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
   grid-template-columns: minmax(0, 1fr);
 }
-.shell-cuerpo:has(#fichaContainer:empty) .riel,
-.shell-cuerpo:has(#fichaContainer:empty) .riel-der { display: none; }
-.shell-cuerpo:has(#fichaContainer:empty) .escenario {
+.shell[data-pieza="inicio"] .riel,
+.shell[data-pieza="inicio"] .riel-der { display: none; }
+.shell[data-pieza="inicio"] .escenario {
   grid-column: 1;
   max-width: 1180px;
   margin-inline: auto;
@@ -267,18 +284,17 @@ body[data-ventana="internacional"],
 body[data-serie="on"] { --horizon: var(--gold-horizon); }
 body[data-peligro="on"] { --horizon: var(--danger-horizon); }
 
-body[data-legado="on"] .shell-cuerpo,
-body[data-legado="on"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
+/* La final (antes `body[data-legado="on"]`): la ficha al costado y la
+   tarjeta, sin riel derecho. El feed, la barra de abajo y el marcador no son
+   parte de la pieza (`data-piezas`). */
+.shell[data-pieza="final"] .shell-cuerpo,
+.shell[data-pieza="final"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
   grid-template-columns: var(--riel-izq) 1fr;
 }
-body[data-legado="on"] .riel-der { display: none; }
-body[data-legado="on"] .log-list,
-body[data-legado="on"] .summary,
-body[data-legado="on"] .meta-pill,
-body[data-legado="on"] .serie-contexto { display: none; }
-body[data-legado="on"] .tarjeta { margin-top: 0; }
+.shell[data-pieza="final"] .riel-der { display: none; }
+.shell[data-pieza="final"] .tarjeta { margin-top: 0; }
 @media (max-width: 899px) {
-  body[data-legado="on"] .riel { display: none; }
+  .shell[data-pieza="final"] .riel { display: none; }
 }
 
 .topbar-pips {
@@ -320,7 +336,7 @@ body[data-legado="on"] .tarjeta { margin-top: 0; }
     padding: var(--s-4);
     gap: var(--s-4);
   }
-  /* La tarjeta final (`data-legado="on"`) tiene su propia regla de columnas
+  /* La tarjeta final (`.shell[data-pieza="final"]`, antes `data-legado`) tiene su propia regla de columnas
      más arriba (`var(--riel-izq) 1fr`, pensada para escritorio con la ficha al
      costado) y por especificidad le ganaba a la de una columna de acá: en un
      celular el escenario quedaba clavado en la primera columna — 260px, el
@@ -333,8 +349,8 @@ body[data-legado="on"] .tarjeta { margin-top: 0; }
      evitan el `overflow-wrap` y el cartel más chico de `.tarjeta-veredicto`
      en pantallas.css. Mismos selectores que la regla de arriba, para empatar
      la especificidad; gana por orden. */
-  body[data-legado="on"] .shell-cuerpo,
-  body[data-legado="on"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
+  .shell[data-pieza="final"] .shell-cuerpo,
+  .shell[data-pieza="final"] .shell-cuerpo:has(.riel-der > .panel-contexto:not([hidden])) {
     grid-template-columns: minmax(0, 1fr);
   }
   .riel {
@@ -388,38 +404,39 @@ body[data-legado="on"] .tarjeta { margin-top: 0; }
 /* K4 (revisión del navegador): a 375px la ficha pegada arriba (`.riel`, sticky desde 899px) ocupaba ~300 de 812px
    mientras había una decisión o un minijuego en pantalla, y la pausa quedaba abajo del pliegue. Con una pausa
    visible y pantalla angosta, la ficha se achica a UNA línea: el nivel chico y nombre · contexto con elipsis; el
-   resto (marcas, ranked, pool, contrato, historia) vuelve al cerrar la pausa. Solo CSS: escritorio no cambia. */
+   resto (marcas, ranked, pool, contrato, historia) vuelve al cerrar la pausa. Solo CSS: escritorio no cambia.
+   V2-B: "una pausa visible" es la pieza (`decision`, `partido` o `minijuego`), no `:has(#decision:not([hidden]))`. */
 @media (max-width: 639px) {
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-card {
+  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-card {
     padding: var(--s-1) var(--s-3);
   }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-card > :not(.ficha-encabezado),
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-encabezado > :not(.ficha-nivel):not(.ficha-identidad),
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-nivel-label,
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-estado-linea,
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-perfil {
+  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-card > :not(.ficha-encabezado),
+  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-encabezado > :not(.ficha-nivel):not(.ficha-identidad),
+  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-nivel-label,
+  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-estado-linea,
+  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-perfil {
     display: none;
   }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-encabezado { gap: var(--s-2); }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-nivel {
+  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-encabezado { gap: var(--s-2); }
+  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-nivel {
     min-width: 0;
     padding: var(--s-1) var(--s-2);
   }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-nivel-numero { font-size: var(--fs-3); }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-identidad {
+  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-nivel-numero { font-size: var(--fs-3); }
+  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-identidad {
     display: flex;
     align-items: baseline;
     gap: var(--s-2);
     white-space: nowrap;
   }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-nombre-linea {
+  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-nombre-linea {
     flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: var(--fs-2);
   }
-  .shell-cuerpo:has(#decision:not([hidden]), #minijuego:not([hidden])) .riel .ficha-contexto-linea {
+  .shell:is([data-pieza="decision"], [data-pieza="partido"], [data-pieza="minijuego"]) .riel .ficha-contexto-linea {
     flex: 1 1 0;
     min-width: 0;
     margin-top: 0;

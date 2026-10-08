@@ -19,6 +19,7 @@ import { crearTarjetaMundial } from './mundial.js';
 import { textoDeProbabilidadJugada } from '../../core/previaDePartido.js';
 import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
 import { formaBeat } from '../../core/log.js';
+import { crearTarjetaCierre, crearLineaSplitAnterior } from './cierre.js';
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
 // que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
@@ -338,18 +339,49 @@ export function renderFeed(logList, state, { limite = LIMITE_FEED, hasta = state
   );
 }
 
+// La página del relato (FASE V, V2-B; PLAN.md §V.5 "Una página por split"): los beats del split en curso, en orden
+// cronológico (el más nuevo abajo) y sin el límite de `LIMITE_FEED`. `desde` es `inicioDePagina` (índice absoluto en
+// `state.logs`, el `logs.length` de cuando se llamó a `avanzarSplit`); `hasta`, el corte exclusive (el reproductor lo
+// hace crecer de a un beat). Dos renglones que no son del motor: `anterior` (el cierre del split anterior, en una línea,
+// cuando su tarjeta no llegó a verse) arriba, y `cierre` (la tarjeta de cierre del split) abajo de todo, como un beat más.
+// Pasa por `reconciliar` con las mismas claves que `renderFeed` (índices absolutos): un beat ya pintado se actualiza en
+// su lugar, no se duplica. `renderFeed` y sus checks no cambian.
+export function renderPagina(contenedor, state, { desde = 0, hasta = state.logs.length, anterior = null, cierre = null } = {}) {
+  const inicio = Math.max(0, Math.min(desde, hasta));
+  const items = [
+    ...(anterior ? [{ sintetico: 'anterior', cierre: anterior }] : []),
+    ...agruparBeats(state.logs.slice(inicio, hasta), inicio),
+    ...(cierre ? [{ sintetico: 'cierre', cierre }] : [])
+  ];
+  const nodoDeItem = (item) => {
+    if (item.sintetico === 'anterior') return crearLineaSplitAnterior(item.cierre);
+    if (item.sintetico === 'cierre') return crearTarjetaCierre(item.cierre);
+    return nodoDeBeat(item, state);
+  };
+  reconciliar(
+    contenedor,
+    items,
+    (item) => item.sintetico ?? item.clave,
+    nodoDeItem,
+    (nodo, item) => reemplazarEnElLugar(nodo, nodoDeItem(item))
+  );
+}
+
+// Dónde arranca la página cuando no se sabe dónde arrancó el split (retomar sin el marcador de `lolcs-vista`): en los
+// últimos `limite` beats, la misma ventana que `renderFeed`.
+export function desdeDeUltimosBeats(logs, limite = LIMITE_FEED) {
+  return inicioDeVentana(logs, logs.length, limite);
+}
+
+// FASE V (V2-B): si se ve o no lo dice la pieza del escenario (`data-piezas` de `index.html`, `shell.css`), no esta
+// función: en la final, `#summary` y `#metaPill` no son parte de la pieza.
 export function renderLowerThird(summary, metaPill, state, { modo, decision } = {}) {
   if (!summary || !metaPill) return;
 
   if (state?.terminado && state.tarjeta) {
-    summary.hidden = true;
-    metaPill.hidden = true;
     metaPill.textContent = '';
     return;
   }
-
-  summary.hidden = false;
-  metaPill.hidden = false;
 
   const regimenObj = METAS.find((m) => m.id === state?.meta?.regimen);
   const seed = state?.seed;

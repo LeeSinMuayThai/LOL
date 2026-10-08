@@ -15,7 +15,9 @@
 import * as sonido from './sonido.js';
 import { BALANCE } from '../data/balance.js';
 import { ventanaVisibleDe } from '../core/vistaDeCarrera.js';
-import { saltarBeat, velocidadActual } from './reproductor.js';
+// El teclado (FASE V, V2-B) vive en su propio módulo y sigue colgado de esta raíz aparte: si el controlador explota, las
+// teclas siguen andando sobre lo que haya en pantalla.
+import './teclado.js';
 
 const logList = document.getElementById('logList');
 const ticker = document.getElementById('ticker');
@@ -32,15 +34,6 @@ document.addEventListener('click', (evento) => {
     sonido.click();
   }
 });
-const runButton = document.getElementById('run');
-const nuevaCarreraBtn = document.getElementById('nuevaCarrera');
-const decisionPanel = document.getElementById('decision');
-const decisionOptions = document.getElementById('decisionOptions');
-const mercadoPanel = document.getElementById('mercado');
-const mercadoGrid = document.getElementById('mercadoGrid');
-const avanzadoDetails = document.querySelector('.avanzado');
-const carreraPanel = document.getElementById('carrera');
-const minijuegoPanel = document.getElementById('minijuego');
 
 // --- El punto vivo del topbar (T2) ------------------------------------------
 // `estado` vive en el closure del controlador, así que esto no se llama
@@ -110,9 +103,7 @@ export function aplicarEstudio(state, ficha) {
   const peligro = Boolean(ficha?.mentalidad?.peligro) || peligroAmateur;
   if (peligro) body.dataset.peligro = 'on';
   else delete body.dataset.peligro;
-
-  if (state.terminado && state.tarjeta) body.dataset.legado = 'on';
-  else delete body.dataset.legado;
+  // V2-B: la final ya no es `body[data-legado]`: es la pieza `final` (`.shell[data-pieza]`, src/ui/escena.js).
 }
 
 export function limpiarEstudio() {
@@ -121,7 +112,6 @@ export function limpiarEstudio() {
   delete body.dataset.ventana;
   delete body.dataset.serie;
   delete body.dataset.peligro;
-  delete body.dataset.legado;
   if (topbarPips) {
     topbarPips.hidden = true;
     topbarPips.replaceChildren();
@@ -129,9 +119,14 @@ export function limpiarEstudio() {
 }
 
 // --- El ticker: la última línea de #logList, en marquesina -----------------
-// `feed.js` hace `logList.replaceChildren(...)` con lo más reciente PRIMERO
-// (`.slice(-limite).reverse()`) — el ticker lee `firstElementChild`, no el
-// último, o mostraría la línea más vieja de las ocho que quedan en pantalla.
+// V2-B: `#logList` es la página del split (`renderPagina`), en orden
+// cronológico: lo más reciente es el ÚLTIMO renglón que viene del motor (los
+// sintéticos —la tarjeta de cierre, la línea "Split anterior"— no cuentan).
+function ultimoRenglon(lista) {
+  let item = lista.lastElementChild;
+  while (item && item.dataset.sintetico !== undefined) item = item.previousElementSibling;
+  return item;
+}
 function textoDeTicker(item) {
   if (!item) return '';
   const titulo = item.querySelector('.log-titulo');
@@ -142,7 +137,7 @@ function textoDeTicker(item) {
 
 if (logList && ticker) {
   const actualizarTicker = () => {
-    const texto = textoDeTicker(logList.firstElementChild) || 'En vivo.';
+    const texto = textoDeTicker(ultimoRenglon(logList)) || 'En vivo.';
     const pista = document.createElement('div');
     pista.className = 'ticker-pista';
     const a = document.createElement('span');
@@ -153,82 +148,3 @@ if (logList && ticker) {
   new MutationObserver(actualizarTicker).observe(logList, { childList: true });
   actualizarTicker();
 }
-
-// --- Teclado desde el arranque ----------------------------------------------
-// Un elemento "visible" acá quiere decir "no tapado por [hidden] en ningún
-// ancestro" — `.hidden`/`.disabled` solo leen el atributo PROPIO del
-// elemento, y `#run`/`#nuevaCarrera` dependen de que su contenedor
-// (`#setup`/`#carrera`) esté visible. `offsetParent` es la forma barata de
-// preguntar eso sin caminar la cadena de ancestros a mano.
-function visible(el) {
-  return !!el && el.offsetParent !== null;
-}
-
-function escribiendoEnUnCampo() {
-  const activo = document.activeElement;
-  return !!activo && (activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA');
-}
-
-// El sentido de "saltear un beat" en Espacio/Enter llega en T3, cuando el
-// reproductor tenga algo que saltear. Acá cubre lo que ya existe: arrancar
-// la carrera o volver a empezar una nueva.
-function activarPrimario() {
-  if (visible(runButton) && !runButton.disabled) {
-    runButton.click();
-    return true;
-  }
-  if (visible(nuevaCarreraBtn)) {
-    nuevaCarreraBtn.click();
-    return true;
-  }
-  return false;
-}
-
-function opcionVisible(indice) {
-  if (decisionPanel && !decisionPanel.hidden) {
-    return decisionOptions?.children[indice] ?? null;
-  }
-  if (mercadoPanel && !mercadoPanel.hidden) {
-    return mercadoGrid?.children[indice] ?? null;
-  }
-  return null;
-}
-
-document.addEventListener('keydown', (evento) => {
-  if (escribiendoEnUnCampo()) return;
-
-  if (evento.key === ' ' || evento.key === 'Enter') {
-    if (activarPrimario()) {
-      evento.preventDefault();
-      return;
-    }
-    if (
-      evento.key === ' '
-      && visible(carreraPanel)
-      && !visible(decisionPanel)
-      && !visible(mercadoPanel)
-      && !visible(minijuegoPanel)
-      && velocidadActual() !== 'instantaneo'
-    ) {
-      evento.preventDefault();
-      saltarBeat();
-    }
-    return;
-  }
-
-  if (evento.key >= '1' && evento.key <= '4') {
-    const opcion = opcionVisible(Number(evento.key) - 1);
-    if (opcion && !opcion.disabled) opcion.click();
-    return;
-  }
-
-  if (evento.key === 'Escape') {
-    // Lo único cerrable en T1: el disclosure de la seed avanzada. Si no
-    // está abierto, Esc es el atajo de "volver a empezar" cuando corresponde.
-    if (avanzadoDetails?.open) {
-      avanzadoDetails.open = false;
-    } else if (visible(nuevaCarreraBtn)) {
-      nuevaCarreraBtn.click();
-    }
-  }
-});

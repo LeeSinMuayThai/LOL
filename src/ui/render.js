@@ -7,7 +7,7 @@ export { crearPantallaInicio, renderDesafio, renderHistorial } from './screens/i
 export { renderCarrera, renderRielContexto, mostrarDecisionEnPantalla, mostrarMercadoEnPantalla, renderLowerThird } from './screens/carrera.js';
 export { renderTarjeta } from './screens/tarjeta.js';
 export { renderFicha } from './components/ficha.js';
-export { renderFeed } from './components/feed.js';
+export { renderFeed, renderPagina, desdeDeUltimosBeats } from './components/feed.js';
 export { olvidarContenedor } from './core/reconciliar.js';
 export { renderDecision } from './components/decision.js';
 export { renderMercado } from './components/mercado.js';

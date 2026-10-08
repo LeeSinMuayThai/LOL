@@ -267,3 +267,24 @@
   letter-spacing: var(--track-label);
   color: var(--ink-mute);
 }
+
+/* El número del atajo (V2-B): 1-4 llevan el foco al "Firmar" de la oferta n y Enter firma. El número se ve, a la izquierda
+   del botón; misma caja que `.option-atajo` de las decisiones, pero en la fila (no absoluta). */
+.mercado-atajo {
+  flex: none;
+  align-self: center;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sharp);
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  color: var(--ink-mute);
+}
+.mercado-atajo:has(+ .mercado-card-btn:focus-visible) { border-color: var(--live); color: var(--live); }
+/* El corte de esquina (`clip-path`) se come el anillo de foco (`outline`, base.css): con el foco puesto por el atajo, el botón
+   pierde el corte y el anillo se ve. */
+.mercado-card-btn:focus-visible { clip-path: none; }
