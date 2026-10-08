@@ -98,7 +98,15 @@ const SPLITS_DE_VERIFICACION = 30;
 // del pro, amateur.js con la oferta que avisa y deja esperar, atributos.js con el riesgo del cierre, competitivo.js con el tier 3),
 // src/core +12 (prensa.js nuevo, topMundial.js con P3, guardado.js con la 14), src/data +10 (balance.js, version.js) y src/ui +2.
 // Subido a 2500: ~98 KB (4%) de margen sobre el peso medido ese día, no una expectativa.
-const PESO_MAXIMO_KB = 2500;
+//
+// Re-medido en la integración de la ola V3 de la FASE V (2026-10-08, `v-integracion` c02a8c9): 2517 KB contra 2500. Lo
+// que creció desde `fase-9r` (c01b905) es la pantalla que el usuario pidió para la FASE V ("Escenario + un panel", "Una
+// página por split") y el Golden Road, no algo que sobre: en crudo (git) src/ui +90 KB (la franja, los cuartos, el
+// acompañante, el director de escena, el teclado, las familias de paradas y el CSS partido por familia: estilos +22,
+// components +24, paradas +16, core +11) y src/core +11 (el registro por split, el escalón y el seguimiento del Golden
+// Road). Subido a 2600: ~83 KB (3,3%) de margen sobre el peso medido ese día, no una expectativa. V7 re-mide con el CSS
+// muerto de los rieles ya borrado.
+const PESO_MAXIMO_KB = 2600;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
