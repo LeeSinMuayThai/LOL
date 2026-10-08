@@ -550,7 +550,7 @@ async function probarAtajosDeLaPrevia(hayCharla) {
 // Ya en juego (la fase pasó a `juego`): las teclas son del minijuego; la parada no reacciona. Se juega con ellas, así que se prueba una sola vez.
 async function probarTeclasEnJuego() {
   if (SIN_TECLADO) return;
-  const fase = await page.evaluate(() => document.querySelector('#minijuego')?.dataset.fase ?? null);
+  const fase = await page.evaluate(() => { window.__clicsDeTeclas?.splice(0); return document.querySelector('#minijuego')?.dataset.fase ?? null; });
   for (const tecla of ['1', '2', 'v', 't', 'm', 'c', 'q', 'w', 'e', 'r', 'a', 'd', 's']) {
     await page.keyboard.press(tecla);
     await page.waitForTimeout(20);

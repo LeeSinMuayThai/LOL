@@ -64,6 +64,12 @@
   box-shadow: inset 0 0 0 2px var(--down);
   animation: minijuego-miss 120ms var(--ease);
 }
+/* V3d (regla 1 de §V.3: una sola cosa pide atención): con el reloj corriendo (o el veredicto a la vista) la consigna y la caja de
+   apuesta ya se leyeron y se pliegan: el juego y el veredicto ganan el lugar y entran enteros en el celular. */
+#minijuego[data-fase="juego"] > .decision-desc,
+#minijuego[data-fase="juego"] > #minijuegoApuesta,
+#minijuego[data-fase="resultado"] > .decision-desc,
+#minijuego[data-fase="resultado"] > #minijuegoApuesta { display: none; }
 /* V3d: antes de que corra el reloj, el widget es la charla o el botón: no necesita el aire de un minijuego en marcha. */
 #minijuego[data-fase="previa"] .minijuego-widget { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); }
 @keyframes minijuego-hit {
