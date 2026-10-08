@@ -34,6 +34,62 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-08 — FASE V, ola 4: los minijuegos, la franja y los cuartos, y la carrera dibujada con el Golden Road, en `v-integracion` (PLAN.md §V.7)
+
+**Las correcciones de la ola V3** (`e1faa47`, un Sonnet):
+- La jerarquía del mercado se lee: "Jerarquía en el equipo: 0 ▲ 21 al cerrar el primer split (Rookie)".
+- El pliegue de cada oferta dice lo que guarda ("más · arraigo y negociar").
+- La línea de "qué está en juego" no corta una comilla de cierre.
+- El nombre del equipo entra en el tablero de la serie.
+- La previa y el "Camino" solo recuerdan que los abriste dentro del mismo partido.
+- La regex del bot de `recorrido.mjs` sigue el texto nuevo, con las mismas elecciones en 4 mercados.
+
+**Tres workers en paralelo**, cada uno dueño de sus archivos y sin conflictos al mergear:
+- **V3d, los minijuegos, la prueba y la prensa** (`39b420f`).
+  - La parada tiene fases (`data-fase`: previa, juego, resultado).
+  - En la previa van la apuesta compacta con un solo "más" y la charla del coach en filas con tecla. 1-n eligen y **V**
+    lanza "¡Vamos!" (D94); durante el juego todas las teclas son del minijuego.
+  - El rótulo dice qué es cada minijuego (D93).
+  - Con el reloj corriendo se pliegan la consigna y la apuesta.
+  - En el mapa decisivo, el título, la primera opción y "¡Vamos!" ahora entran sin scrollear a 1440 y a 390.
+- **V3e, la franja y los cuartos** (`75ff6ff`).
+  - Una sola ficha.
+  - El acompañante Vos es compacto: en amateur, el rango y las barras; el plan amateur a 1440 bajó de 46 a 35-37
+    números.
+  - La final muestra los picos de la carrera (D90).
+  - La etiqueta de tier sale del contexto vivo (D91).
+  - `fichaPrevia` va por contenedor y los desplegables se recuerdan (D95).
+  - La Temporada muestra la tabla cerrada entre splits, y la Crónica está agrupada por año y split.
+  - Un check nuevo, "V3e (regla 15)".
+- **V5, la carrera dibujada y el Golden Road** (`69a8c62`).
+  - `src/ui/core/trayectoria.js` (puro) dice qué se dibuja, y el cuarto Carrera lo dibuja con `graficos/`: la cinta de
+    clubes, la curva de nivel, la nota de cada año, la vitrina, el archirrival y el escalón.
+  - El acompañante del cierre de año, el retiro y la vuelta pasó de 37 a 3 números.
+  - El Golden Road se sigue en la tarjeta de cierre ("Golden Road 2031: ✓ split 1 · ✓ split 2 · ◻ split 3 · ◻ liga ·
+    ◻ Mundial"), solo mientras está vivo.
+  - La medalla está en la tarjeta final ("Logro aparte · No suma puntos"), en el texto para compartir, en el PNG y en el
+    historial.
+  - Un check nuevo, "V5 carrera dibujada": el dibujo es el registro, y siete mutantes dan FAIL.
+
+**La revisión** (Sonnet con navegador, sobre `75ff6ff`) dio "OK con observaciones menores":
+- **El Golden Road respeta la regla 4.** El ✓ del split 2 aparece después del beat "terminó 1.º de 10", y "¡Lo
+  lograste!" aparece después del relato del Mundial.
+- **La medalla no toca el puntaje.**
+- **Las metas de §V.8 se cumplen en todos los tipos de parada, salvo dos que no se fuerzan:**
+  - El retiro de una seed llega a 46 números por el tablero de la serie.
+  - El plan de Fearless a 390 queda en 26-30 números por los % por mapa de cada opción, que hacen falta para decidir.
+- **Lo que encontró va a V4:**
+  - A 390 el último beat queda detrás de la barra de cuartos.
+  - El texto del escalón no tiene check (un mutante quedó verde).
+  - Queda código muerto: `renderFicha` en `render.js`.
+
+**Verificado por el supervisor sobre `75ff6ff`:**
+- `validate.js --rapido`: 373 OK / 0 FAIL.
+- `--solo` de "V2 escena", "V5 carrera", "V3e" y "K1 versión": OK (`HUELLA_JUEGO` sin cambio).
+- `build.js`: OK, con `dist/` en **2597 de 2600 KB**.
+
+**El juego servido al usuario** en el puerto 8090 pasó a `75ff6ff`.
+
 ### 2026-10-08 — FASE V, ola V3: la parada genérica, el partido y el mercado, en `v-integracion` (PLAN.md §V.7)
 
 **Tres workers Sonnet en paralelo**, cada uno dueño de sus archivos (`c02a8c9`, merge de `v3a-decision`, `v3b-partido` y
