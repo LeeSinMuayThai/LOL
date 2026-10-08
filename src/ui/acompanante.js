@@ -13,6 +13,7 @@ import { acompanante as acompanantePartido } from './paradas/partido.js';
 import { pintar as pintarCarrera } from './cuartos/carrera.js';
 import { TITULOS_DE_CUARTOS } from './cuartos.js';
 import { acompanante as acompananteMercado } from './paradas/mercado.js';
+import { acompanante as acompananteVos } from './cuartos/vos.js';
 
 // El corte desde el que el acompañante existe (el mismo de `shell.css`).
 const CONSULTA_ANCHA = '(min-width: 1180px)';
@@ -25,11 +26,8 @@ function contenedor(clase) {
 
 // Un stub por tipo (`TIPOS_DE_ACOMPANANTE`). Cada uno llama al renderer de hoy con la `vista`.
 const STUBS = {
-  vos(caja, estado, { ui, modulos }) {
-    const ficha = contenedor('ficha-card');
-    caja.appendChild(ficha);
-    ui.renderFicha(ficha, estado, modulos);
-  },
+  // Vos (V3e): la ficha compacta; la entera vive en el cuarto Vos (cuartos/vos.js), que comparte la pieza.
+  vos: acompananteVos,
   tabla(caja, estado, { ui }) {
     const panel = contenedor('panel-contexto');
     caja.appendChild(panel);

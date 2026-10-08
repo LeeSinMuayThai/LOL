@@ -1,4 +1,6 @@
-import { fichaCompleta } from '../../core/ficha.js';
+import { fichaCompleta, bandaDeNivel, bandaDeJerarquia, bandaDeArraigoFicha, bandaDeHype } from '../../core/ficha.js';
+import { calcularContexto } from '../../core/contexto.js';
+import { desdePuntos, etiquetaDeRanked } from '../../core/ranked.js';
 import { valorDeMercado } from '../../core/valorMercado.js';
 import { plural } from '../../core/formato.js';
 import { titulosDeFila } from '../../core/registro.js';
@@ -69,7 +71,33 @@ const MARCAS_DE_RIESGO = new Set(['deuda_sueno', 'pc_confiscada', 'riesgo_famili
 const MARCAS_VISIBLES = 6;
 const POOL_TILES = 8;
 
-let fichaPrevia = { seed: null, nivel: null, lp: null };
+// D95 (FASE V, V3e): lo que la ficha recuerda de su render anterior (el valor desde donde arranca el `countUp` y qué
+// desplegables dejó abiertos el jugador) es de CADA contenedor, no del módulo: la ficha se pinta en el cuarto Vos y en el
+// acompañante, y con un estado compartido el cuarto contaba desde el valor del otro ("18 LP" y "50 LP" con el mismo
+// estado). `dueno` es el nodo estable que sobrevive a los renders (el cuerpo del cuarto, el `aside`): el `.ficha-card` se
+// rehace entero cada vez. Una carrera nueva (otra `seed`) empieza de cero.
+const memoriaDeFicha = new WeakMap();
+
+function memoriaDe(dueno, state) {
+  let memoria = memoriaDeFicha.get(dueno);
+  if (!memoria || memoria.seed !== state.seed) {
+    memoria = { seed: state.seed, nivel: null, lp: null, abiertos: new Map() };
+    memoriaDeFicha.set(dueno, memoria);
+  }
+  return memoria;
+}
+
+// Un desplegable que no se cierra solo en cada render (D95): arranca como lo dejó el jugador (o como dice `abierto` si
+// nunca lo tocó) y recuerda lo que el jugador hace con un clic en su `summary` (también lo dispara el teclado).
+function crearDesplegable(clave, titulo, abierto, memoria) {
+  const detalle = document.createElement('details');
+  detalle.open = memoria.abiertos.get(clave) ?? abierto;
+  const resumen = document.createElement('summary');
+  resumen.textContent = titulo;
+  resumen.addEventListener('click', () => memoria.abiertos.set(clave, !detalle.open));
+  detalle.appendChild(resumen);
+  return detalle;
+}
 
 function hitosJerarquia() {
   const { estatusBandas } = BALANCE.contexto;
@@ -122,7 +150,7 @@ function tonoDeEstudio(valor, a) {
   return null;
 }
 
-function crearRankedHero(state, modulos) {
+function crearRankedHero(state, modulos, memoria) {
   const ranked = state.player.ranked;
   const servidor = modulos.ranked.servidorDeLaPartida(state);
   const tier = tierPorId(ranked.tier);
@@ -156,7 +184,9 @@ function crearRankedHero(state, modulos) {
   lpEl.className = 'ficha-ranked-lp';
   const num = document.createElement('span');
   num.className = 'num';
-  countUp(num, fichaPrevia.lp, ranked.lp);
+  // Sin valor anterior en este contenedor (la primera vez que se pinta) no hay delta que mostrar: sale el valor, sin contar
+  // desde 0 (`countUp` toma el `null` como 0).
+  countUp(num, memoria.lp ?? ranked.lp, ranked.lp);
   lpEl.append(num, document.createTextNode(sufijo));
 
   const pista = document.createElement('div');
@@ -167,7 +197,7 @@ function crearRankedHero(state, modulos) {
   pista.appendChild(relleno);
 
   wrap.append(nombre, lpEl, pista);
-  fichaPrevia.lp = ranked.lp;
+  memoria.lp = ranked.lp;
   return wrap;
 }
 
@@ -230,17 +260,13 @@ function crearPoolTiles(state, modulos) {
   return row;
 }
 
-function envolverMas(siempre, extra) {
+function envolverMas(siempre, extra, memoria) {
   const frag = document.createDocumentFragment();
   for (const n of siempre) if (n) frag.appendChild(n);
   const extras = extra.filter(Boolean);
   if (extras.length === 0) return frag;
-  const mas = document.createElement('details');
+  const mas = crearDesplegable('mas', 'Más datos', window.matchMedia?.('(min-width: 900px)').matches ?? true, memoria);
   mas.className = 'ficha-mas';
-  mas.open = window.matchMedia?.('(min-width: 900px)').matches ?? true;
-  const sum = document.createElement('summary');
-  sum.textContent = 'Más datos';
-  mas.appendChild(sum);
   for (const n of extras) mas.appendChild(n);
   frag.appendChild(mas);
   return frag;
@@ -301,26 +327,19 @@ function crearBadgeDuelo(ficha) {
   return badge;
 }
 
-function crearDetalleHistoria(registro) {
+function crearDetalleHistoria(registro, memoria) {
   if (registro.porOrg.length === 0) return null;
-  const detalle = document.createElement('details');
+  const detalle = crearDesplegable('carrera', 'Ver carrera', false, memoria);
   detalle.className = 'ficha-historia';
-  const resumen = document.createElement('summary');
-  resumen.textContent = 'Ver carrera';
-  detalle.appendChild(resumen);
   detalle.append(...registro.porOrg.map((fila) => filaHistoria({ ...fila, titulos: titulosDeFila(fila, registro) })));
   return detalle;
 }
 
 // K3-B: lo que tus decisiones le dejaron a las curvas de edad. Sin marcas visibles no hay sección.
-function crearDetalleConstruido(construido) {
+function crearDetalleConstruido(construido, memoria) {
   if (construido.length === 0) return null;
-  const detalle = document.createElement('details');
+  const detalle = crearDesplegable('construido', 'Lo que construiste', true, memoria);
   detalle.className = 'ficha-historia';
-  detalle.open = true;
-  const resumen = document.createElement('summary');
-  resumen.textContent = 'Lo que construiste';
-  detalle.appendChild(resumen);
   detalle.append(...construido.map((marca) => {
     const item = document.createElement('div');
     item.className = 'ficha-historia-fila';
@@ -330,26 +349,74 @@ function crearDetalleConstruido(construido) {
   return detalle;
 }
 
-function crearDetalleMomentos(registro) {
+function crearDetalleMomentos(registro, memoria) {
   if (registro.momentos.length === 0) return null;
-  const detalleMomentos = document.createElement('details');
+  const detalleMomentos = crearDesplegable('momentos', `Momentos (${registro.momentos.length})`, false, memoria);
   detalleMomentos.className = 'ficha-historia';
-  const resumenMomentos = document.createElement('summary');
-  resumenMomentos.textContent = `Momentos (${registro.momentos.length})`;
-  detalleMomentos.appendChild(resumenMomentos);
   detalleMomentos.append(...[...registro.momentos].reverse().slice(0, 10).map(filaMomento));
   return detalleMomentos;
 }
 
-export function renderFicha(container, state, modulos) {
+// D91 (FASE V, V3e): la etiqueta de la situación ("Probándote en tier 3") y las marcas salían de `state.contexto`, que el
+// motor calcula UNA vez al abrir el split (`systems/contexto.js`, el primero de la lista): si ascendés a tier 2 en ese split,
+// la ficha seguía diciendo "tier 3" hasta el split siguiente (regla 15). Se recalcula acá, sobre el estado de hoy, con la
+// misma función pura del motor (`calcularContexto`): no escribe nada y no toca el `rng`. Sin `state.contexto` (todavía no
+// corrió ningún split) no hay situación que decir.
+function contextoDeLaFicha(state) {
+  if (!state.contexto) return null;
+  try {
+    return calcularContexto(state);
+  } catch (error) {
+    console.error('No se pudo recalcular el contexto de la ficha:', error);
+    return state.contexto;
+  }
+}
+
+function crearNivelBox(numero, banda, etiqueta, memoria = null) {
+  const nivelBox = document.createElement('div');
+  nivelBox.className = `ficha-nivel ficha-nivel--${banda}`;
+  const nivelNum = document.createElement('div');
+  nivelNum.className = 'ficha-nivel-numero';
+  if (memoria) {
+    countUp(nivelNum, memoria.nivel ?? numero, numero);
+    memoria.nivel = numero;
+  } else {
+    nivelNum.textContent = String(numero);
+  }
+  const nivelLabel = document.createElement('div');
+  nivelLabel.className = 'ficha-nivel-label';
+  nivelLabel.textContent = etiqueta;
+  nivelBox.append(nivelNum, nivelLabel);
+  return nivelBox;
+}
+
+function crearNombreLinea(state, modulos) {
+  const nombreLinea = document.createElement('div');
+  nombreLinea.className = 'ficha-nombre-linea';
+  nombreLinea.append(marcaRol(state.player.role));
+  const nombreTxt = document.createElement('span');
+  nombreTxt.textContent = `${state.player.name} · ${modulos.etiquetaRol(state.player.role)}`;
+  nombreLinea.appendChild(nombreTxt);
+  return nombreLinea;
+}
+
+function crearTotales(registro) {
+  const totales = document.createElement('div');
+  totales.className = 'ficha-totales';
+  const partidos = registro.fechasGanadas + registro.fechasPerdidas + registro.mapasGanados + registro.mapasPerdidos;
+  totales.textContent = `${registro.splitsJugados} splits · ${partidos} partidos · ${registro.titulos.length} ${plural(registro.titulos.length, 'título', 'títulos')}`;
+  return totales;
+}
+
+// La ficha entera, la del cuarto Vos. `dueno`: el nodo estable que guarda la memoria de la ficha (por defecto, el propio
+// contenedor; el cuarto pasa su cuerpo, que sobrevive a cada apertura).
+export function renderFicha(container, state, modulos, { dueno = container } = {}) {
   const ficha = fichaCompleta(state);
   const registro = state.career.registro;
   const enHitoMaximo = ficha.jerarquia.esMaxima || ficha.arraigo.esMaxima;
-  const marcas = state.contexto?.marcas ?? [];
-
-  if (fichaPrevia.seed !== state.seed) {
-    fichaPrevia = { seed: state.seed, nivel: null, lp: null };
-  }
+  const contexto = contextoDeLaFicha(state);
+  const marcas = contexto?.marcas ?? [];
+  const memoria = memoriaDe(dueno, state);
 
   container.replaceChildren();
   container.className = 'ficha-card' + (enHitoMaximo ? ' ficha-card--dorada' : '');
@@ -357,26 +424,12 @@ export function renderFicha(container, state, modulos) {
   const encabezado = document.createElement('div');
   encabezado.className = 'ficha-encabezado';
 
-  const nivelBox = document.createElement('div');
-  nivelBox.className = `ficha-nivel ficha-nivel--${ficha.bandaNivel}`;
-  const nivelNum = document.createElement('div');
-  nivelNum.className = 'ficha-nivel-numero';
-  countUp(nivelNum, fichaPrevia.nivel, ficha.nivel);
-  fichaPrevia.nivel = ficha.nivel;
-  const nivelLabel = document.createElement('div');
-  nivelLabel.className = 'ficha-nivel-label';
-  nivelLabel.textContent = LABEL_NIVEL[ficha.bandaNivel];
-  nivelBox.append(nivelNum, nivelLabel);
+  const nivelBox = crearNivelBox(ficha.nivel, ficha.bandaNivel, LABEL_NIVEL[ficha.bandaNivel], memoria);
 
   const identidad = document.createElement('div');
   identidad.className = 'ficha-identidad';
 
-  const nombreLinea = document.createElement('div');
-  nombreLinea.className = 'ficha-nombre-linea';
-  nombreLinea.append(marcaRol(state.player.role));
-  const nombreTxt = document.createElement('span');
-  nombreTxt.textContent = `${state.player.name} · ${modulos.etiquetaRol(state.player.role)}`;
-  nombreLinea.appendChild(nombreTxt);
+  const nombreLinea = crearNombreLinea(state, modulos);
 
   const contextoLinea = document.createElement('div');
   contextoLinea.className = 'ficha-contexto-linea';
@@ -384,8 +437,8 @@ export function renderFicha(container, state, modulos) {
 
   const estadoLinea = document.createElement('div');
   estadoLinea.className = 'ficha-estado-linea';
-  estadoLinea.textContent = state.contexto
-    ? modulos.describirContexto(state.contexto)
+  estadoLinea.textContent = contexto
+    ? modulos.describirContexto(contexto)
     : (FASE_LABEL[state.phase] ?? state.phase);
 
   // K4-C: tu perfil en una palabra (el que hoy resuelve lo chico; las bifurcaciones lo van corriendo).
@@ -405,7 +458,7 @@ export function renderFicha(container, state, modulos) {
     const a = BALANCE.amateur;
     container.appendChild(envolverMas(
       [
-        crearRankedHero(state, modulos),
+        crearRankedHero(state, modulos, memoria),
         crearInstrumento({
           nombre: 'ESTUDIOS',
           valor: state.player.studies,
@@ -425,15 +478,11 @@ export function renderFicha(container, state, modulos) {
         }),
         crearStatRow(state, ficha),
         marcas.length > 0 ? crearMarcas(marcas) : null
-      ]
+      ],
+      memoria
     ));
     return ficha;
   }
-
-  const totales = document.createElement('div');
-  totales.className = 'ficha-totales';
-  const partidos = registro.fechasGanadas + registro.fechasPerdidas + registro.mapasGanados + registro.mapasPerdidos;
-  totales.textContent = `${registro.splitsJugados} splits · ${partidos} partidos · ${registro.titulos.length} ${plural(registro.titulos.length, 'título', 'títulos')}`;
 
   const mentalidad = crearBarra({
     // K3: la barra se lee como consistencia (con la cabeza bien jugás a tu nivel); el id interno sigue siendo mentalidad.
@@ -445,7 +494,7 @@ export function renderFicha(container, state, modulos) {
   container.appendChild(envolverMas(
     [mentalidad],
     [
-      totales,
+      crearTotales(registro),
       crearStatRow(state, ficha),
       marcas.length > 0 ? crearMarcas(marcas) : null,
       crearBarra({ nombre: 'ARRAIGO', banda: ficha.arraigo, hitos: hitosArraigo() }),
@@ -455,10 +504,143 @@ export function renderFicha(container, state, modulos) {
       crearBadgeInternacional(ficha),
       crearBadgeDuelo(ficha),
       crearPoolTiles(state, modulos),
-      crearDetalleConstruido(ficha.construido),
-      crearDetalleHistoria(registro),
-      crearDetalleMomentos(registro)
-    ]
+      crearDetalleConstruido(ficha.construido, memoria),
+      crearDetalleHistoria(registro, memoria),
+      crearDetalleMomentos(registro, memoria)
+    ],
+    memoria
   ));
   return ficha;
+}
+
+// El club y la liga en una línea (sin la fecha ni la edad: la franja de arriba ya las dice).
+function lineaDeClub(state) {
+  const org = state.career.currentOrg ?? null;
+  if (state.career.tier === 3 && !state.career.liga) {
+    return [org, `Tier 3 · ${state.mundo.regionOrigen}`].filter(Boolean).join(' · ');
+  }
+  const ligaId = state.mundo.ligas?.find((l) => l.id === state.career.liga)?.id ?? state.mundo.ligaOrigen;
+  return [org, NOMBRE_DE_LIGA[ligaId] ?? ligaId].filter(Boolean).join(' · ');
+}
+
+// La ficha del acompañante (§V.4 "amateur → Vos (rango + barras)"; "con club → Vos"): solo lo que sirve para decidir.
+//  - Amateur: el rango y las barras que el amateur cuida (estudios, confianza, sueño). Nada más: la ficha entera, con sus
+//    seis atributos, vive en el cuarto Vos.
+//  - Con club: el nivel con su banda, el rol, el club y el contrato.
+export function renderFichaCompacta(container, state, modulos, { dueno = container } = {}) {
+  const memoria = memoriaDe(dueno, state);
+  const marcas = contextoDeLaFicha(state)?.marcas ?? [];
+  container.replaceChildren();
+  container.className = 'ficha-card ficha-card--compacta';
+
+  if (state.phase === 'amateur') {
+    const a = BALANCE.amateur;
+    container.append(
+      crearNombreLinea(state, modulos),
+      crearRankedHero(state, modulos, memoria),
+      crearInstrumento({ nombre: 'ESTUDIOS', valor: state.player.studies, tono: tonoDeEstudio(state.player.studies, a) }),
+      crearInstrumento({ nombre: 'CONFIANZA', valor: state.player.familyTrust, tono: marcas.includes('riesgo_familiar') ? 'danger' : null }),
+      crearInstrumento({ nombre: 'SUEÑO', valor: state.player.sleep, tono: marcas.includes('deuda_sueno') ? 'danger' : null })
+    );
+    return container;
+  }
+
+  const ficha = fichaCompleta(state);
+  const encabezado = document.createElement('div');
+  encabezado.className = 'ficha-encabezado';
+  const identidad = document.createElement('div');
+  identidad.className = 'ficha-identidad';
+  const club = document.createElement('div');
+  club.className = 'ficha-contexto-linea';
+  club.textContent = lineaDeClub(state);
+  identidad.append(crearNombreLinea(state, modulos), club);
+  encabezado.append(crearNivelBox(ficha.nivel, ficha.bandaNivel, LABEL_NIVEL[ficha.bandaNivel], memoria), identidad);
+  container.append(encabezado);
+  const contrato = crearContratoFranja(state, modulos);
+  if (contrato) container.append(contrato);
+  return container;
+}
+
+// D90 (FASE V, V3e): en la pieza final, el cuarto Vos muestra los PICOS de la carrera, no la foto del retiro. Después de
+// muchos splits sin equipo las curvas bajan (`BALANCE.perdidaPorSplit`) y la ficha del retiro llegó a mostrar macro,
+// shotcalling y adaptabilidad en 0. Los picos son los máximos que dejó el registro (`registro.picos`): solo salen los que
+// alguna vez se movieron, cada uno con su referente (la banda o la edad). Pura salvo por `modulos` (formato y ranked).
+export function picosDeLaCarrera(state, modulos) {
+  const picos = state.career.registro.picos;
+  const filas = [];
+  if (picos.nivel > 0) {
+    const edad = picos.edadDelPicoDeNivel > 0 ? ` · a los ${picos.edadDelPicoDeNivel} años` : '';
+    filas.push(['Nivel máximo', String(Math.round(picos.nivel)), `${LABEL_NIVEL[bandaDeNivel(picos.nivel)]}${edad}`]);
+  }
+  if (picos.rankMundial > 0) {
+    filas.push(['Mejor puesto del mundo', `#${picos.rankMundial}`, null]);
+  }
+  if (picos.jerarquia > 0) {
+    const banda = bandaDeJerarquia({ career: { jerarquia: picos.jerarquia } });
+    filas.push(['Jerarquía máxima', `${Math.round(picos.jerarquia)}/100`, banda.label]);
+  }
+  if (picos.arraigo > 0) {
+    filas.push(['Arraigo máximo', `${Math.round(picos.arraigo)}/100`, bandaDeArraigoFicha(picos.arraigo).label]);
+  }
+  if (picos.hype > 0) {
+    const banda = bandaDeHype({ player: { stats: { hype: picos.hype } }, flags: {} });
+    filas.push(['Hype máximo', `${Math.round(picos.hype)}/100`, banda.label]);
+  }
+  if (picos.valorMercadoUSD > 0) {
+    filas.push(['Valor de mercado más alto', `${modulos.formato.plata(picos.valorMercadoUSD)}/año`, null]);
+  }
+  if (picos.salarioAnualUSD > 0) {
+    filas.push(['Sueldo más alto', `${modulos.formato.plata(picos.salarioAnualUSD)}/año`, null]);
+  }
+  if (picos.rankedPuntos > 0 && state.player.ranked?.servidor) {
+    const servidor = modulos.ranked.servidorDeLaPartida(state);
+    filas.push(['Mejor rango en ranked', etiquetaDeRanked(desdePuntos(picos.rankedPuntos, servidor), null), null]);
+  }
+  return filas;
+}
+
+function filaDePico([rotulo, valor, referente]) {
+  const fila = document.createElement('div');
+  fila.className = 'ficha-pico';
+  const rotuloEl = document.createElement('span');
+  rotuloEl.className = 'ficha-pico-rotulo';
+  rotuloEl.textContent = rotulo;
+  const valorEl = document.createElement('span');
+  valorEl.className = 'ficha-pico-valor';
+  valorEl.textContent = valor;
+  fila.append(rotuloEl, valorEl);
+  if (referente) {
+    const ref = document.createElement('span');
+    ref.className = 'ficha-pico-referente';
+    ref.textContent = referente;
+    fila.appendChild(ref);
+  }
+  return fila;
+}
+
+export function renderFichaFinal(container, state, modulos) {
+  container.replaceChildren();
+  container.className = 'ficha-card ficha-card--picos';
+
+  const registro = state.career.registro;
+  const picos = registro.picos;
+  const encabezado = document.createElement('div');
+  encabezado.className = 'ficha-encabezado';
+  const identidad = document.createElement('div');
+  identidad.className = 'ficha-identidad';
+  const rotulo = document.createElement('div');
+  rotulo.className = 'ficha-estado-linea';
+  rotulo.textContent = 'Los picos de tu carrera';
+  identidad.append(crearNombreLinea(state, modulos), rotulo);
+  if (picos.nivel > 0) {
+    encabezado.append(crearNivelBox(Math.round(picos.nivel), bandaDeNivel(picos.nivel), 'Pico'));
+  }
+  encabezado.appendChild(identidad);
+  container.append(encabezado, crearTotales(registro));
+
+  const lista = document.createElement('div');
+  lista.className = 'ficha-picos';
+  lista.append(...picosDeLaCarrera(state, modulos).map(filaDePico));
+  container.appendChild(lista);
+  return container;
 }

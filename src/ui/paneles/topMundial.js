@@ -37,7 +37,7 @@ export function renderTopMundial(container, state, modulos) {
     container.replaceChildren();
     const titulo = document.createElement('div');
     titulo.className = 'panel-contexto-titulo';
-    titulo.textContent = 'El mundo';
+    titulo.textContent = 'Top 5 del mundo';
     const lista = document.createElement('div');
     lista.className = 'topmundial-lista';
     container.append(titulo, lista);

@@ -46,6 +46,7 @@ function crearFilaTabla(item) {
   return filaEl;
 }
 
+// La tabla en vivo del split que se juega.
 export function renderTabla(container, state) {
   const { temporada, currentOrg, liga } = state.career;
 
@@ -54,12 +55,42 @@ export function renderTabla(container, state) {
     return;
   }
   const tabla = tablaDePosiciones(temporada.registrosOtros, temporada.filaPropia);
+  pintarTabla(container, state, { tabla, orgPropia: currentOrg, ligaId: liga });
+}
+
+// La última fila de `registro.porSplit`: el último split que se jugó en una tabla (V3e). Es lo único que dice DE QUÉ split es
+// la tabla cerrada que el estado conserva (`career.temporada.tabla`, que el motor rearma recién cuando arranca otro split
+// con tabla).
+export function ultimoSplitEnTabla(state) {
+  const filas = state.career.registro?.porSplit ?? [];
+  return filas.length > 0 ? filas[filas.length - 1] : null;
+}
+
+// V3e: entre splits (`temporada.activa` es falso) el motor deja la tabla CERRADA del último split jugado en
+// `career.temporada.tabla`. Se muestra marcada como final, con el split al que pertenece cuando el registro lo dice: si la
+// fila del registro es de otro club, la tabla se muestra sin liga ni año en vez de adivinarlos (regla 15). Sin tabla
+// conservada, se oculta (el cuarto cae a `registro.porSplit`, ver `cuartos/temporada.js`).
+export function renderTablaCerrada(container, state) {
+  const { temporada } = state.career;
+  if (temporada.activa || !(temporada.tabla?.length > 0)) {
+    container.hidden = true;
+    return;
+  }
+  const orgPropia = temporada.filaPropia?.org ?? null;
+  const fila = ultimoSplitEnTabla(state);
+  const delSplit = fila && fila.org === orgPropia ? fila : null;
+  pintarTabla(container, state, { tabla: temporada.tabla, orgPropia, ligaId: delSplit?.liga ?? null, cerrada: delSplit ?? true });
+}
+
+function pintarTabla(container, state, { tabla, orgPropia, ligaId, cerrada = false }) {
+  const currentOrg = orgPropia;
+  const { temporada } = state.career;
   if (tabla.length === 0) {
     container.hidden = true;
     return;
   }
 
-  const ligaObj = state.mundo.ligas.find((l) => l.id === liga);
+  const ligaObj = state.mundo.ligas.find((l) => l.id === ligaId);
   const clasifican = ligaObj?.formatoPlayoffs?.clasifican ?? null;
   const internacionales = ligaObj?.cuposInternacionales ?? 0;
 
@@ -77,9 +108,17 @@ export function renderTabla(container, state) {
     container.__tablaRefs = refs;
   }
 
-  const jornada = temporada.calendario?.[temporada.indice]?.jornada;
-  const ligaId = ligaObj?.id ?? liga;
-  refs.titulo.textContent = Number.isFinite(jornada) ? `${nombreVisibleDeLiga(ligaId)} · J${jornada}` : (ligaId ? nombreVisibleDeLiga(ligaId) : 'Tabla');
+  container.classList.toggle('panel-contexto--final', Boolean(cerrada));
+  if (cerrada) {
+    // "Final · 2032 · split 2": el año y el split salen de la fila del registro; sin ella, solo "Final".
+    const donde = typeof cerrada === 'object' ? ` · ${cerrada.anio} · split ${cerrada.split + 1}` : '';
+    const circuito = ligaObj ? nombreVisibleDeLiga(ligaObj.id) : (cerrada.tier === 3 ? 'Tier 3' : 'Tabla');
+    refs.titulo.textContent = `${circuito} · final${donde}`;
+  } else {
+    const jornada = temporada.calendario?.[temporada.indice]?.jornada;
+    const nombreLiga = ligaObj?.id ?? ligaId;
+    refs.titulo.textContent = Number.isFinite(jornada) ? `${nombreVisibleDeLiga(nombreLiga)} · J${jornada}` : (nombreLiga ? nombreVisibleDeLiga(nombreLiga) : 'Tabla');
+  }
 
   const items = tabla.map((fila, indice) => {
     const puesto = indice + 1;
@@ -101,8 +140,10 @@ export function renderTabla(container, state) {
     (nodo, item) => reemplazarEnElLugar(nodo, crearFilaTabla(item))
   );
 
-  if (clasifican !== null || internacionales > 0) {
-    const partes = [];
+  const partes = [];
+  const miPuesto = items.find((item) => item.propia)?.puesto ?? null;
+  if (cerrada && miPuesto !== null) partes.push(`Terminaste ${miPuesto}º de ${items.length}`);
+  if (partes.length > 0 || clasifican !== null || internacionales > 0) {
     if (clasifican !== null) partes.push(`Top ${clasifican} → playoffs`);
     if (internacionales > 0) partes.push(`Top ${internacionales} → internacional`);
     if (!refs.leyenda) {

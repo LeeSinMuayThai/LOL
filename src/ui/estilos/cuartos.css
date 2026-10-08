@@ -230,3 +230,72 @@
   .cuarto-cerrar kbd { display: none; }
   .cuarto-cerrar-x { display: inline; }
 }
+
+/* --- Temporada: la tabla cerrada entre splits (V3e) ------------------------ */
+
+.panel-contexto--final { border-color: var(--line-strong); }
+.panel-contexto--final .panel-contexto-titulo { color: var(--gold); }
+.cuarto-temporada-posicion {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-4);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* --- Crónica: por año y por split (V3e) ------------------------------------ */
+
+.cronica { display: grid; gap: var(--s-3); }
+.cronica-anio {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--line);
+}
+.cronica-anio-titulo {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  cursor: pointer;
+  list-style: none;
+}
+.cronica-anio-titulo::-webkit-details-marker { display: none; }
+.cronica-anio-titulo::before {
+  content: "▸";
+  color: var(--ink-mute);
+  transition: transform var(--dur) var(--ease);
+}
+.cronica-anio[open] > .cronica-anio-titulo::before { transform: rotate(90deg); }
+.cronica-anio-numero {
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.cronica-anio-nota {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.cronica-anio-cuerpo {
+  display: grid;
+  gap: var(--s-4);
+  padding: 0 var(--s-4) var(--s-4);
+}
+.cronica-split-titulo {
+  margin: 0 0 var(--s-2);
+  padding-bottom: var(--s-1);
+  border-bottom: 1px solid var(--line-faint);
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--ice);
+}
+.cronica-lista { margin-top: 0; }

@@ -226,7 +226,7 @@
 .meta-tier--S { background: var(--gold); }
 .meta-tier--A { background: var(--up); }
 .meta-tier--B { background: var(--ink-mute); }
-.meta-tier--C { background: var(--line-strong); color: var(--ink-mute); }
+.meta-tier--C { background: var(--line-strong); color: var(--ink); }
 .meta-tierlist-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* --- Generación (deuda D8) --------------------------------------------- */
