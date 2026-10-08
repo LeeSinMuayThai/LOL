@@ -34,6 +34,26 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-08 — FASE V, V8a: los LP que bajaban al subir y la historia con "2029–2029" (PLAN.md §V.7)
+
+Merge `944eb63` (worker Sonnet high, ~95K tokens y 22 tool calls; sin revisor aparte, porque el diff son 17 líneas de
+un archivo y el supervisor lo leyó entero). Solo toca `components/ficha.js`.
+- **D100:** la memoria de la ficha guarda el escalón (tier y división) junto a los LP.
+  - Si el escalón cambió, el número aparece ya en su valor final. En la misma división sigue contando.
+  - Lo probó el worker en Chromium, pintando la ficha dos veces:
+    - de Oro II 27 a Oro I 15 sale "15" desde el primer cuadro;
+    - de Oro I 15 a 45, cuenta;
+    - de Master 40 a 90, cuenta.
+- **D101:**
+  - la fila de la historia, org por org, dice un solo año cuando el club duró uno ("Fragua Circuit — 3 splits · 14-6 ·
+    2029", visto por el supervisor en la captura de la tarjeta final de la seed 25);
+  - "1 split" va en singular;
+  - en los totales de la ficha, "split" y "partido" van en singular cuando son uno.
+- **Verificado por el supervisor** sobre una copia `git archive` de `cf910cb`: `validate.js --rapido` 376 OK y 0 FAIL;
+  `build.js` OK, 2618 KB. El worker corrió "K1 versión" (OK, huella sin cambio) y el recorrido de la seed 25 a 1440
+  (66 paradas, 0 errores).
+- **El 8090 pasa a servir esta versión.**
+
 ### 2026-10-08 — FASE V mergeada en `fase-9r` y V8 partida en dos (PLAN.md §V.7)
 
 - **`v-integracion` se mergea en `fase-9r`** (`4a6657a`, sin push: el push espera un OK nuevo del usuario). El árbol es
