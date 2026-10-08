@@ -96,6 +96,11 @@
   color: var(--ink-mute);
 }
 .calendario-fila--jugada { color: var(--ink-dim); }
+/* En el celular las fechas ya jugadas se van: el fixture no guarda su resultado (solo un "—"), así que no dicen nada y empujan
+   debajo del pliegue lo que viene. */
+@media (max-width: 639px) {
+  .calendario-fila--jugada { display: none; }
+}
 .calendario-fila--hoy {
   background: var(--live-fill);
   color: var(--ink);
@@ -140,7 +145,8 @@
 
 /* --- Plantilla ------------------------------------------------------------- */
 
-.plantilla-lista { display: grid; gap: 2px; margin-bottom: var(--s-3); font-size: var(--fs-1); }
+.plantilla-lista { display: grid; gap: 2px; font-size: var(--fs-1); }
+.plantilla-leyenda { margin-top: var(--s-2); margin-bottom: var(--s-3); }
 .plantilla-fila {
   display: grid;
   grid-template-columns: 8px 16px minmax(0, 1fr) auto auto;
@@ -226,7 +232,7 @@
 .meta-tier--S { background: var(--gold); }
 .meta-tier--A { background: var(--up); }
 .meta-tier--B { background: var(--ink-mute); }
-.meta-tier--C { background: var(--line-strong); color: var(--ink-mute); }
+.meta-tier--C { background: var(--line-strong); color: var(--ink); }
 .meta-tierlist-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* --- Generación (deuda D8) --------------------------------------------- */

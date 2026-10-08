@@ -103,7 +103,9 @@ import { jugasteUnSplitConLaOrg } from '../systems/competitivo.js';
 import { MONTAR_MINIJUEGO } from '../ui/components/minijuegos/index.js';
 import { lecturaDePrensa, factoresDePrensa } from '../core/prensa.js';
 import { objetivoDePrensa, puntajeDePrensa } from '../ui/components/minijuegos/ruedaDePrensa.js';
-import { LABEL_MARCA as LABEL_MARCA_FICHA, lineaDeContextoFicha } from '../ui/components/ficha.js';
+import { LABEL_MARCA as LABEL_MARCA_FICHA, lineaDeContextoFicha, contextoDeLaFicha, picosDeLaCarrera } from '../ui/components/ficha.js';
+import { dividirEnAnios } from '../ui/cuartos/cronica.js';
+import { plata } from '../core/formato.js';
 import { nombreVisibleDeLiga } from '../ui/formatoUi.js';
 import { crearCampeonTile, urlIconoDeCampeon, urlSplashDeCampeon } from '../ui/components/campeonTile.js';
 import { VERSION_DDRAGON, BASE_DDRAGON } from '../data/ddragon.js';
@@ -28368,6 +28370,88 @@ checkLento(`K6d-B el perfil y criterio eligen la opción que menos quema en cada
   console.log(`      ${c.elecciones} elecciones revisadas`);
   if (c.problemasEleccion.length > 0) throw new Error(`${c.problemasEleccion.length} problema(s): ${c.problemasEleccion.slice(0, 4).join(' | ')}`);
   if (c.elecciones < 20) throw new Error(`check vacío: ${c.elecciones} elecciones`);
+});
+
+// FASE V (V3e, regla 15): lo que la ficha, la franja y la crónica dicen es lo que pasó.
+//  - D91: la etiqueta de situación de la ficha sale del estado de HOY (`contextoDeLaFicha`), no del `state.contexto` que el motor
+//    calcula una vez al abrir el split: ya en tier 2 decía "Probándote en tier 3" hasta el split siguiente. El check cuenta
+//    cuántas veces el guardado estaba viejo (que no sea vacío) y exige que la ficha nunca lo esté; el mutante pone el `contexto`
+//    guardado en tier 3 con el jugador en tier 2.
+//  - D90: los picos de la carrera (el cuarto Vos y la franja en la pieza final) son los máximos que dejó el registro; sin
+//    pico registrado no hay fila (nada en 0), y salen del registro, no del estado de hoy.
+//  - La crónica reparte cada línea de `state.logs` en un año y en un split, sin huecos ni solapes.
+check('V3e (regla 15): la ficha dice el nivel de hoy (nunca "tier 3" ya en tier 2), los picos salen del registro y la crónica reparte cada línea en un año y un split (10 carreras × 60)', () => {
+  const modulos = { formato: { plata }, ranked: { servidorDeLaPartida } };
+  const problemas = [];
+  let viejos = 0;
+  let conClub = 0;
+  let finales = 0;
+  let aniosCerrados = 0;
+  for (let seed = 1; seed <= 10; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 60 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      if (!state.contexto || state.phase !== 'profesional' || !state.career.currentOrg) continue;
+      conClub += 1;
+      const esperado = `tier${state.career.tier}`;
+      if (state.contexto.nivel !== esperado) viejos += 1;
+      const hoy = contextoDeLaFicha(state);
+      if (hoy.nivel !== esperado) {
+        problemas.push(`seed ${seed}, split ${i}: la ficha dice ${hoy.nivel} con el jugador en tier ${state.career.tier}`);
+      }
+      // Mutante: el contexto guardado quedó en tier 3 (lo que el motor dejaba entre el ascenso y el split siguiente).
+      const viejo = { ...state, contexto: { ...state.contexto, nivel: 'tier3', momento: 'tier3_probandose' } };
+      if (state.career.tier !== 3 && contextoDeLaFicha(viejo).nivel !== esperado) {
+        problemas.push(`seed ${seed}, split ${i}: con el contexto guardado en tier 3 la ficha dice ${contextoDeLaFicha(viejo).nivel}`);
+      }
+    }
+    // Los picos y la crónica, sobre la carrera hasta donde llegó.
+    const picos = state.career.registro.picos;
+    const filas = picosDeLaCarrera(state, modulos);
+    if ((picos.nivel > 0) !== filas.some(([rotulo]) => rotulo === 'Nivel máximo')) {
+      problemas.push(`seed ${seed}: el pico de nivel es ${picos.nivel} y las filas son ${filas.map(([r]) => r).join(', ')}`);
+    }
+    const nivelMaximo = filas.find(([rotulo]) => rotulo === 'Nivel máximo');
+    if (nivelMaximo && nivelMaximo[1] !== String(Math.round(picos.nivel))) {
+      problemas.push(`seed ${seed}: el nivel máximo dice ${nivelMaximo[1]} y el registro ${picos.nivel}`);
+    }
+    if (filas.some(([, valor]) => /^(0|#0|\$0)(\/100|k\/año)?$/.test(valor))) {
+      problemas.push(`seed ${seed}: una fila de picos en 0 (${filas.map(([, v]) => v).join(', ')})`);
+    }
+    const sinRegistro = { ...state, career: { ...state.career, registro: { ...state.career.registro, picos: { ...picos, nivel: 0, rankMundial: 0, jerarquia: 0, arraigo: 0, hype: 0, valorMercadoUSD: 0, salarioAnualUSD: 0, rankedPuntos: 0 } } } };
+    if (picosDeLaCarrera(sinRegistro, modulos).length !== 0) {
+      problemas.push(`seed ${seed}: con el registro sin picos igual salen filas`);
+    }
+    if (state.terminado) finales += 1;
+
+    const logs = state.logs;
+    const tramos = dividirEnAnios(logs, state.calendario.anio);
+    let cursor = 0;
+    let anioAnterior = -Infinity;
+    for (const tramo of tramos) {
+      if (tramo.desde !== cursor || tramo.hasta <= tramo.desde) problemas.push(`seed ${seed}: el año ${tramo.anio} arranca en ${tramo.desde} y la cuenta iba en ${cursor}`);
+      cursor = tramo.hasta;
+      if (tramo.cerrado) {
+        aniosCerrados += 1;
+        if (tramo.anio <= anioAnterior) problemas.push(`seed ${seed}: el año ${tramo.anio} no es posterior a ${anioAnterior}`);
+        anioAnterior = tramo.anio;
+      }
+      let desde = tramo.desde;
+      for (const split of tramo.splits) {
+        if (split.desde !== desde || split.hasta <= split.desde) problemas.push(`seed ${seed}, año ${tramo.anio}: un split arranca en ${split.desde} y la cuenta iba en ${desde}`);
+        if (split.numero !== null && split.numero < 1) problemas.push(`seed ${seed}, año ${tramo.anio}: split ${split.numero}`);
+        desde = split.hasta;
+      }
+      if (desde !== tramo.hasta) problemas.push(`seed ${seed}, año ${tramo.anio}: los splits llegan hasta ${desde} y el año hasta ${tramo.hasta}`);
+    }
+    if (cursor !== logs.length) problemas.push(`seed ${seed}: la crónica cubre ${cursor} de ${logs.length} líneas`);
+  }
+  console.log(`      ${conClub} estados con club, ${viejos} con el contexto guardado viejo, ${finales} carreras terminadas, ${aniosCerrados} años cerrados en la crónica`);
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+  if (viejos === 0 || finales === 0 || aniosCerrados < 20) {
+    throw new Error(`check vacío: ${viejos} contextos viejos, ${finales} finales, ${aniosCerrados} años cerrados`);
+  }
 });
 
 if (errores.length > 0) {

@@ -69,7 +69,12 @@ export function renderPlantilla(container, state, modulos) {
     pista.appendChild(relleno);
     sinergiaWrap.append(sinergiaCabecera, pista);
 
-    container.append(titulo, lista, sinergiaWrap);
+    // Qué dicen las dos cifras chicas de cada compañero ("JUNGLA · 25 · 2A" no se explicaba solo) y la grande.
+    const leyenda = document.createElement('div');
+    leyenda.className = 'panel-contexto-leyenda plantilla-leyenda';
+    leyenda.textContent = 'Rol · edad · años de contrato. A la derecha, el nivel.';
+
+    container.append(titulo, lista, leyenda, sinergiaWrap);
     refs = { lista, sinergiaValor, relleno };
     container.__plantillaRefs = refs;
   }
