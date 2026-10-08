@@ -21,6 +21,7 @@ import { aplicarEstudio, limpiarEstudio } from './shell.js';
 import { crearFranja } from './franja.js';
 import { crearCuartos } from './cuartos.js';
 import { crearAcompanante } from './acompanante.js';
+import { agruparBeats } from './components/feed.js';
 import { crearStore } from './core/store.js';
 import {
   almacenamientoLocal, leerHistorial, guardarHistorial, agregarAlHistorial, entradaDeResultado,
@@ -196,7 +197,8 @@ export function iniciar() {
         botonAyuda: ayudaTeclas,
         escena,
         vista,
-        contexto: { ui, modulos }
+        // `contadoDelRelato`: lo que el relato ya contó de la página en curso (la Crónica lo suma, ver abajo).
+        contexto: { ui, modulos, contadoDelRelato }
       });
       acompanante = crearAcompanante({
         aside: document.getElementById('acompanante'),
@@ -372,6 +374,22 @@ export function iniciar() {
     return { desde: ui.desdeDeUltimosBeats(estado.logs), fotoInicio, ultimoCierre: null, cierreVisto: false, anterior: null, coincide: false };
   }
 
+  // La llamada al pipeline que el relato está contando ahora (`reproducirLlamada`), o `null`. Con ella el cuarto Crónica
+  // suma a la `vista` los beats que la página en curso YA mostró (regla 4 de §V.3: nunca uno por contar).
+  let relatoEnCurso = null;
+
+  // `{ estado, hasta }` mientras el relato cuenta: el estado de esa llamada y el índice (exclusive) de `estado.logs` hasta
+  // donde llegó la pantalla, o `null` si no hay relato en curso. Lo que se mostró son los beats de la página que están en
+  // `#logList` (cada uno, un nodo; la línea "Split anterior" y la tarjeta de cierre no cuentan): el beat n-ésimo termina
+  // donde el reproductor lo cortó (`clave + 1`, el mismo corte de `reproducirBeats`).
+  function contadoDelRelato() {
+    if (!relatoEnCurso) return null;
+    const contados = [...logList.children].filter((nodo) => !nodo.dataset.sintetico).length;
+    const beats = agruparBeats(relatoEnCurso.logs.slice(pagina.desde), pagina.desde);
+    const n = Math.min(contados, beats.length);
+    return { estado: relatoEnCurso, hasta: n === 0 ? pagina.desde : beats[n - 1].clave + 1 };
+  }
+
   // Fase T3: el feed se revela de a un beat por `reproductor.reproducirBeats`. FASE V (V2-B): mientras tanto la pieza es
   // el relato y la `vista` no cambia (la ficha y el chrome muestran lo que ya se contó); recién al terminar los beats el
   // director revela la parada (o el relato quieto) y escribe la `vista`. Si la llamada volvió sin pausa, el split cerró:
@@ -392,14 +410,19 @@ export function iniciar() {
     }
     // La tarjeta se ve si el relato espera entre beats: la velocidad se lee ACÁ, la de la llamada que la reproduce.
     const tarjetaSeVe = Boolean(cierre) && !reproductor.sinEspera();
-    await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes), {
-      registroAntes,
-      registroDespues: estadoActual.career.registro,
-      bisagra,
-      state: estadoActual,
-      offset: logsAntes,
-      pagina: { desde: pagina.desde, anterior: pagina.anterior, cierre }
-    });
+    relatoEnCurso = estadoActual;
+    try {
+      await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes), {
+        registroAntes,
+        registroDespues: estadoActual.career.registro,
+        bisagra,
+        state: estadoActual,
+        offset: logsAntes,
+        pagina: { desde: pagina.desde, anterior: pagina.anterior, cierre }
+      });
+    } finally {
+      relatoEnCurso = null;
+    }
     if (cierre) {
       pagina.ultimoCierre = cierre;
       pagina.cierreVisto = tarjetaSeVe;
