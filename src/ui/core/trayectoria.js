@@ -171,19 +171,20 @@ export function trayectoriaDeCarrera(estado) {
 
 // --- Las frases (también puras: el cuarto, el acompañante y la tarjeta de cierre dicen lo mismo con las mismas palabras) ---
 
-// "Tu escalón: Campeón · Para Figura mundial: te falta un título de liga de primera." Los nombres de los escalones son rótulos
-// ("El que no llegó", "Pasó por el circuito", "El GOAT"), no sustantivos: van después de dos puntos, nunca dentro de una oración. El
+// "Tu escalón: «Campeón» · Para llegar a «Figura mundial»: te falta un título de liga de primera." Los nombres de los escalones son
+// rótulos ("El que no llegó", "Pasó por el circuito", "El GOAT"), no sustantivos: van entre comillas y nunca como complemento suelto
+// ("Para Pasó por el circuito" no se lee). El
 // "te falta" sale de la misma cuenta que el "te faltó" de la tarjeta final (`escalonDeCarrera`, `core/puntaje.js`).
 export function textoDeEscalon(escalon) {
   if (!escalon) {
     return null;
   }
-  const vas = `Tu escalón: ${escalon.actual.nombre}`;
+  const vas = `Tu escalón: «${escalon.actual.nombre}»`;
   if (!escalon.siguiente) {
     return { vas, falta: 'Es el techo de la escala.' };
   }
   const { nombre, enPresente } = escalon.siguiente;
-  return { vas, falta: `Para ${nombre}: ${enPresente.charAt(0).toLowerCase()}${enPresente.slice(1)}` };
+  return { vas, falta: `Para llegar a «${nombre}»: ${enPresente.charAt(0).toLowerCase()}${enPresente.slice(1)}` };
 }
 
 // Los cinco hechos del Golden Road, en orden: los tres splits, la liga y el Mundial.
