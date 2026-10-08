@@ -193,3 +193,19 @@ const ACENTO_LOG = {
 export function acentoDeLog(type) {
   return ACENTO_LOG[type] ?? 'mute';
 }
+
+// --- V3d (D93): la pestaña de categoría de una parada de minijuego -------
+// Antes todas decían "Minijuego" (y la barra de abajo decía "EN EL MAPA" hasta en la prensa y la prueba). Sale de
+// `decision.datos.momento` (el que arma el motor: mapa_decisivo, mapa_cerrado, post_serie, post_escandalo, tryout), sin
+// campo nuevo en JSON. Todas conservan el color de aviso del minijuego (`--warn`): lo que cambia es lo que dicen.
+const ROTULO_DE_MINIJUEGO = {
+  mapa_decisivo: 'Mapa decisivo',
+  mapa_cerrado: 'Mapa',
+  post_serie: 'Rueda de prensa',
+  post_escandalo: 'Rueda de prensa',
+  tryout: 'La prueba'
+};
+
+export function rotuloDeMinijuego(decision) {
+  return ROTULO_DE_MINIJUEGO[decision?.datos?.momento] ?? 'Minijuego';
+}

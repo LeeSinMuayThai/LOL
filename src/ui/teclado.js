@@ -9,8 +9,9 @@
 //     "Continuar" arrancaba una carrera nueva y BORRABA la guardada (D86), y Enter sobre "Copiar…" de la tarjeta final
 //     volvía al inicio (D87). Se borró;
 //   - Espacio con el foco en el body o en un encabezado, durante el relato → saltea un beat;
-//   - 1-4 → clic en `[data-atajo=n]` de la pieza activa (decisión o partido; nunca en el minijuego, que es dueño de sus
-//     teclas: 1-5, Q/W/E/R, A/D, A/S — `components/minijuegos/comun.js`). Si el elemento marcado trae `data-atajo-foco`
+//   - 1-4 → clic en `[data-atajo=n]` de la pieza activa (decisión, partido o mercado). En el minijuego solo en su fase PREVIA
+//     (`data-fase="previa"`: la charla del coach; V es "¡Vamos!", V3d): después es dueño de sus teclas (1-5, Q/W/E/R, A/D, A/S —
+//     `components/minijuegos/comun.js`). Si el elemento marcado trae `data-atajo-foco`
 //     (el "Firmar" del mercado), la tecla solo le lleva el FOCO — con el scroll mínimo para verlo — y Enter hace el resto;
 //   - Esc nunca navega: cierra el desplegable "Avanzado" del inicio y nada más (en la final no hace nada: D87). Con un
 //     cuarto abierto, Esc es el nativo del `<dialog>`: lo cierra y el foco vuelve a la parada (V2-C);
@@ -27,6 +28,8 @@ const barraDeCuartos = document.getElementById('cuartosBarra');
 const dialogoDeCuartos = document.getElementById('cuarto');
 const botonAyuda = document.getElementById('ayudaTeclas');
 const TECLA_AYUDA = '?';
+// La tecla de "¡Vamos!" en la previa de un minijuego (V3d, D94): ningún minijuego la usa.
+const TECLA_VAMOS = 'V';
 
 // Las piezas donde 1-4 eligen una opción.
 const PIEZAS_CON_ATAJOS = ['decision', 'partido', 'mercado'];
@@ -78,6 +81,23 @@ document.addEventListener('keydown', (evento) => {
   if (escribiendoEnUnCampo(activo)) return;
   const pieza = piezaActiva();
 
+  // V3d (D94): la fase PREVIA de un minijuego (`data-fase="previa"` en su contenedor, que escribe `paradas/minijuego.js`): 1-n eligen la
+  // charla del coach y V es "¡Vamos!". En cuanto arranca el minijuego la fase pasa a `juego`, esto ya no entra y todas las teclas
+  // son de él (1-5, Q/W/E/R, A/D, A/S). Va antes de los cuartos: V es también la letra de Vos, que en el minijuego está apagada.
+  if (pieza === 'minijuego' && !document.querySelector('dialog[open]')) {
+    const previa = shell?.querySelector('.escenario [data-fase="previa"]');
+    const tecla = evento.key.length === 1 ? evento.key.toUpperCase() : '';
+    if (previa && (ATAJOS.includes(tecla) || tecla === TECLA_VAMOS)) {
+      const boton = tecla === TECLA_VAMOS
+        ? [...previa.querySelectorAll('[data-vamos]')].find((b) => esVisible(b) && !b.disabled)
+        : atajoDeLaPieza(tecla);
+      if (boton) {
+        evento.preventDefault();
+        if (!evento.repeat) boton.click();
+      }
+      return;
+    }
+  }
   const botonCuarto = botonDeCuarto(evento.key);
   if (botonCuarto) {
     const apagada = evento.key === TECLA_AYUDA ? pieza === 'minijuego' : PIEZAS_SIN_CUARTOS.includes(pieza);

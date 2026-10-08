@@ -475,7 +475,7 @@ async function retomar(pieza) {
 }
 
 // ---------- V2-B: el teclado y la regla 4 ----------
-const teclado = { continuarEnter: null, mercado1: null, copiarEnterFinal: null, escFinal: null, letrasInicio: null, letrasMinijuego: null };
+const teclado = { continuarEnter: null, mercado1: null, copiarEnterFinal: null, escFinal: null, letrasInicio: null, letrasMinijuego: null, minijuegoPrevia: null, minijuegoJuego: null, previaConCharla: null, previaSinCharla: null, charlaConTecla: null, vamosConTecla: null };
 // "1" en el mercado (V2-B): lleva el FOCO al "Firmar" de la oferta 1 y NO firma; Enter sobre ese boton si. Un listener de
 // captura en `window` se queda con el primer clic (y lo frena antes de que llegue al boton), para ver si la tecla hizo clic
 // y a QUE: el de "1" tiene que ser ninguno, y el de Enter el "Firmar" de la oferta 1, sin cambiar la carrera.
@@ -514,6 +514,70 @@ async function probarUnoEnElMercado() {
     clicDeUno, foco, clic
   };
 }
+// V3d (D94): el teclado en un minijuego. Un listener de captura en `window` registra los clics sobre algo con `data-atajo`,
+// `data-vamos` o la barra de cuartos (sin frenarlos) y los clics que se frenan para no cambiar la parada.
+//   - PREVIA (`data-fase="previa"`): 1 hace clic en la charla 1 (si hay charla), V en "¡Vamos!" (si hay); los dos se frenan.
+//   - JUEGO (`data-fase="juego"`): ni 1-4, ni V, ni las letras de los cuartos (T/M/C) tocan la parada: solo el minijuego las lee.
+async function probarAtajosDeLaPrevia(hayCharla) {
+  if (SIN_TECLADO) return;
+  await page.evaluate(() => {
+    if (window.__frenarClics) window.removeEventListener('click', window.__frenarClics, { capture: true });
+    window.__clicsDeTeclas = [];
+    window.__frenarClics = (e) => {
+      const b = e.target.closest?.('button');
+      if (!b) return;
+      const marca = b.dataset.atajo ? 'atajo' + b.dataset.atajo : b.hasAttribute('data-vamos') ? 'vamos' : b.closest('#cuartosBarra') ? 'cuarto' : null;
+      if (!marca) return;
+      window.__clicsDeTeclas.push(marca);
+      if (window.__frenar) { e.stopImmediatePropagation(); e.preventDefault(); }
+    };
+    window.__frenar = true;
+    window.addEventListener('click', window.__frenarClics, { capture: true });
+    document.activeElement?.blur?.();
+  });
+  const leer = () => page.evaluate(() => ({ clics: window.__clicsDeTeclas.splice(0), fase: document.querySelector('#minijuego')?.dataset.fase ?? null }));
+  const resultado = { hayCharla };
+  await page.keyboard.press('1');
+  resultado.con1 = await leer();
+  await page.keyboard.press('v');
+  resultado.conV = await leer();
+  await page.evaluate(() => { window.__frenar = false; });
+  resultado.ok = resultado.con1.fase === 'previa' && resultado.conV.fase === 'previa'
+    && (hayCharla ? resultado.con1.clics.join() === 'atajo1' && resultado.conV.clics.length === 0
+      : resultado.con1.clics.length === 0 && resultado.conV.clics.join() === 'vamos');
+  teclado.minijuegoPrevia = resultado;
+}
+// Ya en juego (la fase pasó a `juego`): las teclas son del minijuego; la parada no reacciona. Se juega con ellas, así que se prueba una sola vez.
+async function probarTeclasEnJuego() {
+  if (SIN_TECLADO) return;
+  const fase = await page.evaluate(() => { window.__clicsDeTeclas?.splice(0); return document.querySelector('#minijuego')?.dataset.fase ?? null; });
+  for (const tecla of ['1', '2', 'v', 't', 'm', 'c', 'q', 'w', 'e', 'r', 'a', 'd', 's']) {
+    await page.keyboard.press(tecla);
+    await page.waitForTimeout(20);
+  }
+  const r = await page.evaluate(() => ({
+    clics: window.__clicsDeTeclas.splice(0),
+    fase: document.querySelector('#minijuego')?.dataset.fase ?? null,
+    cuarto: document.querySelector('#cuarto')?.open ?? false,
+    pieza: document.querySelector('.shell')?.dataset.pieza ?? null
+  }));
+  await page.evaluate(() => { window.removeEventListener('click', window.__frenarClics, { capture: true }); });
+  teclado.minijuegoJuego = { ok: fase === 'juego' && r.clics.length === 0 && !r.cuarto && r.pieza === 'minijuego' && r.fase !== 'previa', faseAntes: fase, ...r };
+}
+// V3d: "¡Vamos!" a la vista. Mismo piso que `medir` (la barra de cuartos del celular tapa lo que queda debajo).
+const medirVamos = () => page.evaluate(() => {
+  const visible = (e) => !!e && e.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true });
+  const vh = window.innerHeight;
+  const barra = document.querySelector('#cuartosBarra');
+  const rb = barra && visible(barra) && getComputedStyle(barra).position === 'fixed' ? barra.getBoundingClientRect() : null;
+  const piso = rb && rb.top < vh && rb.top > vh / 2 ? rb.top : vh;
+  const b = document.querySelector('#minijuegoWidget [data-vamos]');
+  if (!b || !visible(b)) return null;
+  const r = b.getBoundingClientRect();
+  const t = document.querySelector('#minijuegoTitle')?.getBoundingClientRect();
+  return { top: Math.round(r.top), bottom: Math.round(r.bottom), piso: Math.round(piso), entra: r.top >= 0 && r.bottom <= piso, tituloEntra: !!t && t.top >= 0 && t.bottom <= piso };
+});
+
 // En la final: Enter sobre "Copiar..." no se va de la final (D87), y Esc no hace nada.
 async function probarTecladoEnLaFinal() {
   if (SIN_TECLADO) return;
@@ -573,7 +637,8 @@ async function clicConRegla4(clic) {
 const hayShellV2C = () => page.evaluate(() => !!document.querySelector('#cuarto') && !!document.querySelector('#acompanante'));
 const LETRAS_DE_CUARTOS = { vos: 'v', temporada: 't', equipo: 'e', mundo: 'm', carrera: 'c', cronica: 'r' };
 // Las letras que se prueban en el minijuego: las de los cuartos que NO son teclas de algun minijuego (Q/W/E/R, A/D, A/S).
-const LETRAS_EN_EL_MINIJUEGO = ['v', 't', 'm', 'c'];
+// La V no va: desde V3d es "¡Vamos!" en la fase previa (se prueba aparte, `probarAtajosDeLaPrevia`).
+const LETRAS_EN_EL_MINIJUEGO = ['t', 'm', 'c'];
 const cuartoAbierto = () => page.evaluate(() => document.querySelector('#cuarto')?.open ?? false);
 
 // (f) En cada parada: el acompañante es el de `acompananteDe` sobre la carrera guardada (en una parada, el estado de la
@@ -832,7 +897,7 @@ for (let it = 0; it < 3000; it++) {
     paradas++; step++;
     const tit = await page.innerText('#minijuegoTitle').catch(() => '');
     const ap = await page.innerText('#minijuego').catch(() => '');
-    const hayCharla = (await page.locator('#minijuegoWidget .minijuego-charla .option-btn').count()) > 0;
+    const hayCharla = (await page.locator('#minijuegoWidget .minijuego-charla-opcion').count()) > 0;
     const tipoP = tipoDeParada('minijuego', tit, [], { charla: hayCharla });
     const primera = !visitadas[tipoP];
     visitadas[tipoP] = (visitadas[tipoP] || 0) + 1;
@@ -841,20 +906,38 @@ for (let it = 0; it < 3000; it++) {
       if (primera) await medirPrimera(tipoP, 'minijuego', { topbar, titulo: tit });
       // V2-C (h): antes de "¡Vamos!", las letras de los cuartos no abren nada.
       if (!teclado.letrasMinijuego) await probarLetrasInertes('Minijuego', LETRAS_EN_EL_MINIJUEGO);
+      // V3d (D94): 1-n y V en la previa; una vez con charla y una sin (la primera de cada una).
+      if (!(hayCharla ? teclado.previaConCharla : teclado.previaSinCharla)) { await probarAtajosDeLaPrevia(hayCharla); if (hayCharla) teclado.previaConCharla = teclado.minijuegoPrevia; else teclado.previaSinCharla = teclado.minijuegoPrevia; }
     } else if (!capturadas.has('minijuego')) {
       await captura('minijuego-antes-de-vamos', { completa: true });
     }
-    const charla = page.locator('#minijuegoWidget .minijuego-charla .option-btn');
+    const charla = page.locator('#minijuegoWidget .minijuego-charla-opcion');
     let charlaTxt = '';
     if (await charla.count()) {
       const ts = await charla.allInnerTexts();
       const ps = ts.map((t) => pctDe(t, /(\d+)% de ganar/) ?? 0);
       const i = MALA ? ps.indexOf(Math.min(...ps)) : ps.indexOf(Math.max(...ps));
       charlaTxt = ` CHARLA[${ts.join(' / ')}] -> ${i + 1}`;
-      await charla.nth(i).click(); await page.waitForTimeout(100);
+      // V3d: la charla se elige con su tecla (1-n); si la tecla no hace nada, con el clic (y queda anotado).
+      if (!SIN_TECLADO) await page.keyboard.press(String(i + 1));
+      else await charla.nth(i).click();
+      await page.waitForTimeout(100);
+      if (await charla.count()) { teclado.charlaConTecla = { ok: false }; await charla.nth(i).click(); await page.waitForTimeout(100); }
+      else if (!teclado.charlaConTecla) teclado.charlaConTecla = { ok: true };
     }
-    await page.locator('.minijuego-espera-boton').first().click({ timeout: 5000 }).catch(() => L('!! sin boton Vamos'));
+    // V3d: "¡Vamos!" entra sin scrollear (se mide una vez por tipo) y se aprieta con su tecla (V).
+    const vamos = MODO === 'recorrido' ? await medirVamos() : null;
+    if (primera && vamos) { const fila = [...filas].reverse().find((x) => x.tipo === tipoP); if (fila) fila.vamos = vamos; }
+    if (!SIN_TECLADO) {
+      await page.keyboard.press('v');
+      await page.waitForTimeout(60);
+      if (await page.locator('#minijuegoWidget [data-vamos]').count()) { teclado.vamosConTecla = { ok: false }; await page.locator('.minijuego-espera-boton').first().click({ timeout: 5000 }).catch(() => L('!! sin boton Vamos')); }
+      else if (!teclado.vamosConTecla) teclado.vamosConTecla = { ok: true };
+    } else {
+      await page.locator('.minijuego-espera-boton').first().click({ timeout: 5000 }).catch(() => L('!! sin boton Vamos'));
+    }
     await page.waitForTimeout(30);
+    if (MODO === 'recorrido' && !teclado.minijuegoJuego && teclado.minijuegoPrevia) await probarTeclasEnJuego();
     if (MODO === 'capturas' && !capturadas.has('minijuego')) { await captura('minijuego-widget', { completa: true }); capturadas.add('minijuego'); }
     const jugada = MODO === 'capturas' ? await dejarPasarMinijuego() : MALA ? await jugarMinijuegoMal() : await jugarMinijuegoBien();
     await page.waitForTimeout(400);
@@ -953,6 +1036,7 @@ for (const f of filas) {
     numerosVisibles: f.numerosVisibles,
     ultimoBotonEntra: f.ultimoBotonEntra,
     ultimoAtajoEntra: f.ultimoAtajoEntra,
+    vamosEntra: f.vamos?.entra ?? null,
     tituloEntero: f.tituloCaja?.entero ?? null,
     opcion1Entera: f.opcion1Caja?.entero ?? null,
     scrollHorizontal: f.scrollHorizontal,
@@ -975,6 +1059,7 @@ const informe = {
     scrollHorizontal: filas.filter((f) => f.scrollHorizontal).map((f) => f.tipo),
     ultimoBotonFueraDelViewport: filas.filter((f) => f.ultimoBotonEntra === false).map((f) => f.tipo),
     ultimoAtajoFueraDelViewport: filas.filter((f) => f.ultimoAtajoEntra === false).map((f) => f.tipo),
+    vamosFueraDelViewport: filas.filter((f) => f.vamos && !f.vamos.entra).map((f) => f.tipo),
     // V2-C
     acompanante: { paradas: acompanantes.paradas, porTipo: acompanantes.porTipo, fallas: acompanantes.fallas.length, detalle: acompanantes.fallas.slice(0, 10) },
     posicion: { paradas: acompanantes.posiciones, fallas: acompanantes.posicionFallas.length, detalle: acompanantes.posicionFallas.slice(0, 10) },
@@ -998,6 +1083,7 @@ if (MODO === 'recorrido') {
   console.log(`  acompanante: ${t.acompanante.paradas} paradas, ${t.acompanante.fallas} fallas ${JSON.stringify(t.acompanante.porTipo)} | cuartos: ${t.cuartos.paradas} paradas, ${t.cuartos.fallas} fallas | pausa=${pausa ? pausa.ok : 'sin probar'}`);
   console.log(`  posicion (escenario centrado o acompañante a la derecha, ancho <= columna): ${t.posicion.paradas} paradas, ${t.posicion.fallas} fallas`);
   console.log(`  teclado: ${Object.entries(teclado).map(([k, v]) => `${k}=${v ? v.ok : 'sin probar'}`).join(' ')}`);
+  console.log(`  vamos: ${filas.filter((f) => f.vamos).map((f) => `${f.tipo}=${f.vamos.entra ? 'entra' : 'NO entra'}(${f.vamos.bottom}/${f.vamos.piso})`).join(' ') || 'sin medir'}`);
   console.log(`  numerosVisibles: ${filas.map((f) => `${f.tipo}=${f.numerosVisibles}`).join(' ')}`);
 }
 await browser.close();
