@@ -16,6 +16,11 @@ import { reconciliar } from '../ui/core/reconciliar.js';
 import { crearDelta } from '../ui/core/delta.js';
 import { agruparBeats, renderFeed, LIMITE_FEED } from '../ui/components/feed.js';
 import * as reproductorModulo from '../ui/reproductor.js';
+import {
+  piezaDe as piezaDeEscenaV2, PIEZAS_DE_PARADA as PIEZAS_DE_PARADA_V2, acompananteDe as acompananteDeV2, CUARTOS as CUARTOS_V2,
+  TIPOS_DE_ACOMPANANTE as TIPOS_DE_ACOMPANANTE_V2, fotoDeSplit as fotoDeSplitV2, cierreDeSplit as cierreDeSplitV2,
+  lineaDeSplitAnterior as lineaDeSplitAnteriorV2
+} from '../ui/core/escena.js';
 import { TONOS_CONOCIDOS as TONOS_DE_GRAFICOS } from '../ui/graficos/comun.js';
 import { correrLote as correrLoteJugabilidad, analizarCatalogo } from './simulate.js';
 import { observar as observarCobertura, calcularHuecosPorCategoria } from './cobertura.js';
@@ -8237,6 +8242,21 @@ check('crearDelta mide [antes, despues] contra la lectura previa (fase V, V0)', 
   }
   if (m2['career.jerarquia'][0] !== 50 || m2['career.jerarquia'][1] !== 50) {
     throw new Error('un path sin cambios entre mediciones debería dar [x, x]');
+  }
+
+  // FASE V (V2-B): un campo también puede ser una función del estado. En un array, la clave es su `name`; en un objeto,
+  // la clave declarada.
+  const conFunciones = crearDelta([function nivelDoble(s) { return s.player.nivel * 2; }, 'career.jerarquia']);
+  conFunciones.medir({ player: { nivel: 10 }, career: { jerarquia: 50 } });
+  const m3 = conFunciones.medir({ player: { nivel: 12 }, career: { jerarquia: 51 } });
+  if (m3.nivelDoble?.[0] !== 20 || m3.nivelDoble?.[1] !== 24 || m3['career.jerarquia']?.[1] !== 51) {
+    throw new Error(`una función en el array debería medirse con su name: dio ${JSON.stringify(m3)}`);
+  }
+  const conObjeto = crearDelta({ nivel: (s) => s.player.nivel, jerarquia: 'career.jerarquia' });
+  conObjeto.medir({ player: { nivel: 10 }, career: { jerarquia: 50 } });
+  const m4 = conObjeto.medir({ player: { nivel: 13 }, career: { jerarquia: 50 } });
+  if (m4.nivel?.[0] !== 10 || m4.nivel?.[1] !== 13 || m4.jerarquia?.[1] !== 50) {
+    throw new Error(`un objeto { clave: path | función } debería medirse con su clave: dio ${JSON.stringify(m4)}`);
   }
 });
 
@@ -18309,6 +18329,111 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
   if (faltan.length > 0) {
     throw new Error(`el lote no cubrió ${faltan.join(', ')} (vistos: ${[...vistos.keys()].join(', ')}): cambiá las seeds, `
       + 'no saques el tipo de la lista');
+  }
+});
+
+// ============================================================================
+// FASE V (V2-B) — el director de escena (PLAN.md §V.5 y §V.7, "el check de V2"). La pantalla ya no es una combinación
+// de `hidden`: la decide `piezaDe(estado)` (src/ui/core/escena.js) y la escribe el director en `.shell[data-pieza]`.
+// La promesa: mientras el motor está en pausa, el escenario muestra una PARADA (decision, partido, mercado o minijuego)
+// —nunca el relato, nunca nada—, la misma después de guardar y recargar (retomar a mitad de parada), y el relato
+// mientras se reproduce. De paso, sobre las mismas carreras: el acompañante de cada parada es uno de los de §V.4 y el
+// cierre de cada split (`fotoDeSplit` → JSON → `cierreDeSplit`, como viaja en `lolcs-vista`) sale bien formado.
+// En rojo con un mutante: `familiaDeParada` que devuelve 'relato' para `presentacion: 'mercado'`.
+// ============================================================================
+const SEEDS_ESCENA_V2 = Array.from({ length: 20 }, (_, i) => 1 + i);
+const SPLITS_ESCENA_V2 = 60;
+const POSICION_ESCENA_V2 = /^\d+\.º de \d+$/;
+
+checkLento('V2 escena: en cada pausa del motor piezaDe da una pieza de parada (decision, partido, mercado o minijuego; nunca relato ni null), la misma tras deserializar(serializar()), y el cierre de cada split sale bien formado (criterio, 20 carreras × 60)', () => {
+  const problemas = [];
+  const porPieza = {};
+  const piezaDeTipo = new Map();
+  let cierres = 0;
+  let conResultado = 0;
+  if (piezaDeEscenaV2(null) !== 'inicio') {
+    problemas.push(`sin estado la pieza es ${piezaDeEscenaV2(null)}, no 'inicio'`);
+  }
+  for (const seed of SEEDS_ESCENA_V2) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_ESCENA_V2 && !state.terminado; i += 1) {
+      // La foto viaja en `localStorage` (`lolcs-vista`): se compara contra su copia JSON, como al retomar.
+      const foto = JSON.parse(JSON.stringify(fotoDeSplitV2(state)));
+      let paso = avanzarSplit(state, rng);
+      let vueltas = 0;
+      while (paso.state.pendiente) {
+        const tipo = tipoDePausaGuardadoK4(paso.state.pendiente);
+        const pieza = piezaDeEscenaV2(paso.state);
+        porPieza[pieza] = (porPieza[pieza] ?? 0) + 1;
+        if (!PIEZAS_DE_PARADA_V2.includes(pieza)) {
+          problemas.push(`seed ${seed}, pausa ${tipo}: la pieza es ${pieza}`);
+        }
+        if (piezaDeEscenaV2(paso.state, { reproduciendo: true }) !== 'relato') {
+          problemas.push(`seed ${seed}, pausa ${tipo}: reproduciendo no da 'relato'`);
+        }
+        const datos = deserializarGuardado(serializarGuardado(paso.state, rng));
+        const piezaRecargada = datos ? piezaDeEscenaV2(datos.state) : null;
+        if (piezaRecargada !== pieza) {
+          problemas.push(`seed ${seed}, pausa ${tipo}: ${pieza} de corrido, ${piezaRecargada} al recargar`);
+        }
+        if (piezaDeTipo.has(tipo) && piezaDeTipo.get(tipo) !== pieza) {
+          problemas.push(`la pausa ${tipo} cae en dos piezas (${piezaDeTipo.get(tipo)} y ${pieza})`);
+        }
+        piezaDeTipo.set(tipo, pieza);
+        const acompanante = acompananteDeV2(paso.state, pieza);
+        const tipoValido = acompanante.tipo === null || TIPOS_DE_ACOMPANANTE_V2.includes(acompanante.tipo);
+        const cuartoValido = acompanante.cuarto === null || CUARTOS_V2.includes(acompanante.cuarto);
+        if (!tipoValido || !cuartoValido || (acompanante.tipo === null) !== (acompanante.cuarto === null)
+          || (pieza === 'minijuego' && acompanante.tipo !== null)) {
+          problemas.push(`seed ${seed}, pausa ${tipo} (${pieza}): acompañante ${JSON.stringify(acompanante)}`);
+        }
+        const { sistemaId, decision } = paso.state.pendiente;
+        paso = resolverDecision(paso.state, ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), paso.state, decision, rng), rng);
+        vueltas += 1;
+        if (vueltas > 200) {
+          throw new Error(`seed ${seed}: más de 200 pausas seguidas en un split`);
+        }
+      }
+      state = paso.state;
+      if (state.terminado) {
+        break;
+      }
+      // El split cerró sin pausa: la tarjeta de cierre.
+      cierres += 1;
+      const cierre = cierreDeSplitV2(foto, state);
+      const { numero, resultado } = cierre;
+      if (!Number.isFinite(numero.despues) || !['nivel', 'rango'].includes(numero.etiqueta)
+        || (numero.antes !== null && !Number.isFinite(numero.antes))) {
+        problemas.push(`seed ${seed}, split ${i}: número de cierre mal formado ${JSON.stringify(numero)}`);
+      }
+      if (numero.antes === null && foto.numero.etiqueta === numero.etiqueta) {
+        problemas.push(`seed ${seed}, split ${i}: con la foto del split el cierre sale sin delta`);
+      }
+      if (resultado !== null) {
+        conResultado += 1;
+        if (!['titulo', 'mundial', 'posicion'].includes(resultado.tipo) || !resultado.texto
+          || (resultado.tipo === 'posicion' && !POSICION_ESCENA_V2.test(resultado.texto))) {
+          problemas.push(`seed ${seed}, split ${i}: resultado mal formado ${JSON.stringify(resultado)}`);
+        }
+      }
+      if (typeof lineaDeSplitAnteriorV2(cierre) !== 'string') {
+        problemas.push(`seed ${seed}, split ${i}: sin la línea "Split anterior"`);
+      }
+    }
+    if (state.terminado && state.tarjeta && piezaDeEscenaV2(state) !== 'final') {
+      problemas.push(`seed ${seed}: la carrera terminada da ${piezaDeEscenaV2(state)}, no 'final'`);
+    }
+  }
+  const sinVer = PIEZAS_DE_PARADA_V2.filter((pieza) => !porPieza[pieza]);
+  if (sinVer.length > 0) {
+    problemas.push(`el lote no pasó por ${sinVer.join(', ')} (vistas: ${JSON.stringify(porPieza)}): cambiá las seeds`);
+  }
+  if (cierres === 0 || conResultado === 0) {
+    problemas.push(`${cierres} cierres de split, ${conResultado} con resultado: el lote no mide el cierre`);
+  }
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problemas: ${problemas.slice(0, 5).join(' | ')}`);
   }
 });
 

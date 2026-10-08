@@ -70,11 +70,17 @@ const L = (s) => fs.appendFileSync(logf, s + '\n');
 const URL_JUEGO = `http://127.0.0.1:${PUERTO}/?seed=${SEED}`;
 
 // ---------- la pieza visible: UN solo lugar ----------
-// Corre dentro de la pagina. Si el shell ya declara `.shell[data-pieza]` (llega en V2-B) manda eso; si no, la logica de hoy:
-// que panel del escenario no tiene `hidden`. Devuelve null si no hay ninguna (el split se esta reproduciendo).
+// Corre dentro de la pagina. Desde V2-B manda `.shell[data-pieza]` (lo escribe solo el director, src/ui/escena.js), traducido
+// al vocabulario del recorrido: inicio -> 'setup', relato -> null (el split se esta reproduciendo), final -> 'tarjeta'; decision,
+// partido, mercado y minijuego quedan igual. Sin `data-pieza` (una UI anterior a V2-B, para medir la linea de base) cae a la
+// logica vieja: que panel del escenario no tiene `hidden`.
 function detectarPieza() {
   const shell = document.querySelector('.shell[data-pieza]');
-  if (shell) return shell.dataset.pieza || null;
+  if (shell) {
+    const p = shell.dataset.pieza || null;
+    const traduccion = { inicio: 'setup', relato: null, final: 'tarjeta' };
+    return p in traduccion ? traduccion[p] : p;
+  }
   const v = (s) => { const e = document.querySelector(s); return !!e && !e.hidden; };
   if (v('#nuevaCarrera') || (v('#tarjeta') && document.querySelector('#tarjeta').innerText.length > 20)) return 'tarjeta';
   if (v('#minijuego')) return 'minijuego';
@@ -84,6 +90,14 @@ function detectarPieza() {
   return null;
 }
 const piezaVisible = (page) => page.evaluate(detectarPieza);
+// La pieza CRUDA de `data-pieza` (null en una UI anterior a V2-B).
+const piezaCruda = (page) => page.evaluate(() => document.querySelector('.shell[data-pieza]')?.dataset.pieza ?? null);
+// V2-B: que lo que se ve coincida con `data-pieza` — exactamente un panel de pieza visible, y el que corresponde.
+function panelesVisibles() {
+  const vis = (s) => { const e = document.querySelector(s); return !!e && e.checkVisibility({ checkVisibilityCSS: true }); };
+  return ['#setup', '#decision', '#mercado', '#minijuego', '#tarjeta'].filter(vis);
+}
+const PANEL_DE_PIEZA = { inicio: '#setup', decision: '#decision', partido: '#decision', mercado: '#mercado', minijuego: '#minijuego', final: '#tarjeta' };
 const esperarPieza = (page, timeout = 30000) =>
   page.waitForFunction(`(() => { const p = (${detectarPieza.toString()})(); return p && p !== 'setup' ? p : false; })()`, null, { timeout });
 
@@ -96,6 +110,8 @@ const ctx = await browser.newContext({
   viewport: { width: ANCHO, height: ALTO },
   ...(MODO === 'capturas' ? { reducedMotion: 'reduce' } : {})
 });
+// El "Copiar..." de la tarjeta final se prueba con Enter (V2-B): con permiso de portapapeles no ensucia la consola.
+await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: `http://127.0.0.1:${PUERTO}` }).catch(() => {});
 const page = await ctx.newPage();
 page.on('console', (m) => {
   if (m.type() === 'error') { errs.push(`[console.error] ${m.text()}`); L(`!! console.error: ${m.text()}`); }
@@ -111,15 +127,28 @@ async function velocidadInstantanea() {
     await page.click('#toggleVelocidad');
   }
 }
-async function armarElInicio() {
-  await page.goto(URL_JUEGO);
+// V2-B: la velocidad 1× (para ver el relato con sus esperas: la regla 4).
+async function velocidadUno() {
+  for (let i = 0; i < 3; i++) {
+    const t = await page.textContent('#toggleVelocidad');
+    if (t.includes('1×')) return;
+    await page.click('#toggleVelocidad');
+  }
+}
+// El draft completo en el inicio (region, perfil, linea, 3 mains): "Empezar carrera" queda habilitado.
+async function completarElDraft() {
   await page.waitForSelector('#rolGrid > *');
-  await velocidadInstantanea();
   await page.locator('#regionGrid > *').nth(REGION).click();
   await page.locator('#perfilGrid > *').nth(PERFIL).click();
   await page.locator('#rolGrid > *').nth(ROL).click();
   for (let i = 0; i < 3; i++) await page.locator('#campeonGrid .campeon-tile:not(.campeon-tile--elegido)').first().click();
   await page.waitForSelector('#run:not([disabled])');
+}
+async function armarElInicio() {
+  await page.goto(URL_JUEGO);
+  await page.waitForSelector('#rolGrid > *');
+  await velocidadInstantanea();
+  await completarElDraft();
   if (MODO === 'capturas') await page.evaluate(() => document.fonts.ready);
 }
 
@@ -235,8 +264,14 @@ async function jugarMinijuegoBien() {
     const fin = (r) => { clearInterval(iv); resolve(r); };
     const q = (s) => W.querySelector(s);
     let tipo = null, memo = null, ultimo = -1, jugadoEn = -1, t0 = Date.now();
+    // Termina cuando la parada se va (V2-B: `data-pieza` deja de ser 'minijuego'; antes, el panel con `hidden`).
+    const seFue = () => { const sh = document.querySelector('.shell[data-pieza]'); return sh ? sh.dataset.pieza !== 'minijuego' : panel.hidden; };
     const iv = setInterval(() => {
-      if (panel.hidden || Date.now() - t0 > 30000) return fin(tipo || 'cerrado');
+      if (seFue() || Date.now() - t0 > 30000) return fin(tipo || 'cerrado');
+      // V2-B: con el veredicto en pantalla el minijuego ya termino (la parada se va 1600 ms despues). Antes de esta guarda,
+      // las ramas de la_llamada, robar_baron y el_teleport leian nodos que el veredicto ya habia borrado: ~107 pageerror
+      // "Cannot read properties of null" por minijuego (1600 ms / 15 ms), que el recorrido se anotaba como errores del juego.
+      if (q('.minijuego-resultado')) return;
       if (!tipo) {
         if (q('.minijuego-campo')) tipo = 'la_prueba'; else if (q('.minijuego-ola')) tipo = 'last_hit'; else if (q('.minijuego-teclas')) tipo = 'el_combo';
         else if (q('.minijuego-metronomo')) tipo = 'el_kite'; else if (q('.minijuego-carriles')) tipo = 'dodge'; else if (q('.minijuego-zonas')) tipo = 'la_vision';
@@ -250,16 +285,17 @@ async function jugarMinijuegoBien() {
       if (tipo === 'la_prueba') { const b = q('.minijuego-blanco'); if (b) { if (!b.dataset.visto) b.dataset.visto = ahora; else if (ahora - b.dataset.visto > 280) b.click(); } }
       if (tipo === 'last_hit') { const m = q('.minijuego-minion:not([disabled])'); if (m && m.dataset.zona === 'ejecucion') m.click(); }
       if (tipo === 'el_combo') { const bs = [...W.querySelectorAll('.minijuego-tecla-btn:not([disabled])')]; if (bs.length && memo.length) { const k = memo.shift(); bs.find((b) => b.textContent === k)?.click(); } }
-      if (tipo === 'el_kite') { const pasos = [...W.querySelectorAll('.minijuego-paso')]; const i = pasos.findIndex((p) => p.dataset.activo === 'si'); if (i >= 0 && i !== jugadoEn) { const av = q('.minijuego-aviso').textContent; const bs = [...W.querySelectorAll('.minijuego-kite button')]; const b = /Atac/.test(av) ? bs[0] : bs[1]; if (b && !b.disabled) { b.click(); jugadoEn = i; } } }
+      if (tipo === 'el_kite') { const pasos = [...W.querySelectorAll('.minijuego-paso')]; const i = pasos.findIndex((p) => p.dataset.activo === 'si'); if (i >= 0 && i !== jugadoEn) { const av = q('.minijuego-aviso')?.textContent ?? ''; const bs = [...W.querySelectorAll('.minijuego-kite button')]; const b = /Atac/.test(av) ? bs[0] : bs[1]; if (b && !b.disabled) { b.click(); jugadoEn = i; } } }
       if (tipo === 'dodge') { const cs = [...W.querySelectorAll('.minijuego-carril')]; const yo = cs.findIndex((c) => c.dataset.yo === 'si'); const pel = cs.findIndex((c) => c.dataset.peligro === 'si'); if (yo >= 0 && yo === pel) { const bs = W.querySelectorAll('.minijuego-mover button'); (yo > 0 ? bs[0] : bs[1])?.click(); } }
       if (tipo === 'la_vision') { const bs = [...W.querySelectorAll('.minijuego-zona-btn')]; if (bs.length && bs[0].dataset.estado === 'tapada') { const i = memo.findIndex((x) => x); if (i >= 0 && !bs[i].disabled) { memo[i] = false; bs[i].click(); } } }
       if (tipo === 'robar_baron' || tipo === 'el_teleport') {
         const z = q('.minijuego-zona'), c = q('.minijuego-marcador'), b = q('.minijuego-btn');
+        if (!z || !c) return;
         const centro = parseFloat(z.style.left) + parseFloat(z.style.width) / 2; const pos = parseFloat(c.style.left || '0');
         const objetivo = tipo === 'el_teleport' ? centro - 18 : centro;
         if (b && !b.disabled && Math.abs(pos - objetivo) < 1.6) b.click();
       }
-      if (tipo === 'la_llamada') { const av = q('.minijuego-aviso'); if (/AHORA/.test(av.textContent)) { if (ultimo < 0) ultimo = ahora; else if (ahora - ultimo > 200) q('.minijuego-btn')?.click(); } }
+      if (tipo === 'la_llamada') { const av = q('.minijuego-aviso'); if (av && /AHORA/.test(av.textContent)) { if (ultimo < 0) ultimo = ahora; else if (ahora - ultimo > 200) q('.minijuego-btn')?.click(); } }
       if (tipo === 'rueda_de_prensa' && !window.__prensa) {
         const ps = [...W.querySelectorAll('.minijuego-pistas-lista li')].map((l) => l.textContent);
         const POS = /al frente|hablar fuerte|es tuya|crédito|carácter|no te achicás|hacerte notar|firmeza/i, NEG = /humildad|bajá el tono|bajar el tono|respeto|grupo adelante|no te metas|divo|no sobra/i;
@@ -358,16 +394,28 @@ async function medir(pieza) {
     };
   }, cfg);
 }
-// La "firma" de una parada: lo que tiene que volver igual despues de recargar y tocar Continuar.
+// La "firma" de una parada: lo que tiene que volver igual despues de recargar y tocar Continuar. Solo lo visible: con
+// `data-pieza` (V2-B) los paneles de otras piezas quedan en el DOM con su contenido viejo, escondidos por CSS.
 async function firmaDeParada(pieza) {
   const cfg = PIEZAS[pieza] ?? PIEZAS.decision;
-  const f = await page.evaluate((cfg) => ({
-    titulo: (document.querySelector(cfg.titulo)?.innerText ?? '').split('\n')[0].trim(),
-    opciones: [...document.querySelectorAll(cfg.opciones)].map((e) => e.innerText.replace(/\s+/g, ' ').trim())
-  }), cfg);
+  const f = await page.evaluate((cfg) => {
+    const vis = (e) => e.checkVisibility({ checkVisibilityCSS: true });
+    return {
+      titulo: (document.querySelector(cfg.titulo)?.innerText ?? '').split('\n')[0].trim(),
+      opciones: [...document.querySelectorAll(cfg.opciones)].filter(vis).map((e) => e.innerText.replace(/\s+/g, ' ').trim())
+    };
+  }, cfg);
   return { ...f, pieza };
 }
+// Los sueldos del mercado (y los numeros de la ficha) entran con `countUp` desde 0 durante 420 ms (components/countUp.js):
+// leer la firma antes de que terminen daba un "firma-distinta" falso al retomar en el mercado.
+const ESPERA_COUNTUP_MS = 600;
+// D86 (V2-B): el PRIMER retomar se hace con el draft completo y Enter sobre "Continuar" (antes eso arrancaba una carrera
+// nueva y borraba la guardada); los demas, con clic.
+let continuarConEnterProbado = false;
 async function retomar(pieza) {
+  if (pieza === 'tarjeta') return { ok: null, motivo: 'no-aplica: la carrera terminada no se guarda' };
+  await page.waitForTimeout(ESPERA_COUNTUP_MS);
   const antes = await firmaDeParada(pieza);
   await page.reload();
   try {
@@ -375,13 +423,97 @@ async function retomar(pieza) {
   } catch {
     return { ok: false, motivo: 'sin-boton-continuar', antes };
   }
-  await page.click('#continuarBtn');
-  try { await esperarPieza(page, 20000); } catch { return { ok: false, motivo: 'no-vuelve-ninguna-parada', antes }; }
+  const conEnter = !continuarConEnterProbado;
+  if (conEnter) {
+    continuarConEnterProbado = true;
+    await completarElDraft();
+    await page.focus('#continuarBtn');
+    await page.keyboard.press('Enter');
+  } else {
+    await page.click('#continuarBtn');
+  }
+  try { await esperarPieza(page, 20000); } catch { return { ok: false, motivo: 'no-vuelve-ninguna-parada', conEnter, antes }; }
   await velocidadInstantanea().catch(() => {});
+  await page.waitForTimeout(ESPERA_COUNTUP_MS);
   const piezaDespues = await piezaVisible(page);
   const despues = await firmaDeParada(piezaDespues);
+  const guardadaSigue = await page.evaluate(() => localStorage.getItem('lolcs-carrera-guardada') !== null);
   const ok = antes.pieza === despues.pieza && antes.titulo === despues.titulo && JSON.stringify(antes.opciones) === JSON.stringify(despues.opciones);
-  return { ok, motivo: ok ? null : 'firma-distinta', antes, despues: ok ? undefined : despues };
+  if (conEnter) teclado.continuarEnter = { ok: ok && guardadaSigue, pieza, guardadaSigue };
+  return { ok, motivo: ok ? null : 'firma-distinta', conEnter, antes, despues: ok ? undefined : despues };
+}
+
+// ---------- V2-B: el teclado y la regla 4 ----------
+const teclado = { continuarEnter: null, mercado1: null, copiarEnterFinal: null, escFinal: null };
+// "1" en el mercado: un listener de captura en `window` se queda con el primer clic (y lo frena antes de que llegue al
+// boton), para ver a QUE le hizo clic la tecla sin cambiar la carrera.
+async function probarUnoEnElMercado() {
+  await page.evaluate(() => {
+    window.__clicDeLaTecla = null;
+    window.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      const card = b?.closest('.mercado-card');
+      window.__clicDeLaTecla = {
+        texto: b?.innerText.trim() ?? null,
+        atajo: b?.dataset.atajo ?? null,
+        carta: card ? [...card.parentElement.children].indexOf(card) : null
+      };
+      e.stopImmediatePropagation();
+      e.preventDefault();
+    }, { capture: true, once: true });
+    document.activeElement?.blur?.();
+  });
+  await page.keyboard.press('1');
+  await page.waitForTimeout(100);
+  const clic = await page.evaluate(() => window.__clicDeLaTecla);
+  const sigue = await piezaVisible(page);
+  teclado.mercado1 = { ok: !!clic && clic.carta === 0 && /Firmar/i.test(clic.texto ?? '') && sigue === 'mercado', clic };
+}
+// En la final: Enter sobre "Copiar..." no se va de la final (D87), y Esc no hace nada.
+async function probarTecladoEnLaFinal() {
+  const copiar = page.locator('#tarjeta button', { hasText: /Copiar/ }).first();
+  if (await copiar.count()) {
+    await copiar.focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    teclado.copiarEnterFinal = { ok: (await piezaCruda(page)) === 'final', pieza: await piezaCruda(page) };
+  } else {
+    teclado.copiarEnterFinal = { ok: null, motivo: 'sin boton Copiar' };
+  }
+  await page.evaluate(() => document.activeElement?.blur?.());
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(400);
+  teclado.escFinal = { ok: (await piezaCruda(page)) === 'final', pieza: await piezaCruda(page) };
+}
+// Regla 4 (§V.3: nada adelanta el resultado): en las primeras REGLA4_PARADAS paradas de decision/partido, a 1x, se muestrea
+// la topbar y la ficha cada 50 ms mientras la pieza es 'relato' y la pagina es la del split de la parada (la lista no se
+// achica ni cambia su primer renglon: cuando arranca el split siguiente, la ficha SI se actualiza, con lo ya contado).
+const REGLA4_PARADAS = 3;
+const regla4 = [];
+async function clicConRegla4(clic) {
+  await velocidadUno();
+  await page.waitForTimeout(ESPERA_COUNTUP_MS);
+  await page.evaluate(() => {
+    const leer = () => `${document.querySelector('.topbar')?.innerText ?? ''}\n${document.querySelector('#fichaContainer')?.innerText ?? ''}`;
+    const lista = document.querySelector('#logList');
+    const r = { antes: leer(), muestras: [], primero: lista.firstElementChild?.textContent.slice(0, 120) ?? '', n: lista.children.length, cerrada: false };
+    r.iv = setInterval(() => {
+      if (r.cerrada || document.querySelector('.shell')?.dataset.pieza !== 'relato') return;
+      const primero = lista.firstElementChild?.textContent.slice(0, 120) ?? '';
+      if (lista.children.length < r.n || (r.primero && primero !== r.primero)) { r.cerrada = true; return; }
+      r.n = lista.children.length;
+      r.primero = r.primero || primero;
+      r.muestras.push(leer());
+    }, 50);
+    window.__regla4 = r;
+  });
+  await clic();
+  await page.waitForFunction(() => { const p = document.querySelector('.shell')?.dataset.pieza; return (p && p !== 'relato') || window.__regla4.cerrada; }, null, { timeout: 120000, polling: 100 }).catch(() => {});
+  const r = await page.evaluate(() => { clearInterval(window.__regla4.iv); const { antes, muestras } = window.__regla4; return { antes, muestras }; });
+  const distintas = r.muestras.filter((m) => m !== r.antes);
+  regla4.push({ muestras: r.muestras.length, distintas: distintas.length, ejemplo: distintas[0]?.slice(0, 240) ?? null });
+  L(`## REGLA4: ${r.muestras.length} muestras durante el relato, ${distintas.length} distintas de antes del clic`);
+  await velocidadInstantanea();
 }
 
 // ---------- el tipo de parada ----------
@@ -405,7 +537,7 @@ function tipoDeParada(pieza, titulo, opts, extras = {}) {
 async function snapshot() {
   return page.evaluate(() => {
     const g = (s) => document.querySelector(s)?.innerText ?? '';
-    const h = (s) => (document.querySelector(s)?.hidden ? '' : g(s));
+    const h = (s) => { const e = document.querySelector(s); return e && e.checkVisibility({ checkVisibilityCSS: true }) ? g(s) : ''; };
     return `TOPBAR: ${g('#topbarEstado')}\nFICHA: ${g('#fichaContainer').slice(0, 900)}\nSUMMARY: ${g('#summary')} // ${g('#metaPill')}\nSERIE: ${h('#serieContexto')}\nPREVIA: ${h('#previa')}\nDECISION: ${h('#decision')}\nMINI: ${h('#minijuego')}\nMERCADO: ${h('#mercado')}\nLOG: ${g('#logList').slice(0, 4000)}`;
   });
 }
@@ -430,6 +562,12 @@ async function medirPrimera(tipo, pieza, extra = {}) {
   await captura(tipo);
   const medidas = await medir(pieza);
   const fila = { tipo, pieza, parada: paradas, step, topbar: extra.topbar ?? '', titulo: extra.titulo ?? '', ...medidas };
+  // V2-B: lo que se ve coincide con `data-pieza` (exactamente un panel de pieza visible, el suyo).
+  fila.piezaCruda = await piezaCruda(page);
+  fila.panelesVisibles = await page.evaluate(panelesVisibles);
+  fila.piezaCoincide = fila.piezaCruda
+    ? fila.panelesVisibles.length === 1 && fila.panelesVisibles[0] === PANEL_DE_PIEZA[fila.piezaCruda]
+    : null;
   fila.retomar = await retomar(pieza);
   fila.erroresEnLaParada = errs.slice(erroresAntes);
   fila.msMedicion = Date.now() - tMed;
@@ -459,7 +597,11 @@ for (let it = 0; it < 3000; it++) {
     const tx = await page.innerText('#tarjeta').catch(() => '');
     L('TARJETA_FINAL: ' + tx.replace(/\n+/g, ' | '));
     if (MODO === 'capturas') await captura('tarjeta-final', { completa: true });
-    else await medirPrimera('tarjeta-final', 'tarjeta', { topbar, titulo: tx.split('\n')[0] });
+    else {
+      // V2-B: el teclado en la final ANTES de medir (medir prueba retomar, que recarga la pagina).
+      await probarTecladoEnLaFinal();
+      await medirPrimera('tarjeta-final', 'tarjeta', { topbar, titulo: tx.split('\n')[0] });
+    }
     break;
   }
 
@@ -499,8 +641,10 @@ for (let it = 0; it < 3000; it++) {
     paradas++; step++;
     visitadas.mercado = (visitadas.mercado || 0) + 1;
     if (visitadas.mercado === 1) {
-      if (MODO === 'recorrido') await medirPrimera('mercado', 'mercado', { topbar, titulo: await page.innerText('#mercadoTitle').catch(() => '') });
-      else { await captura('mercado', { completa: true }); capturadas.add('mercado'); }
+      if (MODO === 'recorrido') {
+        await medirPrimera('mercado', 'mercado', { topbar, titulo: await page.innerText('#mercadoTitle').catch(() => '') });
+        await probarUnoEnElMercado();
+      } else { await captura('mercado', { completa: true }); capturadas.add('mercado'); }
     }
     const cartas = await page.$$eval('#mercadoGrid .mercado-card', (cs) => cs.map((c) => c.innerText.replace(/\n+/g, ' | ')));
     const fichaTop = (snap.match(/^FICHA: ([\s\S]{0,400})/m) || [])[1] || '';
@@ -523,18 +667,19 @@ for (let it = 0; it < 3000; it++) {
     continue;
   }
 
-  if (pieza === 'decision') {
+  // V2-B: el partido (fecha marcada, plan de Fearless, decisivo, Swiss) es su propia pieza, con el mismo panel `#decision`.
+  if (pieza === 'decision' || pieza === 'partido') {
     paradas++; step++;
     const sel = '#decisionOptions .option-btn:not([disabled])';
     const opts = await leerOpciones(sel);
     const t = await page.innerText('#decisionTitle').catch(() => '');
     if (!opts.length) { L('!! decision sin opciones'); await captura('decision-sin-opciones'); stuck += 3; continue; }
-    const serieViva = await page.evaluate(() => { const e = document.querySelector('#serieContexto'); return !!e && !e.hidden; });
+    const serieViva = await page.evaluate(() => { const e = document.querySelector('#serieContexto'); return !!e && e.checkVisibility({ checkVisibilityCSS: true }); });
     const tipoP = tipoDeParada('decision', t, opts, { topbar });
     const primera = !visitadas[tipoP];
     visitadas[tipoP] = (visitadas[tipoP] || 0) + 1;
     if (MODO === 'recorrido') {
-      if (primera) await medirPrimera(tipoP, 'decision', { topbar, titulo: t });
+      if (primera) await medirPrimera(tipoP, pieza, { topbar, titulo: t });
     } else {
       if (tipoP === 'decision' && !capturadas.has('decision')) { await captura('decision-generica', { completa: true }); capturadas.add('decision'); }
       if (serieViva && !capturadas.has('serie')) { await captura('serie-primera', { completa: true }); capturadas.add('serie'); }
@@ -560,7 +705,9 @@ for (let it = 0; it < 3000; it++) {
       }
     }
     L(`[${step}] ${topbar} | edad ${edad} | DECISION(${tipoP}) "${t}"` + opts.map((o, q) => `\n    ${q === idx ? '>>' : '  '} [${sc[q].s.toFixed(1)}] ${o.full.slice(0, 330)}`).join(''));
-    await page.locator(sel).nth(idx).click();
+    const clic = () => page.locator(sel).nth(idx).click();
+    if (MODO === 'recorrido' && paradas > 1 && regla4.length < REGLA4_PARADAS) await clicConRegla4(clic);
+    else await clic();
     await page.waitForTimeout(60);
     continue;
   }
@@ -589,7 +736,11 @@ const informe = {
   totales: {
     paradas,
     tiposMedidos: filas.length,
-    retomarFallidos: filas.filter((f) => !f.retomar.ok).map((f) => f.tipo),
+    retomarFallidos: filas.filter((f) => f.retomar.ok === false).map((f) => f.tipo),
+    piezasVistas: [...new Set(filas.map((f) => f.piezaCruda))],
+    piezaNoCoincide: filas.filter((f) => f.piezaCoincide === false).map((f) => `${f.tipo}:${f.piezaCruda}:${f.panelesVisibles.join('+')}`),
+    teclado,
+    regla4: { paradas: regla4.length, muestras: regla4.reduce((a, r) => a + r.muestras, 0), distintas: regla4.reduce((a, r) => a + r.distintas, 0), detalle: regla4 },
     scrollHorizontal: filas.filter((f) => f.scrollHorizontal).map((f) => f.tipo),
     ultimoBotonFueraDelViewport: filas.filter((f) => f.ultimoBotonEntra === false).map((f) => f.tipo),
     errores: erroresReales.length,
@@ -603,4 +754,11 @@ else fs.writeFileSync(path.join(SALIDA, 'capturas.json'), JSON.stringify({ meta:
 const ls = await page.evaluate(() => { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); o[k] = localStorage.getItem(k); } return o; }).catch(() => ({}));
 fs.writeFileSync(path.join(SALIDA, 'localStorage.json'), JSON.stringify(ls));
 console.log(`RECORRIDO ${MODO} seed=${SEED} ${ANCHO}x${ALTO}: paradas=${paradas} tipos=${JSON.stringify(visitadas)} medidas=${filas.length} errores=${erroresReales.length} salida=${SALIDA}`);
+if (MODO === 'recorrido') {
+  const t = informe.totales;
+  console.log(`  piezas=${JSON.stringify(t.piezasVistas)} piezaNoCoincide=${JSON.stringify(t.piezaNoCoincide)} retomarFallidos=${JSON.stringify(t.retomarFallidos)}`);
+  console.log(`  regla4: ${t.regla4.paradas} paradas, ${t.regla4.muestras} muestras durante el relato, ${t.regla4.distintas} con la ficha/topbar distinta`);
+  console.log(`  teclado: ${Object.entries(teclado).map(([k, v]) => `${k}=${v ? v.ok : 'sin probar'}`).join(' ')}`);
+  console.log(`  numerosVisibles: ${filas.map((f) => `${f.tipo}=${f.numerosVisibles}`).join(' ')}`);
+}
 await browser.close();
