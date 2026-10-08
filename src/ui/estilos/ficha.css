@@ -229,25 +229,11 @@
 .ficha-badge--duelo-ganando { border-color: var(--up); color: var(--up); }
 .ficha-badge--duelo-perdiendo { border-color: var(--danger); color: var(--danger); }
 
-.ficha-pool {
-  margin-top: var(--s-3);
-  font-size: var(--fs-2);
-  color: var(--ink-dim);
-  font-variant-numeric: tabular-nums;
-}
-
 /* --- Contrato y valor de mercado (fase T2) ---------------------------------
    Existían en `career.contrato` y `valorDeMercado(state)` desde la fase 9 y
    nunca se dibujaban en ningún lado. Telemetría, no una caja más: mismo
    patrón que `.ficha-stat` (T0b) — label chico arriba, dato abajo. */
-.ficha-contrato,
-.ficha-valor-mercado {
-  margin-top: var(--s-3);
-  padding-top: var(--s-2);
-  border-top: 1px solid var(--line-faint);
-}
-.ficha-contrato-label,
-.ficha-valor-mercado-label {
+.ficha-contrato-label {
   font-family: var(--font-display);
   font-size: var(--fs-0);
   font-weight: 600;
@@ -298,28 +284,6 @@
   font-size: var(--fs-0);
 }
 .ficha-marca--peligro { border-color: var(--warn); color: var(--warn); }
-
-/* Mentalidad y Hype (fase 9R.2): la barra que te mata tiene que verse venir. */
-.ficha-animo {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-4);
-  margin-top: var(--s-3);
-  font-family: var(--font-display);
-  font-size: var(--fs-2);
-  font-weight: 600;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  color: var(--ink-dim);
-}
-.ficha-animo--peligro .ficha-animo-celda:first-child {
-  color: var(--danger);
-  animation: latir-peligro 2s var(--ease-in-out) infinite;
-}
-@keyframes latir-peligro {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.55; }
-}
 
 /* --- Ver carrera / Momentos ----------------------------------------------- */
 

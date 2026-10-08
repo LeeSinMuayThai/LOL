@@ -215,9 +215,6 @@
   font-size: var(--fs-0);
   color: var(--ink-mute);
 }
-.meta-tierlist { display: grid; gap: 2px; font-size: var(--fs-1); }
-.meta-tierlist-fila { display: flex; align-items: center; gap: var(--s-2); padding: 2px var(--s-1); color: var(--ink-mute); }
-.meta-tierlist-fila--pool { color: var(--ink); background: var(--gold-fill); border-radius: var(--r-sharp); }
 .meta-tier {
   display: inline-grid;
   place-items: center;
@@ -233,7 +230,6 @@
 .meta-tier--A { background: var(--up); }
 .meta-tier--B { background: var(--ink-mute); }
 .meta-tier--C { background: var(--line-strong); color: var(--ink); }
-.meta-tierlist-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* --- Generación (deuda D8) --------------------------------------------- */
 

@@ -160,24 +160,6 @@
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.7; }
 }
-.serie-bracket-titulo-solo {
-  margin-bottom: var(--s-2);
-  font-family: var(--font-display);
-  font-size: var(--fs-2);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
-  color: var(--gold);
-}
-
-.serie-marcador {
-  margin-bottom: var(--s-3);
-  font-family: var(--font-display);
-  font-size: var(--fs-5);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
 .serie-camino { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .serie-mapa {
   padding: 2px var(--s-2);
@@ -187,14 +169,6 @@
 }
 .serie-mapa--ganado  { background: var(--up-fill); color: var(--up); }
 .serie-mapa--perdido { background: var(--down-fill); color: var(--down); }
-
-.serie-quemados {
-  margin-top: var(--s-2);
-  font-size: var(--fs-0);
-  color: var(--ink-mute);
-  text-decoration: line-through;
-  text-decoration-color: var(--line-strong);
-}
 
 .serie-cierres-lista {
   margin-top: var(--s-2);
