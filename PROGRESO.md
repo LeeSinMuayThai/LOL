@@ -34,6 +34,67 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-08 — FASE V, V7 (candado y limpieza) y el cierre de la fase, en `v-integracion` (PLAN.md §V.7)
+
+**V7** (`9c64746`; worker Sonnet high, sin revisor aparte: las capturas idénticas son la prueba, y el supervisor
+comprobó que ningún JS arma los selectores borrados):
+- **CSS muerto:** sale el del layout viejo (`.summary`, `.meta-pill`, los tokens de los rieles y sus media queries) y el
+  que ningún JS pinta (`.ficha-pool`, `.ficha-contrato`, `.ficha-animo`, `.meta-tierlist*`, `.serie-marcador`,
+  `.serie-quemados`, `.minijuego-card-count`, `.cuarto-carrera`).
+  - Las hojas pasan de 5356 a 5206 líneas.
+  - Las capturas de `recorrido.mjs --modo capturas` (seed 25, 1440 y 390) quedan idénticas byte a byte.
+- **D47:** se borra `.ticks`, que nunca se usó (la lista agrupada de 11 selectores queda como única fuente). Se borran
+  también `.corte-sm` y `.bisel`, sin uso.
+- **D48, con una regla medible** (`DISENO.md` §4.6):
+  - **La regla:** contraste WCAG ≥ 4,5:1 para el texto, ≥ 3:1 para el texto grande y para los adornos de estado.
+  - **El comando:** `node src/dev/contraste.mjs --puerto P --seed 25`, a mano; no es un check.
+  - **El arreglo:** `--ink-mute` pasa de #5e6a78 a #7a8a9c, con la misma tonalidad.
+  - **Lo medido:** los nodos que no llegaban bajan de 286 a 76 a 1440, y de 239 a 76 a 390.
+  - **Los 76 que quedan son decisiones de diseño que un token no arregla:** la magnitud de los chips de la previa
+    codificada con `opacity`, el rojo `--danger` como texto sobre el cian de una opción en hover (3,28:1) y
+    `.campeon-tile-ini`. Pasan a D99.
+- **Documentación:** `DISENO.md` §4.5 (la pantalla de hoy, como mapa) y §4.6; `CONCEPTO.md` "La pantalla: una cosa por
+  vez" (§3) y "El Golden Road" (§9).
+- **`dist/`:** 2617 KB, con techo de 2700 (D49).
+
+**El cierre, verificado por el supervisor** sobre una copia `git archive` de `9c64746`:
+- `validate.js --rapido`: 376 OK, 0 FAIL. Los 183 SKIP son los lentos.
+- `--solo` de los lentos de la fase, todos OK:
+  - "V2 escena": ninguna pausa del motor queda sin pieza;
+  - "V5 carrera": el dibujo coincide con el registro;
+  - "V3e";
+  - "V4" (3 casos);
+  - "K0": el espejo de los tiempos en `simulate.js`;
+  - "GR-m": el Golden Road coincide con el motor;
+  - "K1 versión": `HUELLA_JUEGO` 79304237 'K6d', sin cambio.
+- **`simulate.js 1000`:** 0 crashes, en 80 s. La línea del Golden Road da 0 de 1000, como se espera: por defecto son
+  15 splits con el bot `equilibrado`, una carrera que casi no llega a tier 1. Con 1500 × 60, GR-m midió 2,6% con
+  `criterio`.
+- **Determinismo:** `simulate.js 100 60 criterio` dos veces da una salida idéntica (2684 líneas, diff vacío).
+- `build.js` OK.
+- **`recorrido.mjs`** (seeds 25, 39 y 152, a 1440×900 y 390×844; la 39 y la 152 con `--max-paradas 80`): las 6
+  corridas dan 0 errores y retomar funciona en todas las paradas; en la regla 4, 0 de 940 muestras con la franja o el
+  acompañante cambiando durante el relato. El acompañante, los cuartos y la posición dan 0 fallas, y el teclado da
+  todo `true` donde se pudo probar. Los números a la vista llegan como mucho a 46 a 1440 (el retiro de la seed 152,
+  con el tablero de la serie) y a 30 a 390 (el plan de serie de la seed 25).
+- **Las capturas las miró el supervisor.** Salió una cosa menor que va a V8 (D100): en la ficha del amateur (el
+  acompañante Vos y el cuarto Vos), los LP cuentan desde el valor anterior aunque hayas cambiado de división. Al subir
+  de Oro II 27 LP a Oro I 15 LP, el número baja de 27 a 15.
+- **La validación completa no se corrió, a propósito.** El 2026-10-08 el usuario pidió no frenar en "los checks de 3
+  horas": la completa se corre cuando una fase toca el motor o el balance.
+  - La FASE V es pantalla, más un registro aditivo sin `rng` (GR-m), y `HUELLA_JUEGO` quedó idéntica.
+  - Los checks de banda del motor darían lo mismo que en el cierre de K (550 OK / 0 FAIL).
+  - La corre la próxima fase que toque el motor.
+
+**El juego del cierre se sirve al usuario (C2)** en http://localhost:8090, desde esa misma copia.
+
+**Lo que queda de la FASE V:**
+- **El merge a `fase-9r`.** El push espera un OK nuevo del usuario.
+- **V8:** calibrar con lo que diga el usuario en C2 (D98, la pausa del cierre de año; D99, el contraste residual; D100).
+- **Dos metas de pantalla que no se forzaron**, y por qué:
+  - el plan de serie a 390 muestra 26-30 números (meta ≤ 25), porque el % por mapa es el plan;
+  - el retiro de la seed 152 a 1440 muestra 46 (meta ≤ 45), por el tablero de la serie en el acompañante.
+
 ### 2026-10-08 — FASE V, V4: el movimiento y el ritmo, en `v-integracion` (PLAN.md §V.7)
 
 **Lo que midió el worker antes de decidir** (100 carreras × 60 splits): la parada del motor de `edadCierre` no frena
