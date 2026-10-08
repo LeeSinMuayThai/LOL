@@ -21,6 +21,10 @@
 //   guardada; (g) en la primera parada de cada tipo, los 6 cuartos abren con clic y con su letra, Esc los cierra, el foco
 //   vuelve a la parada y la parada es la misma; (h) las letras no abren nada en el inicio ni en el minijuego; (i) con un
 //   cuarto abierto el relato se pausa (no entra ningun beat) y al cerrarlo sigue.
+//   (f2) en CADA parada, DONDE esta: desde 1180 px y con acompañante, el aside queda a la derecha del escenario (su `left` >= el
+//   `right` del escenario) y arranca a su altura (±40 px); sin acompañante el escenario queda centrado (±40 px); en todos los
+//   tamaños el escenario mide <= `--escenario-columna` (720) + el padding de `.shell-cuerpo`. Lo puso la ronda en que un `}` de mas
+//   en shell.css dejo el escenario en x=0 y el acompañante debajo, con todo "presente" y nada rojo.
 //   §V.8 lo corre con las seeds 25, 39 y 152 a 1440x900, 1024x768 (desde V2-C) y 390x844.
 // --modo capturas: velocidad INST + reduced-motion + fuentes cargadas, y capturas fijas (inicio con el draft completo, la
 //   primera decision generica, el primer mercado, la primera serie, el primer minijuego antes de "¡Vamos!" y con el
@@ -574,7 +578,7 @@ const cuartoAbierto = () => page.evaluate(() => document.querySelector('#cuarto'
 
 // (f) En cada parada: el acompañante es el de `acompananteDe` sobre la carrera guardada (en una parada, el estado de la
 // parada: es lo mismo que la `vista`), y se ve donde tiene que verse.
-const acompanantes = { paradas: 0, fallas: [], porTipo: {} };
+const acompanantes = { paradas: 0, fallas: [], porTipo: {}, posiciones: 0, posicionFallas: [] };
 async function probarAcompanante() {
   const r = await page.evaluate(async () => {
     const aside = document.querySelector('#acompanante');
@@ -596,13 +600,36 @@ async function probarAcompanante() {
       && (!asideVisible || aside.children.length > 0)
       && chipVisible === chipEsperado
       && (!chipVisible || chip.dataset.cuarto === esperado.cuarto);
-    return { ok, pieza, tipo, esperado, asideVisible, chipVisible };
+    // (f2) DONDE esta cada cosa (una hoja de estilos rota deja todo "presente" pero en cualquier lado: V2-C, la ronda del
+    // `}` de mas en shell.css puso el escenario en x=0 y el acompañante debajo, y nada de lo de arriba lo noto). Desde 1180 px,
+    // con acompañante: va a la derecha del escenario y arranca a su altura (±40). Sin el: el escenario queda centrado (±40).
+    // Siempre: el escenario no pasa de la columna (720) mas el padding del cuerpo.
+    const rect = (e) => { const r = e.getBoundingClientRect(); return { left: Math.round(r.left), right: Math.round(r.right), top: Math.round(r.top), width: Math.round(r.width) }; };
+    const esc = rect(document.querySelector('#escenario'));
+    const cuerpo = document.querySelector('.shell-cuerpo');
+    const estiloCuerpo = getComputedStyle(cuerpo);
+    const relleno = parseFloat(estiloCuerpo.paddingLeft) + parseFloat(estiloCuerpo.paddingRight);
+    const columna = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--escenario-columna')) || 720;
+    const vw = document.documentElement.clientWidth;
+    const asideRect = rect(aside);
+    const conAcompanante = asideVisible && Boolean(tipo);
+    const fallasPos = [];
+    if (esc.width > columna + relleno + 1) fallasPos.push(`el escenario mide ${esc.width} (> ${columna} + ${relleno})`);
+    if (conAcompanante) {
+      if (asideRect.left < esc.right) fallasPos.push(`el acompañante (left ${asideRect.left}) no esta a la derecha del escenario (right ${esc.right})`);
+      if (Math.abs(asideRect.top - esc.top) > 40) fallasPos.push(`el acompañante empieza en y=${asideRect.top} y el escenario en y=${esc.top}`);
+    } else if (Math.abs((esc.left + esc.right) / 2 - vw / 2) > 40) {
+      fallasPos.push(`el escenario no esta centrado (centro ${(esc.left + esc.right) / 2}, ventana ${vw / 2})`);
+    }
+    return { ok, pieza, tipo, esperado, asideVisible, chipVisible, posicion: { ok: fallasPos.length === 0, fallas: fallasPos, esc, aside: asideRect, conAcompanante } };
   });
   if (!r) return;
   acompanantes.paradas++;
   const clave = r.tipo ?? 'ninguno';
   acompanantes.porTipo[clave] = (acompanantes.porTipo[clave] ?? 0) + 1;
   if (!r.ok) { acompanantes.fallas.push(r); L(`!! ACOMPANANTE: ${JSON.stringify(r)}`); }
+  acompanantes.posiciones++;
+  if (!r.posicion.ok) { acompanantes.posicionFallas.push({ pieza: r.pieza, ...r.posicion }); L(`!! POSICION: ${JSON.stringify(r.posicion)}`); }
 }
 
 // (g) Los 6 cuartos con clic y con su letra; Esc cierra, el foco vuelve a la parada y la parada es la misma.
@@ -948,6 +975,7 @@ const informe = {
     ultimoAtajoFueraDelViewport: filas.filter((f) => f.ultimoAtajoEntra === false).map((f) => f.tipo),
     // V2-C
     acompanante: { paradas: acompanantes.paradas, porTipo: acompanantes.porTipo, fallas: acompanantes.fallas.length, detalle: acompanantes.fallas.slice(0, 10) },
+    posicion: { paradas: acompanantes.posiciones, fallas: acompanantes.posicionFallas.length, detalle: acompanantes.posicionFallas.slice(0, 10) },
     cuartos: { paradas: cuartos.length, fallas: cuartos.filter((c) => !c.ok).length, detalle: cuartos },
     pausa,
     errores: erroresReales.length,
@@ -966,6 +994,7 @@ if (MODO === 'recorrido') {
   console.log(`  piezas=${JSON.stringify(t.piezasVistas)} piezaNoCoincide=${JSON.stringify(t.piezaNoCoincide)} retomarFallidos=${JSON.stringify(t.retomarFallidos)}`);
   console.log(`  regla4: ${t.regla4.paradas} paradas, ${t.regla4.muestras} muestras durante el relato, ${t.regla4.distintas} con la franja/acompañante distinta`);
   console.log(`  acompanante: ${t.acompanante.paradas} paradas, ${t.acompanante.fallas} fallas ${JSON.stringify(t.acompanante.porTipo)} | cuartos: ${t.cuartos.paradas} paradas, ${t.cuartos.fallas} fallas | pausa=${pausa ? pausa.ok : 'sin probar'}`);
+  console.log(`  posicion (escenario centrado o acompañante a la derecha, ancho <= columna): ${t.posicion.paradas} paradas, ${t.posicion.fallas} fallas`);
   console.log(`  teclado: ${Object.entries(teclado).map(([k, v]) => `${k}=${v ? v.ok : 'sin probar'}`).join(' ')}`);
   console.log(`  numerosVisibles: ${filas.map((f) => `${f.tipo}=${f.numerosVisibles}`).join(' ')}`);
 }
