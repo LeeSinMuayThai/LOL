@@ -8,7 +8,7 @@
 
 import { BALANCE } from '../data/balance.js';
 import {
-  filaDeSplitDelAnio, splitEsPrimeroEnPrimera, tituloDePrimeraDelAnio, mundialGanadoEnElAnio, TIER_DE_PRIMERA
+  filaDeSplitDelAnio, splitEsPrimeroEnPrimera, splitsDelAnioSonDePrimero, tituloDePrimeraDelAnio, mundialGanadoEnElAnio, TIER_DE_PRIMERA
 } from './registro.js';
 
 // En qué ventana del año está el jugador MIENTRAS decide, no cuando abrió el split. `contexto.ventana` es la del
@@ -76,13 +76,16 @@ export function seguimientoGoldenRoad(state) {
   const { splitCount } = state.player;
   const cerro = anioBase + Math.floor(splitCount / porAnio) > anio;
 
-  const splits = Array.from({ length: porAnio }, (_, split) => {
+  const porFila = Array.from({ length: porAnio }, (_, split) => {
     const fila = filaDeSplitDelAnio(registro, anio, split);
     if (fila) {
       return splitEsPrimeroEnPrimera(fila) ? 'si' : 'no';
     }
     return (anio - anioBase) * porAnio + split < splitCount ? 'no' : 'pendiente';
   });
+  // Los tres en 'si' son los tres splits del veredicto (`splitsDelAnioSonDePrimero`, la misma regla): con una fila de más en el
+  // año (un registro roto) el año no es un Golden Road, y el seguimiento no puede decir lo contrario.
+  const splits = porFila.every((item) => item === 'si') && !splitsDelAnioSonDePrimero(registro, anio) ? porFila.map(() => 'no') : porFila;
 
   const mundialDelAnio = state.internacional && state.internacional.anio >= anio ? state.internacional : null;
   const liga = tituloDePrimeraDelAnio(registro, anio) ? 'si' : (cerro || mundialDelAnio ? 'no' : 'pendiente');

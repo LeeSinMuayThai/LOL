@@ -21488,6 +21488,11 @@ checkLento(`K4c meta del ritmo (criterio, ${CARRERAS_METAS_B} × ${SPLITS_LOTE_K
 const { migrarDe10 } = await import('../core/guardado.js');
 const { isDeepStrictEqual: sonIgualesK4cG } = await import('util');
 const { planInicial: planInicialK4cG, IDS_PLAN: IDS_PLAN_K4cG } = await import('../core/rutinas.js');
+// FASE V (GR-m): `career.registro.porSplit` no existe en ninguna versión anterior a la 15, así que los guardados viejos que arman estos
+// checks no la traen y `migrarDe14` la arranca vacía (`[]`): el estado de comparación es el real con la tabla vacía.
+function sinFilasGRM(state) {
+  return { ...state, career: { ...state.career, registro: { ...state.career.registro, porSplit: [] } } };
+}
 const FORMA_DE_LA_VERSION_10_K4cG = '7128c450fa6c';
 const PREPARACION_DE_SPLIT_VIEJA_K4cG = 4;
 const SEEDS_GUARDADO_10_K4cG = [1, 2, 3, 4];
@@ -21503,6 +21508,7 @@ function guardadoDeLaVersion10K4cG(state, rng) {
   delete datos.state.player.desgaste;
   delete datos.state.flags.splitsTier2SinOfertaTier1;
   delete datos.state.career.splitPrimerContratoTier2;
+  delete datos.state.career.registro.porSplit; // GR-m (15)
   datos.state.flags.preparacionDeSplit = PREPARACION_DE_SPLIT_VIEJA_K4cG;
   // K4c (revisión): la 10 tampoco escribía `flags.pruebasFallidas` (la migración lo arranca vacío).
   delete datos.state.flags.pruebasFallidas;
@@ -21551,11 +21557,11 @@ check('K4c guardado VERSION 11: la forma de la 10 sigue registrada, y un guardad
         if ('preparacionDeSplit' in datos.state.flags || !IDS_PLAN_K4cG.includes(datos.state.player.planAnual)) {
           throw new Error(`seed ${seed}, split ${i}: sin migrar (preparacionDeSplit ${'preparacionDeSplit' in datos.state.flags}, planAnual ${datos.state.player.planAnual})`);
         }
-        if (!sonIgualesK4cG(datos.state, comoJsonK4cG(state))) {
+        if (!sonIgualesK4cG(datos.state, comoJsonK4cG(sinFilasGRM(state)))) {
           throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el del guardado de la 11`);
         }
         // Y sigue igual: el mismo próximo split (estado, logs y RNG) que el de la versión nueva.
-        const seguido = avanzarSplitAuto(state, conElRngDeK4cG(seed, rng.estado()));
+        const seguido = avanzarSplitAuto(sinFilasGRM(state), conElRngDeK4cG(seed, rng.estado()));
         const rngMigrado = conElRngDeK4cG(datos.seed, datos.rngEstado);
         const recargado = avanzarSplitAuto(datos.state, rngMigrado);
         if (!sonIgualesK4cG(comoJsonK4cG(seguido), comoJsonK4cG(recargado))) {
@@ -21593,6 +21599,7 @@ function guardadoDeLaVersion11K5CR(state, rng) {
   delete datos.state.flags.splitsTier2SinOfertaTier1;
   delete datos.state.career.splitPrimerContratoTier2;
   delete datos.state.career.splitsRetirado;
+  delete datos.state.career.registro.porSplit; // GR-m (15)
   return JSON.stringify(datos);
 }
 
@@ -21622,7 +21629,7 @@ check('K5c-R guardado VERSION 12: la forma de la 11 sigue registrada, y un guard
         throw new Error(`seed ${seed}, split ${i}: el migrado trae la cuenta de la presión en ${datos.state.flags.splitsTier2SinOfertaTier1} y debería traer 0`);
       }
       const realSinRetirado = {
-        ...state, career: { ...state.career, splitsRetirado: 0 }, flags: { ...state.flags, splitsTier2SinOfertaTier1: 0 }
+        ...sinFilasGRM(state), career: { ...sinFilasGRM(state).career, splitsRetirado: 0 }, flags: { ...state.flags, splitsTier2SinOfertaTier1: 0 }
       };
       if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(realSinRetirado)))) {
         throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el del guardado de la 12`);
@@ -21658,6 +21665,7 @@ function guardadoDeLaVersion12K6B(state, rng) {
   const datos = JSON.parse(serializarGuardado(state, rng));
   datos.version = 12;
   for (const clave of Object.keys(FOTOS_VACIAS_K6B)) delete datos.state.flags[clave];
+  delete datos.state.career.registro.porSplit; // GR-m (15)
   return JSON.stringify(datos);
 }
 const tieneFotoK6B = (st) => st.flags.seguisFirma != null || st.flags.finMercadoFirma != null || st.flags.vueltaFirma != null
@@ -21679,7 +21687,7 @@ check('K6b guardado VERSION 13: la forma de la 12 (la de main) sigue registrada,
       if (datos === null) {
         throw new Error(`seed ${seed}, split ${i}: el guardado de VERSION 12 no cargó`);
       }
-      const realSinFotos = { ...state, flags: { ...state.flags, ...FOTOS_VACIAS_K6B } };
+      const realSinFotos = { ...sinFilasGRM(state), flags: { ...state.flags, ...FOTOS_VACIAS_K6B } };
       if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(realSinFotos)))) {
         throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el de la 13 con las fotos en null`);
       }
@@ -21720,6 +21728,7 @@ function guardadoDeLaVersion13K6D(state, rng) {
   const datos = JSON.parse(serializarGuardado(state, rng));
   datos.version = 13;
   for (const clave of Object.keys(NUEVOS_VACIOS_K6D)) delete datos.state.flags[clave];
+  delete datos.state.career.registro.porSplit; // tampoco existía en la 13: `migrarDe14` la arranca vacía en la cadena
   return JSON.stringify(datos);
 }
 check('K6d guardado VERSION 14: la forma de la 13 (la de fase-9r) sigue registrada, y un guardado de la 13 carga completo (sin cierres avisados ni oferta guardada) y sigue igual que el de la 14', () => {
@@ -21737,7 +21746,7 @@ check('K6d guardado VERSION 14: la forma de la 13 (la de fase-9r) sigue registra
       if (datos === null) {
         throw new Error(`seed ${seed}, split ${i}: el guardado de VERSION 13 no cargó`);
       }
-      const realSinLoNuevo = { ...state, flags: { ...state.flags, ...NUEVOS_VACIOS_K6D } };
+      const realSinLoNuevo = { ...sinFilasGRM(state), flags: { ...state.flags, ...NUEVOS_VACIOS_K6D } };
       if (!sonIgualesK4cG(datos.state, JSON.parse(JSON.stringify(realSinLoNuevo)))) {
         throw new Error(`seed ${seed}, split ${i}: el estado migrado no es el de la 14 sin cierres avisados ni oferta guardada`);
       }
@@ -21780,7 +21789,6 @@ function guardadoDeLaVersion14GRM(state, rng) {
   delete datos.state.career.registro.porSplit;
   return JSON.stringify(datos);
 }
-const sinFilasGRM = (state) => ({ ...state, career: { ...state.career, registro: { ...state.career.registro, porSplit: [] } } });
 check('GR-m guardado VERSION 15: la forma de la 14 (la de v-integracion) sigue registrada, y un guardado de la 14 carga completo (sin las filas de los splits ya jugados) y sigue igual que el de la 15', () => {
   if (VERSION_GUARDADO < 15 || FORMAS_CONOCIDAS[14] !== '1ef92b3fd9be' || FORMAS_CONOCIDAS[15] === undefined || FORMAS_CONOCIDAS[15] === FORMAS_CONOCIDAS[14]) {
     throw new Error(`VERSION ${VERSION_GUARDADO}, forma de la 14 ${FORMAS_CONOCIDAS[14]}, forma de la 15 ${FORMAS_CONOCIDAS[15]}`);
@@ -21931,6 +21939,7 @@ check('GR-m Golden Road: la medalla es lo que cuenta el motor (esGoldenRoad arma
   let armados = 0;
   let intermedios = 0;
   let filasVistas = 0;
+  let filasContraElMotor = 0;
   let finales = 0;
   let pausas = 0;
   const etapaDe = (sistemaId) => ETAPAS_SPLIT.findIndex((etapa) => etapa.id === sistemaId);
@@ -21956,9 +21965,22 @@ check('GR-m Golden Road: la medalla es lo que cuenta el motor (esGoldenRoad arma
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
     const vistos = new Map(); // año -> los ítems del seguimiento la última vez que se lo vio
+    let escritas = 0; // filas de porSplit que ya se compararon contra lo que jugó el motor
     for (let i = 0; i < SPLITS_GOLDEN_ROAD_GRM; i += 1) {
       state = jugarSplitObservandoGRM(state, rng, alPausar);
       const cuando = `seed ${seed}, split ${state.player.splitCount}`;
+
+      // La fila nueva dice lo que el motor jugó: la posición de `career.temporada` (que `systems/temporada.js` dejó y `rendimiento`
+      // leyó) y los equipos de su tabla. Seguimiento y veredicto leen las mismas filas: sin esto, una fila que miente pasaría.
+      const escritasAhora = state.career.registro.porSplit;
+      for (const fila of escritasAhora.slice(escritas)) {
+        const jugada = state.career.temporada;
+        if (fila.posicion !== jugada.posicion || (jugada.tabla.length > 0 && fila.equipos !== jugada.tabla.length)) {
+          throw new Error(`${cuando}: la fila ${JSON.stringify(fila)} no es lo que jugó el motor (posición ${jugada.posicion}, ${jugada.tabla.length} equipos en la tabla)`);
+        }
+        filasContraElMotor += 1;
+      }
+      escritas = escritasAhora.length;
       const { registro } = conSplitPendienteAsentadoGRM(state).career;
 
       // Una fila por split jugado en una tabla, en orden y bien formada.
@@ -22071,10 +22093,10 @@ check('GR-m Golden Road: la medalla es lo que cuenta el motor (esGoldenRoad arma
       finales += 1;
     }
   }
-  if (cierres < 20 || armados !== cierres || intermedios < 40 || pausas < 40 || filasVistas === 0 || finales < 10) {
-    throw new Error(`check vacío: ${cierres} cierres de año en primera (hacen falta 20), ${armados} armados, ${intermedios} estados a mitad de año (40), ${pausas} pausas en primera (40), ${finales} carreras terminadas (10)`);
+  if (cierres < 20 || armados !== cierres || intermedios < 40 || pausas < 40 || filasVistas === 0 || filasContraElMotor < 100 || finales < 10) {
+    throw new Error(`check vacío: ${cierres} cierres de año en primera (hacen falta 20), ${armados} armados, ${intermedios} estados a mitad de año (40), ${pausas} pausas en primera (40), ${finales} carreras terminadas (10), ${filasContraElMotor} filas contra el motor (100)`);
   }
-  console.log(`      ${variantes.length} variantes sin un hecho; ${SEEDS_GOLDEN_ROAD_GRM.length} carreras: ${cierres} cierres de año en primera contra goldenRoads, ${intermedios} estados a mitad de año, ${pausas} pausas del motor en primera, ${finales} escalones contra la tarjeta`);
+  console.log(`      ${variantes.length} variantes sin un hecho; ${SEEDS_GOLDEN_ROAD_GRM.length} carreras: ${cierres} cierres de año en primera contra goldenRoads, ${intermedios} estados a mitad de año, ${pausas} pausas del motor en primera, ${filasContraElMotor} filas de porSplit contra lo que jugó el motor, ${finales} escalones contra la tarjeta`);
 });
 
 // K6d (integración; el FAIL de K5c-R en la seed 9 con P7a prendida): volver del retiro corta la racha en rojo (`flags.splitsMentalBajo`,
@@ -22234,7 +22256,7 @@ check('K4c guardado VERSION 11: un guardado de la 10 parado en la pausa de la pr
           const respuesta = sistemaId === 'practica' ? { opcionId: 'seguir' } : sistemaPorId(sistemaId).resolverAuto(legado.state, decision, rngLegado);
           legado = resolverDecision(legado.state, respuesta, rngLegado);
         }
-        const sinPausa = avanzarSplitAuto(state, conElRngDeK4cG(seed, estadoAntes));
+        const sinPausa = avanzarSplitAuto(sinFilasGRM(state), conElRngDeK4cG(seed, estadoAntes));
         // La pausa vieja gastó una interrupción del cupo del split (`presupuesto.gastadas`); lo demás es idéntico.
         const sinCupo = (estado) => ({ ...estado, presupuesto: undefined });
         if (!sonIgualesK4cG(comoJsonK4cG(sinCupo(legado.state)), comoJsonK4cG(sinCupo(sinPausa.state))) || !JSON.stringify(legado.state.logs).includes('Entrenaste según el plan del año')) {
