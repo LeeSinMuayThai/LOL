@@ -81,7 +81,7 @@ const memoriaDeFicha = new WeakMap();
 function memoriaDe(dueno, state) {
   let memoria = memoriaDeFicha.get(dueno);
   if (!memoria || memoria.seed !== state.seed) {
-    memoria = { seed: state.seed, nivel: null, lp: null, abiertos: new Map() };
+    memoria = { seed: state.seed, nivel: null, lp: null, escalon: null, abiertos: new Map() };
     memoriaDeFicha.set(dueno, memoria);
   }
   return memoria;
@@ -186,8 +186,12 @@ function crearRankedHero(state, modulos, memoria) {
   num.className = 'num';
   // Sin valor anterior en este contenedor (la primera vez que se pinta) no hay delta que mostrar: sale el valor, sin contar
   // desde 0 (`countUp` toma el `null` como 0).
-  num.textContent = String(memoria.lp ?? ranked.lp);
-  countUp(num, memoria.lp ?? ranked.lp, ranked.lp);
+  // D100: los LP son los de la DIVISION. Si cambio el tier o la division respecto del render anterior (Oro II 27 -> Oro I 15),
+  // contar desde el valor viejo hace que el numero baje mientras el rango sube: el numero aparece ya en su valor final.
+  const escalon = `${ranked.tier}|${ranked.division ?? ''}`;
+  const desde = memoria.escalon === escalon ? (memoria.lp ?? ranked.lp) : ranked.lp;
+  num.textContent = String(desde);
+  countUp(num, desde, ranked.lp);
   lpEl.append(num, document.createTextNode(sufijo));
 
   const pista = document.createElement('div');
@@ -199,6 +203,7 @@ function crearRankedHero(state, modulos, memoria) {
 
   wrap.append(nombre, lpEl, pista);
   memoria.lp = ranked.lp;
+  memoria.escalon = escalon;
   return wrap;
 }
 
