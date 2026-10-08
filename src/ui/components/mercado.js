@@ -135,7 +135,7 @@ function construirMas(filas, negociacion, abierto) {
   det.className = 'mercado-card-mas';
   det.open = abierto;
   const sum = document.createElement('summary');
-  sum.textContent = negociacion ? 'más · negociar' : 'más';
+  sum.textContent = negociacion ? 'más · arraigo y negociar' : 'más · arraigo';
   det.appendChild(sum);
   for (const f of filas) {
     det.appendChild(f);
