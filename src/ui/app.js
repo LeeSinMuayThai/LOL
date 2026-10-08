@@ -19,6 +19,7 @@ import { fotoDeSplit, cierreDeSplit } from './core/escena.js';
 import { iconoSonido } from './components/iconos.js';
 import { aplicarEstudio, limpiarEstudio } from './shell.js';
 import { crearFranja } from './franja.js';
+import { crearCuartos } from './cuartos.js';
 import { crearStore } from './core/store.js';
 import {
   almacenamientoLocal, leerHistorial, guardarHistorial, agregarAlHistorial, entradaDeResultado,
@@ -98,6 +99,10 @@ export function iniciar() {
   const franjaEl = document.getElementById('franja');
   const franjaEstadoEl = document.getElementById('franjaEstado');
   let franja = null;
+  // Los cuartos (V2-C): el `<dialog id="cuarto">` y su barra en la franja. Se crean cuando cargan los módulos (pintan con
+  // los renderers de hoy) y leen la `vista`.
+  const ayudaTeclas = document.getElementById('ayudaTeclas');
+  let cuartos = null;
 
   // El contrato de elementos que `src/ui/render.js` necesita para pintar
   // la pantalla de decisión (fase 8, §8.5; fase 9c suma la pantalla de ofertas).
@@ -189,6 +194,16 @@ export function iniciar() {
         etiquetaRol: modulos.etiquetaRol,
         // El delta del número es el del split en curso: contra la foto de la página (la misma que usa la tarjeta de cierre).
         fotoDeLaPagina: () => pagina.fotoInicio
+      });
+      cuartos = crearCuartos({
+        dialog: document.getElementById('cuarto'),
+        barra: document.getElementById('cuartosBarra'),
+        cuerpo: document.getElementById('cuartoCuerpo'),
+        titulo: document.getElementById('cuartoTitulo'),
+        botonAyuda: ayudaTeclas,
+        escena,
+        vista,
+        contexto: { ui, modulos }
       });
       reproductor = reproductorModulo;
       sonido = sonidoModulo;
@@ -718,6 +733,7 @@ export function iniciar() {
 
       toggleVelocidad.disabled = false;
       toggleSonido.disabled = false;
+      ayudaTeclas.disabled = false;
       actualizarToggles();
 
       // P.2: el botón "Continuar" solo aparece si hay de verdad algo

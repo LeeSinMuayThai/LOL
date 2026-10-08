@@ -71,6 +71,29 @@ function dormir(ms) {
   });
 }
 
+// FASE V (V2-C; PLAN.md §V.4): con un cuarto abierto el relato se pausa y al cerrarlo sigue. La espera de cada beat
+// termina, pero el beat siguiente (y lo que venga después del último: la parada, la `vista`) no entra hasta `reanudar`.
+// Sin espera entre beats (INST o movimiento reducido) la tanda entera es sincrónica: no hay nada que pausar.
+let pausado = false;
+let alReanudar = [];
+
+export function pausar() {
+  pausado = true;
+}
+
+export function reanudar() {
+  pausado = false;
+  const pendientes = alReanudar;
+  alReanudar = [];
+  for (const seguir of pendientes) seguir();
+}
+
+function esperarLaPausa() {
+  return new Promise((resolve) => {
+    alReanudar.push(resolve);
+  });
+}
+
 // La misma preferencia que ya apaga las animaciones en CSS (base.css):
 // acá se respeta también para el TIMING de JS — sin esto, el CSS no
 // animaría nada pero el reproductor igual pausaría 700ms entre líneas.
@@ -147,6 +170,9 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
     }
     if (espera > 0) {
       await dormir(espera);
+      if (pausado) {
+        await esperarLaPausa();
+      }
     }
   }
 

@@ -40,6 +40,7 @@
     <link rel="stylesheet" href="./src/ui/estilos/hud.css" />
     <link rel="stylesheet" href="./src/ui/estilos/overlay.css" />
     <link rel="stylesheet" href="./src/ui/estilos/material.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/cuartos.css" />
   </head>
   <body>
     <a class="saltar-al-contenido" href="#escenario">Saltar al contenido</a>
@@ -50,7 +51,17 @@
       <header class="franja" id="franja">
         <div class="franja-lockup"><span class="franja-monograma">S+</span><span class="franja-nombre">Un Split Más</span></div>
         <div class="franja-estado" id="franjaEstado"></div>
+        <!-- Los cuartos (V2-C): la letra de aria-keyshortcuts abre cada uno (teclado.js); en el celular, abajo y fija. -->
+        <nav class="franja-cuartos" id="cuartosBarra" aria-label="Cuartos">
+          <button type="button" class="cuarto-boton" data-cuarto="vos" aria-keyshortcuts="V"><span class="cuarto-letra">V</span>os</button>
+          <button type="button" class="cuarto-boton" data-cuarto="temporada" aria-keyshortcuts="T"><span class="cuarto-letra">T</span>emporada</button>
+          <button type="button" class="cuarto-boton" data-cuarto="equipo" aria-keyshortcuts="E"><span class="cuarto-letra">E</span>quipo</button>
+          <button type="button" class="cuarto-boton" data-cuarto="mundo" aria-keyshortcuts="M"><span class="cuarto-letra">M</span>undo</button>
+          <button type="button" class="cuarto-boton" data-cuarto="carrera" aria-keyshortcuts="C"><span class="cuarto-letra">C</span>arrera</button>
+          <button type="button" class="cuarto-boton" data-cuarto="cronica" aria-keyshortcuts="R">C<span class="cuarto-letra">r</span>ónica</button>
+        </nav>
         <div class="franja-controles">
+          <button type="button" id="ayudaTeclas" class="franja-toggle" aria-keyshortcuts="?" title="Teclas (?)" disabled>?</button>
           <button type="button" id="toggleVelocidad" class="franja-toggle" disabled title="Velocidad del reproductor">1×</button>
           <button type="button" id="toggleSonido" class="franja-toggle" disabled title="Sonido" aria-pressed="false"></button>
         </div>
@@ -149,12 +160,7 @@
           </div>
         </div>
 
-        <!-- El riel derecho (fase T5): cinco paneles de contexto, todos con
-             datos que el motor ya calcula y hasta esta fase no se veían en
-             ningún lado. Cada uno se oculta solo (`hidden`) si no tiene
-             nada real que mostrar — la columna entera se colapsa por CSS
-             (`:has()` en shell.css) cuando los cinco están vacíos, en vez
-             de dejar un hueco fantasma durante el setup o en amateur. -->
+        <!-- El riel derecho (fase T5): sus paneles se mudan a los cuartos (V2-C). -->
         <aside class="riel-der" aria-label="Contexto de la carrera">
           <div id="panelTabla" class="panel-contexto" hidden></div>
           <div id="panelCalendario" class="panel-contexto" hidden></div>
@@ -166,6 +172,17 @@
       </div>
 
       <footer class="ticker" id="ticker" aria-hidden="true"></footer>
+
+      <!-- Los cuartos (V2-C; PLAN.md §V.4): un solo diálogo modal (showModal: foco atrapado, fondo inerte, Esc nativo).
+           Las pestañas son copias de #cuartosBarra; el cuerpo se pinta solo al abrirse, desde la `vista` (src/ui/cuartos.js). -->
+      <dialog id="cuarto" class="cuarto" aria-labelledby="cuartoTitulo">
+        <div class="cuarto-cabecera">
+          <h2 id="cuartoTitulo" class="solo-lectores">Cuarto</h2>
+          <div class="cuarto-pestanas" role="tablist" aria-label="Cuartos"></div>
+          <button type="button" class="cuarto-cerrar" title="Cerrar (Esc)">Cerrar <kbd>Esc</kbd></button>
+        </div>
+        <div id="cuartoCuerpo" class="cuarto-cuerpo" role="tabpanel" aria-labelledby="cuartoTitulo"></div>
+      </dialog>
     </div>
 
     <script type="module" src="./src/ui/shell.js"></script>

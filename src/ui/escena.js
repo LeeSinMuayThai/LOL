@@ -21,7 +21,7 @@
 // `ctx` trae lo que la familia necesita del controlador (`estado`, `responder`, `ui`, `pintarPrevia`, `lowerThird`,
 // `rngUi`, los elementos de su contenedor): la familia no importa `app.js`.
 // ---------------------------------------------------------------------------------------------------------------------
-import { piezaDe } from './core/escena.js';
+import { piezaDe, PIEZAS_DE_PARADA } from './core/escena.js';
 
 function esVisible(el) {
   if (!el) return false;
@@ -70,7 +70,21 @@ export function crearEscena({ shell, vista }) {
     return nueva;
   }
 
-  return { revelar, pieza };
+  // V2-C: al cerrar un cuarto el foco vuelve a la parada (a su encabezado, como cuando entró), no al botón que lo abrió:
+  // así Espacio no reabre el cuarto. `false` si no hay una parada a la vista.
+  function enfocar() {
+    if (!PIEZAS_DE_PARADA.includes(pieza())) {
+      return false;
+    }
+    const encabezado = encabezadoActivo();
+    if (!encabezado) {
+      return false;
+    }
+    encabezado.focus({ preventScroll: true });
+    return true;
+  }
+
+  return { revelar, pieza, enfocar };
 }
 
 // Las dos marcas del contrato, para que las familias no las escriban cada una a su manera.
