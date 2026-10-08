@@ -16,15 +16,13 @@ import * as mundo from './cuartos/mundo.js';
 import * as carrera from './cuartos/carrera.js';
 import * as cronica from './cuartos/cronica.js';
 import * as ayuda from './cuartos/ayuda.js';
+import { PIEZAS_SIN_CUARTOS } from './core/escena.js';
 
 const PINTORES = { vos, temporada, equipo, mundo, carrera, cronica, ayuda };
 export const TITULOS_DE_CUARTOS = {
   vos: 'Vos', temporada: 'Temporada', equipo: 'Equipo', mundo: 'Mundo', carrera: 'Carrera', cronica: 'Crónica',
   ayuda: 'Teclas'
 };
-// Donde los cuartos no se abren: el inicio no tiene carrera que mostrar, y el minijuego es dueño de sus teclas y de su
-// reloj (abrir un cuarto a mitad de uno lo dejaría corriendo detrás). La ayuda sí se abre en el inicio.
-export const PIEZAS_SIN_CUARTOS = ['inicio', 'minijuego'];
 
 // `dialog`: `#cuarto`. `barra`: `#cuartosBarra` (en la franja). `cuerpo`: `#cuartoCuerpo`. `titulo`: `#cuartoTitulo`.
 // `botonAyuda`: el `?` de la franja. `escena`: el director (`ui/escena.js`). `vista`: el store de lo ya mostrado.

@@ -19,7 +19,7 @@
 //     `aria-keyshortcuts`. Se apagan en el inicio y en el minijuego (`PIEZAS_SIN_CUARTOS`: los minijuegos son dueños de
 //     Q/W/E/R, A/D, A/S y 1-5) y con el foco en un campo de texto; `?` abre la ayuda de teclas (salvo en el minijuego).
 import { saltarBeat, velocidadActual } from './reproductor.js';
-import { PIEZAS_SIN_CUARTOS } from './cuartos.js';
+import { PIEZAS_SIN_CUARTOS } from './core/escena.js';
 
 const shell = document.querySelector('.shell');
 const avanzadoDetails = document.querySelector('.avanzado');
