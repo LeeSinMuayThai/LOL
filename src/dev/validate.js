@@ -5173,8 +5173,8 @@ check('K6d-P las dos pausas de la rueda de prensa (post_serie, post_escandalo) t
     'sin tono el widget no debía pintar pistas y apuntaba al azar de antes (rngUi 0.5 → 50)');
 
   // El cable de la UI: el controlador le pasa `decision.datos` al widget (sin eso el tono del motor nunca llega a la pantalla).
-  afirmarPrensa(/\}, rngUi, decision\.datos\);/.test(fs.readFileSync(path.join(srcDir, 'ui', 'app.js'), 'utf8')),
-    'ui/app.js no le pasa decision.datos al widget del minijuego: el tono y las pistas no llegan a la pantalla');
+  afirmarPrensa(/\}, rngUi, decision\.datos\);/.test(fs.readFileSync(path.join(srcDir, 'ui', 'paradas', 'minijuego.js'), 'utf8')),
+    'ui/paradas/minijuego.js no le pasa decision.datos al widget del minijuego: el tono y las pistas no llegan a la pantalla');
 });
 
 // Protege (K6d-P, revisión): que la única prensa que se juega hoy, la del escándalo, no se resuelva con un slider fijo. Medido sobre
@@ -13209,13 +13209,13 @@ check('K0 espejos de la UI: DURACION_BEAT_MS y ESPERA_MINIJUEGO_MS son los liter
   };
   // reproductor.js: `const ESPERA_MS = { x1: 700, x2: 350, instantaneo: 0 }`
   const beat = extraer(leer('ui/reproductor.js'), /const\s+ESPERA_MS\s*=\s*\{[^}]*\bx1\s*:\s*(\d+)/g, 'ESPERA_MS.x1 de reproductor.js');
-  // app.js: `setTimeout(() => responder(... { resultado }), 1600)` (K4-B: con la charla del coach, si se ofreció)
-  const minijuego = extraer(leer('ui/app.js'), /setTimeout\(\s*\(\)\s*=>\s*responder\([^;]*\{\s*resultado\s*\}\s*\)\s*,\s*(\d+)\s*\)/g, 'la espera tras el minijuego de app.js');
+  // paradas/minijuego.js (salió de app.js en V2-A): `setTimeout(() => responder(... { resultado }), 1600)` (K4-B: con la charla del coach, si se ofreció)
+  const minijuego = extraer(leer('ui/paradas/minijuego.js'), /setTimeout\(\s*\(\)\s*=>\s*responder\([^;]*\{\s*resultado\s*\}\s*\)\s*,\s*(\d+)\s*\)/g, 'la espera tras el minijuego de paradas/minijuego.js');
   if (beat !== DURACION_BEAT_MS) {
     throw new Error(`DURACION_BEAT_MS = ${DURACION_BEAT_MS} en simulate.js, reproductor.js espera ${beat} ms por beat`);
   }
   if (minijuego !== ESPERA_MINIJUEGO_MS) {
-    throw new Error(`ESPERA_MINIJUEGO_MS = ${ESPERA_MINIJUEGO_MS} en simulate.js, app.js espera ${minijuego} ms tras el minijuego`);
+    throw new Error(`ESPERA_MINIJUEGO_MS = ${ESPERA_MINIJUEGO_MS} en simulate.js, paradas/minijuego.js espera ${minijuego} ms tras el minijuego`);
   }
 });
 
@@ -26902,10 +26902,10 @@ check('K6c la vara: la oferta, la previa de la prueba y la pantalla muestran la 
     const anuncio = vara === 0 ? TEXTO_VARA_CERO_K6C : `necesitás ${vara}%`;
     if (!firmar.descripcion.includes(anuncio)) problemas.push(`seed ${seed}: la oferta no anuncia la vara ("${firmar.descripcion}")`);
   }
-  // La pantalla (src/ui/app.js) no corre en Node: se exige que el veredicto salga de la misma cuenta del motor y no de la
+  // La pantalla (src/ui/paradas/minijuego.js, desde V2-A) no corre en Node: se exige que el veredicto salga de la misma cuenta del motor y no de la
   // probabilidad del mercado.
-  const app = fs.readFileSync(new URL('../ui/app.js', import.meta.url), 'utf8');
-  if (!/import \{[^}]*veredictoDeLaPrueba[^}]*\} from '\.\.\/core\/serie\.js'/.test(app) || !/veredictoDeLaPrueba\(resultado, decision\.datos\.vara\)/.test(app)) {
+  const app = fs.readFileSync(new URL('../ui/paradas/minijuego.js', import.meta.url), 'utf8');
+  if (!/import \{[^}]*veredictoDeLaPrueba[^}]*\} from '\.\.\/\.\.\/core\/serie\.js'/.test(app) || !/veredictoDeLaPrueba\(resultado, decision\.datos\.vara\)/.test(app)) {
     problemas.push('la pantalla de la prueba no usa veredictoDeLaPrueba del motor');
   }
   if (!/laPrueba\.falta/.test(app) || !/laPrueba\.vara/.test(app)) problemas.push('la pantalla no dice la vara y por cuánto no llegaste');
