@@ -231,4 +231,4 @@
 /* V3b: el separador del marcador en la línea no es el de 28 px del tablero grande; y el resumen del Swiss del acompañante
    cuenta el récord entero en vez de cortarlo con "…". */
 .serie-linea-score .serie-score-sep { font-size: inherit; }
-.serie-contexto--completo .serie-swiss-resumen .serie-lado-nombre { white-space: normal; overflow: visible; text-overflow: clip; }
+.serie-contexto--completo .serie-lado-nombre { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
