@@ -24,12 +24,15 @@ function caminoBarra(x, y, w, h, radio = RADIO_EXTREMO_BARRA) {
   return `M ${x} ${y + h} L ${x} ${y + r} a ${r} ${r} 0 0 1 ${r} -${r} h ${w - 2 * r} a ${r} ${r} 0 0 1 ${r} ${r} L ${x + w} ${y + h} Z`;
 }
 
+// V5 (la pestaña Carrera): `valores: false` apaga el número de la punta de cada barra (con muchos años en un celular los
+// números se pisan; la etiqueta de abajo y el `aria-label` siguen).
 export function crearBarras({
   grupos = [],
   ancho = 320,
   alto = 160,
   dominioY = null,
-  onHoverBarra = null
+  onHoverBarra = null,
+  valores = true
 } = {}) {
   if (!Array.isArray(grupos)) {
     throw new Error('crearBarras: grupos debe ser un array');
@@ -120,17 +123,19 @@ export function crearBarras({
       const entraAdentro = hBarra >= MIN_ALTO_TEXTO_INTERNO;
       const yTexto = entraAdentro ? yBarra + 13 : Math.max(12, yBarra - 4);
 
-      const textoValor = nodoSvg('text', {
-        x: xBarra + anchoBarra / 2,
-        y: yTexto,
-        'text-anchor': 'middle',
-        'font-size': '11',
-        'font-family': 'var(--font-ui)',
-        'font-weight': '600',
-        fill: 'var(--ink)'
-      });
-      textoValor.textContent = String(val);
-      svg.appendChild(textoValor);
+      if (valores) {
+        const textoValor = nodoSvg('text', {
+          x: xBarra + anchoBarra / 2,
+          y: yTexto,
+          'text-anchor': 'middle',
+          'font-size': '11',
+          'font-family': 'var(--font-ui)',
+          'font-weight': '600',
+          fill: 'var(--ink)'
+        });
+        textoValor.textContent = String(val);
+        svg.appendChild(textoValor);
+      }
 
       // Área de hit transparente >= 24px
       const anchoHit = Math.max(ANCHO_HIT_MINIMO, anchoBarra);

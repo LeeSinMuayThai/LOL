@@ -10,7 +10,7 @@
 // (`#verContexto`, un nodo del escenario con `data-piezas` de las piezas de parada) abre ese cuarto.
 import { acompananteDe } from './core/escena.js';
 import { acompanante as acompanantePartido } from './paradas/partido.js';
-import { pintar as pintarCarrera } from './cuartos/carrera.js';
+import { acompanante as acompananteCarrera } from './cuartos/carrera.js';
 import { TITULOS_DE_CUARTOS } from './cuartos.js';
 import { acompanante as acompananteMercado } from './paradas/mercado.js';
 
@@ -40,9 +40,8 @@ const STUBS = {
   // V3b: el tablero de la serie, el Swiss y la previa completa son de la familia del partido (paradas/partido.js).
   serie: acompanantePartido,
   previa: acompanantePartido,
-  carrera(caja, estado) {
-    pintarCarrera(caja, estado);
-  }
+  // V5: el resumen de la carrera (el escalón, el Golden Road vivo y una mini trayectoria) lo pinta `cuartos/carrera.js`.
+  carrera: acompananteCarrera
 };
 STUBS.swiss = acompanantePartido;
 

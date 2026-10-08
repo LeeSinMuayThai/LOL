@@ -4,6 +4,7 @@ import { marcaRol } from '../components/iconos.js';
 import { crearCampeonTile, keyDdragonDeCampeon } from '../components/campeonTile.js';
 import { crearSplash } from '../components/splash.js';
 import { miles, linkDeResultado } from '../resultado.js';
+import { medallaDeGoldenRoad } from '../core/trayectoria.js';
 
 const ETIQUETA_STAT = {
   mecanica: 'Mecánica', macro: 'Macro', teamfight: 'Teamfight', laneo: 'Laneo',
@@ -314,7 +315,13 @@ export function renderHistorial(contenedor, historial, { etiquetaRol, version })
       entrada.intentos > 1 ? `${entrada.intentos} intentos` : null,
       entrada.version !== version ? `v ${entrada.version}, otra versión` : null
     ].filter(Boolean).join(' · ');
-    fila.append(que, nodo('span', 'historial-pts', `${miles(entrada.total)} pts`), nodo('span', 'historial-detalle', detalle));
+    fila.append(que, nodo('span', 'historial-pts', `${miles(entrada.total)} pts`));
+    // FASE V (V5): el Golden Road de esa carrera, con su año; las entradas de antes de V5 no lo traen y no muestran nada.
+    const medalla = medallaDeGoldenRoad(entrada.goldenRoads ?? []);
+    if (medalla) {
+      fila.appendChild(nodo('span', 'historial-medalla', medalla));
+    }
+    fila.appendChild(nodo('span', 'historial-detalle', detalle));
     lista.appendChild(fila);
   }
   contenedor.replaceChildren(nodo('div', 'historial-titulo', `Tus últimos resultados${record}`), lista);

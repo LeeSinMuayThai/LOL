@@ -22257,6 +22257,242 @@ check('GR-m Golden Road: la medalla es lo que cuenta el motor (esGoldenRoad arma
   console.log(`      ${variantes.length} variantes sin un hecho; ${SEEDS_GOLDEN_ROAD_GRM.length} carreras: ${cierres} cierres de año en primera contra goldenRoads, ${intermedios} estados a mitad de año, ${pausas} pausas del motor en primera, ${filasContraElMotor} filas de porSplit contra lo que jugó el motor, ${finales} escalones contra la tarjeta`);
 });
 
+// ============================================================================
+// FASE V (V5) — la carrera dibujada (PLAN.md §V.7, "el check de la regla 15 del dibujo"). La promesa: lo que la pestaña Carrera
+// dibuja ES el registro. `trayectoriaDeCarrera` (`ui/core/trayectoria.js`, pura) dice qué se dibuja y el cuarto no calcula nada
+// aparte, así que acá se compara esa función contra el registro de 20 carreras reales × 60 splits, en CADA split: un punto de la
+// curva por fila de `porSplit`, un tramo de la cinta por fila de `porOrg`, los títulos iguales a `registro.titulos` (todos: también
+// los de tier 2 y 3, con su tier), los Mundiales iguales a `mundialesGanados`, los Golden Roads iguales a `goldenRoads`, la nota de
+// cada año igual a `registro.temporadas`. De paso lo que sale de la misma cuenta y el jugador lee en otras pantallas: la línea
+// del Golden Road de la tarjeta de cierre (`cierreDeSplit(...).goldenRoad`) es el seguimiento del motor cuando está vivo, y la
+// medalla de la tarjeta final / el texto para compartir / el historial salen de `goldenRoads(registro)`.
+// En rojo con un mutante (se probó a mano: saltear una fila de `porSplit`, contar un título de tier 2 como Golden Road, dibujar
+// todos los Mundiales y no solo los ganados), y en cada corrida el comparador se prueba contra dibujos corrompidos a propósito.
+// ============================================================================
+const {
+  trayectoriaDeCarrera: trayectoriaDeCarreraV5, trayectoriaDeRegistro: trayectoriaDeRegistroV5, itemsDeGoldenRoad: itemsDeGoldenRoadV5,
+  lineaDeGoldenRoad: lineaDeGoldenRoadV5, medallaDeGoldenRoad: medallaDeGoldenRoadV5, goldenRoadsDeEstado: goldenRoadsDeEstadoV5
+} = await import('../ui/core/trayectoria.js');
+const { mundialesGanados: mundialesGanadosV5 } = await import('../core/registro.js');
+// Las tres primeras tienen un Golden Road con el bot `criterio` (la 133, dos años seguidos): sin ellas, 20 carreras pueden no
+// traer ninguno (sale en ~3% de las carreras) y el check no vería ni un solo hito de Golden Road en carreras reales.
+const SEEDS_DIBUJO_V5 = [114, 133, 152, 61, 85, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+const SPLITS_DIBUJO_V5 = 60;
+const EPSILON_X_V5 = 1e-9;
+
+// Lo que el dibujo dice y el registro no (o al revés). Vacío = el dibujo es el registro. No usa las funciones que prueba para
+// decidir qué es un título o una fila: lee el registro como viene.
+function diferenciasDelDibujoV5(tr, registro, anioBase) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const dif = [];
+  if (tr.puntos.length !== registro.porSplit.length) {
+    dif.push(`${tr.puntos.length} puntos de la curva y ${registro.porSplit.length} filas de porSplit`);
+  }
+  registro.porSplit.forEach((fila, i) => {
+    const punto = tr.puntos[i];
+    if (!punto || punto.anio !== fila.anio || punto.split !== fila.split || punto.nivel !== fila.nivel || punto.tier !== fila.tier
+      || punto.posicion !== fila.posicion || punto.org !== fila.org) {
+      dif.push(`el punto ${i} (${JSON.stringify(punto)}) no es la fila ${JSON.stringify(fila)}`);
+    }
+  });
+  if (tr.tramos.length !== registro.porOrg.length) {
+    dif.push(`${tr.tramos.length} tramos de la cinta y ${registro.porOrg.length} filas de porOrg`);
+  }
+  registro.porOrg.forEach((fila, i) => {
+    const tramo = tr.tramos[i];
+    if (!tramo || tramo.org !== fila.org || tramo.tier !== fila.tier || tramo.desdeAnio !== fila.desdeAnio
+      || Math.abs(tramo.desde - (anioBase + fila.desdeSplit / porAnio)) > EPSILON_X_V5
+      || JSON.stringify(tramo.titulos) !== JSON.stringify(fila.titulos.map((t) => ({ nombre: t.nombre, anio: t.anio })))) {
+      dif.push(`el tramo ${i} (${JSON.stringify(tramo)}) no es la fila ${JSON.stringify(fila)}`);
+    }
+  });
+  const clave = (t) => `${t.nombre}|${t.anio}|${t.tier}|${t.org}`;
+  if (JSON.stringify(tr.titulos.map(clave)) !== JSON.stringify(registro.titulos.map(clave))) {
+    dif.push(`títulos dibujados ${tr.titulos.map(clave)} y del registro ${registro.titulos.map(clave)}`);
+  }
+  const ganados = mundialesGanadosV5(registro).map((entrada) => entrada.anio);
+  if (JSON.stringify(tr.mundiales.map((m) => m.anio)) !== JSON.stringify(ganados)) {
+    dif.push(`Mundiales dibujados ${tr.mundiales.map((m) => m.anio)} y ganados ${ganados}`);
+  }
+  const golden = goldenRoadsGRM(registro);
+  if (JSON.stringify(tr.goldenRoads) !== JSON.stringify(golden)) {
+    dif.push(`Golden Roads dibujados ${tr.goldenRoads} y del registro ${golden}`);
+  }
+  // Los hitos son exactamente esas tres listas, de más viejo a más nuevo.
+  const deTipo = (tipo) => tr.hitos.filter((h) => h.tipo === tipo).length;
+  if (deTipo('titulo') !== registro.titulos.length || deTipo('mundial') !== ganados.length || deTipo('goldenRoad') !== golden.length
+    || tr.hitos.length !== registro.titulos.length + ganados.length + golden.length) {
+    dif.push(`hitos ${deTipo('titulo')} títulos, ${deTipo('mundial')} Mundiales, ${deTipo('goldenRoad')} Golden Roads (de ${tr.hitos.length}) contra ${registro.titulos.length}, ${ganados.length}, ${golden.length}`);
+  }
+  if (tr.hitos.some((h, i) => i > 0 && h.anio < tr.hitos[i - 1].anio)) {
+    dif.push('los hitos no están ordenados por año');
+  }
+  if (JSON.stringify(tr.notas.map((n) => [n.anio, n.nota])) !== JSON.stringify(registro.temporadas.map((n) => [n.anio, n.nota]))) {
+    dif.push('las notas dibujadas no son las de registro.temporadas');
+  }
+  // Todo lo dibujado cae adentro del eje compartido.
+  if (tr.puntos.length + tr.tramos.length > 0) {
+    const [desde, hasta] = tr.dominio ?? [Infinity, -Infinity];
+    const afuera = [...tr.puntos.map((p) => p.x), ...tr.tramos.map((t) => t.desde), ...tr.tramos.map((t) => t.hasta).filter((x) => x !== null)]
+      .filter((x) => x < desde || x > hasta);
+    if (afuera.length > 0) {
+      dif.push(`${afuera.length} marcas fuera del eje [${desde}, ${hasta}]`);
+    }
+  }
+  return dif;
+}
+
+checkLento('V5 carrera dibujada: lo que dibuja la pestaña Carrera es el registro (un punto por fila de porSplit, un tramo por fila de porOrg, los títulos, los Mundiales ganados y los Golden Roads del motor), la línea del Golden Road de la tarjeta de cierre es el seguimiento del motor y la medalla sale de goldenRoads (criterio, 20 carreras × 60)', () => {
+  const anioBase = BALANCE.calendario.anioBase;
+  const problemas = [];
+  const anotar = (cuando, dif) => dif.forEach((texto) => problemas.push(`${cuando}: ${texto}`));
+  let evaluaciones = 0;
+  let cierresConLinea = 0;
+  let cierresSinLinea = 0;
+  let conMundial = 0;
+  let conTituloMenor = 0;
+  let conGoldenRoad = 0;
+  let finales = 0;
+  let medallas = 0;
+  let muestra = null; // una carrera con curva, títulos de tier 2 o 3, un Mundial y un Golden Road: los dibujos corrompidos salen de ella
+
+  // (a) Registros armados: el Golden Road del registro de GR-m y quitándole de a un hecho (ninguna variante lo dibuja).
+  const ANIO = 2031;
+  const armado = (cambios) => ({ ...registroDelGoldenRoadGRM(ANIO, cambios), porOrg: [], temporadas: [] });
+  const positivo = trayectoriaDeRegistroV5(armado({}));
+  if (positivo.goldenRoads.join() !== String(ANIO) || positivo.hitos.filter((h) => h.tipo === 'goldenRoad').length !== 1
+    || positivo.puntos.length !== BALANCE.edad.splitsPorEdad || positivo.mundiales.length !== 1 || positivo.titulos.length !== 1) {
+    problemas.push(`registro armado con los tres hechos: ${JSON.stringify({ gr: positivo.goldenRoads, puntos: positivo.puntos.length, mundiales: positivo.mundiales.length })}`);
+  }
+  for (const { etiqueta, cambios } of variantesSinUnHechoGRM(ANIO)) {
+    const dibujo = trayectoriaDeRegistroV5(armado(cambios));
+    if (dibujo.goldenRoads.length > 0 || dibujo.hitos.some((h) => h.tipo === 'goldenRoad')) {
+      problemas.push(`${etiqueta}: el dibujo muestra un Golden Road`);
+    }
+    anotar(`armado (${etiqueta})`, diferenciasDelDibujoV5(dibujo, armado(cambios), anioBase));
+  }
+
+  // (b) Carreras reales, en cada split.
+  for (const seed of SEEDS_DIBUJO_V5) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < SPLITS_DIBUJO_V5 && !state.terminado; i += 1) {
+      const foto = JSON.parse(JSON.stringify(fotoDeSplitV2(state)));
+      let paso = avanzarSplit(state, rng);
+      let vueltas = 0;
+      while (paso.state.pendiente) {
+        const { sistemaId, decision } = paso.state.pendiente;
+        paso = resolverDecision(paso.state, ESTRATEGIAS_K0.criterio(sistemaPorId(sistemaId), paso.state, decision, rng), rng);
+        vueltas += 1;
+        if (vueltas > 200) {
+          throw new Error(`seed ${seed}: más de 200 pausas seguidas en un split`);
+        }
+      }
+      state = paso.state;
+      const cuando = `seed ${seed}, split ${i}`;
+      const registro = state.career.registro;
+      const tr = trayectoriaDeCarreraV5(state);
+      evaluaciones += 1;
+      anotar(cuando, diferenciasDelDibujoV5(tr, registro, anioBase));
+      if (state.terminado) {
+        // La medalla de la tarjeta final, el texto para compartir y la entrada del historial salen del registro.
+        finales += 1;
+        const golden = goldenRoadsGRM(registro);
+        const medalla = medallaDeGoldenRoadV5(goldenRoadsDeEstadoV5(state));
+        const compartido = resultadoK1B.textoParaCompartir(state, 'http://localhost:8000/');
+        const entrada = resultadoK1B.entradaDeResultado(state, '2026-10-02');
+        const sinMedalla = golden.length === 0;
+        const medallaMal = sinMedalla
+          ? (medalla !== null || /Golden Road/.test(compartido) || entrada.goldenRoads.length !== 0)
+          : (medalla === null || !golden.every((anio) => medalla.includes(String(anio))) || !compartido.includes(medalla)
+            || JSON.stringify(entrada.goldenRoads) !== JSON.stringify(golden));
+        if (medallaMal) {
+          problemas.push(`${cuando}: la medalla ${JSON.stringify(medalla)}, el texto "${compartido}" y el historial ${JSON.stringify(entrada.goldenRoads)} no son los Golden Roads del registro ${golden}`);
+        }
+        medallas += sinMedalla ? 0 : 1;
+        break;
+      }
+      // El cierre de este split: la línea del Golden Road de la tarjeta es el seguimiento del motor, y solo mientras está vivo.
+      const seguimiento = seguimientoGoldenRoadGRM(state);
+      const cierre = cierreDeSplitV2(foto, state);
+      const hayAlgoHecho = seguimiento !== null && itemsDeGoldenRoadV5(seguimiento).some((item) => item.estado === 'si');
+      const esperada = seguimiento !== null && seguimiento.vivo && hayAlgoHecho ? seguimiento : null;
+      if (JSON.stringify(cierre.goldenRoad) !== JSON.stringify(esperada)) {
+        problemas.push(`${cuando}: la tarjeta de cierre trae ${JSON.stringify(cierre.goldenRoad)} y el seguimiento del motor da ${JSON.stringify(seguimiento)}`);
+      }
+      if (esperada) {
+        cierresConLinea += 1;
+        const linea = lineaDeGoldenRoadV5(esperada);
+        const marcas = (texto) => (linea.match(new RegExp(texto, 'g')) ?? []).length;
+        const cuenta = (estado) => itemsDeGoldenRoadV5(esperada).filter((item) => item.estado === estado).length;
+        if (!linea.startsWith(`Golden Road ${esperada.anio}:`) || marcas('✓') !== cuenta('si') || marcas('◻') !== cuenta('pendiente') || marcas('✕') !== 0
+          || esperada.completo !== (cuenta('si') === itemsDeGoldenRoadV5(esperada).length)) {
+          problemas.push(`${cuando}: la línea "${linea}" no dice lo que dice el seguimiento ${JSON.stringify(esperada)}`);
+        }
+        // Lo que esa línea promete al cierre del año, el veredicto del motor lo cumple.
+        if (esperada.completo && !goldenRoadsGRM(registro).includes(esperada.anio)) {
+          problemas.push(`${cuando}: la línea dice Golden Road ${esperada.anio} completo y goldenRoads(registro) da ${goldenRoadsGRM(registro)}`);
+        }
+      } else {
+        cierresSinLinea += 1;
+        if (seguimiento !== null && !seguimiento.vivo && lineaDeGoldenRoadV5(seguimiento) !== null) {
+          problemas.push(`${cuando}: hay línea de un Golden Road que ya no está vivo`);
+        }
+      }
+      if (tr.puntos.length >= 12 && tr.titulos.some((t) => t.tier > 1) && tr.mundiales.length > 0 && tr.goldenRoads.length > 0) {
+        muestra = { tr, registro };
+      }
+    }
+    const final = trayectoriaDeCarreraV5(state);
+    conMundial += final.mundiales.length > 0 ? 1 : 0;
+    conTituloMenor += final.titulos.some((t) => t.tier > 1) ? 1 : 0;
+    conGoldenRoad += final.goldenRoads.length > 0 ? 1 : 0;
+  }
+
+  // (c) El comparador muerde: dibujos corrompidos a propósito (un mutante por cada hecho) tienen que dar diferencias.
+  let comparadorMuerde = 0;
+  let mutantes = 0;
+  if (muestra === null) {
+    problemas.push('ninguna carrera del lote tuvo curva, títulos de tier 2 o 3, un Mundial y un Golden Road a la vez: el comparador no se pudo probar');
+  } else {
+    const { tr, registro } = muestra;
+    const mutar = (cambio) => ({ ...tr, ...cambio });
+    const primerTituloMenor = tr.titulos.findIndex((t) => t.tier > 1);
+    const casos = {
+      'saltear una fila de la curva': mutar({ puntos: tr.puntos.filter((_, i) => i !== 3) }),
+      'una fila de la curva con otro nivel': mutar({ puntos: tr.puntos.map((p, i) => (i === 2 ? { ...p, nivel: p.nivel + 1 } : p)) }),
+      'dibujar un título de más (uno de tier 2)': mutar({ titulos: [...tr.titulos, { nombre: 'LCK_CL', anio: 2040, org: 'X', liga: 'LCK_CL', tier: 2 }] }),
+      'no dibujar un título de tier 2 o 3': mutar({ titulos: tr.titulos.filter((_, i) => i !== primerTituloMenor) }),
+      'contar solo los títulos de primera': mutar({ titulos: tr.titulos.filter((t) => t.tier === 1) }),
+      'no dibujar un Mundial ganado': mutar({ mundiales: tr.mundiales.slice(1) }),
+      'dibujar un Mundial que no se ganó': mutar({ mundiales: [...tr.mundiales, { anio: 2099, org: 'X', liga: null, torneo: 'Mundial 2099' }] }),
+      'no dibujar el Golden Road': mutar({ goldenRoads: [] }),
+      'un Golden Road de más': mutar({ goldenRoads: [...tr.goldenRoads, tr.goldenRoads[0] + 1] }),
+      'saltear un tramo de la cinta': mutar({ tramos: tr.tramos.slice(1) }),
+      'una marca fuera del eje': mutar({ puntos: tr.puntos.map((p, i) => (i === 0 ? { ...p, x: tr.dominio[1] + 5 } : p)) })
+    };
+    for (const [nombre, dibujo] of Object.entries(casos)) {
+      mutantes += 1;
+      if (diferenciasDelDibujoV5(dibujo, registro, anioBase).length > 0) {
+        comparadorMuerde += 1;
+      } else {
+        problemas.push(`el mutante "${nombre}" no da diferencias: el comparador no muerde`);
+      }
+    }
+    if (diferenciasDelDibujoV5(tr, registro, anioBase).length > 0) {
+      problemas.push('el dibujo sin mutar da diferencias contra su propio registro');
+    }
+  }
+
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} problemas: ${problemas.slice(0, 5).join(' | ')}`);
+  }
+  if (evaluaciones < 600 || conMundial < 3 || conTituloMenor < 5 || conGoldenRoad < 3 || medallas < 3 || cierresConLinea < 10 || cierresSinLinea < 100 || finales < 10) {
+    throw new Error(`check vacío: ${evaluaciones} dibujos evaluados (600), ${conMundial} carreras con Mundial (3), ${conTituloMenor} con un título de tier 2 o 3 (5), ${conGoldenRoad} con Golden Road (3), ${medallas} medallas (3), ${cierresConLinea} cierres con la línea del Golden Road (10), ${cierresSinLinea} sin (100), ${finales} carreras terminadas (10)`);
+  }
+  console.log(`      ${evaluaciones} dibujos contra el registro (${SEEDS_DIBUJO_V5.length} carreras × hasta ${SPLITS_DIBUJO_V5} splits); ${conMundial} con Mundial, ${conTituloMenor} con título de tier 2 o 3, ${conGoldenRoad} con Golden Road; ${cierresConLinea} cierres con la línea del Golden Road y ${cierresSinLinea} sin; ${comparadorMuerde} de ${mutantes} dibujos corrompidos dan diferencias`);
+});
+
 // K6d (integración; el FAIL de K5c-R en la seed 9 con P7a prendida): volver del retiro corta la racha en rojo (`flags.splitsMentalBajo`,
 // `systems/retiro.js`). Antes sobrevivía congelada al retiro: el split de la vuelta frenaba con "cerraste los últimos N splits en rojo"
 // contando los de afuera, y el dado del burnout podía pinchar en el primer split de vuelta (la seed 9 se quemó al volver con una racha

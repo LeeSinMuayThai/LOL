@@ -231,3 +231,171 @@ details.tarjeta-internacionales > summary {
 .tarjeta-leyenda-quien { font-size: var(--fs-1); color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tarjeta-leyenda-v { font-size: var(--fs-4); }
 details.tarjeta-internacionales > summary { cursor: pointer; font-size: var(--fs-1); letter-spacing: var(--track-cartel); color: var(--ice); }
+
+/* ==========================================================================
+   FASE V (V5): el Golden Road y la pestaña Carrera. Dueño: V5 (PLAN.md §V.6).
+   Tres cosas viven acá porque son de la misma familia: la línea del seguimiento (`.gr-linea`, de la tarjeta de cierre, el
+   acompañante y la pestaña), la medalla de la tarjeta final y del historial del inicio, y el dibujo de la carrera
+   (`.carrera-*`, del cuarto Carrera y del resumen del acompañante). Colores solo por token; sin animación propia.
+   ========================================================================== */
+
+/* --- La línea del seguimiento: "Golden Road 2031: ✓ split 1 · ✓ split 2 · ◻ split 3 · ◻ liga · ◻ Mundial" ---------- */
+.gr-linea {
+  padding: var(--s-2) var(--s-3);
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+  background: var(--gold-fill);
+  border-left: 3px solid var(--gold-deep);
+  overflow-wrap: anywhere;
+}
+.gr-linea-titulo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.gr-linea-item { white-space: nowrap; }
+.gr-linea-item--si { color: var(--gold); font-weight: 600; }
+.gr-linea-item--pendiente { color: var(--ink-mute); }
+.gr-linea-item--no { color: var(--down); }
+.gr-linea--completo { border-left-color: var(--gold); box-shadow: 0 0 24px -12px var(--gold-glow); }
+.gr-linea-logro {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+/* Dentro de la tarjeta de cierre la línea ocupa su propio renglón, pegada al número. */
+.cierre-split .gr-linea { margin-top: var(--s-1); }
+/* En el celular la barra de cuartos va fija abajo (cuartos.css) y el reproductor sigue el último beat con `scrollIntoView({ block:
+   'nearest' })`: sin este margen la tarjeta (el último beat, y ahora con una línea más) quedaba con su borde de abajo detrás de la barra. */
+@media (max-width: 899px) {
+  .cierre-split { scroll-margin-bottom: calc(var(--cuartos-barra-alto) + var(--s-3)); }
+}
+
+/* --- La medalla: la tarjeta final y el historial del inicio ------------------------------------------------------ */
+.tarjeta-medalla {
+  margin-top: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  background: var(--gold-fill);
+  border: 1px solid var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold-glow), 0 0 40px -18px var(--gold-glow);
+}
+.tarjeta-medalla-k {
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.tarjeta-medalla-v {
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.tarjeta-medalla-detalle { margin-top: var(--s-1); font-size: var(--fs-1); line-height: var(--lh-snug); color: var(--ink-dim); }
+.historial-medalla {
+  grid-column: 1 / -1;
+  font-family: var(--font-display);
+  font-size: var(--fs-2);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* --- El dibujo de la carrera ------------------------------------------------------------------------------------------ */
+.carrera { display: grid; gap: var(--s-4); min-width: 0; }
+.carrera-cabecera { display: grid; gap: var(--s-3); }
+.carrera-escalon {
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  font-size: var(--fs-3);
+  line-height: var(--lh-snug);
+  color: var(--ink-dim);
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--live);
+}
+.carrera-escalon-vas {
+  font-family: var(--font-display);
+  font-size: var(--fs-4);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.carrera-gr { display: grid; gap: var(--s-1); }
+.carrera-gr-definicion { margin: 0; font-size: var(--fs-1); line-height: var(--lh-snug); color: var(--ink-mute); }
+.carrera-cuadricula { display: grid; gap: var(--s-4); grid-template-columns: minmax(0, 1fr); min-width: 0; }
+@media (min-width: 900px) {
+  .carrera-cuadricula { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+}
+.carrera-principal, .carrera-lateral { display: grid; gap: var(--s-4); min-width: 0; align-content: start; }
+.carrera-bloque { padding: var(--s-3); background: var(--bg-surface); border: 1px solid var(--line); min-width: 0; }
+.carrera-bloque-titulo {
+  margin: 0 0 var(--s-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--ice);
+}
+.carrera-graficos { display: grid; gap: var(--s-1); }
+.carrera-grafico-titulo { margin-top: var(--s-2); font-size: var(--fs-0); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-mute); }
+.carrera-grafico-titulo:first-child { margin-top: 0; }
+.carrera-grafico { display: block; width: 100%; height: auto; max-width: 100%; }
+.carrera-pie { margin: var(--s-2) 0 0; font-size: var(--fs-1); color: var(--ink-dim); }
+.carrera-pie--arriba { margin: 0 0 var(--s-2); }
+.carrera-vacio { margin: 0; font-size: var(--fs-2); color: var(--ink-dim); }
+
+.carrera-hitos, .carrera-clubes, .carrera-momentos-lista { list-style: none; margin: 0; padding: 0; }
+.carrera-hitos { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); }
+.carrera-hito {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-1);
+  padding: 2px var(--s-2);
+  font-size: var(--fs-1);
+  color: var(--ink);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+}
+.carrera-hito-texto { font-family: var(--font-display); font-weight: 700; letter-spacing: var(--track-label); }
+.carrera-hito-org { color: var(--ink-mute); }
+.carrera-hito--mundial { border-color: var(--gold-deep); }
+.carrera-hito--mundial .carrera-hito-texto { color: var(--gold); }
+.carrera-hito--goldenRoad { background: var(--gold-fill); border-color: var(--gold); }
+.carrera-hito--goldenRoad .carrera-hito-texto { color: var(--gold); text-transform: uppercase; }
+.carrera-hito--menor { color: var(--ink-dim); background: transparent; }
+
+.carrera-clubes { display: grid; gap: var(--s-1); }
+.carrera-club { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s-2); align-items: center; font-size: var(--fs-1); }
+.carrera-club-nombre { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.carrera-club-detalle { grid-column: 2; color: var(--ink-mute); }
+
+.carrera-rival-quien { margin: 0; display: grid; gap: 2px; }
+.carrera-rival-handle { font-family: var(--font-display); font-size: var(--fs-4); letter-spacing: var(--track-label); color: var(--ink); }
+.carrera-rival-donde { font-size: var(--fs-1); color: var(--ink-mute); }
+.carrera-rival-duelo { margin: var(--s-2) 0 0; font-size: var(--fs-2); color: var(--ink-dim); }
+
+.carrera-momentos { padding: var(--s-2) var(--s-3); border: 1px solid var(--line); background: var(--bg-surface); }
+.carrera-momentos-resumen { cursor: pointer; font-family: var(--font-display); font-size: var(--fs-1); font-weight: 700; letter-spacing: var(--track-cartel); text-transform: uppercase; color: var(--ice); }
+.carrera-momentos-lista { display: grid; gap: var(--s-2); margin-top: var(--s-2); }
+.carrera-momento { font-size: var(--fs-1); line-height: var(--lh-snug); color: var(--ink-dim); }
+
+/* El resumen del acompañante: el mismo dibujo, chico y sin números en los ejes. */
+.carrera-resumen { display: grid; gap: var(--s-3); }
+.carrera-resumen .carrera-escalon { padding: var(--s-2) var(--s-3); font-size: var(--fs-2); }
+.carrera-resumen .carrera-escalon-vas { font-size: var(--fs-3); }
+.carrera-resumen .carrera-pie { margin: 0; }

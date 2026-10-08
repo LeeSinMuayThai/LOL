@@ -3,7 +3,8 @@
 // (`fotoDeSplit` + `cierreDeSplit`). Funciones puras sobre `state`: sin DOM, sin `rng`, sin escribir nada, para que corran
 // en Node y `validate.js` les pueda poner un mutante. La mitad del DOM es `src/ui/escena.js`: es la única que escribe
 // `.shell[data-pieza]`.
-import { tableroDeSerie } from '../../core/vistaDeCarrera.js';
+import { tableroDeSerie, seguimientoGoldenRoad } from '../../core/vistaDeCarrera.js';
+import { seguimientoParaMostrar } from './trayectoria.js';
 import { nivelDelJugador, bandaDeNivel } from '../../core/ficha.js';
 import { puntosAbsolutos, etiquetaDeRanked, servidorDeLaPartida } from '../../core/ranked.js';
 
@@ -193,7 +194,10 @@ export function cierreDeSplit(foto, estado) {
       despues: ahora.valor,
       banda: ahora.banda,
       texto: ahora.texto
-    }
+    },
+    // FASE V (V5): el seguimiento del Golden Road del año, solo mientras el logro está vivo y ya hay algo cumplido; si no, `null`.
+    // Es la misma cuenta del motor (`seguimientoGoldenRoad`, regla 15). JSON, como el resto: viaja en `lolcs-vista`.
+    goldenRoad: seguimientoParaMostrar(seguimientoGoldenRoad(estado))
   };
 }
 
