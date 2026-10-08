@@ -323,7 +323,7 @@ export function iniciar() {
   }
 
   // La página al retomar: la del marcador si es de esta carrera; si no, los últimos beats y un cierre sin delta (la foto
-  // se saca ahora, a mitad del split, y va marcada `parcial`).
+  // se saca ahora, a mitad del split, y va marcada `parcial`). `coincide`: el marcador es de esta carrera.
   function paginaAlRetomar(marcador, estado) {
     const valido = Boolean(marcador)
       && marcador.seed === estado.seed
@@ -340,7 +340,8 @@ export function iniciar() {
         fotoInicio: marcador.fotoInicio ?? null,
         ultimoCierre,
         cierreVisto,
-        anterior: ultimoCierre && !cierreVisto ? ultimoCierre : null
+        anterior: ultimoCierre && !cierreVisto ? ultimoCierre : null,
+        coincide: true
       };
     }
     let fotoInicio = null;
@@ -349,7 +350,7 @@ export function iniciar() {
     } catch (error) {
       console.error('No se pudo sacar la foto del split:', error);
     }
-    return { desde: ui.desdeDeUltimosBeats(estado.logs), fotoInicio, ultimoCierre: null, cierreVisto: false, anterior: null };
+    return { desde: ui.desdeDeUltimosBeats(estado.logs), fotoInicio, ultimoCierre: null, cierreVisto: false, anterior: null, coincide: false };
   }
 
   // Fase T3: el feed se revela de a un beat por `reproductor.reproducirBeats`. FASE V (V2-B): mientras tanto la pieza es
@@ -671,7 +672,19 @@ export function iniciar() {
       // D45: el feed se pinta al retomar (antes `#logList` arrancaba vacío). V2-B: es la página del split en curso, con
       // el marcador de `lolcs-vista`; la ficha y el chrome los pinta la `vista`, que escribe el director.
       pagina = paginaAlRetomar(almacenamiento.cargarVista(), estadoRetomado);
-      ui.renderPagina(logList, estadoRetomado, { desde: pagina.desde, anterior: pagina.anterior });
+      // Sin parada, el guardado es de justo después de cerrar un split: si el marcador es de esta carrera, esa página
+      // vuelve con su tarjeta de cierre (a cualquier velocidad). `cierreVisto` no cambia: lo que se vio al jugarlo es lo que
+      // cuenta (la tarjeta de acá dura hasta el primer beat de la página siguiente), y si no se vio, la línea "Split
+      // anterior" de la página siguiente sigue ahí.
+      const reabreElCierre = !estadoRetomado.pendiente && pagina.coincide && Boolean(pagina.ultimoCierre);
+      if (reabreElCierre) {
+        pagina = { ...pagina, anterior: null };
+      }
+      ui.renderPagina(logList, estadoRetomado, {
+        desde: pagina.desde,
+        anterior: pagina.anterior,
+        cierre: reabreElCierre ? pagina.ultimoCierre : null
+      });
       ui.renderLowerThird(summary, metaPill, estadoRetomado);
 
       if (estadoRetomado.pendiente) {
