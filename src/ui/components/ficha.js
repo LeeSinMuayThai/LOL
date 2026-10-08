@@ -186,6 +186,7 @@ function crearRankedHero(state, modulos, memoria) {
   num.className = 'num';
   // Sin valor anterior en este contenedor (la primera vez que se pinta) no hay delta que mostrar: sale el valor, sin contar
   // desde 0 (`countUp` toma el `null` como 0).
+  num.textContent = String(memoria.lp ?? ranked.lp);
   countUp(num, memoria.lp ?? ranked.lp, ranked.lp);
   lpEl.append(num, document.createTextNode(sufijo));
 
@@ -383,6 +384,7 @@ function crearNivelBox(numero, banda, etiqueta, memoria = null) {
   const nivelNum = document.createElement('div');
   nivelNum.className = 'ficha-nivel-numero';
   if (memoria) {
+    nivelNum.textContent = String(memoria.nivel ?? numero);
     countUp(nivelNum, memoria.nivel ?? numero, numero);
     memoria.nivel = numero;
   } else {
