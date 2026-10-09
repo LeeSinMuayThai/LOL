@@ -554,6 +554,25 @@ lugar, como `fondo.js`.
 - Las variantes de espacio de la primera versión (tenue, de paso, en su lugar) quedan como selector secundario en el
   modo grande de `variantes.html`.
 
+**Resultado (2026-10-09, `899ed27`, merge `81993d4`).**
+- **La política vive en dos tablas.** `js/color.js` tiene la de color y `js/fondo.js` la de espacio, que suma `menos`.
+  Las leen el ambiente, el aura y `partido.js`, que solo declara "momento" y "takeover".
+- **Sin perillas, la fusión no cambia.** La diferencia es de 6 a 9 niveles, lo mismo que da el grano del reloj del
+  código contra sí mismo.
+- **`variantes.html`** muestra tres iframes vivos lado a lado, con pestañas para la serie, el Swiss, la decisión y el
+  mercado. El modo grande se cambia con 1-3 (0 vuelve a "como hoy") y tiene el espacio como selector secundario. Rinde
+  a 30 fps por mundo; con una variante abierta en grande, las otras dos se pausan.
+- **Contraste:** 2565 textos, 0 debajo de 4,5:1 (el peor da 5,77). `verificar.mjs` está en verde y el smoke en el 8095
+  no da errores.
+- **Lo que se ve:**
+  - con Sylas (la serie y la decisión), `real` y `mitad` se parecen al duotono, porque su splash ya es pálido y violáceo;
+    la diferencia está en los retratos y en el aura sobre otros campeones;
+  - en el Swiss, el mercado y las cartas de carga, las tres se distinguen de un vistazo;
+  - el Yone rojo del mercado en `real` es lo que más "pegado" queda.
+- **Lo que falta:**
+  - la carta de la final sigue en el duotono de su rareza;
+  - sin WebGL, `lugar` muestra solo luz.
+
 ---
 
 ## 5. La dirección
