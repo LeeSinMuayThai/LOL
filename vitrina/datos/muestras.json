@@ -9171,6 +9171,560 @@
     }
    ]
   },
+  "resultados": [
+   {
+    "eligioElBot": false,
+    "hastaLaProximaParada": {
+     "cambios": [],
+     "cantidadDeLogs": 0,
+     "proximaParada": {
+      "motivo": "minijuego",
+      "opciones": 0,
+      "sistema": "mercado",
+      "titulo": "La prueba de ingreso"
+     },
+     "terminoLaCarrera": false
+    },
+    "inmediato": {
+     "cambios": [],
+     "encadenaOtraParada": {
+      "opciones": 0,
+      "titulo": "La prueba de ingreso"
+     },
+     "fichaAntes": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "uno_mas",
+       "label": "Uno más",
+       "piso": 0,
+       "techo": 25,
+       "valor": 0
+      },
+      "bandaNivel": "titular",
+      "estadoInternacional": null,
+      "hype": {
+       "delta": 0,
+       "id": "figura",
+       "label": "figura",
+       "valor": 59
+      },
+      "jerarquia": {
+       "esMaxima": false,
+       "id": "rookie",
+       "label": "Rookie",
+       "piso": 0,
+       "techo": 35,
+       "valor": 0
+      },
+      "mentalidad": {
+       "delta": 0,
+       "id": "entero",
+       "label": "entero",
+       "peligro": false,
+       "valor": 74
+      },
+      "nivel": 54
+     },
+     "fichaDespues": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "uno_mas",
+       "label": "Uno más",
+       "piso": 0,
+       "techo": 25,
+       "valor": 0
+      },
+      "bandaNivel": "titular",
+      "estadoInternacional": null,
+      "hype": {
+       "delta": 0,
+       "id": "figura",
+       "label": "figura",
+       "valor": 59
+      },
+      "jerarquia": {
+       "esMaxima": false,
+       "id": "rookie",
+       "label": "Rookie",
+       "piso": 0,
+       "techo": 35,
+       "valor": 0
+      },
+      "mentalidad": {
+       "delta": 0,
+       "id": "entero",
+       "label": "entero",
+       "peligro": false,
+       "valor": 74
+      },
+      "nivel": 54
+     },
+     "logs": []
+    },
+    "label": "FURIA · CBLOL",
+    "opcionId": "FURIA"
+   },
+   {
+    "eligioElBot": true,
+    "hastaLaProximaParada": {
+     "cambios": [],
+     "cantidadDeLogs": 0,
+     "proximaParada": {
+      "motivo": "minijuego",
+      "opciones": 0,
+      "sistema": "mercado",
+      "titulo": "La prueba de ingreso"
+     },
+     "terminoLaCarrera": false
+    },
+    "inmediato": {
+     "cambios": [],
+     "encadenaOtraParada": {
+      "opciones": 0,
+      "titulo": "La prueba de ingreso"
+     },
+     "fichaAntes": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "uno_mas",
+       "label": "Uno más",
+       "piso": 0,
+       "techo": 25,
+       "valor": 0
+      },
+      "bandaNivel": "titular",
+      "estadoInternacional": null,
+      "hype": {
+       "delta": 0,
+       "id": "figura",
+       "label": "figura",
+       "valor": 59
+      },
+      "jerarquia": {
+       "esMaxima": false,
+       "id": "rookie",
+       "label": "Rookie",
+       "piso": 0,
+       "techo": 35,
+       "valor": 0
+      },
+      "mentalidad": {
+       "delta": 0,
+       "id": "entero",
+       "label": "entero",
+       "peligro": false,
+       "valor": 74
+      },
+      "nivel": 54
+     },
+     "fichaDespues": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "uno_mas",
+       "label": "Uno más",
+       "piso": 0,
+       "techo": 25,
+       "valor": 0
+      },
+      "bandaNivel": "titular",
+      "estadoInternacional": null,
+      "hype": {
+       "delta": 0,
+       "id": "figura",
+       "label": "figura",
+       "valor": 59
+      },
+      "jerarquia": {
+       "esMaxima": false,
+       "id": "rookie",
+       "label": "Rookie",
+       "piso": 0,
+       "techo": 35,
+       "valor": 0
+      },
+      "mentalidad": {
+       "delta": 0,
+       "id": "entero",
+       "label": "entero",
+       "peligro": false,
+       "valor": 74
+      },
+      "nivel": 54
+     },
+     "logs": []
+    },
+    "label": "LOUD · CBLOL",
+    "opcionId": "LOUD"
+   },
+   {
+    "eligioElBot": false,
+    "hastaLaProximaParada": {
+     "cambios": [],
+     "cantidadDeLogs": 0,
+     "proximaParada": {
+      "motivo": "minijuego",
+      "opciones": 0,
+      "sistema": "mercado",
+      "titulo": "La prueba de ingreso"
+     },
+     "terminoLaCarrera": false
+    },
+    "inmediato": {
+     "cambios": [],
+     "encadenaOtraParada": {
+      "opciones": 0,
+      "titulo": "La prueba de ingreso"
+     },
+     "fichaAntes": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "uno_mas",
+       "label": "Uno más",
+       "piso": 0,
+       "techo": 25,
+       "valor": 0
+      },
+      "bandaNivel": "titular",
+      "estadoInternacional": null,
+      "hype": {
+       "delta": 0,
+       "id": "figura",
+       "label": "figura",
+       "valor": 59
+      },
+      "jerarquia": {
+       "esMaxima": false,
+       "id": "rookie",
+       "label": "Rookie",
+       "piso": 0,
+       "techo": 35,
+       "valor": 0
+      },
+      "mentalidad": {
+       "delta": 0,
+       "id": "entero",
+       "label": "entero",
+       "peligro": false,
+       "valor": 74
+      },
+      "nivel": 54
+     },
+     "fichaDespues": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "uno_mas",
+       "label": "Uno más",
+       "piso": 0,
+       "techo": 25,
+       "valor": 0
+      },
+      "bandaNivel": "titular",
+      "estadoInternacional": null,
+      "hype": {
+       "delta": 0,
+       "id": "figura",
+       "label": "figura",
+       "valor": 59
+      },
+      "jerarquia": {
+       "esMaxima": false,
+       "id": "rookie",
+       "label": "Rookie",
+       "piso": 0,
+       "techo": 35,
+       "valor": 0
+      },
+      "mentalidad": {
+       "delta": 0,
+       "id": "entero",
+       "label": "entero",
+       "peligro": false,
+       "valor": 74
+      },
+      "nivel": 54
+     },
+     "logs": []
+    },
+    "label": "Ecos Force · Circuito Desafiante",
+    "opcionId": "Ecos Force"
+   },
+   {
+    "eligioElBot": false,
+    "hastaLaProximaParada": {
+     "cambios": [],
+     "cantidadDeLogs": 0,
+     "proximaParada": {
+      "motivo": "minijuego",
+      "opciones": 0,
+      "sistema": "mercado",
+      "titulo": "La prueba de ingreso"
+     },
+     "terminoLaCarrera": false
+    },
+    "inmediato": {
+     "cambios": [],
+     "encadenaOtraParada": {
+      "opciones": 0,
+      "titulo": "La prueba de ingreso"
+     },
+     "fichaAntes": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "uno_mas",
+       "label": "Uno más",
+       "piso": 0,
+       "techo": 25,
+       "valor": 0
+      },
+      "bandaNivel": "titular",
+      "estadoInternacional": null,
+      "hype": {
+       "delta": 0,
+       "id": "figura",
+       "label": "figura",
+       "valor": 59
+      },
+      "jerarquia": {
+       "esMaxima": false,
+       "id": "rookie",
+       "label": "Rookie",
+       "piso": 0,
+       "techo": 35,
+       "valor": 0
+      },
+      "mentalidad": {
+       "delta": 0,
+       "id": "entero",
+       "label": "entero",
+       "peligro": false,
+       "valor": 74
+      },
+      "nivel": 54
+     },
+     "fichaDespues": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "uno_mas",
+       "label": "Uno más",
+       "piso": 0,
+       "techo": 25,
+       "valor": 0
+      },
+      "bandaNivel": "titular",
+      "estadoInternacional": null,
+      "hype": {
+       "delta": 0,
+       "id": "figura",
+       "label": "figura",
+       "valor": 59
+      },
+      "jerarquia": {
+       "esMaxima": false,
+       "id": "rookie",
+       "label": "Rookie",
+       "piso": 0,
+       "techo": 35,
+       "valor": 0
+      },
+      "mentalidad": {
+       "delta": 0,
+       "id": "entero",
+       "label": "entero",
+       "peligro": false,
+       "valor": 74
+      },
+      "nivel": 54
+     },
+     "logs": []
+    },
+    "label": "Enclave Esports · Circuito Desafiante",
+    "opcionId": "Enclave Esports"
+   },
+   {
+    "eligioElBot": false,
+    "hastaLaProximaParada": {
+     "cambios": [],
+     "cantidadDeLogs": 0,
+     "proximaParada": {
+      "motivo": "minijuego",
+      "opciones": 0,
+      "sistema": "mercado",
+      "titulo": "La prueba de ingreso"
+     },
+     "terminoLaCarrera": false
+    },
+    "inmediato": {
+     "cambios": [],
+     "encadenaOtraParada": {
+      "opciones": 0,
+      "titulo": "La prueba de ingreso"
+     },
+     "fichaAntes": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "uno_mas",
+       "label": "Uno más",
+       "piso": 0,
+       "techo": 25,
+       "valor": 0
+      },
+      "bandaNivel": "titular",
+      "estadoInternacional": null,
+      "hype": {
+       "delta": 0,
+       "id": "figura",
+       "label": "figura",
+       "valor": 59
+      },
+      "jerarquia": {
+       "esMaxima": false,
+       "id": "rookie",
+       "label": "Rookie",
+       "piso": 0,
+       "techo": 35,
+       "valor": 0
+      },
+      "mentalidad": {
+       "delta": 0,
+       "id": "entero",
+       "label": "entero",
+       "peligro": false,
+       "valor": 74
+      },
+      "nivel": 54
+     },
+     "fichaDespues": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "uno_mas",
+       "label": "Uno más",
+       "piso": 0,
+       "techo": 25,
+       "valor": 0
+      },
+      "bandaNivel": "titular",
+      "estadoInternacional": null,
+      "hype": {
+       "delta": 0,
+       "id": "figura",
+       "label": "figura",
+       "valor": 59
+      },
+      "jerarquia": {
+       "esMaxima": false,
+       "id": "rookie",
+       "label": "Rookie",
+       "piso": 0,
+       "techo": 35,
+       "valor": 0
+      },
+      "mentalidad": {
+       "delta": 0,
+       "id": "entero",
+       "label": "entero",
+       "peligro": false,
+       "valor": 74
+      },
+      "nivel": 54
+     },
+     "logs": []
+    },
+    "label": "Onda Collective · Circuito Desafiante",
+    "opcionId": "Onda Collective"
+   },
+   {
+    "eligioElBot": false,
+    "hastaLaProximaParada": {
+     "cambios": [],
+     "cantidadDeLogs": 0,
+     "proximaParada": {
+      "motivo": "minijuego",
+      "opciones": 0,
+      "sistema": "mercado",
+      "titulo": "La prueba de ingreso"
+     },
+     "terminoLaCarrera": false
+    },
+    "inmediato": {
+     "cambios": [],
+     "encadenaOtraParada": {
+      "opciones": 0,
+      "titulo": "La prueba de ingreso"
+     },
+     "fichaAntes": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "uno_mas",
+       "label": "Uno más",
+       "piso": 0,
+       "techo": 25,
+       "valor": 0
+      },
+      "bandaNivel": "titular",
+      "estadoInternacional": null,
+      "hype": {
+       "delta": 0,
+       "id": "figura",
+       "label": "figura",
+       "valor": 59
+      },
+      "jerarquia": {
+       "esMaxima": false,
+       "id": "rookie",
+       "label": "Rookie",
+       "piso": 0,
+       "techo": 35,
+       "valor": 0
+      },
+      "mentalidad": {
+       "delta": 0,
+       "id": "entero",
+       "label": "entero",
+       "peligro": false,
+       "valor": 74
+      },
+      "nivel": 54
+     },
+     "fichaDespues": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "uno_mas",
+       "label": "Uno más",
+       "piso": 0,
+       "techo": 25,
+       "valor": 0
+      },
+      "bandaNivel": "titular",
+      "estadoInternacional": null,
+      "hype": {
+       "delta": 0,
+       "id": "figura",
+       "label": "figura",
+       "valor": 59
+      },
+      "jerarquia": {
+       "esMaxima": false,
+       "id": "rookie",
+       "label": "Rookie",
+       "piso": 0,
+       "techo": 35,
+       "valor": 0
+      },
+      "mentalidad": {
+       "delta": 0,
+       "id": "entero",
+       "label": "entero",
+       "peligro": false,
+       "valor": 74
+      },
+      "nivel": 54
+     },
+     "logs": []
+    },
+    "label": "Vórtice Squad · Circuito Desafiante",
+    "opcionId": "Vórtice Squad"
+   }
+  ],
   "seed": 61,
   "sistema": "mercado",
   "vosEnElMercado": {
@@ -18062,6 +18616,648 @@
     }
    ]
   },
+  "resultados": [
+   {
+    "eligioElBot": true,
+    "hastaLaProximaParada": {
+     "cambios": [
+      {
+       "antes": 74,
+       "campo": "career.arraigo",
+       "delta": 5,
+       "despues": 79
+      },
+      {
+       "antes": 83,
+       "campo": "nivel",
+       "delta": 1,
+       "despues": 84
+      },
+      {
+       "antes": 59.54,
+       "campo": "player.sleep",
+       "delta": 0.96,
+       "despues": 60.5
+      },
+      {
+       "antes": 66.51,
+       "campo": "player.stats.adaptabilidad",
+       "delta": -0.45,
+       "despues": 66.06
+      },
+      {
+       "antes": 95.25,
+       "campo": "player.stats.hype",
+       "delta": 4,
+       "despues": 99.25
+      },
+      {
+       "antes": 84.11,
+       "campo": "player.stats.laneo",
+       "delta": 3.43,
+       "despues": 87.54
+      },
+      {
+       "antes": 79.4,
+       "campo": "player.stats.macro",
+       "delta": 0.09,
+       "despues": 79.49
+      },
+      {
+       "antes": 92.6,
+       "campo": "player.stats.mecanica",
+       "delta": -0.58,
+       "despues": 92.02
+      },
+      {
+       "antes": 80,
+       "campo": "player.stats.mentalidad",
+       "delta": -4,
+       "despues": 76
+      },
+      {
+       "antes": 54.73,
+       "campo": "player.stats.shotcalling",
+       "delta": 0.88,
+       "despues": 55.61
+      },
+      {
+       "antes": 87.13,
+       "campo": "player.stats.teamfight",
+       "delta": 1.14,
+       "despues": 88.27
+      },
+      {
+       "antes": 1,
+       "campo": "player.worlds",
+       "delta": 1,
+       "despues": 2
+      }
+     ],
+     "cantidadDeLogs": 4,
+     "proximaParada": {
+      "motivo": null,
+      "opciones": 3,
+      "sistema": "edadCierre",
+      "titulo": "Las cuentas (fin de temporada)"
+     },
+     "terminoLaCarrera": false
+    },
+    "inmediato": {
+     "cambios": [
+      {
+       "antes": 74,
+       "campo": "career.arraigo",
+       "delta": 5,
+       "despues": 79
+      },
+      {
+       "antes": 95.25,
+       "campo": "player.stats.hype",
+       "delta": 4,
+       "despues": 99.25
+      },
+      {
+       "antes": 1,
+       "campo": "player.worlds",
+       "delta": 1,
+       "despues": 2
+      }
+     ],
+     "encadenaOtraParada": null,
+     "fichaAntes": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "idolo",
+       "label": "Ídolo",
+       "piso": 60,
+       "techo": 88,
+       "valor": 74
+      },
+      "bandaNivel": "clase_mundial",
+      "estadoInternacional": "clasificado",
+      "hype": {
+       "delta": 9,
+       "id": "estrella",
+       "label": "estrella",
+       "valor": 95
+      },
+      "jerarquia": {
+       "esMaxima": true,
+       "id": "franquicia",
+       "label": "Franquicia",
+       "piso": 82,
+       "techo": 100,
+       "valor": 94
+      },
+      "mentalidad": {
+       "delta": 7,
+       "id": "en_llamas",
+       "label": "en llamas",
+       "peligro": false,
+       "valor": 80
+      },
+      "nivel": 83
+     },
+     "fichaDespues": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "idolo",
+       "label": "Ídolo",
+       "piso": 60,
+       "techo": 88,
+       "valor": 79
+      },
+      "bandaNivel": "clase_mundial",
+      "estadoInternacional": "clasificado",
+      "hype": {
+       "delta": 13,
+       "id": "estrella",
+       "label": "estrella",
+       "valor": 99
+      },
+      "jerarquia": {
+       "esMaxima": true,
+       "id": "franquicia",
+       "label": "Franquicia",
+       "piso": 82,
+       "techo": 100,
+       "valor": 94
+      },
+      "mentalidad": {
+       "delta": 7,
+       "id": "en_llamas",
+       "label": "en llamas",
+       "peligro": false,
+       "valor": 80
+      },
+      "nivel": 83
+     },
+     "logs": [
+      {
+       "message": "El coach junta a todos antes del 2-2: la charla de la temporada se usa acá.",
+       "type": "internacional"
+      },
+      {
+       "etapa": "swiss",
+       "message": "Swiss, ronda 5: perdiste con Movistar KOI (LEC). Vas 2-3.",
+       "p": 0.41646665619105827,
+       "resultado": "L",
+       "rival": "Movistar KOI",
+       "ronda": 5,
+       "torneo": "mundial",
+       "type": "internacional"
+      },
+      {
+       "message": "Afuera en el Swiss del Mundial 2033 con 2-3. Se vuelve a casa temprano.",
+       "mundial": {
+        "anio": 2033,
+        "bracket": [
+         {
+          "etapa": "cuartos",
+          "series": [
+           {
+            "a": "Gen.G",
+            "b": "Ground Zero Gaming",
+            "ganador": "Gen.G",
+            "marcador": [
+             3,
+             1
+            ]
+           },
+           {
+            "a": "DN SOOPers",
+            "b": "Ninjas in Pyjamas",
+            "ganador": "DN SOOPers",
+            "marcador": [
+             3,
+             1
+            ]
+           },
+           {
+            "a": "Top Esports",
+            "b": "Oh My God",
+            "ganador": "Oh My God",
+            "marcador": [
+             2,
+             3
+            ]
+           },
+           {
+            "a": "Dplus KIA",
+            "b": "Movistar KOI",
+            "ganador": "Movistar KOI",
+            "marcador": [
+             1,
+             3
+            ]
+           }
+          ]
+         },
+         {
+          "etapa": "semis",
+          "series": [
+           {
+            "a": "Gen.G",
+            "b": "DN SOOPers",
+            "ganador": "Gen.G",
+            "marcador": [
+             3,
+             2
+            ]
+           },
+           {
+            "a": "Oh My God",
+            "b": "Movistar KOI",
+            "ganador": "Oh My God",
+            "marcador": [
+             3,
+             2
+            ]
+           }
+          ]
+         },
+         {
+          "etapa": "final",
+          "series": [
+           {
+            "a": "Gen.G",
+            "b": "Oh My God",
+            "ganador": "Gen.G",
+            "marcador": [
+             3,
+             0
+            ]
+           }
+          ]
+         }
+        ],
+        "campeon": "Gen.G",
+        "jugador": "FURIA",
+        "ligaCampeon": "LCK",
+        "record": "2-3",
+        "resultado": "eliminado",
+        "swiss": [
+         {
+          "gano": true,
+          "liga": "LEC",
+          "rival": "Karmine Corp",
+          "ronda": 1
+         },
+         {
+          "gano": false,
+          "liga": "LPL",
+          "rival": "Top Esports",
+          "ronda": 2
+         },
+         {
+          "gano": true,
+          "liga": "LCP",
+          "rival": "Team Secret Whales",
+          "ronda": 3
+         },
+         {
+          "gano": false,
+          "liga": "LPL",
+          "rival": "Ninjas in Pyjamas",
+          "ronda": 4
+         },
+         {
+          "gano": false,
+          "liga": "LEC",
+          "rival": "Movistar KOI",
+          "ronda": 5
+         }
+        ]
+       },
+       "resultado": "eliminado",
+       "torneo": "mundial",
+       "type": "internacional"
+      }
+     ]
+    },
+    "label": "Que hable el coach ahora",
+    "opcionId": "charla"
+   },
+   {
+    "eligioElBot": false,
+    "hastaLaProximaParada": {
+     "cambios": [
+      {
+       "antes": 74,
+       "campo": "career.arraigo",
+       "delta": 5,
+       "despues": 79
+      },
+      {
+       "antes": 83,
+       "campo": "nivel",
+       "delta": 1,
+       "despues": 84
+      },
+      {
+       "antes": 59.54,
+       "campo": "player.sleep",
+       "delta": 0.96,
+       "despues": 60.5
+      },
+      {
+       "antes": 66.51,
+       "campo": "player.stats.adaptabilidad",
+       "delta": -0.45,
+       "despues": 66.06
+      },
+      {
+       "antes": 95.25,
+       "campo": "player.stats.hype",
+       "delta": 4,
+       "despues": 99.25
+      },
+      {
+       "antes": 84.11,
+       "campo": "player.stats.laneo",
+       "delta": 3.43,
+       "despues": 87.54
+      },
+      {
+       "antes": 79.4,
+       "campo": "player.stats.macro",
+       "delta": 0.09,
+       "despues": 79.49
+      },
+      {
+       "antes": 92.6,
+       "campo": "player.stats.mecanica",
+       "delta": -0.58,
+       "despues": 92.02
+      },
+      {
+       "antes": 80,
+       "campo": "player.stats.mentalidad",
+       "delta": -4,
+       "despues": 76
+      },
+      {
+       "antes": 54.73,
+       "campo": "player.stats.shotcalling",
+       "delta": 0.88,
+       "despues": 55.61
+      },
+      {
+       "antes": 87.13,
+       "campo": "player.stats.teamfight",
+       "delta": 1.14,
+       "despues": 88.27
+      },
+      {
+       "antes": 1,
+       "campo": "player.worlds",
+       "delta": 1,
+       "despues": 2
+      }
+     ],
+     "cantidadDeLogs": 3,
+     "proximaParada": {
+      "motivo": null,
+      "opciones": 3,
+      "sistema": "edadCierre",
+      "titulo": "Las cuentas (fin de temporada)"
+     },
+     "terminoLaCarrera": false
+    },
+    "inmediato": {
+     "cambios": [
+      {
+       "antes": 74,
+       "campo": "career.arraigo",
+       "delta": 5,
+       "despues": 79
+      },
+      {
+       "antes": 95.25,
+       "campo": "player.stats.hype",
+       "delta": 4,
+       "despues": 99.25
+      },
+      {
+       "antes": 1,
+       "campo": "player.worlds",
+       "delta": 1,
+       "despues": 2
+      }
+     ],
+     "encadenaOtraParada": null,
+     "fichaAntes": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "idolo",
+       "label": "Ídolo",
+       "piso": 60,
+       "techo": 88,
+       "valor": 74
+      },
+      "bandaNivel": "clase_mundial",
+      "estadoInternacional": "clasificado",
+      "hype": {
+       "delta": 9,
+       "id": "estrella",
+       "label": "estrella",
+       "valor": 95
+      },
+      "jerarquia": {
+       "esMaxima": true,
+       "id": "franquicia",
+       "label": "Franquicia",
+       "piso": 82,
+       "techo": 100,
+       "valor": 94
+      },
+      "mentalidad": {
+       "delta": 7,
+       "id": "en_llamas",
+       "label": "en llamas",
+       "peligro": false,
+       "valor": 80
+      },
+      "nivel": 83
+     },
+     "fichaDespues": {
+      "arraigo": {
+       "esMaxima": false,
+       "id": "idolo",
+       "label": "Ídolo",
+       "piso": 60,
+       "techo": 88,
+       "valor": 79
+      },
+      "bandaNivel": "clase_mundial",
+      "estadoInternacional": "clasificado",
+      "hype": {
+       "delta": 13,
+       "id": "estrella",
+       "label": "estrella",
+       "valor": 99
+      },
+      "jerarquia": {
+       "esMaxima": true,
+       "id": "franquicia",
+       "label": "Franquicia",
+       "piso": 82,
+       "techo": 100,
+       "valor": 94
+      },
+      "mentalidad": {
+       "delta": 7,
+       "id": "en_llamas",
+       "label": "en llamas",
+       "peligro": false,
+       "valor": 80
+      },
+      "nivel": 83
+     },
+     "logs": [
+      {
+       "etapa": "swiss",
+       "message": "Swiss, ronda 5: perdiste con Movistar KOI (LEC). Vas 2-3.",
+       "p": 0.18786825371645466,
+       "resultado": "L",
+       "rival": "Movistar KOI",
+       "ronda": 5,
+       "torneo": "mundial",
+       "type": "internacional"
+      },
+      {
+       "message": "Afuera en el Swiss del Mundial 2033 con 2-3. Se vuelve a casa temprano.",
+       "mundial": {
+        "anio": 2033,
+        "bracket": [
+         {
+          "etapa": "cuartos",
+          "series": [
+           {
+            "a": "Gen.G",
+            "b": "Ground Zero Gaming",
+            "ganador": "Gen.G",
+            "marcador": [
+             3,
+             1
+            ]
+           },
+           {
+            "a": "DN SOOPers",
+            "b": "Ninjas in Pyjamas",
+            "ganador": "DN SOOPers",
+            "marcador": [
+             3,
+             1
+            ]
+           },
+           {
+            "a": "Top Esports",
+            "b": "Oh My God",
+            "ganador": "Oh My God",
+            "marcador": [
+             2,
+             3
+            ]
+           },
+           {
+            "a": "Dplus KIA",
+            "b": "Movistar KOI",
+            "ganador": "Movistar KOI",
+            "marcador": [
+             1,
+             3
+            ]
+           }
+          ]
+         },
+         {
+          "etapa": "semis",
+          "series": [
+           {
+            "a": "Gen.G",
+            "b": "DN SOOPers",
+            "ganador": "Gen.G",
+            "marcador": [
+             3,
+             2
+            ]
+           },
+           {
+            "a": "Oh My God",
+            "b": "Movistar KOI",
+            "ganador": "Oh My God",
+            "marcador": [
+             3,
+             2
+            ]
+           }
+          ]
+         },
+         {
+          "etapa": "final",
+          "series": [
+           {
+            "a": "Gen.G",
+            "b": "Oh My God",
+            "ganador": "Gen.G",
+            "marcador": [
+             3,
+             0
+            ]
+           }
+          ]
+         }
+        ],
+        "campeon": "Gen.G",
+        "jugador": "FURIA",
+        "ligaCampeon": "LCK",
+        "record": "2-3",
+        "resultado": "eliminado",
+        "swiss": [
+         {
+          "gano": true,
+          "liga": "LEC",
+          "rival": "Karmine Corp",
+          "ronda": 1
+         },
+         {
+          "gano": false,
+          "liga": "LPL",
+          "rival": "Top Esports",
+          "ronda": 2
+         },
+         {
+          "gano": true,
+          "liga": "LCP",
+          "rival": "Team Secret Whales",
+          "ronda": 3
+         },
+         {
+          "gano": false,
+          "liga": "LPL",
+          "rival": "Ninjas in Pyjamas",
+          "ronda": 4
+         },
+         {
+          "gano": false,
+          "liga": "LEC",
+          "rival": "Movistar KOI",
+          "ronda": 5
+         }
+        ]
+       },
+       "resultado": "eliminado",
+       "torneo": "mundial",
+       "type": "internacional"
+      }
+     ]
+    },
+    "label": "Guardar la charla",
+    "opcionId": "sinCharla"
+   }
+  ],
   "seed": 61,
   "sistema": "internacional"
  },
