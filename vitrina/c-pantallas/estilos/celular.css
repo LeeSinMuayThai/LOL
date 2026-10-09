@@ -1,0 +1,152 @@
+/* El teléfono: FARO en el celular. La parada es una conversación a pantalla completa, el contexto es un chip, los
+   cuartos son el dock de abajo. Se adapta por el ancho del viewport (el iframe de 390x844 de comun/celular.html). */
+.insp-mas { display: none; }
+
+@media (max-width: 640px) {
+  body { font-size: 14.5px; }
+
+  /* ---------- la barra de estado ---------- */
+  .barra { padding: 0 12px; gap: 8px; font-size: 12px; }
+  .barra-app, .barra-doc, .barra-quien, .bandeja-et, .barra .faro-nombre, .barra .faro-version { display: none; }
+  .barra-izq, .barra-der { gap: 10px; }
+  .barra-fecha .pips { display: none; }
+
+  /* ---------- el dock: los 6 cuartos abajo ---------- */
+  .dock { justify-content: space-around; height: 58px; padding: 0 4px 6px; gap: 0; }
+  .dock-inicio { display: none; }
+  .dock-app { flex-direction: column; gap: 3px; height: 48px; padding: 0 4px; font-size: 9.5px; }
+  .dock-nombre { display: block !important; }
+  [data-era='leyenda'] .dock { margin: 0 10px 10px; justify-self: stretch; }
+
+  /* ---------- la decisión ---------- */
+  .area-decision { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 10px 10px 8px; align-content: start; overflow-y: auto; }
+  /* lo último que pasó: el stack plegado arriba, se despliega desde arriba con un toque */
+  .chip-contexto { order: 0; }
+  .lateral { order: 1; display: flex; padding-top: 0 !important; }
+  .lateral > .widget { display: none; }
+  .ventana-parada { order: 2; --alto-titulo: 30px; }
+  .notis-cab { display: none; }
+  .notis[data-plegada] .notis-lista { padding-bottom: 16px; }
+  .notis[data-plegada] .noti:nth-child(2) { transform: translateY(8px) scale(0.96); }
+  .notis[data-plegada] .noti:nth-child(3) { transform: translateY(15px) scale(0.92); }
+  .notis .noti { padding: 9px 12px 10px; }
+  .notis .noti-titulo { margin-top: 5px; font-size: 13.5px; }
+  .notis .noti-texto { -webkit-line-clamp: 1; font-size: 12.5px; }
+  .notis .noti-meta { display: none; }
+  .notis:not([data-plegada]) { left: 0; right: 0; }
+  .chip-contexto {
+    display: flex; align-items: center; gap: 8px; justify-self: start; padding: 7px 12px; border-radius: var(--r-pastilla);
+    background: color-mix(in srgb, var(--bg-surface) calc(var(--vidrio) * 100%), transparent); box-shadow: inset 0 0 0 1px var(--linea);
+    font: 600 12px/1 var(--f-mono); color: var(--ink); white-space: nowrap; max-width: 100%; overflow: hidden;
+  }
+  .chip-banda { color: var(--accent); }
+  .chip-contexto b { color: var(--up); }
+  .chip-sep { color: var(--ink-mute); font-weight: 500; }
+  .ventana-parada { max-height: none; }
+  .parada-cab { padding: 16px 16px 14px; }
+  .parada-kicker { gap: 8px; font-size: 10.5px; }
+  .parada-titulo { margin-top: 10px; font-size: 27px; line-height: 1.05; max-width: none; }
+  .planteo-fila { margin-top: 10px; }
+  .parada-planteo { font-size: 14px; }
+  .parada-cuerpo { grid-template-columns: minmax(0, 1fr); }
+  .opcion { padding: 13px 14px 13px 14px; grid-template-columns: 30px minmax(0, 1fr); column-gap: 10px; row-gap: 7px; }
+  .opcion-label { font-size: 15.5px; }
+  .opcion-pie { gap: 6px 12px; }
+  .glifo-et { font-size: 10.5px; }
+  /* el inspector: una línea + "más" */
+  .inspector { border-left: 0; border-top: 1px solid var(--linea); padding: 10px 14px 12px; gap: 6px; flex-direction: row; flex-wrap: wrap; align-items: baseline; }
+  .inspector .insp-cab, .inspector .insp-previa, .inspector .insp-riesgo, .inspector .insp-propuesta { display: none; }
+  .inspector .insp-desc { flex: 1 1 0; min-width: 0; font-size: 13px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .inspector[data-abierto] .insp-desc { -webkit-line-clamp: unset; }
+  .inspector[data-abierto] .insp-previa, .inspector[data-abierto] .insp-riesgo { display: flex; flex-basis: 100%; }
+  .insp-mas { display: inline-block; flex: none; padding: 2px 9px; border-radius: var(--r-pastilla); font: 500 11.5px/1.3 var(--f-mono); box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+  .hilo { padding: 16px 14px 18px; }
+  .burbuja { max-width: 92%; font-size: 14px; }
+
+  /* la planilla: la etiqueta arriba, los ejes en columnas alineadas abajo */
+  .planilla .pl-fila { grid-template-columns: repeat(auto-fit, minmax(44px, 1fr)) !important; row-gap: 8px; }
+  .planilla .pl-plan { grid-column: 1 / -1; }
+  .pl-cab { height: auto; padding: 8px 0; }
+  .pl-cab .pl-plan { display: none; }
+  .pl-cab .pl-c span { display: none; }
+  .pl-c { padding: 0 4px; justify-content: center; }
+  .pl-cab .pl-c:first-child, .pl-fila .pl-plan { padding-left: 14px; justify-content: flex-start; }
+  .pl-fila.opcion { padding-bottom: 12px; min-height: 0; }
+  .pl-fila.opcion .pl-plan { padding-top: 12px; padding-bottom: 0; }
+  .pl-lp { flex-direction: column; gap: 4px; }
+  .pl-lp .lp-barra { width: 100%; flex: none; height: 6px; }
+  .pl-lp small { display: none; }
+  .pl-lp b { font-size: 13px; min-width: 0; text-align: center; }
+  .pl-eje { flex-direction: column; gap: 3px; font-size: 12px; }
+  .pl-riesgo { align-items: center; gap: 4px; }
+  .pl-riesgo .medidor, .pl-riesgo .deuda { display: none; }
+  .riesgo-nombre { font-size: 10.5px; }
+  .pila-plan .inspector { padding: 10px 14px 12px; }
+
+  /* ---------- el inicio: pantalla de bloqueo del teléfono ---------- */
+  .bloqueo { display: flex; flex-direction: column; gap: 14px; padding: 0 16px 18px; overflow-y: auto; }
+  .bloqueo-barra { margin: 0 -16px; flex: none; height: 32px; }
+  .bloqueo-barra > span:nth-child(2) { display: none; }
+  .bloqueo > *, .bloqueo-izq > *, .salon > * { flex-shrink: 0; }
+  .bloqueo-izq { display: contents; }
+  .reloj { order: 1; margin: 18px 0 4px; }
+  .reloj-anio { font-size: 118px; }
+  .reloj-sub { font-size: 15px; margin-top: 12px; }
+  .login { order: 2; align-self: stretch; padding: 18px 16px 16px; }
+  .noti-desafio { order: 3; width: auto; }
+  .carpeta { order: 4; width: auto; }
+  .carpeta ul, .carpeta-titulo { display: none; }
+  .sesiones { order: 5; flex-direction: column; }
+  .sesion { width: auto; }
+  .login-nombre { font-size: 25px; }
+  .pastilla { height: 28px; padding: 0 10px; font-size: 12.5px; }
+  .ventana-seleccion { width: calc(100% - 16px); height: calc(100% - 60px); }
+  .sel-grilla { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .login-pie { flex-direction: column; align-items: stretch; }
+
+  /* ---------- la cumbre: el stream en vertical ---------- */
+  .stream-canal, .stream-barra .faro-nombre, .stream-barra .faro-version, .stream-boton kbd { display: none; }
+  .stream-barra { gap: 10px; padding: 0 10px; }
+  .stream-boton { height: 30px; padding: 0 11px; font-size: 12px; }
+  .stream-cuerpo { grid-template-columns: minmax(0, 1fr); grid-template-rows: 500px minmax(0, 1fr); }
+  .player-cab { left: 14px; top: 14px; font-size: 11px; }
+  .marcador { top: 50px; gap: 10px; padding: 6px 8px 6px 12px; font-size: 13px; }
+  .mc-eq b { font-size: 20px; }
+  .mc-mapas li { width: 22px; height: 22px; }
+  .campeones { left: 16px; right: 16px; bottom: 74px; }
+  .camp-titulo { font-size: 45px; }
+  .camp-kicker { font-size: 11.5px; }
+  .camp-sub { font-size: 14px; margin-top: 12px; }
+  .lower { left: 16px; right: 16px; bottom: 14px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .lower li { padding: 7px 6px; }
+  .lower b { font-size: 11.5px; }
+  .lw-rol { font-size: 9px; }
+  .chat { border-left: 0; border-top: 1px solid var(--linea); grid-template-rows: 36px minmax(0, 1fr) 48px; }
+
+  /* el salón de la fama */
+  .salon { display: flex; flex-direction: column; align-items: stretch; gap: 26px; padding: 28px 18px 40px; overflow-y: auto; }
+  .salon-titulo { font-size: 52px; }
+  .carta { align-self: center; width: 290px; }
+  .carta-puntos { font-size: 76px; }
+  .componentes { max-width: none; }
+
+  /* ---------- las eras: cinco filas ---------- */
+  .eras { flex-direction: column; }
+  .era-col { box-shadow: inset 0 -1px 0 var(--negro); }
+  .era-col[data-activa] { flex-grow: 1.7; }
+  .era-escritorio { grid-template-rows: minmax(0, 1fr); }
+  .era-col .barra, .era-col .dock { display: none; }
+  .era-area { flex-direction: row; align-items: center; padding: 10px 12px; gap: 12px; }
+  .era-anio { font-size: 44px; }
+  .era-col[data-activa] .era-anio { font-size: 64px; }
+  .era-os { margin-top: 6px; }
+  .era-os small { font-size: 11.5px; }
+  .ventana-era { max-width: 210px; flex: none; }
+  .ventana-era .ventana-titulo { display: none; }
+  .ventana-era .era-cuerpo { min-height: 0; padding: 10px; gap: 8px; }
+  .era-datos, .era-av { display: none; }
+  .era-handle { font-size: 14px; }
+  .era-num { padding: 6px 0; }
+  .era-num b { font-size: 16px; }
+  .era-escudo { width: 28px; height: 28px; }
+}
