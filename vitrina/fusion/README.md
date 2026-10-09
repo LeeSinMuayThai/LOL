@@ -113,75 +113,88 @@ del Swiss es decorativo (PRNG con datos reales); los cuartos de la barra no nave
 - `verificar.mjs` no conoce la carpeta `fusion` (su lista de direcciones es fija): se verificó con una copia del mismo
   script con `fusion` agregada (ver el informe).
 
-## Las tres intensidades (PLANUI §4.6)
+## Las dos perillas del mundo: el color y el espacio (PLANUI §4.6)
 
-El usuario: la fusión está bien, pero el campeón de fondo pesa demasiado después del inicio ("que mantengas la esencia,
-pero no tan fuerte"). Lo que se queda es la luz de la era (haces, bruma, polvo, su color y su cambio entre eras) y el
-aura como gesto; lo que baja es el campeón. Una perilla, `fondo=pleno|tenue|paso|lugar`, en el hash de `index.html`
-(y en el panel de la vitrina: "Fondo", o Alt+F). **`pleno` es la fusión de hoy y el valor por defecto**: sin `fondo` nada
-cambia. La página para elegir es **`variantes.html`**.
+El usuario, sobre la fusión: el estilo del campeón pesa demasiado después del inicio. Primero lo leímos como espacio
+(cuánto campeón hay de fondo) y él aclaró: *"Me refería más al blanco y negro, violeta ese que tienen… estaba bien para
+el inicio, pero si estaba siempre iba a ser como un estilo repetitivo. Que esté presente, pero no tan fuerte"*, y el
+espacio *"un poco nomás"*. Quedan dos perillas en el hash de `index.html` (y en el panel de la vitrina: "Color", Alt+K;
+"Fondo", Alt+F). **Sin ninguna de las dos (o con `color=duotono` y `fondo=pleno`) la fusión es la de hoy**, píxel a píxel.
+
+**`color=duotono|real|mitad|capas`, el eje principal** (`js/color.js`):
 
 | Variante | Qué hace |
 |---|---|
-| `tenue` — *el mismo mundo, a bajo volumen* | el campeón siempre, a ~40 % de presencia, desenfocado y fundido en más bruma, con más viñeta y menos contraste, sin la profundidad 2,5D (sin parallax por capas, sin contraluz, sin flujo). El aura cruza de campeón al mismo volumen. Se lee primero la luz. |
-| `paso` — *el campeón aparece cuando importa y se va* | en reposo, solo la luz de la era (con un poco más de haz y de polvo para que no quede un fondo plano). El campeón entra con el aura (apuntar cualquier `data-campeon`, y se va con el cruce al soltar), en las pantallas de carga y el post-game de cada mapa y en el resultado de la serie, y en el post-game del Swiss; se funde de vuelta a la luz en 2 s. En la decisión y el mercado, solo con el hover. |
-| `lugar` — *el campeón vive en un lugar fijo, como en el cliente* | el fondo de pantalla completa es solo luz. El campeón vive recortado, nítido y entero, en una ventana de la interfaz: el escenario del draft (como el splash del champ select), el "video" de la Tribuna (una banda entre la cabecera del player y la parada) y una banda pegada arriba del panel "vos" en la decisión, el plan y el mercado. Adentro de la ventana la luz baja, para que el campeón se lea como imagen. El aura cambia el campeón de la ventana y tiñe la luz de afuera (un velo de color, sin forma). |
+| `duotono` — *como hoy* | blanco y negro + la luz de la era, en todos lados. Es el valor por defecto y queda siempre en el inicio, las eras, CAMPEONES, la firma y AFUERA. |
+| `real` — *A color* | todo campeón con sus colores reales: el fondo, el escenario, el video de la Tribuna, los libres, las ranuras, los picks, los quemados, las cartas de carga y la banda de "vos". La era queda en la luz (haces, bruma, polvo, filete) y en un lavado del 18 % sobre el arte de fondo, para que esté en la escena y no pegado. |
+| `mitad` — *Mitad* | 50 % color real y 50 % duotono, en todos lados: se reconocen sus colores, llevados a la paleta de la era. |
+| `capas` — *Fondo en duotono, retratos a color* | el fondo de pantalla completa sigue en duotono, más suave (presencia × 0,72, contraste × 0,8); toda pieza de interfaz con campeón va a color, como en el cliente. |
 
-Lo mismo en las cuatro: la interfaz no cambia (en `lugar` solo se suma la ventana decorativa); el inicio, las eras, el
-título y la firma van al 100 % siempre; **AFUERA es un takeover y lleva el mundo al 100 %** en las cuatro; la luz de la
-era y su cambio siguen.
+**`fondo=pleno|menos|tenue|paso|lugar`, el espacio** (`js/fondo.js`), ahora selector secundario:
 
-**La política del mundo vive en un solo lugar: `js/fondo.js`.** Es una tabla, no `if`s:
-- un **estado** del mundo son 10 números: `presencia` (campeón a pantalla completa), `profundidad` (2,5D), `bruma` y
-  `vineta` extra, `contraste` y `suave` (desenfoque) del duotono, `enLugar` (presencia adentro de la ventana), `ventana`
-  (cuánto pesa la ventana; 0 en un takeover), `luz` y `polvo` (más haz y más polvo cuando no hay campeón);
-- cada variante dice qué estado usa en **reposo**, con el **aura**, en un **momento** y en un **takeover**
-  (`POLITICAS`); `TIEMPOS`: sube 520 ms, vuelve a la luz en 2000 ms, cruza 1300 ms al cambiar de pantalla y 700 ms al
-  cambiar de variante en vivo; `SIEMPRE_PLENO`: inicio, eras, título y firma; `LUGARES`: dónde está la ventana de
-  cada pantalla (ancla, foco de la cara, escala del splash).
+| Variante | Qué hace |
+|---|---|
+| `pleno` — *hoy* | el campeón en la luz, a pantalla completa, siempre. |
+| `menos` — *un poco menos* | la misma composición, con el campeón al 70 % y la luz de contra de la era al 40 % (sin el derrame rosa del borde derecho de la serie), y un poco más de viñeta. **Las tres variantes de color se muestran con `menos`.** |
+| `tenue` | el campeón siempre, a ~40 %, desenfocado y fundido en más bruma, sin la profundidad 2,5D. |
+| `paso` | en reposo solo luz; el campeón entra con el aura, en cada mapa (tu pick de ese mapa), en el resultado y en el post-game del Swiss, y vuelve a la luz en 2 s. |
+| `lugar` | solo luz de fondo; el campeón vive recortado en una ventana de la interfaz: una carta al lado de "Apuntando <nombre>" en el draft (se apaga mientras se juega: las cartas de carga ya son los lugares), el video de la Tribuna y una banda arriba del panel "vos". |
+
+**Dónde vive la política.** El espacio es una tabla en `js/fondo.js`: cada variante dice qué **estado** del mundo usa
+en reposo, con el aura, en un momento y en un takeover (`POLITICAS`), con sus `TIEMPOS` (sube 520 ms, vuelve a la luz
+en 2000 ms, cruza 1300 ms entre pantallas y 700 ms al cambiar de variante), las pantallas que van siempre al 100 % y los
+`LUGARES`. Un estado son 14 números: `presencia`, `profundidad`, `bruma`, `vineta`, `contraste`, `suave`, `enLugar`,
+`ventana`, `contra`, `luz`, `polvo` y los tres del color: `colorFondo`, `lavado` y `colorLugar`. El color es otra tabla en
+`js/color.js` (`POLITICAS_COLOR`: `fondo`, `lavado`, `pieza`, y los multiplicadores de `presencia` y `contraste`) con las
+pantallas que van siempre en duotono; `fondo.js` le suma a cada estado el color con `conColor()`, y el takeover
+vuelve al duotono.
 
 Quién la lee:
 - **el ambiente** (`js/ambiente.js`): `fondo({ politica, lugar })` la fija por pantalla; la intensidad es una función
-  del reloj (un estado inicial + cruces programados), así `congelar(t)` también fotografía la intensidad del instante;
-  la vuelca al shader en `uI`, `uJ`, `uK`, `uRec` y `uRadio` (con `pleno` todos son identidad: la fusión de hoy da los
-  mismos píxeles). La ventana se mide en cada cuadro (`getBoundingClientRect`) y el splash se recorta a su rectángulo con
-  las esquinas redondeadas. Sin WebGL: presencia y desenfoque por variables CSS (en `lugar` queda la luz sola).
-- **el aura** (`js/aura.js`): avisa `apuntado: true|false` cuando hay una mano sobre un campeón; el ambiente lleva el
-  mundo al estado `aura` de la política y de vuelta a la base.
-- **las pantallas** solo declaran hechos: `partido.js` dice "momento" (los mapas y el resultado de la serie; el
-  post-game del Swiss) y "takeover" (AFUERA). Ninguna pantalla sabe qué variante corre.
+  del reloj (un estado inicial + cruces programados), así `congelar(t)` la fotografía. La vuelca al shader en `uI`,
+  `uJ`, `uK`, `uColor`, `uRec` y `uRadio`; con `pleno`/`duotono` todos son identidad. El color del arte de fondo es
+  `mix(duotono, mix(color real, duotono, lavado), colorFondo)` y, adentro de la ventana de `lugar`, el de las piezas.
+  Sin WebGL, el respaldo CSS pinta el arte con la misma mezcla y aplica presencia y desenfoque.
+- **las piezas** (`partido.js`): libres, ranuras, picks e intención del rival y las cartas de carga se pintan con
+  `pintarCampeon()` de `color.js` (el duotono de siempre y, encima, el color real con la mezcla de la política). Los
+  quemados leen `--pieza-color` (main.js la pone en `<html>`): se ven quemados en grises, con su color asomando.
+- **el aura** (`js/aura.js`): avisa `apuntado: true|false`; el ambiente lleva el mundo al estado `aura`.
+- **las pantallas** declaran hechos: `partido.js` dice "momento" (los mapas, con tu pick de cada uno, y el resultado de la
+  serie; el post-game del Swiss) y "takeover" (AFUERA). Ninguna pantalla sabe qué variante corre.
+- **en vivo**: cambiar una perilla (selector, Alt+F/Alt+K, el hash) cruza el mundo en 700 ms y repinta las piezas sin
+  salir de la pantalla.
 
-**`variantes.html`** (`estilos/variantes.css`, `js/variantes.js`): las tres columnas, cada una un iframe vivo de la
-fusión a 1440×900 escalado con su `fondo` en el hash y el panel oculto; las pestañas (la serie, el Swiss, la decisión,
-el mercado) cambian las tres a la vez; "lo mismo en las tres" con el enlace a "así arranca" (el inicio al 100 %). Un clic
-en una columna (o 1-3) la abre grande; adentro, Alt+1-3 cambia la variante sin salir de la pantalla y Alt+0 es "como hoy"
-(o la barra de arriba); Esc vuelve (si el juego no lo usó para saltar). Con una grande abierta, las otras dos pausan su
-ambiente (`postMessage` → `amb.pausar()`).
+**`variantes.html`** (`estilos/variantes.css`, `js/variantes.js`): las tres columnas son `real`, `mitad` y `capas` ("A
+color", "Mitad", "Fondo en duotono, retratos a color") con `fondo=menos`, cada una un iframe vivo de la fusión a
+1440×900 escalado con el panel oculto; las pestañas (la serie, el Swiss, la decisión, el mercado) cambian las tres a la
+vez; "lo mismo en las tres" con el enlace a "así arranca" (el inicio en duotono, al 100 %). Un clic en una columna (o
+1-3) la abre grande; arriba, el conmutador (1-3 las tres; 0 "como hoy": duotono y pleno; con Alt desde adentro del
+juego) y el selector de **espacio** (hoy, un poco menos, tenue, de paso, en su lugar); Esc vuelve (si el juego no lo usó
+para saltar). Con una grande abierta, las otras dos pausan su ambiente (`postMessage` → `amb.pausar()`).
 
-**Trasladable a producción** (si se elige una): la fila elegida de `POLITICAS` con sus estados y `TIEMPOS` (y
-`SIEMPRE_PLENO`); los uniformes y la intensidad como función del reloj de `ambiente.js`, con `fondo/momento/takeover`;
-`apuntado` en el aura; los dos hechos de `partido.js`; si es `lugar`, `LUGARES` + `estilos/fondo.css` (la banda y el
-video, con `--lugar-banda` y `--lugar-video-top` de los tokens). **Solo de prototipo**: el selector inyectado en el
-Shadow DOM del panel y el envoltorio de `history.replaceState` que conserva `fondo` (el panel de `comun/` reescribe el
-hash con sus claves y no se toca), el `postMessage` de pausa y `variantes.html`.
+**Trasladable a producción** (lo que se elija): la fila de `POLITICAS_COLOR` y la de `POLITICAS` con `TIEMPOS`,
+`SIEMPRE_DUOTONO` y `SIEMPRE_PLENO`; `conColor()`; los uniformes y la intensidad como función del reloj de `ambiente.js`
+(`fondo/momento/takeover`); `pintarCampeon()` para toda pieza de campeón; `--pieza-color`; `apuntado` en el aura; los
+hechos de `partido.js`; si se elige `lugar`, `LUGARES` + `estilos/fondo.css`. **Solo de prototipo**: los selectores
+inyectados en el Shadow DOM del panel y el envoltorio de `history.replaceState` que conserva `color`/`fondo` (el panel
+de `comun/` reescribe el hash con sus claves y no se toca), el `postMessage` de pausa y `variantes.html`.
 
 **Verificación (2026-10-09).**
-- `pleno` = la fusión de hoy: capturas del código anterior (`git stash`) contra el nuevo, congeladas a 6000 ms: serie
-  máx. 5, plan 6, mercado 4, Swiss 5 niveles de diferencia por canal (el ruido de grano del shader, que depende del reloj
-  absoluto; el mismo código contra sí mismo da hasta 8). El inicio, el título y la firma con `fondo=paso` y `fondo=lugar`
-  contra `pleno`: máx. 4-6 (van al 100 %).
-- `capturar.mjs --puerto 8116 --direccion fusion` (captura `pleno`): 102 capturas, 0 errores, 0 avisos.
-- `verificar.mjs`: en verde (fusion, 28 archivos).
-- Contraste por píxeles (la copia de `c-pantallas/contraste.mjs` apuntada a `fusion/`), 36 casos de las tres variantes
-  (serie, replan, Swiss, evento, plan, mercado, final, el mapa 1, el fin de la serie, el post-game y AFUERA del Swiss,
-  el resultado del evento): 3201 textos, 0 debajo de 4,5:1. El peor era la línea "antes" del evento en `paso`/`lugar`
-  (4,56, por el haz extra); con `luz` 1,2 se volvió a medir el evento en las cinco eras: 800 textos, peor 5,03.
-- `variantes.html`: 0 errores de consola; hover adentro (el aura dispara en la columna), clic y 1-3 abren la grande,
-  Alt+1/Alt+0 cambian la variante, 1 elige y juega la serie, Esc salta y Esc vuelve, las cuatro pestañas.
+- Sin perillas = la fusión de hoy: capturas del código anterior contra el nuevo, congeladas a 6000 ms: serie máx. 9
+  (2 píxeles de polvo), plan 8, inicio, mercado y Swiss 6 niveles por canal; el mismo código contra sí mismo da hasta 8
+  (el grano y el polvo dependen del reloj absoluto). Inicio, título y firma con otro `fondo`: máx. 4-6 (van al 100 %).
+- Contraste por píxeles (la copia de `c-pantallas/contraste.mjs` apuntada a `fusion/`): las tres de color con
+  `fondo=menos`, 30 casos (serie, Swiss, evento, plan, mercado, final, el mapa 1, el post-game y AFUERA del Swiss, el
+  resultado del evento): 2565 textos, 0 debajo de 4,5:1, peor 5,77. Las del espacio: 3201 textos, 0 debajo; la línea
+  "antes" del evento en `paso`/`lugar`, 5,03 en las cinco eras.
+- `verificar.mjs` en verde; `capturar.mjs --direccion fusion`: 102 capturas, 0 errores (antes del color).
+- `variantes.html`: 0 errores de consola; el aura en una columna, clic y 1-3 abren la grande, Alt+1/Alt+0/Alt+3 y el
+  selector de espacio cambian la vista, 1 juega la serie, Esc salta y Esc vuelve, las cuatro pestañas.
 - Rendimiento (Chromium headless con la GPU real, ANGLE D3D11 sobre una RTX 2060): lado a lado, los tres ambientes a
-  30 cuadros/s y la página a 4,2 ms por cuadro (p95 4,3); con una grande, esa a 30 y las otras dos en 0 (pausadas).
+  30 cuadros/s (la página a 4,2 ms por cuadro, p95 4,3); con una grande, esa a 30 y las otras dos en 0.
 
-**Límites.** En la serie, `lugar` se parece a `pleno`: el campeón ya vivía en el escenario; la diferencia es que no se
-derrama y se lee como imagen. En `paso`, el momento de los mapas muestra el campeón de la pantalla, no el pick de cada
-mapa. Sin WebGL, `lugar` queda en la luz sola (no se recorta la ventana). La banda del video de la Tribuna se mide al
-montar (no sigue un cambio de tamaño de la ventana).
+**Límites.** Con Sylas (la serie, la decisión) `real` y `mitad` se parecen al duotono: su paleta ya es pálida y
+violácea; la diferencia se ve en los libres, las cartas y con el aura. Con Anivia (Swiss) y Yone (mercado), de un
+vistazo. La carta holográfica de la final queda en el duotono de su rareza (es un objeto). En `paso`, el campeón de
+cada mapa entra en tiempo real (no entra en `congelar`). Sin WebGL, `lugar` queda en la luz sola. La banda del video
+de la Tribuna se mide al montar.

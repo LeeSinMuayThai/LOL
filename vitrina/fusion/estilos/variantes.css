@@ -88,3 +88,11 @@ html[data-grande] .va-col[data-abierta], html[data-grande] .va-col[data-abierta]
 @media (prefers-reduced-motion: reduce) {
   .va-col-cab .op-tecla { transition: none; }
 }
+/* el espacio (cuanto campeon de fondo): el selector secundario de la grande */
+.va-espacio-campo { display: inline-flex; align-items: center; gap: 8px; font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
+.va-espacio {
+  height: 30px; padding: 0 8px; border: 0; border-radius: var(--r-control); background: var(--panel-claro); color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--linea-fuerte); font: 500 12px / 1 var(--f-mono);
+}
+.va-espacio:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.va-grande-barra .boton, .va-seg, .va-espacio-campo { white-space: nowrap; flex: none; }

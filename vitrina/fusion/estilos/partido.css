@@ -74,7 +74,7 @@
 .quemados { margin-top: 10px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .quemado, .quemado-hueco { position: relative; aspect-ratio: 1; border-radius: var(--r-control); overflow: hidden; }
 .quemado { cursor: pointer; }
-.quemado img { width: 100%; height: 100%; display: block; filter: grayscale(1) brightness(0.55); }
+.quemado img { width: 100%; height: 100%; display: block; filter: grayscale(calc(1 - var(--pieza-color) * 0.6)) brightness(0.55); }
 .quemado-tacha { position: absolute; inset: 0; z-index: 1; background: linear-gradient(to top right, var(--velo-nada) calc(50% - 1px), var(--ink-dim) calc(50% - 1px), var(--ink-dim) calc(50% + 1px), var(--velo-nada) calc(50% + 1px)); }
 .quemado:hover, .quemado:focus-visible { box-shadow: 0 0 0 2px var(--luz-texto); outline: none; }
 .quemado[data-leido] { box-shadow: 0 0 0 2px var(--danger); }

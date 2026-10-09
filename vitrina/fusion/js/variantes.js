@@ -1,13 +1,18 @@
-// variantes.html (PLANUI §4.6): las tres intensidades del mundo lado a lado, sobre la misma pantalla. Cada columna es
-// la fusion entera (index.html) en un iframe de 1440x900 escalado, viva e interactiva, con el panel de la vitrina oculto
-// y su `fondo` en el hash. Las pestañas cambian la pantalla de las tres a la vez. Clic (o 1-3) abre una grande, con el
-// conmutador de variante (Alt+1-3 desde adentro del juego, Alt+0 = como hoy); Esc vuelve. Mientras una esta grande, las
-// otras dos pausan su mundo (tres WebGL a la vez).
+// variantes.html (PLANUI §4.6): las tres variantes del COLOR del campeon lado a lado, sobre la misma pantalla y con
+// `fondo=menos` ("un poco menos" de campeon de fondo). Cada columna es la fusion entera (index.html) en un iframe de
+// 1440x900 escalado, viva e interactiva, con el panel de la vitrina oculto y `color`/`fondo` en el hash. Las pestañas
+// cambian la pantalla de las tres a la vez. Clic (o 1-3) abre una grande, con el conmutador (1-3 las tres, 0 = como hoy:
+// duotono y pleno; con Alt desde adentro del juego) y el espacio como selector secundario; Esc vuelve. Mientras una esta
+// grande, las otras dos pausan su mundo (tres WebGL a la vez).
 import { POLITICAS } from './fondo.js';
+import { POLITICAS_COLOR } from './color.js';
 import { eraEfectiva } from '../../comun/catalogo.js';
 
-const VARIANTES = ['tenue', 'paso', 'lugar'];
-const CONMUTADOR = [['1', 'tenue'], ['2', 'paso'], ['3', 'lugar'], ['0', 'pleno']];
+const VARIANTES = ['real', 'mitad', 'capas']; // el color de cada columna
+const ESPACIO_DEF = 'menos'; // el fondo de las tres columnas
+const HOY = { color: 'duotono', fondo: 'pleno' };
+const CONMUTADOR = [['1', 'real', 'A color'], ['2', 'mitad', 'Mitad'], ['3', 'capas', 'Retratos a color'], ['0', 'duotono', 'Como hoy']];
+const ESPACIOS = ['pleno', 'menos', 'tenue', 'paso', 'lugar'];
 const PESTANAS = [
   { id: 'serie', titulo: 'La serie', pantalla: 'partido', muestra: 'serie' },
   { id: 'swiss', titulo: 'El Swiss', pantalla: 'partido', muestra: 'swiss' },
@@ -39,22 +44,24 @@ const el = (tag, attrs = {}, hijos = []) => {
 const deHash = () => new URLSearchParams(location.hash.slice(1));
 let pestana = PESTANAS.find((p) => p.id === deHash().get('p')) ?? PESTANAS[0];
 let grande = null; // indice de la columna abierta grande, o null
-let fondoGrande = null; // la variante que se ve en la grande (puede no ser la de su columna)
+let vista = null; // { color, fondo } de la grande (puede no ser la de su columna)
+let espacio = ESPACIO_DEF; // el selector secundario de la grande
 
-const hashDe = (p, fondo) => `pantalla=${p.pantalla}&muestra=${p.muestra}&era=auto&panel=0&fondo=${fondo}`;
-const srcDe = (p, fondo) => `index.html#${hashDe(p, fondo)}`;
+const hashDe = (p, v) => `pantalla=${p.pantalla}&muestra=${p.muestra}&era=auto&panel=0&fondo=${v.fondo}&color=${v.color}`;
+const srcDe = (p, v) => `index.html#${hashDe(p, v)}`;
+const deColumna = (v) => ({ color: v, fondo: ESPACIO_DEF });
 
 // ---------- las tres columnas ----------
 const cols = VARIANTES.map((v, i) => {
-  const pol = POLITICAS[v];
-  const marco = el('iframe', { class: 'va-marco', title: `${pol.etiqueta}: ${pol.linea}`, src: srcDe(pestana, v), width: String(ANCHO), height: String(ALTO), tabindex: '-1' });
+  const pol = POLITICAS_COLOR[v];
+  const marco = el('iframe', { class: 'va-marco', title: `${pol.etiqueta}: ${pol.linea}`, src: srcDe(pestana, deColumna(v)), width: String(ANCHO), height: String(ALTO), tabindex: '-1' });
   const ventana = el('div', { class: 'va-ventana' }, marco);
   const abrirBtn = el('button', { type: 'button', class: 'va-col-cab', 'aria-label': `Ver grande: ${pol.etiqueta}` }, [
     el('span', { class: 'op-tecla', text: String(i + 1) }),
     el('span', { class: 'va-col-txt' }, [el('b', { class: 'va-col-nombre', text: pol.etiqueta.toLowerCase() }), el('span', { class: 'va-col-linea', text: pol.linea })]),
   ]);
   abrirBtn.addEventListener('click', () => abrir(i));
-  const nodo = el('section', { class: 'va-col', 'data-fondo': v, 'aria-label': pol.etiqueta }, [abrirBtn, ventana]);
+  const nodo = el('section', { class: 'va-col', 'data-color': v, 'aria-label': pol.etiqueta }, [abrirBtn, ventana]);
   columnas.append(nodo);
   marco.addEventListener('load', () => instalar(marco, i));
   return { v, nodo, marco, ventana, abrirBtn };
@@ -106,8 +113,7 @@ function irA(p) {
   });
   marcarEra();
   cols.forEach((c, i) => {
-    const fondo = grande === i && fondoGrande ? fondoGrande : c.v;
-    c.marco.contentWindow.location.hash = hashDe(p, fondo);
+    c.marco.contentWindow.location.hash = hashDe(p, grande === i && vista ? vista : deColumna(c.v));
   });
 }
 // el acento de la pagina es la luz de la era de la pantalla que se mira
@@ -137,17 +143,30 @@ function escalar() {
 addEventListener('resize', escalar);
 
 // ---------- grande ----------
-const segBotones = CONMUTADOR.map(([k, f]) => {
-  const b = el('button', { type: 'button', class: 'va-seg', 'data-fondo': f }, [el('span', { class: 'op-tecla', text: k }), POLITICAS[f].etiqueta]);
+const segBotones = CONMUTADOR.map(([k, c, corto]) => {
+  const b = el('button', { type: 'button', class: 'va-seg', 'data-color': c, title: POLITICAS_COLOR[c].linea }, [el('span', { class: 'op-tecla', text: k }), corto]);
   b.addEventListener('click', () => {
     conmutar(k);
     enfocarJuego();
   });
   return b;
 });
+// el espacio (cuanto campeon de fondo): selector secundario
+const selEspacio = el('select', { class: 'va-espacio', 'aria-label': 'Espacio: cuánto campeón de fondo' }, ESPACIOS.map((f) => el('option', { value: f, text: f === 'pleno' ? 'Hoy' : POLITICAS[f].etiqueta })));
+selEspacio.addEventListener('change', () => {
+  espacio = selEspacio.value;
+  if (grande == null) return;
+  mostrar({ color: vista.color, fondo: espacio });
+  enfocarJuego();
+});
 const lineaGrande = el('p', { class: 'va-grande-linea' });
 const volver = el('button', { type: 'button', class: 'boton va-volver', onclick: () => cerrar() }, ['Lado a lado', el('kbd', { text: 'Esc' })]);
-barra.append(volver, el('div', { class: 'va-seg-grupo', role: 'group', 'aria-label': 'Variante' }, segBotones), lineaGrande);
+barra.append(
+  volver,
+  el('div', { class: 'va-seg-grupo', role: 'group', 'aria-label': 'Color' }, segBotones),
+  el('label', { class: 'va-espacio-campo' }, [el('span', { text: 'Espacio' }), selEspacio]),
+  lineaGrande,
+);
 
 const pausar = (c, si) => c.marco.contentWindow?.postMessage({ vitrina: 'ambiente', pausar: si }, location.origin);
 function enfocarJuego() {
@@ -157,14 +176,21 @@ function enfocarJuego() {
   m.contentWindow?.focus();
 }
 function pintarBarra() {
-  segBotones.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.fondo === fondoGrande)));
-  lineaGrande.textContent = POLITICAS[fondoGrande].linea;
+  segBotones.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.color === vista.color)));
+  selEspacio.value = vista.fondo;
+  lineaGrande.textContent = POLITICAS_COLOR[vista.color].linea;
+}
+function mostrar(v) {
+  vista = v;
+  cols[grande].marco.contentWindow.location.hash = hashDe(pestana, v);
+  pintarBarra();
 }
 function abrir(i) {
   if (grande === i) return;
   if (grande != null) cerrar({ enfocar: false });
   grande = i;
-  fondoGrande = cols[i].v;
+  espacio = ESPACIO_DEF;
+  vista = deColumna(cols[i].v);
   html.dataset.grande = '';
   cols[i].nodo.dataset.abierta = '';
   cols.forEach((c, k) => pausar(c, k !== i));
@@ -175,21 +201,21 @@ function abrir(i) {
 }
 function conmutar(tecla) {
   if (grande == null) return;
-  const f = CONMUTADOR.find(([k]) => k === tecla)?.[1];
-  if (!f || f === fondoGrande) return;
-  fondoGrande = f;
-  cols[grande].marco.contentWindow.location.hash = hashDe(pestana, f);
-  pintarBarra();
+  const c = CONMUTADOR.find(([k]) => k === tecla)?.[1];
+  if (!c) return;
+  // 0 = como hoy (duotono y pleno); 1-3 = ese color, con el espacio elegido
+  mostrar(c === HOY.color ? { ...HOY } : { color: c, fondo: espacio });
 }
 function cerrar({ enfocar = true } = {}) {
   if (grande == null) return;
   const c = cols[grande];
   // vuelve a su variante (si se cambio adentro de la grande)
-  if (fondoGrande !== c.v) c.marco.contentWindow.location.hash = hashDe(pestana, c.v);
+  const suya = deColumna(c.v);
+  if (vista.color !== suya.color || vista.fondo !== suya.fondo) c.marco.contentWindow.location.hash = hashDe(pestana, suya);
   delete c.nodo.dataset.abierta;
   delete html.dataset.grande;
   grande = null;
-  fondoGrande = null;
+  vista = null;
   barra.hidden = true;
   cols.forEach((x) => pausar(x, false));
   escalar();

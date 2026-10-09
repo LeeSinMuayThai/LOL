@@ -16,8 +16,9 @@
 // en duotono por canvas 2D.
 import { cargarImagen, urlCentrada } from '../../comun/arte.js';
 import { crearAzar } from '../../comun/azar.js';
-import { leerColor, reducido, inst, duotono, el } from './util.js';
+import { leerColor, reducido, inst, el } from './util.js';
 import { ESTADO_PLENO, TIEMPOS, mezclarEstados } from './fondo.js';
+import { pintarCampeon } from './color.js';
 
 export const ERAS = ['pieza', 'academia', 'escenario', 'mundial', 'leyenda'];
 const ANIMOS = ['normal', 'peligro', 'gloria', 'caida'];
@@ -37,7 +38,8 @@ const PARALLAX_PX = 8;
 // La fusion de hoy en uniformes (la politica `pleno`): identidad en el shader.
 const I_PLENO = [1, 1, 0, 0];
 const J_PLENO = [1, 0, 1, 0];
-const K_PLENO = [1, 1, 0, 0];
+const K_PLENO = [1, 1, 1, 0];
+const C_DUOTONO = [0, 0, 0, 0];
 const REC_NADA = [0, 0, 0, 0];
 const MAX_EVENTOS = 32;
 const T_CRUCE_MAPA = 380; // el cruce de un campeon al siguiente cuando un momento trae los suyos (los mapas)
@@ -203,7 +205,8 @@ uniform vec4 uF; // x: vivo (el splash como plano vivo), y: caida (la luz que ca
 // La politica del mundo (js/fondo.js). Con la fusion de hoy (pleno) todo es identidad: uI = (1,1,0,0), uJ = (1,0,1,0).
 uniform vec4 uI; // x: presencia del campeon a pantalla completa, y: profundidad (2,5D), z: bruma extra, w: vineta extra
 uniform vec4 uJ; // x: contraste del duotono, y: desenfoque, z: presencia adentro del lugar, w: cuanto pesa el lugar (0-1)
-uniform vec4 uK; // x: haces (1 = los de hoy), y: polvo (1 = el de hoy)
+uniform vec4 uK; // x: haces (1 = los de hoy), y: polvo (1 = el de hoy), z: la luz de contra (1 = la de hoy)
+uniform vec4 uColor; // el color del campeon (js/color.js): x: en el fondo, y: lavado de la era, z: adentro del lugar
 uniform vec4 uRec; // el lugar fijo (uv, y hacia arriba): x0, y0, x1, y1
 uniform float uRadio; // el radio de sus esquinas, en pixeles del lienzo
 float dentroG = 0.0; // cuanto de este pixel cae adentro del lugar fijo (se calcula una vez en main)
@@ -374,8 +377,10 @@ void main() {
   col += uLuz * hz * (0.22 + uA.w * niebla * 1.25) * 0.5 * brillo;
   col += uLuz * exp(-d0 * d0 * 2.4) * 0.34 * brillo;
   vec2 cd = (p - vec2(uC.x * asp, uC.y)) * vec2(1.3, 0.8);
-  col += uContra * exp(-dot(cd, cd) * 3.2) * (0.14 + 0.3 * niebla) * brillo * uE.z;
-  col += uContra * exp(-dot(cd, cd) * 38.0) * 0.32 * max(uE.z - 1.0, 0.0) * brillo;
+  float kco = 1.0;
+  if (uK.z != 1.0) kco = uK.z;
+  col += uContra * exp(-dot(cd, cd) * 3.2) * (0.14 + 0.3 * niebla) * brillo * uE.z * kco;
+  col += uContra * exp(-dot(cd, cd) * 38.0) * 0.32 * max(uE.z - 1.0, 0.0) * brillo * kco;
   float mon = monitor(uv, asp);
   col += uLuz * mon * uB.w * 0.5 * brillo;
   col += uLuz * tubos(uv, t) * uB.z * 0.62 * brillo;
@@ -405,6 +410,13 @@ void main() {
     float xs = (uv.x - uMarco.x) * asp * 0.8 + (uv.y - uMarco.y) * 0.5;
     float barr = exp(-pow((xs - (fract(t / 11.0) * 3.2 - 1.6)) / 0.06, 2.0));
     duo += mix(uLuz, uBlanco, 0.75) * barr * smoothstep(0.2, 0.75, l) * 0.6 * max(vivo, 0.35);
+    // el color del campeon (js/color.js): 0 = el duotono de la era, 1 = sus colores reales; afuera del lugar, con un
+    // lavado leve de la era para que quede en la escena y no pegado
+    if (uColor.x + uColor.z > 0.0) {
+      float kc = mix(uColor.x, uColor.z, dentroG);
+      vec3 real = mix(c * 1.08, duo, uColor.y * (1.0 - dentroG));
+      duo = mix(duo, real, kc);
+    }
     float campo = clamp(hz * 0.55 + exp(-d0 * d0 * 1.1) * 0.75 + uB.w * mon * 0.9 + 0.44, 0.0, 1.3);
     // en su lugar el campeon esta iluminado entero, no solo donde le pega el haz
     if (dentroG > 0.0) campo = mix(campo, max(campo, 1.0), dentroG);
@@ -485,7 +497,7 @@ function crearLienzo(canvas) {
   gl.enableVertexAttribArray(loc);
   gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   const U = {};
-  for (const n of ['uRes', 'uT', 'uTL', 'uSemilla', 'uVacio', 'uNoche', 'uLuz', 'uContra', 'uOro', 'uBlanco', 'uA', 'uB', 'uC', 'uD', 'uE', 'uFoco0', 'uFoco1', 'uArte0', 'uArte1', 'uTam0', 'uTam1', 'uArteE', 'uMarco', 'uPar', 'uF', 'uI', 'uJ', 'uK', 'uRec', 'uRadio']) U[n] = gl.getUniformLocation(prog, n);
+  for (const n of ['uRes', 'uT', 'uTL', 'uSemilla', 'uVacio', 'uNoche', 'uLuz', 'uContra', 'uOro', 'uBlanco', 'uA', 'uB', 'uC', 'uD', 'uE', 'uFoco0', 'uFoco1', 'uArte0', 'uArte1', 'uTam0', 'uTam1', 'uArteE', 'uMarco', 'uPar', 'uF', 'uI', 'uJ', 'uK', 'uColor', 'uRec', 'uRadio']) U[n] = gl.getUniformLocation(prog, n);
   const texturas = [0, 1].map((i) => {
     const t = gl.createTexture();
     gl.activeTexture(gl.TEXTURE0 + i);
@@ -530,6 +542,7 @@ function crearLienzo(canvas) {
       gl.uniform4fv(U.uI, u.i ?? I_PLENO);
       gl.uniform4fv(U.uJ, u.j ?? J_PLENO);
       gl.uniform4fv(U.uK, u.k ?? K_PLENO);
+      gl.uniform4fv(U.uColor, u.c ?? C_DUOTONO);
       gl.uniform4fv(U.uRec, u.rec ?? REC_NADA);
       gl.uniform1f(U.uRadio, u.radio ?? 0);
       gl.uniform2fv(U.uTam0, tam[0]);
@@ -645,7 +658,8 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
       f: [vivoAhora, caida, Math.max(0, quiebre), 0],
       i: [it.presencia, it.profundidad, it.bruma, it.vineta],
       j: [it.contraste, it.suave, it.enLugar, kv],
-      k: [it.luz, it.polvo, 0, 0],
+      k: [it.luz, it.polvo, it.contra, 0],
+      c: [it.colorFondo, it.lavado, it.colorLugar, 0],
       rec: lg ? lg.rec : REC_NADA,
       radio: lg ? lg.radio : 0,
     };
@@ -923,7 +937,9 @@ function crearAmbienteCss(contenedor, opciones) {
   function pintarArte(img, era, lienzo) {
     const w = Math.round(Math.min(900, (contenedor.clientWidth || innerWidth) * 0.6));
     const h = Math.round(w * 0.5625);
-    duotono(img, col.noche.map((v) => v * 0.5), col[era].luz, w, h, { canvas: lienzo, foco: [0.5, 0.5] });
+    lienzo.width = w;
+    lienzo.height = h;
+    pintarCampeon(lienzo, img, col.noche.map((v) => v * 0.5), col[era].luz, { foco: [0.5, 0.5], mezcla: pol?.reposo.colorFondo ?? 0 });
   }
   async function ponerArte(key) {
     actual.arte = key;
@@ -958,7 +974,9 @@ function crearAmbienteCss(contenedor, opciones) {
     },
     fondo({ politica, instantaneo = false, dur = TIEMPOS.pantalla } = {}) {
       limpiar();
+      const repintar = actual.img && pol?.reposo.colorFondo !== politica.reposo.colorFondo;
       pol = politica;
+      if (repintar) pintarArte(actual.img, actual.era, lienzos[activa]);
       takeoverYa = false;
       raiz.dataset.fondo = politica.nombre ?? '';
       poner('reposo', instantaneo ? 0 : dur);

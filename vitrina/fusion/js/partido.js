@@ -13,10 +13,11 @@
 // instante.
 import { cargarImagen, urlCarga, urlCentrada, urlIcono } from '../../comun/arte.js';
 import { crearAzar } from '../../comun/azar.js';
-import { el, svg, animar, entrar, esperar, lineasConMascara, primeraOracion, num, conSigno, odometro, reducido, inst, celular, leerColor, duotono, EXPO, DUR } from './util.js';
+import { el, svg, animar, entrar, esperar, lineasConMascara, primeraOracion, num, conSigno, odometro, reducido, inst, celular, leerColor, EXPO, DUR } from './util.js';
 import { icono, triangulos, glifoDeCampo } from './iconos.js';
 import { franja, trayectoria, cuartos } from './marco.js';
 import { claveCampeon } from './aura.js';
+import { pintarCampeon } from './color.js';
 
 const MAPA = 980; // lo que dura cada mapa al jugar la serie (ms)
 const CHARLA = 760; // la charla del coach entre mapas
@@ -44,10 +45,11 @@ function fichaDe(datos, k) {
   const c = Object.values(datos.inicio?.catalogos?.campeonesPorRol ?? {}).flat().find((x) => x.ddragon === key);
   return { key, nombre: c?.name ?? key ?? '', tags: (c?.tags ?? []).map((t) => ETIQUETAS[t] ?? String(t)) };
 }
-// El arte en el duotono de la era (A): sombra = el vacio, luz = la luz de la era, recortado por la cara.
+// El arte en el duotono de la era (A): sombra = el vacio, luz = la luz de la era, recortado por la cara. Cuanto color
+// real lleva encima lo decide la politica del color (js/color.js).
 function pintar(canvas, img, era, foco) {
   if (!img) return;
-  duotono(img, leerColor('--bg-void'), leerColor(`--luz-${era}`), canvas.width, canvas.height, { canvas, foco, brillo: 1.12 });
+  pintarCampeon(canvas, img, leerColor('--bg-void'), leerColor(`--luz-${era}`), { foco, brillo: 1.12 });
 }
 const eraDe = () => document.documentElement.dataset.era || 'escenario';
 
