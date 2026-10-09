@@ -6,29 +6,45 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_CORE ?? 'C:/Users/Ignacio/AppData/Local/npm-cache/_npx/e058441c325e062a/node_modules/playwright-core');
 const EXE = process.env.CHROMIUM_EXE ?? 'C:/Users/Ignacio/AppData/Local/ms-playwright/chromium-1234/chrome-win64/chrome.exe';
-// Uso: node vitrina/c-pantallas/contraste.mjs "nombre|hash[|ancho|alto],..."   (PUERTO=8113 por defecto)
+// Uso: node vitrina/c-pantallas/contraste.mjs "nombre|hash[|ancho|alto[|elegirN|ms]],..."   (PUERTO=8113 por defecto)
+// (elegirN elige la opción N y congela en ms: así se miden también los resultados)
 const PUERTO = process.env.PUERTO ?? 8113;
 const CASOS = (process.argv[2] ?? '').split(',').filter(Boolean);
 const browser = await chromium.launch({ executablePath: EXE, headless: true });
 const fallas = [];
+const peorPorCaso = {};
 let medidos = 0;
 for (const caso of CASOS) {
-  const [nombre, hash, w = '1440', h = '900'] = caso.split('|');
+  const [nombre, hash, w = '1440', h = '900', accion = '', ms = '1500'] = caso.split('|');
   const page = await browser.newPage({ viewport: { width: Number(w), height: Number(h) } });
   await page.goto(`http://127.0.0.1:${PUERTO}/c-pantallas/index.html#${hash}&panel=0`, { waitUntil: 'load' });
   await page.waitForFunction(() => window.vitrina && window.vitrina.estado);
   await page.evaluate(() => Promise.race([window.vitrina.listo ? window.vitrina.listo() : 0, new Promise((r) => setTimeout(r, 8000))]));
   await page.waitForTimeout(1900);
-  await page.evaluate(() => { window.vitrina.congelar(1500); for (const a of document.getAnimations()) a.pause(); });
+  if (accion.startsWith('elegir')) { await page.evaluate((n) => window.vitrina.elegir(n), Number(accion.slice(6))); await page.waitForTimeout(400); }
+  await page.evaluate((t) => { window.vitrina.congelar(t); for (const a of document.getAnimations()) a.pause(); }, Number(ms));
   const textos = await page.evaluate(() => {
     const out = [];
     const canales = (c) => (c.match(/[\d.]+/g) || []).map(Number);
     for (const e of document.querySelectorAll('body *')) {
       if (e.closest('[aria-hidden="true"], .bios, .arranque, .crt, svg, .sr')) continue;
+      // controles inactivos (WCAG 1.4.3 los exime): las opciones que ya no se pueden elegir
+      if (e.closest('[aria-disabled="true"], :disabled')) continue;
       const propio = [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
       if (!propio || !e.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
-      const r = e.getBoundingClientRect();
+      // la caja recortada por los ancestros con overflow (un chat que corre, una lista con scroll)
+      const r0 = e.getBoundingClientRect();
+      const r = { left: r0.left, top: r0.top, right: r0.right, bottom: r0.bottom };
+      for (let a = e.parentElement; a; a = a.parentElement) {
+        if (getComputedStyle(a).overflow === 'visible') continue;
+        const q = a.getBoundingClientRect();
+        r.left = Math.max(r.left, q.left); r.top = Math.max(r.top, q.top); r.right = Math.min(r.right, q.right); r.bottom = Math.min(r.bottom, q.bottom);
+      }
+      r.width = r.right - r.left; r.height = r.bottom - r.top;
       if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) continue;
+      // tapado por otra capa (un toast, el post-game encima): nadie lo ve, no se mide
+      const arriba = document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+      if (arriba && !(arriba === e || e.contains(arriba) || arriba.contains(e))) continue;
       const cs = getComputedStyle(e);
       let op = 1;
       for (let n = e; n; n = n.parentElement) op *= Number(getComputedStyle(n).opacity);
@@ -69,6 +85,7 @@ for (const caso of CASOS) {
   }, { png, textos });
   for (const t of res) {
     medidos++;
+    if (!peorPorCaso[nombre] || t.ratio < peorPorCaso[nombre].ratio) peorPorCaso[nombre] = { ratio: t.ratio, texto: t.texto, fs: t.fs };
     const grande = t.fs >= 24 || (t.fs >= 18.66 && t.fw >= 700);
     if (t.ratio < (grande ? 3 : 4.5)) fallas.push(`${nombre}  ${t.ratio.toFixed(2)}  ${t.fs}px  .${String(t.clase).split(' ')[0]}  "${t.texto}"`);
   }
@@ -77,3 +94,4 @@ for (const caso of CASOS) {
 await browser.close();
 console.log(`${medidos} textos medidos, ${fallas.length} por debajo de 4,5:1 (3:1 en grandes)`);
 for (const f of fallas) console.log('  ' + f);
+console.log('peor por caso: ' + Object.entries(peorPorCaso).map(([n, x]) => `${n} ${x.ratio.toFixed(2)} (${x.fs}px "${x.texto.slice(0, 18)}")`).join(' · '));

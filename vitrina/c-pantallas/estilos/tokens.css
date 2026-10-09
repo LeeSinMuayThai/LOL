@@ -56,6 +56,7 @@
   --f-ui: 'Geist', system-ui, sans-serif;
   --f-mono: 'Geist Mono', ui-monospace, monospace;
   --f-momento: 'Mona Sans', 'Geist', sans-serif;
+  --f-firma: 'Fraunces', Georgia, serif;   /* la firma del contrato, en itálica */
   --f-chrome: 'Geist', system-ui, sans-serif;
   --momento-ancho: 112%;
   --momento-peso: 800;
@@ -264,6 +265,16 @@
   --vivo: #d0173a;
   --vivo-ink: #ffffff;
 
+  /* las orgs del mercado: su color vive SOLO en su ícono (blanco encima >= 4,5:1) */
+  --org-ink: #ffffff;
+  --org-furia: #141414;
+  --org-loud: #087a32;
+  --org-ecos: #b93a0b;
+  --org-enclave: #5b21b6;
+  --org-onda: #0e6f8a;
+  --org-vortice: #b8123a;
+  --org-otra: #4b5262;
+
   /* el ambiente de respaldo de comun/ toma estos */
   --amb-pieza-a: #0a0915;
   --amb-pieza-b: #1c1638;
@@ -295,5 +306,8 @@
   --cat: var(--cat-otro);
   --banda: var(--nivel-otro);
   --rank: var(--rank-gold);
+  --pick-encuadre: center 20%;  /* object-position del splash en el hover-pick */
+  --em: var(--up);              /* color del emblema del post-game */
+  --org: var(--org-otra);       /* color de una org: solo en su ícono */
   --retardo: 0ms;  /* cuándo arranca a cambiar de color una fila del widget (el mismo instante en que rueda) */
 }
