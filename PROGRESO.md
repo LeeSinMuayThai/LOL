@@ -101,6 +101,22 @@ animados, y C lo clásico tipo cliente.
 - Hallazgo: los splash animados de CommunityDragon cubren 12 de 2167 skins, así que los "fondos animados" se hacen
   con el shader.
 
+**Compuerta 1, segunda vuelta: la reacción del usuario a A y C ampliadas, textual.**
+
+> En el, en el primero me gusta más el del C. Un toque más. El A está bueno, pero el C es más de juego, siento yo. O
+> sea, el A está bueno, pero el C me gusta un poquitito más. En el segundo... En el segundo... Me gusta más el de A. En
+> el tercero... Me gusta más el de A. pero noto que aveces los diseños no siguen una misma linea no se, Para que sepas
+> las combinaciones que tenés que hacer y eso, me gusta más el de C en el primero. Por un poquito. En el segundo me
+> gusta más el de C porque siento que es más de juego. El de A está bueno, pero el de C tiene mejor interfaz. Y en el
+> tercero también creo que se ve un poco mejor el de... El de A y aparte tiene mejor interfaz. En el segundo la
+> interfaz del del A También está buena, pero el del C es un poquito mejor. O sea, tampoco... Tampoco es un re cambio.
+
+(Antes de esto dijo que no veía los cambios: el servidor los estaba entregando sin caché, pero la pestaña tenía la
+versión vieja. Se reinició el servidor y se le pasaron enlaces directos a cada pantalla nueva.)
+
+**Lo que se decidió.** La serie y el Swiss, de C; el mercado, de A. Para que todo "siga una misma línea", no se arma un
+collage: se hace **una fusión**, la interfaz de C dentro del mundo de A, con 7 reglas (`PLANUI.md` §4.4-§4.5).
+
 **Lección de proceso.** Por primera vez el usuario reaccionó con entusiasmo a una UI ("uffff") en vez de *"es muy igual
 al anterior"*, que fue lo que dijo después de T0. Funcionaron tres cosas:
 - la imagen antes que las palabras;

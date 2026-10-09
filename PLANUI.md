@@ -20,7 +20,9 @@
 | **U0 · ronda 1** | Las tres direcciones (A · LUZ, B · NOCTURNO, C · PANTALLAS): inicio, decisión, cumbre, tira de eras, celular | ✅ 2026-10-09 (3 × Opus xhigh en paralelo + una ronda de observaciones cada una; merge `c1d88f5`) |
 | **Compuerta 1** | El usuario elige (o mezcla) mirando la vitrina; su reacción en frío queda textual en `PROGRESO.md` | 🔶 2026-10-09: finalistas **A y C** (B archivada); pidió ampliarlas para decidir (§4.2) |
 | **U0 · ronda 1b** | A y C ampliadas: `partido` (serie con Fearless, Swiss 2-2) y `mercado` (ofertas + firma); A profundiza el aura y los fondos animados, C lo clásico tipo cliente (§4.3) | ✅ 2026-10-09 (2 × Opus xhigh; merges `6f145e1`, `3c790c2`; referencias en `vitrina/referencia/ronda-1b/`) |
-| **Compuerta 1 (final)** | El usuario elige A, C o una mezcla | 🔶 esperando al usuario |
+| **Compuerta 1 (final)** | El usuario elige A, C o una mezcla | ✅ 2026-10-09: una mezcla: serie y Swiss de C, mercado de A, y "que sigan una misma línea" (§4.4) |
+| **U0 · fusión** | Una sola dirección: la interfaz de C dentro del mundo de A, con 7 reglas de una misma línea (§4.5) | 🔶 en curso |
+| **Compuerta 1b** | El usuario mira la fusión | ⬜ |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
@@ -343,6 +345,83 @@ medido por píxeles.
 **Proceso.**
 - Dos Opus xhigh nuevos en paralelo, uno por dirección; leen el `README.md` y el código de su dirección en vez de
   continuar a los de la ronda 1, que tienen contextos de ~500K.
+
+### 4.4 Compuerta 1, segunda vuelta: lo que dijo el usuario sobre A y C ampliadas (2026-10-09, textual)
+
+Recorrió en orden los enlaces directos que se le pasaron: la serie, el Swiss, el mercado y la firma.
+
+> En el, en el primero me gusta más el del C. Un toque más. El A está bueno, pero el C es más de juego, siento yo. O
+> sea, el A está bueno, pero el C me gusta un poquitito más. En el segundo... En el segundo... Me gusta más el de A. En
+> el tercero... Me gusta más el de A. pero noto que aveces los diseños no siguen una misma linea no se, Para que sepas
+> las combinaciones que tenés que hacer y eso, me gusta más el de C en el primero. Por un poquito. En el segundo me
+> gusta más el de C porque siento que es más de juego. El de A está bueno, pero el de C tiene mejor interfaz. Y en el
+> tercero también creo que se ve un poco mejor el de... El de A y aparte tiene mejor interfaz. En el segundo la
+> interfaz del del A También está buena, pero el del C es un poquito mejor. O sea, tampoco... Tampoco es un re cambio.
+
+Lo que se lee:
+- **La serie: C, por poco** ("es más de juego").
+- **El Swiss: C, por poco.** En la primera vuelta dijo A y en la segunda C ("tiene mejor interfaz"); vale la segunda,
+  que es la que justificó.
+- **El mercado: A** ("se ve un poco mejor y aparte tiene mejor interfaz").
+- **La firma:** no la comparó.
+- **Las diferencias son chicas** ("tampoco es un re cambio").
+- **El pedido de fondo: "los diseños no siguen una misma línea".** La respuesta no puede ser un collage de pantallas de
+  A y de C, porque eso empeoraría justo lo que marcó. Tiene que ser **una dirección nueva y única** que combine las dos
+  según sus preferencias, con un solo sistema de diseño (§4.5).
+- Esto se suma a la primera vuelta (§4.2): de A le encantó el aura y las animaciones; de C, que es "clásico, como del
+  LoL, lo más fácil de entender".
+
+### 4.5 La fusión: la interfaz de C dentro del mundo de A (el plan, escrito antes de implementarlo)
+
+**La idea en una línea:** *el cliente de tu carrera, iluminado.* Hay dos capas, y cada una viene de una sola dirección:
+- **El mundo, de A.** El ambiente WebGL con los 5 equipos de luz por era, el splash vivo, el **aura** (apuntar un
+  campeón lleva la luz a él), las transiciones de luz entre pantallas, los takeovers (título, firma, AFUERA) y la carta
+  holográfica.
+- **La interfaz, de C.** Paneles claros "de cliente", la jerarquía de lectura, el draft de la serie con los quemados
+  como baneados, el post-game de cada mapa, la Tribuna con el chat para los partidos internacionales, la planilla, el
+  feedback clásico de cliente (la barra en la opción apuntada, la tecla que se hunde) y la barra de cuartos abajo.
+
+**Las reglas de "una misma línea"** (se miden en la revisión y después son guards de producción):
+1. **Una sola superficie.** Un tipo de panel (fondo oscuro translúcido de token, sin desenfoque sobre el canvas, filete
+   de 1 px teñido por la luz de la era), una escala de radios (panel, control, chip) y ≤ 2 niveles de contenedor.
+2. **Una sola jerarquía tipográfica.**
+   - La interfaz habla como C: Geist en el cuerpo; Mona Sans ancha y en minúsculas en los títulos de pantalla (≤ 56 px
+     en las paradas); Geist Mono 11-13 px en los rótulos.
+   - Los momentos gritan como A: Mona Sans condensada en mayúsculas, 96-214 px, solo en takeovers y cierres.
+   - Los números: Mona Sans expandida 900, tabulares.
+3. **Un solo color.** Tintas, semánticos (`--up`/`--down`/`--warn`) y oro, de A. **El único acento es la luz de la era**:
+   el violeta de C desaparece. El color de una org vive solo en su chip.
+4. **Las eras cambian la luz y el arte, nunca la interfaz.** Se acaba la ventana clara de 2028 y el cambio de chrome por
+   era de C: es lo que más rompe la línea. El paso del tiempo lo cuentan la luz, el arte y los datos.
+5. **Una sola gramática de movimiento.** La de A: expo-out 180-320 ms, el orden luz → rótulo → título → opciones,
+   quieto en las paradas. Encima va el micro-feedback de cliente de C.
+6. **El hover, igual en todos lados.** Todo lo que representa a un campeón dispara el aura. Todo lo interactivo tiene el
+   feedback de cliente.
+7. **Un solo sistema de momentos.** El takeover de A para título, firma, AFUERA y Mundial. La Tribuna de C (el "video"
+   es el splash vivo en la luz de la era) para los partidos internacionales.
+
+**Pantalla por pantalla** (de dónde sale cada una; todas reescritas con las reglas de arriba):
+
+| Pantalla | Base | Qué se suma |
+|---|---|---|
+| Inicio | A (la selección con el aura, la intro) | los paneles y controles de C (servidor, perfil, roles) |
+| Decisión (evento, plan amateur) | la estructura de C (un panel con opciones + inspector, el widget de contexto, la planilla) | la luz y el arte de A, con la cara del campeón libre |
+| Serie y replan | **C** (el draft, los quemados como baneados, el post-game por mapa) | el aura en cada retrato y pick, y la luz que cae en DERROTA o sube en VICTORIA |
+| Swiss 2-2 | **C** (la Tribuna, VIDA O MUERTE, el chat, "Fin de la transmisión") | el video del stream es el splash vivo en la luz del Mundial; AFUERA como takeover de A |
+| Mercado | **A** (la tabla de ofertas sobre la luz de la academia) | el panel de lectura de una oferta por vez de C, y Enter firma |
+| Firma | A (la luz de la pieza se abre en la de la academia, el handle trazado en luz) | — |
+| Cumbre: título | A (el takeover CAMPEONES) | — |
+| Cumbre: final | A (la carta holográfica + la trayectoria) | la vitrina de trofeos de `carrera.log` de C, como lista |
+| Eras | A (la misma pantalla en las 5 luces) | — |
+| Celular | la barra de cuartos de C y las hojas de A | — |
+
+**Proceso.**
+- Un solo Opus xhigh construye la fusión en una carpeta nueva, `vitrina/fusion/`, partiendo del código de A y de C.
+  Uno solo, porque el requisito central es la coherencia, y dos workers en paralelo la romperían.
+- A y C quedan como están, como referencia.
+- Una ronda de observaciones del supervisor, con la rúbrica + las 7 reglas de arriba.
+- Se sirve en el 8095 y el usuario la mira. Si la aprueba, **la fusión es la dirección elegida**: §5 se reescribe con
+  sus tokens y la producción la traslada textual.
 - Mismas reglas de `comun.md`, una ronda de observaciones del supervisor, y la vitrina se vuelve a servir en el 8095.
 - **Compuerta 1 (final):** el usuario elige A, C o una mezcla. Después, la ronda 2 de la ganadora es solo lo que falte
   (trayectoria + PNG y los celulares de la serie y el mercado), y se cierra §5.
