@@ -1,6 +1,6 @@
 // Indice de la vitrina: miniaturas vivas, lado a lado, matriz de funciones, antes/despues y "como elegir".
 import { cargarMuestras } from './comun/datos.js';
-import { DIRECCIONES, PANTALLAS, ERAS, PANTALLA_DE, hashDe } from './comun/catalogo.js';
+import { DIRECCIONES, PANTALLAS, ERAS, PANTALLA_DE, FINALISTAS, direccionTiene, hashDe } from './comun/catalogo.js';
 
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];
@@ -72,6 +72,30 @@ function escalar(contenedor) {
   marco.style.transform = `scale(${k})`;
 }
 
+// Una direccion que no tiene la pantalla/muestra pedida muestra un texto tenue en vez de un iframe vacio.
+function ponerVivo(contenedor, dir, estado, dispositivo = 'escritorio') {
+  const tiene = direccionTiene(dir, estado.pantalla, estado.muestra);
+  const aviso = $('.sin-pantalla', contenedor);
+  if (!tiene) {
+    if (items.has(contenedor)) {
+      items.delete(contenedor);
+      observador.unobserve(contenedor);
+      escalador.unobserve(contenedor);
+      $('iframe', contenedor)?.remove();
+    }
+    if (!aviso) {
+      const p = document.createElement('p');
+      p.className = 'sin-pantalla';
+      p.textContent = 'esta dirección no tiene esta pantalla';
+      contenedor.appendChild(p);
+    }
+    return false;
+  }
+  aviso?.remove();
+  montarVivo(contenedor, dir, hashDe(estado), dispositivo);
+  return true;
+}
+
 function montarVivo(contenedor, dir, hash, dispositivo = 'escritorio') {
   contenedor.dataset.dispositivo = dispositivo;
   const url = `${dir}/index.html#${hash}&panel=0`;
@@ -107,18 +131,33 @@ function llenarMuestras() {
   selMuestra.replaceChildren(...ms.map((m) => new Option(m, m)));
   selMuestra.disabled = ms.length === 0;
 }
+// "mostrar B": un solo estado para las dos secciones. Por defecto solo las finalistas.
+let mostrarB = false;
+function aplicarMostrarB() {
+  for (const cb of $$('.mostrar-b')) cb.checked = mostrarB;
+  $('#lado').dataset.b = mostrarB ? '1' : '0';
+  for (const fig of $$('.marco[data-dir]')) fig.hidden = !mostrarB && !FINALISTAS.includes(fig.dataset.dir);
+  actualizarLado();
+  actualizarAD();
+}
+for (const cb of $$('.mostrar-b')) cb.addEventListener('change', () => { mostrarB = cb.checked; aplicarMostrarB(); });
+
 function actualizarLado() {
-  const hash = hashDe({ pantalla: selPantalla.value, muestra: selMuestra.value || undefined, era: selEra.value, dispositivo: selDisp.value });
+  const estado = { pantalla: selPantalla.value, muestra: selMuestra.value || undefined, era: selEra.value, dispositivo: selDisp.value };
+  const hash = hashDe(estado);
   $('#lado').dataset.dispositivo = selDisp.value;
   for (const fig of $$('#lado .marco')) {
-    montarVivo($('.vivo', fig), fig.dataset.dir, hash, selDisp.value);
+    if (fig.hidden) { // oculta (B apagada): desmonta el iframe
+      if (items.has($('.vivo', fig))) ponerVivo($('.vivo', fig), fig.dataset.dir, { pantalla: '?' });
+      continue;
+    }
+    ponerVivo($('.vivo', fig), fig.dataset.dir, estado, selDisp.value);
     $('[data-abrir]', fig).href = `${fig.dataset.dir}/index.html#${hash}`;
   }
 }
 selPantalla.addEventListener('change', () => { llenarMuestras(); actualizarLado(); });
 for (const s of [selMuestra, selEra, selDisp]) s.addEventListener('change', actualizarLado);
 llenarMuestras();
-actualizarLado();
 
 // ---------- matriz de funciones ----------
 // Solo el catalogo de la ronda 1 (comun/catalogo.js), con era=auto.
@@ -133,6 +172,9 @@ const FUNCIONES = [
   ['Sonido', { pantalla: 'decision', muestra: 'evento', sonido: 1 }],
   ['Celular', { pantalla: 'decision', muestra: 'evento', dispositivo: 'celular' }],
   ['Textos breves', { pantalla: 'decision', muestra: 'planAmateur', textos: 'breves' }],
+  ['La serie mapa a mapa (Fearless)', { pantalla: 'partido', muestra: 'serie' }],
+  ['El Swiss 2-2', { pantalla: 'partido', muestra: 'swiss' }],
+  ['El mercado y la firma', { pantalla: 'mercado', muestra: 'mercado' }],
 ];
 const cuerpoMatriz = $('#matriz');
 for (const [nombre, estado] of FUNCIONES) {
@@ -144,6 +186,12 @@ for (const [nombre, estado] of FUNCIONES) {
   for (const d of DIRECCIONES) {
     const td = document.createElement('td');
     td.dataset.dir = d.letra;
+    if (!direccionTiene(d.id, estado.pantalla, estado.muestra)) {
+      td.textContent = '—';
+      td.className = 'tenue';
+      tr.appendChild(td);
+      continue;
+    }
     const a = document.createElement('a');
     a.href = `${d.id}/index.html#${hashDe(estado)}`;
     a.textContent = 'Ver';
@@ -170,9 +218,14 @@ function actualizarAD() {
   const ficha = indiceHoy.muestras[m];
   imgHoy.src = `hoy/${ficha.archivo}`;
   $('#ad-nota').textContent = ficha.nota ?? ficha.titulo ?? '';
-  const hash = hashDe({ pantalla: PANTALLA_DE[m], muestra: m });
+  const estado = { pantalla: PANTALLA_DE[m], muestra: m };
+  const hash = hashDe(estado);
   for (const fig of $$('#antes-despues-grilla .marco[data-dir]')) {
-    montarVivo($('.vivo', fig), fig.dataset.dir, hash);
+    if (fig.hidden) {
+      if (items.has($('.vivo', fig))) ponerVivo($('.vivo', fig), fig.dataset.dir, { pantalla: '?' });
+      continue;
+    }
+    ponerVivo($('.vivo', fig), fig.dataset.dir, estado);
     $('[data-abrir]', fig).href = `${fig.dataset.dir}/index.html#${hash}`;
   }
 }
@@ -218,3 +271,5 @@ $('#copiar').addEventListener('click', async () => {
   aviso.textContent = 'Copiado';
   setTimeout(() => (aviso.textContent = ''), 2200);
 });
+
+aplicarMostrarB();

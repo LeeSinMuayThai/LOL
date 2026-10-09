@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
+  <p class="finalistas">Finalistas: <strong>A · LUZ</strong> y <strong>C · PANTALLAS</strong> (las dos ampliadas con la serie, el Swiss y el mercado). B quedó en la ronda 1: se puede abrir igual.</p>
   <header class="portada">
     <h1>Un Split Más — la UI nueva</h1>
     <p class="bajada">Tres maneras de que tu carrera se vea como se merece. Las tres usan la misma carrera real (seed <span id="seed">…</span>), jugada por el motor, con sus números de verdad. Tocá todo: elegí opciones, mirá los momentos, cambiá de era. Después decime cuál — o qué mezcla.</p>
@@ -26,9 +27,9 @@
       </ul>
       <p class="recorrido">Un recorrido de 5 minutos por dirección: Inicio → Decisión (las dos muestras) → Cumbre (el título y después la carta) → Eras.</p>
       <ul class="atajos">
-        <li><span class="etiqueta-fila">A · LUZ</span> <a href="a-luz/index.html#pantalla=inicio">el inicio</a> · <a href="a-luz/index.html#pantalla=decision&amp;muestra=evento">la decisión</a> · <a href="a-luz/index.html#pantalla=cumbre&amp;muestra=titulo">el momento del título</a></li>
+        <li><span class="etiqueta-fila">A · LUZ</span> <a href="a-luz/index.html#pantalla=inicio">el inicio</a> · <a href="a-luz/index.html#pantalla=decision&amp;muestra=evento">la decisión</a> · <a href="a-luz/index.html#pantalla=cumbre&amp;muestra=titulo">el momento del título</a> · <a href="a-luz/index.html#pantalla=partido&amp;muestra=serie">la serie</a> · <a href="a-luz/index.html#pantalla=mercado&amp;muestra=mercado">el mercado</a></li>
         <li><span class="etiqueta-fila">B · NOCTURNO</span> <a href="b-nocturno/index.html#pantalla=inicio">el inicio</a> · <a href="b-nocturno/index.html#pantalla=decision&amp;muestra=evento">la decisión</a> · <a href="b-nocturno/index.html#pantalla=cumbre&amp;muestra=titulo">el momento del título</a></li>
-        <li><span class="etiqueta-fila">C · PANTALLAS</span> <a href="c-pantallas/index.html#pantalla=inicio">el inicio</a> · <a href="c-pantallas/index.html#pantalla=decision&amp;muestra=evento">la decisión</a> · <a href="c-pantallas/index.html#pantalla=cumbre&amp;muestra=titulo">el momento del título</a></li>
+        <li><span class="etiqueta-fila">C · PANTALLAS</span> <a href="c-pantallas/index.html#pantalla=inicio">el inicio</a> · <a href="c-pantallas/index.html#pantalla=decision&amp;muestra=evento">la decisión</a> · <a href="c-pantallas/index.html#pantalla=cumbre&amp;muestra=titulo">el momento del título</a> · <a href="c-pantallas/index.html#pantalla=partido&amp;muestra=serie">la serie</a> · <a href="c-pantallas/index.html#pantalla=mercado&amp;muestra=mercado">el mercado</a></li>
       </ul>
     </section>
 
@@ -61,16 +62,17 @@
 
     <section id="lado-a-lado" class="seccion" aria-labelledby="t-lado">
       <h2 id="t-lado">Lado a lado</h2>
-      <p class="sub">La misma pantalla, las tres direcciones.</p>
+      <p class="sub">La misma pantalla en las dos finalistas.</p>
       <div class="controles" id="controles-lado">
         <label>Pantalla <select id="lado-pantalla"></select></label>
         <label>Muestra <select id="lado-muestra"></select></label>
         <label>Era <select id="lado-era"></select></label>
         <label>Dispositivo <select id="lado-dispositivo"><option value="escritorio">Escritorio</option><option value="celular">Celular</option></select></label>
+        <label class="opcion"><input type="checkbox" class="mostrar-b" id="lado-b"> mostrar B</label>
       </div>
-      <div class="tres lado" id="lado">
+      <div class="tres lado" id="lado" data-b="0">
         <figure class="marco" data-dir="a-luz"><div class="vivo"></div><figcaption><span>A · LUZ</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
-        <figure class="marco" data-dir="b-nocturno"><div class="vivo"></div><figcaption><span>B · NOCTURNO</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
+        <figure class="marco" data-dir="b-nocturno" data-archivada hidden><div class="vivo"></div><figcaption><span>B · NOCTURNO</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
         <figure class="marco" data-dir="c-pantallas"><div class="vivo"></div><figcaption><span>C · PANTALLAS</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
       </div>
     </section>
@@ -86,12 +88,13 @@
 
     <section id="antes-despues" class="seccion" aria-labelledby="t-antes">
       <h2 id="t-antes">Antes / después</h2>
-      <p class="sub">La captura de hoy del juego, al lado de la misma pantalla en cada dirección.</p>
-      <div class="controles"><label>Pantalla <select id="ad-muestra"></select></label></div>
+      <p class="sub">La captura de hoy del juego, al lado de la misma pantalla en las finalistas.</p>
+      <div class="controles"><label>Pantalla <select id="ad-muestra"></select></label>
+        <label class="opcion"><input type="checkbox" class="mostrar-b" id="ad-b"> mostrar B</label></div>
       <div class="cuatro" id="antes-despues-grilla">
         <figure class="marco" data-hoy><div class="hoy"><img alt="Captura de hoy del juego" loading="lazy"></div><figcaption><span>Hoy</span> <span class="tenue" id="ad-nota"></span></figcaption></figure>
         <figure class="marco" data-dir="a-luz"><div class="vivo"></div><figcaption><span>A · LUZ</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
-        <figure class="marco" data-dir="b-nocturno"><div class="vivo"></div><figcaption><span>B · NOCTURNO</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
+        <figure class="marco" data-dir="b-nocturno" data-archivada hidden><div class="vivo"></div><figcaption><span>B · NOCTURNO</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
         <figure class="marco" data-dir="c-pantallas"><div class="vivo"></div><figcaption><span>C · PANTALLAS</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
       </div>
     </section>

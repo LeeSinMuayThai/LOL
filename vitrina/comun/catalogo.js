@@ -12,14 +12,35 @@ export const ERAS = ['pieza', 'academia', 'escenario', 'mundial', 'leyenda'];
 export const PANTALLAS = {
   inicio: [],
   decision: ['evento', 'planAmateur'],
+  partido: ['serie', 'serieReplan', 'swiss'],
+  mercado: ['mercado', 'firma'],
   cumbre: ['titulo', 'final'],
   eras: [],
 };
 
+// Ronda 1b: finalistas. B · NOCTURNO queda archivada en la ronda 1 (se puede abrir, no crece).
+export const FINALISTAS = ['a-luz', 'c-pantallas'];
+export const PANTALLAS_RONDA_1 = {
+  inicio: [],
+  decision: ['evento', 'planAmateur'],
+  cumbre: ['titulo', 'final'],
+  eras: [],
+};
+const SOLO_RONDA_1 = ['b-nocturno'];
+
+// Que pantallas/muestras tiene cada direccion: las archivadas, solo las de la ronda 1; el resto, todo PANTALLAS.
+export function catalogoDe(direccion) {
+  return SOLO_RONDA_1.includes(direccion) ? PANTALLAS_RONDA_1 : PANTALLAS;
+}
+export function direccionTiene(direccion, pantalla, muestra) {
+  const ms = catalogoDe(direccion)[pantalla];
+  if (!ms) return false;
+  return !muestra || ms.length === 0 || ms.includes(muestra);
+}
+
 // Lo que viene en la ronda 2. Ni el panel ni el indice lo muestran todavia.
 export const RONDA_2 = {
-  decision: ['serie', 'serieReplan'],
-  temporada: ['cierreAnio', 'swiss', 'mercado', 'firma'],
+  temporada: ['cierreAnio'],
   cumbre: ['mundial'],
 };
 

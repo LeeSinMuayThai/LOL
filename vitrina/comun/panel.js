@@ -16,7 +16,7 @@
 // Atributos en <html>: data-pantalla, data-muestra, data-era (SIEMPRE la efectiva, nunca 'auto'), data-dispositivo, data-textos="breves|completos",
 //   y (presentes cuando estan prendidos) data-era-fija (era forzada a mano), data-sonido, data-reducido, data-inst, data-sin-webgl, data-peor-caso.
 
-import { eraEfectiva as resolverEra } from './catalogo.js';
+import { eraEfectiva as resolverEra, catalogoDe, PANTALLAS } from './catalogo.js';
 
 const ERAS_DEFECTO = ['pieza', 'academia', 'escenario', 'mundial', 'leyenda'];
 const BOOLEANAS = { sonido: '0', reducido: '0', inst: '0', webgl: '1', fps: '0', peor: '0' };
@@ -48,8 +48,16 @@ function el(tag, attrs = {}, hijos = []) {
 
 export function crearPanel(opciones = {}) {
   const direccion = opciones.direccion ?? 'direccion';
-  const pantallas = opciones.pantallas?.length ? opciones.pantallas : ['inicio'];
-  const muestrasPorPantalla = opciones.muestras ?? {};
+  // Una direccion archivada en la ronda 1 (catalogo.js) no ofrece pantallas ni muestras que no tiene.
+  const propio = catalogoDe(opciones.direccion);
+  const restringida = propio !== PANTALLAS;
+  const todas = opciones.pantallas?.length ? opciones.pantallas : ['inicio'];
+  const pantallas = restringida ? todas.filter((x) => x in propio) : todas;
+  const muestrasPorPantalla = Object.fromEntries(
+    Object.entries(opciones.muestras ?? {})
+      .filter(([x]) => pantallas.includes(x))
+      .map(([x, ms]) => [x, restringida ? ms.filter((m) => propio[x].includes(m)) : ms]),
+  );
   const eras = opciones.eras?.length ? opciones.eras : ERAS_DEFECTO;
   const acciones = opciones.acciones ?? {};
   const enMarco = window.top !== window; // dentro del iframe de celular.html o de una miniatura del indice

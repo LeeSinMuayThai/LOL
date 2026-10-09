@@ -6,7 +6,8 @@
 //  1. Cada pantalla x muestra a 1440x900 y a 390x844, en modo "movimiento prendido, reloj congelado": deja correr la
 //     entrada, llama window.vitrina.congelar(ms) y pausa todas las animaciones WAAPI antes de sacar la foto.
 //  2. Tiras de cuadros (era=auto) a 0/150/400/800/1500/2400 ms: elegir(1) en decision/evento y decision/planAmateur,
-//     repetir() en cumbre/titulo (el takeover) y en inicio (la intro).
+//     repetir() en cumbre/titulo (el takeover) y en inicio (la intro); ronda 1b: elegir(1) en partido/serie y
+//     partido/swiss, repetir() en mercado/firma (cada tira solo si la direccion tiene esa pantalla y muestra).
 //  3. Una pasada con --enable-unsafe-swiftshader (WebGL por software) y otra con data-sin-webgl (webgl=0).
 //  4. informe.json: errores de consola, pageerror y requestfailed, medidas de FPS y la lista de PNG.
 // Mata solo el navegador que abrio.
@@ -32,6 +33,9 @@ const TIRAS = [
   { accion: 'elegir', pantalla: 'decision', muestra: 'planAmateur' },
   { accion: 'repetir', pantalla: 'cumbre', muestra: 'titulo' },
   { accion: 'repetir', pantalla: 'inicio', muestra: '' },
+  { accion: 'elegir', pantalla: 'partido', muestra: 'serie' },
+  { accion: 'elegir', pantalla: 'partido', muestra: 'swiss' },
+  { accion: 'repetir', pantalla: 'mercado', muestra: 'firma' },
 ];
 const TAMANOS = [
   { nombre: '1440', ancho: 1440, alto: 900, hash: 'dispositivo=escritorio' },
