@@ -1,0 +1,82 @@
+/* LA FUSION (de A · LUZ) — el ambiente de respaldo sin WebGL: capas radiales por era, haces con conic-gradient, la luz de contra,
+   la escena (monitor, tubos, bokeh) y el arte en duotono (canvas 2D) mezclado en "pantalla". */
+.luz-css { --lc-velo: 0.6; position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-void) 70%); }
+.luz-css-era { position: absolute; inset: 0; opacity: 0; transition: opacity var(--dur-era) ease; }
+.luz-css[data-era='pieza'] .luz-css-era[data-era='pieza'],
+.luz-css[data-era='academia'] .luz-css-era[data-era='academia'],
+.luz-css[data-era='escenario'] .luz-css-era[data-era='escenario'],
+.luz-css[data-era='mundial'] .luz-css-era[data-era='mundial'],
+.luz-css[data-era='leyenda'] .luz-css-era[data-era='leyenda'] { opacity: 1; }
+.luz-css[data-quieto] .luz-css-era, .luz-css[data-quieto] .lc-arte { transition: none; }
+.luz-css-era > div { position: absolute; inset: 0; }
+.lc-haces { mask-image: radial-gradient(120% 95% at 72% 0%, var(--mascara) 25%, transparent 85%); mix-blend-mode: screen; opacity: 0.9; transition: opacity 800ms ease; }
+.luz-css[data-calma] .lc-haces { opacity: 0.6; }
+
+/* pieza: el monitor desde abajo, el velador tibio arriba a la derecha */
+.luz-css-era[data-era='pieza'] .lc-fuente { background: radial-gradient(70% 60% at 68% 108%, color-mix(in srgb, var(--luz-pieza) 62%, transparent) 0%, color-mix(in srgb, var(--luz-pieza) 16%, transparent) 45%, transparent 75%); }
+.luz-css-era[data-era='pieza'] .lc-haces { background: conic-gradient(from 330deg at 70% 112%, transparent 0deg, color-mix(in srgb, var(--luz-pieza) 22%, transparent) 14deg, transparent 26deg, color-mix(in srgb, var(--luz-pieza) 14%, transparent) 40deg, transparent 52deg, transparent 360deg); }
+.luz-css-era[data-era='pieza'] .lc-contra { background: radial-gradient(30% 34% at 98% 12%, color-mix(in srgb, var(--contra-pieza) 34%, transparent), transparent 70%); }
+/* academia: tubos horizontales frios */
+.luz-css-era[data-era='academia'] .lc-fuente { background: radial-gradient(80% 50% at 60% -6%, color-mix(in srgb, var(--luz-academia) 30%, transparent), transparent 70%); }
+.luz-css-era[data-era='academia'] .lc-escena {
+  background:
+    radial-gradient(16% 1.2% at 22% 7%, color-mix(in srgb, var(--contra-academia) 90%, transparent), transparent 100%),
+    radial-gradient(16% 1.2% at 50% 13%, color-mix(in srgb, var(--contra-academia) 80%, transparent), transparent 100%),
+    radial-gradient(16% 1.2% at 78% 7%, color-mix(in srgb, var(--contra-academia) 85%, transparent), transparent 100%),
+    radial-gradient(30% 12% at 50% 9%, color-mix(in srgb, var(--luz-academia) 24%, transparent), transparent 100%);
+}
+.luz-css-era[data-era='academia'] .lc-contra { background: radial-gradient(34% 50% at 0% 50%, color-mix(in srgb, var(--contra-academia) 12%, transparent), transparent 70%); }
+/* escenario: haces cruzados, rim magenta, publico en bokeh */
+.luz-css-era[data-era='escenario'] .lc-fuente { background: radial-gradient(50% 40% at 72% -8%, color-mix(in srgb, var(--luz-escenario) 42%, transparent), transparent 75%); }
+.luz-css-era[data-era='escenario'] .lc-haces { background: conic-gradient(from 150deg at 72% -14%, transparent 0deg, color-mix(in srgb, var(--luz-escenario) 26%, transparent) 6deg, transparent 10deg, transparent 18deg, color-mix(in srgb, var(--luz-escenario) 20%, transparent) 23deg, transparent 27deg, transparent 33deg, color-mix(in srgb, var(--luz-escenario) 30%, transparent) 38deg, transparent 42deg, transparent 50deg, color-mix(in srgb, var(--luz-escenario) 18%, transparent) 54deg, transparent 58deg, transparent 360deg); }
+.luz-css-era[data-era='escenario'] .lc-contra { background: radial-gradient(26% 60% at 104% 45%, color-mix(in srgb, var(--contra-escenario) 40%, transparent), transparent 70%); }
+.luz-css-era[data-era='escenario'] .lc-escena {
+  background:
+    radial-gradient(1.6% 2.6% at 12% 90%, color-mix(in srgb, var(--luz-escenario) 50%, transparent), transparent),
+    radial-gradient(2.2% 3.4% at 26% 95%, color-mix(in srgb, var(--contra-escenario) 40%, transparent), transparent),
+    radial-gradient(1.4% 2.2% at 41% 88%, color-mix(in srgb, var(--luz-escenario) 46%, transparent), transparent),
+    radial-gradient(2.6% 4% at 58% 96%, color-mix(in srgb, var(--luz-escenario) 36%, transparent), transparent),
+    radial-gradient(1.8% 2.8% at 71% 89%, color-mix(in srgb, var(--contra-escenario) 46%, transparent), transparent),
+    radial-gradient(2% 3.2% at 86% 94%, color-mix(in srgb, var(--luz-escenario) 44%, transparent), transparent),
+    radial-gradient(1.2% 2% at 95% 87%, color-mix(in srgb, var(--luz-escenario) 50%, transparent), transparent);
+}
+/* mundial: oro desde arriba, polvo dorado */
+.luz-css-era[data-era='mundial'] .lc-fuente { background: radial-gradient(60% 50% at 60% -10%, color-mix(in srgb, var(--luz-mundial) 46%, transparent), transparent 75%); }
+.luz-css-era[data-era='mundial'] .lc-haces { background: conic-gradient(from 140deg at 60% -16%, transparent 0deg, color-mix(in srgb, var(--luz-mundial) 22%, transparent) 8deg, transparent 13deg, color-mix(in srgb, var(--luz-mundial) 26%, transparent) 24deg, transparent 29deg, color-mix(in srgb, var(--luz-mundial) 20%, transparent) 40deg, transparent 45deg, color-mix(in srgb, var(--luz-mundial) 24%, transparent) 56deg, transparent 61deg, color-mix(in srgb, var(--luz-mundial) 18%, transparent) 72deg, transparent 77deg, transparent 360deg); }
+.luz-css-era[data-era='mundial'] .lc-contra { background: radial-gradient(40% 30% at 20% 0%, color-mix(in srgb, var(--contra-mundial) 22%, transparent), transparent 70%); }
+.luz-css-era[data-era='mundial'] .lc-escena {
+  background:
+    radial-gradient(0.4% 0.6% at 64% 34%, var(--luz-mundial), transparent), radial-gradient(0.3% 0.5% at 71% 52%, var(--contra-mundial), transparent),
+    radial-gradient(0.5% 0.8% at 82% 28%, var(--luz-mundial), transparent), radial-gradient(0.3% 0.5% at 56% 61%, var(--luz-mundial), transparent),
+    radial-gradient(0.4% 0.7% at 90% 46%, var(--contra-mundial), transparent), radial-gradient(0.3% 0.4% at 77% 70%, var(--luz-mundial), transparent);
+}
+/* leyenda: luz baja y calida de atardecer */
+.luz-css-era[data-era='leyenda'] .lc-fuente { background: radial-gradient(60% 50% at 104% 66%, color-mix(in srgb, var(--luz-leyenda) 46%, transparent), transparent 75%); }
+.luz-css-era[data-era='leyenda'] .lc-haces { mask-image: radial-gradient(120% 90% at 100% 66%, var(--mascara) 20%, transparent 80%); background: conic-gradient(from 230deg at 104% 66%, transparent 0deg, color-mix(in srgb, var(--luz-leyenda) 18%, transparent) 10deg, transparent 18deg, color-mix(in srgb, var(--luz-leyenda) 14%, transparent) 30deg, transparent 40deg, color-mix(in srgb, var(--luz-leyenda) 12%, transparent) 54deg, transparent 64deg, transparent 360deg); }
+.luz-css-era[data-era='leyenda'] .lc-contra { background: radial-gradient(40% 40% at 0% 84%, color-mix(in srgb, var(--contra-leyenda) 22%, transparent), transparent 70%); }
+
+.lc-arte {
+  position: absolute; right: -4vw; top: 50%; width: 66vw; height: auto; transform: translateY(-50%); opacity: 0; mix-blend-mode: screen;
+  mask-image: radial-gradient(closest-side, var(--mascara) 52%, transparent 100%); transition: opacity 900ms ease;
+}
+.lc-arte[data-visible] { opacity: 0.92; animation: lc-deriva 26s ease-in-out infinite alternate; }
+/* el splash vivo sin WebGL: solo la deriva lenta (Ken Burns) */
+@keyframes lc-deriva { from { transform: translateY(-50%) scale(1); } to { transform: translate(-1.2%, -51%) scale(1.05); } }
+.luz-css[data-animo='caida'] { filter: saturate(0.18) brightness(0.62); transition: filter 900ms ease; }
+.luz-css[data-encuadre='cumbre'] .lc-arte { right: 2vw; width: 72vw; }
+.luz-css[data-encuadre='carta'] .lc-arte { right: auto; left: -6vw; opacity: 0; }
+.luz-css[data-encuadre='carta'] .lc-arte[data-visible] { opacity: 0.35; }
+.luz-css[data-encuadre='centro'] .lc-arte { right: 17vw; }
+.luz-css[data-encuadre='draft'] .lc-arte { right: 10vw; width: 70vw; }
+.luz-css[data-encuadre='tribuna'] .lc-arte { right: 24vw; width: 76vw; }
+.luz-css[data-encuadre='celular'] .lc-arte { right: -40%; width: 180%; top: 66%; }
+.lc-vineta { position: absolute; inset: 0; background: radial-gradient(130% 110% at 60% 45%, transparent 55%, var(--velo-lectura) 100%); }
+.lc-velo { position: absolute; inset: 0; opacity: var(--lc-velo); background: linear-gradient(90deg, var(--velo-lectura) 0%, var(--velo-nada) 60%); }
+.lc-pulso { position: absolute; inset: 0; opacity: 0; background: radial-gradient(70% 70% at 70% 30%, color-mix(in srgb, var(--luz-blanca) 40%, transparent), transparent 70%); }
+.luz-css[data-animo='peligro'] { filter: saturate(0.45) brightness(0.8); }
+.luz-css[data-animo='peligro']::after { content: ''; position: absolute; inset: 0; background: var(--velo-medio); animation: lc-latido 1250ms ease-in-out infinite alternate; }
+.luz-css[data-animo='gloria'] .luz-css-era { filter: brightness(1.3) saturate(1.1); }
+.luz-css[data-congelado]::after, .luz-css[data-congelado] * { animation-play-state: paused !important; }
+@keyframes lc-latido { from { opacity: 0; } to { opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) { .luz-css *, .luz-css::after { animation: none !important; transition: none !important; } }
+html[data-reducido] .luz-css *, html[data-reducido] .luz-css::after, html[data-inst] .luz-css *, html[data-inst] .luz-css::after { animation: none !important; transition: none !important; }

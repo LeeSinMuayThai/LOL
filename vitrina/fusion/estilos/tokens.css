@@ -1,0 +1,188 @@
+/* LA FUSION — tokens. El UNICO archivo de la direccion con colores literales y la UNICA escala (color, superficie,
+   radios, tipo, movimiento). Los nombres siguen los del juego (--ink, --bg-*, --up, --down, --gold, --rank-*,
+   --nivel-*) para que el traslado sea 1:1. Las variantes translucidas van como #rrggbbaa.
+   Las reglas de "una misma linea" (PLANUI §4.5) viven aca:
+   1. una superficie (--panel*, --filete, --r-panel/--r-control/--r-chip);
+   2. una jerarquia tipografica (--t-*: la interfaz, los momentos y los numeros);
+   3. un color: tintas + semanticos + oro; el UNICO acento es --luz (la luz de la era);
+   4. las eras cambian --luz/--contra (y el arte), nunca la interfaz;
+   5. una gramatica de movimiento (--expo, --dur-*). */
+:root {
+  /* ---- base: la noche ---- */
+  --bg-void: #04050a;
+  --bg-surface: #0a0d16;
+  --bg-raised: #151b2b;
+  --bg-sunken: #020307;
+
+  /* ---- tintas ---- */
+  --ink: #f4f6fb;
+  --ink-dim: #a9b3c7;
+  --ink-mute: #8590a6;
+
+  /* ---- semanticos (de A) ---- */
+  --up: #3df2a0;
+  --down: #ff5468;
+  --warn: #ffb547;
+  --danger: #ff5468;
+  --gold: #ffd27a;
+  --gold-hondo: #b8862e;
+
+  /* ---- equipos de luz por era: luz principal + luz de contra (el unico acento) ---- */
+  --luz-pieza: #2f6bff;
+  --contra-pieza: #ffb45a;
+  --luz-academia: #43e6c3;
+  --contra-academia: #e8f6ff;
+  --luz-escenario: #7fa8ff;
+  --contra-escenario: #ff3da8;
+  --luz-mundial: #ffc94d;
+  --contra-mundial: #fff3d6;
+  --luz-leyenda: #ff9a5a;
+  --contra-leyenda: #ff4f7a;
+  --luz-blanca: #ffffff;
+
+  /* ---- la superficie: UN panel (oscuro translucido, sin desenfoque sobre el canvas) ---- */
+  --panel: #070a12e8;
+  --panel-hondo: #04060cf2;
+  --panel-claro: #0d1220d9;
+  --franja-fondo: #05070df0;
+  --velo-lectura: #04050af0;
+  --velo-medio: #04050aa8;
+  --velo-suave: #04050a66;
+  --velo-nada: #04050a00;
+  --linea: #f4f6fb1a;
+  --linea-fuerte: #f4f6fb38;
+  --sombra: #000000b3;
+  --mascara: #000000;
+  --oscuro-total: #000000;
+  --placa: #070a12e8;
+  --placa-fuerte: #070a12f2;
+
+  /* ---- rangos de soloQ y bandas de nivel ---- */
+  --rank-iron: #8a8a94;
+  --rank-bronze: #c58a5a;
+  --rank-silver: #b9c3d3;
+  --rank-gold: #f2c766;
+  --rank-platinum: #5fd3c4;
+  --rank-emerald: #4fd98a;
+  --rank-diamond: #8fb4ff;
+  --rank-master: #c58bff;
+  --rank-grandmaster: #ff6f7d;
+  --rank-challenger: #ffe08a;
+  --nivel-titular: #a9b3c7;
+  --nivel-elite: #7fa8ff;
+  --nivel-clase-mundial: #ffd27a;
+
+  /* ---- la carta: rarezas y foil (un objeto, no interfaz) ---- */
+  --carta-base: #3a4258;
+  --carta-leyenda-a: #ff9a5a;
+  --carta-leyenda-b: #ff4f7a;
+  --carta-goat-a: #f4f6fb;
+  --carta-goat-b: #9db7ff;
+  --carta-oro-a: #ffe3a1;
+  --carta-oro-b: #c9922f;
+  --carta-oro-sombra: #2a1a05;
+  --foil-1: #7fd9ff;
+  --foil-2: #c49bff;
+  --foil-3: #ff9ad5;
+  --foil-4: #ffe08a;
+  --foil-5: #9cffd9;
+
+  /* ---- el color de cada club: SOLO en su chip. Los reales, el suyo; los inventados, una paleta por hash ---- */
+  --org-loud: #3dff7e;
+  --org-furia: #ececf2;
+  --org-p1: #ff8a63;
+  --org-p2: #c2a0ff;
+  --org-p3: #5fd0f2;
+  --org-p4: #f5cf5a;
+  --org-tinta: #05060b;
+
+  /* ---- respaldo del ambiente de comun/ ---- */
+  --amb-pieza-a: #04050a;
+  --amb-pieza-b: #0a0d16;
+  --amb-pieza-luz: #2f6bff;
+  --amb-academia-a: #04050a;
+  --amb-academia-b: #0a0d16;
+  --amb-academia-luz: #43e6c3;
+  --amb-escenario-a: #04050a;
+  --amb-escenario-b: #0a0d16;
+  --amb-escenario-luz: #7fa8ff;
+  --amb-mundial-a: #04050a;
+  --amb-mundial-b: #0a0d16;
+  --amb-mundial-luz: #ffc94d;
+  --amb-leyenda-a: #04050a;
+  --amb-leyenda-b: #0a0d16;
+  --amb-leyenda-luz: #ff9a5a;
+  --amb-peligro: #ff5468;
+  --amb-gloria: #ffd27a;
+  --amb-pulso: #ffffff;
+
+  /* ---- tipografia: tres familias, una escala ---- */
+  --f-display: 'Mona Sans', 'Geist', system-ui, sans-serif;
+  --f-cuerpo: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'Geist Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  /* la interfaz habla como el cliente: Geist en el cuerpo, Mona Sans ANCHA en minusculas en los titulos */
+  --t-rotulo: 11px;
+  --t-rotulo-g: 12.5px;
+  --t-chico: 13px;
+  --t-cuerpo: 16px;
+  --t-cuerpo-g: 18px;
+  --t-opcion: 17px;
+  --t-titulo: 46px;
+  --t-titulo-s: 34px;
+  --ancho-titulo: 125%;
+  /* los momentos gritan: Mona Sans CONDENSADA en mayusculas, 96-214 px, solo en takeovers y cierres */
+  --t-momento-s: 96px;
+  --t-momento: clamp(112px, 12.5vw, 180px);
+  --t-momento-l: clamp(128px, 14.9vw, 214px);
+  --ancho-momento: 75%;
+  /* los numeros: Mona Sans EXPANDIDA 900, tabulares */
+  --t-num-s: 20px;
+  --t-num: 30px;
+  --t-num-m: 44px;
+  --t-num-l: 64px;
+  --t-num-xl: 128px;
+  --ancho-numero: 125%;
+  --tracking-mono: 0.14em;
+
+  /* ---- reticula ---- */
+  --margen: clamp(14px, 3.34vw, 48px);
+  --canal: 20px;
+  --franja-alto: 52px;
+  --barra-alto: 44px;
+
+  /* ---- radios: una escala (panel, control, chip). La carta es un objeto: su radio es suyo ---- */
+  --r-panel: 10px;
+  --r-control: 5px;
+  --r-chip: 999px;
+  --r-carta: 18px;
+  --r-pildora: 999px;
+
+  /* ---- movimiento: expo-out 180-320 ms; orden luz -> rotulo -> titulo -> opciones ---- */
+  --expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --salida: cubic-bezier(0.7, 0, 0.84, 0);
+  --dur-micro: 120ms;
+  --dur-entrada: 280ms;
+  --dur-salida: 160ms;
+  --dur-era: 1300ms;
+
+  /* ---- defaults de las props de componente (las pone el JS por elemento) ---- */
+  --v: 0;
+}
+
+/* La era activa elige el equipo de luz. El resto de las hojas usa solo --luz y --contra: la interfaz no cambia. */
+:root,
+html[data-era='pieza'] { --luz: var(--luz-pieza); --contra: var(--contra-pieza); }
+html[data-era='academia'] { --luz: var(--luz-academia); --contra: var(--contra-academia); }
+html[data-era='escenario'] { --luz: var(--luz-escenario); --contra: var(--contra-escenario); }
+html[data-era='mundial'] { --luz: var(--luz-mundial); --contra: var(--contra-mundial); }
+html[data-era='leyenda'] { --luz: var(--luz-leyenda); --contra: var(--contra-leyenda); }
+
+/* Derivados de la luz activa (se recalculan solos con la era). El filete de 1 px del panel esta teñido por ella. */
+:root {
+  --luz-texto: color-mix(in oklab, var(--luz) 52%, var(--ink));
+  --luz-suave: color-mix(in srgb, var(--luz) 22%, transparent);
+  --luz-tenue: color-mix(in srgb, var(--luz) 10%, transparent);
+  --luz-fuerte: color-mix(in srgb, var(--luz) 40%, transparent);
+  --filete: color-mix(in srgb, var(--luz) 34%, var(--linea));
+  --filete-fuerte: color-mix(in srgb, var(--luz) 70%, transparent);
+}
