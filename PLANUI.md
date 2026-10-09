@@ -514,6 +514,46 @@ Lo que se lee:
 - **Un solo worker**, Opus xhigh, en `vitrina/fusion/**` (más el enlace del índice).
 - **El pulido pendiente de §4.5 espera** a que el usuario elija la intensidad, y entra en la misma ronda.
 
+**Primera versión (`abb6734`).**
+- **La perilla `fondo`** vive en `js/fondo.js`.
+- **Hojas de contactos** de 4 pantallas × 4 variantes.
+- **Lo que mostraron las hojas:** en la serie, `lugar` casi no se distinguía de `pleno`, porque el campeón ya vivía en el
+  escenario. Se pidió una corrección.
+
+**La aclaración del usuario (2026-10-09, textual), que cambia el eje:**
+
+> Yo no iba tanto al espacio, aunque sí un poco, pero, pero un poco nomás. Me refería, por ejemplo, más al, al blanco y
+> negro, violeta ese que tienen, que a veces, o sea, estaba bien para el inicio eso, pero si estaba siempre iba a ser
+> como un estilo repetitivo. Que estaba bueno, que esté presente, pero no tan fuerte siempre. No sé si llegaste a
+> entender eso.
+
+**Lo que se lee:**
+- **Lo repetitivo es el color, no el tamaño.** Es el **duotono de la era**, que deja a cada campeón en "blanco y negro +
+  violeta". Está en el fondo, en el escenario, en los libres, ranuras y picks, en las cartas de carga y en el video de la
+  Tribuna.
+- **En el inicio está bien.**
+- **Después tiene que seguir presente, pero no tan fuerte siempre.**
+- **El espacio baja "un poco nomás".**
+
+**Las tres variantes, rehechas sobre el color.** Es una perilla nueva, `color=duotono|real|mitad|capas`, en un solo
+lugar, como `fondo.js`.
+- **`duotono`** es la de hoy. Es el valor por defecto y queda siempre en el inicio y en los takeovers.
+- **1 · A color (`real`).** Después del inicio, todo campeón va con sus colores reales. La era queda en la luz (haces,
+  bruma, polvo, filete) y en un lavado leve (≤ ~20%) sobre el arte de fondo, para integrarlo a la escena.
+- **2 · Mitad (`mitad`).** Una mezcla de ~50% entre el color real y el duotono, en todos lados: los colores del campeón
+  se reconocen, desaturados y llevados hacia la paleta de la era.
+- **3 · Fondo en duotono, retratos a color (`capas`).**
+  - El fondo de pantalla completa conserva el duotono, más suave.
+  - Todo campeón que es pieza de interfaz (retratos, libres, picks, ranuras, quemados, cartas de carga, la banda de "vos")
+    va a color, como en el cliente del LoL.
+
+**El espacio, "un poco nomás":**
+- Un nivel nuevo, `fondo=menos`: la composición de `pleno` con el campeón de fondo a ~70% y sin derrame fuera de los
+  paneles.
+- Las tres variantes de color se muestran con `fondo=menos`.
+- Las variantes de espacio de la primera versión (tenue, de paso, en su lugar) quedan como selector secundario en el
+  modo grande de `variantes.html`.
+
 ---
 
 ## 5. La dirección

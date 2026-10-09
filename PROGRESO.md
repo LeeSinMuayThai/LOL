@@ -146,6 +146,23 @@ inicio:
 
 El inicio y los takeovers quedan al 100% (`PLANUI.md` §4.6).
 
+**La aclaración del usuario, textual** (llegó mientras se construían esas tres):
+
+> Yo no iba tanto al espacio, aunque sí un poco, pero, pero un poco nomás. Me refería, por ejemplo, más al, al blanco y
+> negro, violeta ese que tienen, que a veces, o sea, estaba bien para el inicio eso, pero si estaba siempre iba a ser
+> como un estilo repetitivo. Que estaba bueno, que esté presente, pero no tan fuerte siempre. No sé si llegaste a
+> entender eso.
+
+Las variantes se rehicieron sobre el **color** (el duotono de la era):
+- **A color**: el campeón en sus colores reales;
+- **Mitad**: la mitad de duotono;
+- **Fondo en duotono, retratos a color**.
+
+El espacio baja solo "un poco", y las variantes de espacio quedan como selector secundario.
+
+**Lección:** cuando el usuario describe una sensación ("oscuro de la luz los champions"), conviene confirmar el eje
+(color, tamaño o frecuencia) con una pregunta corta antes de construir.
+
 ### 2026-10-08 — FASE V, V8a: los LP que bajaban al subir y la historia con "2029–2029" (PLAN.md §V.7)
 
 Merge `944eb63` (worker Sonnet high, ~95K tokens y 22 tool calls; sin revisor aparte, porque el diff son 17 líneas de
