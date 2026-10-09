@@ -23,7 +23,7 @@
 | **Compuerta 1 (final)** | El usuario elige A, C o una mezcla | ✅ 2026-10-09: una mezcla: serie y Swiss de C, mercado de A, y "que sigan una misma línea" (§4.4) |
 | **U0 · fusión** | Una sola dirección: la interfaz de C dentro del mundo de A, con 7 reglas de una misma línea (§4.5) | ✅ 2026-10-09 (1 × Opus xhigh, `f35fcb4`; merge `d7622e9`; referencias en `vitrina/referencia/fusion/`) |
 | **Compuerta 1b** | El usuario mira la fusión | 🔶 2026-10-09: "está bien", pero el duotono "blanco y negro + violeta" de los campeones se vuelve repetitivo después del inicio; pidió tres variantes (§4.6) |
-| **U0 · intensidad** | Una página con tres variantes de color del campeón (a color, mitad, fondo en duotono y retratos a color) y el espacio "un poco" menos (§4.6) | 🔶 en curso |
+| **U0 · intensidad** | Una página con tres variantes de color del campeón (a color, mitad, fondo en duotono y retratos a color) y el espacio "un poco" menos (§4.6) | ✅ 2026-10-09 (`899ed27`, merge `81993d4`); esperando la elección del usuario |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
