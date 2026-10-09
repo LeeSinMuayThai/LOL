@@ -1,18 +1,19 @@
-// Las eras: la misma doble página de la decisión en las cinco ediciones, una al lado de la otra a escala. Cambian la
-// tinta, el grano y el tratamiento de la trama; el arte es el main de cada era y el folio sale de su foto
-// (muestras.eras). El panel cambia la era de la página entera; tocar una miniatura también.
+// Las eras: cinco imprentas de la misma revista. Una doble página grande (la decisión real, con el main y el folio de
+// la foto de cada era en muestras.eras) y un selector. pieza = fotocopia de fanzine; academia = la revista de la liga;
+// escenario = el ácido pleno; mundial = el oro; leyenda = el papel. El panel (Alt+A) o el selector cambian la era de
+// toda la página.
 
 import { montarDecision } from './decision.js';
 import { h, mayus, dos } from './util.js';
 import { folio } from './folio.js';
 
 const ERAS = ['pieza', 'academia', 'escenario', 'mundial', 'leyenda'];
-const TRATAMIENTO = {
-  pieza: ['Fanzine fotocopiado', 'Tinta clara, trama gruesa y mucho grano. El ácido, solo como resaltador.'],
-  academia: ['La revista de la liga', 'Tinta clara con la sombra ácida corrida. Trama media, grano bajo.'],
-  escenario: ['Tinta ácida plena', 'La trama en ácido, fina y nítida. La noche en serio.'],
-  mundial: ['Aparece el oro', 'Segunda tinta: oro. El ácido queda para lo que se elige.'],
-  leyenda: ['Edición de colección', 'Tinta y papel. Trama fina, casi sin grano.'],
+const IMPRENTA = {
+  pieza: ['Fotocopia de fanzine', 'Un bit, grano y la segunda pasada corrida de registro. Titulares recortados y pegados. El ácido, solo como resaltador.'],
+  academia: ['La revista de la liga', 'Limpia y fría: trama fina a 0°, tinta fría, titulares en caja baja, números llenos.'],
+  escenario: ['El ácido pleno', 'La trama en ácido a 45°, fina y nítida. La noche en serio.'],
+  mundial: ['El oro', 'Segunda tinta: oro en la trama, en los números y en los filetes.'],
+  leyenda: ['El papel', 'La crónica se imprime en papel; la decisión sigue de noche.'],
 };
 
 export function montarEras(raiz, ctx) {
@@ -21,86 +22,83 @@ export function montarEras(raiz, ctx) {
   const movil = innerWidth <= 700;
   const [W, Hh] = movil ? [390, 844] : [1440, 900];
   const pagina = h('article.eras', { 'data-pieza': 'eras' });
-  const grilla = h('div.eras-grilla');
-  const minis = [];
+  const lienzo = h('div.mini-lienzo', { inert: true, style: { width: `${W}px`, height: `${Hh}px` } });
+  const marco = h('div.mini-marco.grande', lienzo);
+  const pie = h('p.eras-pie');
 
-  ERAS.forEach((era, i) => {
-    const e = E[era];
-    if (!e) return;
-    const lienzo = h('div.mini-lienzo', { 'data-era': era, inert: true, style: { width: `${W}px`, height: `${Hh}px` } });
-    const marco = h('button.mini-marco', { type: 'button', 'aria-label': `Ver toda la página en la era ${era}`, onclick: () => window.vitrina.era(era) }, lienzo);
-    const fig = h(
-      'figure.mini',
-      { 'data-mini': era },
-      marco,
+  const selector = h(
+    'ol.selector',
+    { 'aria-label': 'Eras' },
+    ERAS.filter((e) => E[e]).map((era, i) =>
       h(
-        'figcaption.mini-pie',
-        h('span.mini-n', dos(i + 1)),
-        h('b', mayus(era)),
-        h('span', `${e.anio} · ${e.edad} años · ${e.org ?? e.fase}`),
-        h('em', TRATAMIENTO[era][0]),
+        'li',
+        h(
+          'button.sel',
+          { type: 'button', 'data-sel': era, onclick: () => window.vitrina.era(era) },
+          h('span.sel-n', dos(i + 1)),
+          h('span.sel-muestra', { 'data-era': era, 'aria-hidden': 'true' }, h('i')),
+          h('b.sel-nombre', mayus(era)),
+          h('span.sel-imprenta', IMPRENTA[era][0]),
+          h('span.sel-dato', `${E[era].anio} · ${E[era].edad} años · ${E[era].org ?? E[era].fase}`),
+        ),
       ),
-    );
-    grilla.append(fig);
-    minis.push({ era, e, lienzo, marco });
-  });
-  grilla.append(
-    h(
-      'aside.tintas',
-      h('p.kicker', h('span.kicker-acento', 'Las tintas'), ' · cómo cambia la revista'),
-      h('ol', ERAS.map((era) => h('li.tinta', { 'data-era': era }, h('i'), h('b', mayus(era)), h('span', TRATAMIENTO[era][1])))),
-      h('p.tintas-nota', h('kbd', 'Alt+A'), ' cambia la era de toda la página. Tocá una miniatura para verla en grande.'),
     ),
   );
 
   const primera = E.pieza ?? Object.values(E)[0];
   const ultima = E.leyenda ?? primera;
   pagina.append(
-    folio(['Un Split Más', 'Las cinco ediciones', `${primera.anio}—${ultima.anio}`], [primera.handle, mayus(primera.rol), 'La misma doble página, cinco tintas']),
+    folio(['Un Split Más', 'Cinco imprentas', `${primera.anio}—${ultima.anio}`], [primera.handle, mayus(primera.rol), 'La misma doble página']),
     h(
-      'header.eras-cabeza',
-      h('div', h('p.kicker', h('span.kicker-acento', 'Eras'), ' · de los 15 al retiro'), h('h1.eras-titulo', 'La misma doble página, cinco tintas')),
-      h('p.eras-bajada', 'Mismo relato, misma decisión. Lo que cambia con la carrera es la impresión: la tinta, el grano y la trama del campeón.'),
+      'div.eras-cuerpo',
+      h(
+        'aside.eras-lado',
+        h('p.kicker', h('span.kicker-acento', 'Eras'), ' · de los 15 al retiro'),
+        h('h1.eras-titulo', 'Cinco imprentas'),
+        h('p.eras-bajada', 'La misma decisión, impresa como la imprimiría cada etapa de la carrera.'),
+        selector,
+        h('p.tintas-nota', h('kbd', 'Alt+A'), ' o un clic cambian la era de toda la página.'),
+      ),
+      h('figure.eras-figura', marco, pie),
     ),
-    grilla,
   );
   raiz.append(pagina);
 
-  const montadas = minis.map(({ era, e, lienzo }) =>
-    montarDecision(lienzo, {
-      datos,
-      meta: ctx.meta,
-      muestra: 'evento',
-      era,
-      miniatura: true,
-      campeon: e.main,
-      franja: e.franja,
-      anio: e.anio,
-    }),
-  );
+  let actual = null;
+  let listo = Promise.resolve();
+  function montar(era) {
+    actual?.destruir();
+    lienzo.dataset.era = era;
+    const e = E[era] ?? primera;
+    actual = montarDecision(lienzo, { datos, meta: ctx.meta, muestra: 'evento', era, miniatura: true, campeon: e.main, franja: e.franja, anio: e.anio });
+    listo = actual.listo;
+    pagina.querySelectorAll('.sel').forEach((b) => {
+      const si = b.dataset.sel === era;
+      b.classList.toggle('actual', si);
+      b.setAttribute('aria-pressed', String(si));
+    });
+    pie.replaceChildren(h('b', mayus(era)), h('span', IMPRENTA[era][0]), h('em', IMPRENTA[era][1]));
+    return listo;
+  }
 
   function escalar() {
-    for (const { lienzo, marco } of minis) {
-      const k = marco.clientWidth / W;
-      lienzo.style.transform = `scale(${k})`;
-      marco.style.height = `${Hh * k}px`;
-    }
+    const k = marco.clientWidth / W;
+    lienzo.style.transform = `scale(${k})`;
+    marco.style.height = `${Hh * k}px`;
   }
   const ro = new ResizeObserver(escalar);
-  ro.observe(grilla);
+  ro.observe(marco);
+  montar(ERAS.includes(ctx.era) ? ctx.era : 'pieza');
   escalar();
 
-  function marcar(era) {
-    pagina.querySelectorAll('.mini').forEach((m) => m.classList.toggle('actual', m.dataset.mini === era));
-  }
-  marcar(ctx.era);
-
   return {
-    listo: Promise.all(montadas.map((m) => m.listo)),
-    alEra: marcar,
+    get listo() {
+      return listo;
+    },
+    alEra: (era) => montar(era),
     destruir() {
       ro.disconnect();
-      montadas.forEach((m) => m.destruir());
+      actual?.destruir();
       pagina.remove();
     },
   };

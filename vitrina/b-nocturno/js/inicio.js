@@ -224,7 +224,7 @@ export function montarInicio(raiz, ctx) {
   pintarHoja();
   pintarElegidos();
 
-  const amb = crearAmbiente(foto, { meta, fade: [0.6, 1.0, 0.16, 0.0], zoom: 1.55, semilla: 'portada' });
+  const amb = crearAmbiente(foto, { meta, fade: [0.62, 1.0, 0.14, 0.0], recorte: 'centrada', foco: [0.47, 0.36], celdas: 104, zoom: 1.3, semilla: 'portada' });
   const listo = amb.ambiente({ era: ctx.era, animo: 'normal', arte: J.mains[0]?.ddragon ?? null });
 
   // ——— la intro: la portada se imprime ———

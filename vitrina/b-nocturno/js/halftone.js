@@ -18,11 +18,40 @@ const ANIMOS = ['normal', 'peligro', 'gloria'];
 const ERAS = ['pieza', 'academia', 'escenario', 'mundial', 'leyenda'];
 // Dónde está la cara en cada splash (fracción del ancho y del alto): el recorte "cover" se centra ahí.
 const FOCOS = { Yone: [0.6, 0.26], Sylas: [0.45, 0.38], Anivia: [0.56, 0.42] };
-const focoDe = (op, key) => op.foco ?? FOCOS[key] ?? [0.5, 0.42];
+const focoDe = (op, key) => op.foco ?? (op.recorte === 'centrada' ? [0.5, 0.4] : FOCOS[key] ?? [0.5, 0.42]);
 
 const reducido = () =>
   document.documentElement.hasAttribute('data-reducido') || matchMedia('(prefers-reduced-motion: reduce)').matches;
 const inst = () => document.documentElement.hasAttribute('data-inst');
+
+// Niveles: punto negro y blanco desde el histograma de luminancia (percentiles 2 y 98) de una copia chica.
+const PCT_NEGRO = 0.02;
+const PCT_BLANCO = 0.98;
+export function nivelesDe(img) {
+  if (!img) return [0, 1];
+  try {
+    const c = document.createElement('canvas');
+    c.width = 96;
+    c.height = 54;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, c.width, c.height);
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    const hist = new Array(256).fill(0);
+    for (let i = 0; i < d.length; i += 4) hist[Math.round(d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114)]++;
+    const total = d.length / 4;
+    let acum = 0;
+    let negro = 0;
+    let blanco = 255;
+    for (let v = 0; v < 256; v++) {
+      acum += hist[v];
+      if (acum <= total * PCT_NEGRO) negro = v;
+      if (acum <= total * PCT_BLANCO) blanco = v;
+    }
+    return [negro / 255, Math.max(negro + 8, blanco) / 255];
+  } catch {
+    return [0, 1];
+  }
+}
 
 function hexARgb(hex) {
   const h = hex.trim().replace('#', '');
@@ -47,6 +76,8 @@ export function leerTokens(el, modo) {
     grano: num('--ht-grano', 0.1),
     contraste: num('--ht-contraste', 1.2),
     brillo: papel ? num('--ht-papel-brillo', 0.2) : 0,
+    gamma: num('--ht-gamma', 0.8),
+    estilo: modo === 'papel' ? 0 : num('--ht-estilo', 0),
   };
 }
 
@@ -59,7 +90,8 @@ precision highp float;
 in vec2 v_uv; out vec4 o;
 uniform sampler2D u_a, u_b; uniform float u_mezcla;
 uniform vec2 u_res, u_resA, u_resB, u_foco; uniform float u_zoom;
-uniform float u_brillo, u_cobertura;
+uniform float u_brillo, u_cobertura, u_gamma, u_estilo;
+uniform vec2 u_nivA, u_nivB;
 uniform float u_celda, u_angulo, u_grano, u_contraste, u_t, u_respira, u_pulso, u_pulsoFuerza, u_arte, u_modo, u_semilla;
 uniform vec3 u_fondo, u_tinta, u_tinta2;
 uniform vec4 u_fade; uniform vec2 u_pulsoC;
@@ -73,7 +105,9 @@ vec2 cubrir(vec2 uv, vec2 r){
 float luz(vec2 uv){
   vec3 a = texture(u_a, cubrir(uv, u_resA)).rgb;
   vec3 b = texture(u_b, cubrir(uv, u_resB)).rgb;
-  return dot(mix(a, b, u_mezcla), vec3(0.299, 0.587, 0.114));
+  float la = clamp((dot(a, vec3(0.299, 0.587, 0.114)) - u_nivA.x) / (u_nivA.y - u_nivA.x), 0.0, 1.0);
+  float lb = clamp((dot(b, vec3(0.299, 0.587, 0.114)) - u_nivB.x) / (u_nivB.y - u_nivB.x), 0.0, 1.0);
+  return pow(mix(la, lb, u_mezcla), u_gamma);
 }
 float desv(float t, float a, float b){
   if (a == b) return 1.0;
@@ -97,6 +131,20 @@ void main(){
   float onda = exp(-pow((d - u_pulso * 1.4) * 7.0, 2.0)) * (1.0 - u_pulso) * u_pulsoFuerza;
   float barrido = clamp(u_cobertura * 1.6 - uvc.y * 0.6, 0.0, 1.0);
   float r = sqrt(v) * 0.5 * u_celda * 1.16 * resp * (1.0 + onda) * barrido;
+  if (u_estilo > 0.5) {
+    // fotocopia de fanzine: 1 bit por píxel, umbral con ruido, y la segunda tinta corrida de registro
+    vec2 uvp = clamp(px / u_res, 0.0, 1.0);
+    float f = u_arte * desv(uvp.y, u_fade.x, u_fade.y) * desv(uvp.x, u_fade.z, u_fade.w) * clamp(u_cobertura * 1.6 - uvp.y * 0.6, 0.0, 1.0);
+    float l1 = clamp((luz(uvp) - 0.5) * u_contraste + 0.5 + u_brillo, 0.0, 1.0) * f;
+    float l2 = clamp((luz(clamp((px + vec2(2.0, 1.0)) / u_res, 0.0, 1.0)) - 0.5) * u_contraste + 0.5, 0.0, 1.0) * f;
+    float ruido = (hash(floor(px)) - 0.5) * u_grano * 1.6;
+    float on1 = step(0.5, l1 + ruido);
+    float on2 = step(0.5, l2 + ruido * 0.7);
+    vec3 cf = mix(u_fondo, u_tinta2, on2);
+    cf = mix(cf, u_tinta, on1);
+    o = vec4(cf, 1.0);
+    return;
+  }
   float aa = 0.7;
   float p1 = 1.0 - smoothstep(r - aa, r + aa, length(q - cq));
   float p2 = 1.0 - smoothstep(r - aa, r + aa, length(q - cq - vec2(u_celda * 0.24, u_celda * 0.2)));
@@ -137,9 +185,12 @@ export function tramaEstatica(canvas, img, o) {
     try {
       mc.drawImage(img, fx - sw / 2, fy - sh / 2, sw, sh, 0, 0, gw, gh);
       const datos = mc.getImageData(0, 0, gw, gh).data;
+      const [n0, n1] = o.niveles ?? nivelesDe(img);
+      const g = t.gamma ?? 1;
       leer = (x, y) => {
         const i = (Math.min(gh - 1, Math.max(0, Math.floor((y / H) * gh))) * gw + Math.min(gw - 1, Math.max(0, Math.floor((x / W) * gw)))) * 4;
-        return (datos[i] * 0.299 + datos[i + 1] * 0.587 + datos[i + 2] * 0.114) / 255;
+        const l = (datos[i] * 0.299 + datos[i + 1] * 0.587 + datos[i + 2] * 0.114) / 255;
+        return Math.pow(Math.min(1, Math.max(0, (l - n0) / (n1 - n0))), g);
       };
     } catch {
       leer = () => 0; // canvas "sucio" (sin CORS): queda sin arte
@@ -147,6 +198,30 @@ export function tramaEstatica(canvas, img, o) {
   }
   const fade = o.fade ?? [0, 0, 0, 0];
   const desv = (v, a, b) => (a === b ? 1 : a < b ? 1 - suave(a, b, v) : suave(b, a, v));
+  if (t.estilo === 1 && o.modo !== 'papel') {
+    // fotocopia: 1 bit por bloque de 2 px, umbral con ruido y la segunda tinta corrida de registro
+    const azarF = crearAzar(`fotocopia-${W}x${H}`);
+    const im = ctx.getImageData(0, 0, W, H);
+    const d = im.data;
+    const pintar = (x, y, c) => {
+      for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+        const k = ((y + dy) * W + (x + dx)) * 4;
+        if (k < d.length && x + dx < W) { d[k] = c[0] * 255; d[k + 1] = c[1] * 255; d[k + 2] = c[2] * 255; }
+      }
+    };
+    for (let y = 0; y < H; y += 2) {
+      for (let x = 0; x < W; x += 2) {
+        const f = img ? desv(y / H, fade[0], fade[1]) * desv(x / W, fade[2], fade[3]) : 0;
+        const ruido = (azarF.siguiente() - 0.5) * t.grano * 1.6;
+        const l1 = Math.min(1, Math.max(0, (leer(x, y) - 0.5) * t.contraste + 0.5)) * f;
+        const l2 = Math.min(1, Math.max(0, (leer(x + 4, y + 2) - 0.5) * t.contraste + 0.5)) * f;
+        if (l1 + ruido > 0.5) pintar(x, y, t.tinta);
+        else if (l2 + ruido * 0.7 > 0.5) pintar(x, y, t.tinta2);
+      }
+    }
+    ctx.putImageData(im, 0, 0);
+    return;
+  }
   const ca = Math.cos(t.angulo);
   const sa = Math.sin(t.angulo);
   const diag = Math.hypot(W, H);
@@ -220,6 +295,7 @@ export function crearAmbiente(contenedor, opciones = {}) {
     animo: 'normal',
     arteKey: null,
     imgs: [null, null], // A y B
+    niveles: [[0, 1], [0, 1]],
     activa: 0,
     mezcla: 0,
     mezclaObj: 0,
@@ -266,7 +342,7 @@ export function crearAmbiente(contenedor, opciones = {}) {
     const loc = gl.getAttribLocation(prog, 'a_pos');
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    for (const n of ['u_a', 'u_b', 'u_mezcla', 'u_res', 'u_resA', 'u_resB', 'u_foco', 'u_zoom', 'u_celda', 'u_angulo', 'u_grano', 'u_contraste', 'u_t', 'u_respira', 'u_pulso', 'u_pulsoFuerza', 'u_arte', 'u_modo', 'u_semilla', 'u_fondo', 'u_tinta', 'u_tinta2', 'u_fade', 'u_pulsoC', 'u_brillo', 'u_cobertura'])
+    for (const n of ['u_a', 'u_b', 'u_mezcla', 'u_res', 'u_resA', 'u_resB', 'u_foco', 'u_zoom', 'u_celda', 'u_angulo', 'u_grano', 'u_contraste', 'u_t', 'u_respira', 'u_pulso', 'u_pulsoFuerza', 'u_arte', 'u_modo', 'u_semilla', 'u_fondo', 'u_tinta', 'u_tinta2', 'u_fade', 'u_pulsoC', 'u_brillo', 'u_cobertura', 'u_gamma', 'u_estilo', 'u_nivA', 'u_nivB'])
       U[n] = gl.getUniformLocation(prog, n);
     texs = [0, 1].map((i) => {
       const t = gl.createTexture();
@@ -326,7 +402,16 @@ export function crearAmbiente(contenedor, opciones = {}) {
   // ——— parámetros ———
   function tokensDeEra() {
     raiz.dataset.era = estado.era;
-    return leerTokens(raiz, modo);
+    const t = leerTokens(raiz, modo);
+    const k = opciones.apagado ?? 0;
+    if (k) {
+      const gris = (c) => c.map(() => (c[0] * 0.299 + c[1] * 0.587 + c[2] * 0.114));
+      const bajar = (c) => c.map((x, i) => (x + (gris(c)[i] - x) * k) * (1 - k * 0.55) + t.fondo[i] * k * 0.55);
+      t.tinta = bajar(t.tinta);
+      t.tinta2 = bajar(t.tinta2);
+      t.contraste *= 1 - k * 0.35;
+    }
+    return t;
   }
   function mezclarTokens(a, b, k) {
     const m = (x, y) => x + (y - x) * k;
@@ -334,7 +419,7 @@ export function crearAmbiente(contenedor, opciones = {}) {
     return {
       fondo: mv(a.fondo, b.fondo), tinta: mv(a.tinta, b.tinta), tinta2: mv(a.tinta2, b.tinta2),
       peligro: b.peligro, gloria: b.gloria,
-      celda: m(a.celda, b.celda), angulo: m(a.angulo, b.angulo), grano: m(a.grano, b.grano), contraste: m(a.contraste, b.contraste), brillo: m(a.brillo, b.brillo),
+      celda: m(a.celda, b.celda), angulo: m(a.angulo, b.angulo), grano: m(a.grano, b.grano), contraste: m(a.contraste, b.contraste), brillo: m(a.brillo, b.brillo), gamma: m(a.gamma, b.gamma), estilo: b.estilo,
     };
   }
   function avanzar(dt) {
@@ -385,11 +470,15 @@ export function crearAmbiente(contenedor, opciones = {}) {
     gl.uniform2f(U.u_resB, ...res(ib));
     gl.uniform2f(U.u_foco, ...focoDe(opciones, estado.arteKey));
     gl.uniform1f(U.u_zoom, opciones.zoom ?? 1);
-    gl.uniform1f(U.u_celda, t.celda * ESCALA);
+    gl.uniform1f(U.u_celda, celdaCss(t) * ESCALA);
     gl.uniform1f(U.u_angulo, t.angulo);
     gl.uniform1f(U.u_grano, t.grano);
     gl.uniform1f(U.u_contraste, t.contraste);
     gl.uniform1f(U.u_brillo, t.brillo);
+    gl.uniform1f(U.u_gamma, t.gamma);
+    gl.uniform1f(U.u_estilo, t.estilo);
+    gl.uniform2f(U.u_nivA, ...estado.niveles[ia]);
+    gl.uniform2f(U.u_nivB, ...estado.niveles[ib]);
     gl.uniform1f(U.u_cobertura, cobertura(ahoraMs));
     gl.uniform1f(U.u_t, ahoraMs / 1000);
     gl.uniform1f(U.u_respira, estado.respira);
@@ -406,10 +495,15 @@ export function crearAmbiente(contenedor, opciones = {}) {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
+  // La celda en px CSS: si la superficie pide `celdas` a lo ancho, la era la escala (--ht-celda / 6).
+  function celdaCss(t) {
+    if (!opciones.celdas) return t.celda;
+    return Math.max(3, (contenedor.clientWidth / opciones.celdas) * (t.celda / 6));
+  }
   function dibujarEstatico() {
     if (gl || !estado.tokensObj) return;
     const img = estado.imgs[estado.activa];
-    tramaEstatica(canvas, img, { tokens: estado.tokensObj, modo, fade: opciones.fade, foco: focoDe(opciones, estado.arteKey), zoom: opciones.zoom });
+    tramaEstatica(canvas, img, { tokens: { ...estado.tokensObj, celda: celdaCss(estado.tokensObj) }, modo, fade: opciones.fade, foco: focoDe(opciones, estado.arteKey), zoom: opciones.zoom, niveles: estado.niveles[estado.activa] });
   }
 
   function cuadro(ahora) {
@@ -452,6 +546,7 @@ export function crearAmbiente(contenedor, opciones = {}) {
     if (mio !== token || estado.destruido) return;
     const destino = estado.imgs[estado.activa] ? 1 - estado.activa : estado.activa;
     estado.imgs[destino] = img;
+    estado.niveles[destino] = nivelesDe(img);
     if (img) subir(destino, img);
     if (destino !== estado.activa) {
       estado.activa = destino;

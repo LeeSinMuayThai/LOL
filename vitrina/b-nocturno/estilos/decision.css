@@ -58,10 +58,17 @@
   float: left; font: 900 66px/0.74 var(--f-grot); font-stretch: 125%;
   margin: 7px 10px 0 0; color: var(--era-acento);
 }
-.breves { margin-top: 12px; border-top: 1px solid var(--rule); }
-.breves li { padding: 7px 0; border-bottom: 1px solid var(--rule); font: 400 11px/1.45 var(--f-mono); color: var(--ink-mute); }
-.breve-txt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.breve-tipo { display: block; color: var(--ink-dim); letter-spacing: 0.1em; font-size: 9.5px; margin-bottom: 2px; }
+.breves { margin-top: 14px; border-top: 1px solid var(--rule); }
+.breves li { border-bottom: 1px solid var(--rule); }
+.breves li.extra { display: none; }
+.breves.todas li.extra { display: block; }
+.breve { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; align-items: baseline; width: 100%; padding: 8px 0; }
+.breve-tipo { font: 600 9.5px/1.2 var(--f-mono); letter-spacing: 0.12em; color: var(--ink-mute); }
+.breve-txt { font: 500 14px/1.35 var(--f-grot); color: var(--ink-dim); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.breve:hover .breve-txt { color: var(--ink); }
+.abierto .breve-txt { display: block; color: var(--ink); }
+.breves-mas { margin: 10px 0 0; }
+.capitular { font-size: 19px; line-height: 1.38; }
 .ultimo { border-left: 1px solid var(--rule); padding-left: var(--gutter); margin-left: calc(var(--gutter) / -2); }
 .maquina { font: 600 21px/1.18 var(--f-mono); margin: 8px 0 8px; color: var(--ink); letter-spacing: -0.01em; }
 .ultimo-bajada { font-size: 14px; line-height: 1.45; color: var(--ink-dim); }
@@ -139,18 +146,19 @@
 .nota-riesgo { color: var(--ink); }
 .nota-perfil { font: 600 11px/1.3 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--era-acento); }
 
-.posdata { border-top: 2px solid var(--era-acento); }
-.pd-cabeza .kicker-acento { width: 84px; font-size: 13px; font-weight: 600; flex: none; }
+.posdata { border-top: 3px solid var(--acid); padding-top: 14px; row-gap: 10px; }
+.pd-cabeza { align-items: center; }
+.pd-cabeza .kicker-acento { width: 84px; flex: none; font: 900 40px/0.8 var(--f-grot); font-stretch: 125%; letter-spacing: -0.04em; color: var(--acid); }
 .pd-cabeza span:last-child { color: var(--ink); }
-.pd-txt { font-size: 17px; line-height: 1.45; max-width: 56ch; }
-.sellos { display: flex; flex-wrap: wrap; gap: 14px 30px; margin-top: 8px; }
+.pd-txt { font-size: 21px; line-height: 1.34; max-width: 44ch; }
+.sellos { display: flex; flex-wrap: wrap; gap: 16px 40px; margin-top: 6px; }
 .sello { display: grid; gap: 4px; }
 .sello-etq { font: 600 10.5px/1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); }
-.sello-num { display: inline-flex; align-items: baseline; gap: 6px; font: 900 34px/1 var(--f-grot); font-stretch: 125%; letter-spacing: -0.02em; }
+.sello-num { display: inline-flex; align-items: baseline; gap: 6px; font: 900 56px/0.9 var(--f-grot); font-stretch: 125%; letter-spacing: -0.03em; }
 .sello-num small { font-size: 0.42em; letter-spacing: 0.04em; }
 .sello-antes { font-size: 0.55em; color: var(--ink-mute); }
 .sello-flecha { font: 400 0.42em/1 var(--f-mono); color: var(--ink-mute); }
-.sello-delta { display: inline-flex; align-items: center; gap: 3px; font: 600 12px/1 var(--f-mono); }
+.sello-delta { display: inline-flex; align-items: center; gap: 4px; font: 600 14px/1 var(--f-mono); }
 .sello.sube .sello-delta { color: var(--up); }
 .sello.baja .sello-delta { color: var(--down); }
 .sello-previsto { font: 400 10px/1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-mute); }
@@ -169,8 +177,14 @@
 .alm-cabeza em { font-style: normal; color: var(--ink-mute); }
 .almanaque .opciones { margin-top: 0; border-top: 0; }
 .alm-fila { width: 100%; padding: 12px 0 13px; }
-.pliego-matriz .sello-num { font-size: 28px; }
-.pliego-matriz .pd-txt { font-size: 16px; }
+.pliego-matriz .sello-num { font-size: 34px; }
+.pliego-matriz .sellos { gap: 12px 24px; }
+.pliego-matriz .pd-txt { font-size: 18px; max-width: 60ch; }
+.pliego-matriz.hay-eleccion .planteo { display: none; }
+.hay-eleccion .alm-fila:not(.elegida) { padding: 7px 0 8px; }
+.hay-eleccion .alm-fila:not(.elegida) .op-label { font-size: 16px; }
+.hay-eleccion .alm-fila:not(.elegida) .alm-tags, .hay-eleccion .alm-fila:not(.elegida) .deuda { display: none; }
+.hay-eleccion .alm-fila:not(.elegida) .op-num { font-size: 24px; }
 .pliego-matriz .margen { padding-top: 12px; }
 .alm-fila .op-num { font-size: 36px; }
 .alm-fila .op-label { font-size: 22px; line-height: 0.96; font-stretch: 70%; }
@@ -201,6 +215,25 @@
 .pliego[data-era='pieza'] .parada-titulo .tt { background: var(--ink); color: var(--bg-void); box-decoration-break: clone; -webkit-box-decoration-break: clone; padding: 0 0.1em; }
 .pliego[data-era='pieza'] .cartel .placa:first-child { background: var(--ink); color: var(--bg-void); padding: 0 0.1em; transform: rotate(0.6deg); display: inline-block; }
 .pliego[data-era='pieza'] .op-num { -webkit-text-stroke-color: var(--ink-mute); }
+.pliego[data-era='pieza'] .parada-titulo .tt { box-shadow: 4px 3px 0 var(--rule-strong); }
+.pliego[data-era='pieza'] > .folio-arriba { border-bottom: 3px solid var(--ink); }
+.pliego[data-era='pieza'] .capitular::first-letter { background: var(--ink); color: var(--bg-void); padding: 4px 6px 0; margin-right: 12px; }
+/* academia: la revista de la liga. Limpia y fría: titulares en caja baja, números llenos, grilla de filetes ordenada. */
+.pliego[data-era='academia'] .parada-titulo { text-transform: none; font-stretch: 88%; font-weight: 700; font-size: 50px; line-height: 0.98; letter-spacing: -0.025em; }
+.pliego[data-era='academia'] .cartel { text-transform: none; font-stretch: 88%; font-weight: 700; letter-spacing: -0.02em; }
+.pliego[data-era='academia'] .op-label { text-transform: none; font-stretch: 92%; font-weight: 700; font-size: 26px; letter-spacing: -0.015em; }
+.pliego[data-era='academia'] .op-num { color: var(--ink); -webkit-text-stroke: 0 transparent; font-size: 40px; }
+.pliego[data-era='academia'] .op.apuntada .op-num { color: var(--era-acento); }
+.pliego[data-era='academia'] .capitular::first-letter { float: none; font: inherit; color: inherit; margin: 0; }
+.pliego[data-era='academia'] .cols { border-top: 2px solid var(--era-acento); }
+.pliego[data-era='academia'] .opciones { border-top: 2px solid var(--era-acento); }
+.pliego[data-era='academia'] .cita::before { color: var(--era-acento); }
+/* mundial: el oro como segunda tinta, con presencia */
+.pliego[data-era='mundial'] .op-num { color: var(--gold); -webkit-text-stroke: 0 transparent; }
+.pliego[data-era='mundial'] .cartel .placa:first-child { background: var(--gold); color: var(--bg-void); padding: 0 0.12em; }
+.pliego[data-era='mundial'] > .folio-arriba { box-shadow: inset 0 -3px 0 var(--gold); }
+.pliego[data-era='mundial'] .lomo { background: var(--gold); width: 2px; }
+.pliego[data-era='mundial'] .kicker-filete { background: var(--gold); height: 2px; }
 /* leyenda: edición de colección. La crónica sale en papel; la decisión, de noche. */
 .pliego[data-era='leyenda'] .pagina-izq { color: var(--paper-ink); }
 .pliego[data-era='leyenda'] .pagina-izq::before { content: ''; position: absolute; top: 0; bottom: 0; left: calc(-1 * var(--margen)); right: calc(var(--gutter) / -2); background: var(--paper); }

@@ -57,6 +57,8 @@
   --ht-papel-brillo: 0.26;
   --ht-peligro: #ff5a4e;
   --ht-gloria: #e8c35a;
+  --ht-gamma: 0.8;
+  --ht-estilo: 0;
 
   /* El respaldo común (ambiente-css) toma estos si alguna vez se usa */
   --amb-pieza-a: #0b0b0c;
@@ -85,59 +87,69 @@
   --ease-tapa: cubic-bezier(0.12, 0.82, 0.18, 1);
 }
 
-/* ——— ERAS: cambia la tinta y el tratamiento del halftone ——— */
-/* pieza: fanzine fotocopiado. Tinta clara, puntos gruesos, mucho grano; el ácido solo como resaltador. */
+/* ——— ERAS: cada era es otra imprenta, no solo otra tinta ——— */
+/* pieza: fotocopia de fanzine. 1 bit, grano, la segunda pasada corrida de registro; el ácido solo como resaltador. */
 [data-era='pieza'] {
   --era-tinta: #ece8e1;
   --era-acento: #ece8e1;
-  --ht-tinta: #d9d4cc;
-  --ht-tinta-2: #3a3936;
-  --ht-celda: 11;
+  --ht-estilo: 1;
+  --ht-tinta: #e6e1d8;
+  --ht-tinta-2: #4a4844;
+  --ht-celda: 6;
   --ht-angulo: 15;
-  --ht-grano: 0.34;
+  --ht-grano: 0.55;
   --ht-contraste: 1.55;
+  --ht-gamma: 0.72;
 }
-/* academia: la revista de la liga. Tinta clara con sombra ácida, trama media, grano bajo. */
+/* academia: la revista de la liga. Limpia y fría: trama fina a 0°, tinta fría, casi sin grano. */
 [data-era='academia'] {
-  --era-tinta: #ece8e1;
-  --era-acento: #c8ff2e;
-  --ht-tinta: #ece8e1;
-  --ht-tinta-2: #3f5410;
-  --ht-celda: 7;
-  --ht-angulo: 45;
-  --ht-grano: 0.12;
-  --ht-contraste: 1.2;
+  --era-tinta: #c4d6e2;
+  --era-acento: #c4d6e2;
+  --ht-estilo: 0;
+  --ht-tinta: #c4d6e2;
+  --ht-tinta-2: #24323b;
+  --ht-celda: 5;
+  --ht-angulo: 0;
+  --ht-grano: 0.03;
+  --ht-contraste: 1.15;
+  --ht-gamma: 0.8;
 }
 /* escenario: la tinta ácida plena. */
 [data-era='escenario'] {
   --era-tinta: #c8ff2e;
   --era-acento: #c8ff2e;
+  --ht-estilo: 0;
   --ht-tinta: #c8ff2e;
   --ht-tinta-2: #3f5410;
   --ht-celda: 6;
   --ht-angulo: 45;
-  --ht-grano: 0.1;
-  --ht-contraste: 1.3;
+  --ht-grano: 0.08;
+  --ht-contraste: 1.25;
+  --ht-gamma: 0.78;
 }
-/* mundial: aparece la segunda tinta, oro. */
+/* mundial: el oro como segunda tinta, con presencia. */
 [data-era='mundial'] {
   --era-tinta: #e8c35a;
   --era-acento: #e8c35a;
+  --ht-estilo: 0;
   --ht-tinta: #e8c35a;
-  --ht-tinta-2: #3f5410;
+  --ht-tinta-2: #5a4614;
   --ht-celda: 6;
   --ht-angulo: 30;
-  --ht-grano: 0.1;
-  --ht-contraste: 1.3;
+  --ht-grano: 0.08;
+  --ht-contraste: 1.25;
+  --ht-gamma: 0.78;
 }
 /* leyenda: edición de colección. Tinta y papel; trama fina. */
 [data-era='leyenda'] {
   --era-tinta: #f1ece2;
   --era-acento: #f1ece2;
+  --ht-estilo: 0;
   --ht-tinta: #f1ece2;
   --ht-tinta-2: #5b5750;
   --ht-celda: 5;
   --ht-angulo: 45;
-  --ht-grano: 0.06;
+  --ht-grano: 0.05;
   --ht-contraste: 1.15;
+  --ht-gamma: 0.85;
 }

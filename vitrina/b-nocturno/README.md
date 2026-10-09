@@ -17,7 +17,7 @@ Correr: `node vitrina/servir.mjs --puerto 8112` → `http://127.0.0.1:8112/b-noc
 | **Elegir** (1-4, clic, Enter) | La opción elegida se subraya con un trazo de marcador ácido (300 ms) y el resultado real (`resultados[opcionId]`) se imprime como **P. D.**: el cuerpo del log y los números "sellados" con odómetro (antes → después, delta, y lo previsto por la previa al lado). |
 | **Cumbre · título** | El ¡EXTRA!: sobre la noche (la final mapa a mapa, el plan, los quemados del Fearless) entra girando una tapa de papel y frena (880 ms, se saltea): "¡CAMPEONES!", el halftone de Yone en una tinta sobre papel, la bajada armada con org/liga/año/marcador/rival, el marcador ancho, el plantel con el jugador resaltado y la serie W/L. Desemboca en "LA EDICIÓN DE COLECCIÓN →". |
 | **Cumbre · final** | La edición de colección: cabecera, "Se cierra una carrera", Yone en papel, el escalón (LEYENDA) como titular, el puntaje como número de edición (odómetro) con su percentil, el sello Golden Road 2036 y la seed como código de barras (decorativo, de los dígitos). Al lado, el almanaque: curva de nivel por split con trama, cinta de clubes (los que dieron títulos en ácido), cada título como ◆, el Golden Road marcado en oro, el pico anotado, la nota de cada año, los 8 Mundiales y las cifras grandes con su referente. |
-| **Eras** | La misma doble página (evento) en las cinco eras a escala, con el main y el folio de cada foto de `muestras.eras`, y la leyenda de las tintas. Tocar una miniatura (o Alt+A) cambia la era de toda la página. |
+| **Eras** | Cinco imprentas: una doble página grande (la decisión real, con el main y el folio de cada foto de `muestras.eras`) y un selector arriba. **pieza** fotocopia de fanzine (1 bit, grano, segunda pasada corrida de registro, titulares calados); **academia** la revista de la liga (trama fina a 0°, tinta fría, caja baja, números llenos); **escenario** el ácido pleno; **mundial** el oro en la trama, los números y los filetes; **leyenda** la crónica en papel. El selector o Alt+A cambian la era de toda la página. |
 | **Celular** | La decisión como nota de revista en una columna: folio arriba, el contexto como chip, la foto en franja, opciones con glifos (sin etiquetas), "más" por opción que abre una sola nota de una línea (+ "más"), la crónica debajo y la barra de cuartos fija abajo. La tabla del plan pasa a fila = plan, celdas alineadas a una cabecera de íconos. |
 
 ## Tokens (`estilos/tokens.css`, únicos colores literales)
@@ -36,9 +36,11 @@ Correr: `node vitrina/servir.mjs --puerto 8112` → `http://127.0.0.1:8112/b-noc
 | `--ht-*` | por era | lo que lee el shader: `--ht-tinta`, `--ht-tinta-2`, `--ht-celda` (px), `--ht-angulo` (°), `--ht-grano`, `--ht-contraste`, `--ht-papel*` |
 | `--era-acento` | por era | pieza crema · academia ácido · escenario ácido · mundial oro · leyenda papel |
 
-Eras (`[data-era]`): **pieza** fanzine fotocopiado (trama 11 px a 15°, grano 0,34, titulares calados y torcidos), **academia**
-revista de la liga (trama crema con sombra ácida corrida), **escenario** ácido pleno, **mundial** aparece el oro,
-**leyenda** la crónica se imprime en papel (la trama pasa a tinta oscura).
+Eras (`[data-era]` en el pliego): **pieza** fotocopia de 1 bit con grano y registro corrido, titulares calados y torcidos;
+**academia** revista de la liga, limpia y fría (`#c4d6e2`, trama a 0°, caja baja, números llenos); **escenario** ácido
+pleno; **mundial** el oro como segunda tinta (trama, números, cartel, filetes); **leyenda** la crónica en papel.
+
+La columna "SoloQ · LP por semana" del plan amateur rotula `lpSemana` tal como lo nombra el motor (`src/systems/amateur.js:564,583,593`: "Lo que da, por semana").
 
 Tipografía: Archivo (62 % / 850-900 titulares, 125 % / 900 números, 100 % / 400 cuerpo 16-18 px), IBM Plex Mono 9,5-13 px
 (folios, datos, tablas, la máquina de escribir), Fraunces itálica SOLO en la cita destacada.
@@ -47,7 +49,7 @@ Tipografía: Archivo (62 % / 850-900 titulares, 125 % / 900 números, 100 % / 40
 
 | Archivo | Qué hace |
 |---|---|
-| `halftone.js` | El ambiente (contrato de `comun/ambiente.md` + `respirar()`, `imprimir()`, `sinImpresion()`, `listo()`). WebGL2 a escala 0,5, 2 texturas (fundido A/B), ≤ 30 fps, pausa con la pestaña oculta, pérdida de contexto. Trama rotada por celdas con tamaño de punto por luminancia, segunda tinta corrida (sombra impresa), grano, respiración (onda lenta que se aquieta en ≤ 1 s en las paradas), pulso como onda que agranda los puntos, "imprimir" (la trama crece de arriba abajo), modo papel (puntos oscuros sobre papel). Sin WebGL: `tramaEstatica()` dibuja la misma trama en canvas 2D (también la usan la hoja de contactos y las eras). |
+| `halftone.js` | El ambiente (contrato de `comun/ambiente.md` + `respirar()`, `imprimir()`, `sinImpresion()`, `listo()`). Antes de tramar, **niveles**: punto negro y blanco desde el histograma (percentiles 2 y 98) y gamma por era (`--ht-gamma`); el arte grande usa la imagen `centrada` de Data Dragon y una trama de ~90-110 celdas a lo ancho (`celdas`); `--ht-estilo: 1` es la fotocopia de 1 bit (pieza); `apagado` baja contraste y saturación (el fondo del ¡EXTRA!). WebGL2 a escala 0,5, 2 texturas (fundido A/B), ≤ 30 fps, pausa con la pestaña oculta, pérdida de contexto. Trama rotada por celdas con tamaño de punto por luminancia, segunda tinta corrida (sombra impresa), grano, respiración (onda lenta que se aquieta en ≤ 1 s en las paradas), pulso como onda que agranda los puntos, "imprimir" (la trama crece de arriba abajo), modo papel (puntos oscuros sobre papel). Sin WebGL: `tramaEstatica()` dibuja la misma trama en canvas 2D (también la usan la hoja de contactos y las eras). |
 | `decision.js` | La doble página, la tabla de almanaque, la nota al margen (hover/foco/flechas), elegir (marcador + P. D. + odómetros), el modo papel de leyenda. |
 | `cumbre.js` | El ¡EXTRA! (tapa que gira y frena, salteable) y la edición de colección con el almanaque en SVG (curva, trama, cinta, hitos, notas, Mundiales). |
 | `inicio.js` | La portada, la frase con campos, roles, hoja de contactos con lápiz graso, índice, la intro impresa. |

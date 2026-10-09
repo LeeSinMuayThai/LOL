@@ -72,12 +72,30 @@ export function montarDecision(raiz, ctx) {
   let lead = resto.filter((b) => b.beat);
   if (!lead.length) lead = resto.filter((b) => !b.log?.tecnico).slice(0, 1);
   const breves = resto.filter((b) => !lead.includes(b)).sort((a, b) => Number(Boolean(a.log?.tecnico)) - Number(Boolean(b.log?.tecnico)));
+  const notas = [...lead.slice(1), ...breves];
+  const listaBreves = h(
+    'ul.breves',
+    { 'aria-label': 'Breves del split' },
+    notas.map((b, i) =>
+      h(
+        `li${i >= MAX_BREVES ? '.extra' : ''}`,
+        h(
+          'button.breve',
+          { type: 'button', 'aria-expanded': 'false', onclick: (e) => { const li = e.currentTarget.parentElement; const si = li.classList.toggle('abierto'); e.currentTarget.setAttribute('aria-expanded', String(si)); } },
+          h('span.breve-tipo', mayus(b.log.type ?? '')),
+          h('span.breve-txt', b.log.message),
+        ),
+      ),
+    ),
+  );
+  const masBreves = notas.length > MAX_BREVES
+    ? h('button.mas.breves-mas', { type: 'button', onclick: (e) => { listaBreves.classList.add('todas'); e.currentTarget.remove(); } }, `${notas.length - MAX_BREVES} breves más`)
+    : null;
   const cronica = h(
     'div.cronica',
-    lead.map((b, i) => h(`p.beat${i === 0 ? '.capitular' : ''}`, b.log.message)),
-    breves.length
-      ? h('ul.breves', { 'aria-label': 'Breves' }, breves.map((b, i) => h(`li${i >= MAX_BREVES ? '.sr' : ''}`, { title: b.log.message }, h('span.breve-tipo', mayus(b.log.type ?? '')), h('span.breve-txt', b.log.message))))
-      : null,
+    lead[0] ? h('p.beat.capitular', lead[0].log.message) : null,
+    notas.length ? listaBreves : null,
+    masBreves,
   );
   const izquierda = h('section.pagina.pagina-izq', foto, cabeza, h('div.cols', cronica));
   izquierda.append(pieFoto);
@@ -364,8 +382,10 @@ export function montarDecision(raiz, ctx) {
     crearAmbiente(foto, {
       meta,
       modo,
-      fade: matriz ? [0.42, 0.98, 0.84, 1.0] : [0.5, 0.98, 0.86, 1.0],
-      zoom: 1.32,
+      fade: matriz ? [0.5, 1.0, 0.86, 1.0] : [0.58, 1.0, 0.88, 1.0],
+      recorte: 'centrada',
+      celdas: matriz ? 92 : 112,
+      zoom: 1.0,
       estatico: ctx.miniatura,
       semilla: muestra,
       respira: modo === 'noche',

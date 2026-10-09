@@ -1,41 +1,57 @@
-/* Las eras: cinco miniaturas de la misma doble página. */
+/* Las eras: una doble página grande y el selector de imprentas. */
 .eras {
   display: grid;
-  grid-template-rows: var(--folio-alto) auto minmax(0, 1fr);
+  grid-template-rows: var(--folio-alto) minmax(0, 1fr);
   padding: 0 var(--margen);
   min-height: 100vh;
 }
 .eras > .folio { margin: 0 calc(-1 * var(--margen)); }
-.eras-cabeza { display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; padding: 24px 0 16px; border-bottom: 1px solid var(--rule-strong); }
-.eras-titulo { font: 850 54px/0.9 var(--f-grot); font-stretch: 62%; text-transform: uppercase; letter-spacing: -0.004em; margin-top: 10px; }
-.eras-bajada { font-size: 15px; line-height: 1.45; color: var(--ink-dim); max-width: 46ch; }
-.eras-grilla { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px var(--gutter); padding: 18px 0 28px; align-content: start; }
-.mini { display: grid; gap: 8px; }
-.mini-marco { position: relative; display: block; width: 100%; overflow: hidden; background: var(--bg-void); box-shadow: 0 0 0 1px var(--rule); }
-.mini-marco:hover { box-shadow: 0 0 0 1px var(--ink-dim); }
-.mini.actual .mini-marco { box-shadow: 0 0 0 2px var(--era-acento); }
+/* arriba, el título y el selector en una barra; abajo, la doble página lo más grande que entre */
+.eras-cuerpo { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 18px 0 20px; align-items: start; }
+.eras-lado { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'k sel' 't sel' 'b nota'; column-gap: 40px; row-gap: 4px; align-items: end; }
+.eras-lado > .kicker { grid-area: k; }
+.eras-titulo { grid-area: t; font: 850 50px/0.88 var(--f-grot); font-stretch: 62%; text-transform: uppercase; letter-spacing: -0.004em; white-space: nowrap; }
+.eras-bajada { grid-area: b; font-size: 13.5px; line-height: 1.4; color: var(--ink-dim); max-width: 34ch; }
+.eras-lado .tintas-nota { grid-area: nota; align-self: start; }
+.selector { grid-area: sel; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid var(--rule-strong); align-self: end; }
+.selector li { border-right: 1px solid var(--rule); }
+.selector li:last-child { border-right: 0; }
+.sel {
+  display: grid; grid-template-columns: 26px 22px minmax(0, 1fr); column-gap: 10px; row-gap: 3px; align-items: center;
+  width: 100%; padding: 11px 0 12px 12px; box-shadow: inset 3px 0 0 transparent;
+}
+.sel-n { font: 400 10px/1 var(--f-mono); color: var(--ink-mute); }
+.sel-muestra i { display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--ht-tinta); box-shadow: 3px 2px 0 var(--ht-tinta-2); }
+.sel-nombre { font: 850 26px/0.9 var(--f-grot); font-stretch: 62%; letter-spacing: 0.01em; color: var(--ink-dim); }
+.sel-imprenta, .sel-dato { grid-column: 3; font: 400 10px/1.3 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute); }
+.sel-imprenta { color: var(--ink-dim); }
+.sel:hover .sel-nombre { color: var(--ink); }
+.sel.actual { box-shadow: inset 0 3px 0 var(--era-acento); }
+.sel.actual .sel-nombre { color: var(--ink); }
+.sel.actual .sel-imprenta { color: var(--era-acento); }
+.tintas-nota { font: 400 10.5px/1.5 var(--f-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-mute); }
+.eras-figura { display: grid; gap: 10px; min-width: 0; width: min(100%, calc((100vh - 210px) * 1.6)); }
+.mini-marco { position: relative; display: block; width: 100%; overflow: hidden; background: var(--bg-void); box-shadow: 0 0 0 1px var(--rule-strong), 0 30px 60px -20px var(--bg-sunken); }
 .mini-lienzo { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
 .mini-lienzo .pliego { height: 100%; min-height: 0; }
-.mini-pie { display: flex; gap: 10px; align-items: baseline; font: 400 10px/1.2 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); }
-.mini-pie b { font: 850 18px/1 var(--f-grot); font-stretch: 62%; letter-spacing: 0.01em; color: var(--ink); }
-.mini-n { color: var(--ink-mute); }
-.mini-pie em { font-style: normal; margin-left: auto; color: var(--ink); }
-.mini.actual .mini-pie em { color: var(--era-acento); }
-.tintas { display: grid; gap: 12px; align-content: start; padding: 2px 0 0 4px; }
-.tintas ol { display: grid; gap: 9px; }
-.tinta { display: grid; grid-template-columns: 22px 92px minmax(0, 1fr); gap: 10px; align-items: baseline; font-size: 13px; line-height: 1.35; color: var(--ink-dim); }
-.tinta i { width: 22px; height: 22px; border-radius: 50%; background: var(--ht-tinta); box-shadow: 4px 3px 0 var(--ht-tinta-2); align-self: center; }
-.tinta b { font: 850 17px/1 var(--f-grot); font-stretch: 62%; color: var(--ink); }
-.tintas-nota { font: 400 10.5px/1.5 var(--f-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-mute); border-top: 1px solid var(--rule); padding-top: 10px; }
+.eras-pie { display: flex; gap: 14px; align-items: baseline; font: 400 10.5px/1.4 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); }
+.eras-pie b { font: 850 20px/1 var(--f-grot); font-stretch: 62%; color: var(--era-acento); letter-spacing: 0.01em; }
+.eras-pie em { font: 400 14px/1.4 var(--f-grot); font-style: normal; text-transform: none; letter-spacing: 0; color: var(--ink-dim); }
 
 @media (max-width: 700px) {
   .eras { padding: 0 0 24px; }
   .eras > .folio { margin: 0; }
   .eras .folio-der { display: none; }
-  .eras-cabeza { flex-direction: column; align-items: flex-start; gap: 10px; padding: 18px var(--margen) 12px; }
-  .eras-titulo { font-size: 34px; }
-  .eras-grilla { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; padding: 14px var(--margen) 0; }
-  .mini-pie { flex-wrap: wrap; gap: 2px 8px; }
-  .mini-pie em { margin-left: 0; }
-  .tintas { grid-column: 1 / -1; }
+  .eras-cuerpo { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 16px var(--margen) 0; }
+  .eras-lado { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'k' 't' 'b' 'sel' 'nota'; gap: 8px; }
+  .eras-figura { width: 100%; }
+  .eras-titulo { white-space: normal; }
+  .eras-titulo { font-size: 38px; }
+  .selector { display: flex; flex-wrap: wrap; gap: 6px; border: 0; }
+  .selector li, .selector li:last-child { border: 0; }
+  .sel { grid-template-columns: 22px auto; padding: 6px 10px; border: 1px solid var(--rule-strong); border-radius: 999px; }
+  .sel-n, .sel-imprenta, .sel-dato { display: none; }
+  .sel-nombre, .sel.actual .sel-nombre { font-size: 18px; }
+  .sel.actual { box-shadow: none; border-color: var(--era-acento); }
+  .eras-pie { flex-wrap: wrap; }
 }

@@ -50,6 +50,7 @@
 }
 .extra-siguiente-txt { font: 850 30px/1 var(--f-grot); font-stretch: 62%; text-transform: uppercase; padding-bottom: 6px; border-bottom: 3px solid var(--era-acento); }
 .extra-siguiente:hover .extra-siguiente-txt { color: var(--era-acento); }
+.extra-cronica .extra-siguiente { align-self: flex-start; margin: 16px 0 0; }
 
 .tapa-extra {
   grid-column: 6 / 12; grid-row: 2; align-self: center;

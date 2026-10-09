@@ -54,6 +54,7 @@ function montarExtra(raiz, ctx) {
     mapas,
     quemados.length ? h('p.quemados', h('span.kicker', 'Quemados en la serie'), h('span.quemados-lista', quemados.map((q) => h('s', q)))) : null,
   );
+  const salirLugar = cronica;
 
   // la tapa de papel
   const foto = h('figure.tapa-foto', { 'aria-hidden': 'true' });
@@ -85,13 +86,13 @@ function montarExtra(raiz, ctx) {
     folio(['Un Split Más', `Edición ${T.titulo.anio}`, mayus(f.cuando?.ventana?.texto ?? ''), 'Edición extra'], [f.quien?.handle, f.quien?.rolEtiqueta, f.club?.org, f.cuando?.edadTexto, numeroFranja(f.numero)]),
     fondo,
     cronica,
-    salir,
     tapa,
     folioAbajo(0, 'Temporada'),
   );
+  salirLugar.append(salir);
   raiz.append(pagina);
 
-  const amb = crearAmbiente(fondo, { meta, fade: [0, 0, 0.56, 0.36], zoom: 1, semilla: 'extra' });
+  const amb = crearAmbiente(fondo, { meta, fade: [0, 0, 0.56, 0.36], zoom: 1, apagado: 0.62, semilla: 'extra' });
   const ambTapa = crearAmbiente(foto, { meta, modo: 'papel', fade: [0.74, 1.0, 0, 0], zoom: 1.5, semilla: 'tapa', respira: false });
   const listo = Promise.all([
     amb.ambiente({ era: ctx.era, animo: 'gloria', arte: main }),
