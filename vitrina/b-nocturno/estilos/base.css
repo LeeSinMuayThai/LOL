@@ -1,0 +1,7 @@
+html, body { height: 100%; margin: 0; }
+body { background: var(--amb-pieza-a); color: var(--placeholder-texto); font: 16px/1.5 var(--v-fuente); }
+.escena { position: relative; min-height: 100%; display: grid; place-content: center; text-align: center; gap: 8px; padding: 24px; }
+.escena > * { position: relative; z-index: 1; margin: 0; }
+.rotulo { font: 500 12px var(--v-fuente-mono); letter-spacing: 0.08em; color: var(--placeholder-texto-2); }
+h1 { font-weight: 600; font-size: clamp(32px, 7vw, 72px); letter-spacing: -0.02em; }
+.detalle { font: 13px var(--v-fuente-mono); color: var(--placeholder-texto-2); }

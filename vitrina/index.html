@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Un Split Más — la UI nueva</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="comun/fuentes.css">
+  <link rel="stylesheet" href="comun/tokens.css">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <header class="portada">
+    <h1>Un Split Más — la UI nueva</h1>
+    <p class="bajada">Tres maneras de que tu carrera se vea como se merece. Las tres usan la misma carrera real (seed <span id="seed">…</span>), jugada por el motor, con sus números de verdad. Tocá todo: elegí opciones, mirá los momentos, cambiá de era. Después decime cuál — o qué mezcla.</p>
+  </header>
+
+  <main>
+    <section id="direcciones" class="seccion" aria-labelledby="t-direcciones">
+      <h2 id="t-direcciones">Las tres direcciones</h2>
+      <div class="tres">
+        <article class="direccion" data-dir="a-luz">
+          <div class="vivo" data-hash="pantalla=inicio"></div>
+          <p class="etiqueta">A · LUZ</p>
+          <h3>Tu carrera, iluminada.</h3>
+          <p>Luz de escenario que cambia con tu carrera, el splash de tu main como ambiente y tipografía grande.</p>
+          <a class="boton" href="a-luz/index.html#pantalla=inicio">Abrir</a>
+        </article>
+        <article class="direccion" data-dir="b-nocturno">
+          <div class="vivo" data-hash="pantalla=inicio"></div>
+          <p class="etiqueta">B · NOCTURNO</p>
+          <h3>Tu carrera, impresa de noche.</h3>
+          <p>Una revista que sale de noche: grilla editorial, una tinta ácida, halftone, tapas y el ¡EXTRA!</p>
+          <a class="boton" href="b-nocturno/index.html#pantalla=inicio">Abrir</a>
+        </article>
+        <article class="direccion" data-dir="c-pantallas">
+          <div class="vivo" data-hash="pantalla=inicio"></div>
+          <p class="etiqueta">C · PANTALLAS</p>
+          <h3>Todo pasa en tus pantallas.</h3>
+          <p>Tu escritorio a los 15, la estación del equipo de pro y el stream del Mundial; los aparatos envejecen con el calendario.</p>
+          <a class="boton" href="c-pantallas/index.html#pantalla=inicio">Abrir</a>
+        </article>
+      </div>
+    </section>
+
+    <section id="lado-a-lado" class="seccion" aria-labelledby="t-lado">
+      <h2 id="t-lado">Lado a lado</h2>
+      <p class="sub">La misma pantalla, las tres direcciones.</p>
+      <div class="controles" id="controles-lado">
+        <label>Pantalla <select id="lado-pantalla"></select></label>
+        <label>Muestra <select id="lado-muestra"></select></label>
+        <label>Era <select id="lado-era"></select></label>
+        <label>Dispositivo <select id="lado-dispositivo"><option value="escritorio">Escritorio</option><option value="celular">Celular</option></select></label>
+      </div>
+      <div class="tres lado" id="lado">
+        <figure class="marco" data-dir="a-luz"><div class="vivo"></div><figcaption><span>A · LUZ</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
+        <figure class="marco" data-dir="b-nocturno"><div class="vivo"></div><figcaption><span>B · NOCTURNO</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
+        <figure class="marco" data-dir="c-pantallas"><div class="vivo"></div><figcaption><span>C · PANTALLAS</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
+      </div>
+    </section>
+
+    <section id="funciones" class="seccion" aria-labelledby="t-funciones">
+      <h2 id="t-funciones">Funciones</h2>
+      <p class="sub">Cada una, en cada dirección.</p>
+      <table class="matriz">
+        <thead><tr><th scope="col">Función</th><th scope="col">A · LUZ</th><th scope="col">B · NOCTURNO</th><th scope="col">C · PANTALLAS</th></tr></thead>
+        <tbody id="matriz"></tbody>
+      </table>
+    </section>
+
+    <section id="antes-despues" class="seccion" aria-labelledby="t-antes">
+      <h2 id="t-antes">Antes / después</h2>
+      <p class="sub">La captura de hoy del juego, al lado de la misma pantalla en cada dirección.</p>
+      <div class="controles"><label>Pantalla <select id="ad-muestra"></select></label></div>
+      <div class="cuatro" id="antes-despues-grilla">
+        <figure class="marco" data-hoy><div class="hoy"><img alt="Captura de hoy del juego" loading="lazy"></div><figcaption><span>Hoy</span> <span class="tenue" id="ad-nota"></span></figcaption></figure>
+        <figure class="marco" data-dir="a-luz"><div class="vivo"></div><figcaption><span>A · LUZ</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
+        <figure class="marco" data-dir="b-nocturno"><div class="vivo"></div><figcaption><span>B · NOCTURNO</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
+        <figure class="marco" data-dir="c-pantallas"><div class="vivo"></div><figcaption><span>C · PANTALLAS</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
+      </div>
+    </section>
+
+    <section id="recomendacion" class="seccion" aria-labelledby="t-reco">
+      <h2 id="t-reco">Recomendación</h2>
+      <p class="reco">A como base; de B, la tapa del año; de C, la bandeja de contratos que firmás. Pero el que juega sos vos.</p>
+    </section>
+
+    <section id="elegir" class="seccion" aria-labelledby="t-elegir">
+      <h2 id="t-elegir">Cómo elegir</h2>
+      <form id="form-eleccion" class="eleccion" autocomplete="off">
+        <fieldset>
+          <legend>Base</legend>
+          <label class="opcion"><input type="radio" name="base" value="A"> A · LUZ</label>
+          <label class="opcion"><input type="radio" name="base" value="B"> B · NOCTURNO</label>
+          <label class="opcion"><input type="radio" name="base" value="C"> C · PANTALLAS</label>
+        </fieldset>
+        <fieldset>
+          <legend>Ideas a importar</legend>
+          <label class="opcion"><input type="checkbox" name="idea" value="la tapa del año de B"> La tapa del año de B</label>
+          <label class="opcion"><input type="checkbox" name="idea" value="el ¡EXTRA! de B"> El ¡EXTRA! de B</label>
+          <label class="opcion"><input type="checkbox" name="idea" value="la bandeja de contratos de C"> La bandeja de contratos de C</label>
+          <label class="opcion"><input type="checkbox" name="idea" value="el stream con chat de C"> El stream con chat de C</label>
+          <label class="opcion"><input type="checkbox" name="idea" value="la pared de retratos de Fearless"> La pared de retratos de Fearless</label>
+        </fieldset>
+        <fieldset>
+          <legend>Ajustes</legend>
+          <label class="opcion"><input type="checkbox" name="breves"> Textos breves por defecto</label>
+          <label class="opcion"><input type="checkbox" name="sonido"> Sonido prendido por defecto</label>
+        </fieldset>
+        <div class="salida">
+          <p id="texto-eleccion" class="texto-eleccion" aria-live="polite"></p>
+          <button type="button" class="boton" id="copiar">Copiar mi elección</button>
+          <span id="copiado" class="copiado" role="status"></span>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="pie"><p>La vitrina no es parte del juego. <a href="README.md">README</a></p></footer>
+  <script type="module" src="index.js"></script>
+</body>
+</html>

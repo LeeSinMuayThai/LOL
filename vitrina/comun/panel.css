@@ -1,0 +1,123 @@
+/* Estilos del panel (dentro de su Shadow DOM). Solo tokens de comun/tokens.css. */
+:host {
+  all: initial;
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2147483000;
+  font: 12px/1.35 var(--v-fuente);
+  color: var(--v-texto);
+}
+:host([hidden]) { display: none; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+.caja {
+  width: 288px;
+  max-width: calc(100vw - 24px);
+  background: var(--v-superficie);
+  border: 1px solid var(--v-borde);
+  border-radius: var(--v-radio);
+  box-shadow: 0 8px 32px var(--v-sombra);
+  overflow: hidden;
+}
+.caja[data-abierto='0'] { width: auto; opacity: 0.72; transition: opacity 160ms ease; }
+.caja[data-abierto='0']:hover, .caja[data-abierto='0']:focus-within { opacity: 1; }
+.caja[data-abierto='0'] .cuerpo { display: none; }
+
+.cabecera {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  cursor: pointer;
+  font: 500 12px/1 var(--v-fuente-mono);
+  color: var(--v-texto-2);
+}
+.cabecera:hover { color: var(--v-texto); }
+.cabecera:focus-visible { outline: 2px solid var(--v-foco); outline-offset: -2px; }
+.punto { width: 6px; height: 6px; border-radius: 50%; background: var(--v-ok); }
+.titulo { flex: 1; white-space: nowrap; }
+.chevron { transition: transform 160ms ease; }
+.caja[data-abierto='1'] .chevron { transform: rotate(180deg); }
+
+.cuerpo { padding: 4px 12px 12px; display: grid; gap: 10px; border-top: 1px solid var(--v-borde); padding-top: 12px; }
+.campos { display: grid; gap: 6px; }
+.campo { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 8px; color: var(--v-texto-2); }
+select {
+  appearance: none;
+  background: var(--v-superficie-2);
+  color: var(--v-texto);
+  border: 1px solid var(--v-borde);
+  border-radius: var(--v-radio-chico);
+  padding: 5px 8px;
+  font: 12px var(--v-fuente-mono);
+}
+select:focus-visible, .btn:focus-visible, .seg button:focus-visible, input:focus-visible { outline: 2px solid var(--v-foco); outline-offset: 1px; }
+
+.acciones { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.btn {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  padding: 5px 10px;
+  border: 1px solid var(--v-borde-fuerte);
+  border-radius: var(--v-radio-chico);
+  color: var(--v-texto);
+  font: 500 12px/1 var(--v-fuente);
+}
+.btn:hover { border-color: var(--v-texto-2); }
+.btn:active { background: var(--v-superficie-2); }
+.btn.chico { padding: 5px 8px; }
+.grupo-elegir { display: flex; gap: 4px; align-items: center; margin-left: auto; }
+.rotulo { color: var(--v-texto-3); margin-right: 2px; }
+
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--v-borde); border-radius: var(--v-radio-chico); overflow: hidden; }
+.seg button { all: unset; box-sizing: border-box; text-align: center; padding: 6px 0; cursor: pointer; color: var(--v-texto-2); }
+.seg button[aria-pressed='true'] { background: var(--v-superficie-2); color: var(--v-texto); }
+
+.interruptores { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+.interruptor { display: flex; align-items: center; gap: 6px; color: var(--v-texto-2); cursor: pointer; }
+.interruptor input { accent-color: var(--v-acento); margin: 0; }
+.interruptor:hover { color: var(--v-texto); }
+
+.ayuda { margin: 0; color: var(--v-texto-3); font-size: 11px; }
+
+.medidor {
+  position: fixed;
+  left: 8px;
+  top: 8px;
+  padding: 4px 8px;
+  background: var(--v-scrim);
+  color: var(--v-texto);
+  border-radius: var(--v-radio-chico);
+  font: 11px/1 var(--v-fuente-mono);
+  pointer-events: none;
+}
+.aviso {
+  position: fixed;
+  right: 12px;
+  bottom: 56px;
+  padding: 8px 12px;
+  background: var(--v-superficie-2);
+  border: 1px solid var(--v-borde-fuerte);
+  border-radius: var(--v-radio-chico);
+  color: var(--v-texto);
+}
+
+.visor {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--v-scrim);
+  padding: 24px;
+  cursor: zoom-out;
+  outline: none;
+}
+.visor-cuerpo { max-width: 100%; max-height: 100%; display: grid; gap: 10px; justify-items: center; }
+.visor img { max-width: 100%; max-height: calc(100vh - 90px); border-radius: var(--v-radio-chico); border: 1px solid var(--v-borde-fuerte); }
+.visor-pie { margin: 0; color: var(--v-texto-2); font: 12px var(--v-fuente-mono); text-align: center; }
