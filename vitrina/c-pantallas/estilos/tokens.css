@@ -1,5 +1,294 @@
-/* Tokens de C · PANTALLAS. Placeholder: la dirección real reemplaza esto. Acá (y solo acá) van los colores literales. */
+/* C · PANTALLAS — tokens. Acá (y solo acá) viven los colores literales.
+   El sistema operativo inventado se llama FARO y su versión es el año: FARO 26 (la pieza del pibe, 2026), FARO 28 (la PC
+   del equipo), FARO 31 (la estación de pro), FARO 33 (el stream), FARO 44 (los 2040). Cada era redefine los mismos
+   nombres sobre [data-era]: el <html> trae la era efectiva y cualquier subárbol puede traer otra (la pantalla de eras
+   pinta las cinco a la vez con el mismo componente). */
+
+:root,
+[data-era='pieza'] {
+  --os-nombre: 'FARO';
+  --os-version: '26';
+
+  /* superficies: la pieza de noche; la única luz es la del monitor */
+  --bg-void: #07080b;
+  --bg-surface: #15171c;
+  --bg-raised: #1e2129;
+  --bg-sunken: #0d0e12;
+  --linea: #2a2d37;
+  --linea-fuerte: #3a3e4b;
+  --ink: #eceef4;
+  --ink-dim: #b0b4c3;
+  --ink-mute: #8a8fa2;
+
+  --accent: #7c5cff;
+  --accent-ink: #ffffff;
+  --accent-suave: #261f4a;
+
+  --up: #3df2a0;
+  --down: #ff5468;
+  --warn: #ffb547;
+  --danger: #ff5468;
+  --gold: #ffd27a;
+
+  /* el papel de pared: el splash del main, oscurecido con la luz fría del monitor */
+  --pared-velo: #0a0915;
+  --pared-luz: #3b2f8f;
+  --pared-brillo: 0.42;
+  --pared-saturacion: 0.9;
+  --pared-sepia: 0;
+  --pared-velo-opacidad: 0.62;
+
+  /* forma */
+  --r-ventana: 12px;
+  --r-control: 8px;
+  --r-pastilla: 999px;
+  --borde-ventana: 1px;
+  --vidrio: 0.78;
+  --vidrio-blur: 22px;
+  --sombra-ventana: 0 40px 90px -30px var(--bg-void), 0 0 0 1px var(--linea);
+  --brillo-foco: inset 0 1px 0 0 var(--linea-fuerte);
+  --alto-titulo: 36px;
+  --alto-barra: 30px;
+  --alto-dock: 52px;
+
+  /* tipografía */
+  --f-ui: 'Geist', system-ui, sans-serif;
+  --f-mono: 'Geist Mono', ui-monospace, monospace;
+  --f-momento: 'Mona Sans', 'Geist', sans-serif;
+  --f-chrome: 'Geist', system-ui, sans-serif;
+  --momento-ancho: 112%;
+  --momento-peso: 800;
+  --chrome-mayus: none;
+  --chrome-espaciado: 0;
+
+  /* movimiento (se lee también desde JS con getComputedStyle) */
+  --ease-ventana: cubic-bezier(0.2, 0.9, 0.25, 1.08);
+  --ease-entrar: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-salir: cubic-bezier(0.5, 0, 0.75, 0);
+  --dur-ventana: 240ms;
+  --dur-noti: 320ms;
+  --dur-rodar: 700ms;
+}
+
+/* FARO 28 · la PC del equipo: vidrio limpio y claro, el acento de la org solo en detalles */
+[data-era='academia'] {
+  --os-version: '28';
+  --bg-void: #c9ced8;
+  --bg-surface: #fbfbfd;
+  --bg-raised: #ffffff;
+  --bg-sunken: #eceef3;
+  --linea: #d8dce4;
+  --linea-fuerte: #c3c8d2;
+  --ink: #14161b;
+  --ink-dim: #454b58;
+  --ink-mute: #626978;
+  --accent: #2d55ff;
+  --accent-ink: #ffffff;
+  --accent-suave: #dfe6ff;
+  --up: #0b8a55;
+  --down: #c8243f;
+  --warn: #9a5c00;
+  --danger: #c8243f;
+  --gold: #8a6100;
+  --pared-velo: #e4e7ee;
+  --pared-luz: #ffffff;
+  --pared-brillo: 1;
+  --pared-saturacion: 0.2;
+  --pared-sepia: 0;
+  --pared-velo-opacidad: 0.86;
+  --r-ventana: 10px;
+  --r-control: 6px;
+  --vidrio: 0.86;
+  --vidrio-blur: 30px;
+  --sombra-ventana: 0 30px 60px -28px var(--linea-fuerte), 0 0 0 1px var(--linea);
+  --brillo-foco: inset 0 1px 0 0 var(--bg-raised);
+  --alto-titulo: 32px;
+  --momento-ancho: 100%;
+  --momento-peso: 700;
+}
+
+/* FARO 31 · la estación de pro: sobria, rápida, monocroma; la tinta es el acento */
+[data-era='escenario'] {
+  --os-version: '31';
+  --bg-void: #040405;
+  --bg-surface: #0f1012;
+  --bg-raised: #191a1e;
+  --bg-sunken: #08080a;
+  --linea: #24262b;
+  --linea-fuerte: #3a3c43;
+  --ink: #f3f3f0;
+  --ink-dim: #a9aaae;
+  --ink-mute: #85878d;
+  --accent: #f3f3f0;
+  --accent-ink: #0a0a0b;
+  --accent-suave: #232428;
+  --pared-velo: #030304;
+  --pared-luz: #1c1d22;
+  --pared-brillo: 0.72;
+  --pared-saturacion: 0.32;
+  --pared-sepia: 0;
+  --pared-velo-opacidad: 0.42;
+  --r-ventana: 4px;
+  --r-control: 3px;
+  --vidrio: 0.94;
+  --vidrio-blur: 8px;
+  --sombra-ventana: 0 0 0 1px var(--linea-fuerte);
+  --brillo-foco: inset 0 2px 0 0 var(--ink);
+  --alto-titulo: 26px;
+  --alto-barra: 26px;
+  --alto-dock: 46px;
+  --f-chrome: 'Geist Mono', ui-monospace, monospace;
+  --momento-ancho: 125%;
+  --momento-peso: 860;
+  --chrome-mayus: uppercase;
+  --chrome-espaciado: 0.06em;
+  --dur-ventana: 180ms;
+  --dur-noti: 220ms;
+  --dur-rodar: 520ms;
+}
+
+/* FARO 33 · el stream: negro de plataforma, el chat al costado, el acento es el EN VIVO */
+[data-era='mundial'] {
+  --os-version: '33';
+  --bg-void: #0e0e10;
+  --bg-surface: #18181b;
+  --bg-raised: #222226;
+  --bg-sunken: #0a0a0b;
+  --linea: #2c2c31;
+  --linea-fuerte: #3d3d44;
+  --ink: #efeff1;
+  --ink-dim: #b3b3bd;
+  --ink-mute: #8b8b98;
+  --accent: #ff4fd8;
+  --accent-ink: #120410;
+  --accent-suave: #3a1534;
+  --pared-velo: #0e0e10;
+  --pared-luz: #3a1534;
+  --pared-brillo: 0.32;
+  --pared-saturacion: 0.7;
+  --pared-sepia: 0;
+  --pared-velo-opacidad: 0.7;
+  --r-ventana: 8px;
+  --r-control: 6px;
+  --vidrio: 0.92;
+  --vidrio-blur: 12px;
+  --alto-titulo: 30px;
+  --momento-ancho: 125%;
+  --momento-peso: 900;
+}
+
+/* FARO 44 · los 2040: el mismo escritorio, envejecido y más avanzado. Sin marcos, papel de pared gastado, marfil y oro */
+[data-era='leyenda'] {
+  --os-version: '44';
+  --bg-void: #0b0907;
+  --bg-surface: #1b1713;
+  --bg-raised: #26211b;
+  --bg-sunken: #120f0c;
+  --linea: #3a3229;
+  --linea-fuerte: #54493b;
+  --ink: #f6efe1;
+  --ink-dim: #c9bea9;
+  --ink-mute: #a39882;
+  --accent: #ffd27a;
+  --accent-ink: #1c1407;
+  --accent-suave: #3a2e17;
+  --up: #8fe3b0;
+  --down: #ff8a7a;
+  --warn: #ffc56b;
+  --pared-velo: #140f0a;
+  --pared-luz: #6b4a1f;
+  --pared-brillo: 0.5;
+  --pared-saturacion: 0.35;
+  --pared-sepia: 0.55;
+  --pared-velo-opacidad: 0.55;
+  --r-ventana: 26px;
+  --r-control: 14px;
+  --vidrio: 0.8;
+  --vidrio-blur: 40px;
+  --sombra-ventana: 0 60px 120px -40px var(--bg-void), 0 0 0 1px var(--linea);
+  --brillo-foco: inset 0 1px 0 0 var(--linea-fuerte);
+  --alto-titulo: 22px;
+  --f-ui: 'Mona Sans', 'Geist', sans-serif;
+  --f-chrome: 'Mona Sans', 'Geist', sans-serif;
+  --momento-ancho: 88%;
+  --momento-peso: 640;
+  --ease-ventana: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-ventana: 420ms;
+  --dur-noti: 460ms;
+  --dur-rodar: 900ms;
+}
+
+/* ánimos del ambiente (encima de la era) */
 :root {
-  --placeholder-texto: #ececef;
-  --placeholder-texto-2: #a0a3ad;
+  --animo-peligro: #ff3b4e;
+  --animo-gloria: #ffc35a;
+  --pulso: #ffffff;
+  --crt-linea: #f4f1ff;
+  --negro: #000000;
+
+  /* rangos de soloQ (escudo propio en SVG) */
+  --rank-iron: #6f6763;
+  --rank-bronze: #b0714d;
+  --rank-silver: #a3afbc;
+  --rank-gold: #e8b54d;
+  --rank-platinum: #45c2b0;
+  --rank-emerald: #34c87a;
+  --rank-diamond: #7491ff;
+  --rank-master: #b76bff;
+  --rank-grandmaster: #ff5163;
+  --rank-challenger: #f6d77f;
+
+  /* bandas de nivel del motor */
+  --nivel-promesa: #8f96a8;
+  --nivel-titular: #7fb0ff;
+  --nivel-elite: #c49bff;
+  --nivel-clase_mundial: #ffd27a;
+  --nivel-otro: #8f96a8;
+
+  /* categorías de parada */
+  --cat-mercado: #ffb547;
+  --cat-caminos: #9d8cff;
+  --cat-equipo: #6fd3ff;
+  --cat-vida: #ff8fb1;
+  --cat-otro: #a9adbd;
+
+  /* el chat del stream */
+  --chat-a: #ff9ee6;
+  --chat-b: #9fd0ff;
+  --chat-c: #ffe08a;
+  --vivo: #ff3d57;
+  --vivo-ink: #ffffff;
+
+  /* el ambiente de respaldo de comun/ toma estos */
+  --amb-pieza-a: #0a0915;
+  --amb-pieza-b: #1c1638;
+  --amb-pieza-luz: #7c5cff;
+}
+
+/* La PC del equipo es clara: las bandas, categorías y rangos se oscurecen para leerse sobre blanco.
+   (Doble atributo: tiene que ganarle al :root de arriba también en el <html>.) */
+[data-era='academia'][data-era] {
+  --nivel-promesa: #586074;
+  --nivel-titular: #1f58c9;
+  --nivel-elite: #6a2fd0;
+  --nivel-clase_mundial: #8a5a00;
+  --nivel-otro: #586074;
+  --cat-mercado: #a86400;
+  --cat-caminos: #5a43d6;
+  --cat-equipo: #0a6f9c;
+  --cat-vida: #b2306a;
+  --cat-otro: #586074;
+}
+
+/* Props de componente: las pone el JS en línea (style="--v: 0.62"); acá sus valores por defecto. */
+:root {
+  --v: 0;          /* fracción 0..1 de una barra (scaleX) */
+  --d: 1;          /* posición de un dígito del odómetro (0 = en blanco, 1..10 = 0..9) */
+  --carga: 0;      /* batería 0..1 */
+  --i: 1;          /* altura de una raya de la señal */
+  --cols: 1fr;     /* columnas de la planilla */
+  --cat: var(--cat-otro);
+  --banda: var(--nivel-otro);
+  --rank: var(--rank-gold);
+  --retardo: 0ms;  /* cuándo arranca a cambiar de color una fila del widget (el mismo instante en que rueda) */
 }

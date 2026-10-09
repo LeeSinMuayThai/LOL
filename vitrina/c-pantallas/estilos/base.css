@@ -1,7 +1,87 @@
+/* C · PANTALLAS — base: reset, escena, ambiente (el papel de pared de FARO), odómetro, foco, movimiento reducido. */
+@property --v { syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --carga { syntax: '<number>'; inherits: true; initial-value: 0; }
+
+*, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
-body { background: var(--amb-pieza-a); color: var(--placeholder-texto); font: 16px/1.5 var(--v-fuente); }
-.escena { position: relative; min-height: 100%; display: grid; place-content: center; text-align: center; gap: 8px; padding: 24px; }
-.escena > * { position: relative; z-index: 1; margin: 0; }
-.rotulo { font: 500 12px var(--v-fuente-mono); letter-spacing: 0.08em; color: var(--placeholder-texto-2); }
-h1 { font-weight: 600; font-size: clamp(32px, 7vw, 72px); letter-spacing: -0.02em; }
-.detalle { font: 13px var(--v-fuente-mono); color: var(--placeholder-texto-2); }
+html { background: var(--bg-void); color-scheme: dark; }
+html[data-era='academia'] { color-scheme: light; }
+body {
+  font: 400 15px/1.45 var(--f-ui);
+  color: var(--ink);
+  background: var(--bg-void);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  text-rendering: optimizeLegibility;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: inherit; }
+h1, h2, h3, p, ul, ol { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+kbd { font-family: var(--f-mono); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.escena { position: fixed; inset: 0; overflow: hidden; isolation: isolate; }
+.capa-contenido { position: absolute; inset: 0; z-index: 1; }
+
+/* ---------- ambiente: el papel de pared ---------- */
+.amb { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; background: var(--bg-void); }
+.amb-capa { position: absolute; inset: 0; background: var(--bg-void); }
+.amb-pared {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.04);
+  filter: brightness(var(--pared-brillo)) saturate(var(--pared-saturacion)) sepia(var(--pared-sepia));
+}
+.amb-velo { position: absolute; inset: 0; background: var(--pared-velo); opacity: var(--pared-velo-opacidad); }
+.amb-vivo .amb-pared { filter: brightness(calc(var(--pared-brillo) + 0.3)) saturate(calc(var(--pared-saturacion) + 0.1)) sepia(var(--pared-sepia)); }
+.amb-vivo .amb-velo { opacity: calc(var(--pared-velo-opacidad) - 0.3); }
+/* la caída de luz del propio monitor: más oscuro en los bordes, nada de brillos sueltos */
+.amb-luz {
+  position: absolute; inset: 0;
+  background: radial-gradient(130% 100% at 38% 42%, transparent 46%, color-mix(in srgb, var(--bg-void) 78%, transparent) 100%);
+}
+.amb-mono {
+  position: absolute; left: -2vw; bottom: -17vh;
+  font: 900 74vh/0.78 var(--f-momento); font-stretch: 125%; letter-spacing: -0.07em;
+  color: var(--linea);
+}
+.amb-mono + .amb-velo { opacity: 0; }
+.amb-animo { position: absolute; inset: 0; opacity: 0; transition: opacity 900ms ease; }
+.amb-animo[data-animo='peligro'] { opacity: 0.22; background: radial-gradient(90% 70% at 50% 120%, var(--animo-peligro), transparent 70%); }
+.amb-animo[data-animo='gloria'] { opacity: 0.2; background: radial-gradient(90% 70% at 50% -20%, var(--animo-gloria), transparent 70%); }
+.amb-grano { position: absolute; inset: -50%; opacity: 0; }
+.amb-grano[data-era='leyenda'] {
+  opacity: 0.1; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+.amb-pulso { position: absolute; inset: 0; opacity: 0; background: var(--pulso); mix-blend-mode: soft-light; }
+.amb-pulso[data-tipo='peligro'] { background: var(--animo-peligro); mix-blend-mode: normal; }
+.amb-pulso[data-tipo='gloria'] { background: var(--animo-gloria); mix-blend-mode: screen; }
+
+/* ---------- odómetro ---------- */
+.odo { display: inline-flex; height: 1em; line-height: 1; overflow: hidden; vertical-align: -0.1em; font-variant-numeric: tabular-nums; }
+.odo-dig { display: inline-block; height: 1em; overflow: hidden; }
+.odo-tira { display: flex; flex-direction: column; transform: translateY(calc(var(--d) * -1em)); }
+.odo-tira > span { display: block; height: 1em; line-height: 1; text-align: center; }
+
+/* ---------- glifos ---------- */
+.ico { width: 18px; height: 18px; flex: none; }
+.ico-chico { width: 15px; height: 15px; }
+.ico-micro { width: 12px; height: 12px; }
+.ico-eje { width: 16px; height: 16px; color: var(--ink-dim); }
+.flechas { flex: none; }
+.flechas.sube { color: var(--up); }
+.flechas.baja { color: var(--down); }
+.pos { color: var(--up); }
+.neg { color: var(--down); }
+
+/* ---------- foco: anillo doble, se ve sobre cualquier arte ---------- */
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; box-shadow: 0 0 0 5px var(--bg-void); }
+
+/* ---------- movimiento reducido / INST ---------- */
+[data-reducido] *, [data-reducido] *::before, [data-reducido] *::after,
+[data-inst] *, [data-inst] *::before, [data-inst] *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation-duration: 0s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation-duration: 0s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+}
+
+.provisorio { position: absolute; inset: auto 0 50% 0; text-align: center; font: 600 24px var(--f-mono); color: var(--ink-mute); }
