@@ -21,8 +21,8 @@
 | **Compuerta 1** | El usuario elige (o mezcla) mirando la vitrina; su reacción en frío queda textual en `PROGRESO.md` | 🔶 2026-10-09: finalistas **A y C** (B archivada); pidió ampliarlas para decidir (§4.2) |
 | **U0 · ronda 1b** | A y C ampliadas: `partido` (serie con Fearless, Swiss 2-2) y `mercado` (ofertas + firma); A profundiza el aura y los fondos animados, C lo clásico tipo cliente (§4.3) | ✅ 2026-10-09 (2 × Opus xhigh; merges `6f145e1`, `3c790c2`; referencias en `vitrina/referencia/ronda-1b/`) |
 | **Compuerta 1 (final)** | El usuario elige A, C o una mezcla | ✅ 2026-10-09: una mezcla: serie y Swiss de C, mercado de A, y "que sigan una misma línea" (§4.4) |
-| **U0 · fusión** | Una sola dirección: la interfaz de C dentro del mundo de A, con 7 reglas de una misma línea (§4.5) | 🔶 en curso |
-| **Compuerta 1b** | El usuario mira la fusión | ⬜ |
+| **U0 · fusión** | Una sola dirección: la interfaz de C dentro del mundo de A, con 7 reglas de una misma línea (§4.5) | ✅ 2026-10-09 (1 × Opus xhigh, `f35fcb4`; merge `d7622e9`; referencias en `vitrina/referencia/fusion/`) |
+| **Compuerta 1b** | El usuario mira la fusión | 🔶 esperando al usuario |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
@@ -422,6 +422,31 @@ Lo que se lee:
 - Una ronda de observaciones del supervisor, con la rúbrica + las 7 reglas de arriba.
 - Se sirve en el 8095 y el usuario la mira. Si la aprueba, **la fusión es la dirección elegida**: §5 se reescribe con
   sus tokens y la producción la traslada textual.
+
+**Resultado (2026-10-09, `f35fcb4`).** Cubre el catálogo entero (inicio, evento, plan, serie, replan, Swiss, mercado,
+firma, título, final, eras, celular), con el resultado real al elegir en todas las paradas. Parte del código de A.
+
+Qué se armó:
+- `js/partido.js` reescribe el draft y la Tribuna de C sobre los helpers de A. El centro del draft queda abierto al
+  mundo. El aura responde en cada libre, pick y quemado, y el nombre del campeón sigue a la luz (`aura.alCambiar`). Cada
+  mapa se juega como pantalla de carga en duotono → VICTORIA/DERROTA. En el Swiss, el video es el splash vivo en oro y
+  AFUERA llega como takeover.
+- La decisión es el panel de C anclado abajo, con la cara del campeón libre.
+- El mercado es la tabla de A con el panel de lectura de C.
+- La final suma la vitrina de trofeos de C.
+
+Verificación:
+- Una sola superficie, una barra arriba y una abajo en todas las pantallas de cliente, títulos en Mona ancha minúscula,
+  la luz de la era como único acento, ninguna hoja de interfaz que cambie por era.
+- La hoja de contactos de las 10 pantallas (`vitrina/referencia/fusion/fusion-hoja-de-contactos.jpg`) lo confirma.
+- 102 capturas, 0 errores.
+- Contraste medido: 1911 textos en 30 casos, 0 debajo de 4,5:1.
+
+Pendiente de pulido (para la ronda con lo que diga el usuario):
+- el draft está denso;
+- queda una fila "Tu plan · 91%" después del resultado de la serie;
+- el nombre del campeón en el draft habla con la voz de título, y el champ select real lo grita;
+- las transiciones dentro de la página se revisaron cuadro a cuadro, nadie las vio en vivo.
 - Mismas reglas de `comun.md`, una ronda de observaciones del supervisor, y la vitrina se vuelve a servir en el 8095.
 - **Compuerta 1 (final):** el usuario elige A, C o una mezcla. Después, la ronda 2 de la ganadora es solo lo que falte
   (trayectoria + PNG y los celulares de la serie y el mercado), y se cierra §5.
