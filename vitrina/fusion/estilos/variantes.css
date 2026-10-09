@@ -1,0 +1,98 @@
+/* LA FUSION — variantes.html: las tres intensidades del mundo lado a lado (PLANUI §4.6). Es parte del mismo juego: el
+   panel, el rotulo, la tecla, el cuarto y el titulo ancho de la fusion (base.css); el acento es la luz de la era de la
+   pantalla que se mira. Sin colores literales: viven en tokens.css. */
+body.variantes {
+  overflow: auto; min-height: 100%; display: flex; flex-direction: column; justify-content: center;
+  background: radial-gradient(90% 70% at 70% -10%, var(--luz-tenue), transparent 70%), var(--bg-void);
+}
+.va-cab {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 24px 40px; flex-wrap: wrap;
+  padding: 28px var(--margen) 18px;
+}
+.va-titulo {
+  margin: 10px 0 0; font: 800 var(--t-titulo-s) / 1 var(--f-display); font-stretch: var(--ancho-titulo);
+  letter-spacing: -0.03em; color: var(--ink); text-wrap: balance;
+}
+.va-invita { margin-top: 10px; font: 400 var(--t-cuerpo) / 1.45 var(--f-cuerpo); color: var(--ink-dim); }
+.va-lado { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.va-pestanas { display: flex; gap: 2px; height: var(--barra-alto); box-shadow: inset 0 -1px 0 var(--linea); }
+.va-inicio { color: var(--luz-texto); text-decoration: none; box-shadow: inset 0 -1px 0 var(--filete); }
+.va-inicio:hover { color: var(--ink); box-shadow: inset 0 -1px 0 var(--ink); }
+.va-inicio:focus-visible { outline-offset: 3px; }
+/* lo mismo en las tres: una linea quieta, que no compite con las ventanas */
+.va-igual {
+  display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 22px var(--margen) 0; padding-top: 14px; box-shadow: inset 0 1px 0 var(--linea);
+  font: 400 var(--t-chico) / 1.4 var(--f-cuerpo); color: var(--ink-dim);
+}
+.va-igual li + li::before { content: '·'; margin-right: 22px; color: var(--ink-mute); }
+.va-igual li:nth-child(2)::before { content: none; }
+.va-igual-k { font: 500 var(--t-rotulo) / 1.4 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
+
+/* ---------- las tres columnas ---------- */
+.va-columnas {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--canal);
+  padding: 0 var(--margen);
+}
+.va-columnas { grid-template-rows: auto auto; row-gap: 12px; }
+/* subgrid: las tres cabeceras ocupan la misma fila, asi las tres ventanas arrancan a la misma altura */
+.va-col { display: grid; grid-row: span 2; grid-template-rows: subgrid; align-items: start; min-width: 0; }
+.va-col-cab {
+  all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: flex-start; gap: 12px; padding: 4px 2px;
+  border-radius: var(--r-control);
+}
+.va-col-cab:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+.va-col-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.va-col-nombre { font: 800 22px / 1.05 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.02em; color: var(--ink); }
+.va-col-linea { font: 400 var(--t-chico) / 1.4 var(--f-cuerpo); color: var(--ink-dim); }
+.va-col-cab:hover .op-tecla, .va-col:hover .op-tecla { color: var(--bg-void); background: var(--luz-texto); box-shadow: none; }
+/* la ventana: el juego entero a 1440x900, escalado al ancho de la columna (js/variantes.js) */
+.va-ventana {
+  position: relative; overflow: hidden; border-radius: var(--r-panel); background: var(--bg-void);
+  box-shadow: inset 0 0 0 1px var(--filete), 0 28px 70px -30px var(--sombra); cursor: zoom-in;
+}
+.va-marco { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; display: block; }
+.va-col:hover .va-ventana { box-shadow: inset 0 0 0 1px var(--filete-fuerte), 0 28px 70px -30px var(--sombra); }
+.va-ventana::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--filete); }
+.va-ayuda {
+  padding: 10px var(--margen) 24px; font: 500 var(--t-rotulo) / 2 var(--f-mono); letter-spacing: 0.06em; color: var(--ink-mute);
+}
+.va-ayuda kbd { height: 18px; }
+
+/* ---------- grande: la columna abierta ocupa la pantalla; la barra arriba cambia la variante ---------- */
+html[data-grande] body.variantes { overflow: hidden; }
+html[data-grande] .va-col[data-abierta] .va-marco { position: fixed; z-index: 20; box-shadow: 0 0 0 1px var(--filete); }
+html[data-grande] .va-cab, html[data-grande] .va-columnas, html[data-grande] .va-ayuda { visibility: hidden; }
+html[data-grande] .va-col[data-abierta], html[data-grande] .va-col[data-abierta] .va-ventana { visibility: visible; }
+.va-grande-barra {
+  position: fixed; z-index: 21; left: 0; right: 0; top: 0; height: 52px;
+  display: flex; align-items: center; gap: 18px; padding: 0 var(--margen);
+  background: var(--panel); box-shadow: inset 0 -1px 0 var(--filete);
+}
+.va-grande-barra[hidden] { display: none; }
+.va-volver { height: 32px; }
+.va-seg-grupo { display: flex; gap: 2px; padding: 3px; border-radius: var(--r-control); box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+.va-seg {
+  all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 4px;
+  border-radius: var(--r-control); font: 600 12px / 1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-dim);
+}
+.va-seg .op-tecla { min-width: 22px; height: 22px; }
+.va-seg:hover { color: var(--ink); background: var(--luz-tenue); }
+.va-seg[aria-pressed='true'] { color: var(--ink); background: var(--luz-suave); }
+.va-seg[aria-pressed='true'] .op-tecla { color: var(--bg-void); background: var(--luz-texto); box-shadow: none; }
+.va-seg:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.va-grande-linea { font: 400 var(--t-chico) / 1.3 var(--f-cuerpo); color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+@media (max-width: 900px) {
+  .va-columnas { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .va-col-cab .op-tecla { transition: none; }
+}
+/* el espacio (cuanto campeon de fondo): el selector secundario de la grande */
+.va-espacio-campo { display: inline-flex; align-items: center; gap: 8px; font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
+.va-espacio {
+  height: 30px; padding: 0 8px; border: 0; border-radius: var(--r-control); background: var(--panel-claro); color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--linea-fuerte); font: 500 12px / 1 var(--f-mono);
+}
+.va-espacio:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.va-grande-barra .boton, .va-seg, .va-espacio-campo { white-space: nowrap; flex: none; }

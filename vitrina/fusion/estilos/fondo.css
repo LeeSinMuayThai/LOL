@@ -1,0 +1,28 @@
+/* LA FUSION — la politica del mundo (js/fondo.js, PLANUI §4.6): las ventanas de la variante `lugar`, donde vive el
+   campeon cuando el fondo es solo luz. Son decorativas (aria-hidden, sin texto): el shader dibuja el splash recortado a
+   su rectangulo y ellas ponen el filete. El escenario del draft ya es una ventana: no necesita nada. */
+.lugar-ventana { --lugar-aire: 18px; position: absolute; z-index: 0; pointer-events: none; }
+/* la cara en el panel "vos": una banda pegada arriba del panel, con su mismo filete; el panel pierde el radio de arriba */
+.lugar-banda {
+  left: 0; right: 0; bottom: 100%; height: var(--lugar-banda);
+  border-radius: var(--r-panel) var(--r-panel) 0 0;
+  box-shadow: inset 0 0 0 1px var(--filete), inset 0 -40px 40px -30px var(--velo-medio);
+}
+.contexto:has(> .lugar-banda) { border-top-left-radius: 0; border-top-right-radius: 0; }
+.contexto:has(> .lugar-banda)::after { display: none; }
+/* la carta del escenario del draft: al lado de "Apuntando <nombre>", arriba de tus libres y a la izquierda del
+   marcador, como el splash del champ select; el resto del escenario es luz. Mientras se juega la serie se apaga: las
+   pantallas de carga de cada mapa ya son las cartas. */
+.lugar-carta {
+  left: 236px; top: 20px; width: 240px; bottom: 150px; z-index: 1;
+  border-radius: var(--r-panel);
+  box-shadow: inset 0 0 0 1px var(--filete), inset 0 -36px 36px -28px var(--velo-medio);
+  transition: opacity var(--dur-entrada) var(--expo);
+}
+.draft[data-jugando] .lugar-carta { opacity: 0; }
+/* el video de la Tribuna: entre la cabecera del player y la parada (js/fondo.js le pone el borde de abajo) */
+.lugar-video {
+  left: var(--canal); right: var(--canal); top: var(--lugar-video-top); bottom: 50%;
+  border-radius: var(--r-control);
+  box-shadow: inset 0 0 0 1px var(--filete);
+}

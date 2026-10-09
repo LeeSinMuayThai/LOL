@@ -149,6 +149,11 @@
   --canal: 20px;
   --franja-alto: 52px;
   --barra-alto: 44px;
+  /* el color de las piezas de campeon (js/color.js; main.js lo pone en <html>): 0 = duotono, 1 = color real */
+  --pieza-color: 0;
+  /* las ventanas de la variante `lugar` (js/fondo.js): la banda del panel "vos" y el video de la Tribuna */
+  --lugar-banda: 216px;
+  --lugar-video-top: 128px;
 
   /* ---- radios: una escala (panel, control, chip). La carta es un objeto: su radio es suyo ---- */
   --r-panel: 10px;

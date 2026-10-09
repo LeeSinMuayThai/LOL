@@ -13,14 +13,16 @@
 // instante.
 import { cargarImagen, urlCarga, urlCentrada, urlIcono } from '../../comun/arte.js';
 import { crearAzar } from '../../comun/azar.js';
-import { el, svg, animar, entrar, esperar, lineasConMascara, primeraOracion, num, conSigno, odometro, reducido, inst, celular, leerColor, duotono, EXPO, DUR } from './util.js';
+import { el, svg, animar, entrar, esperar, lineasConMascara, primeraOracion, num, conSigno, odometro, reducido, inst, celular, leerColor, EXPO, DUR } from './util.js';
 import { icono, triangulos, glifoDeCampo } from './iconos.js';
 import { franja, trayectoria, cuartos } from './marco.js';
 import { claveCampeon } from './aura.js';
+import { pintarCampeon } from './color.js';
 
 const MAPA = 980; // lo que dura cada mapa al jugar la serie (ms)
 const CHARLA = 760; // la charla del coach entre mapas
 const T0_MAPAS = 420; // el primer mapa, cuando el plan ya se volvio la cabecera
+const RESULTADO = 1600; // cuanto dura el resultado de la serie como momento del mundo, antes de volver a la luz
 const RONDAS = { final: 'La final', semis: 'Semifinal', semifinal: 'Semifinal', cuartos: 'Cuartos de final' };
 const ETQ_CAMBIO = { 'career.arraigo': ['arraigo', 'Arraigo'], 'player.stats.hype': ['hype', 'Hype'], 'player.worlds': ['mundo', 'Mundiales'] };
 const ETIQUETAS = {
@@ -43,10 +45,11 @@ function fichaDe(datos, k) {
   const c = Object.values(datos.inicio?.catalogos?.campeonesPorRol ?? {}).flat().find((x) => x.ddragon === key);
   return { key, nombre: c?.name ?? key ?? '', tags: (c?.tags ?? []).map((t) => ETIQUETAS[t] ?? String(t)) };
 }
-// El arte en el duotono de la era (A): sombra = el vacio, luz = la luz de la era, recortado por la cara.
+// El arte en el duotono de la era (A): sombra = el vacio, luz = la luz de la era, recortado por la cara. Cuanto color
+// real lleva encima lo decide la politica del color (js/color.js).
 function pintar(canvas, img, era, foco) {
   if (!img) return;
-  duotono(img, leerColor('--bg-void'), leerColor(`--luz-${era}`), canvas.width, canvas.height, { canvas, foco, brillo: 1.12 });
+  pintarCampeon(canvas, img, leerColor('--bg-void'), leerColor(`--luz-${era}`), { foco, brillo: 1.12 });
 }
 const eraDe = () => document.documentElement.dataset.era || 'escenario';
 
@@ -390,9 +393,11 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
     const quemados = new Set(quemados0);
     let t = T0_MAPAS;
     const pasos = [];
+    const picks = []; // [ms, campeon]: tu pick de cada mapa, para el mundo (si la politica lo muestra)
     juego.replaceChildren();
     logs.forEach((l, i) => {
       if (l.mapa) {
+        picks.push([t, claveCampeon(l.campeon)]);
         jugarMapa(l, t, i === ultimoMapa);
         t += MAPA;
       } else if (primerMapa >= 0 && i > primerMapa && i < ultimoMapa) {
@@ -473,6 +478,8 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
     const gano = r?.serie?.resultado?.gano ?? fin?.gano ?? (fin?.postSerie ? mapas[mapas.length - 1]?.resultado === 'W' : null);
     const animoFin = fin?.postSerie ? (gano ? 'gloria' : 'caida') : 'peligro';
     amb.ambiente({ animo: animoFin, retardo: quieto() ? 0 : t });
+    // las pantallas de carga, los post-game y el resultado son un momento del mundo (la politica decide que se ve)
+    amb.momento?.({ retardo: quieto() ? 0 : T0_MAPAS, dura: t - T0_MAPAS + RESULTADO, campeones: picks.filter(([, k]) => k) });
     if (animoFin === 'gloria') amb.pulso('gloria', quieto() ? 0 : t);
     contadorQ.textContent = `${quemados.size} de ${capacidad}`;
     anim(contadorQ, [{ opacity: 0 }, { opacity: 1 }], { delay: t - MAPA * 0.4, duration: 200 });
@@ -746,6 +753,9 @@ function crearSwiss({ datos, muestra, amb, sonido, peor }) {
     const tCae = tPost + 260;
     const tAfuera = tPost + 1250;
     amb.ambiente({ animo: fuera ? 'caida' : 'gloria', retardo: quieto() ? 0 : tCae });
+    // el post-game es un momento del mundo; AFUERA es un takeover: el mundo va al 100 % y se queda
+    amb.momento?.({ retardo: quieto() ? 0 : tPost, dura: tAfuera - tPost });
+    amb.takeover?.(quieto() ? 0 : tAfuera - 160);
     const cambios = (r?.inmediato?.cambios ?? []).filter((c) => ETQ_CAMBIO[c.campo] && Math.round(c.antes) !== Math.round(c.despues));
     const afuera = el('div', { class: 'sw-afuera', 'data-fuera': fuera ? '' : null }, [
       el('p', { class: 'eq-kicker', text: `Mundial ${anio} · Swiss · fin de la transmisión` }),

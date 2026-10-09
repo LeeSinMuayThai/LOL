@@ -1,0 +1,66 @@
+// LA POLITICA DEL COLOR DEL CAMPEON (PLANUI §4.6, segunda vuelta). El usuario: "el blanco y negro, violeta ese que
+// tienen… estaba bien para el inicio, pero si estaba siempre iba a ser como un estilo repetitivo. Que esté presente, pero
+// no tan fuerte siempre". El eje es el duotono de la era sobre el arte del campeon. Vive aca y en ningun otro lado:
+//   - el mundo (ambiente.js) lo lee a traves de los estados de js/fondo.js (colorFondo, lavado, colorLugar);
+//   - las piezas de interfaz (libres, ranuras, picks, cartas de carga) se pintan con pintarCampeon();
+//   - los quemados leen --pieza-color (main.js la pone en <html>).
+//
+//   duotono  hoy (por defecto): blanco y negro + la luz de la era, en todos lados.
+//   real     "A color": todo campeon con sus colores; la era queda en la luz y en un lavado leve sobre el arte de fondo.
+//   mitad    "Mitad": 50 % color real y 50 % duotono, en todos lados.
+//   capas    el fondo de pantalla completa en duotono (mas suave); toda pieza de interfaz a color, como en el cliente.
+//
+// Lo mismo en las cuatro: el inicio y los takeovers (CAMPEONES, la firma, AFUERA) van siempre en duotono.
+import { duotono } from './util.js';
+
+export const COLORES = ['duotono', 'real', 'mitad', 'capas'];
+export const COLOR_DEF = 'duotono';
+export const normalizarColor = (c) => (COLORES.includes(c) ? c : COLOR_DEF);
+
+// Cada variante (0 = duotono, 1 = color real):
+//   fondo      el arte de fondo de pantalla completa (y el video de la Tribuna)
+//   lavado     cuanto duotono vuelve sobre el arte de fondo a color (≤ 0,2: el campeon "en la escena", no pegado)
+//   pieza      todo campeon que es pieza de interfaz (y la ventana de `fondo=lugar`)
+//   presencia, contraste   multiplican los del fondo (capas: el duotono de fondo, mas suave)
+export const POLITICAS_COLOR = {
+  duotono: { etiqueta: 'Como hoy', linea: 'Blanco y negro con la luz de la era, en todos lados.', fondo: 0, lavado: 0, pieza: 0, presencia: 1, contraste: 1 },
+  real: { etiqueta: 'A color', linea: 'Cada campeón con sus colores. La era queda en la luz.', fondo: 1, lavado: 0.18, pieza: 1, presencia: 1, contraste: 1 },
+  mitad: { etiqueta: 'Mitad', linea: 'Mitad color, mitad duotono: se reconocen sus colores, llevados a la paleta de la era.', fondo: 0.5, lavado: 0, pieza: 0.5, presencia: 1, contraste: 1 },
+  capas: { etiqueta: 'Fondo en duotono, retratos a color', linea: 'El fondo sigue en duotono, más suave; los retratos y las cartas, a color, como en el cliente.', fondo: 0, lavado: 0, pieza: 1, presencia: 0.72, contraste: 0.8 },
+};
+const DUOTONO = POLITICAS_COLOR.duotono;
+
+// Las pantallas que siempre van en duotono (el inicio, los takeovers; las eras son la demostracion de las cinco luces).
+const SIEMPRE_DUOTONO = ['inicio', 'eras', 'cumbre/titulo', 'mercado/firma'];
+const siempre = (pantalla, muestra) => SIEMPRE_DUOTONO.includes(pantalla) || SIEMPRE_DUOTONO.includes(`${pantalla}/${muestra ?? ''}`);
+
+// La politica de color de una pantalla.
+export const colorDe = (nombre, pantalla, muestra) => (siempre(pantalla, muestra) ? DUOTONO : POLITICAS_COLOR[normalizarColor(nombre)]);
+
+// Un estado del mundo (js/fondo.js) con el color: `takeover` vuelve al duotono (AFUERA).
+export function conColor(estado, c, { takeover = false } = {}) {
+  const k = takeover ? DUOTONO : c;
+  return { ...estado, presencia: estado.presencia * k.presencia, contraste: estado.contraste * k.contraste, colorFondo: k.fondo, lavado: k.lavado, colorLugar: k.pieza };
+}
+
+// La de la pantalla montada, para las piezas que se pintan despues (las cartas de carga de cada mapa).
+let actual = DUOTONO;
+export function fijarColor(nombre, pantalla, muestra) {
+  actual = colorDe(nombre, pantalla, muestra);
+  return actual;
+}
+export const mezclaPieza = () => actual.pieza;
+
+// Pinta un campeon: el duotono de la era de siempre y, encima, su color real con la mezcla pedida (0 = duotono exacto).
+export function pintarCampeon(canvas, img, sombra, luz, { foco = [0.5, 0.35], brillo = 1, mezcla = mezclaPieza() } = {}) {
+  duotono(img, sombra, luz, canvas.width, canvas.height, { canvas, foco, brillo });
+  if (!img || !(mezcla > 0)) return canvas;
+  const ctx = canvas.getContext('2d');
+  const esc = Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
+  const w = img.naturalWidth * esc;
+  const h = img.naturalHeight * esc;
+  ctx.globalAlpha = Math.min(1, mezcla);
+  ctx.drawImage(img, (canvas.width - w) * foco[0], (canvas.height - h) * foco[1], w, h);
+  ctx.globalAlpha = 1;
+  return canvas;
+}
