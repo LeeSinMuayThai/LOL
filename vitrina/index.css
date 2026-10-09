@@ -155,12 +155,23 @@ textarea {
 .finalistas { width: min(1240px, 100% - 48px); margin: 24px auto 0; padding: 0; color: var(--v-texto-2); font-size: 14px; }
 .finalistas strong { color: var(--v-texto); font-weight: 600; }
 .portada { padding-top: clamp(32px, 6vw, 80px); }
-.lado[data-b='0'] { grid-template-columns: repeat(2, 1fr); }
-.lado[data-b='0'][data-dispositivo='celular'] { grid-template-columns: repeat(2, minmax(0, 390px)); }
+.lado[data-b='1'] { grid-template-columns: repeat(4, 1fr); }
+.lado[data-b='1'][data-dispositivo='celular'] { grid-template-columns: repeat(4, minmax(0, 390px)); }
 .marco[hidden] { display: none; }
 .sin-pantalla { position: absolute; inset: 0; margin: 0; display: grid; place-items: center; padding: 16px; text-align: center; color: var(--v-texto-3); font: 13px var(--v-fuente-mono); }
 .matriz td.tenue { color: var(--v-texto-3); }
 .controles .opcion { font-size: 14px; }
 @media (max-width: 900px) {
-  .lado[data-b='0'], .lado[data-b='0'][data-dispositivo='celular'] { grid-template-columns: 1fr; }
+  .lado[data-b='1'], .lado[data-b='1'][data-dispositivo='celular'] { grid-template-columns: 1fr; }
 }
+
+/* La fusion (destacada) y A / C en chico */
+.destacada { border-top: 0; padding-top: clamp(24px, 4vw, 48px); }
+.destacada h2 { font-size: clamp(28px, 3.6vw, 48px); letter-spacing: -0.03em; max-width: 24ch; margin-bottom: 20px; }
+.fusion-linea { max-width: 70ch; margin: 0 0 32px; font-size: clamp(16px, 1.5vw, 19px); color: var(--v-texto-2); }
+.vivo.grande { max-width: 1100px; }
+.fusion-enlaces { margin: 24px 0; }
+.fusion-enlaces li { gap: 6px 14px; }
+.chica h2 { font-size: clamp(16px, 1.6vw, 20px); color: var(--v-texto-2); font-weight: 500; }
+.chica .tres { max-width: 900px; }
+.chica h3 { font-size: 17px; }

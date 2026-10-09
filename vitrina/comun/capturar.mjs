@@ -43,7 +43,7 @@ const TAMANOS = [
 ];
 
 if (!DIRECCION || DIRECCION === true) {
-  console.error('Falta --direccion (a-luz | b-nocturno | c-pantallas)');
+  console.error('Falta --direccion (fusion | a-luz | b-nocturno | c-pantallas)');
   process.exit(2);
 }
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');

@@ -18,7 +18,7 @@ import { verificarSinFondoDeTinta } from '../../src/dev/guards.js';
 
 const ESTE = fileURLToPath(import.meta.url);
 const RAIZ = path.resolve(path.dirname(ESTE), '..');
-const DIRECCIONES = ['a-luz', 'b-nocturno', 'c-pantallas'];
+const DIRECCIONES = ['fusion', 'a-luz', 'b-nocturno', 'c-pantallas'];
 const SALTAR_CARPETAS = new Set(['capturas', 'node_modules', 'fuentes', 'datos', 'hoy']);
 const EXT_CODIGO = new Set(['.js', '.mjs', '.html', '.css']);
 
@@ -170,6 +170,10 @@ if (!SOLO || SOLO === 'indice') {
 for (const d of DIRECCIONES) {
   if (SOLO && SOLO !== d) continue;
   const dir = path.join(RAIZ, d);
+  if (!fs.existsSync(dir)) {
+    console.log(`AVISO ${d}: la carpeta todavia no existe (se saltea)`);
+    continue;
+  }
   ambitos.push(ambito(d, listar(dir), dir));
 }
 
