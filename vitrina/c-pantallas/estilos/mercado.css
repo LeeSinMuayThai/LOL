@@ -1,0 +1,153 @@
+/* El mercado: la bandeja de contratos (la app Contratos de FARO) y la firma. */
+
+/* el ícono de una org: su color vive solo acá */
+.org-ico { display: inline-grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: var(--r-control); background: var(--org); color: var(--org-ink); font: 800 14px/1 var(--f-momento); font-stretch: 112%; letter-spacing: 0.02em; }
+.org-ico-grande { width: 56px; height: 56px; border-radius: calc(var(--r-control) + 3px); font-size: 19px; }
+.org-ico-chico { width: 22px; height: 22px; border-radius: 5px; font-size: 9.5px; }
+
+/* ---------- la bandeja ---------- */
+.area-mercado { position: relative; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 312px; gap: 26px; align-items: start; padding: 18px 36px 14px 40px; }
+.ventana-bandeja { width: 100%; max-height: calc(100% - var(--alto-titulo)); }
+.bandeja { display: grid; grid-template-columns: minmax(0, 1fr) 352px; min-height: 0; }
+.bandeja-lista { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.ventana-bandeja .parada-cab { padding: 20px 26px 16px; }
+.ventana-bandeja .parada-titulo { font-size: 44px; }
+.kicker-n { padding: 4px 8px 3px; border-radius: var(--r-pastilla); background: var(--accent); color: var(--accent-ink); letter-spacing: 0.02em; }
+.contratos-cab { display: grid; grid-template-columns: 172px 88px 152px 84px; gap: 6px; padding: 9px 20px 8px 120px; background: var(--bg-sunken); box-shadow: inset 0 1px 0 var(--linea), inset 0 -1px 0 var(--linea); font: 500 10.5px/1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-mute); }
+.contratos { display: flex; flex-direction: column; overflow-y: auto; min-height: 0; }
+.contratos li + li .contrato { box-shadow: inset 0 1px 0 var(--linea); }
+.contrato { position: relative; width: 100%; display: grid; grid-template-columns: 30px 40px auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 12px; row-gap: 8px; align-items: center; padding: 12px 20px 12px 26px; }
+.contrato .atajo { grid-row: 1 / span 2; margin-top: 0; }
+.contrato .org-ico { grid-row: 1 / span 2; }
+.contrato-de { grid-column: 3; display: flex; align-items: center; gap: 9px; min-width: 0; white-space: nowrap; }
+.contrato-de b { font: 650 15.5px/1.2 var(--f-ui); color: var(--ink); }
+.liga { padding: 3px 7px 2px; border-radius: var(--r-pastilla); font: 600 10.5px/1.2 var(--f-mono); color: var(--ink-dim); box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+.liga[data-tier='1'] { color: var(--accent-texto); box-shadow: inset 0 0 0 1px var(--accent); }
+.tag-bombazo { font: 650 10.5px/1 var(--f-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--warn); }
+.contrato-asunto { grid-column: 4; min-width: 0; font-size: 13.5px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.terminos { grid-column: 3 / -1; display: grid; grid-template-columns: 172px 88px 152px 84px; gap: 6px; align-items: center; }
+.t-sueldo, .t-jer, .t-anios, .t-plantel { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.t-barra { position: relative; width: 44px; height: 6px; flex: none; border-radius: 3px; background: var(--linea); overflow: hidden; }
+.t-barra::before { content: ''; position: absolute; inset: 0; transform-origin: left; transform: scaleX(var(--v)); background: var(--ink-dim); }
+.t-sueldo .t-barra::before { background: var(--up); }
+.t-jer .t-barra::before { background: var(--accent); }
+.terminos b { font: 650 13px/1 var(--f-mono); color: var(--ink); white-space: nowrap; }
+.terminos small { font: 500 11px/1 var(--f-mono); color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.terminos .ico { color: var(--ink-mute); }
+.pips-anios { display: inline-flex; gap: 3px; }
+.pips-anios i { width: 9px; height: 9px; border-radius: 2px; background: var(--linea-fuerte); }
+.pips-anios i[data-on] { background: var(--ink); }
+.t-plantel[data-banda='primero'] b { color: var(--warn); }
+.contrato[data-leida] { background: var(--accent-suave); }
+.contrato[aria-pressed='true'] .atajo { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
+.bandeja[data-elegida] .contrato:not([aria-pressed]) { opacity: 0.38; }
+.bandeja[data-elegida] .contrato[data-leida]:not([aria-pressed]) { background: none; }
+
+/* el panel de lectura: un contrato por vez */
+.lectura { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow-y: auto; padding: 22px 24px 20px; background: var(--bg-sunken); box-shadow: inset 1px 0 0 var(--linea); }
+.lect-cab { display: flex; align-items: center; gap: 14px; }
+.lect-org { font: var(--momento-peso) 26px/1 var(--f-momento); font-stretch: var(--momento-ancho); letter-spacing: -0.01em; color: var(--ink); }
+.lect-liga { margin-top: 6px; font: 500 11.5px/1.25 var(--f-mono); color: var(--ink-mute); }
+.lect-asunto { font-size: 14px; line-height: 1.45; color: var(--ink); }
+.lect-asunto span { display: block; margin-bottom: 4px; font: 500 10.5px/1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-mute); }
+.lect-campos { display: flex; flex-direction: column; margin: 0; border-radius: var(--r-control); background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--linea); }
+.lect-campo { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 10px; padding: 8px 12px; box-shadow: inset 0 -1px 0 var(--linea); }
+.lect-campo:last-child { box-shadow: none; }
+.lect-campo dt { font-size: 12.5px; line-height: 1.3; color: var(--ink-mute); }
+.lect-campo dd { margin: 0; font: 650 13px/1.3 var(--f-mono); color: var(--ink); }
+.lect-campo dd small { display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--ink-mute); }
+.lect-prosa { display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; line-height: 1.45; color: var(--ink-dim); }
+.lect-desc { font-size: 14.5px; color: var(--ink); }
+.lect-riesgo, .lect-linea { display: flex; align-items: flex-start; gap: 8px; }
+.lect-riesgo { font-weight: 550; color: var(--warn); }
+.lect-riesgo .ico, .lect-linea .ico { margin-top: 2px; }
+.lect-linea .ico { color: var(--ink-mute); }
+[data-textos='breves'] .lect-linea { display: none; }
+.lect-pie { margin-top: auto; display: flex; align-items: center; gap: 12px; padding-top: 4px; }
+.lect-pie small { font: 500 11px/1.2 var(--f-mono); color: var(--ink-mute); }
+.firmar { flex: none; }
+
+/* la respuesta: el contrato aceptado y la próxima parada */
+.respuesta-mercado { display: flex; flex-direction: column; gap: 14px; }
+.resp-enviado { display: flex; align-items: center; gap: 7px; font: 500 12px/1.3 var(--f-mono); color: var(--up); }
+.resp-carta { display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: var(--r-ventana); background: var(--bg-raised); box-shadow: 0 0 0 1px var(--linea), inset 3px 0 0 var(--accent); }
+.resp-k { display: flex; align-items: center; gap: 6px; font: 600 10.5px/1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-texto); }
+.resp-titulo { font: var(--momento-peso) 34px/1 var(--f-momento); font-stretch: var(--momento-ancho); letter-spacing: -0.015em; color: var(--ink); }
+.resp-org { display: flex; align-items: center; gap: 8px; font-size: 16px; color: var(--ink-dim); }
+.resp-org b { color: var(--ink); }
+.resp-nota { font-size: 13px; line-height: 1.45; color: var(--ink-dim); }
+.resp-carta .boton-pri, .resp-carta .boton-sec { align-self: flex-start; margin-top: 4px; }
+
+/* el mundo que se mueve, a la derecha */
+.lateral-mercado { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.mundo-valor { margin-top: 12px; display: flex; flex-direction: column; gap: 5px; }
+.mundo-valor span { font-size: 12px; color: var(--ink-mute); }
+.mundo-valor b { font: var(--momento-peso) 30px/1 var(--f-momento); font-stretch: var(--momento-ancho); letter-spacing: -0.02em; color: var(--ink); }
+.mundo-valor small { font: 500 11px/1 var(--f-mono); color: var(--ink-mute); }
+.mundo-asientos ul { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.mundo-asientos li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); }
+.mundo-asientos li b { font-weight: 600; }
+.mundo-asientos li small { margin-left: auto; font: 500 11px/1 var(--f-mono); color: var(--ink-mute); }
+.notis-n { font: 600 11px/1 var(--f-mono); color: var(--ink-dim); }
+.notis-mundo .noti-app, .notis-firma .noti-app { text-transform: none; }
+/* listas planas (no el stack plegable de la decisión) */
+.notis.notis-mundo, .notis.notis-firma { position: relative; inset: auto; z-index: auto; max-height: none; overflow: visible; padding: 0; background: none; box-shadow: none; }
+
+/* ---------- la firma ---------- */
+.firma { position: absolute; inset: 0; }
+.firma-despues { position: absolute; inset: 0; }
+.firma-antes { position: absolute; inset: 0; z-index: 4; visibility: hidden; background: var(--bg-void); color: var(--ink); }
+.firma-pared, .firma-pared img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
+.firma-pared img { filter: brightness(var(--pared-brillo)) saturate(var(--pared-saturacion)); }
+.firma-pared::after { content: ''; position: absolute; inset: 0; background: var(--pared-velo); opacity: var(--pared-velo-opacidad); }
+.area-firma { position: relative; min-height: 0; display: grid; grid-template-columns: minmax(0, 620px) 360px; justify-content: center; align-items: center; gap: 40px; padding: 20px 40px; }
+.firma-antes .area-firma { grid-template-columns: minmax(0, 620px); }
+.ventana-contrato { width: 100%; }
+.doc { display: flex; flex-direction: column; gap: 18px; padding: 26px 30px 24px; }
+.doc-cab { display: flex; align-items: center; gap: 16px; }
+.doc-k { font: 600 10.5px/1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-mute); }
+.doc-org { margin-top: 6px; font: var(--momento-peso) 30px/1 var(--f-momento); font-stretch: var(--momento-ancho); letter-spacing: -0.015em; color: var(--ink); }
+.doc-sub { margin-top: 6px; font: 500 12px/1 var(--f-mono); color: var(--ink-dim); }
+.doc-campos { display: grid; grid-template-columns: 1fr 1fr; margin: 0; border-radius: var(--r-control); box-shadow: inset 0 0 0 1px var(--linea); overflow: hidden; }
+.doc-campos > div { padding: 10px 14px; box-shadow: inset 0 -1px 0 var(--linea), inset -1px 0 0 var(--linea); }
+.doc-campos dt { font-size: 11.5px; color: var(--ink-mute); }
+.doc-campos dd { margin: 4px 0 0; font: 650 15px/1.2 var(--f-mono); color: var(--ink); }
+.doc-campos dd small { font-size: 12px; font-weight: 500; color: var(--ink-mute); }
+.doc-log { font-size: 15px; line-height: 1.45; color: var(--ink-dim); }
+.firma-svg { display: block; width: 100%; max-width: 440px; height: auto; overflow: visible; }
+.firma-trazo { font: italic 560 66px var(--f-firma); fill: var(--ink); stroke: var(--ink); stroke-width: 1.1; stroke-dasharray: 420; stroke-dashoffset: 0; }
+.firma-rubrica { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+.doc-linea { display: flex; justify-content: space-between; padding-top: 8px; border-top: 1.5px solid var(--ink-dim); font: 500 11px/1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-mute); }
+.noti-firmado { visibility: visible; top: 46px; right: 36px; box-shadow: 0 24px 60px -18px var(--linea-fuerte), 0 0 0 1px var(--up); }
+.noti-firmado .noti-cab, .noti-firmado .noti-ico { color: var(--up); }
+.noti-firmado .noti-texto { font: 600 13.5px/1.4 var(--f-mono); color: var(--ink); }
+.firma-saltar { position: absolute; z-index: 9; right: 26px; bottom: 74px; background: var(--bg-surface); }
+.notis-firma { align-self: center; }
+
+@media (max-width: 640px) {
+  .area-mercado { grid-template-columns: minmax(0, 1fr); gap: 10px; align-content: start; padding: 6px 6px 4px; overflow-y: auto; }
+  .area-mercado .lateral-mercado { display: none; }
+  .ventana-bandeja { max-height: none; --alto-titulo: 28px; }
+  .bandeja { grid-template-columns: minmax(0, 1fr); }
+  .ventana-bandeja .parada-cab { padding: 14px 14px 12px; }
+  .ventana-bandeja .parada-titulo { font-size: 28px; }
+  .contratos-cab { display: none; }
+  .contratos .contrato { grid-template-columns: 26px 34px minmax(0, 1fr); grid-template-rows: auto auto auto; row-gap: 6px; column-gap: 10px; padding: 11px 12px; }
+  .contratos .contrato .atajo { grid-column: 1; grid-row: 1 / span 3; align-self: start; }
+  .contratos .contrato .org-ico { grid-column: 2; grid-row: 1 / span 3; align-self: start; }
+  .contrato .org-ico { width: 34px; height: 34px; font-size: 12px; }
+  .contrato-de { grid-column: 3; flex-wrap: wrap; row-gap: 4px; }
+  .contrato-asunto { grid-column: 3; grid-row: 2; font-size: 12.5px; }
+  .terminos { grid-column: 3; grid-row: 3; grid-template-columns: auto auto; gap: 6px 14px; }
+  .t-barra { width: 32px; }
+  .lectura { padding: 14px; box-shadow: inset 0 1px 0 var(--linea); }
+  .lect-prosa .lect-linea, .lect-asunto { display: none; }
+  .area-firma { grid-template-columns: minmax(0, 1fr); align-content: start; padding: 10px 8px; overflow-y: auto; }
+  .firma-antes .area-firma { grid-template-columns: minmax(0, 1fr); }
+  .notis-firma { display: none; }
+  .doc { padding: 16px 16px 14px; gap: 12px; }
+  .doc-org { font-size: 22px; }
+  .doc-log { font-size: 13.5px; }
+  .noti-firmado { left: 8px; right: 8px; width: auto; top: auto; bottom: 70px; }
+  .firma-saltar { right: 10px; bottom: 70px; }
+}

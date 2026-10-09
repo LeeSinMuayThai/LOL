@@ -2,9 +2,10 @@
 // cliente (una ventana de FARO) junta el login de la carrera nueva y la selección de campeones: nombre de invocador,
 // servidor = región, perfil, rol = pestañas de la grilla de Data Dragon, el splash del apuntado de fondo, 3 ranuras y
 // BLOQUEAR. "Continuar" es tu última sesión; el desafío del día llega como notificación; el historial es una carpeta.
-import { cargarImagen, urlIcono, urlSplash } from '../../comun/arte.js';
+import { cargarImagen, urlIcono } from '../../comun/arte.js';
 import { el, anim, tipeado } from './util.js';
 import { icono, logoFaro, notificacion, ventana } from './os.js';
+import { vistaPick } from './campeones.js';
 
 const BIOS = [
   'FARO BIOS 2.6 · placa de segunda mano',
@@ -73,24 +74,9 @@ export function pintarInicio(raiz, ctx) {
       },
     }, it.icono ? icono(it.icono, 'ico ico-chico') : null, it.nombre)));
 
-  // la selección: el splash del apuntado es el fondo de la ventana
-  const fondoSel = el('div', { class: 'sel-fondo', 'aria-hidden': 'true' });
-  const pista = el('span', { class: 'sel-pista' });
-  let apuntado = null;
-  let cargaFondo = Promise.resolve();
-  function apuntar(k) {
-    if (!k || k === apuntado) return cargaFondo;
-    apuntado = k;
-    pista.textContent = k;
-    cargaFondo = cargarImagen(urlSplash(k, meta)).then((img) => {
-      if (!img || apuntado !== k) return;
-      const c = img.cloneNode();
-      c.alt = '';
-      fondoSel.replaceChildren(c);
-      anim(c, [{ opacity: 0, transform: 'scale(1.04)' }, { opacity: 1, transform: 'none' }], { duration: 340, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
-    });
-    return cargaFondo;
-  }
+  // la selección: como el hover-pick del champ select, el apuntado pone su splash y su nombre en la ventana del cliente
+  const pick = vistaPick(ctx, { clase: 'sel-fondo', kicker: 'Apuntando' });
+  const apuntar = (k) => pick.apuntar(k);
   const grilla = el('div', { class: 'sel-grilla', role: 'listbox', 'aria-label': 'Campeones del rol', 'aria-multiselectable': 'true' });
   const slots = el('div', { class: 'sel-slots' });
   function pintarSlots() {
@@ -129,10 +115,10 @@ export function pintarInicio(raiz, ctx) {
   const bloquear = el('button', { class: 'boton-pri bloquear', type: 'button', onclick: (e) => { login.dataset.bloqueado = 'si'; e.currentTarget.firstChild.textContent = 'BLOQUEADO'; } }, 'BLOQUEAR', el('kbd', {}, 'Enter'));
   const login = ventana({
     app: 'Cliente', icon: 'soloq', titulo: 'nueva-carrera', clase: 'login', pieza: 'inicio', etiqueta: 'Carrera nueva y selección de campeones',
-    cuerpo: [fondoSel, el('div', { class: 'login-cont' },
+    cuerpo: [pick.nodo, el('div', { class: 'login-cont' },
       el('header', { class: 'login-cab' }, avatar, el('div', {},
         el('p', { class: 'login-k' }, 'Nombre de invocador'),
-        el('p', { class: 'login-nombre' }, nombre)), pista),
+        el('p', { class: 'login-nombre' }, nombre))),
       campo('Servidor', elegible('Servidor', cat.regiones.map((r) => ({ id: r.regionId, nombre: r.regionId, titulo: `${r.region} · ${r.liga}` })), 'region'), ayudaRegion),
       campo('Perfil', elegible('Perfil', cat.perfiles.map((p) => ({ id: p.id, nombre: p.nombre })), 'perfil'), ayudaPerfil),
       campo('Elegí tus 3 mains', el('div', { class: 'sel' },
@@ -166,7 +152,7 @@ export function pintarInicio(raiz, ctx) {
     if (e.key === 'Enter' && !e.altKey && !(e.target instanceof HTMLButtonElement)) bloquear.click();
   };
   document.addEventListener('keydown', tecla);
-  return { listo: cargaFondo, destruir: () => document.removeEventListener('keydown', tecla) };
+  return { listo: pick.listo, destruir: () => document.removeEventListener('keydown', tecla) };
 }
 
 function campo(etiqueta, control, ayuda) {

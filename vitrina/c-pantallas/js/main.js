@@ -9,6 +9,8 @@ import { pintarDecision, conPeorCaso } from './decision.js';
 import { pintarInicio } from './inicio.js';
 import { pintarCumbre } from './cumbre.js';
 import { pintarEras } from './eras.js';
+import { pintarPartido } from './partido.js';
+import { pintarMercado } from './mercado.js';
 import { el, cancelarEn, monogramaDe } from './util.js';
 
 const datos = await cargarMuestras();
@@ -47,7 +49,7 @@ function pintar(estado) {
   const peor = estado.peor ? datos.peorCaso : null;
   const ctx = { datos, meta: datos.meta, amb, era, estado, peor, fondo, mainDelHeroe };
   document.title = `C · PANTALLAS · ${pantalla}${muestra ? ' / ' + muestra : ''}`;
-  const anio = pantalla === 'decision' ? datos[muestra]?.anio : pantalla === 'cumbre' ? (muestra === 'final' ? datos.final?.trayectoria?.dominio?.[1] : datos.titulo?.anio) : datos.eras?.pieza?.anio;
+  const anio = pantalla === 'decision' || pantalla === 'partido' || pantalla === 'mercado' ? datos[muestra]?.anio : pantalla === 'cumbre' ? (muestra === 'final' ? datos.final?.trayectoria?.dominio?.[1] : datos.titulo?.anio) : datos.eras?.pieza?.anio;
   if (anio) capa.style.setProperty('--os-version', `'${String(anio).slice(2)}'`);
   else capa.style.removeProperty('--os-version');
 
@@ -59,6 +61,10 @@ function pintar(estado) {
     const esPlan = m.decision.opciones.some((o) => o.previa?.some((p) => p.campo === 'player.ranked'));
     const foco = FOCOS[arte] ? { foco: FOCOS[arte], ...DESTINO[esPlan ? 'plan' : 'evento'], vivo: true } : {};
     fondo({ era, arte, org: m.org ?? m.franja?.club?.org, quieto: true, ...foco });
+  } else if (pantalla === 'partido' && datos[muestra]?.decision) {
+    vista = pintarPartido(capa, muestra, ctx);
+  } else if (pantalla === 'mercado' && datos[muestra]) {
+    vista = pintarMercado(capa, muestra, ctx);
   } else if (pantalla === 'cumbre') {
     vista = pintarCumbre(capa, muestra === 'final' ? 'final' : 'titulo', ctx);
   } else if (pantalla === 'eras') {
