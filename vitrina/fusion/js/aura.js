@@ -25,13 +25,18 @@ export function crearAura(amb) {
   // quien muestra el nombre del campeon apuntado (el escenario del draft) se suscribe: el nombre y la luz cambian juntos
   const oyentes = new Set();
 
-  function ir(key) {
-    if (key === actual) return;
+  // `apunta`: hay una mano sobre un campeon (aunque sea el de la pantalla). El ambiente lleva el mundo al estado `aura`
+  // de la politica (js/fondo.js) mientras dure, y de vuelta a la base al soltarlo.
+  let apuntando = false;
+  function ir(key, apunta = key !== base) {
+    if (key === actual && apunta === apuntando) return;
+    const cambia = key !== actual;
     actual = key;
+    apuntando = apunta;
     if (key) raiz.dataset.aura = key;
     else delete raiz.dataset.aura;
-    amb.ambiente({ arte: key, cruce: T_AURA });
-    oyentes.forEach((f) => f(key));
+    amb.ambiente({ arte: key, cruce: T_AURA, apuntado: apunta });
+    if (cambia) oyentes.forEach((f) => f(key));
   }
   function apuntar(nodo) {
     const key = claveCampeon(nodo.dataset.campeon);
@@ -40,7 +45,7 @@ export function crearAura(amb) {
     if (!key) return;
     const ya = () => {
       if (pegajosa) base = key;
-      ir(key);
+      ir(key, !pegajosa);
     };
     if (inst() || reducido()) ya();
     else tEntra = setTimeout(ya, ENTRA);
@@ -49,8 +54,8 @@ export function crearAura(amb) {
     clearTimeout(tEntra);
     clearTimeout(tVuelve);
     if (pegajosa) return;
-    if (inst() || reducido()) ir(base);
-    else tVuelve = setTimeout(() => ir(base), VUELVE);
+    if (inst() || reducido()) ir(base, false);
+    else tVuelve = setTimeout(() => ir(base, false), VUELVE);
   }
   const de = (n) => (n instanceof Element ? n.closest('[data-campeon]') : null);
   const sobre = (e) => {
@@ -74,6 +79,7 @@ export function crearAura(amb) {
       clearTimeout(tVuelve);
       base = claveCampeon(key);
       actual = base;
+      apuntando = false;
       pegajosa = Boolean(opciones.pegajosa);
       delete raiz.dataset.aura;
     },

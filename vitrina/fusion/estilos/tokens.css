@@ -149,6 +149,9 @@
   --canal: 20px;
   --franja-alto: 52px;
   --barra-alto: 44px;
+  /* las ventanas de la variante `lugar` (js/fondo.js): la banda del panel "vos" y el video de la Tribuna */
+  --lugar-banda: 216px;
+  --lugar-video-top: 128px;
 
   /* ---- radios: una escala (panel, control, chip). La carta es un objeto: su radio es suyo ---- */
   --r-panel: 10px;
