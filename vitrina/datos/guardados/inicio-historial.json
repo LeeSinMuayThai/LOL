@@ -1,0 +1,56 @@
+{
+ "clave": "lolcs-historial",
+ "valor": {
+  "entradas": [
+   {
+    "desafio": null,
+    "goldenRoads": [],
+    "handle": "Haldar",
+    "intentos": 1,
+    "jugadoEn": "2026-10-08",
+    "nivel": "Figura mundial",
+    "rol": "mid",
+    "seed": 608,
+    "total": 659,
+    "version": "K6d"
+   },
+   {
+    "desafio": null,
+    "goldenRoads": [],
+    "handle": "Vaygal",
+    "intentos": 1,
+    "jugadoEn": "2026-10-07",
+    "nivel": "Campeón",
+    "rol": "jungla",
+    "seed": 1458,
+    "total": 262,
+    "version": "K6d"
+   },
+   {
+    "desafio": null,
+    "goldenRoads": [],
+    "handle": "Grurix",
+    "intentos": 1,
+    "jugadoEn": "2026-10-05",
+    "nivel": "El que no llegó",
+    "rol": "jungla",
+    "seed": 2246,
+    "total": 23,
+    "version": "K6d"
+   }
+  ],
+  "forma": 1,
+  "record": {
+   "desafio": null,
+   "goldenRoads": [],
+   "handle": "Haldar",
+   "intentos": 1,
+   "jugadoEn": "2026-10-08",
+   "nivel": "Figura mundial",
+   "rol": "mid",
+   "seed": 608,
+   "total": 659,
+   "version": "K6d"
+  }
+ }
+}
