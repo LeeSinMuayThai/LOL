@@ -16,6 +16,22 @@
   </header>
 
   <main>
+    <section id="como-mirarla" class="seccion" aria-labelledby="t-como">
+      <h2 id="t-como">Cómo mirarla</h2>
+      <ul class="como">
+        <li>Cada dirección tiene un panel abajo a la derecha (<kbd>Alt</kbd>+<kbd>V</kbd> lo abre).</li>
+        <li>Cambiá de pantalla, de muestra y de era; <strong>▶ Repetir</strong> vuelve a pasar la intro o el momento.</li>
+        <li>En la decisión, <strong>1-4</strong> eligen y ves el resultado real que dio el motor.</li>
+        <li><strong>Celular</strong> la muestra en un teléfono; <strong>Hoy</strong> abre cómo se ve el juego hoy en esa misma pantalla.</li>
+      </ul>
+      <p class="recorrido">Un recorrido de 5 minutos por dirección: Inicio → Decisión (las dos muestras) → Cumbre (el título y después la carta) → Eras.</p>
+      <ul class="atajos">
+        <li><span class="etiqueta-fila">A · LUZ</span> <a href="a-luz/index.html#pantalla=inicio">el inicio</a> · <a href="a-luz/index.html#pantalla=decision&amp;muestra=evento">la decisión</a> · <a href="a-luz/index.html#pantalla=cumbre&amp;muestra=titulo">el momento del título</a></li>
+        <li><span class="etiqueta-fila">B · NOCTURNO</span> <a href="b-nocturno/index.html#pantalla=inicio">el inicio</a> · <a href="b-nocturno/index.html#pantalla=decision&amp;muestra=evento">la decisión</a> · <a href="b-nocturno/index.html#pantalla=cumbre&amp;muestra=titulo">el momento del título</a></li>
+        <li><span class="etiqueta-fila">C · PANTALLAS</span> <a href="c-pantallas/index.html#pantalla=inicio">el inicio</a> · <a href="c-pantallas/index.html#pantalla=decision&amp;muestra=evento">la decisión</a> · <a href="c-pantallas/index.html#pantalla=cumbre&amp;muestra=titulo">el momento del título</a></li>
+      </ul>
+    </section>
+
     <section id="direcciones" class="seccion" aria-labelledby="t-direcciones">
       <h2 id="t-direcciones">Las tres direcciones</h2>
       <div class="tres">
@@ -82,7 +98,12 @@
 
     <section id="recomendacion" class="seccion" aria-labelledby="t-reco">
       <h2 id="t-reco">Recomendación</h2>
-      <p class="reco">A como base; de B, la tapa del año; de C, la bandeja de contratos que firmás. Pero el que juega sos vos.</p>
+      <div class="reco">
+        <p class="reco-titulo"><strong>A como base.</strong> Es la que más se siente juego: la luz cambia con tu carrera, el campeón vive en la pantalla y los momentos (el título, la carta) son los más fuertes de las tres.</p>
+        <p><strong>De B</strong>, el almanaque: la final como infografía impresa es la mejor manera de mirar una carrera entera.</p>
+        <p><strong>De C</strong>, el stream con el chat para el título y el Mundial.</p>
+        <p>Pero el que juega sos vos: si B o C te pegaron más fuerte, esa es la respuesta, y cualquiera de las tres se puede llevar al juego.</p>
+      </div>
     </section>
 
     <section id="elegir" class="seccion" aria-labelledby="t-elegir">
@@ -94,19 +115,36 @@
           <label class="opcion"><input type="radio" name="base" value="B"> B · NOCTURNO</label>
           <label class="opcion"><input type="radio" name="base" value="C"> C · PANTALLAS</label>
         </fieldset>
-        <fieldset>
+        <fieldset class="ideas">
           <legend>Ideas a importar</legend>
-          <label class="opcion"><input type="checkbox" name="idea" value="la tapa del año de B"> La tapa del año de B</label>
-          <label class="opcion"><input type="checkbox" name="idea" value="el ¡EXTRA! de B"> El ¡EXTRA! de B</label>
-          <label class="opcion"><input type="checkbox" name="idea" value="la bandeja de contratos de C"> La bandeja de contratos de C</label>
-          <label class="opcion"><input type="checkbox" name="idea" value="el stream con chat de C"> El stream con chat de C</label>
-          <label class="opcion"><input type="checkbox" name="idea" value="la pared de retratos de Fearless"> La pared de retratos de Fearless</label>
+          <div class="grupo"><p class="rotulo-grupo">De A · LUZ</p>
+            <label class="opcion"><input type="checkbox" name="idea" data-origen="A" value="el takeover de luz de los momentos"> El takeover de luz de los momentos</label>
+            <label class="opcion"><input type="checkbox" name="idea" data-origen="A" value="la carta holográfica"> La carta holográfica</label>
+            <label class="opcion"><input type="checkbox" name="idea" data-origen="A" value="el splash del campeón como ambiente"> El splash del campeón como ambiente</label>
+          </div>
+          <div class="grupo"><p class="rotulo-grupo">De B · NOCTURNO</p>
+            <label class="opcion"><input type="checkbox" name="idea" data-origen="B" value="el almanaque de la carrera (la final como infografía)"> El almanaque de la carrera (la final como infografía)</label>
+            <label class="opcion"><input type="checkbox" name="idea" data-origen="B" value="el ¡EXTRA! y las tapas"> El ¡EXTRA! y las tapas</label>
+            <label class="opcion"><input type="checkbox" name="idea" data-origen="B" value="la nota al margen como inspector"> La nota al margen como inspector</label>
+          </div>
+          <div class="grupo"><p class="rotulo-grupo">De C · PANTALLAS</p>
+            <label class="opcion"><input type="checkbox" name="idea" data-origen="C" value="el stream con chat para el título y el Mundial"> El stream con chat para el título y el Mundial</label>
+            <label class="opcion"><input type="checkbox" name="idea" data-origen="C" value="la etapa amateur dentro de tu PC (el escritorio de 2026)"> La etapa amateur dentro de tu PC (el escritorio de 2026)</label>
+            <label class="opcion"><input type="checkbox" name="idea" data-origen="C" value="la bandeja del sistema como tu cuerpo (batería = sueño)"> La bandeja del sistema como tu cuerpo (batería = sueño)</label>
+            <label class="opcion"><input type="checkbox" name="idea" data-origen="C" value="la planilla del plan amateur"> La planilla del plan amateur</label>
+          </div>
+          <div class="grupo"><p class="rotulo-grupo">Para cualquiera</p>
+            <label class="opcion"><input type="checkbox" name="idea" data-origen="" value="la pared de retratos de Fearless"> La pared de retratos de Fearless</label>
+          </div>
         </fieldset>
         <fieldset>
           <legend>Ajustes</legend>
           <label class="opcion"><input type="checkbox" name="breves"> Textos breves por defecto</label>
           <label class="opcion"><input type="checkbox" name="sonido"> Sonido prendido por defecto</label>
         </fieldset>
+        <label class="libre">Algo más (lo que te gustó, lo que no)
+          <textarea name="libre" rows="3"></textarea>
+        </label>
         <div class="salida">
           <p id="texto-eleccion" class="texto-eleccion" aria-live="polite"></p>
           <button type="button" class="boton" id="copiar">Copiar mi elección</button>
