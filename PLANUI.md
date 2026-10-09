@@ -19,8 +19,8 @@
 | **U0 · ola 0** | El andamio de la vitrina: datos reales (`vitrina/datos/`), panel, cargador de arte, PRNG decorativo, fuentes, verificador, capturas, "hoy", índice | ✅ 2026-10-09 (`a7126d1`, `dacbec8`, `dcb741f`; merge en `u-integracion`) |
 | **U0 · ronda 1** | Las tres direcciones (A · LUZ, B · NOCTURNO, C · PANTALLAS): inicio, decisión, cumbre, tira de eras, celular | ✅ 2026-10-09 (3 × Opus xhigh en paralelo + una ronda de observaciones cada una; merge `c1d88f5`) |
 | **Compuerta 1** | El usuario elige (o mezcla) mirando la vitrina; su reacción en frío queda textual en `PROGRESO.md` | 🔶 2026-10-09: finalistas **A y C** (B archivada); pidió ampliarlas para decidir (§4.2) |
-| **U0 · ronda 1b** | A y C ampliadas: `partido` (serie con Fearless, Swiss 2-2) y `mercado` (ofertas + firma); A profundiza el aura y los fondos animados, C lo clásico tipo cliente (§4.3) | 🔶 en curso |
-| **Compuerta 1 (final)** | El usuario elige A, C o una mezcla | ⬜ |
+| **U0 · ronda 1b** | A y C ampliadas: `partido` (serie con Fearless, Swiss 2-2) y `mercado` (ofertas + firma); A profundiza el aura y los fondos animados, C lo clásico tipo cliente (§4.3) | ✅ 2026-10-09 (2 × Opus xhigh; merges `6f145e1`, `3c790c2`; referencias en `vitrina/referencia/ronda-1b/`) |
+| **Compuerta 1 (final)** | El usuario elige A, C o una mezcla | 🔶 esperando al usuario |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
@@ -301,6 +301,44 @@ la ronda 2 de la ganadora, así que la ronda 2 se achica:
   - el mercado como la **bandeja de contratos**, donde la firma se dibuja (su firma 4, que había quedado para la
     ronda 2).
   La vara de C: simple, se entiende de un vistazo.
+
+**Resultado (2026-10-09).** Las dos cumplieron todo el orden de prioridades: 102 capturas cada una, 0 errores, contraste
+medido por píxeles.
+
+**A** (`0726c8d`):
+- El **aura** es un solo mecanismo (`js/aura.js`, por `data-campeon`) en la selección, los mains, la pared de Fearless,
+  los picks de cada mapa, los quemados, el campeón del split y el plantel del título. Entra a los 120 ms, cruza en
+  750 ms y no salta si llega otro campeón mientras cruza.
+- El **splash vivo** sale del shader (profundidad 2,5D, parallax, deriva, flujo en las luces, barrido de luz cada
+  11 s, polvo y brasas por era) y respira en las paradas.
+- Transiciones de luz entre pantallas.
+- CommunityDragon: solo 12 de 2167 skins tienen splash animado (ninguna base, ninguna de esta carrera, ~2,8 MB cada
+  una). Descartado: el splash vivo procedural es el camino.
+- Las pantallas nuevas:
+  - la serie con la pared de retratos que se apaga al quemarse y la serie jugada mapa a mapa;
+  - el replan con la luz que se quiebra;
+  - el Swiss 2-2 en oro, que termina en DERROTA → AFUERA, con el récord rodando a 2-3;
+  - el mercado como tabla de ofertas;
+  - la firma de LOUD como takeover: la luz de la pieza se abre en la de la academia y el handle se traza en luz.
+
+**C** (`ee7e33e`):
+- El **hover-pick del cliente** (`js/campeones.js`): apuntar un campeón cruza su splash y muestra su nombre en la
+  ventana Cliente, como el champ select, sin aura de ambiente. Además, el feedback clásico: una barra de luz en la
+  opción, teclas que se hunden.
+- La serie es **un draft**:
+  - los dos equipos a los costados con 5 ranuras y la p de cada mapa contra el 50%;
+  - los quemados como baneados;
+  - un **post-game** VICTORIA/DERROTA con emblema propio en cada mapa ("tenías 78%").
+- El replan entra como notificación.
+- El Swiss va en la **Tribuna**, con la banda VIDA O MUERTE y el chat nervioso. Termina en "Fin de la transmisión", con
+  las dos p (42% con la charla, 19% sin) y lo que quedó.
+- El mercado es la **bandeja de contratos**: el color del club solo en su ícono, Enter firma.
+- La **firma se dibuja**, y la PC de la pieza se cierra y queda la del equipo.
+
+**Lo que ninguna resolvió del todo** (queda para la ronda 2 de la ganadora):
+- A: la columna derecha de la serie compite un poco con la decisión, y un cuadro del odómetro de la firma muestra un
+  "." suelto.
+- C: el toast del replan tapa la cabecera del rival ~3 s, y entre mapa y mapa asoma el hover-pick.
 
 **Proceso.**
 - Dos Opus xhigh nuevos en paralelo, uno por dirección; leen el `README.md` y el código de su dirección en vez de

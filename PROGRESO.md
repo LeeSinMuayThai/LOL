@@ -88,6 +88,19 @@ No se tocó nada de `src/`, `index.html` ni `server.js`. Rama `u-integracion`, s
 pantallas nuevas (la serie con Fearless, el Swiss 2-2, el mercado y la firma). Además, A profundiza el aura y los fondos
 animados, y C lo clásico tipo cliente.
 
+**Ronda 1b, hecha el mismo día.**
+- Datos: la ola de datos sumó `resultados[]` al Swiss y al mercado (Sonnet high, `0c9f216`). Solo cambian esas dos
+  claves; la seed héroe sigue siendo la 61 y dos corridas completas dan el mismo sha256.
+- Andamio: sumó las pantallas `partido` y `mercado`, las tiras de la serie, el Swiss y la firma, y el índice con las
+  finalistas (`24dcaca`).
+- Las direcciones: 2 × Opus xhigh nuevos (~480-500K, 122-124 tool calls cada uno) ampliaron **A** (`0726c8d`) y **C**
+  (`ee7e33e`), con las mismas pantallas nuevas y cada una profundizando lo que el usuario dijo que le gustó.
+  `PLANUI.md` §4.3 tiene el detalle.
+- Merges `6f145e1` y `3c790c2`. Las referencias están en `vitrina/referencia/ronda-1b/`.
+- Las 18 pantallas de A y C abren sin errores en el 8095.
+- Hallazgo: los splash animados de CommunityDragon cubren 12 de 2167 skins, así que los "fondos animados" se hacen
+  con el shader.
+
 **Lección de proceso.** Por primera vez el usuario reaccionó con entusiasmo a una UI ("uffff") en vez de *"es muy igual
 al anterior"*, que fue lo que dijo después de T0. Funcionaron tres cosas:
 - la imagen antes que las palabras;
