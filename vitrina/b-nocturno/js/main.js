@@ -1,30 +1,76 @@
-// Placeholder de B · NOCTURNO: usa el panel y el ambiente de respaldo para probar la vitrina de punta a punta.
+// B · NOCTURNO — "Tu carrera, impresa de noche."
+// Arma el panel común y monta la pantalla pedida. Cada pantalla exporta montar*(raiz, ctx) y devuelve
+// { listo, elegir?, repetir?, saltar?, congelar?, alEra?, destruir }.
+
 import { crearPanel } from '../../comun/panel.js';
-import { crearAmbiente } from '../../comun/ambiente-css.js';
 import { cargarMuestras } from '../../comun/datos.js';
-import { PANTALLAS } from '../../comun/catalogo.js';
+import { PANTALLAS, ERAS } from '../../comun/catalogo.js';
+import { montarDecision } from './decision.js';
+import { montarInicio } from './inicio.js';
+import { montarCumbre } from './cumbre.js';
+import { montarEras } from './eras.js';
 
 const datos = await cargarMuestras();
-const amb = crearAmbiente(document.getElementById('escena'), { meta: datos.meta });
-const detalle = document.getElementById('detalle');
-let elegida = 0;
-let carga = Promise.resolve();
+const escena = document.getElementById('escena');
+let actual = null;
+let clave = '';
+let eraActual = '';
+let listo = Promise.resolve();
 
-function pintar(estado) {
-  const main = datos.jugador?.mains?.[0]?.ddragon ?? null;
-  carga = amb.ambiente({ era: estado.eraEfectiva, animo: estado.pantalla === 'cumbre' ? 'gloria' : 'normal', arte: main });
-  detalle.textContent = `${datos.jugador?.handle ?? '?'} · ${estado.pantalla}${estado.muestra ? ' / ' + estado.muestra : ''} · era ${estado.eraEfectiva}${estado.era === 'auto' ? ' (auto)' : ''}${elegida ? ' · opción ' + elegida : ''}`;
+const MONTAR = { decision: montarDecision, inicio: montarInicio, cumbre: montarCumbre, eras: montarEras };
+
+function montar(estado) {
+  actual?.destruir();
+  escena.replaceChildren();
+  window.scrollTo(0, 0);
+  const ctx = {
+    datos,
+    meta: datos.meta,
+    era: estado.eraEfectiva,
+    muestra: estado.muestra,
+    peor: estado.peor,
+    irA: (pantalla, muestra) => {
+      window.vitrina.irA(pantalla);
+      if (muestra) window.vitrina.muestra(muestra);
+    },
+  };
+  actual = (MONTAR[estado.pantalla] ?? montarInicio)(escena, ctx);
+  listo = Promise.resolve(actual.listo).catch(() => {});
 }
 
 crearPanel({
   direccion: 'b-nocturno',
   pantallas: Object.keys(PANTALLAS),
   muestras: PANTALLAS,
-  alCambiar: pintar,
+  eras: ERAS,
+  alCambiar(estado) {
+    const nueva = [estado.pantalla, estado.muestra, estado.peor, estado.webgl].join('|');
+    if (nueva !== clave) {
+      clave = nueva;
+      eraActual = estado.eraEfectiva;
+      montar(estado);
+    } else if (estado.eraEfectiva !== eraActual) {
+      eraActual = estado.eraEfectiva;
+      actual?.alEra?.(estado.eraEfectiva);
+    }
+  },
   acciones: {
-    repetir() { amb.pulso('logro'); },
-    elegir(n) { elegida = n; amb.pulso('elegir'); pintar(window.vitrina.estado()); },
-    congelar(ms) { amb.congelar(ms); },
+    repetir: () => actual?.repetir?.(),
+    elegir: (n) => actual?.elegir?.(n),
+    congelar: (ms) => actual?.congelar?.(ms),
   },
 });
-window.vitrina.listo = () => carga;
+
+window.vitrina.listo = () => listo;
+
+// 1-4 eligen directo; Escape/Espacio saltean la tapa o la intro.
+addEventListener('keydown', (e) => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.target.closest?.('input, select, textarea, [contenteditable]')) return;
+  if (/^[1-4]$/.test(e.key) && actual?.elegir) {
+    actual.elegir(Number(e.key));
+    e.preventDefault();
+  } else if ((e.key === 'Escape' || e.key === ' ') && actual?.saltar?.()) {
+    e.preventDefault();
+  }
+});
