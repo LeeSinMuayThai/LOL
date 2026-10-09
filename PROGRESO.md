@@ -123,6 +123,29 @@ al anterior"*, que fue lo que dijo después de T0. Funcionaron tres cosas:
 - Opus xhigh con briefs de dirección de arte en vez de briefs de estructura;
 - una revisión que mira las capturas con una rúbrica en lugar de aprobar por métricas de layout.
 
+**La fusión** (`f35fcb4`, merge `d7622e9`; `PLANUI.md` §4.5) se construyó y se sirvió en el 8095.
+
+**Compuerta 1b: la reacción del usuario a la fusión, textual.**
+
+> Está bien, pero ¿sabes qué siento que pasa en la fusión? Por ejemplo, en la serie. Yo dije que me gustaba más tipo el,
+> la interfaz. Pero está todo como así oscuro de la luz los champions. Y eso está bueno cuando arrancás la carrera,
+> elegís tus main todo. Y está bueno que se mantenga esa estética, pero no tan heavy después, ¿me entendés? O sea, sí
+> está bien un poco, pero no tan heavy. Tipo, quiero que la mantengas, la esencia, pero no tan fuerte. Por ejemplo, que
+> no estén todo el tiempo los campeones. Quizás sí un poco, pero no tanto. Escúchame, hace otra página de cómo sería eso
+> de un poco como no tanto. Mostrando solo un poquito. Tipo, mostrando, por ejemplo, la serie o eso sí, pero tipo... Un
+> poco, mostrando tipo variaciones de cómo sería un poquito. Tipo, manteniendo el coso de la luz, pero no al 100%
+> después de la pantalla inicial. Hace una demostración. O sea, hace una página que tenga tres variantes.
+>
+> Intenta entender a lo que me refiero.
+
+**Lo que se decidió.** La interfaz queda como está. Se arma una página con tres intensidades del mundo para después del
+inicio:
+- **tenue**: el campeón siempre, a un tercio;
+- **de paso**: solo luz, y el campeón cuando importa;
+- **en su lugar**: el campeón contenido en lugares fijos de la interfaz.
+
+El inicio y los takeovers quedan al 100% (`PLANUI.md` §4.6).
+
 ### 2026-10-08 — FASE V, V8a: los LP que bajaban al subir y la historia con "2029–2029" (PLAN.md §V.7)
 
 Merge `944eb63` (worker Sonnet high, ~95K tokens y 22 tool calls; sin revisor aparte, porque el diff son 17 líneas de

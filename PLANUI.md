@@ -22,7 +22,8 @@
 | **U0 · ronda 1b** | A y C ampliadas: `partido` (serie con Fearless, Swiss 2-2) y `mercado` (ofertas + firma); A profundiza el aura y los fondos animados, C lo clásico tipo cliente (§4.3) | ✅ 2026-10-09 (2 × Opus xhigh; merges `6f145e1`, `3c790c2`; referencias en `vitrina/referencia/ronda-1b/`) |
 | **Compuerta 1 (final)** | El usuario elige A, C o una mezcla | ✅ 2026-10-09: una mezcla: serie y Swiss de C, mercado de A, y "que sigan una misma línea" (§4.4) |
 | **U0 · fusión** | Una sola dirección: la interfaz de C dentro del mundo de A, con 7 reglas de una misma línea (§4.5) | ✅ 2026-10-09 (1 × Opus xhigh, `f35fcb4`; merge `d7622e9`; referencias en `vitrina/referencia/fusion/`) |
-| **Compuerta 1b** | El usuario mira la fusión | 🔶 esperando al usuario |
+| **Compuerta 1b** | El usuario mira la fusión | 🔶 2026-10-09: "está bien", pero el campeón de fondo pesa demasiado después del inicio; pidió tres variantes de intensidad (§4.6) |
+| **U0 · intensidad** | Una página con las tres variantes (tenue, de paso, en su lugar) sobre la fusión (§4.6) | 🔶 en curso |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
@@ -450,6 +451,68 @@ Pendiente de pulido (para la ronda con lo que diga el usuario):
 - Mismas reglas de `comun.md`, una ronda de observaciones del supervisor, y la vitrina se vuelve a servir en el 8095.
 - **Compuerta 1 (final):** el usuario elige A, C o una mezcla. Después, la ronda 2 de la ganadora es solo lo que falte
   (trayectoria + PNG y los celulares de la serie y el mercado), y se cierra §5.
+
+### 4.6 Compuerta 1b: lo que dijo el usuario sobre la fusión (2026-10-09, textual), y las tres intensidades
+
+> Está bien, pero ¿sabes qué siento que pasa en la fusión? Por ejemplo, en la serie. Yo dije que me gustaba más tipo el,
+> la interfaz. Pero está todo como así oscuro de la luz los champions. Y eso está bueno cuando arrancás la carrera,
+> elegís tus main todo. Y está bueno que se mantenga esa estética, pero no tan heavy después, ¿me entendés? O sea, sí
+> está bien un poco, pero no tan heavy. Tipo, quiero que la mantengas, la esencia, pero no tan fuerte. Por ejemplo, que
+> no estén todo el tiempo los campeones. Quizás sí un poco, pero no tanto. Escúchame, hace otra página de cómo sería eso
+> de un poco como no tanto. Mostrando solo un poquito. Tipo, mostrando, por ejemplo, la serie o eso sí, pero tipo... Un
+> poco, mostrando tipo variaciones de cómo sería un poquito. Tipo, manteniendo el coso de la luz, pero no al 100%
+> después de la pantalla inicial. Hace una demostración. O sea, hace una página que tenga tres variantes.
+>
+> Intenta entender a lo que me refiero.
+
+Lo que se lee:
+- **La fusión está bien** ("está bien, pero…"), y la interfaz de C en la serie sigue siendo la elegida.
+- **Lo que pesa es el mundo.** Hoy el splash del campeón ocupa toda la pantalla, en la luz de la era, en todas las
+  pantallas y todo el tiempo. En `vitrina/referencia/fusion/fusion-serie.jpg` y `fusion-decision-evento.jpg`, el Sylas en
+  violeta es lo más grande de la pantalla.
+- **En el inicio está bien al 100%**: al arrancar la carrera y elegir los mains. Ahí no se toca.
+- **Después: la esencia, "no tan heavy".** Se queda la luz de la era. Los campeones, "quizás sí un poco, pero no tanto",
+  y "que no estén todo el tiempo".
+- **Pide ver variantes antes de decidir**: una página con tres, mostrando la serie "o eso".
+
+**Las tres variantes.** Cada una baja el campeón por un eje distinto, para que la diferencia se vea de un vistazo:
+1. **Tenue: el mismo mundo, a bajo volumen.** El campeón sigue de fondo siempre, pero a un tercio de presencia:
+   - fundido en la luz de la era, con más bruma y viñeta y menos contraste;
+   - sin la cara en primer plano;
+   - el aura sigue cruzando de campeón, igual de tenue.
+   - La pantalla se lee primero como luz y después como campeón.
+2. **De paso: el campeón aparece cuando importa y se va.** El fondo de reposo es solo la luz de la era (haces, bruma,
+   polvo). El campeón entra:
+   - con el aura, al apuntar un campeón;
+   - en la pantalla de carga de cada mapa y en VICTORIA/DERROTA;
+   - al elegir.
+   - Después se funde de vuelta a la luz en ~2 s.
+   - En la decisión y el mercado no hay campeón salvo con el hover.
+3. **En su lugar: el campeón vive en un lugar fijo de la interfaz, como en el cliente.** El fondo de pantalla completa
+   es solo luz. El campeón aparece contenido y recortado en lugares fijos:
+   - el escenario del draft (la ventana del medio);
+   - la cara en el panel "vos" de la decisión;
+   - los retratos y las ranuras.
+   - El aura cambia ese lugar y tiñe la luz, pero no inunda la pantalla.
+
+**Lo mismo en las tres:**
+- **la interfaz no cambia**: es la misma fusión, solo cambia el mundo;
+- **el inicio queda al 100%**: es la referencia de "así arranca";
+- **los takeovers (CAMPEONES, la firma, AFUERA) quedan al 100%**, porque son los momentos. Es una decisión del
+  supervisor; si el usuario los quiere también atenuados, se cambia;
+- la luz de la era y su cambio entre eras siguen;
+- el contraste sigue en ≥ 4,5:1.
+
+**Cómo se construye:**
+- **Una perilla en la fusión.** `fondo=pleno|tenue|paso|lugar` en el hash. Por defecto queda `pleno`, que es la de hoy.
+  El panel de la vitrina tiene el selector.
+- **Una página nueva, `vitrina/fusion/variantes.html`**, con las tres variantes lado a lado sobre la misma pantalla:
+  - pestañas para la serie, el Swiss, la decisión y el mercado;
+  - el inicio al 100% como referencia;
+  - clic (o 1-3) en una variante para abrirla grande e interactiva;
+  - un enlace desde la sección de la fusión del índice.
+- **Un solo worker**, Opus xhigh, en `vitrina/fusion/**` (más el enlace del índice).
+- **El pulido pendiente de §4.5 espera** a que el usuario elija la intensidad, y entra en la misma ronda.
 
 ---
 
