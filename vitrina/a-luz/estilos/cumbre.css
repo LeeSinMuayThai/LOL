@@ -30,14 +30,14 @@
 .tk-rival { color: var(--ink-dim); }
 .tk-mapas { list-style: none; display: flex; flex-wrap: wrap; gap: 10px 30px; margin: 18px 0 0; padding: 0; font: 500 11px / 1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
 .tk-mapas li { display: flex; gap: 9px; align-items: baseline; }
-.tk-m { color: var(--ink-mute); }
+.tk-m { color: var(--ink-dim); }
 .tk-mapas b { font: 700 16px / 1 var(--f-display); letter-spacing: 0; text-transform: none; color: var(--ink); }
 .tk-mapas .gano .tk-r { color: var(--up); }
 .tk-mapas .perdio .tk-r { color: var(--down); }
 .tk-creditos { list-style: none; display: flex; flex-wrap: wrap; gap: 18px 44px; margin: 52px 0 0; padding: 24px 0 0; border-top: 1px solid var(--linea); }
 .tk-creditos li { display: grid; grid-template-columns: auto auto; align-items: center; gap: 6px 10px; }
 .tk-creditos b { font: 700 24px / 1 var(--f-display); font-stretch: 88%; color: var(--ink); }
-.tk-creditos span { grid-column: 2; font: 500 10.5px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
+.tk-creditos span { grid-column: 2; font: 500 10.5px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
 .tk-creditos li.vos b { color: var(--gold); }
 .tk-creditos li.vos .carril { stroke: var(--gold); }
 .tk-seguir {
@@ -79,7 +79,7 @@
 .carta[data-rareza='goat'] { --c-marco: var(--carta-goat-b); --c-acento: var(--carta-goat-a); }
 .carta[data-golden] { --c-marco: var(--carta-oro-a); --c-acento: var(--carta-oro-a); box-shadow: 0 50px 90px var(--sombra), 0 0 0 2px var(--carta-oro-b), 0 0 130px color-mix(in srgb, var(--gold) 35%, transparent); }
 .carta-arte { position: absolute; inset: 0; width: 100%; height: 100%; }
-.carta-velo { position: absolute; inset: 0; background: linear-gradient(180deg, var(--velo-lectura) 0%, var(--velo-medio) 16%, var(--velo-nada) 36%, var(--velo-nada) 46%, var(--velo-lectura) 80%); }
+.carta-velo { position: absolute; inset: 0; background: linear-gradient(180deg, var(--velo-lectura) 0%, var(--velo-lectura) 16%, var(--velo-medio) 28%, var(--velo-nada) 40%, var(--velo-medio) 56%, var(--velo-lectura) 70%); }
 .carta-foil {
   position: absolute; inset: 0; opacity: 0.16; mix-blend-mode: color-dodge;
   background: linear-gradient(115deg, var(--foil-1) 0%, var(--foil-2) 18%, var(--foil-3) 36%, var(--foil-4) 54%, var(--foil-5) 72%, var(--foil-1) 90%);
@@ -87,9 +87,14 @@
   mask-image: radial-gradient(130% 90% at var(--mx) var(--my), var(--mascara) 0%, transparent 72%);
 }
 .carta[data-golden] .carta-foil { background-image: linear-gradient(115deg, var(--foil-4) 0%, var(--luz-blanca) 22%, var(--carta-oro-a) 40%, var(--foil-1) 58%, var(--foil-4) 76%, var(--carta-oro-a) 100%); opacity: 0.22; }
+.carta-banda {
+  position: absolute; inset: -30%; opacity: 0.3; mix-blend-mode: color-dodge; pointer-events: none;
+  background: linear-gradient(118deg, transparent 34%, color-mix(in srgb, var(--foil-1) 60%, transparent) 43%, color-mix(in srgb, var(--foil-3) 60%, transparent) 48%, color-mix(in srgb, var(--foil-4) 70%, transparent) 53%, color-mix(in srgb, var(--foil-5) 55%, transparent) 58%, transparent 66%);
+  transform: translateX(calc((var(--mx) - 50%) * 0.5));
+}
 .carta-brillo { position: absolute; inset: 0; mix-blend-mode: overlay; background: radial-gradient(circle at var(--mx) var(--my), color-mix(in srgb, var(--luz-blanca) 70%, transparent) 0%, transparent 46%); }
-.carta-marco { position: absolute; inset: 11px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--c-marco) 70%, transparent); }
-.carta[data-golden] .carta-marco { box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--carta-oro-b) 35%, transparent); }
+.carta-marco { position: absolute; inset: 11px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--c-marco) 80%, transparent); box-shadow: 0 0 16px color-mix(in srgb, var(--c-marco) 45%, transparent), inset 0 0 12px color-mix(in srgb, var(--c-marco) 30%, transparent); }
+.carta[data-golden] .carta-marco { box-shadow: 0 0 18px color-mix(in srgb, var(--gold) 55%, transparent), inset 0 0 0 3px color-mix(in srgb, var(--carta-oro-b) 35%, transparent), inset 0 0 14px color-mix(in srgb, var(--gold) 35%, transparent); }
 .carta-sup { position: absolute; top: 26px; left: 26px; right: 24px; display: grid; grid-template-columns: auto 1fr; }
 .carta-calif { display: grid; justify-items: start; }
 .carta-pts { font: 900 76px / 0.8 var(--f-display); font-stretch: 125%; letter-spacing: -0.045em; color: var(--c-acento); font-variant-numeric: tabular-nums; text-shadow: 0 2px 24px var(--sombra); }
@@ -97,13 +102,13 @@
 .carta-rol { justify-self: end; display: grid; justify-items: center; gap: 4px; font: 600 10px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink); }
 .carta-rol .glifo-rol { width: 30px; height: 30px; }
 .carta-rol .carril { stroke: var(--c-acento); }
-.carta-pct { grid-column: 1 / -1; margin-top: 10px; font: 500 10px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.carta-pct { grid-column: 1 / -1; justify-self: start; margin-top: 10px; padding: 4px 7px; border-radius: var(--r-pildora); background: var(--placa-fuerte); font: 600 10px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink); }
 .carta-inf { position: absolute; left: 26px; right: 26px; bottom: 24px; display: grid; gap: 6px; }
 .carta-rareza { font: 600 10px / 1 var(--f-mono); letter-spacing: 0.22em; text-transform: uppercase; color: var(--c-acento); }
 .carta-handle { font: 900 42px / 0.9 var(--f-display); font-stretch: 82%; letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink); overflow-wrap: anywhere; }
 .carta-datos { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 12px 0 0; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--c-acento) 45%, transparent); }
 .carta-datos div { display: grid; gap: 5px; }
-.carta-datos dt { font: 500 9px / 1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mute); }
+.carta-datos dt { font: 500 9px / 1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
 .carta-datos dd { margin: 0; font: 800 21px / 1 var(--f-display); font-stretch: 115%; color: var(--ink); }
 
 /* ---------- trayectoria dibujada ---------- */
@@ -116,7 +121,7 @@
 .td-org.con-titulo { fill: var(--gold); }
 .td-capa { position: absolute; inset: 0; }
 .td-org-nom { position: absolute; top: 79%; padding-right: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 500 10px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); }
-.td-edad { position: absolute; top: -18px; transform: translateX(-50%); font: 500 10px / 1 var(--f-mono); color: var(--ink-mute); }
+.td-edad { position: absolute; top: -18px; transform: translateX(-50%); font: 500 10px / 1 var(--f-mono); color: var(--ink-dim); }
 .td-hito { position: absolute; width: 8px; height: 8px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--gold); box-shadow: 0 0 10px var(--gold); }
 .td-hito.grande { width: 14px; height: 14px; background: var(--luz-blanca); box-shadow: 0 0 18px var(--gold), 0 0 4px var(--gold); }
 .td-gr { position: absolute; margin: -20px 0 0 14px; transform: translate(0, -50%); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font: 600 10.5px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--gold); }

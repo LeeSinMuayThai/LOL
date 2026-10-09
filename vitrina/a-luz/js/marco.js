@@ -82,14 +82,22 @@ export function contexto(m, { peor } = {}) {
   const amateur = j.fase === 'amateur';
   const placa = el('aside', { class: 'contexto', id: 'contexto', 'aria-label': 'Contexto: vos' });
   placa.append(el('p', { class: 'ctx-kicker' }, [el('span', { text: 'Vos' }), el('span', { text: `${j.edad ?? m.edad} años · ${m.anio}` })]));
-  const deltaNivel = m.franja?.numero?.tipo === 'nivel' ? Math.round(m.franja.numero.valor) - Math.round(m.franja.numero.antes) : 0;
-  const cab = el('div', { class: 'ctx-cabeza' }, [
-    el('div', { class: 'ctx-grande', 'data-campo': 'nivel' }, [el('span', { class: 'ctx-rotulo' }, ['Nivel', deltaNivel ? el('span', { class: `ctx-delta ${deltaNivel > 0 ? 'sube' : 'baja'}` }, [triangulos('baja', deltaNivel > 0 ? '+' : '-'), String(Math.abs(deltaNivel))]) : null]), el('b', { class: 'ctx-numero', text: num(f.nivel) })]),
-    el('div', { class: 'ctx-lado' }, [
-      el('span', { class: 'ctx-banda', text: m.franja?.numero?.bandaTexto ?? (amateur ? j.rankedTexto : f.bandaNivel) }),
-      el('span', { class: 'ctx-sub', text: amateur ? 'tu rango en soloQ' : `${f.jerarquia.label} en ${peor?.org ?? j.org}` }),
-    ]),
-  ]);
+  // La cabeza de la placa dice lo que la franja NO dice: si la franja ya muestra el nivel, aca va la jerarquia.
+  const nivelEnFranja = m.franja?.numero?.tipo === 'nivel';
+  const jer = f.jerarquia;
+  const cab = nivelEnFranja
+    ? el('div', { class: 'ctx-cabeza' }, [
+        el('div', { class: 'ctx-grande', 'data-campo': 'jerarquia' }, [el('span', { class: 'ctx-rotulo', text: 'Jerarquía' }), el('b', { class: 'ctx-numero', text: num(jer.valor) })]),
+        el('div', { class: 'ctx-lado' }, [
+          el('span', { class: 'ctx-banda', text: jer.label }),
+          el('span', { class: 'ctx-sub', text: `en ${peor?.org ?? j.org} · banda ${jer.piso}–${jer.techo}` }),
+        ]),
+        el('span', { class: 'medidor ctx-medidor', 'aria-hidden': 'true' }, [el('i', { class: 'banda', style: { left: `${jer.piso}%`, width: `${jer.techo - jer.piso}%` } }), el('i', { class: 'valor', style: { width: `${jer.valor}%` } })]),
+      ])
+    : el('div', { class: 'ctx-cabeza' }, [
+        el('div', { class: 'ctx-grande', 'data-campo': 'nivel' }, [el('span', { class: 'ctx-rotulo', text: 'Nivel' }), el('b', { class: 'ctx-numero', text: num(f.nivel) })]),
+        el('div', { class: 'ctx-lado' }, [el('span', { class: 'ctx-banda', text: amateur ? 'Amateur' : f.jerarquia.label }), el('span', { class: 'ctx-sub', text: 'tu nivel de juego, de 100' })]),
+      ]);
   placa.append(cab);
   const filas = el('div', { class: 'ctx-filas' });
   if (amateur) {
@@ -102,7 +110,6 @@ export function contexto(m, { peor } = {}) {
     );
   } else {
     filas.append(
-      fila('jerarquia', 'Jerarquía', f.jerarquia.valor, f.jerarquia.label, { piso: f.jerarquia.piso, techo: f.jerarquia.techo, ico: 'jerarquia' }),
       fila('hype', 'Hype', f.hype.valor, f.hype.label, { delta: f.hype.delta, ico: 'hype' }),
       fila('mentalidad', 'Cabeza', f.mentalidad.valor, f.mentalidad.label, { delta: f.mentalidad.delta, ico: 'mentalidad' }),
       fila('arraigo', 'Arraigo', f.arraigo.valor, f.arraigo.label, { piso: f.arraigo.piso, techo: f.arraigo.techo, ico: 'arraigo' }),

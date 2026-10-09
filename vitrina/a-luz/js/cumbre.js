@@ -130,6 +130,7 @@ function crearCarta({ datos, amb, peor }) {
     arte,
     el('div', { class: 'carta-velo', 'aria-hidden': 'true' }),
     el('div', { class: 'carta-foil', 'aria-hidden': 'true' }),
+    el('div', { class: 'carta-banda', 'aria-hidden': 'true' }),
     el('div', { class: 'carta-brillo', 'aria-hidden': 'true' }),
     el('div', { class: 'carta-marco', 'aria-hidden': 'true' }),
     el('div', { class: 'carta-sup' }, [
@@ -170,7 +171,7 @@ function crearCarta({ datos, amb, peor }) {
   raiz.append(veredicto, escenaCarta, tray.nodo);
 
   // --- inclinacion, brillo y foil que siguen al puntero (no dependen del tiempo: congelar no los toca)
-  const POSE = { rx: 4, ry: -11, mx: 64, my: 30 };
+  const POSE = { rx: 4, ry: -11, mx: 70, my: 58 };
   const poner = (p) => {
     carta.style.setProperty('--rx', `${p.rx}deg`);
     carta.style.setProperty('--ry', `${p.ry}deg`);

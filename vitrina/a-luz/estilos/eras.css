@@ -48,7 +48,7 @@
 .er-luces[data-era='escenario'] .l1 { background: var(--luz-escenario); } .er-luces[data-era='escenario'] .l2 { background: var(--contra-escenario); }
 .er-luces[data-era='mundial'] .l1 { background: var(--luz-mundial); } .er-luces[data-era='mundial'] .l2 { background: var(--contra-mundial); }
 .er-luces[data-era='leyenda'] .l1 { background: var(--luz-leyenda); } .er-luces[data-era='leyenda'] .l2 { background: var(--contra-leyenda); }
-.er-pie-escena { font-size: 13px; color: var(--ink-mute); }
+.er-pie-escena { font-size: 13px; color: var(--ink-dim); }
 
 @media (max-width: 640px) {
   .eras-pantalla { display: block; padding: calc(var(--franja-alto) + 26px) 20px 30px; }

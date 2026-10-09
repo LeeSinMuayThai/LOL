@@ -311,8 +311,12 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
       if (c.campo === 'ranked') {
         numeros.append(el('div', { class: 'res-num res-rango', 'data-campo': 'ranked' }, [
           el('span', { class: 'rn-rotulo' }, [icono('ranked'), 'SoloQ']),
-          el('b', { class: 'rn-valor rn-texto' }, [el('span', { class: 'rn-viejo', text: c.antes }), el('span', { class: 'rn-nuevo', text: c.despues })]),
-          elo ? el('span', { class: `rn-delta ${elo.delta >= 0 ? 'sube' : 'baja'}` }, [triangulos(Math.abs(elo.delta) > 500 ? 'alta' : 'media', elo.delta >= 0 ? '+' : '-'), `${conSigno(elo.delta)} LP`]) : null,
+          el('span', { class: 'rn-fila' }, [
+            el('span', { class: 'rn-antes', text: c.antes }),
+            icono('flecha'),
+            el('b', { class: 'rn-valor rn-texto' }, el('span', { class: 'rn-nuevo', text: c.despues })),
+            elo ? el('span', { class: `rn-delta ${elo.delta >= 0 ? 'sube' : 'baja'}` }, [triangulos(Math.abs(elo.delta) > 500 ? 'alta' : 'media', elo.delta >= 0 ? '+' : '-'), `${conSigno(elo.delta)} LP`]) : null,
+          ]),
         ]));
         continue;
       }
@@ -320,9 +324,12 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
       const b = Math.round(c.despues);
       numeros.append(el('div', { class: 'res-num', 'data-campo': campoCorto(c.campo) }, [
         el('span', { class: 'rn-rotulo' }, [icono(glifoDeCampo(c.campo)), etiquetaDe(c.campo, etiquetas)]),
-        el('b', { class: 'rn-valor', 'data-desde': String(a), 'data-hasta': String(b), text: num(b) }),
-        el('span', { class: `rn-delta ${b > a ? 'sube' : 'baja'}` }, [triangulos(Math.abs(b - a) >= 8 ? 'alta' : Math.abs(b - a) >= 3 ? 'media' : 'baja', b > a ? '+' : '-'), conSigno(b - a)]),
-        el('span', { class: 'rn-antes', text: `antes ${num(a)}` }),
+        el('span', { class: 'rn-fila' }, [
+          el('span', { class: 'rn-antes', text: num(a) }),
+          icono('flecha'),
+          el('b', { class: 'rn-valor', 'data-desde': String(a), 'data-hasta': String(b), text: num(b) }),
+          el('span', { class: `rn-delta ${b > a ? 'sube' : 'baja'}` }, [triangulos(Math.abs(b - a) >= 8 ? 'alta' : Math.abs(b - a) >= 3 ? 'media' : 'baja', b > a ? '+' : '-'), conSigno(b - a)]),
+        ]),
       ]));
     }
     const hasta = (res?.hastaLaProximaParada?.cambios ?? []).filter((c) => !OCULTOS.has(c.campo) && typeof c.antes === 'number' && Math.round(c.despues) !== Math.round(c.antes));
@@ -357,6 +364,8 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
     amb.pulso('elegir');
     sonido?.clic();
     const res = resultados[o.id];
+    placa.style.marginTop = `${placa.offsetTop - col.offsetTop}px`;
+    placa.style.alignSelf = 'start';
     const r0 = fila.getBoundingClientRect();
     const c0 = lista.getBoundingClientRect();
     // fantasma de las otras filas: se apagan en su lugar
@@ -392,8 +401,7 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
     tarjeta.querySelectorAll('.rn-delta, .rd-otro, .rd-nivel').forEach((d, k) => animar(d, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], { delay: 640 + k * 60, dur: 320 }));
     const rango = tarjeta.querySelector('.rn-texto');
     if (rango) {
-      animar(rango.querySelector('.rn-viejo'), [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-100%)' }], { delay: 520, dur: 360, fill: 'both' }) ?? rango.querySelector('.rn-viejo').remove();
-      animar(rango.querySelector('.rn-nuevo'), [{ opacity: 0, transform: 'translateY(100%)' }, { opacity: 1, transform: 'none' }], { delay: 620, dur: 420 });
+      animar(rango.querySelector('.rn-nuevo'), [{ opacity: 0, transform: 'translateY(100%)' }, { opacity: 1, transform: 'none' }], { delay: 560, dur: 460 });
       const frr = fr.querySelector('.fr-rango');
       const nuevo = (res?.inmediato?.cambios ?? []).find((c) => c.campo === 'ranked');
       if (frr && nuevo) {

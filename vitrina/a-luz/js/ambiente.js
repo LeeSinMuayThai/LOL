@@ -29,20 +29,22 @@ const PARALLAX_PX = 8;
 
 // La escena de cada era (sin colores: salen de --luz-<era> y --contra-<era>).
 const ESCENAS = {
-  pieza: { fuente: [0.86, 1.06], abanico: 0.5, bruma: 0.5, polvo: 0.32, bokeh: 0, tubos: 0, monitor: 1, contra: [0.98, 0.86], brillo: 0.9, haces: 0.35 },
-  academia: { fuente: [0.62, 1.14], abanico: 0.85, bruma: 0.35, polvo: 0.22, bokeh: 0, tubos: 1, monitor: 0, contra: [0.04, 0.5], brillo: 0.9, haces: 0.5 },
-  escenario: { fuente: [0.72, 1.2], abanico: 1, bruma: 0.85, polvo: 0.5, bokeh: 1, tubos: 0, monitor: 0, contra: [1.02, 0.42], brillo: 1, haces: 1 },
-  mundial: { fuente: [0.6, 1.24], abanico: 1.3, bruma: 0.95, polvo: 1, bokeh: 0.7, tubos: 0, monitor: 0, contra: [0.2, 1.06], brillo: 1.1, haces: 1 },
-  leyenda: { fuente: [1.08, 0.34], abanico: 0.8, bruma: 0.6, polvo: 0.45, bokeh: 0.12, tubos: 0, monitor: 0, contra: [-0.05, 0.16], brillo: 0.9, haces: 0.8 },
+  pieza: { fuente: [0.86, 1.06], abanico: 0.5, bruma: 0.5, polvo: 0.32, bokeh: 0, tubos: 0, monitor: 1, contra: [0.99, 0.74], brillo: 0.9, haces: 0.35, cruce: 0, rim: 1.2, contraF: 2.6 },
+  academia: { fuente: [0.62, 1.14], abanico: 0.85, bruma: 0.35, polvo: 0.22, bokeh: 0, tubos: 1, monitor: 0, contra: [0.04, 0.5], brillo: 0.9, haces: 0.5, cruce: 0, rim: 0, contraF: 1 },
+  escenario: { fuente: [0.74, 1.2], abanico: 0.95, bruma: 0.95, polvo: 0.6, bokeh: 1.6, tubos: 0, monitor: 0, contra: [1.0, 0.5], brillo: 1.3, haces: 1.35, cruce: 0.9, rim: 1.2, contraF: 2.2 },
+  mundial: { fuente: [0.6, 1.24], abanico: 1.3, bruma: 0.95, polvo: 1, bokeh: 0.7, tubos: 0, monitor: 0, contra: [0.2, 1.06], brillo: 1.1, haces: 1, cruce: 0, rim: 0, contraF: 1 },
+  leyenda: { fuente: [1.08, 0.34], abanico: 0.8, bruma: 0.6, polvo: 0.45, bokeh: 0.12, tubos: 0, monitor: 0, contra: [-0.05, 0.16], brillo: 0.9, haces: 0.8, cruce: 0, rim: 0, contraF: 1 },
 };
-// Donde vive el arte: centro (uv, y hacia arriba), alto relativo a la pantalla, opacidad.
+// Donde vive el arte: el punto de la pantalla (uv, y hacia arriba) donde cae el FOCO del campeon (su cara), el alto
+// relativo a la pantalla y la opacidad. El foco de cada splash centrado vive en FOCO (coordenadas de la imagen, y abajo).
 export const ENCUADRES = {
-  derecha: { x: 0.64, y: 0.5, alto: 1.18, op: 1 },
-  inicio: { x: 0.76, y: 0.5, alto: 1.2, op: 1 },
-  cumbre: { x: 0.7, y: 0.5, alto: 1.25, op: 0.9 },
-  carta: { x: 0.3, y: 0.5, alto: 1.1, op: 0.35 },
-  centro: { x: 0.5, y: 0.5, alto: 1.1, op: 0.85 },
-  celular: { x: 0.5, y: 0.72, alto: 0.5, op: 0.9 },
+  derecha: { x: 0.79, y: 0.75, alto: 1.02, op: 1 },
+  eras: { x: 0.614, y: 0.748, alto: 1.18, op: 1 },
+  inicio: { x: 0.733, y: 0.752, alto: 1.2, op: 1 },
+  cumbre: { x: 0.672, y: 0.762, alto: 1.25, op: 0.9 },
+  carta: { x: 0.276, y: 0.731, alto: 1.1, op: 0.35 },
+  centro: { x: 0.476, y: 0.731, alto: 1.1, op: 0.85 },
+  celular: { x: 0.462, y: 0.825, alto: 0.5, op: 0.9 },
 };
 
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
@@ -53,6 +55,9 @@ const suave = (x) => {
 const expoOut = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * clamp01(x)));
 const mezclar = (a, b, k) => a + (b - a) * k;
 const mezclarV = (a, b, k) => a.map((v, i) => mezclar(v, b[i], k));
+export const FOCO = { Sylas: [0.48, 0.3], Yone: [0.48, 0.27] };
+const FOCO_DEF = [0.48, 0.29];
+const focoDe = (key) => FOCO[key] ?? FOCO_DEF;
 
 function colores() {
   const c = { vacio: leerColor('--bg-void'), noche: leerColor('--bg-surface'), oro: leerColor('--gold'), blanco: leerColor('--luz-blanca') };
@@ -65,12 +70,13 @@ function paramsDeEra(era, col) {
     a: [s.fuente[0], s.fuente[1], s.abanico, s.bruma],
     b: [s.polvo, s.bokeh, s.tubos, s.monitor],
     c: [s.contra[0], s.contra[1], s.brillo, s.haces],
+    e: [s.cruce, s.rim, s.contraF, 0],
     luz: col[era].luz,
     contra: col[era].contra,
   };
 }
 function mezclarParams(p, q, k) {
-  return { a: mezclarV(p.a, q.a, k), b: mezclarV(p.b, q.b, k), c: mezclarV(p.c, q.c, k), luz: mezclarV(p.luz, q.luz, k), contra: mezclarV(p.contra, q.contra, k) };
+  return { a: mezclarV(p.a, q.a, k), b: mezclarV(p.b, q.b, k), c: mezclarV(p.c, q.c, k), e: mezclarV(p.e, q.e, k), luz: mezclarV(p.luz, q.luz, k), contra: mezclarV(p.contra, q.contra, k) };
 }
 const celularAhora = () => matchMedia('(max-width: 640px)').matches;
 
@@ -87,7 +93,8 @@ out vec4 color;
 uniform vec2 uRes;
 uniform float uT, uTL, uSemilla;
 uniform vec3 uVacio, uNoche, uLuz, uContra, uOro, uBlanco;
-uniform vec4 uA, uB, uC, uD;
+uniform vec4 uA, uB, uC, uD, uE;
+uniform vec2 uFoco0, uFoco1;
 uniform sampler2D uArte0, uArte1;
 uniform vec2 uTam0, uTam1;
 uniform vec4 uArteE;
@@ -164,10 +171,11 @@ float monitor(vec2 uv, float asp) {
   vec2 d = (uv - vec2(0.66, -0.08)) * vec2(asp * 0.75, 1.25);
   return exp(-dot(d, d) * 2.0);
 }
-vec4 muestraArte(sampler2D tx, vec2 tam, vec2 uv, float asp) {
+vec4 muestraArte(sampler2D tx, vec2 tam, vec2 uv, float asp, vec2 foco) {
   float ah = uMarco.z;
   float aw = ah * (tam.x / max(tam.y, 1.0)) / asp;
-  vec2 q = (uv - uMarco.xy - uPar) / vec2(aw, ah) + 0.5;
+  vec2 centro = uMarco.xy + uPar - vec2((foco.x - 0.5) * aw, (0.5 - foco.y) * ah);
+  vec2 q = (uv - centro) / vec2(aw, ah) + 0.5;
   if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return vec4(0.0);
   vec3 c = texture(tx, vec2(q.x, 1.0 - q.y)).rgb;
   float borde = smoothstep(0.0, 0.26, q.x) * smoothstep(1.0, 0.74, q.x) * smoothstep(0.0, 0.3, q.y) * smoothstep(1.0, 0.86, q.y);
@@ -185,13 +193,18 @@ void main() {
   vec2 src = vec2(uA.x * asp, uA.y);
   vec2 base = vec2(0.5 * asp, 0.45) - src;
   float hz = haces(p, src, base, uA.z, t) * uC.w;
+  if (uE.x > 0.0) {
+    vec2 src2 = vec2((1.0 - uA.x) * asp, uA.y);
+    hz += haces(p, src2, vec2(0.5 * asp, 0.45) - src2, uA.z, t + 7.0) * uC.w * uE.x;
+  }
   float d0 = length(p - src);
-  float brillo = uC.z * (1.0 + gloria * 0.5) * (1.0 - peligro * 0.3) * (1.0 - calma * 0.16);
+  float brillo = uC.z * (1.0 + gloria * 0.5) * (1.0 - peligro * 0.3) * (1.0 - calma * 0.05);
 
   col += uLuz * hz * (0.22 + uA.w * niebla * 1.25) * 0.5 * brillo;
   col += uLuz * exp(-d0 * d0 * 2.4) * 0.34 * brillo;
   vec2 cd = (p - vec2(uC.x * asp, uC.y)) * vec2(1.3, 0.8);
-  col += uContra * exp(-dot(cd, cd) * 3.2) * (0.14 + 0.3 * niebla) * brillo;
+  col += uContra * exp(-dot(cd, cd) * 3.2) * (0.14 + 0.3 * niebla) * brillo * uE.z;
+  col += uContra * exp(-dot(cd, cd) * 38.0) * 0.32 * max(uE.z - 1.0, 0.0) * brillo;
   float mon = monitor(uv, asp);
   col += uLuz * mon * uB.w * 0.5 * brillo;
   col += uLuz * tubos(uv, t) * uB.z * 0.62 * brillo;
@@ -200,8 +213,8 @@ void main() {
 
   // el arte, en duotono y adentro de la luz
   if (uArteE.y + uArteE.z > 0.0) {
-    vec4 a0 = muestraArte(uArte0, uTam0, uv, asp); a0.a *= uArteE.y;
-    vec4 a1 = muestraArte(uArte1, uTam1, uv, asp); a1.a *= uArteE.z;
+    vec4 a0 = muestraArte(uArte0, uTam0, uv, asp, uFoco0); a0.a *= uArteE.y;
+    vec4 a1 = muestraArte(uArte1, uTam1, uv, asp, uFoco1); a1.a *= uArteE.z;
     vec3 c = mix(a0.rgb, a1.rgb, uArteE.x);
     float a = mix(a0.a, a1.a, uArteE.x);
     float l = smoothstep(0.04, 0.9, dot(c, vec3(0.299, 0.587, 0.114)));
@@ -212,6 +225,16 @@ void main() {
     float campo = clamp(hz * 0.55 + exp(-d0 * d0 * 1.1) * 0.75 + uB.w * mon * 0.9 + 0.44, 0.0, 1.3);
     float m = a * campo * uMarco.w;
     col = 1.0 - (1.0 - col) * (1.0 - clamp(duo * m, 0.0, 1.0));
+    // luz de contra recortando al campeon: el borde que mira a la contra, donde la imagen cae hacia lo oscuro
+    if (uE.y > 0.0) {
+      vec2 hacia = normalize(vec2(uC.x, uC.y) - uv) * vec2(0.0045, 0.0045 * asp);
+      vec4 b0 = muestraArte(uArte0, uTam0, uv + hacia, asp, uFoco0);
+      vec4 b1 = muestraArte(uArte1, uTam1, uv + hacia, asp, uFoco1);
+      float lb = dot(mix(b0.rgb, b1.rgb, uArteE.x), vec3(0.299, 0.587, 0.114));
+      float la = dot(c, vec3(0.299, 0.587, 0.114));
+      float rim = smoothstep(0.07, 0.3, la - lb) * smoothstep(0.12, 0.5, la);
+      col += uContra * rim * uE.y * a * uMarco.w * 1.1;
+    }
   }
 
   float pv = polvo(p, t);
@@ -260,7 +283,7 @@ function crearLienzo(canvas) {
   gl.enableVertexAttribArray(loc);
   gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   const U = {};
-  for (const n of ['uRes', 'uT', 'uTL', 'uSemilla', 'uVacio', 'uNoche', 'uLuz', 'uContra', 'uOro', 'uBlanco', 'uA', 'uB', 'uC', 'uD', 'uArte0', 'uArte1', 'uTam0', 'uTam1', 'uArteE', 'uMarco', 'uPar']) U[n] = gl.getUniformLocation(prog, n);
+  for (const n of ['uRes', 'uT', 'uTL', 'uSemilla', 'uVacio', 'uNoche', 'uLuz', 'uContra', 'uOro', 'uBlanco', 'uA', 'uB', 'uC', 'uD', 'uE', 'uFoco0', 'uFoco1', 'uArte0', 'uArte1', 'uTam0', 'uTam1', 'uArteE', 'uMarco', 'uPar']) U[n] = gl.getUniformLocation(prog, n);
   const texturas = [0, 1].map((i) => {
     const t = gl.createTexture();
     gl.activeTexture(gl.TEXTURE0 + i);
@@ -272,9 +295,11 @@ function crearLienzo(canvas) {
   gl.uniform1i(U.uArte0, 0);
   gl.uniform1i(U.uArte1, 1);
   const tam = [[1, 1], [1, 1]];
+  const focos = [FOCO_DEF, FOCO_DEF];
   return {
     gl,
-    textura(slot, img) {
+    textura(slot, img, foco = FOCO_DEF) {
+      focos[slot] = foco;
       gl.activeTexture(gl.TEXTURE0 + slot);
       gl.bindTexture(gl.TEXTURE_2D, texturas[slot]);
       if (img) {
@@ -293,6 +318,9 @@ function crearLienzo(canvas) {
       gl.uniform4fv(U.uB, u.p.b);
       gl.uniform4fv(U.uC, u.p.c);
       gl.uniform4fv(U.uD, u.d);
+      gl.uniform4fv(U.uE, u.p.e);
+      gl.uniform2fv(U.uFoco0, focos[0]);
+      gl.uniform2fv(U.uFoco1, focos[1]);
       gl.uniform4fv(U.uArteE, u.arte);
       gl.uniform4fv(U.uMarco, u.marco);
       gl.uniform2fv(U.uPar, u.par);
@@ -446,7 +474,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     const img = key ? await cargarImagen(urlCentrada(key, opciones.meta)) : null;
     if (mio !== arte.token || !vivo) return;
     const slot = 1 - arte.activa;
-    if (img) lienzo.textura(slot, img);
+    if (img) lienzo.textura(slot, img, focoDe(key));
     arte.on[slot] = img ? 1 : 0;
     arte.activa = slot;
     arte.t = inst() || reducido() ? -1e9 : reloj();
@@ -652,7 +680,7 @@ export function crearAmbiente(contenedor, opciones = {}) {
 }
 
 // Fotos fijas de cada era con la misma escena (para la pantalla de eras). Devuelve { era: canvas2D } o null sin WebGL.
-export async function fotografiar(eras, { ancho, alto, meta, artePorEra = {}, encuadre = 'derecha', t = 9000 }) {
+export async function fotografiar(eras, { ancho, alto, meta, artePorEra = {}, encuadre = 'eras', t = 9000 }) {
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(ancho * ESCALA * 2);
   canvas.height = Math.round(alto * ESCALA * 2);
@@ -665,7 +693,7 @@ export async function fotografiar(eras, { ancho, alto, meta, artePorEra = {}, en
   for (const era of eras) {
     const key = artePorEra[era];
     const img = key ? await cargarImagen(urlCentrada(key, meta)) : null;
-    if (img) lienzo.textura(0, img);
+    if (img) lienzo.textura(0, img, focoDe(key));
     lienzo.dibujar({ t: t / 1000, tl: t / 1000, semilla, col, p: paramsDeEra(era, col), d: [0.4, 0, 0, 0], arte: [0, img ? 1 : 0, 0, 0.45], marco: [enc.x, enc.y, enc.alto, enc.op], par: [0, 0] });
     const foto = document.createElement('canvas');
     foto.width = canvas.width;

@@ -25,16 +25,16 @@
 .in-servidores { display: flex; flex-wrap: wrap; gap: 2px; }
 .in-server { all: unset; cursor: pointer; display: grid; gap: 4px; padding: 6px 11px 8px; border-bottom: 2px solid var(--linea); }
 .in-server b { font: 600 14px / 1 var(--f-mono); color: var(--ink-dim); }
-.in-server span { font: 500 9px / 1 var(--f-mono); letter-spacing: 0.1em; color: var(--ink-mute); }
+.in-server span { font: 500 9px / 1 var(--f-mono); letter-spacing: 0.1em; color: var(--ink-dim); }
 .in-server[aria-checked='true'] { border-bottom-color: var(--luz); background: linear-gradient(0deg, var(--luz-suave), var(--velo-nada)); }
 .in-server[aria-checked='true'] b { color: var(--ink); }
 .in-server:focus-visible, .in-perfil:focus-visible, .in-rol:focus-visible, .in-retrato:focus-visible, .in-bloquear:focus-visible, .in-continuar:focus-visible, .in-boton:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-.in-linea { margin: 8px 0 0; max-width: 72ch; font-size: 14px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.in-linea { margin: 8px 0 0; max-width: 54ch; font-size: 14px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .in-perfil-linea { display: flex; align-items: baseline; gap: 20px; min-width: 0; padding-top: 4px; }
 .in-perfiles { display: flex; gap: 16px; flex: none; }
 .in-perfil { all: unset; cursor: pointer; padding-bottom: 5px; border-bottom: 2px solid transparent; font: 700 17px / 1 var(--f-display); font-stretch: 100%; color: var(--ink-mute); }
 .in-perfil[aria-checked='true'] { color: var(--ink); border-bottom-color: var(--luz); }
-.in-perfil-texto { min-width: 0; font-size: 14px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.in-perfil-texto { min-width: 0; max-width: 24ch; font-size: 14px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .in-roles { display: flex; gap: 8px; }
 .in-rol { all: unset; cursor: pointer; display: grid; justify-items: center; gap: 7px; width: 76px; padding: 8px 0 6px; border-radius: 6px; font: 500 10px / 1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mute); }
 .glifo-rol.grande { width: 40px; height: 40px; }
@@ -48,7 +48,7 @@
 .in-retrato:hover img, .in-retrato:focus-visible img, .in-retrato[aria-pressed='true'] img { filter: none; }
 .in-retrato:hover img { transform: scale(1.2); }
 .in-retrato[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--luz), 0 0 18px var(--luz-fuerte); }
-.in-orden { position: absolute; right: 3px; bottom: 3px; z-index: 1; display: grid; place-items: center; min-width: 16px; height: 16px; border-radius: 50%; background: var(--luz); color: var(--bg-void); font: 700 10px / 1 var(--f-mono); }
+.in-orden { position: absolute; right: 3px; bottom: 3px; z-index: 1; display: grid; place-items: center; min-width: 16px; height: 16px; border-radius: 50%; background: var(--luz-texto); color: var(--bg-void); font: 700 10px / 1 var(--f-mono); }
 .in-orden:empty { display: none; }
 .in-cierre { display: flex; align-items: center; gap: 22px; padding-left: 136px; margin-top: 4px; }
 .in-ranuras { list-style: none; display: flex; gap: 18px; margin: 0; padding: 0; }
@@ -82,7 +82,7 @@
 .in-cont-txt span:last-child { font-size: 13px; color: var(--ink-dim); }
 .in-cont-flecha { position: relative; z-index: 1; width: 22px; height: 22px; color: var(--ink); }
 .in-desafio, .in-historial { padding-top: 14px; border-top: 1px solid var(--linea); }
-.in-mini-k { margin: 0; font: 500 10.5px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
+.in-mini-k { margin: 0; font: 500 10.5px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
 .in-desafio-quien { display: flex; align-items: center; gap: 9px; margin: 12px 0 0; }
 .in-desafio-quien b { font: 700 18px / 1 var(--f-display); color: var(--ink); }
 .in-desafio-quien span { font-size: 12.5px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

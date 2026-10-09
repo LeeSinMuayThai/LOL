@@ -81,7 +81,7 @@ export function crearEras({ datos, estado, amb }) {
         const a = crearAmbiente(fondos[e], { meta: datos.meta });
         a.pausar?.();
         respaldos.push(a);
-        await a.ambiente({ era: e, arte: artePorEra[e], encuadre: 'derecha', velo: 0.4 });
+        await a.ambiente({ era: e, arte: artePorEra[e], encuadre: 'eras', velo: 0.4 });
       }
     }
   })();
@@ -117,7 +117,7 @@ export function crearEras({ datos, estado, amb }) {
     },
     arte: eras[era]?.main ?? null,
     animo: 'normal',
-    encuadre: 'derecha',
+    encuadre: 'eras',
     velo: 0.5,
   };
 }
