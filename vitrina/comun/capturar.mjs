@@ -5,7 +5,8 @@
 // Que hace (todo se guarda en vitrina/<direccion>/capturas/):
 //  1. Cada pantalla x muestra a 1440x900 y a 390x844, en modo "movimiento prendido, reloj congelado": deja correr la
 //     entrada, llama window.vitrina.congelar(ms) y pausa todas las animaciones WAAPI antes de sacar la foto.
-//  2. Tiras de cuadros de elegir(1) y de repetir() en la pantalla "cumbre" a 0/150/400/800/1500/2400 ms.
+//  2. Tiras de cuadros (era=auto) a 0/150/400/800/1500/2400 ms: elegir(1) en decision/evento y decision/planAmateur,
+//     repetir() en cumbre/titulo (el takeover) y en inicio (la intro).
 //  3. Una pasada con --enable-unsafe-swiftshader (WebGL por software) y otra con data-sin-webgl (webgl=0).
 //  4. informe.json: errores de consola, pageerror y requestfailed, medidas de FPS y la lista de PNG.
 // Mata solo el navegador que abrio.
@@ -26,6 +27,12 @@ const CONGELAR_MS = Number(args.congelar ?? 1500);
 const RAPIDO = Boolean(args.rapido); // espera de entrada mas corta (para pruebas)
 const ENTRADA_MS = RAPIDO ? 700 : 1800;
 const MS_TIRA = [0, 150, 400, 800, 1500, 2400];
+const TIRAS = [
+  { accion: 'elegir', pantalla: 'decision', muestra: 'evento' },
+  { accion: 'elegir', pantalla: 'decision', muestra: 'planAmateur' },
+  { accion: 'repetir', pantalla: 'cumbre', muestra: 'titulo' },
+  { accion: 'repetir', pantalla: 'inicio', muestra: '' },
+];
 const TAMANOS = [
   { nombre: '1440', ancho: 1440, alto: 900, hash: 'dispositivo=escritorio' },
   { nombre: '390', ancho: 390, alto: 844, hash: 'dispositivo=celular' },
@@ -118,7 +125,7 @@ async function listarEstados(page0) {
   const estados = [];
   for (const pantalla of cat.pantallas) {
     const ms = cat.muestras[pantalla]?.length ? cat.muestras[pantalla] : [''];
-    for (const muestra of ms) estados.push({ pantalla, muestra, era: cat.eras[0] });
+    for (const muestra of ms) estados.push({ pantalla, muestra, era: 'auto' });
     if (pantalla === 'eras') for (const era of cat.eras.slice(1)) estados.push({ pantalla, muestra: ms[0], era });
   }
   return { cat, estados };
@@ -157,7 +164,7 @@ async function pasada(nombre, { argsNavegador = [], sufijoHash = '', sufijoArchi
     const ctxF = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     for (const pantalla of cat.pantallas) {
       const muestra = cat.muestras[pantalla]?.[0] ?? '';
-      const page = await abrir(ctxF, nombre, hashDe(TAMANOS[0], { pantalla, muestra, era: cat.eras[0], extra: sufijoHash }));
+      const page = await abrir(ctxF, nombre, hashDe(TAMANOS[0], { pantalla, muestra, era: 'auto', extra: sufijoHash }));
       await pausa(ENTRADA_MS);
       await page.evaluate(() => window.vitrina.set('fps', true));
       await pausa(2200);
@@ -166,17 +173,22 @@ async function pasada(nombre, { argsNavegador = [], sufijoHash = '', sufijoArchi
     }
     await ctxF.close();
 
-    // Tiras de la cumbre (solo en la pasada normal)
-    if (completa && cat.pantallas.includes('cumbre')) {
+    // Tiras (solo en la pasada normal), siempre con era=auto: elegir(1) en decision/evento y decision/planAmateur,
+    // repetir() en cumbre/titulo (el takeover) y en inicio (la intro).
+    if (completa) {
       const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-      for (const accion of ['elegir', 'repetir']) {
+      for (const t of TIRAS) {
+        const hayPantalla = cat.pantallas.includes(t.pantalla) && (!t.muestra || cat.muestras[t.pantalla]?.includes(t.muestra));
+        if (!hayPantalla) {
+          informe.avisos.push({ pasada: nombre, texto: `tira ${t.accion}-${t.muestra || t.pantalla} omitida: la direccion no tiene esa pantalla/muestra` });
+          continue;
+        }
         for (const ms of MS_TIRA) {
-          const e = { pantalla: 'cumbre', muestra: cat.muestras.cumbre?.[0] ?? '', era: cat.eras[0] };
-          const page = await abrir(ctx, nombre, hashDe(TAMANOS[0], e));
+          const page = await abrir(ctx, nombre, hashDe(TAMANOS[0], { pantalla: t.pantalla, muestra: t.muestra, era: 'auto' }));
           await pausa(ENTRADA_MS);
-          await page.evaluate((a) => (a === 'elegir' ? window.vitrina.elegir(1) : window.vitrina.repetir()), accion);
+          await page.evaluate((a) => (a === 'elegir' ? window.vitrina.elegir(1) : window.vitrina.repetir()), t.accion);
           await congelar(page, ms);
-          await foto(page, `tira-${accion}-${String(ms).padStart(4, '0')}ms`, { pasada: nombre, tira: accion, ms });
+          await foto(page, `tira-${t.accion}-${t.muestra || t.pantalla}-${String(ms).padStart(4, '0')}ms`, { pasada: nombre, tira: t.accion, pantalla: t.pantalla, muestra: t.muestra, ms });
           await page.close();
         }
       }

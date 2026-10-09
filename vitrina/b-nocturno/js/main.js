@@ -12,8 +12,8 @@ let carga = Promise.resolve();
 
 function pintar(estado) {
   const main = datos.jugador?.mains?.[0]?.ddragon ?? null;
-  carga = amb.ambiente({ era: estado.era, animo: estado.pantalla === 'cumbre' ? 'gloria' : 'normal', arte: main });
-  detalle.textContent = `${datos.jugador?.handle ?? '?'} · ${estado.pantalla}${estado.muestra ? ' / ' + estado.muestra : ''} · era ${estado.era}${elegida ? ' · opción ' + elegida : ''}`;
+  carga = amb.ambiente({ era: estado.eraEfectiva, animo: estado.pantalla === 'cumbre' ? 'gloria' : 'normal', arte: main });
+  detalle.textContent = `${datos.jugador?.handle ?? '?'} · ${estado.pantalla}${estado.muestra ? ' / ' + estado.muestra : ''} · era ${estado.eraEfectiva}${estado.era === 'auto' ? ' (auto)' : ''}${elegida ? ' · opción ' + elegida : ''}`;
 }
 
 crearPanel({
