@@ -49,7 +49,7 @@ Una dirección:
 | `ambiente-css.js` + `.css` | Implementación de respaldo sin WebGL (capas CSS que cambian por era). Toma sus colores de los `--amb-*`. |
 | `panel.js` + `panel.css` | El panel flotante (abajo). Vive en Shadow DOM. |
 | `celular.html` (+ `.css`, `.js`) | La misma página dentro de un iframe de 390×844 con un marco de teléfono sobrio. |
-| `catalogo.js` | Pantallas y muestras comunes, `hashDe(...)` y la era automática. **Ronda 1** (`PANTALLAS`, lo único que muestran el panel y el índice): `inicio`; `decision` = evento, planAmateur; `cumbre` = titulo, final; `eras`. **Ronda 2** (`RONDA_2`, todavía oculta): decision = serie, serieReplan; temporada = cierreAnio, swiss, mercado, firma; cumbre = mundial. `ERA_DE_MUESTRA` dice qué era le toca a cada muestra (los datos no traen campo `era`). Las muestras son claves de primer nivel de `datos/muestras.json`. |
+| `catalogo.js` | Pantallas y muestras comunes, `hashDe(...)` y la era automática. **Ronda 1b** (`PANTALLAS`, lo único que muestran el panel y el índice): `inicio`; `decision` = evento, planAmateur; `partido` = serie, serieReplan, swiss; `mercado` = mercado, firma; `cumbre` = titulo, final; `eras`. Finalistas (`FINALISTAS`): a-luz y c-pantallas; **b-nocturno queda archivada** en la ronda 1 (`PANTALLAS_RONDA_1`): se abre igual, el panel no le ofrece las pantallas nuevas y el índice dice "esta dirección no tiene esta pantalla" (`direccionTiene()`). **Ronda 2** (`RONDA_2`, oculta): temporada = cierreAnio; cumbre = mundial. `ERA_DE_MUESTRA` dice qué era le toca a cada muestra (los datos no traen campo `era`). Las muestras son claves de primer nivel de `datos/muestras.json`. |
 | `tokens.css` | Colores y escala del panel, del índice, del marco de celular, y los `--amb-*` de respaldo. Una dirección puede redefinir los `--amb-*` en su propio `estilos/tokens.css`. |
 | `fuentes.css` + `fuentes/` | `@font-face` locales (latin, woff2, `font-display: swap`). |
 | `verificar.mjs`, `capturar.mjs` | Verificador y capturas (abajo). |
@@ -164,7 +164,7 @@ Usa el Chromium en caché de Playwright (`PLAYWRIGHT_CORE` / `CHROMIUM_EXE` para
 
 - cada pantalla × muestra a 1440×900 y a 390×844 (la pantalla `eras` además una por era), con el movimiento prendido y
   el reloj congelado (`congelar(1500)`);
-- tiras (siempre con `era=auto`) a 0/150/400/800/1500/2400 ms: `tira-elegir-evento-*` y `tira-elegir-planAmateur-*` (`elegir(1)` en decision/evento y decision/planAmateur), `tira-repetir-titulo-*` (`repetir()` en cumbre/titulo, el takeover) y `tira-repetir-inicio-*` (`repetir()` en inicio, la intro);
+- tiras (siempre con `era=auto`) a 0/150/400/800/1500/2400 ms: `tira-elegir-evento-*` y `tira-elegir-planAmateur-*` (`elegir(1)` en decision/evento y decision/planAmateur), `tira-repetir-titulo-*` (`repetir()` en cumbre/titulo, el takeover) y `tira-repetir-inicio-*` (`repetir()` en inicio, la intro); ronda 1b: `tira-elegir-serie-*`, `tira-elegir-swiss-*` (`elegir(1)` en partido/serie y partido/swiss) y `tira-repetir-firma-*` (`repetir()` en mercado/firma), solo si la dirección tiene esa pantalla y muestra;
 - una pasada con `--enable-unsafe-swiftshader` (`*-swiftshader.png`) y otra con `webgl=0` (`*-sinwebgl.png`);
 - `informe.json`: errores de consola, `pageerror`, `requestfailed`, avisos, FPS por pantalla y la lista de PNG.
 
