@@ -1,0 +1,58 @@
+/* A · LUZ — Eras: la misma composicion en las cinco luces. */
+.eras-pantalla {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto 1fr; column-gap: var(--canal);
+  min-height: 100vh; padding: calc(var(--franja-alto) + 52px) var(--margen) 34px;
+}
+.er-cabeza { grid-column: 1 / span 7; }
+.er-cabeza .rotulo-cat { margin-top: 0; }
+.er-bajada { margin: 18px 0 0; max-width: 54ch; font-size: 17px; line-height: 1.5; color: var(--ink-dim); }
+.er-tira { grid-column: 1 / -1; align-self: end; list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; margin: 40px 0 0; padding: 0; }
+.er-mini { all: unset; cursor: pointer; display: grid; gap: 10px; width: 100%; }
+.er-mini:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+.er-marco { position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: var(--r-placa); background: var(--bg-void); box-shadow: 0 0 0 1px var(--linea); transition: box-shadow 260ms var(--expo), transform 360ms var(--expo); }
+.er-mini:hover .er-marco { transform: translateY(-4px); }
+.er-mini[aria-pressed='true'] .er-marco { box-shadow: 0 0 0 2px var(--luz), 0 0 44px var(--luz-suave); }
+.er-fondo { position: absolute; inset: 0; }
+.er-foto { display: block; width: 100%; height: 100%; }
+.er-escala { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; transform-origin: 0 0; transform: scale(var(--er-k)); pointer-events: none; }
+.er-tira { --er-k: 0.165; }
+.er-comp {
+  position: relative; width: 1440px; height: 900px;
+  --luz-texto: color-mix(in oklab, var(--luz) 52%, var(--ink));
+  --luz-fuerte: color-mix(in srgb, var(--luz) 40%, transparent);
+  --luz-suave: color-mix(in srgb, var(--luz) 22%, transparent);
+  --luz-tenue: color-mix(in srgb, var(--luz) 9%, transparent);
+}
+.er-comp[data-era='pieza'] { --luz: var(--luz-pieza); --contra: var(--contra-pieza); }
+.er-comp[data-era='academia'] { --luz: var(--luz-academia); --contra: var(--contra-academia); }
+.er-comp[data-era='escenario'] { --luz: var(--luz-escenario); --contra: var(--contra-escenario); }
+.er-comp[data-era='mundial'] { --luz: var(--luz-mundial); --contra: var(--contra-mundial); }
+.er-comp[data-era='leyenda'] { --luz: var(--luz-leyenda); --contra: var(--contra-leyenda); }
+.er-comp::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, var(--velo-medio) 0%, var(--velo-nada) 60%); }
+.er-comp .franja { position: absolute; }
+.er-comp-cuerpo { position: absolute; left: 96px; top: 190px; width: 820px; }
+.er-comp .rotulo-cat { margin-top: 0; font-size: 20px; }
+.er-comp .titulo-parada { margin-top: 18px; font-size: 76px; max-width: 13em; }
+.er-comp-opcion { display: flex; align-items: center; gap: 20px; margin-top: 30px; padding: 26px 0; border-bottom: 2px solid var(--linea); background: linear-gradient(90deg, var(--luz-fuerte), var(--velo-nada) 70%); }
+.er-comp-opcion + .er-comp-opcion { margin-top: 0; }
+.er-comp-opcion.apagada { background: none; }
+.er-comp-opcion .op-tecla { width: 44px; height: 44px; margin-left: 14px; font-size: 18px; background: var(--luz); border-color: var(--luz); color: var(--bg-void); }
+.er-comp-opcion.apagada .op-tecla { background: none; border-color: var(--linea-fuerte); color: var(--ink-dim); }
+.er-comp-opcion .op-label { font-size: 38px; }
+.er-pie { display: flex; align-items: center; gap: 10px; font: 500 11px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.er-pie b { color: var(--ink); font-weight: 600; }
+.er-luces { display: inline-flex; gap: 3px; }
+.er-luces i { width: 9px; height: 9px; border-radius: 50%; }
+.er-luces[data-era='pieza'] .l1 { background: var(--luz-pieza); } .er-luces[data-era='pieza'] .l2 { background: var(--contra-pieza); }
+.er-luces[data-era='academia'] .l1 { background: var(--luz-academia); } .er-luces[data-era='academia'] .l2 { background: var(--contra-academia); }
+.er-luces[data-era='escenario'] .l1 { background: var(--luz-escenario); } .er-luces[data-era='escenario'] .l2 { background: var(--contra-escenario); }
+.er-luces[data-era='mundial'] .l1 { background: var(--luz-mundial); } .er-luces[data-era='mundial'] .l2 { background: var(--contra-mundial); }
+.er-luces[data-era='leyenda'] .l1 { background: var(--luz-leyenda); } .er-luces[data-era='leyenda'] .l2 { background: var(--contra-leyenda); }
+.er-pie-escena { font-size: 13px; color: var(--ink-mute); }
+
+@media (max-width: 640px) {
+  .eras-pantalla { display: block; padding: calc(var(--franja-alto) + 26px) 20px 30px; }
+  .er-bajada { font-size: 15px; }
+  .er-tira { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 78vw; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; margin-top: 28px; padding-bottom: 8px; }
+  .er-tira li { scroll-snap-align: start; }
+}
