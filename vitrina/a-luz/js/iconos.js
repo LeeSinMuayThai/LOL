@@ -40,6 +40,18 @@ const P = {
   copa: ['M4.5 2h7v3.5a3.5 3.5 0 0 1-7 0z', 'M8 9v3', 'M5 14h6', 'M4.5 3.5H2.5a2 2 0 0 0 2 2.6', 'M11.5 3.5h2a2 2 0 0 1-2 2.6'],
   mundo: [{ c: [8, 8, 6] }, 'M2 8h12', 'M8 2c2.2 2.2 2.2 9.8 0 12', 'M8 2c-2.2 2.2-2.2 9.8 0 12'],
   flecha: ['M2.5 8h11', 'M9.5 4l4 4-4 4'],
+  // planes de la serie
+  guardar: ['M4 2h8v12l-4-3-4 3z'],
+  conTodo: ['M3 3l5 5-5 5', 'M8.5 3l5 5-5 5'],
+  coach: ['M2 6.5v3h2.5L10 13V3L4.5 6.5z', 'M12.5 5.5a3.5 3.5 0 0 1 0 5'],
+  charla: ['M2.5 3h11v7.5H7l-3 2.5v-2.5H2.5z'],
+  sinCharla: ['M4 2h8v12l-4-3-4 3z'],
+  quemado: ['M8 14.5c-2.8 0-4.5-2-4.5-4.4 0-2.6 2.2-3.6 2.6-6.6 1.6 1 2.2 2.6 2.1 3.8.9-.5 1.4-1.4 1.5-2.5 1.6 1.4 2.8 3.2 2.8 5.3 0 2.4-1.7 4.4-4.5 4.4z'],
+  // el plantel al que llegas (mercado)
+  margen: ['M8 14V2.5', 'M3.5 7L8 2.5 12.5 7'],
+  parejo: ['M3 6h10', 'M3 10h10'],
+  pelea: ['M2 12.5h12', 'M2.5 11L2 4.5l3.5 3L8 3l2.5 4.5 3.5-3-.5 6.5z'],
+  firma: ['M11 2.5l2.5 2.5-8 8H3v-2.5z', 'M9.5 4l2.5 2.5'],
 };
 
 // Clave del motor -> glifo (el campo de `previa` es una ruta tipo player.stats.macro).

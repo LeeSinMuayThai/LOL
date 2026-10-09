@@ -124,7 +124,7 @@ export function contexto(m, { peor } = {}) {
     const r = j.contrato.aniosRestantes;
     pie.append(el('p', { class: 'ctx-duelo' }, [el('span', { class: 'ctx-rotulo', text: 'Contrato' }), el('b', { text: String(r) }), el('span', { text: `${r === 1 ? 'año más' : 'años más'} en ${peor?.org ?? j.contrato.org}` })]));
   }
-  if (j.campeonDelSplit) pie.append(el('p', { class: 'ctx-duelo' }, [el('span', { class: 'ctx-rotulo', text: 'Split' }), el('b', { text: j.campeonDelSplit }), el('span', { text: 'tu campeón de este split' })]));
+  if (j.campeonDelSplit) pie.append(el('p', { class: 'ctx-duelo' }, [el('span', { class: 'ctx-rotulo', text: 'Split' }), el('b', { class: 'campeon-foco', 'data-campeon': j.campeonDelSplit, tabindex: '0', text: j.campeonDelSplit }), el('span', { text: 'tu campeón de este split' })]));
   if (pie.childElementCount) placa.append(pie);
   return placa;
 }

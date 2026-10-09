@@ -153,6 +153,7 @@ html[data-textos='breves'] .insp-previa { display: none; }
 .mx-marca { display: inline-flex; align-items: center; gap: 5px; font: 600 10px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--warn); }
 .mx-riesgo-cab .ico { color: var(--warn); }
 .fantasma { pointer-events: none; z-index: 1; }
+.fantasma > * { pointer-events: none; }
 .fantasma .oculta { visibility: hidden; }
 
 /* ---------- el resultado (la opcion crecida) ---------- */

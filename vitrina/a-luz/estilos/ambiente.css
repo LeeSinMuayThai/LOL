@@ -59,7 +59,10 @@
   position: absolute; right: -4vw; top: 50%; width: 66vw; height: auto; transform: translateY(-50%); opacity: 0; mix-blend-mode: screen;
   mask-image: radial-gradient(closest-side, var(--mascara) 52%, transparent 100%); transition: opacity 900ms ease;
 }
-.lc-arte[data-visible] { opacity: 0.92; }
+.lc-arte[data-visible] { opacity: 0.92; animation: lc-deriva 26s ease-in-out infinite alternate; }
+/* el splash vivo sin WebGL: solo la deriva lenta (Ken Burns) */
+@keyframes lc-deriva { from { transform: translateY(-50%) scale(1); } to { transform: translate(-1.2%, -51%) scale(1.05); } }
+.luz-css[data-animo='caida'] { filter: saturate(0.18) brightness(0.62); transition: filter 900ms ease; }
 .luz-css[data-encuadre='cumbre'] .lc-arte { right: 2vw; width: 72vw; }
 .luz-css[data-encuadre='carta'] .lc-arte { right: auto; left: -6vw; opacity: 0; }
 .luz-css[data-encuadre='carta'] .lc-arte[data-visible] { opacity: 0.35; }
