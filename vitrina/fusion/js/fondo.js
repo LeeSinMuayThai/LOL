@@ -36,11 +36,12 @@ const TENUE = { presencia: 0.42, profundidad: 0, bruma: 0.5, vineta: 0.3, contra
 const TINTE = { ...LUZ, presencia: 0.22, suave: 1, contraste: 0.45, enLugar: 1 };
 
 // Cada variante: el estado en reposo, con el aura apuntando, en un momento, y en un takeover. `lugar` dice si el
-// campeon vive en un lugar fijo de la interfaz. `etiqueta` y `linea` son para la vitrina (en el idioma del usuario).
+// campeon vive en un lugar fijo de la interfaz. `campeonDelMomento`: en un momento con campeon propio (la pantalla de
+// carga de un mapa: tu pick) el mundo muestra ese campeon y no el de la pantalla. `etiqueta` y `linea` son para la vitrina (en el idioma del usuario).
 export const POLITICAS = {
   pleno: { etiqueta: 'Como hoy', linea: 'El campeón llena el fondo en todas las pantallas.', reposo: PLENO, aura: PLENO, momento: PLENO, takeover: PLENO, lugar: false },
   tenue: { etiqueta: 'Tenue', linea: 'El campeón sigue de fondo, pero bajito: se ve primero la luz.', reposo: TENUE, aura: TENUE, momento: TENUE, takeover: PLENO, lugar: false },
-  paso: { etiqueta: 'De paso', linea: 'Solo luz. El campeón aparece cuando importa y se va.', reposo: LUZ, aura: PLENO, momento: PLENO, takeover: PLENO, lugar: false },
+  paso: { etiqueta: 'De paso', linea: 'Solo luz. El campeón aparece cuando importa y se va.', reposo: LUZ, aura: PLENO, momento: PLENO, takeover: PLENO, lugar: false, campeonDelMomento: true },
   lugar: { etiqueta: 'En su lugar', linea: 'Solo luz de fondo. El campeón vive en un lugar fijo, como en el cliente.', reposo: LUZ, aura: TINTE, momento: LUZ, takeover: PLENO, lugar: true },
 };
 
@@ -52,13 +53,14 @@ export const TIEMPOS = { sube: 520, vuelta: 2000, pantalla: 1300, variante: 700 
 // demostracion de las cinco luces con el mundo de hoy.
 const SIEMPRE_PLENO = ['inicio', 'eras', 'cumbre/titulo', 'mercado/firma'];
 
-// Donde vive el campeon en `lugar`. `ancla`: el elemento de la pantalla; `crear`: si hay que sumar la ventana (la banda
-// sobre el panel "vos", el video de la Tribuna) o el ancla ya es la ventana (el escenario del draft). `hasta`: la ventana
+// Donde vive el campeon en `lugar`. `ancla`: el elemento de la pantalla; `crear`: la ventana que se suma adentro (la
+// carta del escenario del draft, la banda sobre el panel "vos", el video de la Tribuna) o, sin `crear`, el ancla misma.
+// La ventana es CSS (estilos/fondo.css): su opacidad es el peso del lugar (la carta se apaga mientras se juega la serie). `hasta`: la ventana
 // termina arriba de ese elemento (la parada de la Tribuna). `foco`: donde cae la cara adentro de la ventana (0-1).
 // `escala`: el alto del splash en altos de la ventana.
 const LUGARES = {
-  'partido/serie': { ancla: '.escenario', foco: [0.66, 0.42], escala: 1.9 },
-  'partido/serieReplan': { ancla: '.escenario', foco: [0.66, 0.42], escala: 1.9 },
+  'partido/serie': { ancla: '.escenario', crear: 'carta', foco: [0.5, 0.44], escala: 2.3 },
+  'partido/serieReplan': { ancla: '.escenario', crear: 'carta', foco: [0.5, 0.44], escala: 2.3 },
   'partido/swiss': { ancla: '.player', crear: 'video', hasta: '.sw-parada', foco: [0.55, 0.45], escala: 3 },
   'decision/evento': { ancla: '.contexto', crear: 'banda', foco: [0.56, 0.5], escala: 2.6 },
   'decision/planAmateur': { ancla: '.contexto', crear: 'banda', foco: [0.56, 0.5], escala: 2.6 },
@@ -79,6 +81,7 @@ export function politica(nombre, pantalla, muestra) {
     aura: estado('aura'),
     momento: estado('momento'),
     takeover: estado('takeover'),
+    campeonDelMomento: !todoPleno && Boolean(p.campeonDelMomento),
     lugar: !todoPleno && p.lugar ? LUGARES[clave(pantalla, muestra)] ?? null : null,
   };
 }

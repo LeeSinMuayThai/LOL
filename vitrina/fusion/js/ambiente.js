@@ -40,6 +40,7 @@ const J_PLENO = [1, 0, 1, 0];
 const K_PLENO = [1, 1, 0, 0];
 const REC_NADA = [0, 0, 0, 0];
 const MAX_EVENTOS = 32;
+const T_CRUCE_MAPA = 380; // el cruce de un campeon al siguiente cuando un momento trae los suyos (los mapas)
 const DESENFOQUE_CSS = 14; // px de desenfoque del arte sin WebGL con `suave` = 1
 
 // La escena de cada era (sin colores: salen de --luz-<era> y --contra-<era>).
@@ -144,6 +145,9 @@ function crearIntensidad() {
   }
   return {
     en,
+    get politica() {
+      return pol;
+    },
     // otra politica (otra pantalla u otra variante): se cruza desde donde esta hacia su reposo
     fijar(p, t, dur) {
       base = en(t);
@@ -576,6 +580,11 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
   const arte = { on: [0, 0], activa: 0, t: -1e9, dur: T_ARTE, key: [null, null], token: 0, carga: Promise.resolve() };
   let actual = { era: null, animo: 'normal', arte: undefined };
   const intensidad = crearIntensidad();
+  const mapas = new Set(); // los cambios de campeon programados de un momento
+  const limpiarMapas = () => {
+    mapas.forEach(clearTimeout);
+    mapas.clear();
+  };
   let lugar = null; // { nodo, foco, escala }: la ventana de la interfaz donde vive el campeon (fondo `lugar`)
   const par = [0, 0];
   const parObjetivo = [0, 0];
@@ -619,7 +628,8 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     const it = intensidad.en(t);
     const lg = medirLugar();
     // en su lugar, el encuadre es el de la ventana; en un takeover (ventana 0) vuelve al de la pantalla
-    if (lg) m = { x: mezclar(m.x, lg.marco.x, it.ventana), y: mezclar(m.y, lg.marco.y, it.ventana), alto: mezclar(m.alto, lg.marco.alto, it.ventana), op: mezclar(m.op, lg.marco.op, it.ventana) };
+    const kv = lg ? it.ventana * lg.peso : 0;
+    if (lg) m = { x: mezclar(m.x, lg.marco.x, kv), y: mezclar(m.y, lg.marco.y, kv), alto: mezclar(m.alto, lg.marco.alto, kv), op: mezclar(m.op, lg.marco.op, kv) };
     const kArte = suave((t - arte.t) / arte.dur);
     const mezclaArte = arte.activa === 1 ? kArte : 1 - kArte;
     return {
@@ -634,7 +644,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
       par,
       f: [vivoAhora, caida, Math.max(0, quiebre), 0],
       i: [it.presencia, it.profundidad, it.bruma, it.vineta],
-      j: [it.contraste, it.suave, it.enLugar, lg ? it.ventana : 0],
+      j: [it.contraste, it.suave, it.enLugar, kv],
       k: [it.luz, it.polvo, 0, 0],
       rec: lg ? lg.rec : REC_NADA,
       radio: lg ? lg.radio : 0,
@@ -648,8 +658,13 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     const H = contenedor.clientHeight || innerHeight;
     const r = lugar.nodo.getBoundingClientRect();
     if (r.width < 2 || r.height < 2) return null;
-    const radio = parseFloat(getComputedStyle(lugar.nodo).borderTopLeftRadius) || 0;
+    const cs = getComputedStyle(lugar.nodo);
+    const radio = parseFloat(cs.borderTopLeftRadius) || 0;
+    // la opacidad de la ventana es el peso del lugar (la carta del draft se apaga mientras se juega)
+    const peso = parseFloat(cs.opacity);
+    if (!(peso > 0.001)) return null;
     return {
+      peso,
       rec: [r.left / W, 1 - r.bottom / H, r.right / W, 1 - r.top / H],
       radio: radio * ESCALA,
       marco: { x: (r.left + r.width * lugar.foco[0]) / W, y: 1 - (r.top + r.height * lugar.foco[1]) / H, alto: (r.height * lugar.escala) / H, op: 1 },
@@ -769,14 +784,30 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     },
     // La politica del mundo para esta pantalla (js/fondo.js) y su lugar fijo, si tiene.
     fondo({ politica, lugar: l = null, instantaneo = false, dur = TIEMPOS.pantalla } = {}) {
+      limpiarMapas();
       lugar = l;
       intensidad.fijar(politica, reloj(), instantaneo ? 0 : dur);
       dibujar();
     },
     // Un momento (la pantalla de carga de un mapa, el post-game, el resultado): el mundo sube al estado `momento` y
     // despues de `dura` vuelve a la base en ~2 s.
-    momento({ retardo = 0, dura = 0 } = {}) {
+    // `campeones`: [[ms, clave], ...] los campeones del momento (tu pick de cada mapa); si la politica lo pide, el mundo
+    // los muestra a su tiempo (en tiempo real: es la demostracion en vivo, no entra en congelar).
+    momento({ retardo = 0, dura = 0, campeones = [] } = {}) {
       intensidad.momento(reloj() + Math.max(0, retardo), Math.max(0, dura));
+      if (!intensidad.politica.campeonDelMomento || !campeones.length) return;
+      limpiarMapas();
+      if (inst() || reducido()) {
+        ponerArte(campeones[campeones.length - 1][1], { dur: T_CRUCE_MAPA });
+        return;
+      }
+      for (const [ms, key] of campeones) {
+        const id = setTimeout(() => {
+          mapas.delete(id);
+          if (vivo) ponerArte(key, { dur: T_CRUCE_MAPA });
+        }, Math.max(0, ms));
+        mapas.add(id);
+      }
     },
     // Un takeover (AFUERA): el mundo va al 100 % y se queda.
     takeover(retardo = 0) {
@@ -812,6 +843,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     },
     destruir() {
       if (!vivo && !canvas.isConnected) return;
+      limpiarMapas();
       vivo = false;
       cancelAnimationFrame(raf);
       removeEventListener('pointermove', alMover);

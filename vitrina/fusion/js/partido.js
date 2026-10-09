@@ -391,9 +391,11 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
     const quemados = new Set(quemados0);
     let t = T0_MAPAS;
     const pasos = [];
+    const picks = []; // [ms, campeon]: tu pick de cada mapa, para el mundo (si la politica lo muestra)
     juego.replaceChildren();
     logs.forEach((l, i) => {
       if (l.mapa) {
+        picks.push([t, claveCampeon(l.campeon)]);
         jugarMapa(l, t, i === ultimoMapa);
         t += MAPA;
       } else if (primerMapa >= 0 && i > primerMapa && i < ultimoMapa) {
@@ -475,7 +477,7 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
     const animoFin = fin?.postSerie ? (gano ? 'gloria' : 'caida') : 'peligro';
     amb.ambiente({ animo: animoFin, retardo: quieto() ? 0 : t });
     // las pantallas de carga, los post-game y el resultado son un momento del mundo (la politica decide que se ve)
-    amb.momento?.({ retardo: quieto() ? 0 : T0_MAPAS, dura: t - T0_MAPAS + RESULTADO });
+    amb.momento?.({ retardo: quieto() ? 0 : T0_MAPAS, dura: t - T0_MAPAS + RESULTADO, campeones: picks.filter(([, k]) => k) });
     if (animoFin === 'gloria') amb.pulso('gloria', quieto() ? 0 : t);
     contadorQ.textContent = `${quemados.size} de ${capacidad}`;
     anim(contadorQ, [{ opacity: 0 }, { opacity: 1 }], { delay: t - MAPA * 0.4, duration: 200 });
