@@ -80,13 +80,12 @@ export function crearInicio({ datos, amb, sonido, peor }) {
   function pintarGrilla() {
     grilla.textContent = '';
     for (const c of cat.campeonesPorRol[rol] ?? []) {
-      const b = el('button', { type: 'button', class: 'in-retrato', 'data-key': c.ddragon, 'aria-pressed': String(elegidos.includes(c.ddragon)), 'aria-label': c.name, title: c.name }, [el('span', { class: 'in-orden' })]);
+      const b = el('button', { type: 'button', class: 'in-retrato', 'data-key': c.ddragon, 'data-campeon': c.ddragon, 'aria-pressed': String(elegidos.includes(c.ddragon)), 'aria-label': c.name, title: c.name }, [el('span', { class: 'in-orden' })]);
       const carga = cargarImagen(urlIcono(c.ddragon, datos.meta)).then((img) => {
         if (img) b.prepend(img.cloneNode());
       });
       cargas.push(carga);
-      b.addEventListener('pointerenter', () => apuntar(c.ddragon));
-      b.addEventListener('focus', () => apuntar(c.ddragon));
+      // apuntar un retrato es el aura (js/aura.js, por data-campeon): su splash pasa a ser la luz de la pagina
       b.addEventListener('click', () => alternar(c.ddragon));
       grilla.append(b);
     }
@@ -102,7 +101,7 @@ export function crearInicio({ datos, amb, sonido, peor }) {
     for (let i = 0; i < MAINS; i++) {
       const key = elegidos[i];
       const c = key ? Object.values(cat.campeonesPorRol).flat().find((x) => x.ddragon === key) ?? j.mains.find((m) => m.ddragon === key) : null;
-      const r = el('li', { class: 'in-ranura' + (key ? ' llena' : '') }, [el('span', { class: 'in-ranura-n', text: String(i + 1) }), el('span', { class: 'in-ranura-cara' }), el('b', { text: c?.name ?? 'Libre' })]);
+      const r = el('li', { class: 'in-ranura' + (key ? ' llena' : ''), 'data-campeon': key ?? null }, [el('span', { class: 'in-ranura-n', text: String(i + 1) }), el('span', { class: 'in-ranura-cara' }), el('b', { text: c?.name ?? 'Libre' })]);
       if (key) cargarImagen(urlIcono(key, datos.meta)).then((img) => img && r.querySelector('.in-ranura-cara').append(img.cloneNode()));
       ranuras.append(r);
     }
@@ -120,11 +119,6 @@ export function crearInicio({ datos, amb, sonido, peor }) {
     pintarElegidos();
     const nueva = ranuras.children[Math.max(0, elegidos.indexOf(key))];
     if (nueva && i < 0) animar(nueva, [{ transform: 'scale(.82)', filter: 'brightness(2.2)' }, { transform: 'none', filter: 'none' }], { dur: 420 });
-  }
-  function apuntar(key) {
-    if (key === apuntado) return;
-    apuntado = key;
-    amb.ambiente({ arte: key });
   }
   function cambiarRol(id) {
     if (id === rol) return;
@@ -145,7 +139,7 @@ export function crearInicio({ datos, amb, sonido, peor }) {
   // --- lado derecho: continuar, desafio, historial
   const cont = ini.continuar;
   const placaArte = el('canvas', { class: 'in-cont-arte', width: '520', height: '220', 'aria-hidden': 'true' });
-  const continuar = el('button', { type: 'button', class: 'in-continuar', 'aria-label': `${cont.texto}: ${cont.detalle}` }, [
+  const continuar = el('button', { type: 'button', class: 'in-continuar', 'data-campeon': j.mains[0].ddragon, 'aria-label': `${cont.texto}: ${cont.detalle}` }, [
     placaArte,
     el('span', { class: 'in-cont-txt' }, [
       el('span', { class: 'in-cont-k', text: cont.texto }),
@@ -272,6 +266,7 @@ export function crearInicio({ datos, amb, sonido, peor }) {
       intro?.remove();
     },
     arte: apuntado,
+    auraPegajosa: true,
     animo: 'normal',
     encuadre: 'inicio',
     velo: 0.75,

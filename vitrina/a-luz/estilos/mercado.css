@@ -1,0 +1,125 @@
+/* A · LUZ — el Mercado (las ofertas como franjas alineadas) y la Firma (el takeover del primer contrato). */
+
+.mercado .parada-col { grid-column: 1 / span 9; }
+.mercado > .contexto { grid-column: 10 / span 3; align-self: end; }
+
+/* ---------- la tabla: club · sueldo · anos · jerarquia · plantel ---------- */
+.mk-tabla {
+  margin-top: 22px; display: grid;
+  grid-template-columns: minmax(250px, 1.7fr) minmax(130px, 1fr) 84px minmax(150px, 1.15fr) minmax(128px, 1fr);
+  border-top: 1px solid var(--linea); background: linear-gradient(90deg, var(--velo-nada) 30%, var(--velo-lectura) 80%);
+}
+.mk-cab, .mk-fila { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; }
+.mk-cab { padding: 11px 0 9px; border-bottom: 1px solid var(--linea); font: 500 10px / 1.15 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
+.mk-cab > span { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 7px; padding-right: 14px; }
+.mk-cab .ico { color: var(--ink-dim); }
+.mk-cab .mk-c-club { padding-left: 48px; }
+.mk-cab .mx-ref { flex-basis: 100%; font: 500 10px / 1 var(--f-mono); letter-spacing: 0.08em; color: var(--ink-mute); }
+.mk-fila.opcion { grid-template-columns: subgrid; padding: 9px 0; }
+.mercado .rotulo-cat { margin-top: 30px; }
+.mercado .inspector { min-height: 0; margin-top: 14px; }
+.mercado .insp-texto { font-size: 16px; }
+.mk-club { display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; min-width: 0; }
+.mk-club-t { display: grid; justify-items: start; gap: 5px; min-width: 0; }
+.mk-chip {
+  display: inline-block; max-width: 100%; padding: 6px 11px 5px; border-radius: var(--r-pildora); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 800 15px / 1 var(--f-display); font-stretch: 105%; letter-spacing: 0.02em; text-transform: uppercase; color: var(--org-tinta); background: var(--org-p1);
+}
+.mk-chip[data-tono='loud'] { background: var(--org-loud); }
+.mk-chip[data-tono='furia'] { background: var(--org-furia); }
+.mk-chip[data-tono='p2'] { background: var(--org-p2); }
+.mk-chip[data-tono='p3'] { background: var(--org-p3); }
+.mk-chip[data-tono='p4'] { background: var(--org-p4); }
+.mk-liga { font: 500 10px / 1.2 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); }
+.opcion.apuntada .mk-liga, .opcion.apuntada .mk-plantel span, .opcion.apuntada .mk-jer-et { color: var(--ink); }
+.mk-sueldo, .mk-jer { display: grid; gap: 7px; padding-right: 18px; }
+.mk-sueldo b { font: 600 19px / 1 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--ink); letter-spacing: -0.01em; }
+.mk-anios { display: flex; align-items: center; gap: 4px; }
+.mk-anios i { width: 7px; height: 7px; border-radius: 50%; background: var(--linea-fuerte); }
+.mk-anios i.on { background: var(--luz); box-shadow: 0 0 8px var(--luz); }
+.mk-anios b { margin-left: 6px; font: 700 16px / 1 var(--f-display); font-stretch: 115%; color: var(--ink); }
+.mk-jer { grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 10px; }
+.mk-jer b { font: 800 18px / 1 var(--f-display); font-stretch: 118%; color: var(--ink); }
+.mk-jer-et { grid-column: 1 / -1; font: 500 10px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); }
+.mk-plantel { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 5px 7px; padding-right: 12px; color: var(--ink-dim); }
+.mk-plantel b { font: 600 11px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); }
+.mk-plantel span { grid-column: 2; font: 500 10px / 1 var(--f-mono); letter-spacing: 0.06em; color: var(--ink-dim); }
+.mk-plantel[data-banda='abajo'] .ico { color: var(--up); }
+.mk-plantel[data-banda='primero'] .ico { color: var(--warn); }
+.mk-fila .op-mas { display: none; }
+
+/* ---------- vos en el mercado ---------- */
+.mk-valor { font-size: 54px; }
+.mk-mundo-k { margin: 6px 0 8px; color: var(--ink-dim); }
+.mk-traspasos { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.mk-traspasos li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-top: 7px; border-top: 1px solid var(--linea); }
+.mk-traspasos b { font: 700 14px / 1 var(--f-display); color: var(--ink); }
+.mk-traspasos span { font: 500 10px / 1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-dim); text-align: right; }
+.mk-asientos { margin: 12px 0 0; }
+
+/* ---------- elegir: a donde lleva la oferta ---------- */
+.mk-res { max-width: 780px; }
+.mk-res .res-tag { display: none; }
+.mk-res .res-cab .mk-chip { justify-self: start; font-size: 20px; padding: 8px 14px 7px; }
+.mk-sigue { display: flex; align-items: center; gap: 14px; margin: 22px 0 0 48px; font: 800 38px / 1 var(--f-display); font-stretch: 80%; text-transform: uppercase; color: var(--ink); }
+.mk-sigue .ico { width: 28px; height: 28px; color: var(--luz-texto); }
+.mk-sigue b { color: var(--luz-texto); }
+.mk-res-datos { margin: 12px 0 0 48px; font: 500 12px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); }
+.mk-seguir {
+  all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; margin: 18px 0 0 48px; padding: 12px 18px; border-radius: var(--r-pildora);
+  background: var(--luz-suave); font: 600 12px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink);
+}
+.mk-seguir:hover { background: var(--luz-fuerte); }
+.mk-seguir:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.mk-seguir kbd { font: inherit; font-size: 10px; padding: 3px 7px; border-radius: 3px; background: var(--bg-raised); color: var(--ink-dim); }
+
+/* ---------- la firma ---------- */
+.firma { position: relative; min-height: 100vh; }
+.fm-barrido {
+  position: fixed; top: -10vh; bottom: -10vh; left: 0; width: 40vw; z-index: 1; opacity: 0; pointer-events: none; mix-blend-mode: screen;
+  background: linear-gradient(90deg, var(--velo-nada) 0%, var(--luz-suave) 40%, color-mix(in srgb, var(--luz-blanca) 50%, transparent) 50%, var(--luz-suave) 60%, var(--velo-nada) 100%);
+}
+.fm-bloque { position: relative; z-index: 2; max-width: 900px; }
+.fm-k { display: flex; align-items: center; gap: 18px; margin: 0; font: 600 12px / 1 var(--f-mono); letter-spacing: 0.28em; text-transform: uppercase; color: var(--luz-texto); }
+.fm-k span + span { padding-left: 18px; border-left: 1px solid var(--linea-fuerte); color: var(--ink-dim); }
+.fm-org { margin: 14px 0 0 -0.04em; font: 900 clamp(120px, 17vw, 236px) / 0.8 var(--f-display); font-stretch: 78%; letter-spacing: -0.02em; text-transform: uppercase; color: var(--ink); text-shadow: 0 0 80px var(--luz-fuerte); }
+.fm-org:focus { outline: none; }
+.fm-letra { display: inline-block; }
+.fm-sueldo { display: flex; align-items: baseline; gap: 14px; margin: 26px 0 0; }
+.fm-usd, .fm-anio { font: 500 16px / 1 var(--f-mono); letter-spacing: 0.12em; color: var(--ink-dim); }
+.fm-monto { font: 600 74px / 1 var(--f-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; color: var(--ink); }
+.fm-datos { display: flex; gap: 44px; margin: 22px 0 0; }
+.fm-datos div { display: grid; gap: 7px; }
+.fm-datos dt { font: 500 10px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.fm-datos dd { margin: 0; font: 800 24px / 1 var(--f-display); font-stretch: 100%; color: var(--ink); }
+.fm-firma { display: block; width: min(600px, 100%); height: auto; margin: 16px 0 0 -6px; overflow: visible; }
+.fm-trazo { font: italic 800 92px / 1 var(--f-display); font-stretch: 85%; fill: var(--ink); stroke: var(--luz); stroke-width: 1.4; paint-order: stroke; filter: drop-shadow(0 0 10px var(--luz)); }
+.fm-rubrica { fill: none; stroke: var(--luz); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 700; filter: drop-shadow(0 0 6px var(--luz)); }
+.fm-log { margin: 12px 0 0; max-width: 54ch; font-size: 18px; line-height: 1.45; color: var(--ink-dim); }
+.fm-otros { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 4px; font: 500 11px / 1.35 var(--f-mono); letter-spacing: 0.04em; color: var(--ink-dim); }
+.fm-seguir { margin-top: 22px; background: var(--luz-suave); }
+.fm-seguir:hover { background: var(--luz-fuerte); }
+
+@media (max-width: 640px) {
+  .mk-tabla { display: block; margin-top: 14px; }
+  .mk-cab { display: none; }
+  .mk-fila.opcion { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; padding: 12px 0; position: relative; }
+  .mk-club { grid-column: 1 / -1; grid-template-columns: 34px minmax(0, 1fr); }
+  .mk-chip { font-size: 13px; }
+  .mk-sueldo b { font-size: 15px; }
+  .mk-sueldo, .mk-jer { padding-right: 0; }
+  .mk-anios { display: none; }
+  .mk-plantel { grid-column: 1 / -1; padding-left: 34px; }
+  .mk-sueldo { padding-left: 34px; }
+  .mk-fila .op-mas { display: inline-block; position: absolute; right: 0; top: 16px; }
+  .mk-sigue { margin-left: 38px; font-size: 24px; }
+  .mk-res-datos, .mk-seguir { margin-left: 38px; }
+  .fm-k { flex-wrap: wrap; gap: 8px 12px; letter-spacing: 0.16em; font-size: 10.5px; }
+  .fm-k span + span { padding-left: 12px; }
+  .fm-org { font-size: 96px; }
+  .fm-monto { font-size: 44px; }
+  .fm-datos { gap: 22px; }
+  .fm-datos dd { font-size: 18px; }
+  .fm-trazo { font-size: 72px; }
+  .fm-otros { display: none; }
+}

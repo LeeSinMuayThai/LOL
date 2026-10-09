@@ -77,6 +77,15 @@
   --foil-4: #ffe08a;
   --foil-5: #9cffd9;
 
+  /* ---- el color de cada club: SOLO en su chip (mercado). Los reales, el suyo; los inventados, una paleta ---- */
+  --org-loud: #3dff7e;
+  --org-furia: #ececf2;
+  --org-p1: #ff8a63;
+  --org-p2: #c2a0ff;
+  --org-p3: #5fd0f2;
+  --org-p4: #f5cf5a;
+  --org-tinta: #05060b;
+
   /* ---- respaldo del ambiente de comun/ (por si alguien lo usa con esta paleta) ---- */
   --amb-pieza-a: #04050a;
   --amb-pieza-b: #0a0d16;

@@ -241,7 +241,10 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
   }
   filas.forEach((f, i) => {
     f.addEventListener('pointerenter', () => {
-      if (!celular()) apuntar(i);
+      if (celular()) return;
+      // la luz responde sutil a la opcion apuntada (un pulso leve), sin moverse
+      if (i !== apuntada) amb.pulso('apuntar');
+      apuntar(i);
     });
     f.addEventListener('focus', () => apuntar(i));
     if (!f.classList.contains('bloqueada')) f.addEventListener('click', () => elegir(i + 1));

@@ -9,8 +9,11 @@ import { crearDecision } from './decision.js';
 import { crearCumbre } from './cumbre.js';
 import { crearInicio } from './inicio.js';
 import { crearEras } from './eras.js';
+import { crearPartido } from './partido.js';
+import { crearMercado } from './mercado.js';
 import { crearSonido } from './sonido.js';
-import { celular } from './util.js';
+import { crearAura } from './aura.js';
+import { celular, reducido, inst, SALE, DUR } from './util.js';
 
 const datos = await cargarMuestras();
 // Las lineas de los titulos se miden con la fuente real: se cargan antes del primer montaje.
@@ -22,15 +25,18 @@ let amb = crearAmbiente(capaAmbiente, { meta: datos.meta });
 const ambiente = {
   ambiente: (o) => amb.ambiente(o),
   aquietar: (s) => amb.aquietar(s),
-  pulso: (t) => amb.pulso(t),
+  pulso: (t, r) => amb.pulso(t, r),
+  quiebre: (r) => amb.quiebre(r),
   reloj: () => amb.reloj(),
   get impl() {
     return amb.impl;
   },
 };
 const sonido = crearSonido();
-const FABRICAS = { inicio: crearInicio, decision: crearDecision, cumbre: crearCumbre, eras: crearEras };
+const aura = crearAura(ambiente);
+const FABRICAS = { inicio: crearInicio, decision: crearDecision, partido: crearPartido, mercado: crearMercado, cumbre: crearCumbre, eras: crearEras };
 let actual = null;
+let montaje = 0;
 let estadoActual = null;
 let cargaArte = Promise.resolve();
 let marcaAccion = 0;
@@ -45,17 +51,36 @@ function aplicarAmbiente(estado, p) {
   });
 }
 
-function montar(estado) {
-  actual?.destruir?.();
-  escena.textContent = '';
+// Cambiar de pantalla o de muestra es una transicion de luz, no un corte: lo viejo sale en 160 ms mientras el ambiente
+// ya cruza a la era y al campeon nuevos; despues lo nuevo entra con su orden de siempre (luz -> rotulo -> titulo ->
+// opciones). No se usa View Transitions: congelaria el lienzo del ambiente en una foto justo cuando tiene que cruzar.
+// Con INST o movimiento reducido, instantaneo.
+async function montar(estado) {
+  const yo = ++montaje;
   const fabrica = FABRICAS[estado.pantalla] ?? crearInicio;
-  actual = fabrica({ datos, muestra: estado.muestra, estado, amb: ambiente, sonido, peor: estado.peor });
-  escena.append(actual.nodo);
-  escena.scrollTop = 0;
+  const nuevo = fabrica({ datos, muestra: estado.muestra, estado, amb: ambiente, sonido, peor: estado.peor });
+  const viejo = actual;
+  actual = nuevo;
   marcaAccion = amb.reloj();
   amb.aquietar(false);
-  aplicarAmbiente(estado, actual);
-  actual.entrar?.();
+  aura.pantalla(nuevo.arte, { pegajosa: nuevo.auraPegajosa });
+  aplicarAmbiente(estado, nuevo);
+  if (viejo?.nodo?.isConnected && !inst() && !reducido()) {
+    viejo.nodo.style.pointerEvents = 'none';
+    amb.pulso('cambio');
+    const salida = viejo.nodo.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-8px)', filter: 'blur(4px)' }], { duration: DUR.sale, easing: SALE, fill: 'forwards' });
+    await salida.finished.catch(() => {});
+    if (yo !== montaje) {
+      nuevo.destruir?.();
+      return;
+    }
+  }
+  viejo?.destruir?.();
+  escena.textContent = '';
+  escena.append(nuevo.nodo);
+  escena.scrollTop = 0;
+  marcaAccion = amb.reloj();
+  nuevo.entrar?.();
 }
 
 crearPanel({

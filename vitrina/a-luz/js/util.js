@@ -33,6 +33,31 @@ export function esperar(nodo, ms) {
   return a.finished.then(() => undefined, () => undefined);
 }
 
+// Lo que se va al elegir se pliega YA (el layout queda en su lugar final: congelar(t) fotografia el instante correcto,
+// sin depender de un `finished` que en una tira congelada nunca llega) y un fantasma de eso mismo se apaga encima.
+// `contenedor` tiene que estar posicionado. `oculta`: el nodo que no va en el fantasma (la fila que crece).
+export function plegar(contenedor, { fantasma = [], plegar: plegables = [], oculta = null } = {}) {
+  const r0 = contenedor.getBoundingClientRect();
+  const capa = el('div', { class: 'fantasma', 'aria-hidden': 'true', style: { position: 'absolute', left: '0', top: '0', width: '100%', height: '0', margin: '0' } });
+  oculta?.setAttribute('data-oculta', '');
+  for (const n of fantasma) {
+    if (!n?.isConnected) continue;
+    const r = n.getBoundingClientRect();
+    const c = n.cloneNode(true);
+    c.removeAttribute('id');
+    c.querySelectorAll('[id]').forEach((x) => x.removeAttribute('id'));
+    c.querySelectorAll('[data-oculta]').forEach((x) => (x.style.visibility = 'hidden'));
+    Object.assign(c.style, { position: 'absolute', left: `${r.left - r0.left}px`, top: `${r.top - r0.top}px`, width: `${r.width}px`, margin: '0' });
+    capa.append(c);
+  }
+  oculta?.removeAttribute('data-oculta');
+  for (const n of plegables) n?.classList.add('plegado');
+  contenedor.append(capa);
+  const a = animar(capa, [{ opacity: 1 }, { opacity: 0, filter: 'blur(2px)' }], { dur: DUR.sale, fill: 'forwards', easing: 'linear' });
+  if (a) a.finished.then(() => capa.remove(), () => {});
+  else capa.remove();
+}
+
 // ---------- DOM ----------
 export function el(tag, attrs = {}, hijos = []) {
   const n = document.createElement(tag);
