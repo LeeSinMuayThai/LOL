@@ -178,11 +178,11 @@ export function fotografiarHeroe(seed) {
       serieDelSplit = true;
     }
     if (sistema.id === 'internacional' && motivo === 'swiss') {
-      m.ofrecer('swiss', 1, foto({ internacional: clonar(state.internacional) }));
+      m.ofrecer('swiss', 1, foto({ internacional: clonar(state.internacional) }, { seguirSerie: false }));
     }
     if (sistema.id === 'mercado' && motivo === 'oferta' && nOpc >= 3) {
       const prioridad = 1 + (nOpc >= 4 ? 1 : 0) + (decision.opciones.some((o) => o.tier === 1) ? 2 : 0) + (state.career.contrato?.org ? 0 : 1);
-      m.ofrecer('mercado', prioridad, foto({ vosEnElMercado: clonar(decision.datos?.vos ?? null), mercadoDelMundo: { traspasosMundo: clonar(decision.datos?.traspasosMundo ?? []), asientosAbiertos: clonar(decision.datos?.asientosAbiertos ?? []), clubesInteresados: clonar(decision.datos?.clubesInteresados ?? []) } }));
+      m.ofrecer('mercado', prioridad, foto({ vosEnElMercado: clonar(decision.datos?.vos ?? null), mercadoDelMundo: { traspasosMundo: clonar(decision.datos?.traspasosMundo ?? []), asientosAbiertos: clonar(decision.datos?.asientosAbiertos ?? []), clubesInteresados: clonar(decision.datos?.clubesInteresados ?? []) } }, { seguirSerie: false }));
     }
     ultimaPagina = pagina;
   };
