@@ -159,3 +159,45 @@
 [data-era='leyenda'] .dock-nombre { display: none; }
 [data-era='leyenda'] .dock-inicio { border-right: 0; padding-right: 4px; }
 [data-era='leyenda'] .dock-app { border-radius: var(--r-pastilla); padding: 0 11px; }
+
+/* ---------- FARO: la ventana con pestaña ----------
+   La barra de título es una pestaña que sobresale arriba a la izquierda, unida al cuerpo por una curva inversa; la
+   lámpara (el punto de acento) está prendida solo en la ventana enfocada. Los controles viven dentro de la pestaña. */
+.ventana { margin-top: var(--alto-titulo); overflow: visible; border-top-left-radius: 0; }
+.ventana-cuerpo { border-radius: inherit; overflow: hidden; }
+.ventana-titulo {
+  --tab-bg: var(--bg-surface);
+  position: absolute; left: 0; bottom: 100%; max-width: calc(100% - 48px);
+  padding: 0 12px 0 14px; gap: 10px; border-bottom: 0;
+  background: var(--tab-bg); border-radius: var(--r-ventana) var(--r-ventana) 0 0;
+  box-shadow: -1px 0 0 var(--linea), 1px 0 0 var(--linea), 0 -1px 0 var(--linea);
+}
+.ventana-titulo::after {
+  content: ''; position: absolute; left: 100%; bottom: 0; width: var(--r-ventana); height: var(--r-ventana);
+  background: radial-gradient(circle at 100% 0, transparent calc(var(--r-ventana) - 0.5px), var(--tab-bg) var(--r-ventana));
+}
+.ventana-ctl { margin-left: 8px; }
+.ventana-anillo { position: absolute; inset: -1px; z-index: 4; border-radius: inherit; pointer-events: none; opacity: 0; box-shadow: 0 0 0 2px var(--accent), 0 0 48px -8px var(--accent); }
+/* FARO 31/32: pestaña invertida, tinta sobre negro, en mayúsculas: la estación de pro */
+[data-era='escenario'] .ventana-titulo { --tab-bg: var(--ink); color: var(--accent-ink); box-shadow: none; }
+[data-era='escenario'] .ventana-titulo .ventana-app, [data-era='escenario'] .ventana-titulo .ventana-doc { color: var(--accent-ink); }
+[data-era='escenario'] .ventana-titulo .ventana-ctl i { background: var(--accent-ink); }
+[data-era='escenario'] .ventana[data-enfocada] .ventana-titulo::before { background: var(--accent-ink); }
+[data-era='escenario'] .ventana-titulo::after { display: none; }
+/* FARO 44: sin pestaña; una manija adentro */
+[data-era='leyenda'] .ventana { margin-top: 0; border-top-left-radius: var(--r-ventana); }
+[data-era='leyenda'] .ventana-titulo { position: relative; bottom: auto; max-width: none; background: transparent; box-shadow: none; border-radius: 0; }
+[data-era='leyenda'] .ventana-titulo::after { display: none; }
+
+/* ---------- notificaciones: el ícono de la app en su baldosa y la hora relativa ---------- */
+.noti-ico { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 6px; background: var(--accent-suave); color: var(--accent); }
+.noti-hora { margin-left: auto; flex: none; font: 500 11px/1 var(--f-mono); letter-spacing: 0; text-transform: none; color: var(--ink-mute); }
+.noti-toast { visibility: hidden; }
+
+/* ---------- el widget, acoplado al borde de la pantalla como un cajón ---------- */
+.lateral { position: relative; }
+.lateral > .widget { margin-right: -36px; padding-right: 50px; border-right: 0; border-radius: var(--r-ventana) 0 0 var(--r-ventana); }
+.lateral > .widget::before { content: ''; position: absolute; left: 6px; top: 50%; width: 4px; height: 44px; margin-top: -22px; border-radius: 4px; background: var(--linea-fuerte); }
+
+/* contraste medido (scratchpad/contraste-c.mjs): el acento como texto chico usa --accent-texto */
+.noti[data-destacada] .noti-cab, .noti-toast .noti-cab, .noti-ico { color: var(--accent-texto); }

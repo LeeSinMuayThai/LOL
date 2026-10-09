@@ -70,11 +70,11 @@ function stream(raiz, ctx) {
     c.className = 'camara-img';
     foto.append(c);
     bucle(c, [{ transform: 'scale(1.06) translate3d(0, 0, 0)' }, { transform: 'scale(1.14) translate3d(-1.5%, 1%, 0)' }], { duration: 16000, direction: 'alternate', easing: 'ease-in-out' });
-    anim(c, [{ filter: 'blur(14px) brightness(2.2)', opacity: 0.4 }, { filter: 'none', opacity: 1 }], { duration: 520, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+    anim(c, [{ filter: 'blur(10px) brightness(0.35)', opacity: 0.6 }, { filter: 'none', opacity: 1 }], { duration: 620, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
   });
 
   // el pico: corte de cámara, CAMPEONES, el marcador, el plantel, el chat a full
-  anim(flash, [{ opacity: 0.85 }, { opacity: 0 }], { duration: 380, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
+  anim(flash, [{ opacity: 1 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }], { duration: 460, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
   titulo.querySelectorAll('.camp-titulo span').forEach((s, i) => anim(s, [
     { opacity: 0, transform: 'translateY(0.35em) scale(1.5)', filter: 'blur(10px)' },
     { opacity: 1, transform: 'translateY(-0.03em) scale(0.98)', filter: 'blur(0)', offset: 0.7 },
@@ -86,7 +86,6 @@ function stream(raiz, ctx) {
   lower.querySelectorAll('li').forEach((li, i) => anim(li, [{ opacity: 0, transform: 'translateX(-28px)' }, { opacity: 1, transform: 'none' }], { delay: 760 + i * 60, duration: 320, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }));
   anim(seguir, [{ opacity: 0 }, { opacity: 1 }], { delay: PICO - 200, duration: 300 });
   chat.animar();
-  ctx.amb?.pulso('gloria');
 
   function terminarPico() {
     for (const a of raizStream.getAnimations({ subtree: true })) if (a.effect?.getTiming().iterations !== Infinity) a.finish();

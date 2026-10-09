@@ -22,6 +22,30 @@ export function crearAmbiente(contenedor, opciones = {}) {
   contenedor.prepend(raiz);
 
   let estado = { era: 'pieza', animo: 'normal', arte: null };
+  let encuadre = null;
+  // Pone el punto `foco` del splash (fracciones de la imagen) en el punto `destino` de la pantalla, con `zoom` sobre
+  // "cover"; una máscara radial centrada en la cara funde los bordes que quedan al aire. En pantallas angostas, cover.
+  function encuadrar() {
+    if (!encuadre) return;
+    const { i, img, o } = encuadre;
+    const cw = raiz.clientWidth;
+    const ch = raiz.clientHeight;
+    if (cw < 700 || !img.naturalWidth) {
+      i.removeAttribute('style');
+      i.style.objectPosition = o.encuadre ?? 'center 24%';
+      return;
+    }
+    const s = Math.max(cw / img.naturalWidth, ch / img.naturalHeight) * (o.zoom ?? 1);
+    const dw = img.naturalWidth * s;
+    const dh = img.naturalHeight * s;
+    const x = o.destino[0] * cw - o.foco[0] * dw;
+    const y = o.destino[1] * ch - o.foco[1] * dh;
+    Object.assign(i.style, { inset: 'auto', left: `${x}px`, top: `${y}px`, width: `${dw}px`, height: `${dh}px`, objectFit: 'fill' });
+    const m = `radial-gradient(${0.42 * cw}px ${0.62 * ch}px at ${o.foco[0] * dw}px ${o.foco[1] * dh + 0.12 * ch}px, var(--negro) 38%, transparent 100%)`;
+    i.style.maskImage = m;
+    i.style.webkitMaskImage = m;
+  }
+  addEventListener('resize', encuadrar);
   let actual = null;
   let pedido = 0;
   let pausado = false;
@@ -44,6 +68,11 @@ export function crearAmbiente(contenedor, opciones = {}) {
       i.alt = '';
       i.style.objectPosition = o.encuadre ?? 'center 24%';
       capa.append(i);
+      if (o.foco && o.destino) {
+        capa.classList.add('amb-foco');
+        encuadre = { i, img, o };
+        encuadrar();
+      } else encuadre = null;
       if (!o.quieto) {
         bucle(i, [{ transform: 'scale(1.04) translate3d(0, 0, 0)' }, { transform: 'scale(1.1) translate3d(-1.2%, -0.8%, 0)' }], {
           duration: 42000, direction: 'alternate', easing: 'ease-in-out',

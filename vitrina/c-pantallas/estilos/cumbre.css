@@ -23,7 +23,7 @@
     linear-gradient(180deg, color-mix(in srgb, var(--bg-void) 70%, transparent) 0%, transparent 22%, transparent 42%, color-mix(in srgb, var(--bg-void) 92%, transparent) 88%),
     linear-gradient(90deg, color-mix(in srgb, var(--bg-void) 72%, transparent) 0%, transparent 62%);
 }
-.stream-flash { position: absolute; inset: 0; background: var(--pulso); opacity: 0; mix-blend-mode: screen; z-index: 2; pointer-events: none; }
+.stream-flash { position: absolute; inset: 0; background: var(--negro); opacity: 0; z-index: 2; pointer-events: none; }
 .player-cab { position: absolute; left: 24px; top: 20px; z-index: 3; display: flex; align-items: center; gap: 12px; font: 600 12.5px/1 var(--f-mono); color: var(--ink); }
 .vivo { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px 5px; border-radius: 4px; background: var(--vivo); color: var(--vivo-ink); letter-spacing: 0.06em; }
 .vivo i { width: 7px; height: 7px; border-radius: 50%; background: var(--vivo-ink); }
@@ -43,7 +43,7 @@
 .mc-mapas li[data-res='L'] { box-shadow: 0 0 0 1.5px var(--down); }
 .mc-mapas li img { width: 100%; height: 100%; display: block; }
 .mc-mapas li[data-res='L'] img { filter: grayscale(1) brightness(0.6); }
-.mc-mapas li span { position: absolute; right: 1px; bottom: 0; font: 800 9.5px/1 var(--f-mono); color: var(--up); text-shadow: 0 0 3px var(--bg-void); }
+.mc-mapas li span { position: absolute; right: 0; bottom: 0; padding: 1px 2px 0; border-radius: 3px 0 0 0; background: var(--bg-void); font: 800 9.5px/1 var(--f-mono); color: var(--up); }
 .mc-mapas li[data-res='L'] span { color: var(--down); }
 
 .campeones { position: absolute; z-index: 3; left: 48px; right: 48px; bottom: 132px; }
@@ -109,7 +109,7 @@
 .carta-top { position: absolute; top: 16px; left: 16px; right: 16px; display: flex; justify-content: space-between; gap: 8px; }
 .rareza, .variante { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 5px; border-radius: var(--r-pastilla); font: 700 11.5px/1 var(--f-mono); letter-spacing: 0.05em; text-transform: uppercase; }
 .rareza { background: var(--gold); color: var(--accent-ink); }
-.variante { background: color-mix(in srgb, var(--bg-void) 80%, transparent); color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.variante { background: color-mix(in srgb, var(--bg-void) 94%, transparent); color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
 .carta-pie { position: absolute; left: 22px; right: 22px; bottom: 20px; }
 .carta-handle { font: 800 26px/1 var(--f-momento); font-stretch: 112%; letter-spacing: -0.02em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .carta-rol { margin-top: 6px; font: 500 12px/1 var(--f-mono); color: var(--ink-dim); }

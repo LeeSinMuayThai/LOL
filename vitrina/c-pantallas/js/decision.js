@@ -60,7 +60,7 @@ export function pintarDecision(raiz, m, ctx) {
 
   const escritorio = el('div', { class: 'escritorio', 'data-pantalla-c': 'decision' },
     barra,
-    el('main', { class: 'area area-decision' }, chip, win, lateral),
+    el('main', { class: 'area area-decision', 'data-plan': esPlan ? 'si' : null }, chip, win, lateral),
     dock(m.acompanante?.cuarto ?? 'vos', { abierto: m.acompanante?.cuarto ?? 'vos' }));
   raiz.append(escritorio);
 
@@ -213,6 +213,7 @@ function paradaEvento(m) {
 
   function elegir(n, op, res, widget, notis) {
     nodo.dataset.elegido = String(n);
+    anim(nodo.querySelector('.parada-cab'), [{ opacity: 1 }, { opacity: 0.42 }], { delay: 60, duration: 320 });
     const boton = lista.querySelector(`.opcion[data-atajo="${n}"]`);
     const desde = boton.getBoundingClientRect();
     const t = respuesta(op, res, hilo, { primerRetardo: 240 });
@@ -261,7 +262,16 @@ function respuesta(op, res, hilo, { primerRetardo = 380, mia = true } = {}) {
   anim(resp, [{ opacity: 0, transform: 'translateY(10px) scale(0.97)' }, { opacity: 1, transform: 'none' }], { delay: fin, duration: 280, easing: 'cubic-bezier(0.2, 0.9, 0.25, 1.06)' });
   efectos.querySelectorAll('.efecto').forEach((e, i) => anim(e, [{ opacity: 0, transform: 'translateX(-6px)' }, { opacity: 1, transform: 'none' }], { delay: fin + 180 + i * 70, duration: 220 }));
   anim(seguir, [{ opacity: 0 }, { opacity: 1 }], { delay: fin + 700, duration: 260 });
-  return { mia: burbujaMia, resp, seguir };
+  // la ventana avisa que llegó la respuesta: su borde se enciende un instante (la lámpara de FARO)
+  const win = hilo.closest('.ventana');
+  if (win) {
+    win.querySelector('.ventana-anillo')?.remove();
+    const anillo = el('span', { class: 'ventana-anillo', 'aria-hidden': 'true' });
+    win.append(anillo);
+    anim(anillo, [{ opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 0 }], { delay: fin, duration: 1100, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
+    win.dataset.resultado = 'si';
+  }
+  return { mia: burbujaMia, resp, seguir, fin };
 }
 
 const CAMPO_VISIBLE = new Set([
@@ -275,7 +285,12 @@ function toast(notis, res, op, delay) {
   const texto = cambios.map((c) => `${cortoDe(c.campo)} ${entero(c.antes)} → ${entero(c.despues)}`).join(' · ');
   const n = notificacion({ app: 'Carrera', icon: 'carrera', titulo: 'Quedó en tu carrera', texto: texto || op.label, clase: 'noti-toast' });
   (notis.closest('.area') ?? notis).append(n);
-  anim(n, [{ transform: 'translateX(112%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { delay, duration: 360, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+  anim(n, [
+    { transform: 'translateX(112%)', opacity: 0, visibility: 'visible', easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+    { transform: 'none', opacity: 1, visibility: 'visible', offset: 0.12 },
+    { transform: 'none', opacity: 1, visibility: 'visible', offset: 0.86, easing: 'cubic-bezier(0.5, 0, 0.75, 0)' },
+    { transform: 'translateX(40px)', opacity: 0, visibility: 'visible' },
+  ], { delay, duration: 3000 });
 }
 
 // ---------- plan amateur: la planilla ----------
@@ -350,25 +365,30 @@ function kickerPlan(m) {
   return [el('span', { class: 'cat', style: { '--cat': 'var(--accent)' } }, 'Plan del año'), el('span', { class: 'kicker-cuando' }, `${fr.cuando.texto} · ${fr.club.fase ?? fr.club.org ?? ''}`)];
 }
 
-// ---------- lo último que pasó: el relato del split como notificaciones ----------
+// ---------- lo último que pasó: un stack de notificaciones de FARO (la última arriba, las otras asomando) ----------
+const HORAS = ['ahora', 'recién', 'hace un rato', 'más temprano'];
 function feed(m) {
-  const beats = (m.pagina?.beats ?? []).slice().reverse();
   const antes = m.antes?.log;
-  const lista = el('div', { class: 'notis-lista' });
-  if (antes) {
-    const [appN, ic] = appDeLog(antes.type);
-    lista.append(notificacion({ app: `${appN} · lo último que pasó`, icon: ic, titulo: antes.titulo ?? null, texto: antes.cuerpo ?? antes.message, meta: antes.efectos ?? null, destacada: true }));
-  }
-  const resto = beats.filter((b) => b.log !== antes && b.log?.message !== antes?.message).slice(0, antes ? 2 : 3);
-  for (const b of resto) {
-    const [appN, ic] = appDeLog(b.log.type);
-    lista.append(notificacion({ app: appN, icon: ic, texto: b.log.titulo ? `${b.log.titulo}` : b.log.message, clase: b.log.tecnico ? 'noti-tecnica' : '' }));
-  }
-  const cartel = m.pagina?.cartel;
-  const ocultos = Math.max(0, (m.pagina?.beats?.length ?? 0) - resto.length - (antes ? 1 : 0));
-  return el('section', { class: 'notis', 'aria-label': 'Notificaciones' },
-    el('header', { class: 'notis-cab' }, el('span', {}, cartel?.texto ?? 'Notificaciones'), ocultos ? el('span', { class: 'notis-mas' }, `+${ocultos} antes`) : null),
-    lista);
+  const items = antes ? [{ log: antes }] : [];
+  for (const b of (m.pagina?.beats ?? []).slice().reverse()) if (b.log !== antes && b.log?.message !== antes?.message) items.push({ log: b.log });
+  const lista = el('div', { class: 'notis-lista' }, ...items.slice(0, 6).map((it, i) => {
+    const [appN, ic] = appDeLog(it.log.type);
+    return notificacion({
+      app: appN, icon: ic, titulo: it.log.titulo ?? null, texto: it.log.cuerpo ?? it.log.message, meta: i === 0 ? it.log.efectos ?? null : null,
+      destacada: i === 0, hora: HORAS[Math.min(i, HORAS.length - 1)], clase: it.log.tecnico ? 'noti-tecnica' : '',
+    });
+  }));
+  const boton = el('button', { class: 'notis-mas', type: 'button', 'aria-expanded': 'false' }, `${items.length} notificaciones`);
+  const notis = el('section', { class: 'notis', 'data-plegada': 'si', 'aria-label': 'Lo último que pasó' },
+    el('header', { class: 'notis-cab' }, el('span', {}, m.pagina?.cartel?.texto ?? 'Notificaciones'), boton), lista);
+  const plegar = () => {
+    const plegada = notis.toggleAttribute('data-plegada');
+    boton.setAttribute('aria-expanded', String(!plegada));
+    boton.textContent = plegada ? `${items.length} notificaciones` : 'plegar';
+  };
+  boton.addEventListener('click', plegar);
+  lista.addEventListener('click', () => notis.hasAttribute('data-plegada') && plegar());
+  return notis;
 }
 
 // ---------- widgets de contexto ----------

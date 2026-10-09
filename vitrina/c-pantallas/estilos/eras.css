@@ -45,3 +45,7 @@
 .era-col .dock-app { padding: 0 7px; }
 .era-col .dock-inicio { padding: 0 8px 0 4px; margin-right: 2px; }
 .era-col[data-era='leyenda'] .dock { margin-bottom: 12px; }
+
+.era-os .faro-nombre { color: var(--accent-texto); }
+/* el año y su rótulo quedan sobre el papel de pared: un velo arriba de cada franja */
+.era-area { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-void) 70%, transparent) 0%, transparent 34%); }

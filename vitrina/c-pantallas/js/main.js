@@ -18,6 +18,11 @@ const capa = el('div', { class: 'capa-contenido' });
 escena.append(capa);
 
 const ERAS = ['pieza', 'academia', 'escenario', 'mundial', 'leyenda'];
+// Dónde está la cara en cada splash (fracciones de la imagen de Data Dragon, medidas a ojo sobre el _0).
+const FOCOS = { Sylas: [0.535, 0.265], Yone: [0.568, 0.11], Anivia: [0.5, 0.3] };
+// Dónde queda libre la pantalla según la ventana: el evento ancla la ventana abajo (la cara arriba, a la izquierda);
+// la planilla ocupa todo el alto (la cara arriba a la derecha, sobre la columna de contexto).
+const DESTINO = { evento: { destino: [0.34, 0.17], zoom: 1.15 }, plan: { destino: [0.86, 0.2], zoom: 1 } };
 const REPINTAN = ['pantalla', 'muestra', 'era', 'eraEfectiva', 'peor'];
 let vista = null;
 let carga = Promise.resolve();
@@ -26,9 +31,9 @@ let estadoActual = null;
 const mainDelHeroe = () => datos.inicio?.jugador?.mains?.[0]?.ddragon ?? null;
 
 // El papel de pared según la era: la pieza = el splash del main; la PC del equipo = el monograma de la org.
-function fondo({ era, arte, org, animo = 'normal', quieto = false, encuadre }) {
+function fondo({ era, arte, org, animo = 'normal', quieto = false, encuadre, foco, destino, zoom, vivo }) {
   const academia = era === 'academia';
-  carga = amb.ambiente({ era, animo, arte: academia ? null : arte, monograma: academia ? monogramaDe(org) ?? 'EC' : null, quieto, encuadre });
+  carga = amb.ambiente({ era, animo, arte: academia ? null : arte, monograma: academia ? monogramaDe(org) ?? 'EC' : null, quieto, encuadre, foco, destino, zoom, vivo });
   return carga;
 }
 
@@ -50,7 +55,10 @@ function pintar(estado) {
     const m = conPeorCaso(datos[muestra], peor);
     vista = pintarDecision(capa, m, ctx);
     const amateur = m.ficha?.jugador?.fase === 'amateur';
-    fondo({ era, arte: amateur ? mainDelHeroe() : m.ficha?.jugador?.campeonDelSplit ?? mainDelHeroe(), org: m.org ?? m.franja?.club?.org, quieto: true });
+    const arte = amateur ? mainDelHeroe() : m.ficha?.jugador?.campeonDelSplit ?? mainDelHeroe();
+    const esPlan = m.decision.opciones.some((o) => o.previa?.some((p) => p.campo === 'player.ranked'));
+    const foco = FOCOS[arte] ? { foco: FOCOS[arte], ...DESTINO[esPlan ? 'plan' : 'evento'], vivo: true } : {};
+    fondo({ era, arte, org: m.org ?? m.franja?.club?.org, quieto: true, ...foco });
   } else if (pantalla === 'cumbre') {
     vista = pintarCumbre(capa, muestra === 'final' ? 'final' : 'titulo', ctx);
   } else if (pantalla === 'eras') {

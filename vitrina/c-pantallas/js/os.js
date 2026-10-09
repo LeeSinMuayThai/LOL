@@ -150,9 +150,9 @@ export function ventana({ app, icon, titulo, clase = '', cuerpo = [], enfocada =
 }
 
 // ---------- notificación ----------
-export function notificacion({ app, icon = 'cronica', titulo, texto, meta, clase = '', destacada = false }) {
+export function notificacion({ app, icon = 'cronica', titulo, texto, meta, clase = '', destacada = false, hora }) {
   return el('article', { class: `noti ${clase}`, 'data-destacada': destacada ? 'si' : null },
-    el('div', { class: 'noti-cab' }, icono(icon, 'ico ico-chico'), el('span', { class: 'noti-app' }, app)),
+    el('div', { class: 'noti-cab' }, el('span', { class: 'noti-ico' }, icono(icon, 'ico ico-chico')), el('span', { class: 'noti-app' }, app), hora ? el('span', { class: 'noti-hora' }, hora) : null),
     titulo ? el('p', { class: 'noti-titulo' }, titulo) : null,
     texto ? el('p', { class: 'noti-texto' }, texto) : null,
     meta ? el('p', { class: 'noti-meta' }, meta) : null);

@@ -20,9 +20,10 @@
   --ink-dim: #b0b4c3;
   --ink-mute: #8a8fa2;
 
-  --accent: #7c5cff;
+  --accent: #7452f7;      /* el #7c5cff del brief, un pelo más oscuro: blanco encima medía 4,35:1 y ahora 4,9:1 */
   --accent-ink: #ffffff;
   --accent-suave: #261f4a;
+  --accent-texto: #a590ff;   /* el acento cuando es texto chico: >= 4,5:1 sobre las superficies */
 
   --up: #3df2a0;
   --down: #ff5468;
@@ -85,7 +86,8 @@
   --accent: #2d55ff;
   --accent-ink: #ffffff;
   --accent-suave: #dfe6ff;
-  --up: #0b8a55;
+  --accent-texto: #1d41d6;
+  --up: #06703f;
   --down: #c8243f;
   --warn: #9a5c00;
   --danger: #c8243f;
@@ -122,6 +124,7 @@
   --accent: #f3f3f0;
   --accent-ink: #0a0a0b;
   --accent-suave: #232428;
+  --accent-texto: #f3f3f0;
   --pared-velo: #030304;
   --pared-luz: #1c1d22;
   --pared-brillo: 0.72;
@@ -162,6 +165,7 @@
   --accent: #ff4fd8;
   --accent-ink: #120410;
   --accent-suave: #3a1534;
+  --accent-texto: #ff86e6;
   --pared-velo: #0e0e10;
   --pared-luz: #3a1534;
   --pared-brillo: 0.32;
@@ -192,6 +196,7 @@
   --accent: #ffd27a;
   --accent-ink: #1c1407;
   --accent-suave: #3a2e17;
+  --accent-texto: #ffd27a;
   --up: #8fe3b0;
   --down: #ff8a7a;
   --warn: #ffc56b;
@@ -256,7 +261,7 @@
   --chat-a: #ff9ee6;
   --chat-b: #9fd0ff;
   --chat-c: #ffe08a;
-  --vivo: #ff3d57;
+  --vivo: #d0173a;
   --vivo-ink: #ffffff;
 
   /* el ambiente de respaldo de comun/ toma estos */
