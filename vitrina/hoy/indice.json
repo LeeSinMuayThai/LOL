@@ -1,0 +1,71 @@
+{
+  "_doc": "Mapea pantalla/muestra de la vitrina a la captura ACTUAL del juego (antes de la UI nueva). El panel busca primero por muestra y despues por pantalla. 'movil' es la captura a 390x844 si existe. La pantalla eras no tiene equivalente hoy (el juego actual no muestra eras): sin captura.",
+  "muestras": {
+    "inicio": {
+      "archivo": "inicio.png",
+      "titulo": "Inicio (pagina completa)",
+      "nota": "captura de pagina entera a 1440 de ancho"
+    },
+    "evento": {
+      "archivo": "decision.png",
+      "movil": "decision-390.png",
+      "titulo": "Una decision"
+    },
+    "planAmateur": {
+      "archivo": "plan-amateur.png",
+      "titulo": "Plan del split amateur"
+    },
+    "cierreAnio": {
+      "archivo": "cierre-ano.png",
+      "titulo": "Cierre de anio"
+    },
+    "serie": {
+      "archivo": "plan-serie.png",
+      "movil": "plan-serie-390.png",
+      "titulo": "Plan de una serie"
+    },
+    "swiss": {
+      "archivo": "swiss.png",
+      "titulo": "Fase suiza"
+    },
+    "mercado": {
+      "archivo": "mercado.png",
+      "titulo": "Mercado de pases"
+    },
+    "firma": {
+      "archivo": "mercado.png",
+      "titulo": "Mercado de pases",
+      "nota": "hoy la firma de contrato es parte del mercado"
+    },
+    "titulo": {
+      "archivo": "tarjeta-final.png",
+      "titulo": "Tarjeta final de la carrera",
+      "nota": "lo mas cercano a un titulo de logro"
+    },
+    "mundial": {
+      "archivo": "minijuego.png",
+      "titulo": "Un momento de skill en el Mundial",
+      "nota": "el minijuego de hoy"
+    },
+    "final": {
+      "archivo": "tarjeta-final.png",
+      "titulo": "Tarjeta final de la carrera"
+    }
+  },
+  "pantallas": {
+    "inicio": {
+      "archivo": "inicio.png",
+      "titulo": "Inicio (pagina completa)"
+    },
+    "decision": {
+      "archivo": "decision.png",
+      "movil": "decision-390.png",
+      "titulo": "Una decision"
+    },
+    "cumbre": {
+      "archivo": "tarjeta-final.png",
+      "titulo": "Tarjeta final de la carrera",
+      "nota": "hoy no hay una pantalla de cumbre separada"
+    }
+  }
+}

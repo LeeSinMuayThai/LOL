@@ -1,0 +1,52 @@
+/* Tokens de comun/: el panel, el indice, el marco de celular y la paleta de respaldo del ambiente CSS.
+   Es el UNICO lugar de comun/ e indice donde se escribe un color literal. Cada direccion tiene su propio
+   estilos/tokens.css y puede redefinir los --amb-* para que el ambiente de respaldo tome su paleta.
+   `:host` es para el Shadow DOM del panel. */
+:root,
+:host {
+  /* Superficie neutra de la vitrina (indice, panel, marco de celular) */
+  --v-fondo: #0c0d10;
+  --v-superficie: #14151a;
+  --v-superficie-2: #1b1d23;
+  --v-borde: #ffffff1a;
+  --v-borde-fuerte: #ffffff3d;
+  --v-texto: #ececef;
+  --v-texto-2: #a0a3ad;
+  --v-texto-3: #70747f;
+  --v-acento: #ececef;
+  --v-sobre-acento: #0c0d10;
+  --v-foco: #9db7ff;
+  --v-ok: #7fd6a0;
+  --v-aviso: #f2c76e;
+  --v-error: #ff8f8f;
+  --v-scrim: #000000bf;
+  --v-sombra: #00000080;
+  --v-marco-celular: #1d1e24;
+  --v-pantalla-celular: #000000;
+
+  /* Escala (no son colores, pero viven aca para que nada quede suelto) */
+  --v-radio: 10px;
+  --v-radio-chico: 6px;
+  --v-fuente: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --v-fuente-mono: 'Geist Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* Ambiente CSS de respaldo (comun/ambiente-css.js): dos tonos y una luz por era */
+  --amb-pieza-a: #17141c;
+  --amb-pieza-b: #2b2233;
+  --amb-pieza-luz: #9a7be0;
+  --amb-academia-a: #0d1820;
+  --amb-academia-b: #17303c;
+  --amb-academia-luz: #4ea6c9;
+  --amb-escenario-a: #1a1017;
+  --amb-escenario-b: #381a2d;
+  --amb-escenario-luz: #e0587f;
+  --amb-mundial-a: #14110a;
+  --amb-mundial-b: #3b2d0e;
+  --amb-mundial-luz: #f0b84a;
+  --amb-leyenda-a: #090910;
+  --amb-leyenda-b: #251c40;
+  --amb-leyenda-luz: #dccbff;
+  --amb-peligro: #ff4d4d;
+  --amb-gloria: #ffd36b;
+  --amb-pulso: #ffffff;
+}

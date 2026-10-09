@@ -1,0 +1,98 @@
+/* Ambiente de respaldo sin WebGL. Solo usa tokens (--amb-*), nada de colores sueltos ni de url() para el arte. */
+.amb {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+  background: var(--amb-pieza-a);
+}
+
+.amb-era {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 900ms ease;
+  background:
+    radial-gradient(120% 90% at 50% 110%, var(--era-b) 0%, transparent 70%),
+    linear-gradient(180deg, var(--era-a) 0%, var(--era-b) 100%);
+}
+.amb-era[data-era='pieza'] { --era-a: var(--amb-pieza-a); --era-b: var(--amb-pieza-b); }
+.amb-era[data-era='academia'] { --era-a: var(--amb-academia-a); --era-b: var(--amb-academia-b); }
+.amb-era[data-era='escenario'] { --era-a: var(--amb-escenario-a); --era-b: var(--amb-escenario-b); }
+.amb-era[data-era='mundial'] { --era-a: var(--amb-mundial-a); --era-b: var(--amb-mundial-b); }
+.amb-era[data-era='leyenda'] { --era-a: var(--amb-leyenda-a); --era-b: var(--amb-leyenda-b); }
+.amb[data-era='pieza'] .amb-era[data-era='pieza'],
+.amb[data-era='academia'] .amb-era[data-era='academia'],
+.amb[data-era='escenario'] .amb-era[data-era='escenario'],
+.amb[data-era='mundial'] .amb-era[data-era='mundial'],
+.amb[data-era='leyenda'] .amb-era[data-era='leyenda'] { opacity: 1; }
+
+.amb-arte {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 30%;
+  opacity: 0;
+  transition: opacity 1100ms ease;
+  filter: saturate(0.85) brightness(0.55);
+  transform: scale(1.04);
+}
+.amb-arte[data-visible] { opacity: 0.6; }
+
+.amb-luz {
+  position: absolute;
+  inset: -20%;
+  opacity: 0.5;
+  mix-blend-mode: screen;
+  background: radial-gradient(40% 40% at 50% 40%, var(--luz) 0%, transparent 100%);
+  transition: opacity 900ms ease;
+  animation: amb-deriva 18s ease-in-out infinite alternate;
+}
+.amb[data-era='pieza'] .amb-luz { --luz: var(--amb-pieza-luz); }
+.amb[data-era='academia'] .amb-luz { --luz: var(--amb-academia-luz); }
+.amb[data-era='escenario'] .amb-luz { --luz: var(--amb-escenario-luz); }
+.amb[data-era='mundial'] .amb-luz { --luz: var(--amb-mundial-luz); }
+.amb[data-era='leyenda'] .amb-luz { --luz: var(--amb-leyenda-luz); }
+
+@keyframes amb-deriva {
+  from { transform: translate3d(-6%, -3%, 0) scale(1); }
+  to { transform: translate3d(6%, 4%, 0) scale(1.15); }
+}
+
+.amb-animo {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 700ms ease;
+  background: radial-gradient(90% 80% at 50% 50%, transparent 40%, var(--animo) 140%);
+}
+.amb[data-animo='peligro'] .amb-animo { --animo: var(--amb-peligro); opacity: 0.55; }
+.amb[data-animo='gloria'] .amb-animo { --animo: var(--amb-gloria); opacity: 0.45; }
+
+.amb-vineta {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, var(--amb-pieza-a) 130%);
+  opacity: 0.6;
+}
+
+.amb-pulso {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(70% 60% at 50% 50%, var(--amb-pulso) 0%, transparent 100%);
+  mix-blend-mode: soft-light;
+}
+.amb-pulso[data-tipo='peligro'] { background: radial-gradient(70% 60% at 50% 50%, var(--amb-peligro) 0%, transparent 100%); mix-blend-mode: normal; }
+.amb-pulso[data-tipo='gloria'] { background: radial-gradient(70% 60% at 50% 50%, var(--amb-gloria) 0%, transparent 100%); mix-blend-mode: normal; }
+
+/* Sin esperas / movimiento reducido: sin transiciones ni derivas */
+html[data-inst] .amb *,
+html[data-reducido] .amb * { transition-duration: 0s !important; animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .amb * { transition-duration: 0s !important; animation: none !important; }
+}

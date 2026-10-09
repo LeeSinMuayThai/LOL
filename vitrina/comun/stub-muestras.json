@@ -1,0 +1,22 @@
+{
+  "_aviso": "STUB de la vitrina: datos de relleno con la misma forma que datos/muestras.json. Se usa solo si falta el real.",
+  "meta": { "seed": 0, "ddragon": { "version": "16.19.1", "base": "https://ddragon.leagueoflegends.com/cdn" } },
+  "jugador": {
+    "handle": "Stub",
+    "rol": "mid",
+    "region": "LEC",
+    "perfil": "estrella precoz",
+    "mains": [
+      { "nombre": "Ahri", "ddragon": "Ahri", "tags": ["Mage", "Assassin"] },
+      { "nombre": "Ekko", "ddragon": "Ekko", "tags": ["Assassin", "Fighter"] }
+    ]
+  },
+  "catalogos": {},
+  "muestras": {
+    "inicio": { "titulo": "Un Split Más", "subtitulo": "Tu carrera arranca a los 15." },
+    "evento": { "titulo": "Una oferta que no esperabas", "opciones": [{ "texto": "Aceptar" }, { "texto": "Esperar" }, { "texto": "Decir que no" }] },
+    "planAmateur": {}, "cierreAnio": {}, "serie": {}, "swiss": {}, "mercado": {}, "firma": {}, "titulo": {}, "mundial": {}, "final": {},
+    "eras": { "pieza": {}, "academia": {}, "escenario": {}, "mundial": {}, "leyenda": {} }
+  },
+  "peorCaso": {}
+}
