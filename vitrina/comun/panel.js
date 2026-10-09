@@ -4,17 +4,19 @@
 //   import { crearPanel } from '../comun/panel.js';
 //   crearPanel({
 //     direccion: 'a-luz',
-//     pantallas: ['inicio', 'decision', 'cumbre', 'eras'],
-//     muestras: { decision: ['evento', 'planAmateur'] },
+//     pantallas: Object.keys(PANTALLAS),                                // de comun/catalogo.js (ronda 1)
+//     muestras: PANTALLAS,
 //     eras: ['pieza', 'academia', 'escenario', 'mundial', 'leyenda'],   // opcional, estas son las de defecto
 //     alCambiar(estado, cambios) {},                                    // se llama al arrancar y en cada cambio
 //     acciones: { repetir() {}, elegir(n) {}, congelar(ms) {} },        // todas opcionales
 //   });
 //
-// Hash: #pantalla=decision&muestra=evento&era=pieza&dispositivo=escritorio[&sonido=1&reducido=1&inst=1&webgl=0
+// Hash: #pantalla=decision&muestra=evento&era=auto&dispositivo=escritorio[&sonido=1&reducido=1&inst=1&webgl=0
 //        &fps=1&textos=breves&peor=1&panel=0&abierto=1]
-// Atributos en <html>: data-pantalla, data-muestra, data-era, data-dispositivo, data-textos="breves|completos",
-//   y (presentes cuando estan prendidos) data-sonido, data-reducido, data-inst, data-sin-webgl, data-peor-caso.
+// Atributos en <html>: data-pantalla, data-muestra, data-era (SIEMPRE la efectiva, nunca 'auto'), data-dispositivo, data-textos="breves|completos",
+//   y (presentes cuando estan prendidos) data-era-fija (era forzada a mano), data-sonido, data-reducido, data-inst, data-sin-webgl, data-peor-caso.
+
+import { eraEfectiva as resolverEra } from './catalogo.js';
 
 const ERAS_DEFECTO = ['pieza', 'academia', 'escenario', 'mundial', 'leyenda'];
 const BOOLEANAS = { sonido: '0', reducido: '0', inst: '0', webgl: '1', fps: '0', peor: '0' };
@@ -59,7 +61,10 @@ export function crearPanel(opciones = {}) {
     e.pantalla = pantallas.includes(p.get('pantalla')) ? p.get('pantalla') : pantallas[0];
     const ms = muestrasPorPantalla[e.pantalla] ?? [];
     e.muestra = ms.includes(p.get('muestra')) ? p.get('muestra') : (ms[0] ?? '');
-    e.era = eras.includes(p.get('era')) ? p.get('era') : eras[0];
+    // 'auto' (por defecto) = la era de la muestra (catalogo.js); cualquier otra la fija. La pantalla `eras` usa la primera como base.
+    e.era = p.get('era') === 'auto' || eras.includes(p.get('era')) ? p.get('era') : 'auto';
+    e.eraEfectiva = e.era !== 'auto' ? e.era : e.pantalla === 'eras' ? eras[0] : resolverEra('auto', e.pantalla, e.muestra);
+    if (!eras.includes(e.eraEfectiva)) e.eraEfectiva = eras[0];
     e.dispositivo = DISPOSITIVOS.includes(p.get('dispositivo')) ? p.get('dispositivo') : 'escritorio';
     for (const [k, def] of Object.entries(BOOLEANAS)) e[k] = (p.get(k) ?? def) === '1';
     e.textos = TEXTOS.includes(p.get('textos')) ? p.get('textos') : 'completos';
@@ -94,7 +99,8 @@ export function crearPanel(opciones = {}) {
     html.dataset.direccion = direccion;
     html.dataset.pantalla = estado.pantalla;
     html.dataset.muestra = estado.muestra;
-    html.dataset.era = estado.era;
+    html.dataset.era = estado.eraEfectiva; // siempre la efectiva, nunca 'auto'
+    marcar('data-era-fija', estado.era !== 'auto');
     html.dataset.dispositivo = estado.dispositivo;
     html.dataset.textos = estado.textos;
     marcar('data-sonido', estado.sonido);
@@ -137,7 +143,7 @@ export function crearPanel(opciones = {}) {
   const api = {
     irA: (pantalla) => set('pantalla', pantalla),
     muestra: (m) => set('muestra', m),
-    era: (e) => set('era', e),
+    era: (e) => set('era', e), // 'auto' o una era
     set,
     estado: copia,
     repetir() {
@@ -263,7 +269,7 @@ export function crearPanel(opciones = {}) {
     pantallas.map((p) => el('option', { value: p, texto: p })));
   const selMuestra = el('select', { 'aria-label': 'Muestra', onchange: (e) => set('muestra', e.target.value) });
   const selEra = el('select', { 'aria-label': 'Era', onchange: (e) => set('era', e.target.value) },
-    eras.map((x) => el('option', { value: x, texto: ETIQUETAS_ERA[x] ?? x })));
+    [el('option', { value: 'auto', texto: 'Auto (la de la muestra)' }), ...eras.map((x) => el('option', { value: x, texto: ETIQUETAS_ERA[x] ?? x }))]);
   const campo = (rotulo, control) => el('label', { class: 'campo' }, [el('span', { texto: rotulo }), control]);
   const filaMuestra = campo('Muestra', selMuestra);
 
@@ -335,7 +341,7 @@ export function crearPanel(opciones = {}) {
         const ms = muestrasPorPantalla[estado.pantalla] ?? [];
         if (ms.length) set('muestra', ciclar(ms, estado.muestra));
       },
-      KeyA: () => set('era', ciclar(eras, estado.era)),
+      KeyA: () => set('era', ciclar(['auto', ...eras], estado.era)), // auto > pieza > ... > leyenda > auto
       KeyR: () => api.repetir(),
       KeyS: () => set('sonido', !estado.sonido),
       KeyM: () => set('reducido', !estado.reducido),

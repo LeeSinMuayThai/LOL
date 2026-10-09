@@ -68,7 +68,7 @@ const selMuestra = $('#lado-muestra');
 const selEra = $('#lado-era');
 const selDisp = $('#lado-dispositivo');
 selPantalla.replaceChildren(...Object.keys(PANTALLAS).map((p) => new Option(p, p)));
-selEra.replaceChildren(...ERAS.map((e) => new Option(e, e)));
+selEra.replaceChildren(new Option('auto (la de la muestra)', 'auto'), ...ERAS.map((e) => new Option(e, e)));
 
 function llenarMuestras() {
   const ms = PANTALLAS[selPantalla.value] ?? [];
@@ -89,17 +89,18 @@ llenarMuestras();
 actualizarLado();
 
 // ---------- matriz de funciones ----------
+// Solo el catalogo de la ronda 1 (comun/catalogo.js), con era=auto.
 const FUNCIONES = [
   ['El ambiente vivo', { pantalla: 'eras' }],
   ['Elegir → resultado', { pantalla: 'decision', muestra: 'evento' }],
-  ['El número que rueda', { pantalla: 'temporada', muestra: 'cierreAnio' }],
-  ['El momento', { pantalla: 'cumbre', muestra: 'mundial' }],
-  ['La carta', { pantalla: 'cumbre', muestra: 'titulo' }],
+  ['El número que rueda', { pantalla: 'cumbre', muestra: 'final' }],
+  ['El momento', { pantalla: 'cumbre', muestra: 'titulo' }],
+  ['La carta', { pantalla: 'cumbre', muestra: 'final' }],
   ['La tira de eras', { pantalla: 'eras' }],
   ['La intro', { pantalla: 'inicio' }],
   ['Sonido', { pantalla: 'decision', muestra: 'evento', sonido: 1 }],
   ['Celular', { pantalla: 'decision', muestra: 'evento', dispositivo: 'celular' }],
-  ['Textos breves', { pantalla: 'decision', muestra: 'evento', textos: 'breves' }],
+  ['Textos breves', { pantalla: 'decision', muestra: 'planAmateur', textos: 'breves' }],
 ];
 const cuerpoMatriz = $('#matriz');
 for (const [nombre, estado] of FUNCIONES) {

@@ -34,7 +34,7 @@ Una dirección:
   estilos/tokens.css    TODOS los colores literales de la dirección (y solo ahí)
   estilos/*.css         el resto de las hojas, solo con var(--token)
   js/                   módulos ES; importan de ../../comun/
-  capturas/             PNG + informe.json que escribe comun/capturar.mjs
+  capturas/             PNG + informe.json que escribe comun/capturar.mjs (NO se versiona: ~70 MB por dirección, está en el .gitignore; se regenera)
   README.md             decisiones de la dirección, qué hay en cada pantalla, qué falta
 ```
 
@@ -49,7 +49,7 @@ Una dirección:
 | `ambiente-css.js` + `.css` | Implementación de respaldo sin WebGL (capas CSS que cambian por era). Toma sus colores de los `--amb-*`. |
 | `panel.js` + `panel.css` | El panel flotante (abajo). Vive en Shadow DOM. |
 | `celular.html` (+ `.css`, `.js`) | La misma página dentro de un iframe de 390×844 con un marco de teléfono sobrio. |
-| `catalogo.js` | Pantallas y muestras comunes (`PANTALLAS`, `ERAS`) y `hashDe(...)`. Las tres direcciones tienen que implementar estas pantallas para que el índice apunte a lo mismo. |
+| `catalogo.js` | Pantallas y muestras comunes, `hashDe(...)` y la era automática. **Ronda 1** (`PANTALLAS`, lo único que muestran el panel y el índice): `inicio`; `decision` = evento, planAmateur; `cumbre` = titulo, final; `eras`. **Ronda 2** (`RONDA_2`, todavía oculta): decision = serie, serieReplan; temporada = cierreAnio, swiss, mercado, firma; cumbre = mundial. `ERA_DE_MUESTRA` dice qué era le toca a cada muestra (los datos no traen campo `era`). Las muestras son claves de primer nivel de `datos/muestras.json`. |
 | `tokens.css` | Colores y escala del panel, del índice, del marco de celular, y los `--amb-*` de respaldo. Una dirección puede redefinir los `--amb-*` en su propio `estilos/tokens.css`. |
 | `fuentes.css` + `fuentes/` | `@font-face` locales (latin, woff2, `font-display: swap`). |
 | `verificar.mjs`, `capturar.mjs` | Verificador y capturas (abajo). |
@@ -60,18 +60,18 @@ Una dirección:
 import { crearPanel } from '../../comun/panel.js';
 crearPanel({
   direccion: 'a-luz',
-  pantallas: ['inicio', 'decision', 'temporada', 'cumbre', 'eras'],     // ver comun/catalogo.js
-  muestras: { decision: ['evento', 'planAmateur', 'serie'] },
+  pantallas: Object.keys(PANTALLAS),     // import { PANTALLAS } from '../../comun/catalogo.js' (ronda 1)
+  muestras: PANTALLAS,
   eras: ['pieza', 'academia', 'escenario', 'mundial', 'leyenda'],       // opcional
   alCambiar(estado, cambios) {},    // al arrancar (cambios = todas las claves) y en cada cambio
   acciones: { repetir() {}, elegir(n) {}, congelar(ms) {} },            // todas opcionales
 });
 ```
 
-Controles: pantalla · muestra · era · ▶ Repetir · Elegir 1/2/3 · Hoy · Escritorio/Celular · Sonido · Movimiento
+Controles: pantalla · muestra · era (`Auto (la de la muestra)` + las 5 eras; `Alt+A` cicla auto → pieza → … → leyenda → auto; en la pantalla `eras`, auto usa `pieza` de base) · ▶ Repetir · Elegir 1/2/3 · Hoy · Escritorio/Celular · Sonido · Movimiento
 reducido · INST · WebGL · Medidor de FPS · Peor caso · Textos breves.
 
-**Todo el estado vive en el hash**: `#pantalla=decision&muestra=evento&era=pieza&dispositivo=escritorio` y, si no son los
+**Todo el estado vive en el hash**: `#pantalla=decision&muestra=evento&era=auto&dispositivo=escritorio` y, si no son los
 valores por defecto, `sonido=1 reducido=1 inst=1 webgl=0 fps=1 textos=breves peor=1`. Además `panel=0` esconde el
 panel (miniaturas, capturas) y `abierto=1` lo abre. Cambiar el hash a mano también funciona.
 
@@ -79,7 +79,8 @@ Atributos que el panel pone en `<html>` (las direcciones los leen en CSS y en JS
 
 | Atributo | Cuándo |
 |---|---|
-| `data-pantalla`, `data-muestra`, `data-era`, `data-dispositivo`, `data-direccion` | siempre |
+| `data-pantalla`, `data-muestra`, `data-era`, `data-dispositivo`, `data-direccion` | siempre. `data-era` es **siempre la era efectiva** (nunca `auto`). |
+| `data-era-fija` | la era se forzó a mano (no es `auto`) |
 | `data-textos="breves\|completos"` | siempre (por defecto `completos`) |
 | `data-reducido` | movimiento reducido manual. **Además** hay que respetar `prefers-reduced-motion` (`estado().reducido` ya junta los dos). |
 | `data-inst` | INST: sin esperas, todo instantáneo |
@@ -91,6 +92,8 @@ Atributos que el panel pone en `<html>` (las direcciones los leen en CSS y en JS
 
 ```
 irA(pantalla)  muestra(m)  era(e)  repetir()  elegir(n)  congelar(ms)  set(clave, valor)  estado()
+estado().era            'auto' o una era;  estado().eraEfectiva  la ya resuelta (alCambiar avisa también cuando cambia ésta,
+                        p. ej. al cambiar de muestra en auto)
 fps() -> { fps, p95, n }          catalogo() -> { pantallas, muestras, eras }
 listo            (opcional) la direccion lo define: () => Promise que resuelve cuando arte y ambiente quedaron puestos
 ```
@@ -161,7 +164,7 @@ Usa el Chromium en caché de Playwright (`PLAYWRIGHT_CORE` / `CHROMIUM_EXE` para
 
 - cada pantalla × muestra a 1440×900 y a 390×844 (la pantalla `eras` además una por era), con el movimiento prendido y
   el reloj congelado (`congelar(1500)`);
-- tiras `tira-elegir-<ms>ms.png` y `tira-repetir-<ms>ms.png` en la pantalla `cumbre` a 0/150/400/800/1500/2400 ms;
+- tiras (siempre con `era=auto`) a 0/150/400/800/1500/2400 ms: `tira-elegir-evento-*` y `tira-elegir-planAmateur-*` (`elegir(1)` en decision/evento y decision/planAmateur), `tira-repetir-titulo-*` (`repetir()` en cumbre/titulo, el takeover) y `tira-repetir-inicio-*` (`repetir()` en inicio, la intro);
 - una pasada con `--enable-unsafe-swiftshader` (`*-swiftshader.png`) y otra con `webgl=0` (`*-sinwebgl.png`);
 - `informe.json`: errores de consola, `pageerror`, `requestfailed`, avisos, FPS por pantalla y la lista de PNG.
 
