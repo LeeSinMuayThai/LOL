@@ -20,6 +20,8 @@ export const PANTALLAS = {
 
 // Ronda 1b: finalistas. B · NOCTURNO queda archivada en la ronda 1 (se puede abrir, no crece).
 export const FINALISTAS = ['a-luz', 'c-pantallas'];
+// Direcciones que el indice muestra por defecto en "lado a lado" y "antes / despues" (B sigue con "mostrar B").
+export const VISIBLES_POR_DEFECTO = ['fusion', 'a-luz', 'c-pantallas'];
 export const PANTALLAS_RONDA_1 = {
   inicio: [],
   decision: ['evento', 'planAmateur'],
@@ -67,7 +69,10 @@ export function eraEfectiva(era, pantalla, muestra) {
   return ERA_DE_MUESTRA[muestra] ?? ERA_DE_MUESTRA[pantalla] ?? ERAS[0];
 }
 
+// La fusion (A + C, ronda 2) va primera. Su carpeta puede no existir todavia: verificar.mjs la saltea con un aviso y
+// el indice muestra "en construccion".
 export const DIRECCIONES = [
+  { id: 'fusion', letra: 'A+C', nombre: 'LA FUSIÓN' },
   { id: 'a-luz', letra: 'A', nombre: 'LUZ' },
   { id: 'b-nocturno', letra: 'B', nombre: 'NOCTURNO' },
   { id: 'c-pantallas', letra: 'C', nombre: 'PANTALLAS' },

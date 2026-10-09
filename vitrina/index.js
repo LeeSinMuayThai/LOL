@@ -1,6 +1,6 @@
 // Indice de la vitrina: miniaturas vivas, lado a lado, matriz de funciones, antes/despues y "como elegir".
 import { cargarMuestras } from './comun/datos.js';
-import { DIRECCIONES, PANTALLAS, ERAS, PANTALLA_DE, FINALISTAS, direccionTiene, hashDe } from './comun/catalogo.js';
+import { DIRECCIONES, PANTALLAS, ERAS, PANTALLA_DE, VISIBLES_POR_DEFECTO, direccionTiene, hashDe } from './comun/catalogo.js';
 
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];
@@ -8,6 +8,16 @@ const ANCHO_ESCRITORIO = 1440;
 const ALTO_ESCRITORIO = 900;
 const ANCHO_CELULAR = 390;
 const ALTO_CELULAR = 844;
+
+// Que direcciones tienen carpeta (la fusion se construye aparte y puede faltar).
+async function existeDir(dir) {
+  try {
+    return (await fetch(`${dir}/index.html`, { method: 'HEAD' })).ok;
+  } catch {
+    return false;
+  }
+}
+const EXISTE = { fusion: await existeDir('fusion') };
 
 // ---------- seed ----------
 cargarMuestras().then((d) => {
@@ -74,8 +84,10 @@ function escalar(contenedor) {
 
 // Una direccion que no tiene la pantalla/muestra pedida muestra un texto tenue en vez de un iframe vacio.
 function ponerVivo(contenedor, dir, estado, dispositivo = 'escritorio') {
-  const tiene = direccionTiene(dir, estado.pantalla, estado.muestra);
+  const falta = EXISTE[dir] === false; // carpeta inexistente
+  const tiene = !falta && direccionTiene(dir, estado.pantalla, estado.muestra);
   const aviso = $('.sin-pantalla', contenedor);
+  if (aviso) aviso.textContent = falta ? 'en construcción' : 'esta dirección no tiene esta pantalla';
   if (!tiene) {
     if (items.has(contenedor)) {
       items.delete(contenedor);
@@ -86,7 +98,7 @@ function ponerVivo(contenedor, dir, estado, dispositivo = 'escritorio') {
     if (!aviso) {
       const p = document.createElement('p');
       p.className = 'sin-pantalla';
-      p.textContent = 'esta dirección no tiene esta pantalla';
+      p.textContent = falta ? 'en construcción' : 'esta dirección no tiene esta pantalla';
       contenedor.appendChild(p);
     }
     return false;
@@ -115,7 +127,10 @@ function montarVivo(contenedor, dir, hash, dispositivo = 'escritorio') {
   reconciliar();
 }
 
-// Las tres tarjetas del principio
+// La fusion, grande
+ponerVivo($('#fusion .vivo'), 'fusion', { pantalla: 'inicio' });
+
+// Las tarjetas de A, B y C
 for (const art of $$('.direccion')) montarVivo($('.vivo', art), art.dataset.dir, art.dataset.hash ?? $('.vivo', art).dataset.hash);
 
 // ---------- lado a lado ----------
@@ -136,7 +151,7 @@ let mostrarB = false;
 function aplicarMostrarB() {
   for (const cb of $$('.mostrar-b')) cb.checked = mostrarB;
   $('#lado').dataset.b = mostrarB ? '1' : '0';
-  for (const fig of $$('.marco[data-dir]')) fig.hidden = !mostrarB && !FINALISTAS.includes(fig.dataset.dir);
+  for (const fig of $$('.marco[data-dir]')) fig.hidden = !mostrarB && !VISIBLES_POR_DEFECTO.includes(fig.dataset.dir);
   actualizarLado();
   actualizarAD();
 }

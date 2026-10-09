@@ -10,13 +10,22 @@
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
-  <p class="finalistas">Finalistas: <strong>A · LUZ</strong> y <strong>C · PANTALLAS</strong> (las dos ampliadas con la serie, el Swiss y el mercado). B quedó en la ronda 1: se puede abrir igual.</p>
   <header class="portada">
     <h1>Un Split Más — la UI nueva</h1>
     <p class="bajada">Tres maneras de que tu carrera se vea como se merece. Las tres usan la misma carrera real (seed <span id="seed">…</span>), jugada por el motor, con sus números de verdad. Tocá todo: elegí opciones, mirá los momentos, cambiá de era. Después decime cuál — o qué mezcla.</p>
   </header>
 
   <main>
+    <section id="fusion" class="seccion destacada" aria-labelledby="t-fusion">
+      <h2 id="t-fusion">La fusión: el cliente de tu carrera, iluminado</h2>
+      <p class="fusion-linea">La interfaz de C (la que se siente juego: el draft, el post-game, la tribuna) dentro del mundo de A (la luz, el aura, el splash vivo, los momentos), con un solo sistema de diseño. La serie y el Swiss vienen de C; el mercado, de A.</p>
+      <div class="vivo grande" data-dir="fusion"></div>
+      <ul class="atajos fusion-enlaces">
+        <li><a href="fusion/index.html#pantalla=inicio">inicio</a> · <a href="fusion/index.html#pantalla=decision&amp;muestra=evento">decisión</a> · <a href="fusion/index.html#pantalla=partido&amp;muestra=serie">la serie</a> · <a href="fusion/index.html#pantalla=partido&amp;muestra=swiss">el Swiss</a> · <a href="fusion/index.html#pantalla=mercado&amp;muestra=mercado">el mercado</a> · <a href="fusion/index.html#pantalla=mercado&amp;muestra=firma">la firma</a> · <a href="fusion/index.html#pantalla=cumbre&amp;muestra=titulo">el título</a> · <a href="fusion/index.html#pantalla=cumbre&amp;muestra=final">la final</a></li>
+      </ul>
+      <p><a class="boton" href="fusion/index.html#pantalla=inicio">Abrir la fusión</a></p>
+    </section>
+
     <section id="como-mirarla" class="seccion" aria-labelledby="t-como">
       <h2 id="t-como">Cómo mirarla</h2>
       <ul class="como">
@@ -27,14 +36,15 @@
       </ul>
       <p class="recorrido">Un recorrido de 5 minutos por dirección: Inicio → Decisión (las dos muestras) → Cumbre (el título y después la carta) → Eras.</p>
       <ul class="atajos">
+        <li><span class="etiqueta-fila">LA FUSIÓN</span> <a href="fusion/index.html#pantalla=inicio">el inicio</a> · <a href="fusion/index.html#pantalla=decision&amp;muestra=evento">la decisión</a> · <a href="fusion/index.html#pantalla=cumbre&amp;muestra=titulo">el momento del título</a> · <a href="fusion/index.html#pantalla=partido&amp;muestra=serie">la serie</a> · <a href="fusion/index.html#pantalla=mercado&amp;muestra=mercado">el mercado</a></li>
         <li><span class="etiqueta-fila">A · LUZ</span> <a href="a-luz/index.html#pantalla=inicio">el inicio</a> · <a href="a-luz/index.html#pantalla=decision&amp;muestra=evento">la decisión</a> · <a href="a-luz/index.html#pantalla=cumbre&amp;muestra=titulo">el momento del título</a> · <a href="a-luz/index.html#pantalla=partido&amp;muestra=serie">la serie</a> · <a href="a-luz/index.html#pantalla=mercado&amp;muestra=mercado">el mercado</a></li>
         <li><span class="etiqueta-fila">B · NOCTURNO</span> <a href="b-nocturno/index.html#pantalla=inicio">el inicio</a> · <a href="b-nocturno/index.html#pantalla=decision&amp;muestra=evento">la decisión</a> · <a href="b-nocturno/index.html#pantalla=cumbre&amp;muestra=titulo">el momento del título</a></li>
         <li><span class="etiqueta-fila">C · PANTALLAS</span> <a href="c-pantallas/index.html#pantalla=inicio">el inicio</a> · <a href="c-pantallas/index.html#pantalla=decision&amp;muestra=evento">la decisión</a> · <a href="c-pantallas/index.html#pantalla=cumbre&amp;muestra=titulo">el momento del título</a> · <a href="c-pantallas/index.html#pantalla=partido&amp;muestra=serie">la serie</a> · <a href="c-pantallas/index.html#pantalla=mercado&amp;muestra=mercado">el mercado</a></li>
       </ul>
     </section>
 
-    <section id="direcciones" class="seccion" aria-labelledby="t-direcciones">
-      <h2 id="t-direcciones">Las tres direcciones</h2>
+    <section id="direcciones" class="seccion chica" aria-labelledby="t-direcciones">
+      <h2 id="t-direcciones">A y C, tal como quedaron en la ronda 1b, para comparar</h2>
       <div class="tres">
         <article class="direccion" data-dir="a-luz">
           <div class="vivo" data-hash="pantalla=inicio"></div>
@@ -62,7 +72,7 @@
 
     <section id="lado-a-lado" class="seccion" aria-labelledby="t-lado">
       <h2 id="t-lado">Lado a lado</h2>
-      <p class="sub">La misma pantalla en las dos finalistas.</p>
+      <p class="sub">La misma pantalla: la fusión, A y C.</p>
       <div class="controles" id="controles-lado">
         <label>Pantalla <select id="lado-pantalla"></select></label>
         <label>Muestra <select id="lado-muestra"></select></label>
@@ -71,6 +81,8 @@
         <label class="opcion"><input type="checkbox" class="mostrar-b" id="lado-b"> mostrar B</label>
       </div>
       <div class="tres lado" id="lado" data-b="0">
+        <figure class="marco" data-dir="fusion"><div class="vivo"></div><figcaption><span>LA FUSIÓN</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
+        <figure class="marco" data-dir="fusion"><div class="vivo"></div><figcaption><span>LA FUSIÓN</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
         <figure class="marco" data-dir="a-luz"><div class="vivo"></div><figcaption><span>A · LUZ</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
         <figure class="marco" data-dir="b-nocturno" data-archivada hidden><div class="vivo"></div><figcaption><span>B · NOCTURNO</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
         <figure class="marco" data-dir="c-pantallas"><div class="vivo"></div><figcaption><span>C · PANTALLAS</span> <a href="#" data-abrir>abrir</a></figcaption></figure>
@@ -81,14 +93,14 @@
       <h2 id="t-funciones">Funciones</h2>
       <p class="sub">Cada una, en cada dirección.</p>
       <table class="matriz">
-        <thead><tr><th scope="col">Función</th><th scope="col">A · LUZ</th><th scope="col">B · NOCTURNO</th><th scope="col">C · PANTALLAS</th></tr></thead>
+        <thead><tr><th scope="col">Función</th><th scope="col">LA FUSIÓN</th><th scope="col">A · LUZ</th><th scope="col">B · NOCTURNO</th><th scope="col">C · PANTALLAS</th></tr></thead>
         <tbody id="matriz"></tbody>
       </table>
     </section>
 
     <section id="antes-despues" class="seccion" aria-labelledby="t-antes">
       <h2 id="t-antes">Antes / después</h2>
-      <p class="sub">La captura de hoy del juego, al lado de la misma pantalla en las finalistas.</p>
+      <p class="sub">La captura de hoy del juego, al lado de la misma pantalla en la fusión, A y C.</p>
       <div class="controles"><label>Pantalla <select id="ad-muestra"></select></label>
         <label class="opcion"><input type="checkbox" class="mostrar-b" id="ad-b"> mostrar B</label></div>
       <div class="cuatro" id="antes-despues-grilla">
@@ -114,6 +126,7 @@
       <form id="form-eleccion" class="eleccion" autocomplete="off">
         <fieldset>
           <legend>Base</legend>
+          <label class="opcion"><input type="radio" name="base" value="La fusión" checked> La fusión (A+C)</label>
           <label class="opcion"><input type="radio" name="base" value="A"> A · LUZ</label>
           <label class="opcion"><input type="radio" name="base" value="B"> B · NOCTURNO</label>
           <label class="opcion"><input type="radio" name="base" value="C"> C · PANTALLAS</label>
