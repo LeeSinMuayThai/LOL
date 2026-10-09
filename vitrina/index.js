@@ -14,18 +14,51 @@ cargarMuestras().then((d) => {
   $('#seed').textContent = d?.meta?.seed ?? '?';
 });
 
-// ---------- miniaturas vivas (iframe escalado, cargado cuando se acerca a la pantalla) ----------
-const visibles = new IntersectionObserver((entradas) => {
+// ---------- miniaturas vivas ----------
+// Cada iframe se monta recien cuando su contenedor entra en pantalla y vuelve a about:blank cuando sale. Nunca mas de
+// MAX_VIVOS a la vez (las direcciones usan WebGL): si hay mas visibles, quedan vivos los 4 mas cerca del centro.
+const MAX_VIVOS = 4;
+const items = new Map(); // contenedor -> { url, visible }
+
+const observador = new IntersectionObserver((entradas) => {
   for (const e of entradas) {
-    if (!e.isIntersecting) continue;
-    const marco = e.target.querySelector('iframe');
-    if (marco && !marco.src && marco.dataset.src) marco.src = marco.dataset.src;
+    const it = items.get(e.target);
+    if (it) it.visible = e.isIntersecting;
   }
-}, { rootMargin: '300px' });
+  reconciliar();
+}, { rootMargin: '120px' });
 
 const escalador = new ResizeObserver((entradas) => {
   for (const e of entradas) escalar(e.target);
 });
+
+function distanciaAlCentro(contenedor) {
+  const r = contenedor.getBoundingClientRect();
+  return Math.abs(r.top + r.height / 2 - innerHeight / 2);
+}
+
+function reconciliar() {
+  const visibles = [...items].filter(([, it]) => it.visible).sort((x, y) => distanciaAlCentro(x[0]) - distanciaAlCentro(y[0]));
+  const vivos = new Set(visibles.slice(0, MAX_VIVOS).map(([c]) => c));
+  for (const [contenedor, it] of items) {
+    const marco = $('iframe', contenedor);
+    if (vivos.has(contenedor)) {
+      if (marco.dataset.montada !== it.url) {
+        marco.src = it.url; // mismo documento y otro hash: la pagina se entera por hashchange
+        marco.dataset.montada = it.url;
+      }
+    } else if (marco.dataset.montada) {
+      marco.src = 'about:blank';
+      delete marco.dataset.montada;
+    }
+  }
+}
+let pendiente = false;
+addEventListener('scroll', () => {
+  if (pendiente) return;
+  pendiente = true;
+  requestAnimationFrame(() => { pendiente = false; reconciliar(); });
+}, { passive: true });
 
 function escalar(contenedor) {
   const marco = contenedor.querySelector('iframe');
@@ -41,22 +74,21 @@ function escalar(contenedor) {
 
 function montarVivo(contenedor, dir, hash, dispositivo = 'escritorio') {
   contenedor.dataset.dispositivo = dispositivo;
-  let marco = contenedor.querySelector('iframe');
   const url = `${dir}/index.html#${hash}&panel=0`;
-  if (!marco) {
-    marco = document.createElement('iframe');
+  if (!items.has(contenedor)) {
+    const marco = document.createElement('iframe');
     marco.title = `Vista previa de ${dir}`;
     marco.tabIndex = -1;
     marco.setAttribute('aria-hidden', 'true');
-    marco.dataset.src = url;
     contenedor.appendChild(marco);
-    visibles.observe(contenedor);
+    items.set(contenedor, { url, visible: false });
+    observador.observe(contenedor);
     escalador.observe(contenedor);
   } else {
-    marco.dataset.src = url;
-    if (marco.src) marco.src = url; // mismo documento, otro hash: la pagina se entera por hashchange
+    items.get(contenedor).url = url;
   }
   escalar(contenedor);
+  reconciliar();
 }
 
 // Las tres tarjetas del principio
@@ -151,15 +183,20 @@ const form = $('#form-eleccion');
 const salida = $('#texto-eleccion');
 function textoEleccion() {
   const base = form.elements.base.value;
-  const ideas = $$('input[name=idea]:checked', form).map((i) => i.value);
-  const partes = [base ? `Elijo ${base}` : 'Todavía no elegí base'];
-  const cuerpo = partes[0] + ideas.map((i) => ` + ${i}`).join('');
-  return `${cuerpo}; textos ${form.elements.breves.checked ? 'breves' : 'completos'}; sonido ${form.elements.sonido.checked ? 'prendido' : 'apagado'}`;
+  const ideas = $$('input[name=idea]:checked', form).map((i) => {
+    const origen = i.dataset.origen; // A | B | C | '' (para cualquiera)
+    return origen && origen !== base ? `${i.value} (de ${origen})` : i.value;
+  });
+  const cuerpo = (base ? `Elijo ${base}` : 'Todavía no elegí base') + ideas.map((i) => ` + ${i}`).join('');
+  const ajustes = `textos ${form.elements.breves.checked ? 'breves' : 'completos'}; sonido ${form.elements.sonido.checked ? 'prendido' : 'apagado'}`;
+  const libre = form.elements.libre.value.trim();
+  return `${cuerpo}; ${ajustes}.${libre ? ` Algo más: ${libre}` : ''}`;
 }
 function refrescar() {
   salida.textContent = textoEleccion();
 }
 form.addEventListener('change', refrescar);
+form.addEventListener('input', refrescar);
 refrescar();
 
 $('#copiar').addEventListener('click', async () => {
