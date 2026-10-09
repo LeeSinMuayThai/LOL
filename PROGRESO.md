@@ -34,6 +34,66 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-09 — PLANUI, U0: la vitrina, ronda 1 (tres direcciones de arte) y la compuerta 1
+
+**Por qué.** Es el tercer plan de UI. El usuario dijo que los dos anteriores *"terminaron muy parecidos… los diseños eran
+muy simples"*. Esta vez se elige mirando prototipos que funcionan sobre datos reales, antes de escribir el plan de
+producción. El plan vigente pasa a ser `PLANUI.md`: §1 tiene el diagnóstico de por qué salieron iguales, §4 la vitrina.
+No se tocó nada de `src/`, `index.html` ni `server.js`. Rama `u-integracion`, sin push.
+
+**Qué se hizo** (todo en `vitrina/`, fuera de `dist/`, servido por `vitrina/servir.mjs` en el 8095):
+- **Ola 0, datos** (Sonnet high, `a7126d1`): el bot `criterio` barrió 2500 seeds sin errores. La seed héroe es la
+  **61**, que cumple los 6 obligatorios y todos los deseables menos la lesión.
+  - `muestras.json` (426 KB) guarda, por parada, las salidas reales de los helpers del juego, el relato de la página,
+    el resultado de **cada** opción (resuelto en un clon) y su guardado real.
+  - Es determinista: dos corridas dan el mismo archivo.
+  - Inventario de "leer menos": el 76% de las opciones ya trae datos estructurados y solo el 3% tiene un % que vive
+    únicamente en la prosa. No hace falta tocar el motor (U-m queda descartada por ahora).
+- **Ola 0, andamio** (Sonnet high, `dacbec8`, `dcb741f`, `bcab0b8`):
+  - el panel (pantalla, muestra, era "auto", repetir, celular, movimiento reducido, INST, WebGL, FPS, textos breves,
+    peor caso, "hoy");
+  - el cargador CORS de Data Dragon, el PRNG decorativo, el contrato del ambiente y 10 fuentes OFL;
+  - `verificar.mjs` (las reglas de `guards.js` + la lista de prohibidos) y `capturar.mjs` (1440 y 390, reloj
+    congelado, tiras de cuadros, pasadas swiftshader y sin WebGL);
+  - el índice: lado a lado, funciones, antes/después contra hoy y "Copiar mi elección".
+- **Ronda 1** (3 × Opus xhigh en paralelo, ~400-540K tokens y 106-121 tool calls cada uno):
+  - **A · LUZ** (`bfecc59` → `5a63908`), **B · NOCTURNO** (`1a717ad` → `5b9b8f2`) y **C · PANTALLAS** (`8cfc45e` →
+    `bb3ddfe`).
+  - El supervisor revisó todas las capturas y tiras con la rúbrica y mandó **una** ronda de 6-7 observaciones a cada
+    una (~30-34 tool calls por corrección).
+  - Lo que más cambió con esas observaciones:
+    - A: el `escenario` apagado pasó a estadio, la `pieza` tuvo segunda luz, la cara del campeón quedó libre.
+    - B: el semitono pasó de ruido a un campeón reconocible, y las 5 eras pasaron a ser 5 imprentas distintas.
+    - C: el resultado pasó de un toast chico a la ventana entera, y la selección de campeones quedó visible.
+  - A y C midieron el contraste con scripts de píxeles: 0 fallas en las paradas.
+  - Merge `c1d88f5`.
+  - Cómo es cada una está en `PLANUI.md` §4.1; las capturas de referencia, en `vitrina/referencia/ronda-1/`.
+
+**Compuerta 1: la reacción del usuario, textual.**
+
+> uffff, me gustaron el A y el C,
+>
+> Primero que nada, quiero que quede anotado cómo son estos tres para que después salga bien, ¿no? O sea, que no quede
+> en tu memoria y te vayas olvidando. Lo que más me gustó del A es como... Es que tiene como aura que cuando jovereas un
+> champ cambia el fondo y es como que entra en transición, eh, que tenga como esas animaciones, eso está bueno. Es más,
+> hasta se podría poner fondos animados, pero no sé si se consiguen fácil. Pero me parece que está bastante bueno. Eh,
+> quizás el fondo retro ese, o sea, está bueno, está bueno, eso no te lo voy a negar. Pero hay que ver. Y después del C,
+> que es la segunda opción, me gustó que es como clásico. ¿Me entendés? O sea, ¿a qué voy con esto? Es, es simple del
+> LOL. Tipo, a ver, cuando jovereas no se cambia nada. Eh, pero está bueno, es como del LOL, me explico. O sea, es como
+> lo más fácil de entender. Ahora, ¿yo sabes qué te diría? Lo que yo te voy a decir que vos hagas es... El A y el C,
+> expandilos. Pensalos un poco más, mejorarlos. Como para que yo pueda ver un poquito más. No te digo que hagas mucho,
+> pero un poquito más de ellos y me pueda decidir mejor. Que sea una demostración un poco más alta de ambos.
+
+**Qué sigue.** Finalistas A y C; B queda archivada. La **ronda 1b** (`PLANUI.md` §4.3) amplía las dos con las mismas
+pantallas nuevas (la serie con Fearless, el Swiss 2-2, el mercado y la firma). Además, A profundiza el aura y los fondos
+animados, y C lo clásico tipo cliente.
+
+**Lección de proceso.** Por primera vez el usuario reaccionó con entusiasmo a una UI ("uffff") en vez de *"es muy igual
+al anterior"*, que fue lo que dijo después de T0. Funcionaron tres cosas:
+- la imagen antes que las palabras;
+- Opus xhigh con briefs de dirección de arte en vez de briefs de estructura;
+- una revisión que mira las capturas con una rúbrica en lugar de aprobar por métricas de layout.
+
 ### 2026-10-08 — FASE V, V8a: los LP que bajaban al subir y la historia con "2029–2029" (PLAN.md §V.7)
 
 Merge `944eb63` (worker Sonnet high, ~95K tokens y 22 tool calls; sin revisor aparte, porque el diff son 17 líneas de

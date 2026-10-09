@@ -54,7 +54,8 @@ Orden de lectura al abrir el proyecto:
 |---|---|
 | `CLAUDE.md` | este archivo: las reglas duras |
 | `CONCEPTO.md` | qué es el juego y por qué los sistemas están conectados así. **§12 es el archivo de investigación**: ligas 2026, salarios, duración de carreras, Fearless — no hay que volver a investigarlo |
-| **`PLAN.md`** | **el plan vigente, fase por fase, hasta el juego terminado.** Incluye la tabla de deuda técnica, las trampas conocidas (T1-T10) y las reglas de proceso |
+| **`PLAN.md`** | el plan del juego, fase por fase (terminado con FASE V). Sigue siendo la fuente de la tabla de deuda técnica, las trampas conocidas (T1-T10) y las reglas de proceso |
+| **`PLANUI.md`** | **el plan vigente: la UI nueva** (2026-10-09). La vitrina de direcciones de arte (`vitrina/`), las dos compuertas del usuario, el sistema de diseño, pantalla por pantalla, las olas U1-U4 y su verificación. Continúa la numeración de deudas de `PLAN.md` (D102+) |
 | `PROGRESO.md` | changelog: qué se hizo, por qué, y con qué números medidos |
 | `DISENO.md` | arquitectura de archivos |
 | `AUDITORIA.md` | auditoría completa fechada (2026-10-01, contra el commit `2c63c4f`): cómo vamos contra lo que se quiere, por qué no se siente como El Ídolo/Copero (medido, con un experimento contrafáctico de agencia), qué se hizo bien y mal, y salud del código — una foto, no se actualiza sola. Es la base del próximo plan: lo accionable se pliega a `PLAN.md` cuando ese plan se escriba. La anterior (2026-09-25, contra `3fc6ea5`) sigue en git: `git show 2c63c4f:AUDITORIA.md` |
@@ -68,7 +69,7 @@ Orden de lectura al abrir el proyecto:
 
 ## Workflow recomendado
 
-- Trabajar una fase a la vez, en el orden de `PLAN.md`.
+- Trabajar una fase a la vez, en el orden de `PLAN.md` (la UI nueva, en el de `PLANUI.md`).
 - **Nada se planea en el momento**: si algo no está escrito en `PLAN.md`, se escribe ahí antes de
   implementarlo. Lo que se descubre midiendo va a la tabla de deuda técnica del mismo documento.
 - Si un concepto no está claro, pedir aclaración antes de implementar.
