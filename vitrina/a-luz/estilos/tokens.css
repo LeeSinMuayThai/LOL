@@ -1,5 +1,145 @@
-/* Tokens de A · LUZ. Placeholder: la dirección real reemplaza esto. Acá (y solo acá) van los colores literales. */
+/* A · LUZ — tokens. Es el UNICO archivo de la direccion con colores literales. Los nombres siguen los del juego
+   (--ink, --bg-*, --up, --down, --gold, --rank-*, --nivel-*) para que el traslado sea 1:1. Las variantes translucidas
+   van como #rrggbbaa. Lo que no es color (escala, tipografia, curvas) tambien vive aca. */
 :root {
-  --placeholder-texto: #ececef;
-  --placeholder-texto-2: #a0a3ad;
+  /* ---- base: la noche ---- */
+  --bg-void: #04050a;
+  --bg-surface: #0a0d16;
+  --bg-raised: #121827;
+  --bg-sunken: #020307;
+
+  /* ---- tintas ---- */
+  --ink: #f4f6fb;
+  --ink-dim: #a9b3c7;
+  --ink-mute: #7c879c;
+
+  /* ---- semanticos ---- */
+  --up: #3df2a0;
+  --down: #ff5468;
+  --warn: #ffb547;
+  --danger: #ff5468;
+  --gold: #ffd27a;
+  --gold-hondo: #b8862e;
+
+  /* ---- equipos de luz por era: luz principal + luz de contra ---- */
+  --luz-pieza: #2f6bff;
+  --contra-pieza: #ffb45a;
+  --luz-academia: #43e6c3;
+  --contra-academia: #e8f6ff;
+  --luz-escenario: #7fa8ff;
+  --contra-escenario: #ff3da8;
+  --luz-mundial: #ffc94d;
+  --contra-mundial: #fff3d6;
+  --luz-leyenda: #ff9a5a;
+  --contra-leyenda: #ff4f7a;
+  --luz-blanca: #ffffff;
+
+  /* ---- placas, velos y lineas (translucidos) ---- */
+  --placa: #0a0d16e3;
+  --placa-fuerte: #0a0d16eb;
+  --franja-fondo: #06080fc7;
+  --velo-lectura: #04050af0;
+  --velo-medio: #04050aa8;
+  --velo-nada: #04050a00;
+  --linea: #f4f6fb1c;
+  --linea-fuerte: #f4f6fb40;
+  --sombra: #000000b3;
+  --mascara: #000000;
+  --oscuro-total: #000000;
+
+  /* ---- rangos de soloQ y bandas de nivel ---- */
+  --rank-iron: #8a8a94;
+  --rank-bronze: #c58a5a;
+  --rank-silver: #b9c3d3;
+  --rank-gold: #f2c766;
+  --rank-platinum: #5fd3c4;
+  --rank-emerald: #4fd98a;
+  --rank-diamond: #8fb4ff;
+  --rank-master: #c58bff;
+  --rank-grandmaster: #ff6f7d;
+  --rank-challenger: #ffe08a;
+  --nivel-titular: #a9b3c7;
+  --nivel-elite: #7fa8ff;
+  --nivel-clase-mundial: #ffd27a;
+
+  /* ---- la carta: rarezas y foil ---- */
+  --carta-base: #3a4258;
+  --carta-leyenda-a: #ff9a5a;
+  --carta-leyenda-b: #ff4f7a;
+  --carta-goat-a: #f4f6fb;
+  --carta-goat-b: #9db7ff;
+  --carta-oro-a: #ffe3a1;
+  --carta-oro-b: #c9922f;
+  --carta-oro-sombra: #2a1a05;
+  --foil-1: #7fd9ff;
+  --foil-2: #c49bff;
+  --foil-3: #ff9ad5;
+  --foil-4: #ffe08a;
+  --foil-5: #9cffd9;
+
+  /* ---- respaldo del ambiente de comun/ (por si alguien lo usa con esta paleta) ---- */
+  --amb-pieza-a: #04050a;
+  --amb-pieza-b: #0a0d16;
+  --amb-pieza-luz: #2f6bff;
+  --amb-academia-a: #04050a;
+  --amb-academia-b: #0a0d16;
+  --amb-academia-luz: #43e6c3;
+  --amb-escenario-a: #04050a;
+  --amb-escenario-b: #0a0d16;
+  --amb-escenario-luz: #7fa8ff;
+  --amb-mundial-a: #04050a;
+  --amb-mundial-b: #0a0d16;
+  --amb-mundial-luz: #ffc94d;
+  --amb-leyenda-a: #04050a;
+  --amb-leyenda-b: #0a0d16;
+  --amb-leyenda-luz: #ff9a5a;
+  --amb-peligro: #ff5468;
+  --amb-gloria: #ffd27a;
+  --amb-pulso: #ffffff;
+
+  /* ---- tipografia ---- */
+  --f-display: 'Mona Sans', 'Geist', system-ui, sans-serif;
+  --f-cuerpo: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'Geist Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --t-mono: 12px;
+  --t-cuerpo: 17px;
+  --t-opcion: 26px;
+  --t-parada: 56px;
+  --t-gigante: 128px;
+  --t-numero-cumbre: 200px;
+  --tracking-mono: 0.14em;
+
+  /* ---- reticula: 12 columnas, margen 96 a 1440 ---- */
+  --margen: clamp(20px, 6.667vw, 96px);
+  --canal: 24px;
+  --franja-alto: 56px;
+  --tray-alto: 28px;
+
+  /* ---- radios (a proposito distintos: placa recta, carta redondeada, medidores en pildora) ---- */
+  --r-placa: 2px;
+  --r-carta: 18px;
+  --r-pildora: 999px;
+
+  /* ---- movimiento ---- */
+  --expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --salida: cubic-bezier(0.7, 0, 0.84, 0);
+  --dur-entrada: 280ms;
+  --dur-salida: 160ms;
+  --dur-era: 1300ms;
+}
+
+/* La era activa elige el equipo de luz. El resto de las hojas usa solo --luz y --contra. */
+:root,
+html[data-era='pieza'] { --luz: var(--luz-pieza); --contra: var(--contra-pieza); }
+html[data-era='academia'] { --luz: var(--luz-academia); --contra: var(--contra-academia); }
+html[data-era='escenario'] { --luz: var(--luz-escenario); --contra: var(--contra-escenario); }
+html[data-era='mundial'] { --luz: var(--luz-mundial); --contra: var(--contra-mundial); }
+html[data-era='leyenda'] { --luz: var(--luz-leyenda); --contra: var(--contra-leyenda); }
+
+/* Derivados de la luz activa (se recalculan solos con la era). */
+:root {
+  --luz-texto: color-mix(in oklab, var(--luz) 52%, var(--ink));
+  --luz-suave: color-mix(in srgb, var(--luz) 22%, transparent);
+  --luz-tenue: color-mix(in srgb, var(--luz) 9%, transparent);
+  --luz-fuerte: color-mix(in srgb, var(--luz) 40%, transparent);
 }
