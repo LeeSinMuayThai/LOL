@@ -1248,3 +1248,6 @@ final de `estilos/mercado.css` y en `tokens.css`). `crearFirmaLinea` no cambió.
     la prosa del motor, los términos, la firma "Por <org>" y el sello), que caen sobre la pila al llegar (la última,
     arriba). Apuntar una la saca de la pila y la pone al frente; FIRMAR le estampa "Firmada" con el golpe.
   - **`campeon`**: la derecha de §4.9 (tu main en el bitono), para comparar. Un id desconocido cae en `camiseta`.
+- **De paso (afecta a todas las variantes):** desde 1024 px los términos del aura van en una sola fila (el número y el aire se
+  achican por debajo de 1440). En 1280×720 los cuatro términos de una org saltaban a dos filas, el panel bajaba, el escudo
+  apuntado se iba de abajo del mouse y volvía el reposo: un bucle de hover que ya estaba en §4.9.

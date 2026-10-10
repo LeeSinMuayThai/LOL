@@ -735,6 +735,9 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
   /* la derecha: el alto util entre la franja y la cinta (el heroe es sticky), y su franja en el celular */
   --ms-heroe-alto: calc(100vh - var(--franja-alto) - var(--barra-alto) - var(--ln-tv-cinta) - 40px);
   --ms-heroe-cel: 236px;
+  /* los terminos del aura, en una fila: el numero y el aire entre terminos se achican por debajo de 1440 */
+  --ms-num-aura: clamp(32px, 3.05vw, 44px);
+  --ms-terminos-gap: clamp(22px, 3.05vw, 44px);
   /* el reloj: la celda de un dia de la ventana */
   --ms-reloj-celda: 12px;
   --ms-reloj-celda-alto: 22px;

@@ -1820,7 +1820,7 @@ const CAM_VALLES = [
   ['M 488 130 C 498 170 504 210 508 252', 7], ['M 112 130 C 102 170 96 210 92 252', 7],
 ];
 const CAM_LUZ = {
-  blur: 8, onda: '0.007 0.012', ondaOctavas: 2, ondaK: 0.3, semillaOnda: 11, fino: '0.85', finoK: 0.04, semillaFino: 4,
+  blur: 8, onda: '0.007 0.012', ondaOctavas: 2, ondaK: 0.035, semillaOnda: 11, fino: '0.85', finoK: 0.05, semillaFino: 4,
   relieve: 12, kd: 1.22, ks: 0.8, exp: 14, azimut: 235, elev: 54, elevBrillo: 38, filo: 6, filoDx: -3,
 };
 // las sombras de forma (multiply): el cuerpo como cilindro (los costados se van) y la luz clave de arriba a la izquierda
@@ -1969,7 +1969,7 @@ function heroeCamiseta({ ofertas, tonos, yo, tonoReposo }) {
 // ("mejorás claramente sobre <el mid de hoy>"), tal cual.
 const ROLES_PL = ['top', 'jungla', 'mid', 'adc', 'support'];
 const ROL_NOMBRE = { top: 'Top', jungla: 'Jungla', mid: 'Mid', adc: 'ADC', support: 'Support' };
-const PL_POS = { top: [20, 17], jungla: [27, 43], mid: [50, 50], adc: [80, 83], support: [57, 86] }; // % del mapa
+const PL_POS = { top: [18, 16], jungla: [25, 44], mid: [50, 47], adc: [70, 89], support: [87, 67] }; // % del mapa
 const PL_PING = { dur: 900, escala: 2.6 };
 function heroePlantel({ ofertas, tonos, yo }) {
   const rol = ROLES_PL.includes(yo.rol) ? yo.rol : 'mid';
