@@ -15,7 +15,7 @@ import { crearSonido } from './sonido.js';
 import { crearAura } from './aura.js';
 import { celular, reducido, inst, SALE, DUR } from './util.js';
 import { FONDOS, FONDO_DEF, POLITICAS, TIEMPOS, normalizarFondo, politica, montarLugar } from './fondo.js';
-import { COLORES, COLOR_DEF, POLITICAS_COLOR, normalizarColor, fijarColor } from './color.js';
+import { COLORES, COLOR_DEF, COLOR_OP, POLITICAS_COLOR, normalizarColor, fijarColor } from './color.js';
 
 const datos = await cargarMuestras();
 // Las lineas de los titulos se miden con la fuente real: se cargan antes del primer montaje.
@@ -54,17 +54,22 @@ const PERILLAS = {
   fondo: { lista: FONDOS, def: FONDO_DEF, normalizar: normalizarFondo, etiqueta: (f) => POLITICAS[f].etiqueta, rotulo: 'Fondo (Alt+F)', tecla: 'KeyF' },
   color: { lista: COLORES, def: COLOR_DEF, normalizar: normalizarColor, etiqueta: (c) => POLITICAS_COLOR[c].etiqueta, rotulo: 'Color (Alt+K)', tecla: 'KeyK' },
 };
-const delHash = (k) => PERILLAS[k].normalizar(new URLSearchParams(location.hash.slice(1)).get(k));
-const valor = { fondo: delHash('fondo'), color: delHash('color') };
 // La tercera perilla, `op=<id>` (PLANUI §4.7): la opcion de diseño de la pantalla montada. Cada pantalla interpreta sus
 // propios ids (ctx.op) y sin `op` es la de hoy. No tiene selector: la eligen opciones.html o el hash.
 const opDelHash = () => (new URLSearchParams(location.hash.slice(1)).get('op') ?? '').replace(/[^a-z0-9-]/g, '');
 let op = opDelHash();
+// Con una opcion de §4.7 en el hash, el color por defecto es la receta (js/color.js); `color=` explicito manda.
+const defDe = (k) => (k === 'color' && op ? COLOR_OP : PERILLAS[k].def);
+const delHash = (k) => {
+  const v = new URLSearchParams(location.hash.slice(1)).get(k);
+  return v == null ? defDe(k) : PERILLAS[k].normalizar(v);
+};
+const valor = { fondo: delHash('fondo'), color: delHash('color') };
 const conPerillas = (url) => {
   if (url == null) return url;
   const u = new URL(String(url), location.href);
   const p = new URLSearchParams(u.hash.slice(1));
-  for (const [k, def] of Object.entries(PERILLAS).map(([k, x]) => [k, x.def])) {
+  for (const [k, def] of Object.keys(PERILLAS).map((k) => [k, defDe(k)])) {
     if (valor[k] === def) p.delete(k);
     else p.set(k, valor[k]);
   }
@@ -89,7 +94,7 @@ function aplicarFondo(p, estado, dur) {
   if (!p) return;
   const c = fijarColor(valor.color, estado.pantalla, estado.muestra);
   document.documentElement.style.setProperty('--pieza-color', String(c.pieza));
-  const pol = politica(valor.fondo, estado.pantalla, estado.muestra, valor.color);
+  const pol = politica(valor.fondo, estado.pantalla, estado.muestra, valor.color, p.escena);
   amb.fondo({ politica: pol, lugar: montarLugar(p.nodo, pol.lugar), instantaneo: dur === 0, dur });
 }
 // En vivo (selector, Alt+F/Alt+K, el hash de variantes.html): el mundo cruza y las piezas se repintan.
@@ -114,6 +119,9 @@ function aplicarAmbiente(estado, p) {
     arte: p.arte ?? null,
     encuadre: celular() ? 'celular' : p.encuadre ?? 'derecha',
     velo: p.velo ?? 0.6,
+    // PLANUI §4.7: la paleta de la competicion y la arena (solo las opciones del partido; el resto, null y 0)
+    paleta: p.paleta ?? null,
+    arena: p.arena ?? 0,
   });
 }
 
@@ -156,11 +164,8 @@ async function montar(estado) {
 // aplica. Va antes del panel para leer el hash antes de que el panel lo reescriba.
 addEventListener('hashchange', () => {
   const nuevoOp = opDelHash();
-  if (nuevoOp !== op) {
-    op = nuevoOp;
-    marcarPerillas();
-    if (estadoActual) montar(estadoActual);
-  }
+  const cambioOp = nuevoOp !== op;
+  op = nuevoOp;
   let cambio = false;
   for (const k of Object.keys(PERILLAS)) {
     const v = delHash(k);
@@ -169,8 +174,13 @@ addEventListener('hashchange', () => {
       cambio = true;
     }
   }
-  if (!cambio) return;
+  if (!cambio && !cambioOp) return;
   marcarPerillas();
+  // otra opcion: la pantalla se vuelve a montar (ya con el color nuevo, si cambio)
+  if (cambioOp) {
+    if (estadoActual) montar(estadoActual);
+    return;
+  }
   const m = montaje;
   queueMicrotask(() => {
     if (m === montaje) aplicarEnVivo();

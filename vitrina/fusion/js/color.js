@@ -9,12 +9,17 @@
 //   real     "A color": todo campeon con sus colores; la era queda en la luz y en un lavado leve sobre el arte de fondo.
 //   mitad    "Mitad": 50 % color real y 50 % duotono, en todos lados.
 //   capas    el fondo de pantalla completa en duotono (mas suave); toda pieza de interfaz a color, como en el cliente.
+//   receta   (PLANUI §4.7) la de la tercera vuelta, con los numeros del usuario: parte de `mitad` y "los campeones
+//            tienen un 15 % mas de color mientras que el fondo un 10 % mas": piezas 65/35, fondo 60/40. Es la base de
+//            todas las opciones de §4.7: con `op` en el hash y sin `color`, main.js la usa por defecto.
 //
 // Lo mismo en las cuatro: el inicio y los takeovers (CAMPEONES, la firma, AFUERA) van siempre en duotono.
 import { duotono } from './util.js';
 
-export const COLORES = ['duotono', 'real', 'mitad', 'capas'];
+export const COLORES = ['duotono', 'real', 'mitad', 'capas', 'receta'];
 export const COLOR_DEF = 'duotono';
+// el color por defecto cuando el hash trae una opcion de §4.7 (`op=`)
+export const COLOR_OP = 'receta';
 export const normalizarColor = (c) => (COLORES.includes(c) ? c : COLOR_DEF);
 
 // Cada variante (0 = duotono, 1 = color real):
@@ -27,6 +32,7 @@ export const POLITICAS_COLOR = {
   real: { etiqueta: 'A color', linea: 'Cada campeón con sus colores. La era queda en la luz.', fondo: 1, lavado: 0.18, pieza: 1, presencia: 1, contraste: 1 },
   mitad: { etiqueta: 'Mitad', linea: 'Mitad color, mitad duotono: se reconocen sus colores, llevados a la paleta de la era.', fondo: 0.5, lavado: 0, pieza: 0.5, presencia: 1, contraste: 1 },
   capas: { etiqueta: 'Fondo en duotono, retratos a color', linea: 'El fondo sigue en duotono, más suave; los retratos y las cartas, a color, como en el cliente.', fondo: 0, lavado: 0, pieza: 1, presencia: 0.72, contraste: 0.8 },
+  receta: { etiqueta: 'La receta', linea: 'Medio duotono, con un poco más de color: los campeones 65 %, el fondo 60 %.', fondo: 0.6, lavado: 0, pieza: 0.65, presencia: 1, contraste: 1 },
 };
 const DUOTONO = POLITICAS_COLOR.duotono;
 

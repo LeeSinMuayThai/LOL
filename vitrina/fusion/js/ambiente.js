@@ -32,7 +32,9 @@ const T_CALMA = 800;
 const T_ANIMO = 900;
 const T_PULSO = 380;
 const FPS_MAX = 30;
-const ESCALA = 0.5;
+const ESCALA = 0.5; // la luz (bruma, haces, polvo), en escala de la pantalla
+const ESCALA_ARTE = 1; // el arte del campeon se compone a resolucion nativa (PLANUI §4.7: el fondo nitido)
+const LUZ_REL = ESCALA / ESCALA_ARTE;
 const REPOSO_REDUCIDO = 6000; // instante fijo que se dibuja con movimiento reducido
 const PARALLAX_PX = 8;
 // La fusion de hoy en uniformes (la politica `pleno`): identidad en el shader.
@@ -182,34 +184,38 @@ function crearIntensidad() {
 }
 
 // ======================================================================================================================
-// Shader
+// Shader, en dos pasadas (PLANUI §4.7: "que el fondo tenga mas calidad")
+// ----------------------------------------------------------------------------------------------------------------------
+// Por que dos: el splash salia blando y con dientes. Tres causas, medidas:
+//   1. todo se pintaba a escala 0,5 y el navegador lo estiraba x2: el arte de 720 px de alto quedaba en ~430 y volvia a
+//      crecer (papilla);
+//   2. la textura no tenia mipmaps: al achicarla a la mitad, las lineas finas y brillantes (la energia de Sylas)
+//      saltaban de un texel a otro (dientes), y el duotono, que dispara la luz de contra en los brillos, los marcaba;
+//   3. el "vivo" desplazaba cada pixel segun SU luminancia: dos pixeles vecinos de luz distinta se corrian distinto y el
+//      borde se rasgaba.
+// Ahora: la LUZ (bruma, haces, polvo, la escena; lo blando y lo caro) se pinta a escala 0,5 en dos texturas, y el ARTE
+// se compone a resolucion nativa encima, leyendo esa luz. La textura del arte lleva mipmaps (textureLod con el nivel de
+// su escala) y la profundidad 2,5D y el flujo del vivo salen de un nivel borroso del mip: un campo suave, que ya no
+// rasga los bordes. La luz no cambia ni un tono: es la misma cuenta, partida en dos.
 // ======================================================================================================================
 const VERT = `#version 300 es
 in vec2 p;
 void main() { gl_Position = vec4(p, 0.0, 1.0); }`;
 
-const FRAG = `#version 300 es
+// Lo comun a las dos pasadas: los uniformes y el ruido.
+const COMUN = `#version 300 es
 precision highp float;
-out vec4 color;
 uniform vec2 uRes;
 uniform float uT, uTL, uSemilla;
 uniform vec3 uVacio, uNoche, uLuz, uContra, uOro, uBlanco;
 uniform vec4 uA, uB, uC, uD, uE;
-uniform vec2 uFoco0, uFoco1;
-uniform sampler2D uArte0, uArte1;
-uniform vec2 uTam0, uTam1;
-uniform vec4 uArteE;
-uniform vec4 uMarco;
-uniform vec2 uPar;
 uniform vec4 uF; // x: vivo (el splash como plano vivo), y: caida (la luz que cae), z: quiebre (la luz que se quiebra)
 // La politica del mundo (js/fondo.js). Con la fusion de hoy (pleno) todo es identidad: uI = (1,1,0,0), uJ = (1,0,1,0).
 uniform vec4 uI; // x: presencia del campeon a pantalla completa, y: profundidad (2,5D), z: bruma extra, w: vineta extra
 uniform vec4 uJ; // x: contraste del duotono, y: desenfoque, z: presencia adentro del lugar, w: cuanto pesa el lugar (0-1)
 uniform vec4 uK; // x: haces (1 = los de hoy), y: polvo (1 = el de hoy), z: la luz de contra (1 = la de hoy)
-uniform vec4 uColor; // el color del campeon (js/color.js): x: en el fondo, y: lavado de la era, z: adentro del lugar
-uniform vec4 uRec; // el lugar fijo (uv, y hacia arriba): x0, y0, x1, y1
-uniform float uRadio; // el radio de sus esquinas, en pixeles del lienzo
-float dentroG = 0.0; // cuanto de este pixel cae adentro del lugar fijo (se calcula una vez en main)
+uniform vec4 uS; // la arena (PLANUI §4.7, op=escenario): x: cuanto (0-1), y: el alto del publico (uv)
+uniform float uEsc; // la escala con la que se guarda la luz (1 con texturas de medio flotante, 2 con 8 bits)
 
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float ruido(vec2 p) {
@@ -217,14 +223,14 @@ float ruido(vec2 p) {
   return mix(mix(h21(i), h21(i + vec2(1.0, 0.0)), u.x), mix(h21(i + vec2(0.0, 1.0)), h21(i + vec2(1.0, 1.0)), u.x), u.y);
 }
 float fbm(vec2 p) { float a = 0.5, s = 0.0; for (int i = 0; i < 4; i++) { s += a * ruido(p); p = p * 2.03 + vec2(1.7, 9.2); a *= 0.5; } return s; }
-// adentro del lugar fijo: 1 adentro, 0 afuera, con el borde de un pixel y las esquinas redondeadas
-float enLugar(vec2 uv) {
-  vec2 c = (uRec.xy + uRec.zw) * 0.5 * uRes;
-  vec2 h = (uRec.zw - uRec.xy) * 0.5 * uRes;
-  vec2 d = abs(uv * uRes - c) - h + uRadio;
-  float sd = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - uRadio;
-  return clamp(0.5 - sd, 0.0, 1.0);
-}
+`;
+
+// Primera pasada (escala 0,5): la luz del mundo, en dos texturas.
+//   oFondo  = la luz detras del campeon (rgb) y el "campo" (cuanto lo ilumina el haz, / 1,3)
+//   oFrente = lo que va por delante del campeon (la bruma extra, el polvo cercano, las brasas) y la niebla (para la gloria)
+const FRAG_LUZ = `${COMUN}
+layout(location = 0) out vec4 oFondo;
+layout(location = 1) out vec4 oFrente;
 
 float haces(vec2 p, vec2 src, vec2 base, float abanico, float t) {
   vec2 d = p - src; float dist = length(d);
@@ -303,8 +309,141 @@ float brasas(vec2 p, float t) {
   }
   return s;
 }
+// La arena (op=escenario): los cabezales moviles colgados del techo, en la paleta del torneo. Cada uno un cono que
+// barre despacio; la niebla los vuelve volumen.
+vec3 cabezales(vec2 uv, float asp, float t, float niebla) {
+  vec3 s = vec3(0.0);
+  for (int i = 0; i < 6; i++) {
+    float fi = float(i);
+    vec2 src = vec2((0.08 + fi * 0.168) * asp, 1.04);
+    float ang = (fi - 2.5) * 0.11 + sin(t * (0.23 + 0.04 * fi) + fi * 1.7 + uSemilla) * 0.32;
+    vec2 d = vec2(uv.x * asp, uv.y) - src;
+    float a = atan(d.x, -d.y) - ang;
+    float cono = exp(-pow(a / (0.045 + 0.012 * mod(fi, 2.0)), 2.0)) * smoothstep(1.35, 0.1, length(d));
+    s += mix(uLuz, uContra, mod(fi, 2.0)) * cono * (0.35 + niebla * 0.9);
+  }
+  return s;
+}
+// El publico: dos filas de siluetas (cabezas y hombros) recortadas contra la luz del escenario. Devuelve cuanto tapa.
+float publico(vec2 uv, float asp, float suelo) {
+  float tapa = 0.0;
+  for (int k = 0; k < 2; k++) {
+    float fk = float(k);
+    float esc = 18.0 - fk * 7.0;
+    float x = uv.x * asp * esc + fk * 7.3;
+    float id = floor(x);
+    float f = fract(x) - 0.5 + (h21(vec2(id, fk)) - 0.5) * 0.3;
+    float alto = suelo - fk * 0.055 + (h21(vec2(id, fk + 4.0)) - 0.5) * 0.02;
+    float r = (0.2 + 0.08 * h21(vec2(id, fk + 9.0))) / esc;
+    vec2 c = vec2(f / esc, uv.y - alto - r * 1.1);
+    float cabeza = smoothstep(r, r * 0.8, length(c * vec2(1.0, 0.85)));
+    float hombros = smoothstep(0.004, 0.0, uv.y - alto + 0.002 * sin(x * 3.1));
+    tapa = max(tapa, max(cabeza, hombros) * (0.75 + fk * 0.25));
+  }
+  return tapa;
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  float asp = uRes.x / uRes.y;
+  float t = uTL;
+  float calma = uD.x, peligro = uD.y, gloria = uD.z;
+  float vivo = uF.x, caida = uF.y;
+  vec2 p = vec2(uv.x * asp, uv.y);
+  float arena = uS.x;
+
+  vec3 col = mix(uVacio, uNoche, smoothstep(-0.1, 1.1, uv.y));
+  float niebla = fbm(p * 1.7 + vec2(t * 0.025, -t * 0.012)) * 0.65 + fbm(p * 4.4 - vec2(t * 0.04, t * 0.018)) * 0.35;
+  vec2 src = vec2(uA.x * asp, uA.y);
+  vec2 base = vec2(0.5 * asp, 0.45) - src;
+  float hz = haces(p, src, base, uA.z, t) * uC.w;
+  if (uE.x > 0.0) {
+    vec2 src2 = vec2((1.0 - uA.x) * asp, uA.y);
+    hz += haces(p, src2, vec2(0.5 * asp, 0.45) - src2, uA.z, t + 7.0) * uC.w * uE.x;
+  }
+  // sin el campeon, mas haz (la politica del mundo)
+  if (uK.x != 1.0) hz *= uK.x;
+  // en la arena, la fuente de la era deja lugar a los cabezales
+  if (arena > 0.0) hz *= 1.0 - arena * 0.6;
+  float kp = uB.x;
+  if (uK.y != 1.0) kp *= uK.y;
+  float d0 = length(p - src);
+  float brillo = uC.z * (1.0 + gloria * 0.5) * (1.0 - peligro * 0.3) * (1.0 - calma * 0.05) * (1.0 - caida * 0.55);
+  float ktm = 1.0;
+  if (arena > 0.0) ktm = 1.0 - arena;
+
+  col += uLuz * hz * (0.22 + uA.w * niebla * 1.25) * 0.5 * brillo;
+  col += uLuz * exp(-d0 * d0 * 2.4) * 0.34 * brillo;
+  vec2 cd = (p - vec2(uC.x * asp, uC.y)) * vec2(1.3, 0.8);
+  float kco = 1.0;
+  if (uK.z != 1.0) kco = uK.z;
+  col += uContra * exp(-dot(cd, cd) * 3.2) * (0.14 + 0.3 * niebla) * brillo * uE.z * kco;
+  col += uContra * exp(-dot(cd, cd) * 38.0) * 0.32 * max(uE.z - 1.0, 0.0) * brillo * kco;
+  float mon = monitor(uv, asp);
+  col += uLuz * mon * uB.w * 0.5 * brillo * ktm;
+  col += uLuz * tubos(uv, t) * uB.z * 0.62 * brillo * ktm;
+  col += bokeh(p, uv, t) * uB.y * 0.3 * brillo * ktm;
+  col += mix(uLuz, uContra, 0.3) * niebla * niebla * uA.w * 0.07 * brillo;
+  // polvo lejano, por detras del campeon
+  col += mix(uLuz, uContra, 0.25) * polvo(p * 0.62 + vec2(3.1, 1.7), t * 0.55) * (hz * 0.8 + 0.06) * kp * 0.45 * brillo;
+
+  vec3 frente = vec3(0.0);
+  if (arena > 0.0) {
+    // la sala a oscuras, los cabezales del techo, el humo del piso y la pared de pantallas del fondo
+    col *= 1.0 - arena * 0.2;
+    vec3 cab = cabezales(uv, asp, t, niebla) * brillo;
+    col += cab * 0.9 * arena;
+    float humo = fbm(p * vec2(2.2, 4.0) + vec2(t * 0.03, 0.0)) * smoothstep(0.62, 0.05, uv.y);
+    col += mix(uLuz, uContra, 0.5) * humo * 0.16 * arena * brillo;
+    col += mix(uLuz, uContra, uv.x) * exp(-pow((uv.y - uS.y - 0.05) * 7.0, 2.0)) * 0.26 * arena * brillo;
+    // el publico tapa (por delante del campeon de la pantalla gigante) y sus celulares titilan
+    float tapa = publico(uv, asp, uS.y) * arena;
+    vec2 q = p * 46.0 + vec2(0.0, t * 0.05);
+    float cel = step(0.93, h21(floor(q) + uSemilla)) * smoothstep(0.12, 0.0, length(fract(q) - 0.5)) * smoothstep(uS.y + 0.02, uS.y - 0.06, uv.y) * (0.5 + 0.5 * sin(t * 2.0 + h21(floor(q)) * 30.0));
+    frente += mix(uBlanco, uLuz, 0.4) * cel * 0.8 * arena;
+    frente -= col * tapa * 0.94;
+    frente += cab * tapa * 0.08;
+  }
+
+  // mas bruma de la era por encima del campeon (tenue): lo funde en la luz
+  if (uI.z > 0.0) frente += mix(uLuz, uContra, 0.3) * (0.18 + niebla * 0.9) * uI.z * 0.16 * brillo;
+  float pv = polvo(p, t);
+  frente += mix(uLuz, uBlanco, 0.45) * pv * (hz * 1.5 + 0.1) * kp * brillo;
+  frente += mix(uContra, uOro, 0.5) * brasas(p, t) * uE.w * (0.35 + 0.65 * vivo) * 0.55 * brillo * (1.0 - caida * 0.8);
+
+  float campo = clamp(hz * 0.55 + exp(-d0 * d0 * 1.1) * 0.75 + uB.w * mon * 0.9 * ktm + 0.44, 0.0, 1.3);
+  oFondo = vec4(col / uEsc, campo / 1.3);
+  oFrente = vec4(frente / uEsc * 0.5 + 0.5, niebla);
+}`;
+
+// Segunda pasada (resolucion nativa): el campeon, nitido, adentro de la luz de la primera; despues lo que va por
+// delante y el ultimo grado (peligro, gloria, la caida, el quiebre, la vineta, el grano).
+const FRAG_ARTE = `${COMUN}
+out vec4 color;
+uniform sampler2D uLuz0, uLuz1;
+uniform vec2 uFoco0, uFoco1;
+uniform sampler2D uArte0, uArte1;
+uniform vec2 uTam0, uTam1;
+uniform vec4 uArteE;
+uniform vec4 uMarco;
+uniform vec2 uPar;
+uniform vec4 uColor; // el color del campeon (js/color.js): x: en el fondo, y: lavado de la era, z: adentro del lugar
+uniform vec4 uRec; // el lugar fijo (uv, y hacia arriba): x0, y0, x1, y1
+uniform float uRadio; // el radio de sus esquinas, en pixeles del lienzo
+float dentroG = 0.0; // cuanto de este pixel cae adentro del lugar fijo (se calcula una vez en main)
+
+// adentro del lugar fijo: 1 adentro, 0 afuera, con el borde de un pixel y las esquinas redondeadas
+float enLugar(vec2 uv) {
+  vec2 c = (uRec.xy + uRec.zw) * 0.5 * uRes;
+  vec2 h = (uRec.zw - uRec.xy) * 0.5 * uRes;
+  vec2 d = abs(uv * uRes - c) - h + uRadio;
+  float sd = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - uRadio;
+  return clamp(0.5 - sd, 0.0, 1.0);
+}
 // El splash como plano vivo: profundidad 2,5D falsa (luminancia + la cara en primer plano + un degrade vertical), con
 // parallax al puntero y una deriva lenta tipo Ken Burns; las luces altas (pelo, tela, energia) fluyen con un ruido leve.
+// La profundidad y el flujo salen de un nivel borroso del mip (un campo suave): mover cada pixel por su propia luz
+// rasgaba los bordes. El color se lee con el nivel de mip de su escala: nitido, sin dientes.
 vec4 muestraArte(sampler2D tx, vec2 tam, vec2 uv, float asp, vec2 foco, float t, float vivo) {
   float ah = uMarco.z;
   float aw = ah * (tam.x / max(tam.y, 1.0)) / asp;
@@ -315,7 +454,9 @@ vec4 muestraArte(sampler2D tx, vec2 tam, vec2 uv, float asp, vec2 foco, float t,
   float kb = 1.0 + 0.05 * vivo * (0.5 + 0.5 * sin(t * 0.05 - 1.2));
   q = (q - fq) / kb + fq + vec2(sin(t * 0.033), cos(t * 0.029)) * 0.012 * vivo;
   if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) return vec4(0.0);
-  float l0 = dot(texture(tx, vec2(q.x, 1.0 - q.y)).rgb, vec3(0.299, 0.587, 0.114));
+  // el nivel de mip: cuantos texeles caen en un pixel de la pantalla
+  float lod = max(0.0, log2(tam.y / max(ah * uRes.y * kb, 1.0)));
+  float l0 = dot(textureLod(tx, vec2(q.x, 1.0 - q.y), lod + 3.0).rgb, vec3(0.299, 0.587, 0.114));
   vec2 dc = (q - fq) * vec2(1.7, 1.0);
   float prof = clamp(l0 * 0.42 + exp(-dot(dc, dc) * 7.0) * 0.4 + (1.0 - q.y) * 0.26, 0.0, 1.0);
   vec2 desp = (uPar * 2.4 + vec2(sin(t * 0.13), cos(t * 0.11)) * 0.0045 * vivo) * (prof - 0.42);
@@ -326,8 +467,8 @@ vec4 muestraArte(sampler2D tx, vec2 tam, vec2 uv, float asp, vec2 foco, float t,
   vec2 flujo = vec2(ruido(q * 8.0 + vec2(0.0, t * 0.42)), ruido(q * 8.0 + vec2(5.2, -t * 0.36))) - 0.5;
   float kf = vivo;
   if (uI.y < 1.0) kf *= uI.y;
-  qd += flujo * 0.016 * hl * kf;
-  vec3 c = texture(tx, vec2(clamp(qd.x, 0.0, 1.0), 1.0 - clamp(qd.y, 0.0, 1.0))).rgb;
+  qd += flujo * 0.007 * hl * kf;
+  vec3 c = textureLod(tx, vec2(clamp(qd.x, 0.0, 1.0), 1.0 - clamp(qd.y, 0.0, 1.0)), lod).rgb;
   // desenfoque (tenue, el tinte del lugar): dos anillos de muestras alrededor. Adentro del lugar, nitido.
   float sv = uJ.y * (1.0 - dentroG);
   if (sv > 0.0) {
@@ -336,7 +477,7 @@ vec4 muestraArte(sampler2D tx, vec2 tam, vec2 uv, float asp, vec2 foco, float t,
       float an = float(i) * 0.785398 + 0.39;
       vec2 o = vec2(cos(an), sin(an)) * sv * (i < 4 ? 0.012 : 0.026);
       vec2 qq = clamp(qd + o, 0.0, 1.0);
-      s += texture(tx, vec2(qq.x, 1.0 - qq.y)).rgb;
+      s += textureLod(tx, vec2(qq.x, 1.0 - qq.y), lod + 1.0).rgb;
     }
     c = mix(c, s / 8.0, clamp(sv * 1.2, 0.0, 1.0));
   }
@@ -357,94 +498,69 @@ void main() {
     uv.x += step(0.62, h21(vec2(fila, floor(uT * 14.0)))) * (h21(vec2(fila, 3.7)) - 0.5) * 0.05 * quiebre;
   }
   vec2 p = vec2(uv.x * asp, uv.y);
-
-  vec3 col = mix(uVacio, uNoche, smoothstep(-0.1, 1.1, uv.y));
-  float niebla = fbm(p * 1.7 + vec2(t * 0.025, -t * 0.012)) * 0.65 + fbm(p * 4.4 - vec2(t * 0.04, t * 0.018)) * 0.35;
+  vec4 L0 = texture(uLuz0, uv);
+  vec4 L1 = texture(uLuz1, uv);
+  vec3 col = L0.rgb * uEsc;
+  float niebla = L1.a;
   vec2 src = vec2(uA.x * asp, uA.y);
-  vec2 base = vec2(0.5 * asp, 0.45) - src;
-  float hz = haces(p, src, base, uA.z, t) * uC.w;
-  if (uE.x > 0.0) {
-    vec2 src2 = vec2((1.0 - uA.x) * asp, uA.y);
-    hz += haces(p, src2, vec2(0.5 * asp, 0.45) - src2, uA.z, t + 7.0) * uC.w * uE.x;
-  }
-  // sin el campeon, mas haz (la politica del mundo)
-  if (uK.x != 1.0) hz *= uK.x;
-  float kp = uB.x;
-  if (uK.y != 1.0) kp *= uK.y;
   float d0 = length(p - src);
-  float brillo = uC.z * (1.0 + gloria * 0.5) * (1.0 - peligro * 0.3) * (1.0 - calma * 0.05) * (1.0 - caida * 0.55);
-
-  col += uLuz * hz * (0.22 + uA.w * niebla * 1.25) * 0.5 * brillo;
-  col += uLuz * exp(-d0 * d0 * 2.4) * 0.34 * brillo;
-  vec2 cd = (p - vec2(uC.x * asp, uC.y)) * vec2(1.3, 0.8);
-  float kco = 1.0;
-  if (uK.z != 1.0) kco = uK.z;
-  col += uContra * exp(-dot(cd, cd) * 3.2) * (0.14 + 0.3 * niebla) * brillo * uE.z * kco;
-  col += uContra * exp(-dot(cd, cd) * 38.0) * 0.32 * max(uE.z - 1.0, 0.0) * brillo * kco;
-  float mon = monitor(uv, asp);
-  col += uLuz * mon * uB.w * 0.5 * brillo;
-  col += uLuz * tubos(uv, t) * uB.z * 0.62 * brillo;
-  col += bokeh(p, uv, t) * uB.y * 0.3 * brillo;
-  col += mix(uLuz, uContra, 0.3) * niebla * niebla * uA.w * 0.07 * brillo;
-  // polvo lejano, por detras del campeon
-  col += mix(uLuz, uContra, 0.25) * polvo(p * 0.62 + vec2(3.1, 1.7), t * 0.55) * (hz * 0.8 + 0.06) * kp * 0.45 * brillo;
 
   // el arte, en duotono y adentro de la luz
   if (uJ.w > 0.0) dentroG = enLugar(uv) * uJ.w;
   // adentro del lugar fijo la luz baja, como la pantalla del cliente detras del splash: el campeon se lee como imagen
-  if (dentroG > 0.0) col *= 1.0 - dentroG * 0.45;
+  // (en la arena, la pantalla gigante emite: el campeon se ve sobre negro, como una pantalla LED)
+  if (dentroG > 0.0) col *= 1.0 - dentroG * mix(0.45, 0.85, uS.x);
   if (uArteE.y + uArteE.z > 0.0) {
     vec4 a0 = muestraArte(uArte0, uTam0, uv, asp, uFoco0, t, vivo); a0.a *= uArteE.y;
     vec4 a1 = muestraArte(uArte1, uTam1, uv, asp, uFoco1, t, vivo); a1.a *= uArteE.z;
-    vec3 c = mix(a0.rgb, a1.rgb, uArteE.x);
     float a = mix(a0.a, a1.a, uArteE.x);
-    float l = smoothstep(0.04, 0.9, dot(c, vec3(0.299, 0.587, 0.114)));
-    // menos contraste (tenue): el duotono se aplana hacia el medio, sin negros ni brillos duros
-    if (uJ.x != 1.0) l = 0.42 + (l - 0.42) * mix(uJ.x, 1.0, dentroG);
-    float lado = smoothstep(0.2, 0.9, abs(uv.x - uC.x) < 0.5 ? 1.0 - abs(uv.x - uC.x) * 1.4 : 0.0);
-    vec3 duo = mix(uNoche * 0.5, uLuz * 1.05, l);
-    duo = mix(duo, uContra, smoothstep(0.55, 1.0, l) * lado * 0.5);
-    duo += mix(uLuz, uBlanco, 0.6) * pow(l, 4.0) * 0.7;
-    // las luces altas titilan como energia, y cada tanto un barrido de luz cruza al campeon
-    duo += uLuz * pow(l, 2.5) * (ruido(vec2(uv.x * 16.0, uv.y * 9.0 - t * 0.7)) - 0.42) * 0.4 * vivo;
-    float xs = (uv.x - uMarco.x) * asp * 0.8 + (uv.y - uMarco.y) * 0.5;
-    float barr = exp(-pow((xs - (fract(t / 11.0) * 3.2 - 1.6)) / 0.06, 2.0));
-    duo += mix(uLuz, uBlanco, 0.75) * barr * smoothstep(0.2, 0.75, l) * 0.6 * max(vivo, 0.35);
-    // el color del campeon (js/color.js): 0 = el duotono de la era, 1 = sus colores reales; afuera del lugar, con un
-    // lavado leve de la era para que quede en la escena y no pegado
-    if (uColor.x + uColor.z > 0.0) {
-      float kc = mix(uColor.x, uColor.z, dentroG);
-      vec3 real = mix(c * 1.08, duo, uColor.y * (1.0 - dentroG));
-      duo = mix(duo, real, kc);
-    }
-    float campo = clamp(hz * 0.55 + exp(-d0 * d0 * 1.1) * 0.75 + uB.w * mon * 0.9 + 0.44, 0.0, 1.3);
-    // en su lugar el campeon esta iluminado entero, no solo donde le pega el haz
-    if (dentroG > 0.0) campo = mix(campo, max(campo, 1.0), dentroG);
-    float m = a * campo * uMarco.w;
-    // la presencia del campeon: a pantalla completa (uI.x) o, si hay lugar fijo, adentro (uJ.z) y afuera (uI.x)
-    float pres = uI.x;
-    if (uJ.w > 0.0) pres = mix(uI.x, uJ.z, dentroG);
-    if (pres != 1.0) m *= pres;
-    col = 1.0 - (1.0 - col) * (1.0 - clamp(duo * m, 0.0, 1.0));
-    // luz de contra recortando al campeon: el borde que mira a la contra, donde la imagen cae hacia lo oscuro
-    float kr = uE.y;
-    if (uI.y < 1.0 || pres != 1.0) kr *= uI.y * pres;
-    if (kr > 0.0) {
-      vec2 hacia = normalize(vec2(uC.x, uC.y) - uv) * vec2(0.0045, 0.0045 * asp);
-      vec4 b0 = muestraArte(uArte0, uTam0, uv + hacia, asp, uFoco0, t, vivo);
-      vec4 b1 = muestraArte(uArte1, uTam1, uv + hacia, asp, uFoco1, t, vivo);
-      float lb = dot(mix(b0.rgb, b1.rgb, uArteE.x), vec3(0.299, 0.587, 0.114));
-      float la = dot(c, vec3(0.299, 0.587, 0.114));
-      float rim = smoothstep(0.07, 0.3, la - lb) * smoothstep(0.12, 0.5, la);
-      col += uContra * rim * kr * a * uMarco.w * 1.1;
+    if (a > 0.0) {
+      vec3 c = mix(a0.rgb, a1.rgb, uArteE.x);
+      float l = smoothstep(0.04, 0.9, dot(c, vec3(0.299, 0.587, 0.114)));
+      // menos contraste (tenue): el duotono se aplana hacia el medio, sin negros ni brillos duros
+      if (uJ.x != 1.0) l = 0.42 + (l - 0.42) * mix(uJ.x, 1.0, dentroG);
+      float lado = smoothstep(0.2, 0.9, abs(uv.x - uC.x) < 0.5 ? 1.0 - abs(uv.x - uC.x) * 1.4 : 0.0);
+      vec3 duo = mix(uNoche * 0.5, uLuz * 1.05, l);
+      duo = mix(duo, uContra, smoothstep(0.55, 1.0, l) * lado * 0.5);
+      duo += mix(uLuz, uBlanco, 0.6) * pow(l, 4.0) * 0.7;
+      // las luces altas titilan como energia, y cada tanto un barrido de luz cruza al campeon
+      duo += uLuz * pow(l, 2.5) * (ruido(vec2(uv.x * 16.0, uv.y * 9.0 - t * 0.7)) - 0.42) * 0.4 * vivo;
+      float xs = (uv.x - uMarco.x) * asp * 0.8 + (uv.y - uMarco.y) * 0.5;
+      float barr = exp(-pow((xs - (fract(t / 11.0) * 3.2 - 1.6)) / 0.06, 2.0));
+      duo += mix(uLuz, uBlanco, 0.75) * barr * smoothstep(0.2, 0.75, l) * 0.6 * max(vivo, 0.35);
+      // el color del campeon (js/color.js): 0 = el duotono de la era, 1 = sus colores reales; afuera del lugar, con un
+      // lavado leve de la era para que quede en la escena y no pegado
+      if (uColor.x + uColor.z > 0.0) {
+        float kc = mix(uColor.x, uColor.z, dentroG);
+        vec3 real = mix(c * 1.08, duo, uColor.y * (1.0 - dentroG));
+        duo = mix(duo, real, kc);
+      }
+      float campo = L0.a * 1.3;
+      // en su lugar el campeon esta iluminado entero, no solo donde le pega el haz
+      if (dentroG > 0.0) campo = mix(campo, max(campo, 1.0 + 0.2 * uS.x), dentroG);
+      float m = a * campo * uMarco.w;
+      // la presencia del campeon: a pantalla completa (uI.x) o, si hay lugar fijo, adentro (uJ.z) y afuera (uI.x)
+      float pres = uI.x;
+      if (uJ.w > 0.0) pres = mix(uI.x, uJ.z, dentroG);
+      if (pres != 1.0) m *= pres;
+      col = 1.0 - (1.0 - col) * (1.0 - clamp(duo * m, 0.0, 1.0));
+      // luz de contra recortando al campeon: el borde que mira a la contra, donde la imagen cae hacia lo oscuro
+      float kr = uE.y;
+      if (uI.y < 1.0 || pres != 1.0) kr *= uI.y * pres;
+      if (kr > 0.0) {
+        vec2 hacia = normalize(vec2(uC.x, uC.y) - uv) * vec2(0.0045, 0.0045 * asp);
+        vec4 b0 = muestraArte(uArte0, uTam0, uv + hacia, asp, uFoco0, t, vivo);
+        vec4 b1 = muestraArte(uArte1, uTam1, uv + hacia, asp, uFoco1, t, vivo);
+        float lb = dot(mix(b0.rgb, b1.rgb, uArteE.x), vec3(0.299, 0.587, 0.114));
+        float la = dot(c, vec3(0.299, 0.587, 0.114));
+        float rim = smoothstep(0.07, 0.3, la - lb) * smoothstep(0.12, 0.5, la);
+        col += uContra * rim * kr * a * uMarco.w * 1.1;
+      }
     }
   }
 
-  // mas bruma de la era por encima del campeon (tenue): lo funde en la luz
-  if (uI.z > 0.0) col += mix(uLuz, uContra, 0.3) * (0.18 + niebla * 0.9) * uI.z * 0.16 * brillo;
-  float pv = polvo(p, t);
-  col += mix(uLuz, uBlanco, 0.45) * pv * (hz * 1.5 + 0.1) * kp * brillo;
-  col += mix(uContra, uOro, 0.5) * brasas(p, t) * uE.w * (0.35 + 0.65 * vivo) * 0.55 * brillo * (1.0 - caida * 0.8);
+  // lo que va por delante (la bruma extra, el polvo cercano, las brasas, el publico de la arena)
+  col += ((L1.rgb - 0.5) * 2.0) * uEsc;
 
   float lum = dot(col, vec3(0.299, 0.587, 0.114));
   col = mix(col, vec3(lum), peligro * 0.6);
@@ -467,7 +583,11 @@ void main() {
   color = vec4(max(col, 0.0), 1.0);
 }`;
 
-// Un lienzo WebGL2 con el programa compilado. Lo usan el ambiente y fotografiar().
+const UNIFORMES = ['uRes', 'uT', 'uTL', 'uSemilla', 'uVacio', 'uNoche', 'uLuz', 'uContra', 'uOro', 'uBlanco', 'uA', 'uB', 'uC', 'uD', 'uE', 'uFoco0', 'uFoco1', 'uArte0', 'uArte1', 'uTam0', 'uTam1', 'uArteE', 'uMarco', 'uPar', 'uF', 'uI', 'uJ', 'uK', 'uS', 'uColor', 'uRec', 'uRadio', 'uEsc', 'uLuz0', 'uLuz1'];
+const ARENA_NADA = [0, 0, 0, 0];
+
+// Un lienzo WebGL2 con los dos programas compilados y la luz en un framebuffer a media escala. Lo usan el ambiente y
+// fotografiar(). El lienzo es del tamaño nativo: el arte se compone ahi; la luz, en LUZ_REL de ese tamaño.
 function crearLienzo(canvas) {
   const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, depth: false, stencil: false, premultipliedAlpha: false, powerPreference: 'low-power' });
   if (!gl) return null;
@@ -478,38 +598,87 @@ function crearLienzo(canvas) {
     if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? 'shader');
     return s;
   };
-  let prog;
-  try {
-    prog = gl.createProgram();
+  const enlazar = (frag) => {
+    const prog = gl.createProgram();
     gl.attachShader(prog, compilar(gl.VERTEX_SHADER, VERT));
-    gl.attachShader(prog, compilar(gl.FRAGMENT_SHADER, FRAG));
+    gl.attachShader(prog, compilar(gl.FRAGMENT_SHADER, frag));
+    gl.bindAttribLocation(prog, 0, 'p');
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) ?? 'link');
+    const U = {};
+    for (const n of UNIFORMES) U[n] = gl.getUniformLocation(prog, n);
+    return { prog, U };
+  };
+  let luzP;
+  let arteP;
+  try {
+    luzP = enlazar(FRAG_LUZ);
+    arteP = enlazar(FRAG_ARTE);
   } catch (e) {
     console.warn('[a-luz] el shader no compilo, uso el respaldo CSS:', e.message);
     return null;
   }
-  gl.useProgram(prog);
   const buf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buf);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-  const loc = gl.getAttribLocation(prog, 'p');
-  gl.enableVertexAttribArray(loc);
-  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-  const U = {};
-  for (const n of ['uRes', 'uT', 'uTL', 'uSemilla', 'uVacio', 'uNoche', 'uLuz', 'uContra', 'uOro', 'uBlanco', 'uA', 'uB', 'uC', 'uD', 'uE', 'uFoco0', 'uFoco1', 'uArte0', 'uArte1', 'uTam0', 'uTam1', 'uArteE', 'uMarco', 'uPar', 'uF', 'uI', 'uJ', 'uK', 'uColor', 'uRec', 'uRadio']) U[n] = gl.getUniformLocation(prog, n);
-  const texturas = [0, 1].map((i) => {
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const nuevaTextura = (unidad, filtroMin) => {
     const t = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0 + i);
+    gl.activeTexture(gl.TEXTURE0 + unidad);
     gl.bindTexture(gl.TEXTURE_2D, t);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array(3));
-    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, filtroMin], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
     return t;
-  });
-  gl.uniform1i(U.uArte0, 0);
-  gl.uniform1i(U.uArte1, 1);
+  };
+  // el arte (unidades 0 y 1, con mipmaps) y la luz de la primera pasada (2 y 3)
+  const texturas = [0, 1].map((i) => nuevaTextura(i, gl.LINEAR));
+  const luzTex = [2, 3].map((i) => nuevaTextura(i, gl.LINEAR));
+  // La luz se guarda en medio flotante si se puede (la gloria y el pulso la pasan de 1); si no, en 8 bits a la mitad.
+  let flotante = Boolean(gl.getExtension('EXT_color_buffer_float'));
+  const fbo = gl.createFramebuffer();
+  let fw = 0;
+  let fh = 0;
+  function asegurarLuz(w, h) {
+    if (w === fw && h === fh) return;
+    fw = w;
+    fh = h;
+    for (let intento = 0; intento < 2; intento++) {
+      luzTex.forEach((t, i) => {
+        gl.activeTexture(gl.TEXTURE2 + i);
+        gl.bindTexture(gl.TEXTURE_2D, t);
+        if (flotante) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
+        else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      });
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      luzTex.forEach((t, i) => gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, t, 0));
+      gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+      const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      if (ok || !flotante) return;
+      flotante = false;
+    }
+  }
   const tam = [[1, 1], [1, 1]];
   const focos = [FOCO_DEF, FOCO_DEF];
+  function poner({ U }, u, w, h) {
+    gl.uniform2f(U.uRes, w, h);
+    gl.uniform1f(U.uT, u.t);
+    gl.uniform1f(U.uTL, u.tl);
+    gl.uniform1f(U.uSemilla, u.semilla);
+    for (const [n, v] of [['uVacio', u.col.vacio], ['uNoche', u.col.noche], ['uOro', u.col.oro], ['uBlanco', u.col.blanco], ['uLuz', u.p.luz], ['uContra', u.p.contra]]) gl.uniform3fv(U[n], v);
+    gl.uniform4fv(U.uA, u.p.a);
+    gl.uniform4fv(U.uB, u.p.b);
+    gl.uniform4fv(U.uC, u.p.c);
+    gl.uniform4fv(U.uD, u.d);
+    gl.uniform4fv(U.uE, u.p.e);
+    gl.uniform4fv(U.uF, u.f ?? [0, 0, 0, 0]);
+    gl.uniform4fv(U.uI, u.i ?? I_PLENO);
+    gl.uniform4fv(U.uJ, u.j ?? J_PLENO);
+    gl.uniform4fv(U.uK, u.k ?? K_PLENO);
+    gl.uniform4fv(U.uS, u.s ?? ARENA_NADA);
+    gl.uniform1f(U.uEsc, flotante ? 1 : 2);
+  }
   return {
     gl,
     textura(slot, img, foco = FOCO_DEF) {
@@ -518,30 +687,42 @@ function crearLienzo(canvas) {
       gl.bindTexture(gl.TEXTURE_2D, texturas[slot]);
       if (img) {
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
         tam[slot] = [img.naturalWidth, img.naturalHeight];
       }
     },
     dibujar(u) {
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.uniform2f(U.uRes, canvas.width, canvas.height);
-      gl.uniform1f(U.uT, u.t);
-      gl.uniform1f(U.uTL, u.tl);
-      gl.uniform1f(U.uSemilla, u.semilla);
-      for (const [n, v] of [['uVacio', u.col.vacio], ['uNoche', u.col.noche], ['uOro', u.col.oro], ['uBlanco', u.col.blanco], ['uLuz', u.p.luz], ['uContra', u.p.contra]]) gl.uniform3fv(U[n], v);
-      gl.uniform4fv(U.uA, u.p.a);
-      gl.uniform4fv(U.uB, u.p.b);
-      gl.uniform4fv(U.uC, u.p.c);
-      gl.uniform4fv(U.uD, u.d);
-      gl.uniform4fv(U.uE, u.p.e);
+      const W = canvas.width;
+      const H = canvas.height;
+      const w = Math.max(2, Math.round(W * LUZ_REL));
+      const h = Math.max(2, Math.round(H * LUZ_REL));
+      asegurarLuz(w, h);
+      // 1. la luz, a media escala
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.viewport(0, 0, w, h);
+      gl.useProgram(luzP.prog);
+      poner(luzP, u, w, h);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      // 2. el arte, nativo, sobre la luz
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, W, H);
+      gl.useProgram(arteP.prog);
+      const { U } = arteP;
+      poner(arteP, u, W, H);
+      gl.uniform1i(U.uArte0, 0);
+      gl.uniform1i(U.uArte1, 1);
+      gl.uniform1i(U.uLuz0, 2);
+      gl.uniform1i(U.uLuz1, 3);
+      luzTex.forEach((t, i) => {
+        gl.activeTexture(gl.TEXTURE2 + i);
+        gl.bindTexture(gl.TEXTURE_2D, t);
+      });
       gl.uniform2fv(U.uFoco0, focos[0]);
       gl.uniform2fv(U.uFoco1, focos[1]);
       gl.uniform4fv(U.uArteE, u.arte);
       gl.uniform4fv(U.uMarco, u.marco);
       gl.uniform2fv(U.uPar, u.par);
-      gl.uniform4fv(U.uF, u.f ?? [0, 0, 0, 0]);
-      gl.uniform4fv(U.uI, u.i ?? I_PLENO);
-      gl.uniform4fv(U.uJ, u.j ?? J_PLENO);
-      gl.uniform4fv(U.uK, u.k ?? K_PLENO);
       gl.uniform4fv(U.uColor, u.c ?? C_DUOTONO);
       gl.uniform4fv(U.uRec, u.rec ?? REC_NADA);
       gl.uniform1f(U.uRadio, u.radio ?? 0);
@@ -550,9 +731,11 @@ function crearLienzo(canvas) {
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },
     liberar() {
-      texturas.forEach((t) => gl.deleteTexture(t));
+      [...texturas, ...luzTex].forEach((t) => gl.deleteTexture(t));
+      gl.deleteFramebuffer(fbo);
       gl.deleteBuffer(buf);
-      gl.deleteProgram(prog);
+      gl.deleteProgram(luzP.prog);
+      gl.deleteProgram(arteP.prog);
     },
   };
 }
@@ -599,12 +782,34 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     mapas.clear();
   };
   let lugar = null; // { nodo, foco, escala }: la ventana de la interfaz donde vive el campeon (fondo `lugar`)
+  // PLANUI §4.7: la paleta de la competicion (cuanto toma el lugar de la luz de la era) y la arena (op=escenario).
+  // Cruzan en T_ERA, como la era: son funcion del reloj.
+  const SIN_PALETA = { luz: [0, 0, 0], contra: [0, 0, 0], k: 0 };
+  let palDesde = SIN_PALETA;
+  let palHacia = SIN_PALETA;
+  let tPal = -1e9;
+  let arenaDesde = { k: 0, suelo: 0 };
+  let arenaHacia = { k: 0, suelo: 0 };
+  let tArena = -1e9;
+  const paletaEn = (t) => {
+    const k = suave((t - tPal) / T_ERA);
+    const a = palDesde.k > 0 ? palDesde : { ...palHacia, k: 0 };
+    const b = palHacia.k > 0 ? palHacia : { ...palDesde, k: 0 };
+    return { luz: mezclarV(a.luz, b.luz, k), contra: mezclarV(a.contra, b.contra, k), k: mezclar(a.k, b.k, k) };
+  };
+  const arenaEn = (t) => {
+    const k = suave((t - tArena) / T_ERA);
+    return { k: mezclar(arenaDesde.k, arenaHacia.k, k), suelo: arenaHacia.k > 0 ? arenaHacia.suelo : arenaDesde.suelo };
+  };
   const par = [0, 0];
   const parObjetivo = [0, 0];
 
   function paramsEn(t) {
     const k = suave((t - tEra) / T_ERA);
-    return mezclarParams(pDesde, pHacia, k);
+    const p = mezclarParams(pDesde, pHacia, k);
+    const pal = paletaEn(t);
+    if (!(pal.k > 0)) return p;
+    return { ...p, luz: mezclarV(p.luz, pal.luz, pal.k), contra: mezclarV(p.contra, pal.contra, pal.k) };
   }
   function calmaEn(t) {
     let e = calmaEventos[0];
@@ -659,6 +864,10 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
       i: [it.presencia, it.profundidad, it.bruma, it.vineta],
       j: [it.contraste, it.suave, it.enLugar, kv],
       k: [it.luz, it.polvo, it.contra, 0],
+      s: (() => {
+        const a = arenaEn(t);
+        return [a.k, a.suelo, 0, 0];
+      })(),
       c: [it.colorFondo, it.lavado, it.colorLugar, 0],
       rec: lg ? lg.rec : REC_NADA,
       radio: lg ? lg.radio : 0,
@@ -680,13 +889,13 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     return {
       peso,
       rec: [r.left / W, 1 - r.bottom / H, r.right / W, 1 - r.top / H],
-      radio: radio * ESCALA,
+      radio: radio * ESCALA_ARTE,
       marco: { x: (r.left + r.width * lugar.foco[0]) / W, y: 1 - (r.top + r.height * lugar.foco[1]) / H, alto: (r.height * lugar.escala) / H, op: 1 },
     };
   }
   function medir() {
-    const w = Math.max(2, Math.round(contenedor.clientWidth * ESCALA));
-    const h = Math.max(2, Math.round(contenedor.clientHeight * ESCALA));
+    const w = Math.max(2, Math.round(contenedor.clientWidth * ESCALA_ARTE));
+    const h = Math.max(2, Math.round(contenedor.clientHeight * ESCALA_ARTE));
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w;
       canvas.height = h;
@@ -756,7 +965,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
 
   const api = {
     impl: 'webgl',
-    ambiente({ era, animo: an, arte: key, encuadre, velo: v, instantaneo: corte = false, retardo = 0, cruce, apuntado } = {}) {
+    ambiente({ era, animo: an, arte: key, encuadre, velo: v, instantaneo: corte = false, retardo = 0, cruce, apuntado, paleta, arena } = {}) {
       // retardo: el cambio se programa en el reloj del ambiente (asi congelar(t) lo dibuja fiel en las tiras)
       const t = reloj() + Math.max(0, retardo);
       const instantaneo = inst() || reducido() || corte;
@@ -787,6 +996,25 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
         if (instantaneo) marcoDesde = { ...enc };
       }
       if (typeof v === 'number') velo = v;
+      // la paleta de la competicion: { luz, contra (tokens), k } o null (vuelve a la luz de la era)
+      if (paleta !== undefined) {
+        const nueva = paleta ? { luz: leerColor(paleta.luz), contra: leerColor(paleta.contra), k: paleta.k ?? 1 } : SIN_PALETA;
+        const igual = nueva.k === palHacia.k && nueva.luz.join() === palHacia.luz.join() && nueva.contra.join() === palHacia.contra.join();
+        if (!igual) {
+          palDesde = instantaneo ? nueva : paletaEn(t);
+          palHacia = nueva;
+          tPal = instantaneo ? -1e9 : t;
+        }
+      }
+      // la arena: un numero (0-1) o { k, suelo } (el alto del publico, en uv)
+      if (arena !== undefined) {
+        const nueva = typeof arena === 'number' ? { k: arena, suelo: arenaHacia.suelo || 0.2 } : { k: arena?.k ?? 0, suelo: arena?.suelo ?? 0.2 };
+        if (nueva.k !== arenaHacia.k || nueva.suelo !== arenaHacia.suelo) {
+          arenaDesde = instantaneo ? nueva : arenaEn(t);
+          arenaHacia = nueva;
+          tArena = instantaneo ? -1e9 : t;
+        }
+      }
       actual.era = eraHacia;
       if (key !== undefined) arte.carga = ponerArte(key, { dur: cruce ?? T_ARTE, retardo });
       dibujar();
@@ -1066,8 +1294,8 @@ export function crearAmbiente(contenedor, opciones = {}) {
 // Fotos fijas de cada era con la misma escena (para la pantalla de eras). Devuelve { era: canvas2D } o null sin WebGL.
 export async function fotografiar(eras, { ancho, alto, meta, artePorEra = {}, encuadre = 'eras', t = 9000 }) {
   const canvas = document.createElement('canvas');
-  canvas.width = Math.round(ancho * ESCALA * 2);
-  canvas.height = Math.round(alto * ESCALA * 2);
+  canvas.width = Math.round(ancho * ESCALA_ARTE);
+  canvas.height = Math.round(alto * ESCALA_ARTE);
   const lienzo = crearLienzo(canvas);
   if (!lienzo) return null;
   const col = colores();
