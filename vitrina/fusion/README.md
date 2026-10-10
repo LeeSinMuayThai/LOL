@@ -864,7 +864,103 @@ b.iniciar();
 
 ### El mercado y la firma (C): tu segunda selección y el anuncio
 
-*(lo escribe C)*
+Archivos: la rama `op=linea` de `js/mercado.js` (`crearOfertasLinea`, `crearFirmaLinea` y sus ayudantes, al final del
+archivo), el bloque `ms-` de `estilos/mercado.css` y el bloque C de `tokens.css` (`--ms-*`). Sin op, `op=final` y las
+ops de §4.7 (`mesa`, `anuncio`, `orgs`) no cambian: se midió (abajo).
+
+**El mercado: tu segunda selección.** Es un champ select de equipos: seis escudos, una sola elección, un botón de
+ceremonia.
+- **La entrada** usa `beats.js`: 2,4 s, se asienta en 2,3 s, Espacio la saltea.
+  - El bumper "VENTANA DE PASES ABIERTA" ocupa de 0 a 1 s, con `destello(60)`.
+  - Después, una línea de luz y el panel con seis ranuras `?`.
+  - Cada escudo cae desde la línea (760 ms + 215 ms por oferta), toca, enciende el borde en el acento de su org y
+    suena `sonido.ding?.()`.
+  - El aura en reposo aparece a 1880 ms y la cinta a 1950 ms.
+- **El aura.** Apuntar una org (mouse con 120 ms de demora, foco, clic o 1-6) la pinta arriba:
+  - el logo monumental como `<img>`;
+  - el nombre gigante (`ajustarLetra` lo achica si no entra);
+  - el kicker: liga · tier · tipo · oferta N de 6 · bombazo;
+  - los términos como números grandes con referente: sueldo con "N× tu valor", contrato con período, jerarquía "de
+    100 · proyectada · titular" y plantel "8.º de 8 · plantel flojo".
+
+  El tono va con `aplicarTono(html)` + `amb.ambiente({ paleta: paletaDe(tono), cruce: 350 })`, así que es el main
+  del jugador (el arte de la pantalla, no un campeón al azar) el que pasa al bitono de la org. Al soltar el mouse
+  vuelve en 600 ms a la elegida, o al reposo en el tono de la era: "Elegí tu equipo", tu valor, cuántos te llaman y
+  la oferta más alta.
+- **Las orgs inventadas** (sin logo) toman cada una una paleta p1..p4 distinta, en el orden de la grilla
+  (`tonosDeGrilla`): con el hash, dos podían caer en el mismo tono.
+- **La comparación** va en las fichas: barras de sueldo/máximo y jerarquía/100, con su leyenda. El detalle está en el
+  inspector del cierre (la prosa y las notas de riesgo y arraigo). Ninguna fila ni panel se repite.
+- **Las teclas:** 1-6 apuntan y eligen, Tab recorre, Enter firma (lo escucha `bloquear()`) y Espacio saltea. ← y →
+  no se usan.
+- **FIRMAR** es `bloquear({ texto: 'Firmar' })`, con beats propios de 4 s:
+  - la cabeza y la grilla se apagan y sube el contrato ("Contrato de jugador profesional", ORG × handle);
+  - la firma se traza entre 520 y 1570 ms, con su rúbrica;
+  - el sello "Firmado" cae y golpea a 1916 ms, con onda, sacudón y `destello` + `amb.pulso('logro')`;
+  - el resultado aparece a 2150 ms.
+
+  LOUD, la elección real del motor, encadena a la firma a 3900 ms. Las otras orgs dicen "Hasta acá llega esta
+  muestra…" y ofrecen "Ver lo que pasó en LOUD" y "Volver a decidir".
+- **La trampa del Enter.** La escucha de Enter de `bloquear()` se registra antes que la de `main.js`. Por eso el
+  mismo Enter que firmaba llegaba después a `tecla()`, con la firma ya empezada, y la salteaba entera. Ahora
+  `firmadoEn` (el `performance.now()` de la firma) distingue ese evento de un Enter posterior, que sí saltea.
+- **"Mientras tanto"** es `cinta()`, fija abajo: los traspasos con su logo y los asientos abiertos.
+
+**La firma: el walkout.** Dura 4,6 s, se asienta en 4,3 s y Espacio la saltea. El orden:
+1. Apagón con barrido diagonal; el haz baja a 60 ms.
+2. A 300 ms, BR y el logo del CBLOL en el haz.
+3. El glifo del rol gira entre 650 y 1210 ms.
+4. A 1440 ms el logo de LOUD sale del centro (FLIP medido) y golpea:
+   - una onda doble;
+   - la pantalla se inunda del tono: `paleta` con `cruce: 260`, los lightsticks y `destello(1440)`;
+   - el main barre detrás en el bitono de LOUD, con la política del 70 % de momento, sin tocarla a mano.
+5. ELURAH89 cae letra por letra en Mona condensada, desde 1990 ms (55 ms por letra).
+6. La firma se traza sobre su base a 2500 ms.
+7. Las placas (`placaInferior`) entran a 2950 ms.
+8. "LOUD DA LA BIENVENIDA A ELURAH89" aparece a 3450 ms, con confeti en los colores de la org (`crearConfeti`: 130
+   piezas, 60 % en celular).
+9. Quedan los loops vivos: el halo del logo, el haz que se mece y un brillo que recorre el handle.
+
+Tres detalles:
+- `ERA_FIRMA = 'mundial'`. Con escenario y el verde de LOUD el arte quedaba lavado; se comparó contra academia,
+  pieza y leyenda.
+- **Saltar antes del golpe.** El ambiente ignora una paleta igual reenviada, así que se manda
+  `paletaDe(tono, 0.999)` para forzar el cruce.
+- **Con `peor=1`** la org, el handle y la liga son los del caso peor (SHG, LCP, APAC):
+  - En el mercado, la oferta que eligió el motor pasa a ser esa org: logo, tono y el nombre de 29 letras.
+  - Los textos del motor cambian el nombre de la org (`conOrg`).
+  - El handle largo tiene el tope `--ms-handle-max` (54vw) para no meterse en el arte.
+
+**Decisiones de implementación.**
+- La firma del contrato es `.ms-ct-firma` y la del walkout `.ms-fm-firma`, porque `.ms-firma` es la raíz de la
+  sección. Al principio chocaban.
+- La regla genérica `.escudo` de `partido.css` dibuja una caja: se neutraliza dentro de `.ms-mercado` y `.ms-firma`.
+- `--luz-*` se redeclara en `.ms-mercado` desde `--tono-*`, porque en `:root` se resuelve una sola vez y no sigue al
+  tono.
+- El tipo de contrato va en el kicker del aura y no en el inspector: así, en 1440×900, el panel no tapa la cinta.
+- En celular (390×844): la grilla es de 3×2, el aura es una banda arriba y el walkout va apilado y centrado.
+
+**Verificación (2026-10-10).**
+- `node vitrina/comun/verificar.mjs`: "Todo en verde."
+- **Contraste por píxeles** (el texto contra el fondo real; también los `aria-hidden` y los grandes): 1503 textos en
+  22 casos, sin ninguno por debajo de 4,5:1.
+  - Los casos: reposo, las 6 orgs apuntadas, firmar con la real y con otra, la firma, `peor=1`, celular, `webgl=0`
+    e INST.
+  - La única falla, la leyenda en celular, era la propia muestra de color medida como fondo. Separado el texto de la
+    muestra, se volvió a medir.
+  - El mínimo es 4,80:1, en "Desafiante · T2" a 9,5 px en celular.
+- **`congelar(t)` es fiel** (dos capturas en el mismo `t`, con otro `t` en el medio):
+  - firma en 800, 1500, 2400 y 5000, y firmar en 1000, 2000 y 2600: 0 px distintos;
+  - entrada en 400, 1500 y 2400: máximo 4 niveles (ruido de WebGL), salvo 3 px en 2400.
+- **Lo que no cambia**, sin op y con `op=final`, `mesa`, `anuncio` y `orgs` (mercado y firma, escritorio y celular):
+  el antes contra el después da lo mismo que dos corridas del antes entre sí. Ningún píxel pasa de 24 niveles fuera
+  de ese ruido.
+- **En 390×844**, `scrollWidth` da 390 en el mercado, la firma y los dos con `peor=1`.
+- 0 errores de consola y 0 requestfailed en todas las corridas.
+
+**Límites.**
+- `amb.pulso` tiene un solo lugar: el pulso de apuntar pisa al anterior.
+- Las orgs que el motor no jugó no tienen firma: no se inventa cómo salía.
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->

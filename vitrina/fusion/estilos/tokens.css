@@ -607,6 +607,20 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 /* (separador entre bloques de §4.9: no tocar) */
 
 /* ===== PLANUI §4.9 · linea · C, el mercado y la firma. Sus tokens van entre esta linea y su cierre ===== */
+/* El mercado como tu segunda seleccion y la firma como el anuncio (js/mercado.js, el final de estilos/mercado.css). Sin
+   colores propios: todo sale del tono (--tono-*, la org apuntada o la era) y de la noche de siempre. */
 :root {
+  /* el aura: el escudo monumental y el nombre gigante (js/mercado.js achica la letra si el nombre no entra) */
+  --ms-aura-escudo: 172px;
+  --ms-nombre: clamp(64px, 8.2vw, 124px);
+  --ms-nombre-cel: 46px;
+  /* la entrada: donde cruza el bumper (y la linea de luz de la que caen las ofertas), su alto y su letra */
+  --ms-bumper-y: 34vh;
+  --ms-bumper-alto: 196px;
+  --ms-bumper-letra: clamp(52px, 6.6vw, 100px);
+  /* la firma: la bienvenida y el handle en el celular */
+  --ms-bienvenida: clamp(26px, 3vw, 44px);
+  --ms-handle-cel: 84px;
+  --ms-handle-max: 54vw;              /* el handle largo se achica antes de meterse en el arte */
 }
 /* ===== fin §4.9 mercado ===== */
