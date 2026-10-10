@@ -7,7 +7,7 @@
 import { el, entrar, salir, animar, esperar, lineasConMascara, primeraOracion, num, conSigno, odometro, reducido, inst, celular, EXPO, DUR } from './util.js';
 import { icono, glifoDeCampo, triangulos, ABREVIATURA } from './iconos.js';
 import { franja, trayectoria, contexto, rodarContexto, cuartos, entrarPanel } from './marco.js';
-import { leerEvento, crearEscena, crearInvitacion, crearPeso, crearFinal, cargados } from './escena.js';
+import { leerEvento, crearEscena, crearInvitacion, crearPeso, crearFinal, crearCostura, cargados } from './escena.js';
 
 const ETIQUETAS = {
   mecanica: 'Mecánica', macro: 'Macro', laneo: 'Laneo', teamfight: 'Teamfight', shotcalling: 'Shotcalling',
@@ -25,7 +25,8 @@ const etiquetaDe = (campo, mapa) => mapa[campo] ?? ETIQUETAS[campoCorto(campo)] 
 const textoDeBeat = (log) => (log.titulo ? log.titulo : log.message);
 // Las opciones de diseño de esta pantalla (PLANUI §4.7, `op=` en el hash; js/escena.js). Sin `op`, la de hoy.
 // `final` (PLANUI §4.8) es la ultima demostracion: la invitacion como portal (cliente) que abre el capitulo con destinos.
-const OPCIONES = ['escena', 'cliente', 'bisagra', 'final'];
+// `linea` (PLANUI §4.9): la bisagra como ¡OFERTA ENCONTRADA! que abre la costura con los dos destinos; las comunes, simples.
+const OPCIONES = ['escena', 'cliente', 'bisagra', 'final', 'linea'];
 
 export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
   const opDec = OPCIONES.includes(op) ? op : null;
@@ -48,6 +49,7 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
   for (const o of dec.opciones) for (const p of o.previa ?? []) etiquetas[p.campo] = p.etiqueta;
   const esMatriz = dec.datos?.motivo === 'plan_amateur' || (dec.opciones.length >= 3 && dec.opciones.every((o) => (o.previa ?? []).every((p) => typeof p.valor === 'number')));
   const j = m.ficha?.jugador ?? {};
+  const main = j.campeonDelSplit ?? datos.inicio?.jugador?.mains?.[0]?.ddragon ?? null;
 
   // ------------------------------------------------------------------ nodos
   const raiz = el('section', { class: 'parada parada-decision', 'data-pieza': 'decision', 'data-forma': esMatriz ? 'matriz' : 'lista', 'data-muestra': muestra, 'data-op': opDec, 'data-bisagra': opDec && m.esBisagra ? '' : null });
@@ -298,6 +300,14 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
     raiz.classList.add('en-espera');
     raiz.append(invitacion.nodo);
   }
+  // (op=linea, PLANUI §4.9) con destino, la costura; si es bisagra, llega como ¡OFERTA ENCONTRADA! y el panel espera.
+  // Sin destino (el plan, una decision de vida) no hay capa: la pantalla de siempre dentro de la linea.
+  const esperaAviso = opDec === 'linea' && !!lec.destino && lec.bisagra;
+  if (opDec === 'linea' && lec.destino) {
+    capa = crearCostura(lec, { amb, arte: main, sonido, contenedor: raiz, limite: antesFila, lateral: placa, alAceptar: (o) => abrirPanelLinea(o) });
+    antesFila.before(capa.banda);
+    if (esperaAviso) raiz.classList.add('dc-espera');
+  }
   if (capa) {
     raiz.prepend(capa.nodo);
     // soltar la lista devuelve la escena a su reposo (salvo que el foco siga adentro)
@@ -311,9 +321,17 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
   const quieto = () => inst() || reducido();
   function entrada() {
     // (op cliente, bisagra) el panel espera la invitacion: el titulo se mide igual, pero entra al aceptar
-    if (!invitacion) lineasConMascara(titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: 780 + i * 70, dur: 420 }));
+    if (!invitacion && !esperaAviso) lineasConMascara(titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: 780 + i * 70, dur: 420 }));
     entrar(fr, 0, -10);
     capa?.entrar();
+    // (op=linea) el aviso llega enseguida, sin el relato: tapa la pantalla (atenuada e inerte) hasta que se acepta
+    if (esperaAviso) {
+      relato.remove();
+      fondoInerte(true);
+      if (quieto()) amb.aquietar(true);
+      else esperar(raiz, 700).then(() => amb.aquietar(true));
+      return;
+    }
     if (quieto()) {
       relato.remove();
       amb.aquietar(true);
@@ -329,9 +347,10 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
     if (invitacion) invitacion.entrar();
     else entradaPanel(capa?.retardoPanel ?? 0);
   }
-  // la entrada del panel (antes, columna, rotulo, opciones, inspector, "vos", la barra); `d` corre todo el orden
-  function entradaPanel(d, conCuartos = true) {
-    entrar(antes, 700 + d, 10);
+  // la entrada del panel (antes, columna, rotulo, opciones, inspector, "vos", la barra); `d` corre todo el orden.
+  // `conMarco` en false: la linea "antes" y "vos" ya estan (op=linea: se vieron atenuados detras del aviso)
+  function entradaPanel(d, conCuartos = true, conMarco = true) {
+    if (conMarco) entrar(antes, 700 + d, 10);
     animar(col, [{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], { delay: 640 + d, dur: 320 });
     entrar(rotulo, 740 + d, 10);
     entrar(planteo, 900 + d, 10);
@@ -344,7 +363,7 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
       lista.querySelectorAll('.mx-barra i').forEach((b, k) => animar(b, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: 1040 + d + k * 12, dur: 520 }));
     }
     entrar(inspector, 1120 + d, 8);
-    entrarPanel(placa, 1060 + d);
+    if (conMarco) entrarPanel(placa, 1060 + d);
     if (conCuartos) animar(raiz.querySelector('.cuartos'), [{ transform: 'translateY(100%)' }, { transform: 'none' }], { delay: 1100 + d });
   }
   // (op cliente, final) aceptar la invitacion abre el panel de siempre, con su orden de entrada (en final, despues de
@@ -355,6 +374,57 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
     const d = capa?.retardoAceptar ?? -620;
     lineasConMascara(titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: 780 + d + i * 70, dur: 420 }));
     entradaPanel(d, false);
+  }
+  // (op=linea) mientras esta el aviso, lo de atras es la pantalla atenuada: se ve, pero no se usa
+  function fondoInerte(si) {
+    for (const n of [fr, antesFila, col, placa, raiz.querySelector('.cuartos')]) n?.toggleAttribute('inert', si);
+  }
+  // (op=linea) aceptar el aviso: se abre la costura y el panel entra con su orden (despues de que crece el portal);
+  // el foco pasa al titulo de la parada
+  function abrirPanelLinea({ instantaneo = false } = {}) {
+    raiz.classList.remove('dc-espera');
+    fondoInerte(false);
+    if (t0Doc != null) raiz.dataset.dcAceptado = String(Math.round(document.timeline.currentTime - t0Doc));
+    if (quieto() || instantaneo) {
+      if (!elegido) titulo.focus({ preventScroll: true });
+      registrar();
+      return;
+    }
+    const d = capa.retardoAceptar;
+    lineasConMascara(titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: 780 + d + i * 70, dur: 420 }));
+    entradaPanel(d, false, false);
+    esperar(raiz, capa.focoAceptar).then(() => {
+      if (!elegido && raiz.isConnected) titulo.focus({ preventScroll: true });
+    });
+    registrar();
+  }
+
+  // (op=linea) congelar(ms): main.js congela el ambiente y window.vitrina pone TODAS las animaciones en `ms` (como si
+  // hubieran nacido al entrar). Las que nacieron despues (la apertura al aceptar, la eleccion) se corrigen a su propio
+  // reloj en un microtask, que corre despues del bucle de window.vitrina.congelar. `data-dc-aceptado` dice cuando se
+  // acepto (ms desde la entrada), para las tiras de la apertura.
+  let t0Doc = null;
+  const nacidas = new Map();
+  function registrar() {
+    if (t0Doc == null) return;
+    const ahora = document.timeline.currentTime - t0Doc;
+    for (const a of document.getAnimations()) {
+      const t = a.effect?.target;
+      if (nacidas.has(a) || !t || !raiz.contains(t)) continue;
+      nacidas.set(a, a.startTime != null ? a.startTime - t0Doc : ahora - (a.currentTime ?? 0));
+    }
+  }
+  function congelarLinea(ms) {
+    queueMicrotask(() => {
+      for (const [a, t] of nacidas) {
+        try {
+          a.pause();
+          a.currentTime = ms - t;
+        } catch {
+          /* animacion sin linea de tiempo valida */
+        }
+      }
+    });
   }
 
   // ------------------------------------------------------------------ elegir -> la opcion se vuelve su resultado
@@ -419,6 +489,7 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
     const fila = filas[i];
     if (!o || !fila || fila.classList.contains('bloqueada')) return;
     if (invitacion?.abierta) invitacion.aceptar({ instantaneo: true });
+    if (capa?.avisoAbierto) capa.aceptarYa();
     elegido = true;
     raiz.classList.add('eligiendo');
     amb.pulso('elegir');
@@ -477,10 +548,13 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
     esperar(raiz, 420).then(() => amb.pulso(n2 === 'golpe' ? 'elegir' : 'logro'));
     if (quieto()) tarjeta.focus({ preventScroll: true });
     else esperar(raiz, 500).then(() => tarjeta.focus({ preventScroll: true }));
+    registrar();
   }
 
   function tecla(e) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
+    // (op=linea) con el aviso abierto solo vale Enter, y la escucha el aviso (js/ceremonia.js)
+    if (capa?.avisoAbierto) return;
     // (op cliente) con la invitacion abierta: Enter o Espacio aceptan; 1-9 aceptan y eligen
     if (invitacion?.abierta && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
@@ -506,14 +580,21 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
 
   return {
     nodo: raiz,
-    entrar: entrada,
+    entrar: opDec === 'linea'
+      ? () => {
+          t0Doc = document.timeline.currentTime;
+          entrada();
+          registrar();
+        }
+      : entrada,
     elegir,
     tecla,
     // (op escena, final) con geografia, el fondo es la escena: sin campeon
-    arte: (opDec === 'escena' || opDec === 'final') && lec.destino ? null : j.campeonDelSplit ?? datos.inicio?.jugador?.mains?.[0]?.ddragon ?? null,
+    arte: (opDec === 'escena' || opDec === 'final') && lec.destino ? null : main,
     animo: 'normal',
     encuadre: 'derecha',
     listo: opDec ? () => cargados(raiz) : undefined,
     destruir: opDec ? () => capa?.destruir() : undefined,
+    congelar: opDec === 'linea' ? congelarLinea : undefined,
   };
 }

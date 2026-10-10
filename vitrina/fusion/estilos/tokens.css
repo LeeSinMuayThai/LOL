@@ -598,7 +598,23 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 /* (separador entre bloques de §4.9: no tocar) */
 
 /* ===== PLANUI §4.9 · linea · B, la decision (la oferta encontrada y la costura). Sus tokens van entre esta linea y su cierre ===== */
+/* (js/escena.js crearCostura, estilos/decision.css: el bloque dc-). Sin colores nuevos: los destinos usan el tono de su
+   liga (--tono-* en cada lado, aplicarTono) y el portal la ceremonia del kit (--ln-oro*, --ln-velo). */
 :root {
+  /* los destinos sobre la costura: el logo de la liga, el de tu org y cuanto bajan desde la franja */
+  --dc-logo: 100px;
+  --dc-logo-org: 66px;
+  --dc-aire: 30px;
+  --dc-lado-ancho: 500px;
+  /* el velo del aviso: cuanto tapa la pantalla de atras (detras se reconoce tu main en la era) */
+  --dc-aviso-velo: 80%;
+  /* el velo de lectura detras de cada destino (cuanto del vacio de su tono) y el fondo de los chips */
+  --dc-velo-lado: 74%;
+  --dc-chip-fondo: 86%;
+  /* celular: la banda de arriba del panel donde la costura se ve partida en vertical */
+  --dc-banda-cel: 300px;
+  --dc-logo-cel: 46px;
+  --dc-logo-org-cel: 34px;
 }
 /* ===== fin §4.9 decision ===== */
 

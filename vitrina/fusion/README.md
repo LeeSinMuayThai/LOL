@@ -856,7 +856,97 @@ b.iniciar();
 
 ### La decisión (B): ¡OFERTA ENCONTRADA! y la costura
 
-*(lo escribe B)*
+El usuario: *"en 'la decision' el circulito podria ser el famoso coso de aceptar partida algo asi"*. Abrir:
+`index.html#pantalla=decision&muestra=evento&op=linea` (y `muestra=planAmateur`). Código: `crearCostura` al final de
+`js/escena.js` (tablas `COSTURA`, `PORTAL_LN`, `T_LN`, `LADO_LN`), la rama `linea` de `js/decision.js`, el bloque §4.9 al
+final de `estilos/decision.css` (prefijo `dc-`) y el bloque B de `tokens.css` (`--dc-*`, sin colores nuevos). Sin op,
+`final` y las ops de §4.7 no cambian (medido abajo).
+
+**1 · El aviso.** La bisagra llega como el aviso de aceptar partida del cliente, con el `anilloAceptar` del kit:
+- el escudo es el logo de la LCK (`<img>`), el encabezado "¡Oferta encontrada!", la cola "Cupo de import · LCK" (el
+  cupo sale del **tipo** del efecto, `CUPO`), el tono `tonoDestino('LCK')` y 12 s;
+- llega enseguida (el relato del split no corre: la línea "antes" queda como resumen) sobre la pantalla atenuada: la
+  franja, "antes", "vos" y la barra se ven pero son `inert`; el panel espera (`dc-espera`). Detrás se reconoce tu main
+  en la luz de la era (el velo del kit, un poco más liviano en esta pantalla: `--dc-aviso-velo`);
+- el foco va al ¡ACEPTAR!; Enter lo escucha el aviso (la pantalla no maneja ninguna tecla mientras está abierto); al
+  llegar a cero entra solo; no hay rechazar. Con INST o movimiento reducido, el aro queda lleno y quieto y no entra solo.
+
+**2 · Aceptar abre la costura.** El anillo se agranda como un portal: un velo con el hueco del aro (`--dc-pr`,
+registrado con `@property`) que crece hasta salir de la pantalla, con el borde en el oro de la ceremonia y el halo en el
+tono de la LCK; arranca lento y sale disparado (`T_LN.curva`; un expo-out se veía abierto de golpe). Adentro el mundo
+ya cruza (`amb.ambiente({ costura })`, 1,1 s): tu main en los dos lados, São Paulo · CBLOL (`tonoDestino('CBLOL')`) a
+la izquierda y Seúl · LCK a la derecha, y la línea que se traza de abajo hacia arriba. A los 560 ms entran los destinos
+y a los 760 ms el panel (su orden de siempre, sin "antes" ni "vos", que ya estaban). El foco pasa al título.
+
+**3 · Los destinos** (`.dc-lado`, `aria-hidden`, cada uno con `aplicarTono` de su liga): el logo de la liga grande
+(`<img>`, más tu org en tu lado), la ciudad y "liga · org" o "liga · región", y por cada camino de ese lado una
+pastilla con su tecla y su nombre corto (`CAMINO`: te quedás, ida y vuelta) y **lo que arriesgás en chips**: la
+`previa` del motor (glifo, abreviatura, ▲/▼ por magnitud) y el riesgo. La cerrada va apagada con su candado
+("mudanza · cerrada"). Un rAF los ubica con `amb.costura()`: cada uno centrado en su mitad, también mientras la costura
+cruza y congelada en las tiras. Un velo de lectura del vacío de su tono va detrás de cada uno.
+- Si el panel crece hasta un destino (título largo, pantalla baja), ese destino va compacto (sin las filas) o, si
+  tampoco entra, solo con sus logos, del alto que quede. El lado B se mide contra "vos" si cae sobre su columna.
+
+**4 · Apuntar y elegir.** Apuntar una opción (hover, foco, flechas, "más") corre la costura hacia su lado: **crece el
+destino apuntado** (±0,13; un adelanto de elegirlo, el aura de la decisión), y su fila se enciende en su tono. La
+cerrada deja la costura al medio y enciende su candado. Elegir abre ese destino: la costura se va al otro borde y se
+endereza (1,3 s), el destino elegido llena la pantalla, el otro se va, la noche de la interfaz toma su tono
+(`aplicarTono` en `<html>`) y el panel muestra el resultado real con los números rodando (el odómetro del kit).
+
+**5 · El panel de decisión, abajo.** El de siempre: el título una sola vez (el aviso no lo repite), las opciones con
+glifos y el inspector, que ya no repite el nombre de la opción apuntada ("leer menos"). Se fueron el skyline, las
+tarjetas de stats y las rutas punteadas: no queda ninguna silueta.
+
+**Las comunes** (`planAmateur`, y toda decisión sin destino): sin capa. La pantalla de siempre dentro de la línea:
+el tono de la era en la noche (K), el campeón en su luz, el panel y la matriz del plan. Una decisión con destino que no
+es bisagra tendría la costura sin el aviso.
+
+**En el celular** (390 × 844): el aviso a escala (el del kit); la costura partida en vertical en una banda arriba del
+panel (`.dc-banda`, en el flujo), con su reposo en el medio de la banda: A arriba a la izquierda, B abajo a la derecha;
+los chips no van (las opciones del panel ya los muestran) y queda la pastilla de cada camino. Elegido, el destino sube
+al principio de la banda.
+
+**Campo del evento → elemento** (nada sale de la prosa):
+
+| Campo | `op=linea` |
+|---|---|
+| `esBisagra` + liga de destino | el aviso y la costura (sin bisagra: la costura sin aviso; sin destino: la pantalla de siempre) |
+| efecto con `liga` ≠ la tuya | el escudo del aviso, el lado B (su tono, su logo, su ciudad y región de `LIGAS`) |
+| tipo de efecto en `CUPO` | "Cupo de import" en la cola del aviso |
+| `ficha.jugador.liga` / `org` | el lado A: su tono, sus logos, su ciudad |
+| camino de cada opción (`leerEvento`) | su lado (`LADO_LN`: te quedás → A; ida y vuelta, mudanza → B) y su nombre corto |
+| `previa[]` y `riesgo` de cada opción | los chips de su fila |
+| `opcionesBloqueadas` | la fila apagada con candado en su lado |
+| `j.campeonDelSplit` | tu main, en el mundo antes de aceptar y en los dos lados de la costura |
+
+**Para las tiras.** La decisión con `op=linea` implementa `congelar(ms)`: `window.vitrina.congelar` pone todas las
+animaciones en `ms` como si hubieran nacido al entrar; las que nacieron después (la apertura, la elección) se corrigen a
+su propio reloj en un microtask. `data-dc-aceptado` en la parada dice a cuántos ms de la entrada se aceptó: la tira de
+la apertura es `congelar(aceptado + t)`.
+
+**Verificación (2026-10-10, puerto 8114, SwiftShader).**
+- `verificar.mjs` en verde.
+- **Lo que no tenía que cambiar** (el código base servido aparte, INST + `webgl=0`, todo congelado a 6000 ms): 24 casos
+  (evento y plan × sin op, `final`, `escena`, `cliente`, `bisagra`, cada uno en reposo y eligiendo la 1, más el celular
+  y apuntar): 19 con 0 píxeles distintos y 5 con ≤ 5 px de 1 nivel, más `final` en el celular con 121 px de ≤ 2 niveles
+  en el anillo del portal (en otra corrida, 1 px). El mismo código contra sí mismo varía igual (≤ 5 px, 1 nivel).
+- 0 errores de consola y 0 `requestfailed`: las 6 ops × evento y plan con WebGL (aceptar y elegir), la bisagra en
+  `webgl=0`, INST, reducido, `peor=1`, 390 × 844, 1280 × 720 y 1920 × 1080, y la vuelta linea → R → partido → `final`.
+- **Contraste por píxeles** (la copia de `c-pantallas/contraste.mjs` con el color computado pasado a sRGB por un píxel
+  de canvas, la caja del texto y no la del elemento, y midiendo las capas `aria-hidden`; salteando lo inerte detrás del
+  aviso): 21 casos (el aviso; la costura en reposo, apuntando cada opción y elegidas; `peor=1`; `webgl=0`; INST; el
+  celular; 1280 × 720 y 1920 × 1080; el plan) → **1317 textos, 0 debajo de 4,5:1**. Los peores: sobre la costura 6,53
+  ("LCK · Corea"), en el aviso 9,67, en el panel 5,77 ("25–60" de "vos", que viene de antes).
+- Las hojas de contactos (no se versionan): el aviso a 0/150/400/800/1500/2400 ms, la apertura a 0/400/1200/3000 ms,
+  apuntando cada opción y elegidas, las comunes, el celular, los modos y antes/después.
+
+**Límites.**
+- El velo del aviso se aliviana con una regla de esta hoja sobre `.ln-aviso-velo` (el kit no tiene esa opción).
+- `PORTAL_LN` repite la geometría del aro de `js/ceremonia.js` (92 y 104 sobre 240): si el kit la cambia, hay que
+  cambiarla acá.
+- En el celular la cara del lado B queda detrás del panel: de ese lado se ve su tono y su logo.
+- Sin WebGL la costura es la del respaldo CSS del kit (sin halo ni chispas); los destinos se ubican igual, por la
+  posición.
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->
