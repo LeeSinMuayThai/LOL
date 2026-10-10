@@ -24,7 +24,7 @@
 | **U0 · fusión** | Una sola dirección: la interfaz de C dentro del mundo de A, con 7 reglas de una misma línea (§4.5) | ✅ 2026-10-09 (1 × Opus xhigh, `f35fcb4`; merge `d7622e9`; referencias en `vitrina/referencia/fusion/`) |
 | **Compuerta 1b** | El usuario mira la fusión | 🔶 2026-10-09: "está bien", pero el duotono "blanco y negro + violeta" de los campeones se vuelve repetitivo después del inicio; pidió tres variantes (§4.6) |
 | **U0 · intensidad** | Una página con tres variantes de color del campeón (a color, mitad, fondo en duotono y retratos a color) y el espacio "un poco" menos (§4.6) | ✅ 2026-10-09 (`899ed27`, merge `81993d4`); el usuario respondió con capturas (§4.7) |
-| **U0 · opciones** | La serie con la receta de color y el fondo nítido; tres opciones por pantalla para el partido (la competición), la decisión y el mercado (logos reales) (§4.7) | 🔶 en curso |
+| **U0 · opciones** | La serie con la receta de color y el fondo nítido; tres opciones por pantalla para el partido (la competición), la decisión y el mercado (logos reales) (§4.7) | ✅ 2026-10-09 (merges `66c6cc4`, `4c2de5f`, `67764bd`, `94dc50a`); esperando la elección del usuario en `opciones.html` |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
@@ -643,6 +643,44 @@ comentario 4 es del mercado.
   - La plomería de `op` ya está en `main.js` (la hizo el supervisor).
 - **Después del merge**, el supervisor arma `opciones.html`, una página con pestañas por pantalla y las opciones lado a
   lado, con "como hoy" para comparar. También conecta los logos de equipo al marcador de la serie y del Swiss.
+
+**Resultado (2026-10-09; merges `66c6cc4`, `4c2de5f`, `67764bd`, `94dc50a`).** Tres Opus xhigh en paralelo y un Sonnet
+para `opciones.html`. Cero choques de código: solo el README, que se resolvió a mano.
+
+**Partido:**
+- `color=receta` (piezas 65/35, fondo 60/40) es la base cuando hay `op`.
+- **La causa de la "poca calidad":** el shader entero pintaba a 0,5 y la textura no tenía mipmaps. El "vivo" desplazaba
+  cada píxel por su brillo y rompía los bordes.
+- **El arreglo:** dos pasadas, con la luz a 0,5 y el arte a resolución completa con mipmaps. El "vivo" bajó de 0,016 a
+  0,007. Esto cambia también "como hoy", a propósito.
+- **`js/competicion.js`:** paletas tomadas de los logos oficiales (no hay guías de marca públicas con hex) y 22 logos.
+- El Swiss quedó **sin** oro en `luz` y `transmision`. El usuario pidió −20%; si lo quiere literal, la perilla es
+  `K_PALETA`.
+
+**Decisión:**
+- `js/escena.js`: CBLOL y FURIA ↔ la LCK sobre Seúl, con el arco. Apuntar cruza la escena.
+- `cliente`: "partida encontrada" con el anillo de 12 s.
+- `bisagra`: el capítulo, los dos caminos y las cartas de lo que arriesgás.
+- La tabla "campo del evento → elemento de la escena" está en el README.
+
+**Mercado:**
+- `js/logos.js`: 45 orgs reales y 12 ligas de `static.lolesports.com`, las 53 URLs con 200. Las 7 orgs inventadas llevan
+  monograma.
+- `mesa`: el contrato con la firma trazada y el sello FIRMADO.
+- `anuncio`: el post de fichaje de la org. Solo LOUD se "publica": es la única prueba que el motor jugó; las otras quedan
+  en BORRADOR.
+- `orgs`: los logos flotan por sueldo y su aura tiñe el mundo.
+
+**Verificación:**
+- **El supervisor:** las 32 combinaciones de pantalla × opción y `opciones.html` (4 pestañas) en el 8095 sin errores ni
+  avisos; `verificar.mjs` en verde.
+- **Los workers:** contraste con 0 textos debajo de 4,5:1 (2514 + 985 + 876).
+
+**Pendiente:**
+- los logos de equipo en el marcador de la serie y del Swiss ya los pone `competicion.js`; queda unificar sus URLs en
+  `logos.js`;
+- los estilos `.logo`/`.escudo` viven en `mercado.css`;
+- sin WebGL no hay paleta ni arena.
 
 ---
 
