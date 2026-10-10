@@ -664,12 +664,24 @@ html[data-reducido] :is(.dc-lado, .dc-fila, .dc-tecla, .dc-chip) { transition: n
 .dc-costura[data-apunta='a'] .dc-heroe[data-lado='a'] .dc-heroe-luz,
 .dc-costura[data-apunta='b'] .dc-heroe[data-lado='b'] .dc-heroe-luz { transform: translateY(calc(var(--dc-heroe-sube) * -1)); }
 .dc-costura[data-apunta='a'] .dc-heroe[data-lado='b'], .dc-costura[data-apunta='b'] .dc-heroe[data-lado='a'] { opacity: var(--dc-heroe-apagado); }
-.dc-costura[data-var='liga'][data-apunta='a'] .dc-heroe[data-lado='b'], .dc-costura[data-var='liga'][data-apunta='b'] .dc-heroe[data-lado='a'] { opacity: var(--dc-heroe-apagado-liga); }
+/* (liga: se apagan el logo y la pared, no lo escrito: la ciudad y lo marcado siguen leyendose >= 4,5:1) */
+.dc-costura[data-var='liga'][data-apunta='a'] .dc-heroe[data-lado='b'], .dc-costura[data-var='liga'][data-apunta='b'] .dc-heroe[data-lado='a'] { opacity: 1; }
+.dc-costura[data-var='liga'][data-apunta='a'] .dc-heroe[data-lado='b'] :is(.dc-mon-logo, .dc-pared, .dc-marca-escudo),
+.dc-costura[data-var='liga'][data-apunta='b'] .dc-heroe[data-lado='a'] :is(.dc-mon-logo, .dc-pared, .dc-marca-escudo) { opacity: var(--dc-heroe-apagado-liga); }
+.dc-mon-logo, .dc-pared, .dc-marca-escudo { transition: opacity var(--dc-heroe-cruce) var(--expo); }
 /* elegido: el otro heroe se va (como su destino; gana sobre el apagado de liga) */
 .dc-costura[data-elegido='a'][data-apunta][data-var] .dc-heroe[data-lado='b'], .dc-costura[data-elegido='b'][data-apunta][data-var] .dc-heroe[data-lado='a'] { opacity: 0; }
 
 /* ---------- copas: la copa (js/trofeo.js, lienzo WebGL o SVG) y el logo de la liga como <img> en su placa ---------- */
 .dc-copa { position: relative; width: var(--dc-copa-w, 0px); height: var(--dc-copa-h, 0px); }
+/* el charco de luz donde apoya el pedestal (la copa no flota: esta parada en la luz de su lado); apuntada, mas luz */
+.dc-copa::before {
+  content: ''; position: absolute; left: 4%; right: 4%; bottom: 0; height: var(--dc-charco-alto);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tono-luz) var(--dc-charco), transparent), transparent);
+  opacity: 0.7; transition: opacity var(--dc-heroe-cruce) var(--expo);
+}
+.dc-costura[data-apunta='a'] .dc-heroe[data-lado='a'] .dc-copa::before, .dc-costura[data-apunta='b'] .dc-heroe[data-lado='b'] .dc-copa::before { opacity: 1; }
+.dc-costura[data-apunta='a'] .dc-heroe[data-lado='b'] .dc-copa::before, .dc-costura[data-apunta='b'] .dc-heroe[data-lado='a'] .dc-copa::before { opacity: 0.25; }
 .dc-copa-placa { position: absolute; display: flex; align-items: center; justify-content: center; padding: 0.4% 8%; overflow: hidden; }
 .dc-copa-placa img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 2px var(--sombra)); }
 
@@ -710,13 +722,13 @@ html[data-reducido] :is(.dc-lado, .dc-fila, .dc-tecla, .dc-chip) { transition: n
 .dc-costura[data-apunta='b'] .dc-heroe[data-lado='b'] .logo.dc-mon-logo,
 .dc-costura[data-elegido] .logo.dc-mon-logo { filter: drop-shadow(0 10px 30px var(--sombra)) drop-shadow(0 0 64px color-mix(in srgb, var(--tono-luz) 80%, transparent)); }
 /* compacto (la franja libre es baja: 1280x720): el logo y la ciudad, sin la pared */
-.dc-mon-compacto .dc-pared, .dc-mon-compacto .dc-marca { display: none; }
+.dc-mon-compacto :is(.dc-pared, .dc-marca, .dc-mon-lugar span) { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .dc-heroe, .dc-heroe-escala, .dc-heroe-luz, .logo.dc-mon-logo { transition: none; }
+  .dc-heroe, .dc-heroe-escala, .dc-heroe-luz, .logo.dc-mon-logo, .dc-pared, .dc-marca-escudo { transition: none; }
   .dc-incognito .monograma { animation: none; }
 }
-html[data-reducido] :is(.dc-heroe, .dc-heroe-escala, .dc-heroe-luz, .logo.dc-mon-logo) { transition: none; }
+html[data-reducido] :is(.dc-heroe, .dc-heroe-escala, .dc-heroe-luz, .logo.dc-mon-logo, .dc-pared, .dc-marca-escudo) { transition: none; }
 html:is([data-reducido], [data-inst]) .dc-incognito .monograma { animation: none; }
 
 @media (max-width: 640px) {

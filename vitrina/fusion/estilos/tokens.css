@@ -717,6 +717,9 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
   --dc-heroe-sube: 3.5%;
   --dc-heroe-apagado: 0.9;
   --dc-heroe-apagado-liga: 0.4;
+  /* copas: el charco de luz bajo el pedestal (su alto, en altos de la copa, y cuanto del tono) */
+  --dc-charco-alto: 14%;
+  --dc-charco: 46%;
   /* liga: el monumento. El logo, la ciudad, un escudo de la pared, el marcado, los huecos */
   --dc-mon-logo: 128px;
   --dc-mon-ciudad: 34px;
