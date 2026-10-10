@@ -46,15 +46,18 @@ function esVisible(el) {
   return el.offsetParent !== null;
 }
 
-const AMBIENTE_NULO = Object.freeze({ aplicar() {}, aquietar() {}, pausa() {} });
+const AMBIENTE_NULO = Object.freeze({ aplicar() {}, fondo() {}, aquietar() {}, pausa() {} });
 
 // `shell`: el `.shell` de `index.html`. `vista`: el store de lo ya mostrado (`ui/core/store.js`). `ambiente`: el puente
-// al ambiente (`shell.js`: `aplicar({ era, animo })`, `aquietar()`, `pausa(motivo, activa)`). `sinTransicion()`: `true` si
-// el reproductor va sin espera (INST o movimiento reducido): ahí todo es síncrono.
+// al ambiente (`shell.js`: `aplicar({ era, animo })`, `fondo(contexto)`, `aquietar(si)`, `pausa(motivo, activa)`).
+// `sinTransicion()`: `true` si el reproductor va sin espera (INST o movimiento reducido): ahí todo es síncrono.
 export function crearEscena({ shell, vista, ambiente = AMBIENTE_NULO, sinTransicion = () => true }) {
   // La última pieza pedida (no la del DOM): con una transición esperando su cuadro, el DOM todavía muestra la anterior.
   let ultimaPedida = shell.dataset.pieza ?? null;
   let luzActual = null;
+  // Lo que el director le dice al mundo según la pieza: el inicio tiene su política de fondo (el bitono entero).
+  const contextoDe = (p) => (p === 'inicio' ? 'inicio' : 'juego');
+  ambiente.fondo(contextoDe(ultimaPedida ?? 'inicio'));
 
   function pieza() {
     return shell.dataset.pieza ?? null;
@@ -120,9 +123,11 @@ export function crearEscena({ shell, vista, ambiente = AMBIENTE_NULO, sinTransic
       if (typeof pintar === 'function') {
         pintar();
       }
-      // La enmienda de la regla 1 (PLANUI §2): una parada apareció, el ambiente se aquieta. Con minijuego, en pausa.
-      if (esParada && nueva !== anterior) {
-        ambiente.aquietar();
+      // La enmienda de la regla 1 (PLANUI §2): una parada apareció, el ambiente se aquieta; vuelve a moverse en el
+      // relato. Con minijuego, en pausa.
+      if (nueva !== anterior) {
+        ambiente.aquietar(esParada);
+        ambiente.fondo(contextoDe(nueva));
       }
       ambiente.pausa('minijuego', nueva === 'minijuego');
     }, { animar, alTerminar: esParada ? enfocarEncabezado : null });

@@ -297,12 +297,16 @@ export function verificarProhibidos({ estilosDir, indexHtml = null, uiDir = null
 }
 
 // §9.5: los parsers de contraste (`hexDeToken`, `contraste.mjs`) leen `#rrggbb`; un `oklch()` o un `color-mix()` en una
-// hoja pasa sin medir. Las variantes translúcidas van como `#rrggbbaa` en tokens.css.
+// hoja pasa sin medir. Las variantes translúcidas van como `#rrggbbaa` en tokens.css. Exenta: `fx.css`, la hoja del kit
+// (U1k), que es decorativa (luz, bruma, velos teñidos del tono, la ceremonia: nada que pinte una placa o una tinta de
+// texto que lean los parsers) y copia textual la vitrina, también sus `html[data-tono]` (decisión del supervisor,
+// 2026-10-10). Lo que se lee sigue en tokens.css y en las hojas de las familias, que no la tienen.
 const PATRON_COLOR_MODERNO = /(?<![\w-])(?:oklch|oklab|lab|lch|color|color-mix)\(/i;
+export const HOJAS_DECORATIVAS = Object.freeze(['fx.css']);
 
-export function verificarSinColorModerno(estilosDir) {
+export function verificarSinColorModerno(estilosDir, { exentas = HOJAS_DECORATIVAS } = {}) {
   const hallazgos = [];
-  for (const archivo of listarArchivosCss(estilosDir)) {
+  for (const archivo of listarArchivosCss(estilosDir).filter((a) => !exentas.includes(path.basename(a)))) {
     sinComentariosCss(fs.readFileSync(archivo, 'utf8')).split('\n').forEach((linea, i) => {
       if (PATRON_COLOR_MODERNO.test(linea)) hallazgos.push(`${path.basename(archivo)}:${i + 1}`);
     });

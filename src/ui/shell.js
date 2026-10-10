@@ -30,7 +30,10 @@ const ESPERA_SIN_IDLE_MS = 0;
 const TECHO_IDLE_MS = 2000;
 
 let api = null;
-let ultimo = null;
+// `tonoEra` de `fx/tono.js` (el kit): se carga solo si el ambiente montado sabe de tonos (`api.tono`).
+let tonoEra = null;
+// Lo último que pidió el director: si el ambiente monta después, arranca con esto (y sin cruce).
+const estado = { luz: null, contexto: null, inst: null, quieto: false };
 const motivosDePausa = new Set();
 
 function seguro(nombre, fn) {
@@ -41,20 +44,33 @@ function seguro(nombre, fn) {
   }
 }
 
+// El segundo tono de la era (LINEA.md §3, contexto `era`) en <html> y en la luz del mundo.
+function aplicarTonoDeEra(era) {
+  if (api && tonoEra && era) seguro('tono', () => api.tono?.(tonoEra(era)));
+}
+
 async function montarAmbiente() {
   const contenedor = document.getElementById('fx-ambiente');
   if (!contenedor || api) return;
   try {
     const { montarFx } = await import('./fx/index.js');
     api = montarFx(contenedor);
+    if (api && typeof api.tono === 'function') {
+      ({ tonoEra } = await import('./fx/tono.js'));
+    }
   } catch (error) {
     console.error('No se pudo montar el ambiente (el juego sigue sin él):', error);
-    api = null;
   }
   if (!api) return;
   // `src/dev/estrella.mjs` (U1a) lo busca para `congelar(ms)` en las capturas.
   window.__fx = api;
-  if (ultimo) seguro('ambiente', () => api.ambiente(ultimo));
+  if (estado.inst !== null) seguro('inst', () => api.inst?.(estado.inst));
+  if (estado.contexto) seguro('fondo', () => api.fondo?.({ contexto: estado.contexto, instantaneo: true }));
+  if (estado.luz) {
+    aplicarTonoDeEra(estado.luz.era);
+    seguro('ambiente', () => api.ambiente({ ...estado.luz, instantaneo: true }));
+  }
+  if (estado.quieto) seguro('aquietar', () => api.aquietar(true));
   if (motivosDePausa.size > 0) seguro('pausar', () => api.pausar());
 }
 
@@ -64,16 +80,33 @@ if (typeof window.requestIdleCallback === 'function') {
   window.setTimeout(() => { montarAmbiente(); }, ESPERA_SIN_IDLE_MS);
 }
 
-// El puente que usa el director (`crearEscena({ ambiente })`).
+// El puente que usan el director (`crearEscena({ ambiente })`) y el controlador (`inst`). Las llamadas que el stub de
+// `fx/index.js` no tiene van con `?.` (la API del kit, `src/ui/fx/README.md`).
 export const ambiente = {
-  // `{ era, animo }` desde la `vista` (ui/core/era.js). Se guarda: si el ambiente monta después, arranca con la última.
+  // `{ era, animo }` desde la `vista` (ui/core/era.js): la luz del mundo y, si cambió la era, su tono.
   aplicar(luz) {
-    ultimo = { ...ultimo, ...luz };
-    if (api) seguro('ambiente', () => api.ambiente(luz));
+    const eraAntes = estado.luz?.era ?? null;
+    estado.luz = { ...estado.luz, ...luz };
+    if (!api) return;
+    if (estado.luz.era !== eraAntes) aplicarTonoDeEra(estado.luz.era);
+    seguro('ambiente', () => api.ambiente(luz));
   },
-  // La enmienda de la regla 1 (PLANUI §2): una parada apareció, el ambiente se aquieta en <= 1 s.
-  aquietar() {
-    if (api) seguro('aquietar', () => api.aquietar());
+  // La política del mundo de la pantalla (`api.fondo`): 'inicio' (el bitono entero) o 'juego'. Los momentos piden el suyo.
+  fondo(contexto) {
+    if (contexto === estado.contexto) return;
+    estado.contexto = contexto;
+    if (api) seguro('fondo', () => api.fondo?.({ contexto }));
+  },
+  // El reproductor entró o salió de INST (o del movimiento reducido): el camino quieto de todo el kit.
+  inst(si) {
+    estado.inst = Boolean(si);
+    if (api) seguro('inst', () => api.inst?.(estado.inst));
+  },
+  // La enmienda de la regla 1 (PLANUI §2): una parada apareció, el ambiente se aquieta en <= 1 s (`si`); vuelve a
+  // moverse en el relato (`false`).
+  aquietar(si = true) {
+    estado.quieto = Boolean(si);
+    if (api) seguro('aquietar', () => api.aquietar(estado.quieto));
   },
   // El ambiente está en pausa mientras haya al menos un motivo: 'minijuego', 'cuarto', 'oculta'.
   pausa(motivo, activa) {

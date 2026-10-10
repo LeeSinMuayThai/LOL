@@ -726,6 +726,8 @@ export function iniciar() {
     toggleSonido.replaceChildren(iconoSonido(on));
     toggleSonido.setAttribute('aria-pressed', on ? 'true' : 'false');
     toggleSonido.title = on ? 'Sonido activado (click para apagar)' : 'Sonido apagado (click para activar)';
+    // PLANUI U1: el kit de efectos va a su cuadro final con INST (o movimiento reducido), como el reproductor.
+    ambiente.inst(reproductor.sinEspera());
   }
 
   // Fase T8 (P.2): retoma exactamente donde quedó — mismo `rng`/`rngUi`
