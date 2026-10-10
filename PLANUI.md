@@ -28,8 +28,8 @@
 | **U0 · demostración final** | Una versión por pantalla (`op=final`): serie con las pantallas del stage, Swiss como stream, decisión B+C, mercado A+C sin campeón de fondo; `final.html` (§4.8) | ✅ 2026-10-10 (merges `b45543c`, `fcd297b`, `5a8c891`, `c0297b7`); el usuario la miró y pidió correcciones (§4.9) |
 | **U0 · una línea** | La mini auditoría y la corrección (`op=linea`): el bitono del inicio como gradación de todo, el segundo tono por contexto, la costura, la ceremonia del LoL, los momentos con beats y la copa en 3D (§4.9) | ✅ 2026-10-10 (merge `f7b2e7d`: K, M, A, B, C y la unificación); superada por §4.10 |
 | **U0 · las últimas correcciones** | La última ronda del usuario sobre `op=linea` (§4.10), con la perilla `var=`: el champ select del inicio, las costuras `copas` y `liga` de la bisagra, VICTORIA verde y el suspenso del mapa decisivo, el stream casi negro, las ofertas que llegan con `camiseta`/`plantel`/`ofertas` y el título con el campeón, la liga y el equipo | ✅ 2026-10-10 (merge `24d9009`: I, D, T, E); esperando que el usuario mire `final.html` en el 8095 |
-| **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
-| **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
+| **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⏭️ 2026-10-10: salteada. La fusión con `op=linea` ya cubre serie, Swiss y mercado; el celular, la trayectoria y el PNG se diseñan en U2/U3 con el mismo kit |
+| **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ✅ 2026-10-10: "Aprobar y migrar", después de ver que lolero.lol salió con la UI vieja. La especificación es la fusión con `op=linea` y las variantes de §4.10 (§2) |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
 | **C1** | El usuario prueba luz, tipografía, ritmo y rendimiento en su máquina | ⬜ |
 | **U2 + U2c** | Las pantallas del norte (inicio + decisión; partido + mercado) + franja, cuartos y contenedor de minijuegos | ⬜ |
@@ -99,8 +99,11 @@ Lo midió un explorador de historia sobre `PLAN.md`, `PROGRESO.md`, `AUDITORIA.m
 | El brief visual de antes (2026-09-04) | *"un diseño full profesional para cuando subamos la página, moderno y futurista"* |
 | Siguen vigentes (§V.1 de `PLAN.md`) | **"Escenario + un panel"** (una pieza + un panel de contexto; en el celular, sin el panel) · **"Una página por split"** · el escalón en el cierre de año · **Golden Road** "Todo el año" como **"Logro aparte"** |
 | Reemplazada | T.2 "broadcast de esports, desktop primero": la estética la decide la compuerta 1 |
-| **Pendiente — compuerta 1** | La dirección (A, B, C o mezcla) |
-| **Pendiente — compuerta 2: enmienda de la regla 1 de §V.3** | Hoy: *"mientras hay una parada, nada más se anima"*. Propuesta: **el ambiente se aquieta en ≤ 1 s cuando aparece una parada** y solo vuelve a moverse en el relato; nada más se anima durante una parada |
+| **Compuerta 1** | La fusión (§4.5), corregida por "una línea" (§4.9) y "las últimas correcciones" (§4.10): la vitrina con `op=linea` es la especificación de producción |
+| **Compuerta 2 (2026-10-10): la bisagra** | *"Según el contexto"*: con dos ligas en juego, `liga`; con una copa en juego, `copas`; si no, `campeones` |
+| **Compuerta 2 (2026-10-10): el mercado** | *"ofertas, cuando elegís que se apriete, salga la animación de la firma sobre el contrato, después que haya una transición animación donde cae de arriba tu línea sobre el mapa con las líneas, después de eso y la camiseta que aparezca en la parte siguiente que es 'la firma' y que te deje elegir el número"* → atrás va `ofertas` (las cartas formales que se apilan). Al elegir: (1) la carta se aprieta y la firma se dibuja sobre el contrato; (2) transición: tu línea (el glifo de tu rol) cae desde arriba sobre el mapa de la Grieta con las cinco líneas (el `plantel`); (3) la pantalla siguiente, "la firma" (el walkout), muestra la camiseta de espaldas con tu nick y **te deja elegir el número**. El número es cosmético: vive en el marcador `lolcs-vista` (como `momentosVistos`), no en el `state` del motor (huella y `VERSION` intactas), y lo pueden leer la carta y el PNG |
+| **Compuerta 2 (2026-10-10): el andamio** | Liviano: U1a reescribe la regla f2 y arma las capturas lado a lado contra la vitrina; las métricas automáticas de §12 (vacío plano, cobertura, histograma, palabras, cuadro) quedan fuera. Se juzga mirando (el usuario: "no te hagas tan fan de los checks") |
+| **Aprobada en la compuerta 2 (2026-10-10): enmienda de la regla 1 de §V.3** | Hoy: *"mientras hay una parada, nada más se anima"*. Propuesta: **el ambiente se aquieta en ≤ 1 s cuando aparece una parada** y solo vuelve a moverse en el relato; nada más se anima durante una parada |
 
 ---
 

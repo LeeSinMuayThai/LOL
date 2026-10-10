@@ -1,0 +1,10 @@
+// Deploy de Lolero a Cloudflare (Workers con assets estaticos): `npm run build && npx wrangler deploy`
+{
+  "name": "lolero",
+  "compatibility_date": "2026-09-01",
+  "assets": { "directory": "./dist" },
+  "routes": [
+    { "pattern": "lolero.lol", "custom_domain": true },
+    { "pattern": "www.lolero.lol", "custom_domain": true }
+  ]
+}
