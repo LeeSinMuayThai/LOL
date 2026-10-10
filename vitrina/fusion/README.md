@@ -1088,4 +1088,95 @@ Tres detalles:
 
 ### La unificación (ola 3)
 
-*(lo escribe U)*
+Una lista cerrada de observaciones cruzadas del supervisor: dos de calidad visual y los pedidos al kit que fueron
+dejando A, B, C y M. Nada se rediseñó fuera de la lista. Sin op, `op=final` y las ops de §4.7 quedan iguales (medido
+abajo).
+
+**1 · AFUERA y el cierre de la serie, a color.** Los dos quedaban casi en blanco y negro: el ánimo `caida` del ambiente
+mezclaba la imagen hacia su luminancia (78 %), y `peligro` hacia el gris (60 %). Ahora la política de color `linea` lleva
+`animoConColor: true` (`js/color.js`) y el ambiente lo lee de la política de la pantalla (`fondo.js` → `uF.w`):
+- con esa política, la caída se cuenta con la luz: la imagen se apaga (el mismo 30 % de antes), se enfría y las sombras
+  caen a la noche del tono de su lado de la costura, sin sacar el color; el peligro conserva su latido oscuro sin gris;
+- el arte del takeover queda con el 70 % de color real que ya le daba la política (`momento`);
+- sin WebGL, lo mismo con `data-animo-color` en la capa CSS (`estilos/ambiente.css`: solo `brightness`);
+- las otras políticas siguen con el gris de siempre (la rama del shader es la misma con `uF.w = 0`).
+
+Medido en la región del arte (saturación HSV media / croma medio): AFUERA 0,24 / 14,5 → 0,54 / 41,9 con la misma
+luminancia (57 → 55); el cierre "FX gana la final" 0,20 / 11,3 → 0,53 / 42,9. Sin WebGL: 0,31 → 0,62 y 0,20 → 0,55.
+
+**2 · Las caras de la costura de la decisión, arriba del panel.** Las dos caras de Sylas caían a la altura de la línea
+"antes" y quedaban bajo el panel de decisión y el panel "vos" (en el celular, la del lado B quedaba detrás del panel).
+- El kit suma `costura.caras` (`js/ambiente.js`): `{ a: { x, y }, b: { x, y }, alto }`, el punto de cada cara y el alto
+  del arte en fracciones de la pantalla (o del marco) y desde arriba, como lo que devuelve `amb.costura()`. Cada cara
+  se queda de su lado: si la línea le pasa a menos de 0,04, la empuja. Se hereda entre llamadas, como la posición, y
+  cruza con el resto. Sin `caras`, la cuenta de siempre (el Swiss y la serie no cambian).
+- La decisión (`crearCostura`, `js/escena.js`) pone las caras en el medio de la franja libre entre la barra de arriba y
+  la línea "antes" (el arte mide 2,1 veces esa franja, nunca menos de 0,45 de la pantalla). Los destinos van contra
+  los bordes (A alineado a la izquierda, B a la derecha), más chicos (logo 72 px, org 48 px, ancho 340 px, en el bloque
+  B de `tokens.css`), y cada cara cae al lado de su destino, del lado de la línea.
+- Las caras quedan quietas al apuntar y al elegir: corre la línea, no ellas. Apuntar agranda el lado apuntado hacia
+  la otra cara; elegir lleva la línea al borde y la cara elegida queda donde estaba, visible.
+- En el celular, adentro de la banda (330 px): A arriba a la derecha y su destino a la izquierda; B abajo a la izquierda
+  y su destino a la derecha. Elegido, el destino sube al principio de la banda y su cara sigue a la vista.
+- Los destinos se ubican por las caras (`amb.costura().a/b`) en cada cuadro, con y sin WebGL.
+
+**3 · Los pedidos al kit (y los parches que se fueron).**
+- **a. `bloquear()` y `anilloAceptar()` consumen su tecla.** `escucharTecla` (`js/ceremonia.js`) escucha en la captura
+  del documento y, si el gesto ocurrió, corta el evento (`stopImmediatePropagation`): el mismo Enter que firma (o
+  acepta) ya no llega a `main.js` ni a la pantalla, sin importar quién se registró primero. Si el botón está
+  deshabilitado, la tecla sigue su camino. `firmadoEn` (`js/mercado.js`) se fue.
+- **b. `amb.pulso` se superpone.** Una lista de pulsos (≤ 8) en vez de un lugar: uno nuevo suma su curva sin cortar la
+  del anterior, con el tope de un pulso solo. Dos arranques quedan a ≥ 335 ms (≤ 3 por segundo, el margen de
+  `beats.js`): el más débil se funde en el que ya está; el más fuerte lo reemplaza si no arrancó, o espera su turno.
+  Sin WebGL, lo mismo con `composite: 'add'`.
+- **c. `anilloAceptar({ velo })`.** Cuánto tapa el velo: un número 0-1 o un token (`'--dc-aviso-velo'`). Sin la opción,
+  el velo del kit de siempre. La regla propia de B sobre `.ln-aviso-velo` (`decision.css`) se fue.
+- **d. `ARO` exportado.** `js/ceremonia.js` exporta la geometría del aro (`{ lado, radio, marco, interior }`) y
+  `PORTAL_LN` (`js/escena.js`) sale de ahí.
+- **e. `amb.costura()` sin WebGL devuelve las caras** (`a`/`b`, con el marco y las `caras`), con la misma cuenta que
+  WebGL (`carasCostura`). El arte del respaldo CSS escala con `caras.alto` (`--lc-cos-escala`).
+- **f. `.escudo` acotado.** La regla de `partido.css` vale solo para el monograma de `js/competicion.js` (en su
+  `<i class="logo-org|logo-comp">`) y adentro del mercado de §4.7/§4.8 (`.mk-op`), donde esa caja ya era parte de cómo
+  se ve `op=final`; con la misma especificidad (`:where`), así ahí el resultado es idéntico. El parche de C en
+  `mercado.css` se fue.
+- **g. INST quieto.** Con INST el ambiente seguía derivando (solo el movimiento reducido usaba el cuadro fijo). Ahora
+  el camino quieto (`reducido() || inst()`) usa el cuadro fijo de siempre, sin pulsos, sin paralaje y con la gloria ya
+  asentada.
+
+**4 · El contraste de la franja.** El 2,17:1 de `.fr-delta` era de la medición: el triángulo (`.tri.sube`, un SVG con
+`fill: var(--up)`) no se vuelve transparente con el texto y quedaba dentro de la caja del elemento, así que se medía el
+"1" verde contra el triángulo verde. Medido con la caja de los nodos de texto (`Range.getClientRects`) y solo los
+píxeles del glifo: 13,5-13,7:1 en la decisión (`linea` y `final`), la serie (`linea` y sin op) y el celular. El token
+`--up` no cambia.
+
+**Verificación (2026-10-10, puerto 8116, SwiftShader).**
+- `node vitrina/comun/verificar.mjs`: "Todo en verde."
+- **Lo que no tenía que cambiar** (capturas del código base `d1c4d9e` contra el nuevo, congeladas a 6000 ms, 1440 × 900):
+  29 casos (sin op × 9 pantallas, `final` × 5, `luz`/`transmision`/`escenario`/`escena`/`cliente`/`bisagra`/`mesa`/
+  `anuncio`/`orgs`, y eligiendo en sin op y `final`): 28 con 0 píxeles por encima de 16 niveles y p99,9 ≤ 4; `orgs`
+  0,118 % (p99,9 17), lo mismo que dos corridas del base entre sí (0,101 %, p99,9 17: un brillo que corre). Con
+  `op=linea`, lo que la lista no tocaba (el aviso de la decisión, con y sin WebGL y en el celular; el mercado en reposo,
+  apuntando, firmando, en el celular y con `peor=1`; la firma; el plan; la serie; el replan; el Swiss; el título; el
+  inicio): 15 casos dentro del ruido (el mercado en reposo dio 0 píxeles en una segunda corrida).
+- **3a:** con la oferta 2 elegida, Enter firma y el sello sigue en opacidad 0 a los 300, 900 y 1500 ms (cae a los
+  1916); un segundo Enter lo deja en 1 a los 120 ms. En la decisión, el Enter que acepta ya no llega a la burbuja del
+  documento (antes: 1 evento; ahora: 0).
+- **3b:** logro a 0 ms y apuntar a 400 ms: a los 450 ms el pulso suma 0,319 (con un solo lugar quedaba 0,105). Golpe a
+  500 ms → arranca a 735 ms; elegir a 600 se funde; gloria a 2100 sube al pulso de 2000. Separación mínima: 335 ms.
+- **3g:** el mundo solo (la interfaz oculta), dos capturas con 2 s de diferencia. Con INST: 0 píxeles distintos en la
+  serie, el Swiss, la decisión, el mercado, el título y la serie sin op (antes: 0,4-10,4 % de píxeles, máx. 75-174
+  niveles); el paralaje con INST, 0 (antes 22 %). Con movimiento reducido: 0, salvo el título (0,026 %, un arte que
+  termina de asentarse y queda igual al cuadro de INST).
+- **Contraste por píxeles** (la caja de los nodos de texto, también `aria-hidden`): 20 casos de lo tocado (el aviso, la
+  costura en reposo, apuntando y elegida, el celular, `webgl=0`, INST, `peor=1`, 1280 × 720 y 1920 × 1080; AFUERA y el
+  cierre de la serie con y sin WebGL, en el celular e INST) → 1499 textos, 0 debajo de 4,5:1 (3:1 en los grandes). Los
+  peores: el guion de 64 px del cierre 4,93; "LCK · Corea" 5,63 en 1280 × 720. Los destinos solos: 66 textos, el peor 8,74.
+- **0 errores de consola y 0 `requestfailed`** en 64 casos: 9 pantallas × (sin op, `final`, `linea`) eligiendo, y con
+  `op=linea` × (`webgl=0`, INST, 390 × 844); la decisión con reducido, `peor=1`, 1280 × 720 y 1920 × 1080; firmar con
+  Enter y saltear; `linea.html` (y `#webgl=0`), `final.html`, `opciones.html` y `variantes.html`.
+
+**Límites.**
+- En una pantalla baja (1280 × 720) la franja libre arriba del panel mide ~85 px: las caras se ven chicas y el destino A
+  queda solo con sus logos (el `dc-mini` de B, que ya pasaba antes).
+- `caras` vale para una costura que no se mueve con el scroll: en el celular, si se baja la pantalla, la banda sube y
+  las caras se quedan (como ya pasaba con la línea).

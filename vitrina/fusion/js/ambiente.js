@@ -22,7 +22,7 @@ import { pintarCampeon } from './color.js';
 
 export const ERAS = ['pieza', 'academia', 'escenario', 'mundial', 'leyenda'];
 const ANIMOS = ['normal', 'peligro', 'gloria', 'caida'];
-const PULSOS = { elegir: 0.45, logro: 0.7, golpe: 1, peligro: 0.8, gloria: 1, cambio: 0.32, apuntar: 0.12 };
+export const PULSOS = { elegir: 0.45, logro: 0.7, golpe: 1, peligro: 0.8, gloria: 1, cambio: 0.32, apuntar: 0.12 };
 const T_ERA = 1300;
 const T_ARTE = 900;
 export const T_AURA = 750; // el cruce del aura (foco de campeon): 600-900 ms
@@ -31,6 +31,31 @@ const VIVO_EN_CALMA = 0.2; // el splash vivo "respira" en las paradas
 const T_CALMA = 800;
 const T_ANIMO = 900;
 const T_PULSO = 380;
+// (PLANUI §4.9, U) Los pulsos se superponen: uno nuevo no corta la cola del anterior. Y no pasan de 3 destellos por
+// segundo: dos arranques quedan a SEP_PULSO como minimo (el margen de beats.js). Uno mas debil (o igual) que el que ya
+// esta cerca se funde en el; uno mas fuerte lo reemplaza si todavia no arranco, o espera su turno si ya arranco.
+const SEP_PULSO = 335;
+const MAX_PULSOS = 8;
+const PULSO_TOPE = Math.max(...Object.values(PULSOS));
+// Donde entra un pulso nuevo en `lista` ({ t, k }): { t } (un arranque nuevo), { subir: p } (sube el k de p) o null.
+export function ubicarPulso(lista, t, k, ahora) {
+  for (let i = 0; i <= lista.length; i++) {
+    const choca = lista.find((p) => Math.abs(p.t - t) < SEP_PULSO);
+    if (!choca) return { t };
+    if (k <= choca.k) return null;
+    if (choca.t > ahora) return { subir: choca };
+    t = choca.t + SEP_PULSO;
+  }
+  return null;
+}
+// La suma de los pulsos en t (con el tope de un pulso solo: superponerlos no da un destello mas fuerte que el mayor).
+export function pulsoEn(lista, t) {
+  let s = 0;
+  for (const p of lista) if (t >= p.t) s += p.k * Math.exp(-(t - p.t) / T_PULSO);
+  return Math.min(PULSO_TOPE, s);
+}
+// el camino quieto: movimiento reducido o INST
+const quieto = () => reducido() || inst();
 const FPS_MAX = 30;
 const ESCALA = 0.5; // la luz (bruma, haces, polvo), en escala de la pantalla
 const ESCALA_ARTE = 1; // el arte del campeon se compone a resolucion nativa (PLANUI §4.7: el fondo nitido)
@@ -73,6 +98,43 @@ function posLinea(pos, grados, vertical, m, asp) {
   const tg = Math.tan((grados * Math.PI) / 180);
   if (vertical) return m.y + m.h * pos + (m.x + m.w * 0.5 - 0.5) * asp * tg;
   return m.x + m.w * pos - (0.5 - m.y - m.h * 0.5) * (tg / asp);
+}
+// (PLANUI §4.9, U) `costura.caras`: donde caen las caras, para encuadrarlas en una franja de la pantalla (la decision:
+// entre los destinos y el panel). { a: { x, y }, b: { x, y }, alto }: el punto de cada cara y el alto del arte, en
+// fracciones de la pantalla (o del marco, si hay) y desde ARRIBA, como lo que devuelve costura(). Cada cara se queda de
+// su lado: si la linea le pasa a menos de COS_MIN, la empuja. Se hereda entre llamadas, como la posicion (`caras: null`
+// la saca); al cambiar, cruza con el resto. Sin `caras`, la cuenta de siempre (COS_CARA, COS_Y, COS_ALTO).
+const COS_MIN = 0.04;
+const leerPunto = (p) => (p && Number.isFinite(p.x) && Number.isFinite(p.y) ? { x: p.x, y: p.y } : null);
+const leerCaras = (c) => {
+  const a = leerPunto(c?.a);
+  const b = leerPunto(c?.b);
+  return a && b && Number.isFinite(c.alto) && c.alto > 0 ? { a, b, alto: c.alto } : null;
+};
+const mezclarPunto = (p, q, k) => ({ x: mezclar(p.x, q.x, k), y: mezclar(p.y, q.y, k) });
+const mezclarCaras = (x, y, k) => (!y ? null : !x ? y : { a: mezclarPunto(x.a, y.a, k), b: mezclarPunto(x.b, y.b, k), alto: mezclar(x.alto, y.alto, k) });
+// Las caras de los dos lados (uv, y hacia arriba) adentro de la caja de la costura (toda la pantalla o el marco). asp:
+// ancho / alto de esa caja. La linea es la del shader: en escritorio pasa por (pos, 0,5) y en el celular por (0,5, 1 - pos).
+function carasCostura(pos, vertical, grados, asp, caras) {
+  if (!caras) {
+    return vertical
+      ? { a: { x: 0.5, y: 1 - pos * 0.5, alto: COS_ALTO_CEL, op: 1 }, b: { x: 0.5, y: (1 - pos) * 0.5, alto: COS_ALTO_CEL, op: 1 } }
+      : { a: { x: pos * COS_CARA, y: COS_Y, alto: COS_ALTO, op: 1 }, b: { x: pos + (1 - pos) * (1 - COS_CARA), y: COS_Y, alto: COS_ALTO, op: 1 } };
+  }
+  const tg = Math.tan((grados * Math.PI) / 180);
+  const alto = caras.alto;
+  if (vertical) {
+    // la altura de la linea (uv, hacia arriba) en cada x; A queda arriba y B abajo
+    const linea = (x) => 1 - pos + (x - 0.5) * asp * tg;
+    const ya = 1 - caras.a.y;
+    const yb = 1 - caras.b.y;
+    return { a: { x: caras.a.x, y: Math.max(ya, linea(caras.a.x) + COS_MIN), alto, op: 1 }, b: { x: caras.b.x, y: Math.min(yb, linea(caras.b.x) - COS_MIN), alto, op: 1 } };
+  }
+  // la x de la linea en cada altura (uv); A queda a la izquierda y B a la derecha
+  const linea = (y) => pos + ((y - 0.5) * tg) / asp;
+  const ya = 1 - caras.a.y;
+  const yb = 1 - caras.b.y;
+  return { a: { x: Math.min(caras.a.x, linea(ya) - COS_MIN), y: ya, alto, op: 1 }, b: { x: Math.max(caras.b.x, linea(yb) + COS_MIN), y: yb, alto, op: 1 } };
 }
 
 // La escena de cada era (sin colores: salen de --luz-<era> y --contra-<era>).
@@ -774,14 +836,21 @@ void main() {
     col += mix(uBlanco, tinte, 0.45) * chispas(dC.y, dC.x, t) * 0.9 * uCos.x * traza;
   }
 
+  // (PLANUI §4.9) con la politica de color linea (uF.w = 1) ningun animo saca el color: los momentos van con el 70 %
+  // del color real del campeon y la regla 3 prohibe el gris neutro. El peligro y la caida se cuentan con la luz.
+  float conColor = uF.w;
   float lum = dot(col, vec3(0.299, 0.587, 0.114));
-  col = mix(col, vec3(lum), peligro * 0.6);
+  col = mix(col, vec3(lum), peligro * 0.6 * (1.0 - conColor));
   col *= 1.0 - peligro * (0.16 + 0.12 * sin(uT * 5.0));
   col += uOro * gloria * 0.07 * (niebla + 0.3);
   col += mix(uLuz, uBlanco, 0.5) * pulso * 0.22 * (exp(-d0 * d0 * 0.8) + 0.35);
-  // la luz que cae (una eliminacion): se apaga y se queda sin color, sin latir
+  // la luz que cae (una eliminacion): se apaga y se queda sin color, sin latir; con la linea, se apaga y se enfria y las
+  // sombras caen a la noche del tono, pero el arte conserva su color
   float lum2 = dot(col, vec3(0.299, 0.587, 0.114));
-  col = mix(col, vec3(lum2) * vec3(0.92, 0.95, 1.0), caida * 0.78);
+  if (conColor > 0.5) {
+    vec3 nocheP = uCos.x > 0.0 ? mix(uNoche, uNocheB, smoothstep(-0.003, 0.003, dC.x) * uCos.x) : uNoche;
+    col = mix(col, col * vec3(0.8, 0.9, 1.0) + nocheP * 0.16, caida);
+  } else col = mix(col, vec3(lum2) * vec3(0.92, 0.95, 1.0), caida * 0.78);
   col *= 1.0 - caida * 0.3;
   col = mix(col, vec3(lum2), quiebre * 0.85);
   col *= 1.0 - quiebre * 0.4;
@@ -1001,7 +1070,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
   let animo = { desde: [0, 0, 0], hacia: [0, 0, 0], t: -1e9, gloriaT: -1e9 };
   let quiebreT = -1e9;
   let calmaEventos = [{ t: 0, desde: 0, hacia: 0, base: 0 }];
-  let pulso = { t: -1e9, k: 0 };
+  let pulsos = []; // los pulsos programados ({ t, k }, por t): se superponen (ubicarPulso)
   let marco = { ...ENCUADRES.derecha };
   let marcoDesde = { ...marco };
   let tMarco = -1e9;
@@ -1039,7 +1108,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
   // `cruce` de la llamada); los colores de cada lado, tambien. El arte de A son las ranuras de siempre (el aura lo cambia);
   // el de B, su ranura propia: al cambiar se apaga y se vuelve a encender en ese lado (un cruce sin cuarta textura).
   const COLORES_COS = ['luz', 'contra', 'noche', 'vacio'];
-  const cosVacia = () => ({ k: 0, pos: 0.5, ang: ANGULO_COSTURA, aK: 0, a: null, b: null, m: MARCO_TODO });
+  const cosVacia = () => ({ k: 0, pos: 0.5, ang: ANGULO_COSTURA, aK: 0, a: null, b: null, m: MARCO_TODO, cr: null });
   let cosDesde = cosVacia();
   let cosHacia = cosVacia();
   let tCos = -1e9;
@@ -1053,14 +1122,15 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     const d = cosDesde;
     const h = cosHacia;
     const lado = (x, y) => (x && y ? mezclarColores(x, y, e) : y ?? x);
-    return { k: mezclar(d.k, h.k, e), pos: mezclar(d.pos, h.pos, e), ang: mezclar(d.ang, h.ang, e), aK: mezclar(d.aK, h.aK, e), a: lado(d.a, h.a), b: lado(d.b, h.b), m: mezclarMarco(d.m, h.m, e) };
+    return { k: mezclar(d.k, h.k, e), pos: mezclar(d.pos, h.pos, e), ang: mezclar(d.ang, h.ang, e), aK: mezclar(d.aK, h.aK, e), a: lado(d.a, h.a), b: lado(d.b, h.b), m: mezclarMarco(d.m, h.m, e), cr: mezclarCaras(d.cr, h.cr, e) };
   }
   // donde cae la cara de cada lado (uv, y hacia arriba): en escritorio, a izquierda y derecha de la linea; en el celular,
-  // arriba y abajo. (PLANUI §4.9, A) Con `marco`, todo eso adentro de ese rectangulo de la pantalla (el video del Swiss)
-  const marcosCostura = (pos, vertical, m = MARCO_TODO) =>
-    enMarco(vertical
-      ? { a: { x: 0.5, y: 1 - pos * 0.5, alto: COS_ALTO_CEL, op: 1 }, b: { x: 0.5, y: (1 - pos) * 0.5, alto: COS_ALTO_CEL, op: 1 } }
-      : { a: { x: pos * COS_CARA, y: COS_Y, alto: COS_ALTO, op: 1 }, b: { x: pos + (1 - pos) * (1 - COS_CARA), y: COS_Y, alto: COS_ALTO, op: 1 } }, m);
+  // arriba y abajo. (PLANUI §4.9, A) Con `marco`, todo eso adentro de ese rectangulo de la pantalla (el video del Swiss).
+  // (U) Con `caras`, medidas desde la linea (carasCostura).
+  const marcosCostura = (cz) => {
+    const asp = canvas.width / Math.max(1, canvas.height);
+    return enMarco(carasCostura(cz.pos, cosVertical, cz.ang, (asp * cz.m.w) / cz.m.h, cz.cr), cz.m);
+  };
   const arteB = { key: undefined, desde: 0, hacia: 0, t: -1e9, dur: 1, token: 0, carga: Promise.resolve() };
   const presB = (t) => mezclar(arteB.desde, arteB.hacia, suave((t - arteB.t) / arteB.dur));
   // los lightsticks del publico (0-1), con el reloj
@@ -1113,16 +1183,19 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     return s;
   }
   function uniformes(t) {
-    const tr = reducido() ? REPOSO_REDUCIDO : t;
+    // el camino quieto (movimiento reducido o INST): el mundo es el cuadro fijo de siempre, sin deriva ni pulsos
+    const fijo = quieto();
+    const tr = fijo ? REPOSO_REDUCIDO : t;
     const ka = clamp01((t - animo.t) / T_ANIMO);
     const peligro = mezclar(animo.desde[0], animo.hacia[0], suave(ka));
     let gloria = mezclar(animo.desde[1], animo.hacia[1], suave(ka));
     const caida = mezclar(animo.desde[2], animo.hacia[2], suave(ka));
     const dq = t - quiebreT;
-    const quiebre = dq >= 0 && !reducido() && !inst() ? Math.exp(-dq / T_QUIEBRE) * (0.7 + 0.3 * Math.cos(dq * 0.05)) : 0;
-    const vivoAhora = reducido() ? 0 : 1 - (1 - VIVO_EN_CALMA) * calmaEn(t).v;
-    gloria *= 0.5 + 0.5 * Math.exp(-Math.max(0, t - animo.gloriaT) / 2600);
-    const pk = t >= pulso.t && !reducido() ? pulso.k * Math.exp(-(t - pulso.t) / T_PULSO) : 0;
+    const quiebre = dq >= 0 && !fijo ? Math.exp(-dq / T_QUIEBRE) * (0.7 + 0.3 * Math.cos(dq * 0.05)) : 0;
+    const vivoAhora = fijo ? 0 : 1 - (1 - VIVO_EN_CALMA) * calmaEn(t).v;
+    // la gloria se asienta (en el camino quieto, ya asentada: el cuadro final)
+    gloria *= fijo ? 0.5 : 0.5 + 0.5 * Math.exp(-Math.max(0, t - animo.gloriaT) / 2600);
+    const pk = fijo ? 0 : pulsoEn(pulsos, t);
     const km = expoOut((t - tMarco) / T_ERA);
     let m = { x: mezclar(marcoDesde.x, marco.x, km), y: mezclar(marcoDesde.y, marco.y, km), alto: mezclar(marcoDesde.alto, marco.alto, km), op: mezclar(marcoDesde.op, marco.op, km) };
     const it = intensidad.en(t);
@@ -1136,10 +1209,10 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     // el lugar (sin costura, kc = 0 y la presencia queda exacta)
     const cz = costuraEn(t);
     const kc = cz.k * it.costura;
-    const mc = marcosCostura(cz.pos, cosVertical, cz.m);
+    const mc = marcosCostura(cz);
     return {
       t: tr / 1000,
-      tl: (reducido() ? REPOSO_REDUCIDO : tiempoLento(t)) / 1000,
+      tl: (fijo ? REPOSO_REDUCIDO : tiempoLento(t)) / 1000,
       semilla,
       col,
       p: paramsEn(t, cz),
@@ -1154,7 +1227,8 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
       arte: [mezclaArte, arte.on[0], arte.on[1], velo],
       marco: [m.x, m.y, m.alto, m.op],
       par,
-      f: [vivoAhora, caida, Math.max(0, quiebre), 0],
+      // w: la politica de color pide que los animos no saquen el color (la linea: js/color.js, `animoConColor`)
+      f: [vivoAhora, caida, Math.max(0, quiebre), intensidad.politica.color?.animoConColor ? 1 : 0],
       i: [it.presencia * (1 - kc), it.profundidad, it.bruma, it.vineta],
       j: [it.contraste, it.suave, it.enLugar, kv],
       k: [it.luz, it.polvo, it.contra, 0],
@@ -1207,7 +1281,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     if (pausado || document.hidden || congeladoEn != null) return;
     if (ahora - ultimo < 1000 / FPS_MAX - 2) return;
     ultimo = ahora;
-    if (!reducido()) {
+    if (!quieto()) {
       par[0] += (parObjetivo[0] - par[0]) * 0.08;
       par[1] += (parObjetivo[1] - par[1]) * 0.08;
     }
@@ -1215,7 +1289,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     cuadros++;
   }
   const alMover = (e) => {
-    if (reducido() || celularAhora()) return;
+    if (quieto() || celularAhora()) return;
     const w = contenedor.clientWidth || innerWidth;
     const h = contenedor.clientHeight || innerHeight;
     parObjetivo[0] = ((e.clientX / w - 0.5) * 2 * PARALLAX_PX) / w;
@@ -1302,12 +1376,14 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
         // el marco NO se hereda entre llamadas (a diferencia del resto): vale en la llamada que lo trae, y una costura
         // pedida sin `marco` es la de toda la pantalla. Asi el del Swiss nunca se le pega a la pantalla siguiente.
         m: leerMarco(c.marco),
+        // (U) las caras se heredan, como la posicion
+        cr: leerCaras(cosPedida.caras),
       };
       if (typeof cosPedida.vertical === 'boolean') cosVertical = cosPedida.vertical;
     }
     // desde apagada: la geometria y los colores ya son los nuevos (solo sube la presencia); hacia apagada: se quedan
     const desde = ahora.k > 0 ? ahora : { ...hacia, k: 0, aK: 0 };
-    if (hacia.k <= 0) Object.assign(hacia, { a: ahora.a, b: ahora.b, pos: ahora.pos, ang: ahora.ang, m: ahora.m });
+    if (hacia.k <= 0) Object.assign(hacia, { a: ahora.a, b: ahora.b, pos: ahora.pos, ang: ahora.ang, m: ahora.m, cr: ahora.cr });
     cosDesde = instantaneo ? hacia : desde;
     cosHacia = hacia;
     tCos = instantaneo ? -1e9 : t;
@@ -1397,7 +1473,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     // fracciones de la pantalla, y desde ARRIBA, como el CSS)
     costura() {
       const cz = costuraEn(reloj());
-      const mc = marcosCostura(cz.pos, cosVertical, cz.m);
+      const mc = marcosCostura(cz);
       return { k: cz.k, posicion: cz.pos, angulo: cz.ang, vertical: cosVertical, a: { x: mc.a.x, y: 1 - mc.a.y }, b: { x: mc.b.x, y: 1 - mc.b.y } };
     },
     // (PLANUI §4.9) cuantos cuadros dibujo el bucle (para medir los cuadros por segundo)
@@ -1447,8 +1523,17 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
       if (calmaEventos.length > 32) calmaEventos = calmaEventos.slice(-16);
     },
     pulso(tipo, retardo = 0) {
-      if (!(tipo in PULSOS) || reducido()) return;
-      pulso = { t: reloj() + retardo, k: PULSOS[tipo] };
+      if (!(tipo in PULSOS) || quieto()) return;
+      const k = PULSOS[tipo];
+      const ahora = reloj();
+      const u = ubicarPulso(pulsos, ahora + retardo, k, ahora);
+      if (!u) return;
+      if (u.subir) u.subir.k = k;
+      else {
+        pulsos.push({ t: u.t, k });
+        pulsos.sort((a, b) => a.t - b.t);
+        if (pulsos.length > MAX_PULSOS) pulsos = pulsos.slice(-MAX_PULSOS);
+      }
     },
     reloj,
     congelar(t) {
@@ -1510,6 +1595,7 @@ function crearAmbienteCss(contenedor, opciones) {
   raiz.append(...lienzos, cajaCos, el('div', { class: 'lc-vineta' }), el('div', { class: 'lc-velo' }));
   const capaPulso = el('div', { class: 'lc-pulso' });
   raiz.append(capaPulso);
+  let pulsosCss = []; // { t (performance.now), k, anim }
   contenedor.prepend(raiz);
   const col = colores();
   let activa = 0;
@@ -1577,6 +1663,11 @@ function crearAmbienteCss(contenedor, opciones) {
   }
   // La costura sin WebGL: cada lado recortado por la diagonal (clip-path), con el fondo y el arte en su tono.
   let cosCss = null;
+  // donde cae la cara de cada lado, en fracciones de la caja de la costura (desde arriba): la misma cuenta que WebGL
+  const carasCss = (pos, vertical, W, H) => {
+    const c = carasCostura(pos, vertical, Number.isFinite(cosCss?.angulo) ? cosCss.angulo : ANGULO_COSTURA, W / Math.max(1, H), leerCaras(cosCss?.caras));
+    return { a: [c.a.x, 1 - c.a.y], b: [c.b.x, 1 - c.b.y], alto: c.a.alto / (vertical ? COS_ALTO_CEL : COS_ALTO) };
+  };
   const cosImg = { a: null, b: null };
   const cosKey = { a: undefined, b: undefined };
   function pintarCosturaCss() {
@@ -1612,7 +1703,8 @@ function crearAmbienteCss(contenedor, opciones) {
       lados[1].style.clipPath = `polygon(${pc(xt)} 0, 100% 0, 100% 100%, ${pc(xb)} 100%)`;
       Object.assign(linea.style, { left: pc(pos), top: '-20%', width: '2px', height: '140%', transform: `rotate(${grados}deg)` });
     }
-    const caras = vertical ? { a: [0.5, pos * 0.5], b: [0.5, pos + (1 - pos) * 0.5] } : { a: [pos * COS_CARA, 1 - COS_Y], b: [pos + (1 - pos) * (1 - COS_CARA), 1 - COS_Y] };
+    const caras = carasCss(pos, vertical, W, H);
+    raiz.style.setProperty('--lc-cos-escala', caras.alto.toFixed(3));
     ['a', 'b'].forEach((l, i) => {
       const tono = cosCss[l]?.tono;
       const lado = lados[i];
@@ -1682,7 +1774,18 @@ function crearAmbienteCss(contenedor, opciones) {
       if (key !== undefined && key !== actual.arte) carga = ponerArte(key);
       return cargas.length ? Promise.all([carga, ...cargas]) : carga;
     },
-    costura: () => (cosCss ? { k: cosCss.k ?? 1, posicion: cosCss.posicion ?? 0.5, angulo: cosCss.angulo ?? ANGULO_COSTURA, vertical: cosCss.vertical ?? celularAhora() } : { k: 0 }),
+    // (PLANUI §4.9, U) como con WebGL: tambien donde cae la cara de cada lado (fracciones de la pantalla, desde arriba)
+    costura() {
+      if (!cosCss) return { k: 0 };
+      const posicion = clamp01(cosCss.posicion ?? 0.5);
+      const vertical = cosCss.vertical ?? celularAhora();
+      const m = cosCss.marco ?? MARCO_TODO;
+      const W = (contenedor.clientWidth || innerWidth) * m.w;
+      const H = (contenedor.clientHeight || innerHeight) * m.h;
+      const c = carasCss(posicion, vertical, W, H);
+      const cara = ([x, y]) => ({ x: m.x + m.w * x, y: m.y + m.h * y });
+      return { k: cosCss.k ?? 1, posicion, angulo: cosCss.angulo ?? ANGULO_COSTURA, vertical, a: cara(c.a), b: cara(c.b) };
+    },
     cuadros: () => 0,
     aquietar(si = true) {
       raiz.toggleAttribute('data-calma', si);
@@ -1694,6 +1797,8 @@ function crearAmbienteCss(contenedor, opciones) {
       if (repintar) pintarArte(actual.img, actual.era, lienzos[activa]);
       takeoverYa = false;
       raiz.dataset.fondo = politica.nombre ?? '';
+      // (PLANUI §4.9, U) la linea: los animos no sacan el color (estilos/ambiente.css)
+      raiz.toggleAttribute('data-animo-color', Boolean(politica.color?.animoConColor));
       poner('reposo', instantaneo ? 0 : dur);
     },
     momento({ retardo = 0, dura = 0 } = {}) {
@@ -1707,9 +1812,22 @@ function crearAmbienteCss(contenedor, opciones) {
       }, retardo);
     },
     intensidad: () => null,
+    // los pulsos se superponen (composite 'add': uno nuevo no corta al anterior), con la misma regla de <= 3 por segundo
     pulso(tipo, retardo = 0) {
       if (!(tipo in PULSOS) || reducido() || inst()) return;
-      capaPulso.animate([{ opacity: PULSOS[tipo] * 0.5 }, { opacity: 0 }], { duration: 600, delay: retardo, easing: 'ease-out' });
+      const k = PULSOS[tipo];
+      const ahora = performance.now();
+      const u = ubicarPulso(pulsosCss, ahora + retardo, k, ahora);
+      if (!u) return;
+      const lanzar = (t) => capaPulso.animate([{ opacity: k * 0.5 }, { opacity: 0 }], { duration: 600, delay: t - ahora, easing: 'ease-out', composite: 'add' });
+      if (u.subir) {
+        u.subir.anim.cancel();
+        Object.assign(u.subir, { k, anim: lanzar(u.subir.t) });
+        return;
+      }
+      pulsosCss.push({ t: u.t, k, anim: lanzar(u.t) });
+      pulsosCss.sort((a, b) => a.t - b.t);
+      if (pulsosCss.length > MAX_PULSOS) pulsosCss = pulsosCss.slice(-MAX_PULSOS);
     },
     quiebre(retardo = 0) {
       if (reducido() || inst()) return;

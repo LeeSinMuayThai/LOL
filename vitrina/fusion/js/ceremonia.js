@@ -16,17 +16,22 @@ const nuevoId = (p) => `${p}-${++serie}`;
 // WAAPI, salvo en el camino quieto (el estado final ya es el de CSS)
 const animar = (nodo, cuadros, opciones) => (nodo && !quieto() ? nodo.animate(cuadros, { fill: 'backwards', easing: EXPO, ...opciones }) : null);
 const vivas = (lista) => lista.filter(Boolean);
-// Una tecla que vale mientras el nodo esta en la pagina (se suelta sola al desmontarlo).
+// Una tecla que vale mientras el nodo esta en la pagina (se suelta sola al desmontarlo). La tecla que dispara el gesto
+// se consume ahi: se escucha en la captura del documento (antes que la pantalla y que main.js, sin importar quien se
+// registro primero) y, si el gesto ocurrio (`fn` devuelve true), no sigue. Asi el mismo Enter que firma (o acepta) no
+// llega a la pantalla como "saltear la animacion"; el Enter siguiente si llega. Si no ocurrio (el boton deshabilitado),
+// la tecla sigue su camino como siempre.
 function escucharTecla(nodo, tecla, fn) {
   const h = (e) => {
-    if (!nodo.isConnected) return document.removeEventListener('keydown', h);
+    if (!nodo.isConnected) return document.removeEventListener('keydown', h, true);
     if (e.key !== tecla || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (!fn()) return;
     e.preventDefault();
-    fn();
+    e.stopImmediatePropagation();
   };
-  document.addEventListener('keydown', h);
-  return () => document.removeEventListener('keydown', h);
+  document.addEventListener('keydown', h, true);
+  return () => document.removeEventListener('keydown', h, true);
 }
 // El degrade de oro de un SVG (los colores salen de CSS: .ln-oro-0/1/2 en ceremonia.css)
 function degradeOro(id, { vertical = true } = {}) {
@@ -40,10 +45,14 @@ function degradeOro(id, { vertical = true } = {}) {
 // ======================================================================================================================
 // anilloAceptar: el aviso tipo PARTIDA ENCONTRADA
 // ======================================================================================================================
-const ARO = { lado: 240, radio: 104, marco: 117, interior: 92 };
+// La geometria del aro (en unidades del SVG): la caja, el aro que se vacia, el filete de afuera y el de adentro. Se
+// exporta para quien dibuje encima del anillo (el portal de la decision, js/escena.js): asi nadie repite los numeros.
+export const ARO = Object.freeze({ lado: 240, radio: 104, marco: 117, interior: 92 });
 const T_ENTRADA = 380; // cuando arranca el reloj, despues de la entrada
 const T_SALIDA = 260;
-export function anilloAceptar({ escudo, encabezado = '¡PARTIDA ENCONTRADA!', cola = '', tono, segundos = 12, alAceptar, sonido } = {}) {
+// `velo` (opcional): cuanto tapa el velo de atras, un numero 0-1 o el nombre de un token ('--dc-aviso-velo'); sin el,
+// el del kit (tapa todo: el velo de --ln-velo).
+export function anilloAceptar({ escudo, encabezado = '¡PARTIDA ENCONTRADA!', cola = '', tono, segundos = 12, alAceptar, sonido, velo } = {}) {
   const idEnc = nuevoId('ln-aviso-enc');
   const idCola = nuevoId('ln-aviso-cola');
   const idOro = nuevoId('ln-oro');
@@ -66,14 +75,18 @@ export function anilloAceptar({ escudo, encabezado = '¡PARTIDA ENCONTRADA!', co
     cola ? el('p', { class: 'ln-aviso-cola', id: idCola, text: cola }) : null,
     boton,
   ]);
-  const velo = el('div', { class: 'ln-aviso-velo', 'aria-hidden': 'true' });
+  const capaVelo = el('div', { class: 'ln-aviso-velo', 'aria-hidden': 'true' });
   const fogonazo = el('div', { class: 'ln-aviso-fogonazo', 'aria-hidden': 'true' });
-  const nodo = el('div', { class: 'ln-aviso', role: 'alertdialog', 'aria-modal': 'false', 'aria-labelledby': idEnc, 'aria-describedby': cola ? idCola : null }, [velo, fogonazo, tarjeta]);
+  const nodo = el('div', { class: 'ln-aviso', role: 'alertdialog', 'aria-modal': 'false', 'aria-labelledby': idEnc, 'aria-describedby': cola ? idCola : null }, [capaVelo, fogonazo, tarjeta]);
   if (tono) for (const k of ['luz', 'contra', 'acento', 'noche']) if (tono[k]) nodo.style.setProperty(`--tono-${k}`, `var(${tono[k]})`);
+  if (velo != null) {
+    nodo.dataset.velo = '';
+    nodo.style.setProperty('--ln-aviso-velo-k', typeof velo === 'number' ? `${(Math.min(1, Math.max(0, velo)) * 100).toFixed(1)}%` : `var(${velo})`);
+  }
 
   const total = T_ENTRADA + Math.max(0, segundos) * 1000;
   const animaciones = vivas([
-    animar(velo, [{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: 'linear' }),
+    animar(capaVelo, [{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: 'linear' }),
     animar(tarjeta, [{ opacity: 0, transform: 'translateY(10px) scale(0.94)' }, { opacity: 1, transform: 'none' }], { duration: 320, delay: 60 }),
     // el fogonazo radial: un solo destello
     animar(fogonazo, [{ opacity: 0, transform: 'scale(0.6)' }, { opacity: 0.9, transform: 'scale(1)', offset: 0.3 }, { opacity: 0, transform: 'scale(1.25)' }], { duration: 460, delay: 90, easing: 'ease-out' }),
@@ -85,15 +98,16 @@ export function anilloAceptar({ escudo, encabezado = '¡PARTIDA ENCONTRADA!', co
   let hecho = false;
   let soltar = () => {};
   function aceptar() {
-    if (hecho) return;
+    if (hecho) return false;
     hecho = true;
     soltar();
     reloj?.pause();
     animaciones.find((a) => a.effect?.target === cabeza)?.pause();
     nodo.dataset.aceptado = '';
     sonido?.clic?.();
-    animaciones.push(...vivas([animar(tarjeta, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(1.04)' }], { duration: T_SALIDA, easing: SALE, fill: 'forwards' }), animar(velo, [{ opacity: 1 }, { opacity: 0 }], { duration: T_SALIDA, delay: 60, easing: 'linear', fill: 'forwards' })]));
+    animaciones.push(...vivas([animar(tarjeta, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(1.04)' }], { duration: T_SALIDA, easing: SALE, fill: 'forwards' }), animar(capaVelo, [{ opacity: 1 }, { opacity: 0 }], { duration: T_SALIDA, delay: 60, easing: 'linear', fill: 'forwards' })]));
     alAceptar?.();
+    return true;
   }
   boton.addEventListener('click', aceptar);
   soltar = escucharTecla(nodo, 'Enter', aceptar);
@@ -127,7 +141,7 @@ export function bloquear({ texto = 'BLOQUEAR', tecla = 'Enter', alBloquear, soni
   let bloqueado = false;
   let soltar = () => {};
   function hacer() {
-    if (bloqueado || nodo.disabled) return;
+    if (bloqueado || nodo.disabled) return false;
     bloqueado = true;
     soltar();
     nodo.classList.remove('encendido');
@@ -138,6 +152,7 @@ export function bloquear({ texto = 'BLOQUEAR', tecla = 'Enter', alBloquear, soni
     animar(onda, [{ opacity: 0.95, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.7, 2.6)' }], { duration: 560, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
     animar(nodo, [{ transform: 'scale(0.96)' }, { transform: 'none' }], { duration: 260 });
     alBloquear?.();
+    return true;
   }
   nodo.addEventListener('click', hacer);
   soltar = escucharTecla(nodo, tecla, hacer);

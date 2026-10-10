@@ -1761,7 +1761,6 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
   let elegida = -1; // la org elegida (clic, foco, 1-6): la que firma FIRMAR y la que vuelve al soltar el mouse
   let mostrada = null; // la que muestra el aura ahora (null: el reposo)
   let tAura = 0;
-  let firmadoEn = 0; // performance.now() de la firma: el evento que firmo es anterior y no saltea la animacion
 
   // ---------------------------------------------------------------------------------------------- armar
   function construir() {
@@ -2065,7 +2064,6 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
     clearTimeout(tAura);
     elegido = true;
     asentado = false;
-    firmadoEn = performance.now();
     mostrar(i);
     const o = ofertas[i];
     const x = norm[i];
@@ -2163,8 +2161,8 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
     if (entrando && !elegido && e.code === 'Space') {
       e.preventDefault();
       saltarEntrada();
-    } else if (elegido && !asentado && !e.repeat && e.timeStamp > firmadoEn && (e.key === 'Enter' || e.code === 'Space')) {
-      // el Enter que firma lo toma el boton, y su escucha corre antes que la de main.js: ese mismo evento no saltea
+    } else if (elegido && !asentado && !e.repeat && (e.key === 'Enter' || e.code === 'Space')) {
+      // el Enter que firma lo consume el boton (js/ceremonia.js): ese mismo evento no llega aca; el siguiente saltea
       e.preventDefault();
       saltarFirma();
     } else if (/^[1-9]$/.test(e.key) && Number(e.key) <= ofertas.length && !elegido) {

@@ -20,7 +20,7 @@
 import { el, svg, animar, esperar, reducido, inst, celular, num, EXPO, SALE, DUR } from './util.js';
 import { icono, glifoDeCampo, triangulos, ABREVIATURA } from './iconos.js';
 import { crearAzar } from '../../comun/azar.js';
-import { anilloAceptar } from './ceremonia.js';
+import { anilloAceptar, ARO } from './ceremonia.js';
 import { tonoDestino, aplicarTono } from './tono.js';
 
 // → logos.js — los logos oficiales del CDN de LoL Esports (esports-api.lolesports.com getLeagues/getTeams, 2026-10-09;
@@ -129,10 +129,17 @@ const COSTURA = {
   abre: 1300, // elegir: la costura se va al otro borde y el destino elegido llena la pantalla
   aire: 12, // lo que separa cada destino de la linea (celular) y del panel (px)
   logoMin: 40, // el logo mas chico de un destino cuando no entra nada mas (px)
+  // (U) las dos caras arriba del panel: en escritorio, en el medio de la franja libre entre la barra de arriba y la linea
+  // "antes", cada una al lado de su destino (los destinos van contra los bordes); en el celular, adentro de la banda (A
+  // arriba a la derecha, B abajo a la izquierda: cada destino al costado de su cara). `alto`: el alto del arte en altos
+  // de esa franja (o de la banda), y nunca menos que `altoMin` de la pantalla (en una pantalla baja la franja casi no
+  // existe: la cara se ve igual, aunque toque la linea "antes"); `junto`: lo que separa la cara del destino, en altos
+  // del arte; `cel`: x e y de cada cara en la banda (fracciones)
+  caras: { alto: 2.1, altoMin: 0.45, junto: 0.1, altoCel: 1.5, cel: { a: [0.69, 0.27], b: [0.31, 0.76] } },
 };
 // El portal: el hueco y el aro, en fracciones de la caja del anillo del aviso (el interior y el aro del SVG de
-// js/ceremonia.js: 92 y 104 sobre 240).
-const PORTAL_LN = { hueco: 92 / 240, aro: 104 / 240 };
+// js/ceremonia.js, que exporta su geometria).
+const PORTAL_LN = { hueco: ARO.interior / ARO.lado, aro: ARO.radio / ARO.lado };
 // Tiempos de la apertura, desde Aceptar (ms)
 const T_LN = {
   crece: 60, // el portal empieza a crecer (la tarjeta del aviso ya se esta yendo)
@@ -1170,43 +1177,77 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
     }
     medidas = { a: [lados.a.offsetWidth, lados.a.offsetHeight], b: [lados.b.offsetWidth, lados.b.offsetHeight], margen: parseFloat(getComputedStyle(contenedor).paddingLeft) || 0 };
   };
-  // cada cuadro: los destinos siguen a la costura (tambien mientras cruza, y congelada en las tiras). Sin WebGL,
-  // amb.costura() da la posicion sin las caras: los destinos se ubican por la posicion.
+  // cada cuadro: los destinos siguen a sus caras (amb.costura(), con y sin WebGL: tambien mientras la costura cruza, y
+  // congelada en las tiras). En escritorio cada destino va al lado de su cara, del lado del borde; en el celular, a la
+  // altura de su cara, contra su borde (A a la izquierda, B a la derecha), adentro de la banda.
   let raf = 0;
   const px = (v) => `${v.toFixed(1)}px`;
   function ubicar() {
     raf = requestAnimationFrame(ubicar);
     const g = amb.costura();
-    const p = g.k > 0 ? g.posicion : base;
     const W = innerWidth;
+    const H = innerHeight;
     const { a: [wa, ha], b: [wb, hb], margen: m } = medidas;
+    const cz = g.k > 0 && g.a && g.b ? g : null;
+    const cr = carasYa ?? caras();
     if (!celular()) {
-      // cada destino centrado en su mitad, sin salirse de los margenes
-      const xa = clamp((p * W) / 2, m + wa / 2, W - m - wa / 2);
-      const xb = clamp(((1 + p) * W) / 2, m + wb / 2, W - m - wb / 2);
-      lados.a.style.transform = `translate(${px(xa - wa / 2)}, 0)`;
-      lados.b.style.transform = `translate(${px(xb - wb / 2)}, 0)`;
+      const junto = (cr?.alto ?? 0) * H * COSTURA.caras.junto;
+      // sin costura todavia (el aviso), donde van a quedar
+      const ca = cz ? g.a.x * W : (cr?.a.x ?? 0.25) * W;
+      const cb = cz ? g.b.x * W : (cr?.b.x ?? 0.75) * W;
+      const xa = clamp(ca - junto - wa, m, W - m - wa);
+      const xb = clamp(cb + junto, m, W - m - wb);
+      lados.a.style.transform = `translate(${px(xa)}, 0)`;
+      lados.b.style.transform = `translate(${px(xb)}, 0)`;
       return;
     }
-    // celular: A sobre la linea, a la izquierda; B debajo, a la derecha; los dos adentro de la banda (que se mueve con
-    // el panel). Elegido, el destino que queda sube al principio de la banda.
+    // celular: los dos adentro de la banda (que se mueve con el panel). Elegido, el destino que queda sube al principio
+    // de la banda.
     const r = banda.getBoundingClientRect();
     const aire = COSTURA.aire;
-    const y = p * innerHeight;
+    const yaC = (cz ? g.a.y : cr?.a.y ?? 0.25) * H;
+    const ybC = (cz ? g.b.y : cr?.b.y ?? 0.75) * H;
     const e = capa.dataset.elegido;
-    const ya = e === 'a' ? r.top + aire : clamp(y - ha - aire, r.top + aire, r.bottom - ha - aire);
-    const yb = e === 'b' ? r.top + aire : clamp(y + aire, r.top + aire, r.bottom - hb - aire);
+    const ya = e === 'a' ? r.top + aire : clamp(yaC - ha / 2, r.top + aire, r.bottom - ha - aire);
+    const yb = e === 'b' ? r.top + aire : clamp(ybC - hb / 2, r.top + aire, r.bottom - hb - aire);
     lados.a.style.transform = `translate(${px(m)}, ${px(ya)})`;
     lados.b.style.transform = `translate(${px(W - m - wb)}, ${px(yb)})`;
   }
   const costura = (cambio, cruce) => amb.ambiente({ costura: cambio, cruce });
-  const prender = (cruce) => costura({ a: { arte, tono: tonos.a }, b: { arte, tono: tonos.b }, posicion: base, angulo: COSTURA.angulo, k: 1 }, cruce);
+  // (U) donde caen las caras (costura.caras del kit): arriba del panel, al lado de cada destino. Las caras se quedan
+  // quietas al apuntar y al elegir (corre la linea, no ellas): el lado apuntado crece hacia la otra cara.
+  let carasYa = null; // las ultimas pedidas (las usa ubicar() en cada cuadro sin volver a medir)
+  function caras() {
+    carasYa = medirCaras();
+    return carasYa;
+  }
+  function medirCaras() {
+    const W = innerWidth;
+    const H = innerHeight;
+    if (celular()) {
+      const r = banda.getBoundingClientRect();
+      if (!(r.height > 0)) return null;
+      const [ax, ay] = COSTURA.caras.cel.a;
+      const [bx, by] = COSTURA.caras.cel.b;
+      return { a: { x: ax, y: (r.top + r.height * ay) / H }, b: { x: bx, y: (r.top + r.height * by) / H }, alto: Math.min(1, (r.height * COSTURA.caras.altoCel) / H) };
+    }
+    const arriba = franjaAbajo();
+    const abajo = limite?.getBoundingClientRect().top ?? H / 2;
+    const libre = Math.max(0, abajo - arriba);
+    const alto = Math.min(1, Math.max(COSTURA.caras.altoMin, (libre * COSTURA.caras.alto) / H));
+    const y = (arriba + abajo) / 2 / H;
+    // las dos a la misma distancia del borde: al lado del destino mas ancho
+    const lado = Math.max(medidas.a[0], medidas.b[0]) + medidas.margen + alto * H * COSTURA.caras.junto;
+    return { a: { x: lado / W, y }, b: { x: 1 - lado / W, y }, alto };
+  }
+  const franjaAbajo = () => document.querySelector('.franja')?.getBoundingClientRect().bottom ?? 0;
+  const prender = (cruce) => costura({ a: { arte, tono: tonos.a }, b: { arte, tono: tonos.b }, posicion: base, angulo: COSTURA.angulo, k: 1, caras: caras() }, cruce);
   const alRedimensionar = () => {
     medir();
     if (capa.dataset.fase !== 'costura') return;
     base = reposo();
     const e = capa.dataset.elegido;
-    costura({ posicion: e ? posElegido(e) : posDe(capa.dataset.apunta) }, 0);
+    costura({ posicion: e ? posElegido(e) : posDe(capa.dataset.apunta), caras: caras() }, 0);
   };
   addEventListener('resize', alRedimensionar);
 
@@ -1280,7 +1321,8 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
         prender(COSTURA.cruce);
         return;
       }
-      aviso = anilloAceptar({ escudo: escudo(), encabezado: '¡Oferta encontrada!', cola: [lec.cupo, ligaB].filter(Boolean).join(' · '), tono: tonos.b, segundos: COSTURA.segundos, alAceptar: abrir, sonido });
+      // el velo del kit, un poco mas liviano en esta pantalla: detras se reconoce tu main en la luz de la era
+      aviso = anilloAceptar({ escudo: escudo(), encabezado: '¡Oferta encontrada!', cola: [lec.cupo, ligaB].filter(Boolean).join(' · '), tono: tonos.b, segundos: COSTURA.segundos, alAceptar: abrir, sonido, velo: '--dc-aviso-velo' });
       avisoAbierto = true;
       contenedor.append(aviso.nodo);
       // el foco va al ¡ACEPTAR! (Enter ya lo escucha el aviso)
