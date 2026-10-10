@@ -21,7 +21,8 @@ const liga = (archivo) => `${CDN}/leagues/${archivo}`;
 // Las orgs reales que aparecen en muestras.json (mercado, serie, Swiss, Mundial, carrera, trayectoria, peor caso), con su
 // liga de hoy. El nombre es el de la simulacion; la clave se compara sin mayusculas.
 const ORGS = {
-  FURIA: { src: equipo('FURIA---black.png'), liga: 'CBLOL' },
+  // `tinta: 'oscura'`: el logo es negro (sobre la noche no se ve): donde va a color, se pasa a la tinta clara
+  FURIA: { src: equipo('FURIA---black.png'), liga: 'CBLOL', tinta: 'oscura' },
   LOUD: { src: equipo('Logo-LOUD-Esports_Original.png'), liga: 'CBLOL' },
   'RED Canids Kalunga': { src: equipo('1631820575924_red-2021-worlds.png'), liga: 'CBLOL' },
   'Fluxo W7M': { src: equipo('1766161431111_LogoColorida.png'), liga: 'CBLOL' },
@@ -36,6 +37,10 @@ const ORGS = {
   Fnatic: { src: equipo('1631819669150_fnc-2021-worlds.png'), liga: 'LEC' },
   GIANTX: { src: equipo('1765897105091_GIANTX-logotype-white.png'), liga: 'LEC' },
   'Natus Vincere': { src: equipo('1752746833620_NAVI_FullColor.png'), liga: 'LEC' },
+  // (PLANUI §4.10, D) T1 y KT Rolster no aparecen en muestras.json: los suma la pared de escudos de la LCK (getTeams,
+  // 2026-10-10: los dos `active` con homeLeague LCK)
+  T1: { src: equipo('1726801573959_539px-T1_2019_full_allmode.png'), liga: 'LCK' },
+  'KT Rolster': { src: equipo('kt_darkbackground.png'), liga: 'LCK' },
   'Gen.G': { src: equipo('1773829250929_GENGLOGO_GOLD.png'), liga: 'LCK' },
   'Dplus KIA': { src: equipo('1673260049703_DPlusKIALOGO11.png'), liga: 'LCK' },
   'Hanwha Life Esports': { src: equipo('1631819564399_hle-2021-worlds.png'), liga: 'LCK' },
@@ -66,6 +71,13 @@ const ORGS = {
   'Ground Zero Gaming': { src: equipo('1766395585595_LCP_TEAMLogo_GZ_Full_B.png'), liga: 'LCP' },
   'Fukuoka SoftBank HAWKS gaming': { src: equipo('1725885083108_SHG_White_Main.png'), liga: 'LCP' },
   'CTBC Flying Oyster': { src: equipo('1656307849320_CFO_Logo.png'), liga: 'LCP' },
+};
+
+// Los planteles de 2026 (CONCEPTO §12, en el orden de src/data/leagues.json): la pared de escudos de la bisagra
+// (PLANUI §4.10, `var=liga`). Solo las ligas que hoy dibuja alguna pantalla; cada nombre esta en ORGS.
+const PLANTELES = {
+  CBLOL: ['Fluxo W7M', 'FURIA', 'Leviatán', 'Los Grandes', 'LOUD', 'paiN Gaming', 'RED Canids Kalunga', 'Vivo Keyd Stars'],
+  LCK: ['T1', 'Gen.G', 'Hanwha Life Esports', 'KT Rolster', 'Dplus KIA', 'BNK FearX', 'KIWOOM DRX', 'Nongshim RedForce', 'Hanjin Brion', 'DN SOOPers'],
 };
 
 // Las orgs que la simulacion invento (no existen): escudo-monograma. Se listan para que la cobertura se pueda chequear.
@@ -104,7 +116,13 @@ export function iniciales(nombre) {
 // { src, iniciales, liga } para una org real; { src: null, iniciales } para una inventada (o desconocida).
 export function logoOrg(nombre) {
   const x = PORCLAVE.get(clave(nombre));
-  return x ? { src: x.src, iniciales: iniciales(nombre), liga: x.liga } : { src: null, iniciales: iniciales(nombre) };
+  return x ? { src: x.src, iniciales: iniciales(nombre), liga: x.liga, ...(x.tinta ? { tinta: x.tinta } : {}) } : { src: null, iniciales: iniciales(nombre) };
+}
+
+// Los equipos de una liga ('CBLOL', 'LCK'), en orden: [{ nombre, src, iniciales, tinta? }]. Una liga sin plantel, [].
+export function equiposDe(liga) {
+  const k = String(liga ?? '').toUpperCase();
+  return (PLANTELES[k] ?? []).map((nombre) => ({ nombre, ...logoOrg(nombre) }));
 }
 
 // { src, iniciales, nombre } para una liga o un torneo ("Mundial 2036" -> el del Mundial).

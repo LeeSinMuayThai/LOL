@@ -649,3 +649,101 @@ html[data-reducido] :is(.dc-lado, .dc-fila, .dc-tecla, .dc-chip) { transition: n
   .dc-lado[data-lado='b'] .dc-cabeza { flex-direction: row-reverse; padding: 0 0 0 9px; }
   .dc-tecla { min-width: 22px; height: 22px; font-size: 11px; }
 }
+
+/* ======================================================================================================================
+   PLANUI §4.10 · LAS TRES COSTURAS (`op=linea&var=`, crearCostura en js/escena.js). `campeones` (sin var) es la de §4.9:
+   nada de aca la toca. `copas` y `liga`: la misma costura del shader sin arte de campeon y, donde caian las caras, el
+   HEROE de cada lado (la copa 3D de su liga, o su monumento: el logo, la ciudad y la pared de escudos), en el tono de su
+   destino (aplicarTono en cada heroe). js/escena.js lo ubica y le pone la escala (--dc-heroe-k); el CSS, la luz.
+   ==================================================================================================================== */
+.dc-heroe { position: absolute; left: 0; top: 0; transition: opacity var(--dc-heroe-cruce) var(--expo); }
+.dc-heroe-escala { transform: scale(var(--dc-heroe-k, 1)); transform-origin: 0 0; transition: transform var(--dc-heroe-cruce) var(--expo); }
+.dc-heroe-luz { transition: transform var(--dc-heroe-cruce) var(--expo); }
+.dc-costura[data-fase='aviso'] .dc-heroe { opacity: 0; }
+/* apuntar un lado: su heroe sube y toma la luz (la copa: el foco de js/trofeo.js; la pared: la ola); el otro se apaga */
+.dc-costura[data-apunta='a'] .dc-heroe[data-lado='a'] .dc-heroe-luz,
+.dc-costura[data-apunta='b'] .dc-heroe[data-lado='b'] .dc-heroe-luz { transform: translateY(calc(var(--dc-heroe-sube) * -1)); }
+.dc-costura[data-apunta='a'] .dc-heroe[data-lado='b'], .dc-costura[data-apunta='b'] .dc-heroe[data-lado='a'] { opacity: var(--dc-heroe-apagado); }
+/* (liga: se apagan el logo y la pared, no lo escrito: la ciudad y lo marcado siguen leyendose >= 4,5:1) */
+.dc-costura[data-var='liga'][data-apunta='a'] .dc-heroe[data-lado='b'], .dc-costura[data-var='liga'][data-apunta='b'] .dc-heroe[data-lado='a'] { opacity: 1; }
+.dc-costura[data-var='liga'][data-apunta='a'] .dc-heroe[data-lado='b'] :is(.dc-mon-logo, .dc-pared, .dc-marca-escudo),
+.dc-costura[data-var='liga'][data-apunta='b'] .dc-heroe[data-lado='a'] :is(.dc-mon-logo, .dc-pared, .dc-marca-escudo) { opacity: var(--dc-heroe-apagado-liga); }
+.dc-mon-logo, .dc-pared, .dc-marca-escudo { transition: opacity var(--dc-heroe-cruce) var(--expo); }
+/* elegido: el otro heroe se va (como su destino; gana sobre el apagado de liga) */
+.dc-costura[data-elegido='a'][data-apunta][data-var] .dc-heroe[data-lado='b'], .dc-costura[data-elegido='b'][data-apunta][data-var] .dc-heroe[data-lado='a'] { opacity: 0; }
+
+/* ---------- copas: la copa (js/trofeo.js, lienzo WebGL o SVG) y el logo de la liga como <img> en su placa ---------- */
+.dc-copa { position: relative; width: var(--dc-copa-w, 0px); height: var(--dc-copa-h, 0px); }
+/* el charco de luz donde apoya el pedestal (la copa no flota: esta parada en la luz de su lado); apuntada, mas luz */
+.dc-copa::before {
+  content: ''; position: absolute; left: 4%; right: 4%; bottom: 0; height: var(--dc-charco-alto);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tono-luz) var(--dc-charco), transparent), transparent);
+  opacity: 0.7; transition: opacity var(--dc-heroe-cruce) var(--expo);
+}
+.dc-costura[data-apunta='a'] .dc-heroe[data-lado='a'] .dc-copa::before, .dc-costura[data-apunta='b'] .dc-heroe[data-lado='b'] .dc-copa::before { opacity: 1; }
+.dc-costura[data-apunta='a'] .dc-heroe[data-lado='b'] .dc-copa::before, .dc-costura[data-apunta='b'] .dc-heroe[data-lado='a'] .dc-copa::before { opacity: 0.25; }
+.dc-copa-placa { position: absolute; display: flex; align-items: center; justify-content: center; padding: 0.4% 8%; overflow: hidden; }
+.dc-copa-placa img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 2px var(--sombra)); }
+
+/* ---------- liga: el monumento (el logo, la ciudad, la pared de escudos y lo marcado) ---------- */
+.dc-monumento { position: relative; isolation: isolate; display: grid; justify-items: center; gap: var(--dc-mon-hueco); width: max-content; text-align: center; }
+/* el velo de lectura detras: el vacio de su tono (el abanico de luz de la costura apunta al monumento) */
+.dc-monumento::before {
+  content: ''; position: absolute; inset: -18% -22%; z-index: -1; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tono-vacio) var(--dc-velo-lado), transparent) 0%, color-mix(in srgb, var(--tono-vacio) calc(var(--dc-velo-lado) * 0.7), transparent) 60%, transparent 100%);
+}
+.dc-filtros { position: absolute; width: 0; height: 0; overflow: hidden; }
+.dc-grabado-luz { flood-color: color-mix(in oklab, var(--tono-luz) var(--dc-grabado-mezcla), var(--ink)); flood-opacity: var(--dc-grabado-k); }
+.logo.dc-mon-logo { width: var(--dc-mon-logo); height: var(--dc-mon-logo); filter: drop-shadow(0 10px 30px var(--sombra)) drop-shadow(0 0 46px color-mix(in srgb, var(--tono-luz) 52%, transparent)); transition: filter var(--dc-heroe-cruce) var(--expo); }
+.logo.dc-mon-logo img, .logo.dc-marca-escudo img { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; }
+.dc-mon-lugar { display: grid; justify-items: center; gap: 7px; margin: 0; }
+.dc-mon-lugar b { font: 800 var(--dc-mon-ciudad) / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.025em; color: var(--ink); text-shadow: 0 2px 18px var(--tono-vacio); }
+.dc-mon-lugar span { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: color-mix(in oklab, var(--tono-luz) 45%, var(--ink)); }
+/* la pared: los escudos de la liga grabados en la luz de su tono (el filtro SVG de cada lado); el tuyo, a color */
+.dc-pared { display: grid; grid-template-columns: repeat(var(--dc-cols, 5), var(--dc-escudo)); gap: var(--dc-pared-hueco); margin: 2px 0 0; padding: 0; list-style: none; }
+.dc-escudo { display: grid; place-items: center; width: var(--dc-escudo); height: var(--dc-escudo); }
+.dc-escudo img { display: block; width: 100%; height: 100%; object-fit: contain; filter: var(--dc-grabado); }
+.dc-escudo .monograma { width: 86%; }
+.dc-escudo[data-yo] { border-radius: var(--r-control); background: color-mix(in srgb, var(--tono-vacio) var(--dc-chip-fondo), transparent); box-shadow: 0 0 0 2px var(--tono-acento), 0 0 22px -2px var(--tono-luz); }
+.dc-escudo[data-yo] img { filter: none; padding: 3px; }
+.dc-escudo[data-yo] img[data-tinta='oscura'] { filter: brightness(0) invert(1); }
+/* lo marcado: tu equipo (a color) o el que te llama (sin nombre: el motor no dice cual) */
+.dc-marca { display: flex; align-items: center; gap: 10px; margin: 2px 0 0; padding: 6px 14px 6px 6px; border-radius: var(--r-control); background: color-mix(in srgb, var(--tono-vacio) var(--dc-chip-fondo), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tono-luz) 34%, transparent); }
+.logo.dc-marca-escudo { width: var(--dc-escudo-yo); height: var(--dc-escudo-yo); }
+.dc-marca-txt { display: grid; gap: 4px; text-align: left; }
+.dc-marca-txt b { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: color-mix(in oklab, var(--tono-luz) 40%, var(--ink)); }
+.dc-marca-txt span { font: 600 14px / 1.1 var(--f-cuerpo); color: var(--ink); white-space: nowrap; }
+.dc-incognito .mono-escudo { fill: color-mix(in srgb, var(--tono-vacio) 60%, var(--tono-luz)); stroke: var(--tono-luz); }
+.dc-incognito .mono-filete { stroke: var(--tono-luz); }
+.dc-incognito .monograma { animation: dc-llama var(--dc-llama) ease-in-out infinite alternate; }
+@keyframes dc-llama { from { opacity: 0.62; } to { opacity: 1; } }
+/* apuntado: el logo toma mas luz */
+.dc-costura[data-apunta='a'] .dc-heroe[data-lado='a'] .logo.dc-mon-logo,
+.dc-costura[data-apunta='b'] .dc-heroe[data-lado='b'] .logo.dc-mon-logo,
+.dc-costura[data-elegido] .logo.dc-mon-logo { filter: drop-shadow(0 10px 30px var(--sombra)) drop-shadow(0 0 64px color-mix(in srgb, var(--tono-luz) 80%, transparent)); }
+/* compacto (la franja libre es baja: 1280x720): el logo y la ciudad, sin la pared */
+.dc-mon-compacto :is(.dc-pared, .dc-marca, .dc-mon-lugar span) { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-heroe, .dc-heroe-escala, .dc-heroe-luz, .logo.dc-mon-logo, .dc-pared, .dc-marca-escudo { transition: none; }
+  .dc-incognito .monograma { animation: none; }
+}
+html[data-reducido] :is(.dc-heroe, .dc-heroe-escala, .dc-heroe-luz, .logo.dc-mon-logo, .dc-pared, .dc-marca-escudo) { transition: none; }
+html:is([data-reducido], [data-inst]) .dc-incognito .monograma { animation: none; }
+
+@media (max-width: 640px) {
+  /* con heroe, la banda es mas alta: cada mitad lleva su copa o su monumento de un alto que se lea */
+  .parada-decision:is([data-var='copas'], [data-var='liga']) .dc-banda { height: var(--dc-banda-cel-heroe); }
+  .dc-monumento { gap: var(--dc-mon-hueco-cel); }
+  .logo.dc-mon-logo { width: var(--dc-mon-logo-cel); height: var(--dc-mon-logo-cel); }
+  .dc-mon-lugar { gap: 4px; }
+  .dc-mon-lugar b { font-size: var(--dc-mon-ciudad-cel); }
+  .dc-pared { gap: var(--dc-pared-hueco-cel); grid-template-columns: repeat(var(--dc-cols, 5), var(--dc-escudo-cel)); }
+  .dc-escudo { width: var(--dc-escudo-cel); height: var(--dc-escudo-cel); }
+  .dc-escudo[data-yo] { box-shadow: 0 0 0 1.5px var(--tono-acento), 0 0 12px -2px var(--tono-luz); }
+  .dc-escudo[data-yo] img { padding: 1px; }
+  /* en el celular lo marcado es el escudo y su rotulo (el nombre ya esta en la franja) */
+  .dc-marca { gap: 6px; padding: 3px 8px 3px 3px; }
+  .logo.dc-marca-escudo { width: var(--dc-escudo-yo-cel); height: var(--dc-escudo-yo-cel); }
+  .dc-marca-txt span { display: none; }
+}

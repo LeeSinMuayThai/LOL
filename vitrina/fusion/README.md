@@ -1227,7 +1227,25 @@ actúan mientras se escribe en un campo (el invocador).
 
 ### La decisión (D): las costuras `campeones`, `copas` y `liga`
 
-(pendiente)
+La bisagra (`decision/evento`, CBLOL contra la invitación de la LCK) con `op=linea&var=<id>`. El ¡OFERTA ENCONTRADA! con el aro, ¡ACEPTAR!, el portal y la mecánica son los mismos en las tres: apuntar un camino corre la costura hacia su lado, elegir abre ese destino (los números ruedan en el panel) y la cerrada queda apagada con su candado. Cambia lo que muestra cada lado de la costura.
+
+| `var` | Cada lado | Arte de campeón |
+|---|---|---|
+| `campeones` (o sin `var`, o un id desconocido) | la de §4.9, intacta: tu main en los dos lados, cada uno en su tono | sí |
+| `copas` | **la copa 3D de su liga** (`trofeo.js`: la del CBLOL, plata y rojo cromado; la de la LCK, la alta de las estrías), con el logo de la liga como `<img>` en la placa del pedestal y un charco de luz debajo | no (ni detrás del aviso) |
+| `liga` | **el monumento de la liga**: el logo grande, la ciudad («São Paulo», «CBLOL · Brasil»), la pared con los escudos de sus equipos reales grabados en la luz de su tono, y lo marcado: **tu equipo** a color (FURIA) de un lado y **«Te llama · un equipo de la LCK»** del otro, con un escudo sin nombre (el motor no dice qué equipo llama: no se inventa) | no |
+
+- **Dónde.** `js/escena.js` (`crearCostura(lec, { …, variante })`; `js/decision.js` le pasa `ctx.variante` normalizada y pone `data-var` en la pantalla). Clases `dc-heroe`, `dc-copa`, `dc-monumento`, `dc-pared`, `dc-escudo`, `dc-marca` en `estilos/decision.css`; los tamaños en el bloque «§4.10 · D» de `tokens.css`.
+- **El héroe.** En `copas` y `liga` la costura es la del shader (la diagonal, cada mitad en su tono) con `arte: null` en los dos lados. Donde caían las caras va el héroe de cada lado, arriba del panel, entre su destino (contra el borde) y la línea. `acomodar()` prueba, de mayor a menor alto, dos lugares por lado (al lado del destino o contra la línea) y se queda con el primero que no tapa lo escrito en la línea «antes», el panel ni «vos», y no cruza la costura; los dos héroes van del mismo alto. Las caras del ambiente (`costura.caras`) se ponen en el centro de cada héroe: los abanicos de luz lo iluminan. Si el panel crece (elegir), el héroe se achica con una transición (`--dc-heroe-k`): nunca queda tapado.
+- **Apuntar.** El héroe del lado apuntado sube (`--dc-heroe-sube`) y toma la luz; el otro se apaga. La copa usa `foco()` de `trofeo.js` (abajo); la pared de la liga se enciende de a uno (una ola por columnas) y en el otro lado se apagan el logo y la pared, no lo escrito (sigue ≥ 4,5:1). Elegir: el héroe del otro lado se va, como su destino.
+- **Celular (390×844).** La costura partida en vertical; la banda es más alta con héroe (`--dc-banda-cel-heroe`: 420 px) y cada héroe va donde iban las caras (A arriba a la derecha, B abajo a la izquierda), del alto que deja la diagonal. El monumento lleva su pared en chico; el rótulo de lo marcado queda sin el nombre.
+- **1280×720.** La franja libre es baja (~110 px): las copas van de ese alto, contra la línea (no tapa el panel); el monumento va compacto (el logo y la ciudad, sin la pared).
+- **Sin WebGL.** La copa en SVG de `trofeo.js` y la costura en `clip-path` del ambiente, sin arte.
+- **El foco de la copa (`js/trofeo.js`, aditivo).** `crearTrofeo(lienzo, { …, foco })` y `copa.foco(k, t, dur)`: la luz de la copa (k = 1, la de siempre; 0, apagada) en el reloj de `en(t)`. Al subir, un impulso de giro que frena solo y una pasada del brillo; al bajar, la exposición (`uExpo`), el foco de arriba y el halo. Es función pura de t (congelar es fiel). Sin `foco` (el título), la copa pasa por el mismo camino de siempre (`uExpo` = 1).
+- **Las copas se iluminan con el tono de su competición** (la luz blanca arriba y el color de la liga en las varas de contra), no con el del destino dado vuelta: con el rojo como luz, la del CBLOL se veía roja entera.
+- **Los logos (`js/logos.js`).** Se sumaron T1 y KT Rolster (getTeams de LoL Esports, 2026-10-10: los dos `active` con homeLeague LCK), los planteles 2026 de CBLOL y LCK en el orden de `src/data/leagues.json` (CONCEPTO §12) con `equiposDe(liga)`, y `tinta: 'oscura'` en FURIA. Las 18 URLs de la pared cargan: las 21 `<img>` de `liga` (18 escudos, 2 logos y el marcado) con imagen, 0 monogramas de reemplazo y 0 requestfailed.
+- **La copa de la LCK.** Se buscó el material (4 búsquedas: Inven Global y Upcomer, 2019): las fuentes confirman las 140 líneas de metal, la estrella de arriba y las asas como alas de águila, pero no dicen si es oro o plata. La tabla queda como estaba (`oro`, sin fuente del material).
+- **Medido.** El costo de dibujar cada copa en la bisagra (181×282, ≤ 30 fps), repitiendo su último cuadro en la RTX 2060 del headless (ANGLE/D3D11): 0,07-0,10 ms por cuadro (la del título, 428×648: 0,35 ms). No hizo falta un lienzo para las dos. Montar y desmontar `var=copas` 10 veces (20 contextos creados): el contexto del ambiente sigue vivo, 3 contextos vivos al final y 0 avisos. Contraste por píxeles en `.dc-costura` (reposo, apuntando cada lado, elegido, celular, 1280×720, `webgl=0`): 166 textos, 0 debajo de 4,5:1, el peor 6,63:1.
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->

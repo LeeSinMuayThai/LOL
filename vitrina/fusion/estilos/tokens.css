@@ -726,6 +726,37 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 
 /* ===== PLANUI §4.10 · ultimas · D, la decision (las costuras copas y liga). Sus tokens van entre esta linea y su cierre ===== */
 :root {
+  /* los heroes de las costuras sin campeon (js/escena.js, estilos/decision.css): su cruce, cuanto sube el apuntado (en su
+     alto) y cuanto queda del otro (la copa ya se apaga con su foco; el monumento, con esto) */
+  --dc-heroe-cruce: 520ms;
+  --dc-heroe-sube: 3.5%;
+  --dc-heroe-apagado: 0.9;
+  --dc-heroe-apagado-liga: 0.4;
+  /* copas: el charco de luz bajo el pedestal (su alto, en altos de la copa, y cuanto del tono) */
+  --dc-charco-alto: 14%;
+  --dc-charco: 46%;
+  /* liga: el monumento. El logo, la ciudad, un escudo de la pared, el marcado, los huecos */
+  --dc-mon-logo: 128px;
+  --dc-mon-ciudad: 34px;
+  --dc-mon-hueco: 12px;
+  --dc-escudo: 34px;
+  --dc-escudo-yo: 40px;
+  --dc-pared-hueco: 10px;
+  /* el grabado de la pared: cuanto de la luz del tono (contra la tinta) y su opacidad; por defecto sin filtro (cada
+     pared pone el suyo: url(#dc-grabado-a|b)) */
+  --dc-grabado-mezcla: 72%;
+  --dc-grabado-k: 0.8;
+  --dc-grabado: none;
+  /* el escudo sin nombre del que te llama: respira (lento: no es un destello) */
+  --dc-llama: 1400ms;
+  /* celular: la banda de arriba del panel con heroe (sin heroe, --dc-banda-cel) */
+  --dc-banda-cel-heroe: 420px;
+  --dc-mon-logo-cel: 56px;
+  --dc-mon-ciudad-cel: 18px;
+  --dc-mon-hueco-cel: 6px;
+  --dc-escudo-cel: 17px;
+  --dc-escudo-yo-cel: 22px;
+  --dc-pared-hueco-cel: 5px;
 }
 /* ===== fin §4.10 D ===== */
 

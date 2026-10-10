@@ -13,7 +13,9 @@
 //   linea    · (PLANUI §4.9, "una linea") la bisagra llega como ¡OFERTA ENCONTRADA! (el aviso de aceptar partida del
 //              kit, js/ceremonia.js) sobre la pantalla atenuada; aceptar agranda el anillo como un portal y el mundo cruza
 //              a la COSTURA del ambiente: tu main en los dos destinos, cada mitad en su tono, con sus logos y lo que
-//              arriesgas en chips. Apuntar un camino corre la costura; elegir abre ese destino.
+//              arriesgas en chips. Apuntar un camino corre la costura; elegir abre ese destino. (PLANUI §4.10, `var=`)
+//              tres costuras: `campeones` (esta), `copas` (la copa 3D de cada liga) y `liga` (su logo, su ciudad y la
+//              pared de escudos de sus equipos), las dos ultimas sin arte de campeon.
 // Todo sale de CAMPOS del evento (nunca de su prosa): categoria, esBisagra, anio, la liga y el club de la ficha, los
 // efectos estructurados de cada opcion (`liga`, `camino` abierto/cerrado), previa[] (campo, signo, magnitud), riesgo y
 // rareza. Lo decorativo usa el PRNG de la vitrina. Nada toca el ambiente por dentro: solo su API (pulso, ambiente, costura).
@@ -21,7 +23,9 @@ import { el, svg, animar, esperar, reducido, inst, celular, num, EXPO, SALE, DUR
 import { icono, glifoDeCampo, triangulos, ABREVIATURA } from './iconos.js';
 import { crearAzar } from '../../comun/azar.js';
 import { anilloAceptar, ARO } from './ceremonia.js';
-import { tonoDestino, aplicarTono } from './tono.js';
+import { tonoDestino, tonoCompeticion, aplicarTono } from './tono.js';
+import { crearTrofeo, copaDe, SUBIDA } from './trofeo.js';
+import { equiposDe } from './logos.js';
 
 // → logos.js — los logos oficiales del CDN de LoL Esports (esports-api.lolesports.com getLeagues/getTeams, 2026-10-09;
 // cada URL respondio 200 image/png). `tinta`: 'clara' se ve sobre la noche tal cual; 'oscura' se pasa a la tinta.
@@ -1090,15 +1094,84 @@ export function crearFinal(lec, dec, { col, antesFila, placa, alAceptar }) {
 // la costura se va al otro borde y el resultado real entra en el panel. Sin aviso (una decision con destino que no es
 // bisagra), la costura entra con la pantalla. El DOM no dibuja el mundo: solo se apoya encima.
 // Contrato con decision.js: { nodo, banda, entrar(), apuntar(i), soltar(), elegir(i), aceptarYa(), destruir(),
-// avisoAbierto, retardoAceptar, focoAceptar } y `alAceptar({ instantaneo })` cuando se abre la costura.
+// avisoAbierto, retardoAceptar, focoAceptar, listo(), congelar(ms), pausar(), reanudar() } y `alAceptar({ instantaneo })`
+// cuando se abre la costura.
+//
+// (PLANUI §4.10, D) LAS TRES COSTURAS (`var=` en el hash, `variante`). El aviso, el portal y la mecanica (apuntar corre la
+// costura, elegir abre ese destino, la cerrada apagada con su candado) son los mismos; cambia lo que hay en cada lado:
+//   campeones · (sin `var`) la de §4.9, intacta: tu main en los dos lados, cada uno en su tono
+//   copas     · la COPA 3D de cada liga (js/trofeo.js: la del CBLOL, plata y rojo cromado; la de la LCK), iluminada en el
+//               tono de su destino, con el logo de la liga como <img> en la placa del pedestal
+//   liga      · la IDENTIDAD de cada liga: el logo monumental, la ciudad y la pared de escudos de sus equipos reales
+//               (js/logos.js), en su tono; tu equipo marcado de un lado y "el que te llama" del otro (el motor no dice
+//               cual: va como un escudo sin nombre)
+// En copas y liga la costura es la misma (la del shader) pero sin arte de campeon en ningun lado: donde caian las caras va
+// el HEROE de cada lado, arriba del panel, entre su destino (contra el borde) y la linea. Las caras del ambiente
+// (costura.caras) se ponen en el centro de cada heroe: los abanicos de luz lo iluminan. Apuntar un lado: su heroe toma la
+// luz (la copa gira, sube y brilla; la pared se enciende) y el otro se apaga; elegir: el otro se va. Si el panel crece
+// (el resultado), el heroe se achica con el: nunca queda tapado.
 const RIESGO_LN = { seguro: 'seguro', incierto: 'incierto', ruleta: 'ruleta', alto: 'alto', peligroso: 'alto' };
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+// Los heroes (copas, liga). px y fracciones:
+//   arriba · px entre la franja y el heroe · aire · px entre el heroe y lo que tiene alrededor (el panel, su destino, la
+//   linea) · max · el alto maximo, en altos de pantalla · aspCopa · ancho / alto de la caja de la copa (la copa con su halo)
+//   reposo, on, off · el foco de cada copa (js/trofeo.js): en reposo, apuntada, la otra (lo que sube el apuntado esta
+//   en estilos/tokens.css, --dc-heroe-sube) · entra · de donde sube la copa al abrir (en altos) · cel · el celular: el centro de cada
+//   heroe (fraccion del ancho; A arriba a la derecha, B abajo a la izquierda, como las caras) y el alto maximo (fraccion de
+//   la banda) · paso · px entre un alto probado y el siguiente · compacto · liga: debajo de esta escala el monumento va sin la pared (el logo y la ciudad) · quieto · el
+//   instante en que se dibujan las copas con movimiento reducido o INST (asentadas)
+const HEROE = {
+  arriba: 10,
+  aire: 16,
+  max: 0.5,
+  aspCopa: 0.64,
+  reposo: 0.62,
+  on: 1,
+  off: 0.1,
+  entra: 0.22,
+  cel: { a: 0.72, b: 0.28, alto: 0.44 },
+  compacto: 0.62,
+  paso: 4,
+  quieto: 2400,
+};
+// Tiempos de los heroes al abrir (ms, desde Aceptar): la copa sube (SUBIDA de trofeo.js) y la pared se enciende de a uno
+const T_HEROE = { escudo: 32, pared: 220, ola: 26, olaDur: 420 };
 
-export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, lateral, alAceptar }) {
+// La pared de escudos: el escudo de un equipo (<img> del CDN; si no carga, el monograma), grabado en el tono del lado
+// salvo el tuyo, que va a color. `yo`: tu equipo.
+function escudoEquipo(eq, yo) {
+  const n = el('li', { class: 'dc-escudo', 'data-yo': yo ? '' : null });
+  if (!eq.src) {
+    n.append(monograma(eq.nombre));
+    return n;
+  }
+  const img = el('img', { src: eq.src, alt: eq.nombre, decoding: 'async', draggable: 'false', referrerpolicy: 'no-referrer', 'data-tinta': eq.tinta ?? null });
+  img.addEventListener('error', () => img.replaceWith(monograma(eq.nombre)), { once: true });
+  n.append(img);
+  return n;
+}
+// El grabado: cada escudo de la pared se vuelve luz del tono de su lado (alfa = el del logo x su luminancia, con un piso:
+// lo oscuro queda como silueta tenue, lo claro brilla). Un filtro SVG por lado, adentro del lado (el feFlood toma
+// --tono-luz por herencia).
+function filtroGrabado(id) {
+  return svg('svg', { class: 'dc-filtros', width: '0', height: '0', 'aria-hidden': 'true', focusable: 'false' }, [
+    svg('filter', { id, x: '0', y: '0', width: '1', height: '1', 'color-interpolation-filters': 'sRGB' }, [
+      svg('feColorMatrix', { in: 'SourceGraphic', type: 'matrix', values: '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.15 0.5 0.05 0 0.3', result: 'luma' }),
+      svg('feComposite', { in: 'luma', in2: 'SourceAlpha', operator: 'arithmetic', k1: '1', k2: '0', k3: '0', k4: '0', result: 'alfa' }),
+      svg('feFlood', { class: 'dc-grabado-luz', result: 'tono' }),
+      svg('feComposite', { in: 'tono', in2: 'alfa', operator: 'in' }),
+    ]),
+  ]);
+}
+
+export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, lateral, alAceptar, variante = 'campeones' }) {
   const ligaA = lec.casa.liga;
   const ligaB = lec.destino.liga;
   const tonos = { a: ligaA ? tonoDestino(ligaA) : null, b: tonoDestino(ligaB) };
-  const capa = el('div', { class: 'dc-costura', 'aria-hidden': 'true', 'data-fase': lec.bisagra ? 'aviso' : 'costura', 'data-apunta': '', 'data-elegido': '' });
+  // (§4.10) con heroe no hay arte de campeon en ningun lado: la costura es luz y tono
+  const heroe = variante === 'copas' || variante === 'liga' ? variante : null;
+  const arteLado = heroe ? null : arte;
+  const capa = el('div', { class: 'dc-costura', 'aria-hidden': 'true', 'data-fase': lec.bisagra ? 'aviso' : 'costura', 'data-apunta': '', 'data-elegido': '', 'data-var': heroe ?? 'campeones' });
   // en el celular la costura se parte en vertical: la banda (en el flujo, arriba del panel) le deja lugar
   const banda = el('div', { class: 'dc-banda', 'aria-hidden': 'true' });
 
@@ -1121,13 +1194,15 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
   function lado(l) {
     const enA = l === 'a';
     const liga = enA ? ligaA : ligaB;
+    // los caminos de este lado, con su numero de opcion (las cerradas al final, como en el panel)
+    const filas = lec.caminos.map((c, n) => (LADO_LN[c.camino] === l ? filaDe(c, n) : null)).filter(Boolean);
+    // (§4.10) liga: el logo y el lugar van en el monumento; el destino lleva lo que arriesgas
+    if (heroe === 'liga') return el('div', { class: 'dc-lado', 'data-lado': l }, [filas.length ? el('ul', { class: 'dc-filas' }, filas) : null]);
     const logos = enA
       ? [logo(liga ?? lec.casa.servidor ?? CATEGORIA[lec.categoria] ?? '?', { clase: 'dc-logo-liga' }), lec.casa.org ? logo(lec.casa.org, { clase: 'dc-logo-org' }) : null]
       : [logo(liga, { clase: 'dc-logo-liga' })];
     const lugar = enA ? lec.casa.ciudad ?? lec.casa.org ?? liga : lec.destino.ciudad ?? liga;
     const sub = (enA ? [liga, lec.casa.org] : [liga, lec.destino.region]).filter(Boolean).join(' · ');
-    // los caminos de este lado, con su numero de opcion (las cerradas al final, como en el panel)
-    const filas = lec.caminos.map((c, n) => (LADO_LN[c.camino] === l ? filaDe(c, n) : null)).filter(Boolean);
     return el('div', { class: 'dc-lado', 'data-lado': l }, [
       el('div', { class: 'dc-logos' }, logos),
       el('p', { class: 'dc-lugar' }, [el('b', { text: lugar ?? '' }), sub ? el('span', { text: sub }) : null]),
@@ -1138,6 +1213,59 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
   if (tonos.a) aplicarTono(lados.a, tonos.a);
   aplicarTono(lados.b, tonos.b);
   capa.append(lados.a, lados.b);
+
+  // ---------- (§4.10) los heroes: la copa o el monumento de cada liga ----------
+  // Cada heroe: un nodo de afuera (lo ubica cada cuadro), la escala (se achica con el panel, con transicion) y la luz
+  // (sube al apuntar). `natural()`: su ancho y alto sin escala; `base`: el alto con que se dibujo (la copa).
+  // La copa se ilumina con el tono de su competicion sin dar vuelta (la luz blanca arriba y el color de la liga en las
+  // varas de contra): la plata se lee plata y el oro, oro, con los filos en el color del destino. Con el tono del destino
+  // tal cual (el rojo como luz), la copa del CBLOL se veia roja entera.
+  function heroeCopa(l) {
+    const liga = l === 'a' ? ligaA : ligaB;
+    const tono = liga ? tonoCompeticion(liga) : null;
+    const copa = crearTrofeo(document.createElement('canvas'), { ...copaDe(String(liga ?? '').toLowerCase()), tonos: tono ? { luz: tono.luz, contra: tono.contra, noche: tono.noche } : undefined, foco: HEROE.reposo });
+    const info = LOGOS[liga];
+    const img = info ? el('img', { src: info.url, alt: '', decoding: 'async', draggable: 'false' }) : null;
+    img?.addEventListener('error', () => img.remove(), { once: true });
+    const placa = el('span', { class: 'dc-copa-placa' }, img);
+    const caja = el('div', { class: 'dc-copa', 'data-copa': copa.perfil, 'data-material': copa.material }, [copa.nodo, placa]);
+    return { tipo: 'copa', copa, placa, contenido: caja, natural: (h) => [h * HEROE.aspCopa, h] };
+  }
+  function heroeLiga(l) {
+    const enA = l === 'a';
+    const liga = enA ? ligaA : ligaB;
+    const tuyo = enA ? lec.casa.org : null;
+    const igual = (x, y) => String(x ?? '').toLowerCase() === String(y ?? '').toLowerCase();
+    const equipos = equiposDe(liga);
+    const id = `dc-grabado-${l}`;
+    const pared = equipos.length ? el('ul', { class: 'dc-pared', style: { '--dc-cols': String(Math.ceil(equipos.length / 2)), '--dc-grabado': `url(#${id})` } }, equipos.map((eq) => escudoEquipo(eq, tuyo && igual(eq.nombre, tuyo)))) : null;
+    // lo marcado: tu equipo (a color) o el que te llama (el motor no dice cual: un escudo sin nombre)
+    const marca = enA
+      ? tuyo ? el('p', { class: 'dc-marca' }, [logo(tuyo, { clase: 'dc-marca-escudo' }), el('span', { class: 'dc-marca-txt' }, [el('b', { text: 'Tu equipo' }), el('span', { text: tuyo })])]) : null
+      : el('p', { class: 'dc-marca dc-te-llama' }, [el('span', { class: 'logo dc-marca-escudo dc-incognito' }, monograma('?')), el('span', { class: 'dc-marca-txt' }, [el('b', { text: 'Te llama' }), el('span', { text: `un equipo de la ${liga}` })])]);
+    const ciudad = enA ? lec.casa.ciudad : lec.destino.ciudad;
+    const region = LIGAS[liga]?.region ?? (enA ? null : lec.destino.region);
+    const mon = el('div', { class: 'dc-monumento' }, [
+      filtroGrabado(id),
+      logo(liga ?? '?', { clase: 'dc-mon-logo' }),
+      el('p', { class: 'dc-mon-lugar' }, [el('b', { text: ciudad ?? liga ?? '' }), el('span', { text: [liga, region].filter(Boolean).join(' · ') })]),
+      pared,
+      marca,
+    ]);
+    return { tipo: 'liga', contenido: mon, natural: () => [mon.offsetWidth, mon.offsetHeight] };
+  }
+  const heroes = heroe ? {} : null;
+  if (heroe) {
+    for (const l of ['a', 'b']) {
+      const h = heroe === 'copas' ? heroeCopa(l) : heroeLiga(l);
+      h.luz = el('div', { class: 'dc-heroe-luz' }, h.contenido);
+      h.escala = el('div', { class: 'dc-heroe-escala' }, h.luz);
+      h.nodo = el('div', { class: 'dc-heroe', 'data-lado': l, 'data-heroe': h.tipo }, h.escala);
+      if (tonos[l]) aplicarTono(h.nodo, tonos[l]);
+      heroes[l] = h;
+      capa.append(h.nodo);
+    }
+  }
 
   // ---------- donde va la costura y donde caen los destinos ----------
   // el reposo: el medio de la pantalla; en el celular, el medio de la banda (A arriba de la linea, B abajo)
@@ -1180,6 +1308,7 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
   // cada cuadro: los destinos siguen a sus caras (amb.costura(), con y sin WebGL: tambien mientras la costura cruza, y
   // congelada en las tiras). En escritorio cada destino va al lado de su cara, del lado del borde; en el celular, a la
   // altura de su cara, contra su borde (A a la izquierda, B a la derecha), adentro de la banda.
+  // (§4.10) Con heroe, en escritorio cada destino va contra su borde y el heroe a su lado (acomodar()).
   let raf = 0;
   const px = (v) => `${v.toFixed(1)}px`;
   function ubicar() {
@@ -1190,7 +1319,13 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
     const { a: [wa, ha], b: [wb, hb], margen: m } = medidas;
     const cz = g.k > 0 && g.a && g.b ? g : null;
     const cr = carasYa ?? caras();
+    if (heroe) ubicarHeroes();
     if (!celular()) {
+      if (heroe) {
+        lados.a.style.transform = `translate(${px(m)}, 0)`;
+        lados.b.style.transform = `translate(${px(W - m - wb)}, 0)`;
+        return;
+      }
       const junto = (cr?.alto ?? 0) * H * COSTURA.caras.junto;
       // sin costura todavia (el aviso), donde van a quedar
       const ca = cz ? g.a.x * W : (cr?.a.x ?? 0.25) * W;
@@ -1218,7 +1353,7 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
   // quietas al apuntar y al elegir (corre la linea, no ellas): el lado apuntado crece hacia la otra cara.
   let carasYa = null; // las ultimas pedidas (las usa ubicar() en cada cuadro sin volver a medir)
   function caras() {
-    carasYa = medirCaras();
+    carasYa = heroe ? carasHeroes() : medirCaras();
     return carasYa;
   }
   function medirCaras() {
@@ -1241,15 +1376,215 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
     return { a: { x: lado / W, y }, b: { x: 1 - lado / W, y }, alto };
   }
   const franjaAbajo = () => document.querySelector('.franja')?.getBoundingClientRect().bottom ?? 0;
-  const prender = (cruce) => costura({ a: { arte, tono: tonos.a }, b: { arte, tono: tonos.b }, posicion: base, angulo: COSTURA.angulo, k: 1, caras: caras() }, cruce);
+  const prender = (cruce) => costura({ a: { arte: arteLado, tono: tonos.a }, b: { arte: arteLado, tono: tonos.b }, posicion: base, angulo: COSTURA.angulo, k: 1, caras: caras() }, cruce);
   const alRedimensionar = () => {
     medir();
+    if (heroe) acomodar(true);
     if (capa.dataset.fase !== 'costura') return;
     base = reposo();
     const e = capa.dataset.elegido;
     costura({ posicion: e ? posElegido(e) : posDe(capa.dataset.apunta), caras: caras() }, 0);
   };
   addEventListener('resize', alRedimensionar);
+
+  // ---------- (§4.10) donde va cada heroe ----------
+  // En escritorio: arriba del panel, entre su destino (contra el borde) y la linea, del alto que deja libre lo que tiene
+  // debajo (la linea "antes", el panel, "vos"). Se prueban dos lugares (al lado del destino, o contra la linea) y queda el
+  // que deja la copa mas grande; los dos heroes, del mismo alto. En el celular: en la banda, A arriba a la derecha y B
+  // abajo a la izquierda (como las caras), cada uno de su lado de la linea. `fijar`: vuelve a medir el heroe (la copa se
+  // redibuja a ese alto); sin fijar (el panel crecio), solo se achica con la escala.
+  let geo = null; // { a: { x, y, w, h }, b, base: { a, b }, bandaTop, limTop }
+  const tg = () => Math.tan((COSTURA.angulo * Math.PI) / 180);
+  const xLinea = (y) => base * innerWidth + (innerHeight / 2 - y) * tg();
+  const visible = (n) => {
+    const r = n?.getBoundingClientRect();
+    return r && r.width > 1 && r.height > 1 ? r : null;
+  };
+  // lo que el heroe no puede tapar: lo escrito en la linea "antes" (sus piezas: la fila ocupa todo el ancho del panel,
+  // pero el texto no), el panel y "vos"
+  const tapas = () => [...[...(limite?.children ?? [])].flatMap((n) => [...n.children]), contenedor.querySelector(':scope > .parada-col'), lateral].map(visible).filter(Boolean);
+  // ancho / alto del heroe (la copa: su caja; el monumento: lo que mide sin escala)
+  const aspecto = (l) => {
+    const [w, h] = heroes[l].natural(1);
+    return h > 0 ? w / h : HEROE.aspCopa;
+  };
+  // Un lado en escritorio: para cada alto (de mayor a menor, de a HEROE.paso px) se ubica el heroe al lado de su destino
+  // o contra la linea, y vale el primero que entra (no lo tapa nada de lo de abajo y no cruza la linea).
+  function lugarEscritorio(l, arriba, obst) {
+    const W = innerWidth;
+    const asp = aspecto(l);
+    const m = medidas.margen;
+    const borde = l === 'a' ? m + medidas.a[0] + HEROE.aire : W - m - medidas.b[0] - HEROE.aire;
+    const piso = (x0, x1) => obst.reduce((b, r) => (r.left < x1 && r.right > x0 && r.bottom > arriba ? Math.min(b, r.top) : b), innerHeight) - HEROE.aire;
+    // A: la linea manda abajo (la costura se inclina hacia la derecha arriba); B, arriba
+    const lugar = (h, junto) => {
+      const w = h * asp;
+      const lo = l === 'a' ? borde : xLinea(arriba) + HEROE.aire;
+      const hi = l === 'a' ? xLinea(arriba + h) - HEROE.aire : borde;
+      if (hi - lo < w) return null;
+      const x = l === 'a' ? (junto ? lo : hi - w) : junto ? hi - w : lo;
+      const p = piso(x, x + w);
+      return p - arriba >= h ? { x, h, junto, piso: p } : null;
+    };
+    for (let h = innerHeight * HEROE.max; h > 0; h -= HEROE.paso) {
+      const p = lugar(h, true) ?? lugar(h, false);
+      if (p) return p;
+    }
+    return { x: borde, h: 0, junto: true, piso: arriba };
+  }
+  // Un lado en el celular: en la banda, centrado en su x, del alto que deja la linea (A arriba, B abajo)
+  function lugarCelular(l, r) {
+    const W = innerWidth;
+    const asp = aspecto(l);
+    const yL = (x) => r.top + r.height / 2 - (x - W / 2) * tg();
+    const cx = HEROE.cel[l] * W;
+    for (let h = r.height * HEROE.cel.alto; h > 0; h -= HEROE.paso) {
+      const w = h * asp;
+      const arriba = l === 'a' ? r.top + COSTURA.aire : yL(cx - w / 2) + HEROE.aire;
+      const abajo = l === 'a' ? yL(cx + w / 2) - HEROE.aire : r.bottom - COSTURA.aire;
+      if (abajo - arriba >= h && w / 2 <= Math.min(cx, W - cx) - medidas.margen) return { cx, h, arriba, abajo };
+    }
+    return { cx, h: 0, arriba: r.top, abajo: r.top };
+  }
+  // los dos heroes, del mismo alto y a la misma altura (en el medio de lo libre)
+  function calcular() {
+    const W = innerWidth;
+    if (!celular()) {
+      const arriba = franjaAbajo() + HEROE.arriba;
+      const obst = tapas();
+      const la = lugarEscritorio('a', arriba, obst);
+      const lb = lugarEscritorio('b', arriba, obst);
+      const h = Math.min(la.h, lb.h);
+      const y = arriba + Math.max(0, (Math.min(la.piso, lb.piso) - arriba - h) / 2);
+      const m = medidas.margen;
+      const ubicado = (l, p) => {
+        const w = h * aspecto(l);
+        const borde = l === 'a' ? m + medidas.a[0] + HEROE.aire : W - m - medidas.b[0] - HEROE.aire;
+        const x = l === 'a' ? (p.junto ? borde : Math.max(borde, xLinea(y + h) - HEROE.aire - w)) : p.junto ? borde - w : Math.min(borde - w, xLinea(y) + HEROE.aire);
+        return { x, y, w, h };
+      };
+      return { a: ubicado('a', la), b: ubicado('b', lb), bandaTop: 0 };
+    }
+    const r = banda.getBoundingClientRect();
+    if (!(r.height > 0)) return null;
+    const la = lugarCelular('a', r);
+    const lb = lugarCelular('b', r);
+    const h = Math.min(la.h, lb.h);
+    const ubicado = (l, p) => {
+      const w = h * aspecto(l);
+      return { x: p.cx - w / 2, y: p.arriba + Math.max(0, (p.abajo - p.arriba - h) / 2), w, h };
+    };
+    return { a: ubicado('a', la), b: ubicado('b', lb), bandaTop: r.top };
+  }
+  function acomodar(fijar) {
+    if (!heroes || !contenedor.isConnected) return;
+    // liga: si el monumento entero quedaria muy chico, va compacto (sin la pared): se decide antes de ubicarlo
+    let g;
+    if (heroe === 'liga') {
+      for (const l of ['a', 'b']) heroes[l].contenido.classList.remove('dc-mon-compacto');
+      g = calcular();
+      const chico = g && ['a', 'b'].some((l) => g[l].h / Math.max(1, heroes[l].natural()[1]) < HEROE.compacto);
+      if (chico) {
+        for (const l of ['a', 'b']) heroes[l].contenido.classList.add('dc-mon-compacto');
+        g = calcular();
+      }
+    } else g = calcular();
+    if (!g) return;
+    g.limTop = limite?.getBoundingClientRect().top ?? 0;
+    g.base = fijar || !geo ? { a: g.a.h, b: g.b.h } : geo.base;
+    geo = g;
+    for (const l of ['a', 'b']) {
+      const hz = heroes[l];
+      if (hz.tipo === 'copa') {
+        const b0 = geo.base[l];
+        if (fijar) {
+          hz.contenido.style.setProperty('--dc-copa-h', px(b0));
+          hz.contenido.style.setProperty('--dc-copa-w', px(b0 * HEROE.aspCopa));
+          hz.copa.redimensionar();
+          ubicarPlaca(hz);
+        }
+        hz.nodo.style.setProperty('--dc-heroe-k', (b0 > 0 ? Math.min(1, geo[l].h / b0) : 1).toFixed(4));
+      } else {
+        const nh = hz.natural()[1];
+        hz.nodo.style.setProperty('--dc-heroe-k', (nh > 0 ? Math.min(1, geo[l].h / nh) : 1).toFixed(4));
+      }
+    }
+    ubicarHeroes();
+  }
+  // la placa de la copa: el logo como <img> sobre el rectangulo de la placa del pedestal (en px de la caja)
+  function ubicarPlaca(hz) {
+    const r = hz.copa.placa();
+    if (!r) return;
+    Object.assign(hz.placa.style, { left: px(r.x), top: px(r.y), width: px(r.ancho), height: px(r.alto) });
+  }
+  function ubicarHeroes() {
+    if (!geo) return;
+    // en el celular la banda se mueve con el panel (el scroll); en escritorio, si el panel crecio, se achican
+    if (celular()) {
+      const dy = banda.getBoundingClientRect().top - geo.bandaTop;
+      for (const l of ['a', 'b']) heroes[l].nodo.style.transform = `translate(${px(geo[l].x)}, ${px(geo[l].y + dy)})`;
+      return;
+    }
+    const lt = limite?.getBoundingClientRect().top ?? 0;
+    if (Math.abs(lt - geo.limTop) > 1) {
+      geo.limTop = lt;
+      acomodar(false);
+      return;
+    }
+    for (const l of ['a', 'b']) heroes[l].nodo.style.transform = `translate(${px(geo[l].x)}, ${px(geo[l].y)})`;
+  }
+  // las caras del ambiente: el centro de cada heroe (los abanicos de luz lo iluminan)
+  function carasHeroes() {
+    if (!geo) acomodar(true);
+    if (!geo) return null;
+    const H = innerHeight;
+    const W = innerWidth;
+    const dy = celular() ? banda.getBoundingClientRect().top - geo.bandaTop : 0;
+    const c = (g) => ({ x: (g.x + g.w / 2) / W, y: (g.y + dy + g.h / 2) / H });
+    return { a: c(geo.a), b: c(geo.b), alto: Math.min(1, Math.max(geo.a.h, 1) / H) };
+  }
+
+  // ---------- (§4.10) las copas: su reloj (ms desde que entra la pantalla, como congelar) y su foco ----------
+  const copas = heroe === 'copas' ? [heroes.a.copa, heroes.b.copa] : [];
+  let t0Copas = 0;
+  let congeladas = null;
+  let rafCopas = 0;
+  let ultimoCuadro = 0;
+  let copasEnMarcha = false;
+  const relojCopas = () => (quieto() ? HEROE.quieto : congeladas ?? performance.now() - t0Copas);
+  const pintarCopas = (fijo = false) => {
+    const t = relojCopas();
+    for (const c of copas) c.en(t, fijo);
+  };
+  function bucleCopas(ahora) {
+    rafCopas = requestAnimationFrame(bucleCopas);
+    if (ahora - ultimoCuadro < 1000 / (copas[0]?.fps ?? 30) - 2) return;
+    ultimoCuadro = ahora;
+    pintarCopas();
+  }
+  function arrancarCopas() {
+    if (!copas.length) return;
+    copasEnMarcha = true;
+    cancelAnimationFrame(rafCopas);
+    if (quieto() || congeladas != null) pintarCopas(true);
+    else rafCopas = requestAnimationFrame(bucleCopas);
+  }
+  // el foco: el lado apuntado toma la luz y el otro se apaga ('' = reposo); con movimiento reducido, ya
+  function focoHeroes(l) {
+    if (!copas.length) return;
+    const ya = quieto();
+    const t = relojCopas() - (ya ? 1 : 0);
+    for (const k of ['a', 'b']) heroes[k].copa.foco(!l ? HEROE.reposo : k === l ? HEROE.on : HEROE.off, t, ya ? 1 : undefined);
+    if (ya || congeladas != null) pintarCopas(true);
+  }
+  // liga: la pared del lado apuntado se enciende de a uno (una ola por columnas)
+  function olaPared(l) {
+    if (heroe !== 'liga' || !l || quieto()) return;
+    const pared = heroes[l].contenido.querySelector('.dc-pared');
+    if (!pared) return;
+    const cols = Number(pared.style.getPropertyValue('--dc-cols')) || 1;
+    [...pared.children].forEach((x, k) => animar(x, [{ transform: 'none' }, { transform: 'translateY(-14%) scale(1.14)' }, { transform: 'none' }], { delay: (k % cols) * T_HEROE.ola, dur: T_HEROE.olaDur, easing: 'ease-in-out' }));
+  }
 
   // ---------- el aviso: ¡OFERTA ENCONTRADA! ----------
   let aviso = null;
@@ -1262,6 +1597,26 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
     img.addEventListener('error', () => img.replaceWith(monograma(ligaB)), { once: true });
     return img;
   }
+  // (§4.10) los heroes entran con los destinos: la copa sube a la luz (y gira, como en el titulo); la pared se enciende
+  // de a uno. `retardo`: ms desde ahora.
+  function entrarHeroes(retardo) {
+    if (!heroe) return;
+    if (copas.length) {
+      // (con movimiento reducido o INST, la copa ya asentada: sin subida)
+      if (!quieto()) for (const c of copas) c.entrar(relojCopas() + retardo);
+      for (const l of ['a', 'b']) animar(heroes[l].luz, [{ transform: `translateY(${HEROE.entra * 100}%)` }, { transform: 'none' }], { delay: retardo, dur: SUBIDA, easing: EXPO });
+      arrancarCopas();
+      return;
+    }
+    for (const l of ['a', 'b']) {
+      const mon = heroes[l].contenido;
+      animar(mon.querySelector('.dc-mon-logo'), [{ opacity: 0, transform: 'scale(.82)' }, { opacity: 1, transform: 'none' }], { delay: retardo, dur: DUR.larga });
+      animar(mon.querySelector('.dc-mon-lugar'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { delay: retardo + 120, dur: DUR.larga });
+      mon.querySelectorAll('.dc-escudo').forEach((x, k) => animar(x, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], { delay: retardo + T_HEROE.pared + k * T_HEROE.escudo, dur: DUR.entra }));
+      const marca = mon.querySelector('.dc-marca');
+      if (marca) animar(marca, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { delay: retardo + T_HEROE.pared + mon.querySelectorAll('.dc-escudo').length * T_HEROE.escudo, dur: DUR.larga });
+    }
+  }
 
   // ---------- aceptar: el anillo se agranda como un portal y el mundo cruza a la costura ----------
   function abrir() {
@@ -1272,10 +1627,12 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
     capa.dataset.fase = 'costura';
     medir();
     base = reposo();
+    if (heroe) acomodar(true);
     prender(instantaneo ? 0 : COSTURA.cruce);
     if (instantaneo || !r) {
       aviso?.destruir();
       aviso = null;
+      if (heroe) entrarHeroes(0);
       alAceptar({ instantaneo: true });
       return;
     }
@@ -1295,6 +1652,7 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
       lados[l].querySelectorAll('.dc-logos > *').forEach((x, k) => animar(x, [{ opacity: 0, transform: 'scale(.82)' }, { opacity: 1, transform: 'none' }], { delay: T_LN.lados + k * 70, dur: DUR.larga }));
       lados[l].querySelectorAll('.dc-chip, .dc-cerrada').forEach((x, k) => animar(x, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { delay: T_LN.lados + 160 + k * 40 }));
     }
+    entrarHeroes(T_LN.lados);
     esperar(portal, T_LN.fin).then(() => {
       portal.remove();
       aviso?.destruir();
@@ -1311,14 +1669,19 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
     get avisoAbierto() {
       return avisoAbierto;
     },
+    // (§4.10) las copas listas (el shader compilado) y los escudos cargados los espera decision.js
+    listo: () => Promise.all(copas.map((c) => c.listo)),
     entrar() {
+      t0Copas = performance.now();
       medir();
       cancelAnimationFrame(raf);
       ubicar();
       if (!lec.bisagra) {
         // sin aviso: la costura entra con la pantalla
         base = reposo();
+        if (heroe) acomodar(true);
         prender(COSTURA.cruce);
+        entrarHeroes(0);
         return;
       }
       // el velo del kit, un poco mas liviano en esta pantalla: detras se reconoce tu main en la luz de la era
@@ -1340,17 +1703,24 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
       const c = lec.caminos[i];
       if (!c || capa.dataset.fase !== 'costura' || capa.dataset.elegido) return;
       const l = c.bloqueada ? '' : LADO_LN[c.camino] ?? '';
+      const antes = capa.dataset.apunta;
       capa.dataset.apunta = l;
       capa.dataset.cerrada = c.bloqueada ? 'si' : '';
       capa.querySelectorAll('.dc-fila').forEach((f) => f.classList.toggle('on', f.dataset.i === String(i)));
       costura({ posicion: posDe(l) }, COSTURA.apunta);
+      if (heroe && l !== antes) {
+        focoHeroes(l);
+        olaPared(l);
+      }
     },
     soltar() {
       if (capa.dataset.fase !== 'costura' || capa.dataset.elegido) return;
+      const antes = capa.dataset.apunta;
       capa.dataset.apunta = '';
       capa.dataset.cerrada = '';
       capa.querySelectorAll('.dc-fila').forEach((f) => f.classList.remove('on'));
       costura({ posicion: base }, COSTURA.apunta);
+      if (heroe && antes) focoHeroes('');
     },
     // elegir abre ese destino: la costura se va al otro borde (y se endereza), el destino elegido llena la pantalla y la
     // noche de la interfaz toma su tono; el otro destino se apaga
@@ -1360,16 +1730,36 @@ export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, later
       capa.dataset.cerrada = '';
       capa.querySelectorAll('.dc-fila').forEach((f) => f.classList.toggle('on', f.dataset.i === String(i)));
       if (!l) return;
+      const antes = capa.dataset.apunta;
       capa.dataset.apunta = l;
       capa.dataset.elegido = l;
       costura({ posicion: posElegido(l), angulo: 0 }, quieto() ? 0 : COSTURA.abre);
       if (tonos[l]) aplicarTono(document.documentElement, tonos[l]);
+      if (heroe) {
+        focoHeroes(l);
+        if (l !== antes) olaPared(l);
+      }
+    },
+    // (§4.10) congelar(ms) de las tiras: las copas se dibujan en ese instante (ms desde que entro la pantalla)
+    congelar(ms) {
+      if (!copas.length) return;
+      congeladas = ms;
+      cancelAnimationFrame(rafCopas);
+      if (copasEnMarcha) pintarCopas(true);
+    },
+    pausar() {
+      cancelAnimationFrame(rafCopas);
+    },
+    reanudar() {
+      if (copasEnMarcha) arrancarCopas();
     },
     destruir() {
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(rafCopas);
       removeEventListener('resize', alRedimensionar);
       aviso?.destruir();
       aviso = null;
+      for (const c of copas) c.destruir();
     },
   };
 }

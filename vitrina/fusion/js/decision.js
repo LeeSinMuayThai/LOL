@@ -27,9 +27,12 @@ const textoDeBeat = (log) => (log.titulo ? log.titulo : log.message);
 // `final` (PLANUI §4.8) es la ultima demostracion: la invitacion como portal (cliente) que abre el capitulo con destinos.
 // `linea` (PLANUI §4.9): la bisagra como ¡OFERTA ENCONTRADA! que abre la costura con los dos destinos; las comunes, simples.
 const OPCIONES = ['escena', 'cliente', 'bisagra', 'final', 'linea'];
+// (PLANUI §4.10) las costuras de la bisagra con `op=linea` (`var=` en el hash; sin var o desconocida, la de §4.9)
+const VARIANTES = ['campeones', 'copas', 'liga'];
 
-export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
+export function crearDecision({ datos, muestra, amb, sonido, peor, op, variante }) {
   const opDec = OPCIONES.includes(op) ? op : null;
+  const varDec = opDec === 'linea' && VARIANTES.includes(variante) ? variante : 'campeones';
   let capa = null; // la escena o el peso (segun la opcion)
   let invitacion = null; // el momento del cliente (solo en la bisagra)
   const m = datos[muestra];
@@ -52,7 +55,7 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
   const main = j.campeonDelSplit ?? datos.inicio?.jugador?.mains?.[0]?.ddragon ?? null;
 
   // ------------------------------------------------------------------ nodos
-  const raiz = el('section', { class: 'parada parada-decision', 'data-pieza': 'decision', 'data-forma': esMatriz ? 'matriz' : 'lista', 'data-muestra': muestra, 'data-op': opDec, 'data-bisagra': opDec && m.esBisagra ? '' : null });
+  const raiz = el('section', { class: 'parada parada-decision', 'data-pieza': 'decision', 'data-forma': esMatriz ? 'matriz' : 'lista', 'data-muestra': muestra, 'data-op': opDec, 'data-bisagra': opDec && m.esBisagra ? '' : null, 'data-var': opDec === 'linea' ? varDec : null });
   const fr = franja(m.franja, { peor: peorDatos });
   const col = el('div', { class: 'parada-col' });
   const beats = (m.pagina?.beats ?? []).filter((b) => !b.log.tecnico).slice(-MAX_BEATS);
@@ -304,7 +307,7 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
   // Sin destino (el plan, una decision de vida) no hay capa: la pantalla de siempre dentro de la linea.
   const esperaAviso = opDec === 'linea' && !!lec.destino && lec.bisagra;
   if (opDec === 'linea' && lec.destino) {
-    capa = crearCostura(lec, { amb, arte: main, sonido, contenedor: raiz, limite: antesFila, lateral: placa, alAceptar: (o) => abrirPanelLinea(o) });
+    capa = crearCostura(lec, { amb, arte: main, sonido, contenedor: raiz, limite: antesFila, lateral: placa, alAceptar: (o) => abrirPanelLinea(o), variante: varDec });
     antesFila.before(capa.banda);
     if (esperaAviso) raiz.classList.add('dc-espera');
   }
@@ -415,6 +418,7 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
     }
   }
   function congelarLinea(ms) {
+    capa?.congelar?.(ms);
     queueMicrotask(() => {
       for (const [a, t] of nacidas) {
         try {
@@ -589,12 +593,15 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
       : entrada,
     elegir,
     tecla,
-    // (op escena, final) con geografia, el fondo es la escena: sin campeon
-    arte: (opDec === 'escena' || opDec === 'final') && lec.destino ? null : main,
+    // (op escena, final) con geografia, el fondo es la escena: sin campeon. (op=linea, PLANUI §4.10) las costuras copas y
+    // liga tampoco llevan campeon: ni detras del aviso ni en la costura
+    arte: ((opDec === 'escena' || opDec === 'final') && lec.destino) || (opDec === 'linea' && lec.destino && varDec !== 'campeones') ? null : main,
     animo: 'normal',
     encuadre: 'derecha',
-    listo: opDec ? () => cargados(raiz) : undefined,
+    listo: opDec ? () => Promise.all([cargados(raiz), capa?.listo?.()]) : undefined,
     destruir: opDec ? () => capa?.destruir() : undefined,
     congelar: opDec === 'linea' ? congelarLinea : undefined,
+    pausar: opDec === 'linea' ? () => capa?.pausar?.() : undefined,
+    reanudar: opDec === 'linea' ? () => capa?.reanudar?.() : undefined,
   };
 }
