@@ -11,36 +11,19 @@
 // Logos: SOLO <img> enlazado (nunca canvas, nunca versionado). Si no carga, o la org es inventada, va el escudo-monograma
 // del sistema (las iniciales con el filete de la luz).
 import { el } from './util.js';
+import { logoOrg as logoDeOrg, logoLiga } from './logos.js';
 
-const CDN = 'https://static.lolesports.com';
-// → logos.js (los de las ligas y torneos: la API publica de LoL Esports, getLeagues; verificados 200)
-export const LOGOS_LIGA = {
-  worlds: `${CDN}/leagues/1592594612171_WorldsDarkBG.png`,
-  msi: `${CDN}/leagues/1592594634248_MSIDarkBG.png`,
-  firststand: `${CDN}/leagues/1740042025201_RG_LOL_FIRST_STAND_LOGO_VOLT_ALPHA.png`,
-  cblol: `${CDN}/leagues/cblol-logo-symbol-offwhite.png`,
-  lec: `${CDN}/leagues/1592516184297_LEC-01-FullonDark.png`,
-  lck: `${CDN}/leagues/lck-color-on-black.png`,
-  lpl: `${CDN}/leagues/1592516115322_LPL-01-FullonDark.png`,
-  lcs: `${CDN}/leagues/1706356907418_LCSNew-01-FullonDark.png`,
-  lcp: `${CDN}/leagues/1733468139601_lcp-color-golden.png`,
-};
-// → logos.js (los de los equipos: la API publica de LoL Esports, getTeams; el equipo activo de cada org, verificados 200)
-// `sigla`: el tricode de la transmision (el `code` de la API).
-export const LOGOS_EQUIPO = {
-  'red canids kalunga': { url: `${CDN}/teams/1631820575924_red-2021-worlds.png`, sigla: 'RED' },
-  'fluxo w7m': { url: `${CDN}/teams/1766161431111_LogoColorida.png`, sigla: 'FX' },
-  'los grandes': { url: `${CDN}/teams/1784013312149_LOS-OLaranja.png`, sigla: 'LOS' },
-  'pain gaming': { url: `${CDN}/teams/1674657011011_pain_logo_white.png`, sigla: 'PAIN' },
-  loud: { url: `${CDN}/teams/Logo-LOUD-Esports_Original.png`, sigla: 'LOUD' },
-  furia: { url: `${CDN}/teams/FURIA---black.png`, sigla: 'FUR' },
-  leviatán: { url: `${CDN}/teams/1643795049372_LEV-CLAROWhite.png`, sigla: 'LEV' },
-  'vivo keyd stars': { url: `${CDN}/teams/1670542079678_vks.png`, sigla: 'VKS' },
-  'movistar koi': { url: `${CDN}/teams/1734012609283_MKOI_FullColor_Blue.png`, sigla: 'MKOI' },
-  'karmine corp': { url: `${CDN}/teams/1704714951336_KC.png`, sigla: 'KC' },
-  'top esports': { url: `${CDN}/teams/1592592064571_TopEsportsTES-01-FullonDark.png`, sigla: 'TES' },
-  'team secret whales': { url: `${CDN}/teams/1774598000328_White_EyeText_600p.png`, sigla: 'TSW' },
-  'ninjas in pyjamas': { url: `${CDN}/teams/1673425724696_NIP-Symbol-RGB-NeonYellow1.png`, sigla: 'NIP' },
+// Las URLs de los logos (equipos y ligas) viven en js/logos.js, la fuente unica de la fusion (PLANUI §4.8: se cierra
+// el pendiente de §4.7, "unificar sus URLs en logos.js"). Aca quedan el id de cada competicion y los tricodes.
+const LIGA_DE_COMP = { worlds: 'mundial', msi: 'msi', firststand: 'first stand', cblol: 'cblol', lec: 'lec', lck: 'lck', lpl: 'lpl', lcs: 'lcs', lcp: 'lcp' };
+export const LOGOS_LIGA = Object.fromEntries(Object.entries(LIGA_DE_COMP).map(([id, k]) => [id, logoLiga(k).src]));
+// `sigla`: el tricode de la transmision (el `code` de la API publica de LoL Esports, getTeams). Las orgs que no estan
+// usan sus iniciales.
+const SIGLAS = {
+  'red canids kalunga': 'RED', 'fluxo w7m': 'FX', 'los grandes': 'LOS', 'pain gaming': 'PAIN', loud: 'LOUD', furia: 'FUR', leviatán: 'LEV',
+  'vivo keyd stars': 'VKS', 'movistar koi': 'MKOI', 'karmine corp': 'KC', 'top esports': 'TES', 'team secret whales': 'TSW', 'ninjas in pyjamas': 'NIP',
+  'ground zero gaming': 'GZ', 'oh my god': 'OMG', giantx: 'GX', 'gen.g': 'GEN', 'dplus kia': 'DK', 'dn soopers': 'DNS', 'shopify rebellion': 'SR',
+  'team liquid': 'TL', flyquest: 'FLY', 'g2 esports': 'G2', fnatic: 'FNC',
 };
 
 // Las competiciones de 2026 (CONCEPTO §12.3: 6 ligas tier-1 y 3 internacionales). `motivo`: lo reconocible de cada una,
@@ -91,7 +74,11 @@ export function competicionDe(datos, muestra) {
 }
 
 const clave = (nombre) => String(nombre ?? '').trim().toLowerCase();
-export const equipoReal = (nombre) => LOGOS_EQUIPO[clave(nombre)] ?? null;
+// { url, sigla } de una org real (el logo de js/logos.js), o null si la simulacion la invento
+export function equipoReal(nombre) {
+  const src = logoDeOrg(nombre).src;
+  return src ? { url: src, sigla: SIGLAS[clave(nombre)] ?? iniciales(nombre) } : null;
+}
 // las iniciales de una org (para el escudo y la sigla de las inventadas)
 export function iniciales(nombre) {
   const p = String(nombre ?? '').replace(/[^\p{L}\p{N} ]/gu, ' ').split(/\s+/).filter(Boolean);

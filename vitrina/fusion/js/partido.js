@@ -14,7 +14,7 @@
 import { cargarImagen, urlCarga, urlCentrada, urlIcono } from '../../comun/arte.js';
 import { crearAzar } from '../../comun/azar.js';
 import { el, svg, animar, entrar, esperar, lineasConMascara, primeraOracion, num, conSigno, odometro, reducido, inst, celular, leerColor, EXPO, DUR } from './util.js';
-import { icono, triangulos, glifoDeCampo } from './iconos.js';
+import { icono, triangulos, glifoDeCampo, glifoRol } from './iconos.js';
 import { franja, trayectoria, cuartos } from './marco.js';
 import { claveCampeon } from './aura.js';
 import { pintarCampeon } from './color.js';
@@ -45,10 +45,17 @@ const rgbDe = (token) => `rgb(${leerColor(token).map((v) => Math.round(v * 255))
 //                equipos en el marcador, las columnas y el camino
 //   transmision  la transmision oficial: el marcador como "score bug", las placas inferiores y una cortina de entrada
 //   escenario    la arena: el campeon en la pantalla gigante, los cabezales en la paleta del torneo, el publico
-const OPCIONES = ['luz', 'transmision', 'escenario'];
+//   final        PLANUI §4.8, la ultima demostracion: el estadio con sus pantallas LED (la serie) y el Swiss como stream
+const OPCIONES = ['luz', 'transmision', 'escenario', 'final'];
 // cuanto toma la paleta de la competicion el lugar de la luz de la era (el resto sigue siendo la era)
-const K_PALETA = { luz: 0.85, transmision: 0.55, escenario: 1 };
+const K_PALETA = { luz: 0.85, transmision: 0.55, escenario: 1, final: 1 };
+// §4.8: la sala del estadio. `suelo`: el piso del escenario (uv) segun la forma; los cabezales a un 30 % y casi quietos
+// (luz de ambiente, no de recital); el publico del shader apagado (lo dibuja el DOM, por delante de las pantallas).
+const SALA_FINAL = { draft: { suelo: 0.5 }, tribuna: { suelo: 0.42 } };
+const HACES_FINAL = 0.3;
 const CORTINA = 1500; // la cortina de entrada de la transmision (ms); Espacio o Esc la saltean
+const LED_ARTE = [520, 400]; // §4.8: la resolucion del arte de cada lado del duelo de la pantalla central (px del canvas)
+const LED_SOLAPE = 160; // §4.8: cuanto se pisan dos mapas seguidos en la pantalla central (ms), para que no quede un hueco
 // el publico de la arena: la linea de las cabezas (uv, desde abajo) segun la forma de la pantalla
 const SUELO_ARENA = { draft: 0.37, tribuna: 0.3 };
 let duenoComp = null; // la pantalla que puso html[data-comp]: la vieja no se lo saca a la nueva
@@ -63,7 +70,11 @@ function identidad(op, datos, muestra, forma) {
     op,
     comp,
     // lo que main.js le pasa al mundo: la paleta, la arena y la escena (js/fondo.js)
-    props: { paleta: { luz: comp.tokens.luz, contra: comp.tokens.contra, k }, arena: op === 'escenario' ? { k: 1, suelo: SUELO_ARENA[forma] } : 0, escena: op === 'escenario' ? 'arena' : null },
+    props: {
+      paleta: { luz: comp.tokens.luz, contra: comp.tokens.contra, k },
+      arena: op === 'escenario' ? { k: 1, suelo: SUELO_ARENA[forma] } : op === 'final' ? { k: 1, suelo: SALA_FINAL[forma].suelo, haces: HACES_FINAL, publico: 0 } : 0,
+      escena: op === 'escenario' ? 'arena' : op === 'final' ? 'estadio' : null,
+    },
     marcar() {
       duenoComp = yo;
       document.documentElement.dataset.comp = comp.id;
@@ -168,6 +179,234 @@ function marcadorRodante(pasos, inicial) {
   return el('span', { class: 'ms-num odometro', 'aria-label': `${fin.a}-${fin.b}` }, [col(0), el('i', { 'aria-hidden': 'true', text: '–' }), col(1)]);
 }
 
+// ======================================================================================================================
+// PLANUI §4.8 (op=final): EL ESTADIO
+// ======================================================================================================================
+// El escenario del torneo, como en una final de LoL Esports: la pantalla LED central, dos laterales en angulo (un equipo
+// cada una) y la faja de LED al pie del escenario. Adelante, el publico en siluetas, recortado contra las pantallas.
+// Las pantallas son DOM: los logos son <img> (nunca canvas) y el arte es canvas 2D con la receta del color. La sala (la
+// luz de ambiente, el humo, los cabezales quietos) es del ambiente: js/fondo.js, escena 'estadio'. Todo es el mundo
+// (aria-hidden): lo que dicen las pantallas tambien lo dice el panel. La serie y el Swiss (adentro del reproductor)
+// arman la misma estructura; cada uno llena las pantallas con lo suyo.
+const PUBLICO = {
+  ancho: 1600,
+  alto: 120,
+  // dos filas: la de atras mas chica y lavada por el humo, la de adelante en negro
+  filas: [
+    { clase: 'fila-lejos', escala: 0.56, paso: 25, base: 98, varia: 0.2 },
+    { clase: 'fila-cerca', escala: 1, paso: 44, base: 128, varia: 0.26 },
+  ],
+  celulares: 0.1, // cuantos levantan el celular
+};
+const ORDEN_ROL = ['top', 'jungla', 'mid', 'adc', 'support'];
+const ETQ_ROL = { top: 'Top', jungla: 'Jungla', mid: 'Mid', adc: 'ADC', support: 'Support' };
+
+// El publico: siluetas (cabeza y hombros) con el PRNG decorativo, y algun celular en alto que titila (CSS; quieto con
+// movimiento reducido). Se escala con `slice`: siempre cubre el ancho, recortando arriba.
+function publicoSvg(semilla) {
+  const az = crearAzar(`publico-${semilla}`);
+  const { ancho: W, alto: H } = PUBLICO;
+  const s = svg('svg', { class: 'publico', viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMax slice', 'aria-hidden': 'true' });
+  for (const f of PUBLICO.filas) {
+    let d = '';
+    const cels = [];
+    for (let x = az.entre(-24, 0); x < W + 30; x += f.paso * az.entre(0.7, 1.35)) {
+      const k = f.escala * az.entre(1 - f.varia, 1 + f.varia);
+      const r = 10.5 * k;
+      const hombro = 24 * k;
+      const arriba = f.base - 34 * k + az.entre(-4, 4) * k;
+      const cy = arriba - r * 0.72;
+      d += `M${(x - hombro).toFixed(1)} ${H + 4}V${(arriba + 13 * k).toFixed(1)}Q${(x - hombro).toFixed(1)} ${arriba.toFixed(1)} ${(x - hombro * 0.4).toFixed(1)} ${arriba.toFixed(1)}`;
+      d += `H${(x + hombro * 0.4).toFixed(1)}Q${(x + hombro).toFixed(1)} ${arriba.toFixed(1)} ${(x + hombro).toFixed(1)} ${(arriba + 13 * k).toFixed(1)}V${H + 4}Z`;
+      d += `M${(x - r).toFixed(1)} ${cy.toFixed(1)}a${r.toFixed(1)} ${(r * 1.18).toFixed(1)} 0 1 0 ${(2 * r).toFixed(1)} 0a${r.toFixed(1)} ${(r * 1.18).toFixed(1)} 0 1 0 ${(-2 * r).toFixed(1)} 0Z`;
+      if (az.siguiente() < PUBLICO.celulares) cels.push({ x: x + az.entre(-9, 9) * k, y: cy - r * 2.9, k, demora: az.entre(0, 3.2) });
+    }
+    s.append(svg('path', { class: f.clase, d }));
+    for (const c of cels) {
+      s.append(svg('path', { class: `brazo ${f.clase}`, d: `M${(c.x - 5 * c.k).toFixed(1)} ${(c.y + 34 * c.k).toFixed(1)}L${c.x.toFixed(1)} ${(c.y + 9 * c.k).toFixed(1)}`, 'stroke-width': (5.5 * c.k).toFixed(1) }));
+      s.append(svg('rect', { class: 'cel', x: (c.x - 3.5 * c.k).toFixed(1), y: c.y.toFixed(1), width: (7 * c.k).toFixed(1), height: (11 * c.k).toFixed(1), rx: (1.4 * c.k).toFixed(1), style: `animation-delay:-${c.demora.toFixed(2)}s` }));
+    }
+  }
+  return s;
+}
+
+// El esqueleto: las cuatro pantallas y el publico. `en`: 'escenario' (la serie, arriba del draft) o 'feed' (el Swiss,
+// adentro del reproductor).
+function crearEstadio({ en, semilla }) {
+  const centro = el('div', { class: 'led led-centro' });
+  const nos = el('div', { class: 'led led-lado led-nos' });
+  const ellos = el('div', { class: 'led led-lado led-ellos' });
+  const faja = el('div', { class: 'led led-faja' });
+  const nodo = el('div', { class: 'estadio', 'data-en': en, 'aria-hidden': 'true' }, [
+    el('div', { class: 'estadio-escena' }, [nos, ellos, centro, faja]),
+    publicoSvg(semilla),
+  ]);
+  return { nodo, centro, nos, ellos, faja };
+}
+
+// La placa de jugadores de la transmision: handle + rol, sin campeon (el motor no simula los picks de tus companeros).
+function plantelDe(m, fr) {
+  const yo = { handle: fr.quien?.handle, rol: fr.quien?.rol, vos: true };
+  const otros = (m.ficha?.jugador?.companeros ?? []).map((c) => ({ handle: c.handle, rol: c.role ?? c.rol }));
+  return [yo, ...otros].filter((x) => x.handle).sort((a, b) => ORDEN_ROL.indexOf(a.rol) - ORDEN_ROL.indexOf(b.rol));
+}
+const plantelLed = (lista) => el('ol', { class: 'led-plantel' }, lista.map((p) => el('li', { 'data-vos': p.vos ? '' : null }, [glifoRol(p.rol), el('b', { text: p.handle }), el('small', { text: ETQ_ROL[p.rol] ?? p.rol ?? '' })])));
+
+// La pantalla de un equipo: el logo, el nombre, los mapas que lleva (los pips del Bo) y lo que se sume abajo.
+function ladoLed(nodo, nombre, { pips = 0, prendidos = 0, kicker, extra = [] } = {}) {
+  const ps = Array.from({ length: pips }, (_, i) => el('i', { class: 'led-pip', 'data-on': i < prendidos ? '' : null }, el('i')));
+  nodo.append(...[
+    logoOrg(nombre, { clase: 'led-lado-logo' }),
+    kicker ? el('p', { class: 'led-lado-k', text: kicker }) : null,
+    el('p', { class: 'led-lado-n', text: nombre }),
+    pips ? el('p', { class: 'led-pips' }, ps) : null,
+    ...extra,
+  ].filter(Boolean));
+  return ps;
+}
+// El encendido de las pantallas al entrar: suben de negro con un parpadeo corto, la central primero.
+function encenderEstadio(est, t0) {
+  [est.centro, est.nos, est.ellos, est.faja].forEach((n, i) => anim(n, [{ opacity: 0, filter: 'brightness(0.2)' }, { opacity: 1, filter: 'brightness(1.9)', offset: 0.35 }, { opacity: 0.75, offset: 0.5 }, { opacity: 1, filter: 'none' }], { delay: t0 + (i ? 90 + i * 70 : 0), duration: 520, easing: 'linear' }));
+}
+
+// ---------- §4.8: el reproductor del stream ----------
+// El patron de los reproductores de stream (sin marcas de ninguna plataforma): reproducir/pausar, volumen con su
+// deslizador, la marca EN VIVO, la calidad (un menu) y pantalla completa. Los controles se esconden solos si no se
+// mueve el mouse (como un reproductor) y vuelven al moverlo, con el teclado o en pausa.
+const STREAM = {
+  espectadores: [184000, 412000], // decorativo (PRNG): lo que mira una ronda decisiva del Swiss
+  esconder: 3200, // ms sin mover el mouse hasta que la barra se va
+  calidades: ['1080p60', '720p60', '480p', '360p', 'Automática'],
+  volumen: 64,
+};
+const ICONO_PLAYER = {
+  play: ['M8 5.5v13l10.5-6.5z'],
+  pausa: ['M7 5h3.6v14H7z', 'M13.4 5H17v14h-3.6z'],
+  volumen: ['M4 9.5h3.5L12 5.5v13l-4.5-4H4z', 'M15.5 9a4.2 4.2 0 0 1 0 6', 'M18 6.5a8 8 0 0 1 0 11'],
+  mudo: ['M4 9.5h3.5L12 5.5v13l-4.5-4H4z', 'M15.5 9.5l5 5', 'M20.5 9.5l-5 5'],
+  calidad: ['M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z', 'M12 3v2.4M12 18.6V21M3 12h2.4M18.6 12H21M5.6 5.6l1.7 1.7M16.7 16.7l1.7 1.7M5.6 18.4l1.7-1.7M16.7 7.3l1.7-1.7'],
+  completa: ['M4 9V4h5', 'M15 4h5v5', 'M20 15v5h-5', 'M9 20H4v-5'],
+  salir: ['M9 4v5H4', 'M20 9h-5V4', 'M15 20v-5h5', 'M4 15h5v5'],
+};
+const LLENOS = new Set(['play', 'pausa']);
+function icoPlayer(nombre) {
+  const s = svg('svg', { class: `pl-ico${LLENOS.has(nombre) ? ' lleno' : ''}`, viewBox: '0 0 24 24', 'aria-hidden': 'true' });
+  for (const d of ICONO_PLAYER[nombre]) s.append(svg('path', { d }));
+  return s;
+}
+function controlesPlayer(player, feed) {
+  const boton = (clase, etiqueta, ico) => el('button', { type: 'button', class: `pl-btn ${clase}`, 'aria-label': etiqueta, title: etiqueta }, icoPlayer(ico));
+  const play = boton('pl-play', 'Pausar', 'pausa');
+  const vol = boton('pl-vol', 'Silenciar', 'volumen');
+  const barraVol = el('input', { type: 'range', class: 'pl-vol-barra', min: '0', max: '100', step: '1', value: String(STREAM.volumen), 'aria-label': 'Volumen' });
+  barraVol.style.setProperty('--v', String(STREAM.volumen / 100));
+  const calidad = el('button', { type: 'button', class: 'pl-btn pl-calidad', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-label': 'Calidad' }, [icoPlayer('calidad'), el('span', { text: STREAM.calidades[0] })]);
+  const menu = el('ul', { class: 'pl-menu', role: 'menu', 'aria-label': 'Calidad', hidden: true }, STREAM.calidades.map((q, i) => el('li', { role: 'none' }, el('button', { type: 'button', role: 'menuitemradio', 'aria-checked': i ? 'false' : 'true', 'data-q': q }, [q, i ? null : el('small', { text: 'fuente' })]))));
+  const completa = boton('pl-completa', 'Pantalla completa', 'completa');
+  const grande = el('button', { type: 'button', class: 'pl-grande', 'aria-label': 'Reproducir', tabindex: '-1' }, icoPlayer('play'));
+  const barra = el('div', { class: 'pl-barra' }, [
+    play,
+    el('span', { class: 'pl-vol-grupo' }, [vol, barraVol]),
+    el('span', { class: 'pl-vivo' }, [el('i'), 'En vivo']),
+    el('span', { class: 'pl-espacio' }),
+    el('span', { class: 'pl-calidad-grupo' }, [calidad, menu]),
+    completa,
+  ]);
+  player.append(grande, barra);
+  // la barra: se va sola si no se mueve el mouse; vuelve al moverlo, con el foco o en pausa
+  let reloj = 0;
+  const mostrar = () => {
+    player.dataset.ui = 'on';
+    clearTimeout(reloj);
+    reloj = setTimeout(() => {
+      if (!player.dataset.pausa && menu.hidden) player.dataset.ui = 'off';
+    }, STREAM.esconder);
+  };
+  player.addEventListener('pointermove', mostrar);
+  player.addEventListener('focusin', mostrar);
+  // reproducir / pausar: en pausa el video se congela (las animaciones del feed) y aparece el boton grande
+  const pausar = (si) => {
+    player.toggleAttribute('data-pausa', si);
+    play.replaceChildren(icoPlayer(si ? 'play' : 'pausa'));
+    play.setAttribute('aria-label', si ? 'Reproducir' : 'Pausar');
+    play.title = play.getAttribute('aria-label');
+    for (const a of feed.getAnimations({ subtree: true })) {
+      if (si) a.pause();
+      else if (a.playState === 'paused') a.play();
+    }
+    mostrar();
+  };
+  play.addEventListener('click', () => pausar(!player.hasAttribute('data-pausa')));
+  grande.addEventListener('click', () => pausar(false));
+  // el volumen: el boton silencia (y recuerda el nivel), el deslizador lo mueve
+  let antes = STREAM.volumen;
+  const ponerVol = (v) => {
+    barraVol.value = String(v);
+    barraVol.style.setProperty('--v', String(v / 100));
+    vol.replaceChildren(icoPlayer(v > 0 ? 'volumen' : 'mudo'));
+    vol.setAttribute('aria-label', v > 0 ? 'Silenciar' : 'Activar sonido');
+    vol.title = vol.getAttribute('aria-label');
+  };
+  vol.addEventListener('click', () => {
+    const v = Number(barraVol.value);
+    if (v > 0) antes = v;
+    ponerVol(v > 0 ? 0 : antes || STREAM.volumen);
+  });
+  barraVol.addEventListener('input', () => ponerVol(Number(barraVol.value)));
+  // la calidad: un menu de opciones (Esc o un clic afuera lo cierran)
+  const abrir = (si) => {
+    menu.hidden = !si;
+    calidad.setAttribute('aria-expanded', String(si));
+    if (si) menu.querySelector('[aria-checked="true"]')?.focus();
+  };
+  calidad.addEventListener('click', () => abrir(menu.hidden));
+  menu.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-q]');
+    if (!b) return;
+    menu.querySelectorAll('[data-q]').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
+    calidad.querySelector('span').textContent = b.dataset.q;
+    abrir(false);
+    calidad.focus();
+  });
+  menu.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    e.stopPropagation();
+    abrir(false);
+    calidad.focus();
+  });
+  const afuera = (e) => {
+    if (!menu.hidden && !e.target.closest?.('.pl-calidad-grupo')) abrir(false);
+  };
+  document.addEventListener('pointerdown', afuera);
+  // pantalla completa: el reproductor ocupa la pantalla (y el navegador pasa a pantalla completa si lo deja)
+  const tribuna = () => player.closest('.tribuna');
+  const enCompleta = (si) => {
+    tribuna()?.toggleAttribute('data-completa', si);
+    completa.replaceChildren(icoPlayer(si ? 'salir' : 'completa'));
+    completa.setAttribute('aria-label', si ? 'Salir de pantalla completa' : 'Pantalla completa');
+    completa.title = completa.getAttribute('aria-label');
+  };
+  completa.addEventListener('click', () => {
+    const si = !tribuna()?.hasAttribute('data-completa');
+    enCompleta(si);
+    if (si) document.documentElement.requestFullscreen?.().catch(() => {});
+    else if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  });
+  const alSalir = () => {
+    if (!document.fullscreenElement && tribuna()?.hasAttribute('data-completa')) enCompleta(false);
+  };
+  document.addEventListener('fullscreenchange', alSalir);
+  return {
+    mostrar,
+    destruir() {
+      clearTimeout(reloj);
+      document.removeEventListener('pointerdown', afuera);
+      document.removeEventListener('fullscreenchange', alSalir);
+      if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    },
+  };
+}
+
 export function crearPartido(ctx) {
   return ctx.muestra === 'swiss' ? crearSwiss(ctx) : crearDraft(ctx);
 }
@@ -179,6 +418,8 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
   const m = datos[muestra];
   const ident = identidad(op, datos, muestra, 'draft');
   ident.marcar();
+  // §4.8: el estadio arriba (las pantallas LED) y el draft abajo
+  const final = ident.op === 'final';
   const pc = peor ? datos.peorCaso : null;
   const replan = Boolean(m.esReplan || m.decision?.datos?.replan);
   const dec = m.decision;
@@ -307,7 +548,11 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
       anim(nombreAp, [{ opacity: 0, transform: 'translateX(-10px)', letterSpacing: '0.04em' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: EXPO });
     }
   };
-  const desuscribir = aura?.alCambiar((k) => ponerNombre(k));
+  let alAura = null; // §4.8: el duelo de la pantalla central sigue al aura
+  const desuscribir = aura?.alCambiar((k) => {
+    ponerNombre(k);
+    alAura?.(k);
+  });
   const libresNodos = new Map();
   const libresRow = el('ul', { class: 'libres', 'aria-label': `Tus libres: ${libres.length}` }, libres.map((k) => {
     const b = el('button', { class: 'libre', type: 'button', 'data-campeon': k, title: fichaDe(datos, k).nombre }, [
@@ -329,9 +574,10 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
   const juego = el('div', { class: 'juego', 'aria-live': 'polite' });
   // §4.7 transmision: lo apuntado es una placa inferior, con quien juega (tu handle, tu rol, tu equipo)
   const quien = ident.op === 'transmision' ? el('p', { class: 'tv-placa-quien' }, [logoOrg(nos, { clase: 'tv-placa-logo' }), el('b', { text: fr.quien?.handle ?? '' }), el('span', { text: `${fr.quien?.rolEtiqueta ?? ''} · ${siglaDe(nos)}` })]) : null;
-  const escenario = el('div', { class: 'escenario' }, [
+  const kickerLibres = el('p', { class: 'eq-kicker' }, [el('span', { text: 'Tus libres' }), el('b', { class: 'libres-n', text: String(libres.length) })]);
+  const escenario = final ? null : el('div', { class: 'escenario' }, [
     el('div', { class: 'ap' }, [el('p', { class: 'eq-kicker', text: replan ? 'Te lo leyeron' : 'Apuntando' }), nombreAp, tagsAp, quien]),
-    el('div', { class: 'escenario-pie' }, [el('p', { class: 'eq-kicker' }, [el('span', { text: 'Tus libres' }), el('b', { class: 'libres-n', text: String(libres.length) })]), libresRow]),
+    el('div', { class: 'escenario-pie' }, [kickerLibres, libresRow]),
     marcador,
     juego,
   ]);
@@ -394,22 +640,127 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
     f.addEventListener('click', () => elegir(i + 1));
   });
   const enJuego = el('div', { class: 'en-juego' });
-  const decide = el('div', { class: 'decide' }, [planes, inspector, enJuego]);
-  const centro = el('div', { class: 'draft-centro' }, [cab.nodo, escenario, decide, ocultas]);
+  // §4.8: sin la ventana del escenario, tus libres pasan al panel, arriba de los planes
+  const decide = el('div', { class: 'decide' }, final ? [el('div', { class: 'libres-bloque' }, [kickerLibres, libresRow]), planes, inspector, enJuego] : [planes, inspector, enJuego]);
+  const centro = el('div', { class: 'draft-centro' }, final ? [cab.nodo, decide, ocultas] : [cab.nodo, escenario, decide, ocultas]);
   const draft = el('div', { class: 'draft', 'data-replan': replan ? '' : null }, [colNos.nodo, centro, colEllos.nodo]);
+  const est = final ? estadioSerie() : null;
 
   const raiz = el('section', { class: 'parada partido', 'data-pieza': 'partido', 'data-forma': 'draft', 'data-muestra': muestra, 'data-op': ident.op, 'data-comp': ident.comp?.id });
   const frN = franja(fr, { peor: pc ? { handle: pc.handle, org: pc.org?.nombre } : null });
   const tray = trayectoria(datos.final?.tarjeta?.historia ?? [], m.anio, m.edad);
-  raiz.append(frN, draft, cuartos('temporada', null, tray));
+  raiz.append(frN, ...(est ? [est.nodo] : []), draft, cuartos('temporada', null, tray));
+  if (est) alAura = est.aDuelo;
   apuntar(0);
+
+  // ---------- §4.8: las pantallas del estadio ----------
+  // La central es el duelo de mid (tu pick contra el del rival, con el marcador y los logos arriba); las laterales, los
+  // equipos (logo, mapas ganados y tu plantel); la faja, Fearless. El aura pone el campeon apuntado en la central, del
+  // lado de quien lo juega.
+  function estadioSerie() {
+    const e = crearEstadio({ en: 'escenario', semilla: `${m.anio}-${muestra}` });
+    const siglaNos = siglaDe(nos);
+    const siglaEllos = siglaDe(ellos);
+    const rol = fr.quien?.rol ?? 'mid';
+    // la cabecera de la central: el torneo y la ronda; el marcador (con sus logos) en el medio
+    const cabLed = el('div', { class: 'led-cab' }, [
+      el('p', { class: 'led-cab-comp' }, [logoComp(ident.comp, { clase: 'led-cab-logo' }), el('span', { text: ronda })]),
+      marcador,
+      el('p', { class: 'led-cab-fl', text: replan ? `Bo${formato} · mapa ${offset + 1}` : `Bo${formato} · Fearless` }),
+    ]);
+    const pjNos = pjLed('nos');
+    const pjEllos = pjLed('ellos');
+    const duelo = el('div', { class: 'led-duelo' }, [pjNos.nodo, pjEllos.nodo, el('p', { class: 'led-vs', text: 'vs' }), el('p', { class: 'led-rol' }, [glifoRol(rol), ETQ_ROL[rol] ?? rol])]);
+    e.centro.append(cabLed, duelo, juego);
+    // el duelo por defecto: tu campeon planeado contra la intencion del rival; en el replan, el que te leyeron y tu pick
+    // todavia sin hacer
+    const subNos = `${fr.quien?.handle ?? ''} · ${siglaNos}`;
+    const defNos = replan ? null : base;
+    const defEllos = replan ? leido : intencionRival;
+    const subEllos = `${siglaEllos} · ${replan ? 'te lo leyó' : 'su intención'}`;
+    // de que lado juega cada campeon (para el aura)
+    const lado = new Map();
+    libres.forEach((k) => lado.set(k, 'nos'));
+    jugados.forEach((mp) => {
+      lado.set(claveCampeon(mp.campeon), 'nos');
+      if (mp.rivalJuega) lado.set(claveCampeon(mp.rivalJuega), 'ellos');
+    });
+    if (intencionRival) lado.set(intencionRival, 'ellos');
+    if (leido) lado.set(leido, 'ellos');
+    const aDuelo = (k) => {
+      if (!k || k === base) {
+        pjNos.mostrar(defNos, subNos);
+        pjEllos.mostrar(defEllos, subEllos);
+      } else if (lado.get(k) === 'ellos') {
+        pjNos.mostrar(defNos, subNos);
+        pjEllos.mostrar(k, `${siglaEllos} · apuntado`);
+      } else {
+        pjNos.mostrar(k, subNos);
+        pjEllos.mostrar(defEllos, subEllos);
+      }
+    };
+    aDuelo(null);
+    // las laterales: los equipos, con los mapas que lleva cada uno (al mejor de `formato`)
+    const aGanar = Math.ceil(formato / 2);
+    const pipsNos = ladoLed(e.nos, nos, { pips: aGanar, prendidos: marcadorAhora[0], extra: [plantelLed(plantelDe(m, fr))] });
+    const pipsEllos = ladoLed(e.ellos, ellos, { pips: aGanar, prendidos: marcadorAhora[1], kicker: ronda });
+    // la faja: Fearless, los quemados de la serie
+    const contador = el('b', { class: 'led-faja-n num', text: `${quemados0.length}/${capacidad}` });
+    // cada hueco: el marco vacio y, adentro, lo quemado (el icono y la tacha), que es lo que se anima al quemarse
+    const huecos = Array.from({ length: capacidad }, () => el('i', { class: 'led-q' }, el('i', { class: 'led-q-in' }, el('i', { class: 'led-q-tacha' }))));
+    const quemar = (k, i, leidoK = false) => {
+      const h = huecos[i];
+      if (!h) return null;
+      const adentro = h.firstElementChild;
+      h.dataset.on = '';
+      if (leidoK) h.dataset.leido = '';
+      cargas.push(cargarImagen(urlIcono(k, meta)).then((img) => img && adentro.prepend(img.cloneNode())));
+      return adentro;
+    };
+    quemados0.forEach((k, i) => quemar(k, i, k === leido));
+    e.faja.append(logoComp(ident.comp, { clase: 'led-faja-logo' }), el('p', { class: 'led-faja-t' }, [el('b', { text: 'Fearless' }), el('span', { text: 'quemados' })]), el('span', { class: 'led-faja-q' }, huecos), contador);
+    return { ...e, aDuelo, pipsNos, pipsEllos, quemar, contador, siglaNos, siglaEllos };
+  }
+  // un lado del duelo: el arte del campeon (canvas, la receta del color) y su nombre; sin campeon, el "?" de tu pick
+  function pjLed(ladoPj) {
+    const c = el('canvas', { class: 'led-arte', width: String(LED_ARTE[0]), height: String(LED_ARTE[1]) });
+    const reg = [c, null, [0.5, 0.26]];
+    lienzos.push(reg);
+    const nombre = el('b');
+    const sub = el('small');
+    const nodo = el('div', { class: `led-pj ${ladoPj}` }, [c, el('span', { class: 'led-pj-vacio', text: '?' }), el('p', { class: 'led-pj-n' }, [nombre, sub])]);
+    let actualK;
+    let pedido = 0;
+    function mostrar(k, texto) {
+      sub.textContent = texto;
+      if (k === actualK) return;
+      const primera = actualK === undefined;
+      actualK = k;
+      const yo = ++pedido;
+      nodo.toggleAttribute('data-vacio', !k);
+      nombre.textContent = k ? fichaDe(datos, k).nombre : 'Tu pick';
+      if (!primera && !quieto()) anim(nodo, [{ filter: 'brightness(2.2) saturate(0.4)' }, { filter: 'none' }], { duration: 300, easing: EXPO });
+      if (!k) {
+        reg[1] = null;
+        c.getContext('2d').clearRect(0, 0, c.width, c.height);
+        return;
+      }
+      cargas.push(cargarImagen(urlCentrada(k, meta)).then((img) => {
+        if (yo !== pedido || !img) return;
+        reg[1] = img;
+        pintar(c, img, eraDe(), reg[2], ident.luz(eraDe()));
+      }));
+    }
+    return { nodo, mostrar };
+  }
 
   // ---------- entrada: luz -> rotulo -> titulo -> los equipos por los costados -> planes ----------
   let telon = null;
   function entrada() {
     if (ident.op === 'transmision') telon = cortina(draft, ident.comp, `${ident.comp.nombre} ${ident.comp.anio ?? ''}`.trim(), `${ident.comp.fase} · Bo${formato} · Fearless`);
     entrar(frN, 0, -10);
-    anim(draft, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { delay: 80, duration: 320, easing: EXPO });
+    if (est) encenderEstadio(est, 40);
+    anim(draft, [{ opacity: 0, transform: `translateY(${est ? 28 : 14}px)` }, { opacity: 1, transform: 'none' }], { delay: est ? 140 : 80, duration: 320, easing: EXPO });
     entrar(cab.rotulo, 160, 8);
     lineasConMascara(cab.titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: 220 + i * 70, dur: 420 }));
     entrar(cab.planteo, 380, 8);
@@ -434,7 +785,7 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
         el('p', { class: 'sello-t', text: 'Quemado' }),
         el('p', { class: 'sello-sub', text: `${fichaDe(datos, leido).nombre} · ${ellos} te leyó` }),
       ]);
-      escenario.append(sello);
+      (est ? est.centro : escenario).append(sello);
       ventanaDeTiempo(sello, 200, 1900, { entra: 0.08, sale: 0.86 });
       anim(sello.querySelector('.sello-t'), [{ transform: 'scale(1.5)', opacity: 0, letterSpacing: '0.3em', filter: 'blur(10px)' }, { transform: 'none', opacity: 1, filter: 'none' }], { delay: 420, duration: 420, easing: EXPO });
       const q = tablero.querySelector('[data-leido]');
@@ -456,8 +807,14 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
     const primerMapa = iMapas[0] ?? -1;
     const ultimoMapa = iMapas[iMapas.length - 1] ?? -1;
     draft.dataset.jugando = '';
+    // §4.8: la central deja el duelo de la seleccion cuando arranca el primer mapa
+    const duelo = est?.centro.querySelector('.led-duelo');
+    if (duelo) {
+      duelo.style.visibility = 'hidden';
+      anim(duelo, [{ visibility: 'visible' }, { visibility: 'visible' }], { duration: T0_MAPAS + MAPA * 0.12 });
+    }
     // el escenario deja de ser la seleccion: el nombre apuntado y tus libres se apagan, entra la serie
-    escenario.querySelectorAll('.ap, .escenario-pie').forEach((x) => {
+    escenario?.querySelectorAll('.ap, .escenario-pie').forEach((x) => {
       x.style.opacity = '0';
       anim(x, [{ opacity: 1 }, { opacity: 0 }], { duration: 200 });
     });
@@ -485,7 +842,7 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
       } else if (primerMapa >= 0 && i > primerMapa && i < ultimoMapa) {
         // la charla del coach entre mapas
         const cartel = el('div', { class: 'cartel-charla' }, [icono('coach'), el('p', { text: l.message })]);
-        juego.append(cartel);
+        (est ? decide : juego).append(cartel);
         ventanaDeTiempo(cartel, t, CHARLA);
         t += CHARLA;
       }
@@ -512,6 +869,12 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
       if (pn) anim(pn, [{ opacity: 0, transform: 'translateX(-18px)' }, { opacity: 1, transform: 'none' }], { delay: t0, duration: 260, easing: EXPO });
       if (pe) anim(pe, [{ opacity: 0, transform: 'translateX(18px)' }, { opacity: 1, transform: 'none' }], { delay: t0 + 90, duration: 260, easing: EXPO });
       [pn, pe].forEach((p) => p && anim(p.querySelector('.ranura-res'), [{ opacity: 0, transform: 'scale(1.8)' }, { opacity: 1, transform: 'none' }], { delay: t0 + 430, duration: 220, easing: EXPO }));
+      if (est) {
+        mapaEnEstadio(l, k, rk, t0, esUltimo);
+        if (gano) amb.pulso('logro', quieto() ? 0 : t0 + 380);
+        fearless(l, k, rk, t0);
+        return;
+      }
       // el escenario: la pantalla de carga del mapa (tu pick contra el del rival) y su post-game
       const capa = el('div', { class: 'mapa-capa', 'data-res': l.resultado }, [
         el('div', { class: 'carga carga-nos' }, [retratoDe(k, urlCarga, 176, 320, [0.5, 0.2], 'carga-arte'), el('b', { text: fichaDe(datos, k).nombre }), ident.activa ? logoOrg(nos, { clase: 'carga-logo' }) : null]),
@@ -535,9 +898,12 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
       // la derrota apaga la pantalla de carga; la victoria es un pulso de luz en el mundo
       if (!gano) capa.querySelectorAll('.carga-nos canvas').forEach((c) => anim(c, [{ filter: 'none' }, { filter: 'grayscale(1) brightness(0.5)' }], { delay: t0 + 380, duration: 320 }));
       else amb.pulso('logro', quieto() ? 0 : t0 + 380);
+      fearless(l, k, rk, t0);
+    }
+    // el marcador y Fearless: lo que salio queda quemado para los dos (el tablero del panel, tus libres y la faja)
+    function fearless(l, k, rk, t0) {
       const [a, b] = String(l.marcador).split('-').map(Number);
       if (Number.isFinite(a) && Number.isFinite(b)) pasos.push({ t: t0 + 400, a, b });
-      // Fearless: lo que salio queda quemado para los dos
       const tq = t0 + Math.round(MAPA * 0.6);
       for (const q of [k, rk]) {
         if (!q || quemados.has(q)) continue;
@@ -547,6 +913,8 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
         if (hueco) hueco.append(nodo);
         else tablero.append(nodo);
         anim(nodo, [{ opacity: 0, transform: 'scale(1.6)' }, { opacity: 1, transform: 'none' }], { delay: tq, duration: 260, easing: EXPO });
+        const enFaja = est?.quemar(q, quemados.size - 1);
+        if (enFaja) anim(enFaja, [{ opacity: 0, transform: 'scale(1.9)', filter: 'brightness(2.4)' }, { opacity: 1, transform: 'none', filter: 'none' }], { delay: tq, duration: 360, easing: EXPO });
         const lib = libresNodos.get(q);
         if (lib) {
           lib.dataset.quemado = '';
@@ -565,6 +933,10 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
     if (animoFin === 'gloria') amb.pulso('gloria', quieto() ? 0 : t);
     contadorQ.textContent = `${quemados.size} de ${capacidad}`;
     anim(contadorQ, [{ opacity: 0 }, { opacity: 1 }], { delay: t - MAPA * 0.4, duration: 200 });
+    if (est) {
+      est.contador.textContent = `${quemados.size}/${capacidad}`;
+      anim(est.contador, [{ opacity: 0 }, { opacity: 1 }], { delay: t - MAPA * 0.4, duration: 200 });
+    }
     saltar = () => {
       for (const a of raiz.getAnimations({ subtree: true })) {
         try {
@@ -600,18 +972,79 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
         el('button', { class: 'boton', type: 'button', onclick: () => window.vitrina?.repetir() }, ['Volver a decidir', el('kbd', { text: 'R' })]),
       ]),
     ]);
-    juego.append(card);
+    (est ? decide : juego).append(card);
     anim(card, [{ opacity: 0, visibility: 'visible', transform: 'translateY(14px)' }, { opacity: 1, visibility: 'visible', transform: 'none' }], { delay: t0, duration: 380, easing: EXPO });
+    if (est) finalEnEstadio(gano, sigue, ultimo, t0);
     anim(card.querySelector('.emblema'), [{ transform: 'scale(0.4) rotate(-20deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], { delay: t0 + 80, duration: 520, easing: 'cubic-bezier(0.3, 1.4, 0.5, 1)' });
     card.querySelectorAll('.sf-mapas li').forEach((li, i) => anim(li, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { delay: t0 + 200 + i * 50, duration: 220 }));
-    marcador.style.opacity = '0';
-    anim(marcador, [{ opacity: 1 }, { opacity: 0 }], { delay: t0, duration: 200 });
+    if (!est) {
+      marcador.style.opacity = '0';
+      anim(marcador, [{ opacity: 1 }, { opacity: 0 }], { delay: t0, duration: 200 });
+    }
     const sal = enJuego.querySelector('.saltar');
     if (sal) {
       sal.style.visibility = 'hidden';
       anim(sal, [{ visibility: 'visible', opacity: 1 }, { visibility: 'visible', opacity: 0 }], { delay: t0, duration: 200 });
     }
     return card;
+  }
+
+  // §4.8: un mapa en el estadio. La central es la pantalla de carga (tu pick contra el del rival, a pantalla partida) y
+  // despues el resultado (VICTORIA/DERROTA a todo el LED); la lateral del que gano se enciende y suma su mapa.
+  function mapaEnEstadio(l, k, rk, t0, esUltimo) {
+    const gano = l.resultado === 'W';
+    const ladoCarga = (kk, lado, sub) => el('div', { class: `led-pj ${lado}` }, [
+      kk ? retratoDe(kk, urlCentrada, LED_ARTE[0], LED_ARTE[1], [0.5, 0.26], 'led-arte') : null,
+      el('p', { class: 'led-pj-n' }, [el('b', { text: kk ? fichaDe(datos, kk).nombre : '' }), el('small', { text: sub })]),
+    ]);
+    const capa = el('div', { class: 'led-mapa', 'data-res': l.resultado }, [
+      ladoCarga(k, 'nos', `${fr.quien?.handle ?? ''} · ${est.siglaNos}`),
+      ladoCarga(rk, 'ellos', est.siglaEllos),
+      el('p', { class: 'led-vs', text: 'vs' }),
+      el('p', { class: 'led-mapa-n', text: `Mapa ${l.mapa}${l.mapa === formato ? ' · el decisivo' : ''}` }),
+      el('div', { class: 'led-res' }, [
+        el('p', { class: 'led-res-t', text: gano ? 'Victoria' : 'Derrota' }),
+        el('p', { class: 'led-res-sub' }, [logoOrg(gano ? nos : ellos, { clase: 'led-res-logo' }), el('b', { class: 'num', text: String(l.marcador).replace('-', '–') }), el('span', { text: `tenías ${pct(l.p)}` })]),
+      ]),
+    ]);
+    juego.append(capa);
+    // el LED no vuelve al duelo entre mapas: cada mapa queda (con su resultado) hasta que el siguiente lo tapa, aunque
+    // en el medio hable el coach
+    const dura = esUltimo ? MAPA : MAPA + CHARLA + LED_SOLAPE;
+    anim(capa, [{ opacity: 0, visibility: 'visible' }, { opacity: 1, visibility: 'visible', offset: (MAPA * 0.12) / dura }, { opacity: 1, visibility: 'visible' }], { delay: t0, duration: dura });
+    // la carga entra desde los costados, el resultado cae encima con un destello del LED
+    capa.querySelectorAll('.led-pj').forEach((c, j) => anim(c, [{ opacity: 0, transform: `translateX(${j ? 8 : -8}%)` }, { opacity: 1, transform: 'none' }], { delay: t0 + j * 70, duration: 340, easing: EXPO }));
+    anim(capa.querySelector('.led-mapa-n'), [{ opacity: 0, transform: 'translateY(-60%)' }, { opacity: 1, transform: 'none' }], { delay: t0 + 60, duration: 240, easing: EXPO });
+    const res = capa.querySelector('.led-res');
+    // el resultado queda arriba de la carga mientras dure la capa del mapa
+    anim(res, [{ opacity: 0, visibility: 'visible' }, { opacity: 1, visibility: 'visible', offset: 260 / (dura - 380) }, { opacity: 1, visibility: 'visible' }], { delay: t0 + 380, duration: dura - 380 });
+    anim(res.querySelector('.led-res-t'), [{ transform: 'scale(1.35)', letterSpacing: '0.3em', filter: 'blur(6px) brightness(2)' }, { transform: 'none', filter: 'none' }], { delay: t0 + 380, duration: 420, easing: EXPO });
+    const vs = capa.querySelector('.led-vs');
+    vs.style.opacity = '0';
+    anim(vs, [{ opacity: 1 }, { opacity: 1, offset: 0.9 }, { opacity: 0 }], { delay: t0, duration: 400 });
+    if (!gano) capa.querySelectorAll('.led-pj.nos canvas').forEach((c) => anim(c, [{ filter: 'none' }, { filter: 'grayscale(1) brightness(0.5)' }], { delay: t0 + 380, duration: 320 }));
+    // la lateral del que gano: un destello y su mapa
+    const [a, b] = String(l.marcador).split('-').map(Number);
+    const lado = gano ? est.nos : est.ellos;
+    const pip = (gano ? est.pipsNos : est.pipsEllos)[(gano ? a : b) - 1];
+    anim(lado, [{ filter: 'brightness(1.9)' }, { filter: 'none' }], { delay: t0 + 400, duration: 700, easing: EXPO });
+    if (pip) {
+      pip.dataset.on = '';
+      anim(pip.firstElementChild, [{ opacity: 0, transform: 'scaleX(0)' }, { opacity: 1, transform: 'none' }], { delay: t0 + 420, duration: 360, easing: EXPO });
+    }
+  }
+  // §4.8: el final de la serie en la central: el marcador grande con los dos logos y quien se la lleva
+  function finalEnEstadio(gano, sigue, ultimo, t0) {
+    const [a, b] = String(ultimo?.marcador ?? '').split('-');
+    const titular = sigue ? 'La serie sigue' : gano ? (se.ronda === 'final' ? 'Campeones' : `${est.siglaNos} gana la serie`) : `${est.siglaEllos} gana ${se.ronda === 'final' ? 'la final' : 'la serie'}`;
+    const capa = el('div', { class: 'led-final', 'data-gano': sigue ? 'sigue' : String(Boolean(gano)) }, [
+      el('div', { class: 'led-final-eq', 'data-gana': !sigue && gano ? '' : null }, [logoOrg(nos, { clase: 'led-final-logo' }), el('b', { class: 'num', text: a ?? '' })]),
+      el('div', { class: 'led-final-c' }, [el('p', { class: 'led-final-k', text: `${ident.comp.nombre} ${m.anio} · ${ronda}` }), el('p', { class: 'led-final-t', text: titular })]),
+      el('div', { class: 'led-final-eq', 'data-gana': !sigue && !gano ? '' : null }, [el('b', { class: 'num', text: b ?? '' }), logoOrg(ellos, { clase: 'led-final-logo' })]),
+    ]);
+    juego.append(capa);
+    anim(capa, [{ opacity: 0, visibility: 'visible', filter: 'brightness(2.4)' }, { opacity: 1, visibility: 'visible', filter: 'none' }], { delay: t0, duration: 520, easing: EXPO });
+    anim(capa.querySelector('.led-final-t'), [{ opacity: 0, letterSpacing: '0.3em' }, { opacity: 1 }], { delay: t0 + 160, duration: 620, easing: EXPO });
   }
 
   // teclado: 1-3 eligen, flechas recorren, Esc/Espacio saltea, R repite
@@ -664,6 +1097,9 @@ function crearSwiss({ datos, muestra, amb, sonido, peor, op }) {
   const m = datos[muestra];
   const ident = identidad(op, datos, muestra, 'tribuna');
   ident.marcar();
+  // §4.8: la transmision oficial adentro de un reproductor de stream; afuera, la pagina del stream y el chat
+  const final = ident.op === 'final';
+  const meta = datos.meta;
   const pc = peor ? datos.peorCaso : null;
   const dec = m.decision;
   const ops = dec.opciones;
@@ -709,7 +1145,7 @@ function crearSwiss({ datos, muestra, amb, sonido, peor, op }) {
   ]);
   // §4.7 transmision: el "score bug" (los dos equipos con su record del Swiss) debajo de la cabecera
   const recRival = it.swiss?.record?.[rival];
-  const bug = ident.op === 'transmision' ? el('p', { class: 'tv-bug tv-bug-swiss', 'aria-label': `${orgVista} ${rec.v}-${rec.d}, ${rival} ${recRival ? `${recRival.v}-${recRival.d}` : ''}` }, [
+  const bug = ident.op === 'transmision' || final ? el('p', { class: 'tv-bug tv-bug-swiss', 'aria-label': `${orgVista} ${rec.v}-${rec.d}, ${rival} ${recRival ? `${recRival.v}-${recRival.d}` : ''}` }, [
     logoOrg(orgVista, { clase: 'ms-logo' }), el('b', { class: 'ms-sigla', text: siglaDe(orgVista) }), el('span', { class: 'tv-bug-rec num' }, el('span', { text: `${rec.v}–${rec.d}` })),
     el('i', { class: 'tv-bug-vs', text: 'vs' }),
     el('span', { class: 'tv-bug-rec num', text: recRival ? `${recRival.v}–${recRival.d}` : '' }), el('b', { class: 'ms-sigla', text: siglaDe(rival) }), logoOrg(rival, { clase: 'ms-logo' }),
@@ -749,13 +1185,13 @@ function crearSwiss({ datos, muestra, amb, sonido, peor, op }) {
     pg.nota ? el('p', { class: 'sw-nota' }, [icono('charla'), pg.nota]) : null,
   ]);
   // §4.7 transmision: la placa inferior de quien juega, apoyada sobre la parada
-  const placa = ident.op === 'transmision' ? el('div', { class: 'tv-placa' }, [
+  const placa = ident.op === 'transmision' || final ? el('div', { class: 'tv-placa' }, [
     logoOrg(orgVista, { clase: 'tv-placa-logo' }),
     el('p', { class: 'tv-placa-t' }, [el('b', { text: handle }), el('span', { text: `${fr.quien?.rolEtiqueta ?? ''} · ${siglaDe(orgVista)}` })]),
     el('p', { class: 'tv-placa-campeon', text: fichaDe(datos, camara).nombre }),
   ]) : null;
   const parada = el('section', { class: 'sw-parada', 'data-pieza': 'decision', 'aria-label': dec.titulo }, [
-    placa,
+    final ? null : placa,
     cab.nodo,
     el('div', { class: 'sw-cuerpo' }, [el('div', { class: 'sw-col' }, [opsNodo, insp]), previa]),
     ocultas,
@@ -763,7 +1199,11 @@ function crearSwiss({ datos, muestra, amb, sonido, peor, op }) {
   apuntar(0);
 
   const juego = el('div', { class: 'juego sw-juego', 'aria-live': 'polite' });
-  const player = el('div', { class: 'player' }, [cabPlayer, bug, vom, camino, parada, juego]);
+  // §4.8: el feed (la transmision: el estadio del torneo y sus graficos) adentro del reproductor, con sus controles
+  const est = final ? estadioSwiss() : null;
+  const feed = final ? el('div', { class: 'feed' }, [est.nodo, el('div', { class: 'feed-marca', 'aria-hidden': 'true' }, logoComp(ident.comp, { clase: 'feed-marca-logo' })), bug, camino, placa, juego]) : null;
+  const player = final ? el('div', { class: 'player', 'data-ui': 'on' }, [feed]) : el('div', { class: 'player' }, [cabPlayer, bug, vom, camino, parada, juego]);
+  const reproductor = final ? controlesPlayer(player, feed) : null;
 
   // ---------- el chat ----------
   const chat = chatSwiss(m, { handle, org: orgVista, rival, ligaRival, rec, rondas, camara: fichaDe(datos, camara).nombre }, 'antes');
@@ -774,7 +1214,12 @@ function crearSwiss({ datos, muestra, amb, sonido, peor, op }) {
     pista,
     el('footer', { class: 'chat-pie' }, [el('span', { text: 'Mandá un mensaje' }), el('kbd', { text: 'Enter' })]),
   ]);
-  const tribuna = el('div', { class: 'tribuna' }, [player, aside]);
+  // §4.8: la pagina del stream: el reproductor, el titulo y el canal, y los otros cruces de la ronda; al costado, la
+  // parada (fijada arriba del chat) y el chat
+  const stream = final ? el('div', { class: 'stream' }, [player, infoStream(), rondaStream()]) : null;
+  const tribuna = final
+    ? el('div', { class: 'tribuna' }, [stream, el('div', { class: 'lateral' }, [parada, aside])])
+    : el('div', { class: 'tribuna' }, [player, aside]);
 
   const raiz = el('section', { class: 'parada partido swiss', 'data-pieza': 'partido', 'data-forma': 'tribuna', 'data-muestra': muestra, 'data-op': ident.op, 'data-comp': ident.comp?.id });
   const frN = franja(fr, { peor: pc ? { handle: pc.handle, org: pc.org?.nombre } : null });
@@ -787,6 +1232,11 @@ function crearSwiss({ datos, muestra, amb, sonido, peor, op }) {
     if (ident.op === 'transmision') telon = cortina(tribuna, ident.comp, `${ident.comp.nombre} ${anio}`, `${ident.comp.fase} · Bo1`);
     entrar(frN, 0, -10);
     anim(tribuna, [{ opacity: 0 }, { opacity: 1 }], { duration: 260 });
+    if (est) {
+      encenderEstadio(est, 120);
+      [bug, placa].forEach((g, i) => g && anim(g, [{ opacity: 0, transform: 'translateX(-14px)' }, { opacity: 1, transform: 'none' }], { delay: 520 + i * 120, duration: 320, easing: EXPO }));
+      reproductor.mostrar();
+    }
     anim(vom.querySelector('.vom-band'), [{ opacity: 0, transform: 'scaleX(0.3)', letterSpacing: '0.4em' }, { opacity: 1, transform: 'none' }], { delay: 160, duration: 420, easing: EXPO });
     anim(vom.querySelector('.vom-sub'), [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { delay: 340, duration: 300, easing: EXPO });
     camino.querySelectorAll('li').forEach((li, i) => anim(li, [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { delay: 380 + i * 60, duration: 240, easing: EXPO }));
@@ -823,7 +1273,16 @@ function crearSwiss({ datos, muestra, amb, sonido, peor, op }) {
     sonido?.clic();
     player.dataset.jugando = '';
     filas[n - 1].classList.add('apuntada');
-    anim(parada, [{ opacity: 1, visibility: 'visible', transform: 'none' }, { opacity: 0, visibility: 'visible', transform: 'translateY(26px)' }], { delay: 120, duration: 280, easing: 'cubic-bezier(0.5, 0, 0.75, 0)' });
+    if (final) {
+      // la parada queda fijada, resuelta: la elegida encendida, la otra apagada
+      apuntar(n - 1);
+      parada.dataset.elegida = '';
+      filas.forEach((f, j) => {
+        if (j !== n - 1) f.classList.add('bloqueada');
+        f.setAttribute('aria-disabled', 'true');
+      });
+      placa && anim(placa, [{ opacity: 1 }, { opacity: 0 }], { delay: 200, duration: 200, fill: 'forwards' });
+    } else anim(parada, [{ opacity: 1, visibility: 'visible', transform: 'none' }, { opacity: 0, visibility: 'visible', transform: 'translateY(26px)' }], { delay: 120, duration: 280, easing: 'cubic-bezier(0.5, 0, 0.75, 0)' });
 
     let t = 380;
     juego.replaceChildren();
@@ -865,6 +1324,8 @@ function crearSwiss({ datos, muestra, amb, sonido, peor, op }) {
     recViejo.style.opacity = '0';
     anim(recViejo, [{ opacity: 1 }, { opacity: 0 }], { delay: tPost + 120, duration: 160 });
     anim(recNuevo, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { delay: tPost + 160, duration: 260, easing: EXPO });
+    // §4.8: las pantallas del estadio: el record rueda y la central da el resultado
+    est?.alResultado(recFinal, gano, tPost);
     // §4.7 transmision: el record del score bug rueda igual
     const bugRec = bug?.querySelector('.tv-bug-rec');
     if (bugRec) {
@@ -903,7 +1364,7 @@ function crearSwiss({ datos, muestra, amb, sonido, peor, op }) {
       })) : null,
       el('button', { type: 'button', class: 'boton', onclick: () => window.vitrina?.repetir() }, ['Volver a decidir', el('kbd', { text: 'R' })]),
     ]);
-    juego.append(afuera);
+    (final ? stream : juego).append(afuera);
     anim(afuera, [{ opacity: 0, visibility: 'visible' }, { opacity: 1, visibility: 'visible' }], { delay: tAfuera - 160, duration: 420 });
     anim(afuera.querySelector('.sw-afuera-t'), [{ opacity: 0, letterSpacing: '0.4em', filter: 'blur(16px)' }, { opacity: 1, letterSpacing: '-0.01em', filter: 'none' }], { delay: tAfuera, duration: 1100, easing: EXPO });
     afuera.querySelectorAll('.eq-kicker, .sw-afuera-rec, .sw-dos-p p, .sw-dos-p small, .sw-cambios, .boton').forEach((x, i) => entrar(x, tAfuera + 260 + i * 90, 10));
@@ -931,6 +1392,79 @@ function crearSwiss({ datos, muestra, amb, sonido, peor, op }) {
     });
   }
 
+  // ---------- §4.8: el estadio del Mundial (el feed) ----------
+  // La central es el cartel del partido: tu campeon del split (el que el motor usa en la previa) a la izquierda, el
+  // logo del rival a la derecha (del Bo1 no hay pick: no se inventa), VIDA O MUERTE en el medio y los records arriba.
+  // Las laterales, los dos equipos (tu plantel; del rival, el logo y su liga). La faja, los otros cruces de la ronda.
+  function estadioSwiss() {
+    const e = crearEstadio({ en: 'feed', semilla: `${anio}-${rival}` });
+    const recR = it.swiss?.record?.[rival];
+    const recNos = el('b', { class: 'led-rec num', text: `${rec.v}–${rec.d}` });
+    const cabLed = el('div', { class: 'led-cab' }, [
+      el('p', { class: 'led-cab-comp' }, [logoComp(ident.comp, { clase: 'led-cab-logo' }), el('span', { text: 'Swiss' })]),
+      el('p', { class: 'marcador-serie led-recs' }, [logoOrg(orgVista, { clase: 'ms-logo' }), el('b', { class: 'ms-sigla', text: siglaDe(orgVista) }), el('span', { class: 'led-rec-c' }, recNos), el('i', { text: 'vs' }), el('b', { class: 'led-rec num', text: recR ? `${recR.v}–${recR.d}` : '' }), el('b', { class: 'ms-sigla', text: siglaDe(rival) }), logoOrg(rival, { clase: 'ms-logo' })]),
+      el('p', { class: 'led-cab-fl', text: `Ronda ${proxima} · Bo1` }),
+    ]);
+    const c = el('canvas', { class: 'led-arte', width: String(LED_ARTE[0]), height: String(LED_ARTE[1]) });
+    const lienzo = [c, null, [0.5, 0.26]];
+    const cargaArte = cargarImagen(urlCentrada(camara, meta)).then((img) => {
+      lienzo[1] = img;
+      pintar(c, img, eraDe(), lienzo[2], ident.luz(eraDe()));
+    });
+    const duelo = el('div', { class: 'led-duelo' }, [
+      el('div', { class: 'led-pj nos' }, [c, el('p', { class: 'led-pj-n' }, [el('b', { text: fichaDe(datos, camara).nombre }), el('small', { text: `${handle} · ${siglaDe(orgVista)}` })])]),
+      el('div', { class: 'led-pj ellos led-pj-logo' }, [logoOrg(rival, { clase: 'led-pj-escudo' }), el('p', { class: 'led-pj-n' }, [el('b', { text: rival }), el('small', { text: ligaRival })])]),
+      el('p', { class: 'led-vom' }, [el('span', { text: 'Vida' }), el('small', { text: 'o' }), el('span', { text: 'muerte' })]),
+    ]);
+    e.centro.append(cabLed, duelo);
+    ladoLed(e.nos, orgVista, { kicker: ligaDe(orgVista) || m.ficha?.jugador?.liga, extra: [plantelLed(plantelDe(m, fr))] });
+    ladoLed(e.ellos, rival, { kicker: ligaRival });
+    // la faja: los otros cruces de la ronda (los del motor; el tuyo ya esta en la central)
+    const cruces = (it.partidoEnCurso?.cruces ?? []).filter((x) => ![x.a, x.b].includes(org)).map((x) => el('span', { class: 'led-cruce' }, [logoOrg(x.a, { clase: 'led-cruce-logo' }), el('b', { text: siglaDe(x.a) }), el('i', { text: 'vs' }), el('b', { text: siglaDe(x.b) }), logoOrg(x.b, { clase: 'led-cruce-logo' })]));
+    e.faja.append(logoComp(ident.comp, { clase: 'led-faja-logo' }), el('p', { class: 'led-faja-t' }, [el('b', { text: `Ronda ${proxima}` }), el('span', { text: 'también' })]), el('span', { class: 'led-faja-cruces' }, cruces));
+    // el resultado en la central (al terminar el Bo1): el record nuevo rueda (DERROTA es el grafico de la transmision)
+    function alResultado(recFinal, gano, t0) {
+      const nuevo = el('span', { text: recFinal.replace('-', '–') });
+      const viejo = el('span', { text: recNos.textContent });
+      recNos.replaceChildren(viejo, nuevo);
+      viejo.style.opacity = '0';
+      anim(viejo, [{ opacity: 1 }, { opacity: 0 }], { delay: t0 + 120, duration: 160 });
+      anim(nuevo, [{ opacity: 0, transform: 'translateY(30%)' }, { opacity: 1, transform: 'none' }], { delay: t0 + 160, duration: 260, easing: EXPO });
+      // la central se apaga un poco: la serie de luces del estadio despues del Bo1
+      anim(e.centro, [{ filter: 'none' }, { filter: gano ? 'brightness(1.5)' : 'brightness(0.55) saturate(0.4)' }], { delay: t0, duration: 600, easing: EXPO, fill: 'forwards' });
+    }
+    return { ...e, alResultado, cargaArte, lienzo };
+  }
+
+  // ---------- §4.8: la pagina del stream debajo del reproductor ----------
+  // El titulo, el canal (el torneo: su logo es el avatar), los espectadores (decorativos, del PRNG) y la ronda.
+  function infoStream() {
+    const az = crearAzar(`stream-${anio}-${rival}`);
+    const espectadores = az.entero(STREAM.espectadores[0], STREAM.espectadores[1]);
+    return el('div', { class: 'stream-info' }, [
+      el('i', { class: 'stream-avatar', 'aria-hidden': 'true' }, logoComp(ident.comp, { clase: 'stream-avatar-logo' })),
+      el('div', { class: 'stream-txt' }, [
+        el('p', { class: 'stream-titulo', text: `${ident.comp.nombre.toUpperCase()} ${anio} · Swiss, ronda ${proxima}: ${orgVista} vs ${rival} · ${rec.v}-${rec.d}, vida o muerte` }),
+        el('p', { class: 'stream-canal' }, [el('b', { text: ident.comp.nombre }), el('span', { text: `transmisión oficial · ${ident.comp.largo}` })]),
+        el('p', { class: 'stream-tags' }, ['League of Legends', 'Español', 'Esports'].map((t) => el('span', { text: t }))),
+      ]),
+      el('p', { class: 'stream-vivo' }, [el('span', { class: 'en-vivo' }, [el('i'), 'En vivo']), el('b', { class: 'num', text: num(espectadores) }), el('span', { text: 'espectadores' })]),
+    ]);
+  }
+
+  // los cruces de la ronda (los del motor), como los paneles de la pagina del stream; el tuyo es el que esta en pantalla
+  function rondaStream() {
+    const recDe = (n) => it.swiss?.record?.[n];
+    const lado = (n) => [logoOrg(n, { clase: 'stream-cruce-logo' }), el('b', { text: siglaDe(n), title: n }), el('span', { class: 'num', text: recDe(n) ? `${recDe(n).v}–${recDe(n).d}` : '' })];
+    return el('section', { class: 'stream-ronda', 'aria-label': `Swiss, ronda ${proxima}: los cruces` }, [
+      el('p', { class: 'eq-kicker', text: `Swiss · ronda ${proxima} · los cruces` }),
+      el('ul', {}, (it.partidoEnCurso?.cruces ?? []).map((x) => {
+        const vos = [x.a, x.b].includes(org);
+        return el('li', { 'data-vos': vos ? '' : null }, [...lado(x.a), el('i', { text: 'vs' }), ...lado(x.b).reverse(), vos ? el('small', { text: 'en pantalla' }) : null]);
+      })),
+    ]);
+  }
+
   function tecla(e) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     if ((e.key === 'Escape' || e.code === 'Space') && telon?.viva()) {
@@ -953,7 +1487,8 @@ function crearSwiss({ datos, muestra, amb, sonido, peor, op }) {
     entrar: entrada,
     elegir,
     tecla,
-    ...(ident.activa ? { listo: () => logosListos(raiz), destruir: () => ident.soltar() } : {}),
+    ...(ident.activa ? { listo: () => Promise.all([logosListos(raiz), est?.cargaArte]), destruir: () => { reproductor?.destruir(); ident.soltar(); } } : {}),
+    ...(est ? { alCambiarEra: (e) => est.lienzo[1] && pintar(est.lienzo[0], est.lienzo[1], e, est.lienzo[2], ident.luz(e)) } : {}),
     arte: camara,
     animo: 'normal',
     encuadre: celular() ? 'celular' : 'tribuna',

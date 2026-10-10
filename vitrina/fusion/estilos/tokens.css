@@ -243,6 +243,27 @@ html[data-era='leyenda'] { --luz: var(--luz-leyenda); --contra: var(--contra-ley
   --tv-alto-bug: 58px;
   /* la arena (op=escenario): el marco de la pantalla gigante */
   --arena-marco: #000000cc;
+
+  /* PLANUI §4.8 (op=final): el estadio. Las pantallas LED: el negro de un LED encendido (casi nunca es negro puro: le
+     queda un azul de fondo), el bisel, y los velos que se apoyan sobre el arte para que la letra se lea */
+  --led-fondo: #04050a;
+  --led-fondo-alto: #0c0f19;
+  --led-marco: #000000;
+  --led-velo: #000000a6;
+  --led-hondo: #000000e0;
+  --led-nada: #00000000;
+  /* el panel sin transparencia: lo que tapa a otra seccion del mismo panel (el resultado de la serie sobre los planes) */
+  --panel-opaco: #070a12;
+  /* el publico: siluetas recortadas contra la luz del escenario (la fila de atras, un poco lavada por el humo) */
+  --publico: #010205;
+  --publico-lejos: #07090f;
+  /* el stream (el Swiss): la pagina oscura alrededor del reproductor, la columna del chat y la barra de controles */
+  --stream-pagina: #0b0d13;
+  --stream-lateral: #07080d;
+  --stream-video: #000000;
+  --stream-control: #f4f6fb24;
+  --stream-barra: #000000c7;
+  --stream-nada: #00000000;
 }
 /* La competicion que se juega (partido.js pone html[data-comp] solo con una opcion de §4.7): su acento toma el lugar de
    la luz de la era en la interfaz. Los derivados (--luz-texto, --filete...) se recalculan solos. */
