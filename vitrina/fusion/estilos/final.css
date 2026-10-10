@@ -1,0 +1,58 @@
+/* LA FUSION — final.html: la ultima demostracion, una pantalla grande por pestaña (PLANUI §4.8). Mismo juego: el panel, el
+   rotulo, la tecla, el cuarto y el titulo ancho de la fusion (base.css). Sin colores literales: viven en tokens.css. */
+body.final {
+  overflow: hidden; height: 100vh; display: flex; flex-direction: column;
+  background: radial-gradient(90% 70% at 70% -10%, var(--luz-tenue), transparent 70%), var(--bg-void);
+}
+.fn-cab {
+  flex: none; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 40px; flex-wrap: wrap;
+  padding: 18px var(--margen) 10px;
+}
+.fn-titulo {
+  margin: 6px 0 0; font: 800 var(--t-titulo-s) / 1 var(--f-display); font-stretch: var(--ancho-titulo);
+  letter-spacing: -0.03em; color: var(--ink); text-wrap: balance;
+}
+.fn-invita { margin-top: 8px; font: 400 var(--t-cuerpo) / 1.45 var(--f-cuerpo); color: var(--ink-dim); }
+.fn-invita kbd { height: 18px; }
+.fn-lado { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.fn-pestanas { display: flex; flex-wrap: wrap; gap: 2px; box-shadow: inset 0 -1px 0 var(--linea); }
+
+.fn-barra {
+  flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap;
+  padding: 0 var(--margen) 10px;
+}
+.fn-indicador { display: flex; align-items: center; gap: 12px; margin: 0; }
+.fn-ind-k, .fn-mirar-k {
+  font: 500 var(--t-rotulo) / 1.4 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute);
+}
+.fn-indicador b {
+  display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: var(--r-control);
+  font: 600 12px / 1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); background: var(--luz-suave);
+}
+.fn-indicador[data-vista='estaba'] b { color: var(--ink-dim); background: transparent; box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+.fn-indicador[data-vista='referencia'] b { color: var(--ink-dim); background: transparent; box-shadow: inset 0 0 0 1px var(--linea); }
+.fn-botones { display: flex; gap: 8px; }
+.fn-botones .boton { white-space: nowrap; }
+.fn-botones .boton[disabled] { opacity: 0.4; cursor: default; pointer-events: none; }
+
+/* el escenario: el juego entero a 1440x900, escalado a lo mas grande que entre en 16:10 (js/final.js) */
+.fn-escenario {
+  position: relative; flex: 1 1 0; min-height: 0; margin: 0 var(--margen); overflow: hidden;
+  border-radius: var(--r-panel); background: var(--bg-void);
+  box-shadow: inset 0 0 0 1px var(--filete), 0 28px 70px -30px var(--sombra);
+}
+.fn-escenario::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--filete); }
+.fn-marco { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; display: block; }
+
+.fn-mirar {
+  flex: none; display: flex; align-items: baseline; gap: 16px; margin: 0; padding: 10px var(--margen) 4px;
+  font: 400 var(--t-cuerpo) / 1.4 var(--f-cuerpo); color: var(--ink);
+}
+.fn-ayuda {
+  flex: none; margin: 0; padding: 0 var(--margen) 12px;
+  font: 500 var(--t-rotulo) / 2 var(--f-mono); letter-spacing: 0.06em; color: var(--ink-mute);
+}
+.fn-ayuda kbd { height: 18px; }
+@media (max-height: 760px) {
+  .fn-invita { display: none; }
+}
