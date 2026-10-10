@@ -62,6 +62,11 @@ const PERILLAS = {
 // propios ids (ctx.op) y sin `op` es la de hoy. No tiene selector: la eligen opciones.html o el hash.
 const opDelHash = () => (new URLSearchParams(location.hash.slice(1)).get('op') ?? '').replace(/[^a-z0-9-]/g, '');
 let op = opDelHash();
+// La cuarta, `var=<id>` (PLANUI §4.10): la variante dentro de `op=linea` (la costura de la bisagra, lo que va atras del
+// mercado). Cada pantalla interpreta sus ids (ctx.variante) y sin `var` es la de §4.9. No toca el color: `op` sigue
+// siendo `linea`.
+const varDelHash = () => (new URLSearchParams(location.hash.slice(1)).get('var') ?? '').replace(/[^a-z0-9-]/g, '');
+let variante = varDelHash();
 // Con una opcion de §4.7 en el hash, el color por defecto es la receta (js/color.js); con `op=linea`, la politica `linea`
 // (PLANUI §4.9). `color=` explicito manda.
 const defDe = (k) => (k === 'color' && op ? colorDeOp(op) : PERILLAS[k].def);
@@ -80,6 +85,8 @@ const conPerillas = (url) => {
   }
   if (op) p.set('op', op);
   else p.delete('op');
+  if (variante) p.set('var', variante);
+  else p.delete('var');
   u.hash = p.toString();
   return u.href;
 };
@@ -92,6 +99,8 @@ function marcarPerillas() {
   html.dataset.color = valor.color;
   if (op) html.dataset.op = op;
   else delete html.dataset.op;
+  if (variante) html.dataset.var = variante;
+  else delete html.dataset.var;
   for (const [k, sel] of Object.entries(selectores)) sel.value = valor[k];
 }
 // La politica de la pantalla montada (fondo + color) y su lugar fijo (si la variante lo usa). `dur`: el cruce del mundo.
@@ -150,7 +159,7 @@ async function montar(estado) {
   // las piezas de campeon que pinte la pantalla nueva ya salen con el color de la politica
   fijarColor(valor.color, estado.pantalla, estado.muestra);
   const fabrica = FABRICAS[estado.pantalla] ?? crearInicio;
-  const nuevo = fabrica({ datos, muestra: estado.muestra, estado, amb: ambiente, sonido, aura, peor: estado.peor, op });
+  const nuevo = fabrica({ datos, muestra: estado.muestra, estado, amb: ambiente, sonido, aura, peor: estado.peor, op, variante });
   const viejo = actual;
   actual = nuevo;
   marcaAccion = amb.reloj();
@@ -180,8 +189,10 @@ async function montar(estado) {
 // aplica. Va antes del panel para leer el hash antes de que el panel lo reescriba.
 addEventListener('hashchange', () => {
   const nuevoOp = opDelHash();
-  const cambioOp = nuevoOp !== op;
+  const nuevaVar = varDelHash();
+  const cambioOp = nuevoOp !== op || nuevaVar !== variante;
   op = nuevoOp;
+  variante = nuevaVar;
   let cambio = false;
   for (const k of Object.keys(PERILLAS)) {
     const v = delHash(k);

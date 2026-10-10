@@ -966,6 +966,100 @@ divergentes. El remedio es el kit primero, los conceptos fijados por el supervis
   - En 1280×720, las caras de la costura de la decisión quedan chicas.
   - Nadie vio el movimiento en vivo en la GPU de un usuario. La excepción es la costura, que K midió con una RTX 2060.
 
+### 4.10 Las últimas correcciones (2026-10-10, textual)
+
+> Bueno, si te soy sincero, eh, me gustó bastante el resultado y creo que nos estamos acercando a la versión final. Mirá,
+> te voy a hacer unas pequeñas correcciones. El inicio está bien, aunque se podría trabajar un poco más la parte donde
+> elegís los campeones y eso quizás es muy simple. La decisión está buena. Ahora, cuando te aparece para elegir la liga,
+> te aparece dos campeones y eso. Quiero ver otra opción. Esta está buena, así con los dos campeones de distinto color.
+> Está buena, pero se podría poner algo tipo la liga, el trofeo, no sé qué. Probar. Para este se podría ver otras
+> cosas, aunque los campeones está bueno. O sea, por eso no quiero que descartes esta full. pero que estén dos sylas s
+> atrás de distintos colores, eh, no es tan copado, o sea, no, no es tan representativo, pero está bien. Ahora, la
+> serie, este está muy bueno, este está muy bueno. Eh, cuando vas al Swiss, está muy bueno. Este te felicito. El del
+> stream, aunque si bien siento que el color gris medio azulado del fondo no está tan bueno, pero este del... Del Swiss,
+> hasta si encontrás algo para mejorarle me sorprendería. Pero ese está muy bueno, te felicito. El mercado. El mercado
+> está bueno. Yo quería un poco más tipo una animación de que como que te van llegando las ofertas. Como que las
+> ofertas van cayendo momento por momento. Que representaban una animación. Pero está bueno igual este. Si podés
+> encontrar una manera de hacer lo que te digo, te entiendo. Pero igual este está bueno. Eh, solo que lo que no, no te
+> digo y te digo que no, para mí no es representativo de elegir un equipo es que esté el campeón atrás no sé qué se
+> podría poner atrás a la derecha que represente más que estás fichando con un equipo eh, ¿me explico? tipo los equipos
+> que es formal, que es una decisión de fichar que las ofertas van llegando ¿me explico? como esa sensación el título
+> está bueno Solo que ahí podrías poner tipo el campeón, la liga y el, y el equipo, una cosa así, pero está bueno. Y
+> nada. Las animaciones también, pero a veces. Eh, cosa. Nada, fíjate si encontrás para esas cosas. Si podés encontrar
+> algo para mejorarles, me sorprendería. Pero están bastante bien. Serían las últimas correcciones.
+
+**Tres preguntas del supervisor, con las respuestas textuales:**
+- *"Las animaciones… a veces": ¿qué pasa?* → *"No, nada, me confundí. Una cosa que me olvidé decirte y me gustaría
+  corregir es que como estaba antes, la victoria me gustaría que sea verde. Y sabes que cuando te vas al quinto mapa y
+  no se sabe si es victoria o derrota, me gustaría que haya como una animación de que se buildea, así como un
+  suspensito, ¿me explico? Como unos segunditos de animación antes de saber eh, si ganaste o perdiste el quinto mapa
+  que genera un suspensito."*
+- *El mercado: ¿qué va atrás a la derecha en lugar del campeón?* → **"Probá las tres"** (la camiseta con tu nombre, el
+  plantel con tu lugar, las ofertas que llegan).
+- *El Swiss: ¿hacia dónde va el fondo?* → **"Más oscuro, casi negro"**.
+
+**Lo que se lee:**
+- **Va bien:** la serie y el Swiss (*"te felicito"*). La decisión y el mercado *"están buenos"*, el título *"está
+  bueno"*, y es la última ronda.
+- **Inicio.** La línea queda igual, pero **la elección de campeones es "muy simple"** y hay que trabajarla.
+- **Decisión.** La costura con dos Sylas de distinto color *"no es tan representativo"*, pero no se descarta. Hay que
+  probar **otras opciones que representen la liga**: *"la liga, el trofeo"*.
+- **Serie y Swiss.**
+  - **VICTORIA vuelve a ser verde** (como en la fusión); el oro queda para la copa y el ¡ACEPTAR!.
+  - **En el mapa decisivo, suspenso**: unos segundos que se van construyendo antes de saber el resultado.
+- **Swiss.** La página del stream va **casi negra**; el color, solo en el video y los acentos.
+- **Mercado.**
+  - **Las ofertas van llegando "momento por momento"**: una animación con tiempo, no un golpe de 2,5 s.
+  - **Atrás a la derecha, algo que represente fichar con un equipo**, no el campeón. Se prueban las tres opciones.
+- **Título.** Hay que sumar **el campeón, la liga y el equipo**.
+
+**Pantalla por pantalla.** Las variantes van con la perilla nueva `var=` sobre `op=linea`, y `final.html` tiene un
+selector de variantes por pestaña.
+
+- **Inicio: la selección de campeones como un champ select.** La luz del inicio y su bitono al 100% no se tocan.
+  - Los retratos son más grandes, con el rol filtrado por pestañas y el nombre del campeón apuntado bien grande sobre
+    su arte (el aura que ya existe).
+  - Las tres ranuras pasan a ser **cartas de carga verticales** (308×560) que se llenan con una animación.
+  - BLOQUEAR es el gesto de la ceremonia: una carta que se trava y un destello.
+- **Decisión: tres variantes de la costura de la bisagra.**
+  - **`campeones`:** la de hoy.
+  - **`copas`:** cada lado lleva **la copa 3D de su liga**, con `trofeo.js`: la del CBLOL, de plata y rojo cromado,
+    contra la de la LCK. Van en el tono de su destino, con el logo en la placa.
+  - **`liga`:** cada lado lleva la identidad de su liga: el logo monumental, la ciudad y una pared con los escudos de
+    los equipos reales de esa liga (`logos.js`), en su tono. Tu equipo actual va marcado del lado CBLOL y "el que te
+    llama" del lado LCK.
+- **Serie y Swiss.**
+  - **VICTORIA en verde**, en la ceremonia del kit (`victoriaDerrota`): un verde metálico con el emblema alado.
+  - **El suspenso del mapa decisivo** dura ~3 s, se puede saltar y respeta ≤ 3 destellos/s. Arranca cuando el mapa
+    puede cerrar la serie empatada: el quinto de un Bo5, o el Bo1 de vida o muerte del Swiss.
+    - la costura late y empuja de un lado al otro;
+    - la luz titila entre los dos tonos;
+    - los lightsticks se encienden;
+    - la p del mapa queda a la vista;
+    - el pulso se acelera;
+    - después, el golpe de VICTORIA o DERROTA.
+  - **El stream del Swiss va casi negro**, con el tono de Worlds solo en los acentos y en el video.
+- **Mercado: las ofertas llegan con el tiempo, y tres variantes atrás a la derecha.**
+  - **La llegada**: un reloj de la ventana de pases que avanza ("día 1", "día 4"…), y cada oferta **cae** a su lugar
+    con peso y aviso. Es salteable.
+  - **`camiseta`:** la camiseta de la org apuntada, de espaldas, con **ELURAH89** y un número, en sus colores y con su
+    escudo. Va dibujada con cuidado: tela, pliegues y luz.
+  - **`plantel`:** la formación de la org, los 5 roles, con tu lugar de mid esperándote y el logo grande.
+  - **`ofertas`:** las ofertas como **cartas formales** con el membrete y el sello de cada org, que se apilan a medida
+    que llegan. Apuntar una la trae al frente.
+  - En las tres, sin campeón atrás.
+- **Título.** Suma **el campeón** (su nombre y su retrato de carga), **la liga** (el logo grande, no solo en la placa)
+  y **el equipo** (el escudo de FURIA grande).
+
+**Cómo se construye.**
+- El supervisor deja la perilla `var=` en `main.js`.
+- Cuatro Opus xhigh en paralelo, con dueños disjuntos:
+  - **I · inicio y título:** `inicio.*`, `cumbre.*`, y además `final.*` para el selector de variantes.
+  - **D · decisión:** `decision.*`, `escena.js`.
+  - **T · serie y Swiss:** `partido.*`, y `ceremonia.*` para VICTORIA en verde.
+  - **E · mercado:** `mercado.*`.
+- Después, la hoja de contactos y la revisión del supervisor.
+
 ---
 
 ## 5. La dirección
