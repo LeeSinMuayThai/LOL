@@ -191,3 +191,211 @@
   .res-rango .rn-antes { font-size: 14px; }
   .res-rango .rn-valor { font-size: 22px; }
 }
+
+/* ======================================================================================================================
+   PLANUI §4.7 · LAS OPCIONES DE LA DECISION (`op=escena|cliente|bisagra`, js/escena.js). Sin `op` nada de esto aplica:
+   todo cuelga de [data-op], de las capas que solo se crean con una opcion, o de clases que solo ellas usan.
+   Las capas del fondo viven DENTRO del nodo de la pantalla, detras de los paneles y delante del lienzo del ambiente.
+   ==================================================================================================================== */
+@property --peso-x { syntax: '<percentage>'; inherits: true; initial-value: 40%; }
+@property --peso-y { syntax: '<percentage>'; inherits: true; initial-value: 30%; }
+
+/* ---------- los logos reales (<img> del CDN oficial) y el escudo-monograma del sistema ---------- */
+.logo { display: inline-grid; place-items: center; flex: none; }
+.logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.logo img[data-tinta='oscura'] { filter: brightness(0) invert(1); }
+.monograma { width: 100%; height: 100%; overflow: visible; }
+.mono-escudo { fill: var(--panel-hondo); stroke: var(--filete-fuerte); stroke-width: 1.2; }
+.mono-filete { fill: none; stroke: var(--luz); stroke-width: 1; opacity: 0.7; }
+.mono-ini { font: 900 14px / 1 var(--f-display); font-stretch: var(--ancho-numero); letter-spacing: -0.02em; fill: var(--ink); }
+
+.dec-escena, .dec-peso { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; contain: strict; will-change: transform; }
+.esc-svg, .peso-svg { position: absolute; left: 0; top: 0; overflow: visible; }
+
+/* ---------- 1 · la escena: tu lugar, la ciudad que te llama y el arco de luz ---------- */
+.esc-hogar, .esc-resplandor { --esc-x: 50%; --esc-y: 50%; position: absolute; inset: 0; transition: opacity 700ms var(--expo), transform 700ms var(--expo); }
+.esc-hogar { background: radial-gradient(15% 24% at var(--esc-x) var(--esc-y), color-mix(in srgb, var(--luz) 30%, transparent), transparent 78%); opacity: 0.75; transform-origin: var(--esc-x) var(--esc-y); }
+.esc-resplandor { background: radial-gradient(34% 34% at var(--esc-x) var(--esc-y), color-mix(in srgb, var(--contra) 24%, transparent), color-mix(in srgb, var(--luz) 9%, transparent) 55%, transparent 82%); }
+.esc-casa, .esc-destino { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 14px; transition: opacity 700ms var(--expo), filter 700ms var(--expo); }
+.esc-logos { display: flex; align-items: center; gap: 20px; }
+.esc-liga { width: var(--dec-logo-casa); height: var(--dec-logo-casa); }
+.esc-org { width: var(--dec-logo-org); height: var(--dec-logo-org); }
+.esc-liga-destino { width: var(--dec-logo-destino); height: var(--dec-logo-destino); filter: drop-shadow(0 0 26px color-mix(in srgb, var(--contra) 60%, transparent)); }
+.esc-rotulo { padding: 5px 9px; border-radius: var(--r-chip); background: var(--velo-medio); font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); white-space: nowrap; }
+.esc-lejos rect { fill: var(--dec-silueta-lejos); }
+.esc-cerca rect, .esc-hito > * { fill: var(--dec-silueta); }
+.esc-lejos, .esc-cerca, .esc-hito, .esc-luces { transition: opacity 700ms var(--expo); }
+.esc-luces rect { fill: var(--dec-ventana); opacity: 0.78; }
+.esc-luces rect.fria { fill: var(--dec-ventana-fria); }
+.esc-luces rect.titila { animation: esc-titila 3.8s ease-in-out infinite; }
+.esc-luces .hito-punta { fill: var(--dec-hito); }
+.esc-luces .hito-anillo { fill: var(--dec-ventana-fria); opacity: 0.85; }
+.esc-luces .hito-filo { fill: none; stroke: var(--contra); stroke-width: 1.4; opacity: 0.85; }
+@keyframes esc-titila { 0%, 100% { opacity: 0.85; } 50% { opacity: 0.08; } }
+.esc-arco, .esc-arco-halo, .esc-arco-traza { fill: none; stroke-linecap: round; transition: opacity 600ms var(--expo), stroke-width 600ms var(--expo); }
+.esc-arco { stroke: var(--luz-texto); stroke-width: 1.4; stroke-dasharray: 1; opacity: 0.38; }
+.esc-arco-halo { stroke: var(--luz); stroke-width: 7; stroke-dasharray: 1; opacity: 0.12; }
+.esc-arco-halo.ancho { stroke-width: 18; opacity: 0.05; }
+.esc-arco-traza { stroke: var(--ink-mute); stroke-width: 1.4; stroke-dasharray: 0.004 0.011; opacity: 0; }
+.esc-vuelta { fill: none; stroke: var(--luz-texto); stroke-width: 1.4; stroke-linecap: round; stroke-dasharray: 0.012 0.012; opacity: 0; transition: opacity 600ms var(--expo); }
+.dec-escena[data-estado^='viaje'] .esc-vuelta { opacity: 0.85; }
+.esc-cometa { position: absolute; left: 0; top: 0; width: 9px; height: 9px; border-radius: 50%; offset-anchor: center; offset-rotate: 0deg; background: var(--ink); box-shadow: 0 0 10px 3px var(--luz), 0 0 34px 10px var(--luz-fuerte); opacity: 0; }
+.esc-candado { position: absolute; transform: translate(-50%, -50%); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--panel-hondo); box-shadow: inset 0 0 0 1px var(--linea-fuerte); color: var(--ink-dim); opacity: 0; transition: opacity 500ms var(--expo); }
+/* apuntar el viaje corto: el arco se enciende y la luz va y vuelve */
+.dec-escena[data-estado^='viaje'] .esc-arco { opacity: 1; stroke-width: 2.2; }
+.dec-escena[data-estado^='viaje'] .esc-arco-halo { opacity: 0.3; stroke-width: 9; }
+.dec-escena[data-estado^='viaje'] .esc-arco-halo.ancho { opacity: 0.12; stroke-width: 26; }
+.dec-escena[data-estado='viaje'] .esc-destino { filter: brightness(1.15) drop-shadow(0 0 20px var(--luz-fuerte)); }
+.dec-escena[data-estado='viaje'] .esc-resplandor { transform: scale(1.12); }
+/* apuntar quedarte: la luz vuelve a casa, la ciudad se apaga */
+.dec-escena[data-estado^='casa'] :is(.esc-arco, .esc-arco-halo) { opacity: 0.05; }
+.dec-escena[data-estado^='casa'] :is(.esc-destino, .esc-resplandor) { opacity: 0.22; }
+.dec-escena[data-estado^='casa'] .esc-luces { opacity: 0.18; }
+.dec-escena[data-estado^='casa'] :is(.esc-lejos, .esc-hito) { opacity: 0.45; }
+.dec-escena[data-estado^='casa'] .esc-hogar { opacity: 1; transform: scale(1.5); background: radial-gradient(15% 24% at var(--esc-x) var(--esc-y), color-mix(in srgb, var(--luz) 52%, transparent), transparent 78%); }
+.dec-escena[data-estado^='casa'] .esc-casa { filter: drop-shadow(0 0 18px var(--luz-fuerte)); }
+/* apuntar la cerrada: el camino queda apagado, con su candado */
+.dec-escena[data-estado='ir-cerrada'] :is(.esc-arco, .esc-arco-halo) { opacity: 0; }
+.dec-escena[data-estado='ir-cerrada'] :is(.esc-arco-traza, .esc-candado) { opacity: 1; }
+.dec-escena[data-estado='ir-cerrada'] .esc-destino { opacity: 0.4; filter: grayscale(1); }
+.dec-escena[data-estado='ir-cerrada'] .esc-luces { opacity: 0.35; }
+.dec-escena[data-estado='ir-cerrada'] .esc-resplandor { opacity: 0.4; }
+/* elegido: el viaje deja su traza; quedarte apaga la ciudad del todo */
+.dec-escena[data-estado='viaje-hecho'] .esc-arco { opacity: 0.55; stroke-width: 1.6; }
+.dec-escena[data-estado='viaje-hecho'] .esc-arco-halo { opacity: 0.2; }
+.dec-escena[data-estado='casa-hecha'] :is(.esc-destino, .esc-resplandor) { opacity: 0.1; }
+.dec-escena[data-estado='casa-hecha'] .esc-luces { opacity: 0.06; }
+/* sin geografia (un plan, una decision de vida): un haz por opcion desde tu lugar */
+.esc-haz path { fill: none; stroke-linecap: round; transition: opacity 500ms var(--expo), stroke-width 500ms var(--expo); }
+.esc-haz { transition: opacity 500ms var(--expo); }
+.haz-halo { stroke: var(--luz); stroke-width: 12; stroke-dasharray: 1; opacity: 0.06; }
+.haz-nucleo { stroke: var(--luz-texto); stroke-width: 1.3; stroke-dasharray: 1; opacity: 0.32; }
+.haz-fin { fill: var(--luz); opacity: 0.55; transition: opacity 500ms var(--expo); }
+.haz-n { font: 600 12px / 1 var(--f-mono); fill: var(--ink); paint-order: stroke; stroke: var(--bg-void); stroke-width: 4px; stroke-linejoin: round; }
+.esc-haz[data-rara] .haz-fin { fill: var(--gold); }
+.dec-escena[data-modo='haces'] .esc-rotulo { display: none; }
+.dec-escena[data-modo='haces'] .esc-liga { width: var(--dec-logo-org); height: var(--dec-logo-org); }
+.esc-haz[data-bloqueada] .haz-nucleo { stroke: var(--ink-mute); stroke-dasharray: 0.004 0.012; }
+.dec-escena[data-estado='apunta'] .esc-haz:not(.on), .dec-escena[data-estado='elegido'] .esc-haz:not(.on) { opacity: 0.35; }
+.esc-haz.on .haz-nucleo { opacity: 1; stroke-width: 2.2; }
+.esc-haz.on .haz-halo { opacity: 0.4; stroke-width: 22; }
+.esc-haz.on .haz-fin { opacity: 1; }
+/* el riesgo es la forma de la luz: seguro, firme; incierto, cortado; ruleta, titila; alto, en rojo */
+.esc-haz.on[data-riesgo='incierto'] .haz-nucleo { stroke-dasharray: 0.03 0.014; }
+.esc-haz.on[data-riesgo='ruleta'] .haz-nucleo { stroke-dasharray: 0.018 0.018; animation: esc-titila 1.1s steps(2, jump-none) infinite; }
+.esc-haz.on[data-riesgo='alto'] .haz-nucleo { stroke: var(--down); }
+
+/* ---------- 2 · el cliente: la invitacion (solo la bisagra) y el hextech como acento ---------- */
+.parada-decision.en-espera > :is(.antes-fila, .parada-col, .contexto) { visibility: hidden; }
+.invitacion {
+  position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; padding: var(--franja-alto) var(--margen) var(--barra-alto);
+  background: radial-gradient(56% 64% at 50% 48%, var(--velo-medio) 0%, var(--velo-lectura) 78%);
+}
+.inv-caja { display: grid; justify-items: center; gap: 18px; text-align: center; max-width: 680px; }
+.inv-kicker { display: flex; align-items: center; gap: 12px; font: 600 var(--t-rotulo-g) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--hex-crema); }
+.inv-quien { color: var(--hex-oro); padding-left: 12px; box-shadow: inset 1px 0 0 var(--hex-oro-hondo); }
+.inv-rombito { width: 8px; height: 8px; transform: rotate(45deg); background: var(--hex-oro); box-shadow: 0 0 10px var(--hex-oro); }
+.inv-anillo { position: relative; width: var(--dec-anillo); height: var(--dec-anillo); display: grid; place-items: center; margin: 6px 0 2px; }
+.inv-aro { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.inv-giro { fill: none; stroke: var(--hex-oro-hondo); stroke-width: 1; stroke-dasharray: 2 9; transform-box: fill-box; transform-origin: center; animation: inv-giro 28s linear infinite; }
+@keyframes inv-giro { to { transform: rotate(360deg); } }
+.inv-pista { fill: none; stroke: var(--hex-oro-hondo); stroke-width: 2; }
+.inv-reloj { fill: none; stroke: var(--hex-oro); stroke-width: 4; filter: drop-shadow(0 0 6px var(--hex-oro)); }
+.inv-centro { fill: var(--hex-fondo); stroke: var(--hex-oro-hondo); stroke-width: 1; }
+.inv-rombo { fill: var(--hex-oro); }
+.inv-logo { position: relative; width: 124px; height: 124px; }
+.inv-titulo { margin: 0; max-width: 19ch; font: 800 var(--t-titulo-s) / 1.02 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.03em; color: var(--ink); text-wrap: balance; }
+.inv-ruta { display: flex; align-items: center; gap: 12px; color: var(--hex-oro); }
+.inv-ruta .ico { width: 18px; height: 18px; }
+.inv-mini { width: 30px; height: 30px; }
+.inv-aceptar {
+  all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 16px;
+  min-width: 288px; height: 56px; padding: 0 28px; margin-top: 8px; border: 2px solid transparent; border-radius: var(--r-control);
+  background: linear-gradient(var(--hex-fondo), var(--hex-fondo)) padding-box, linear-gradient(180deg, var(--hex-oro-claro), var(--hex-oro-hondo)) border-box;
+  font: 700 15px / 1 var(--f-mono); letter-spacing: 0.24em; text-transform: uppercase; color: var(--hex-crema);
+  box-shadow: 0 0 34px -10px var(--hex-oro); transition: box-shadow 160ms ease, transform 90ms ease, filter 160ms ease;
+}
+.inv-aceptar:hover { box-shadow: 0 0 46px -6px var(--hex-oro); filter: brightness(1.12); }
+.inv-aceptar:active { transform: translateY(1px) scale(0.98); }
+.inv-aceptar:focus-visible { outline: 2px solid var(--hex-crema); outline-offset: 5px; }
+.inv-aceptar kbd { color: var(--hex-crema); box-shadow: inset 0 0 0 1px var(--hex-oro-hondo); letter-spacing: 0.04em; }
+/* aceptada: el panel de siempre, con el filete y el rombo hextech (solo en la bisagra) */
+.parada-decision[data-op='cliente'][data-bisagra] .parada-col { box-shadow: inset 0 0 0 1px var(--hex-oro-hondo), 0 28px 70px -30px var(--sombra); }
+.parada-decision[data-op='cliente'][data-bisagra] .parada-col::after { background: linear-gradient(90deg, var(--velo-nada), var(--hex-oro) 30%, var(--velo-nada)); }
+.parada-decision[data-op='cliente'][data-bisagra] .parada-col::before { content: ''; position: absolute; left: 22px; top: -5px; width: 9px; height: 9px; transform: rotate(45deg); background: var(--hex-oro); box-shadow: 0 0 12px var(--hex-oro); }
+.parada-decision[data-op='cliente'][data-bisagra] .rotulo-cat .bisagra { color: var(--hex-oro); box-shadow: inset 1px 0 0 var(--hex-oro-hondo); }
+/* elegir en la bisagra: la tecla y la barra del resultado se "bloquean" en oro, como el lock-in del champ select */
+.parada-decision[data-op='cliente'][data-bisagra] .resultado::before { background: var(--hex-oro); box-shadow: 0 0 14px var(--hex-oro); }
+.parada-decision[data-op='cliente'][data-bisagra] .res-cab .op-tecla { background: var(--hex-oro); }
+.parada-decision[data-op='cliente'][data-bisagra] .res-tag { color: var(--hex-oro); }
+
+/* ---------- 3 · el peso: la oscuridad, el capitulo, los caminos y lo que arriesgas ---------- */
+.dec-peso { --peso-x: 40%; --peso-y: 30%; transition: --peso-x 760ms var(--expo), --peso-y 760ms var(--expo); }
+.peso-luz { position: absolute; inset: 0; opacity: 0; transition: opacity 600ms var(--expo); background: radial-gradient(24% 36% at var(--peso-x) var(--peso-y), color-mix(in srgb, var(--luz) 30%, transparent), transparent 72%); }
+.dec-peso:not([data-lado='centro']):not([data-lado='cerrada']) .peso-luz { opacity: 1; }
+.peso-oscuro { position: absolute; inset: 0; background: radial-gradient(30% 44% at var(--peso-x) var(--peso-y), var(--dec-oscuro-nada) 0%, var(--dec-oscuro-medio) 52%, var(--dec-oscuro) 100%); }
+.dec-peso[data-pesado='no'] .peso-oscuro { opacity: 0.5; }
+.peso-capitulo { position: absolute; left: 50%; top: 27%; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 4px; text-align: center; }
+.peso-cap-1 { font: 900 var(--t-momento-s) / 0.9 var(--f-display); font-stretch: var(--ancho-momento); text-transform: uppercase; color: var(--ink); white-space: nowrap; }
+.peso-cap-2 { font: 900 var(--t-num-m) / 1 var(--f-display); font-stretch: var(--ancho-numero); color: var(--luz-texto); }
+.peso-camino { transition: opacity 500ms var(--expo); }
+.peso-camino path { fill: none; stroke-linecap: round; transition: opacity 500ms var(--expo), stroke-width 500ms var(--expo); }
+.pc-halo { stroke: var(--luz); stroke-width: 9; stroke-dasharray: 1; opacity: 0.1; }
+.pc-halo.ancho { stroke-width: 22; opacity: 0.04; }
+.pc-nucleo { stroke: var(--luz-texto); stroke-width: 1.6; stroke-dasharray: 1; opacity: 0.5; }
+.pc-flujo { stroke: var(--ink); stroke-width: 2.6; stroke-dasharray: 0.07 0.93; opacity: 0; }
+.peso-camino.on .pc-halo { opacity: 0.3; stroke-width: 11; }
+.peso-camino.on .pc-halo.ancho { opacity: 0.12; stroke-width: 34; }
+.peso-camino.on .pc-nucleo { opacity: 1; stroke-width: 2.8; }
+.peso-camino.on .pc-flujo { opacity: 0.95; }
+.dec-peso:not([data-lado='centro']) .peso-camino:not(.on) { opacity: 0.28; }
+.pc-fin { fill: var(--luz); }
+.pc-n { font: 600 12px / 1 var(--f-mono); fill: var(--ink); paint-order: stroke; stroke: var(--bg-void); stroke-width: 4px; stroke-linejoin: round; }
+.peso-cerrado { opacity: 0.55; transition: opacity 400ms var(--expo); }
+.peso-cerrado path { fill: none; stroke: var(--ink-mute); stroke-width: 1.4; stroke-dasharray: 3 5; }
+.peso-cerrado circle { fill: var(--ink-mute); }
+.dec-peso[data-lado='cerrada'] .peso-cerrado { opacity: 1; }
+.peso-origen { fill: var(--ink); stroke: var(--luz-fuerte); stroke-width: 8; paint-order: stroke; }
+.peso-carta {
+  position: absolute; display: grid; grid-template-columns: auto auto; column-gap: 14px; align-items: start;
+  padding: 14px 16px 14px 14px; background: var(--panel); border-radius: var(--r-panel); box-shadow: inset 0 0 0 1px var(--filete), 0 22px 50px -24px var(--sombra);
+  opacity: 0.8; transition: opacity 500ms var(--expo), box-shadow 300ms ease;
+}
+.peso-carta.on { opacity: 1; box-shadow: inset 0 0 0 1px var(--filete-fuerte), 0 0 46px -12px var(--luz-fuerte), 0 22px 50px -24px var(--sombra); }
+.dec-peso[data-elegido] .peso-carta:not(.on) { opacity: 0; }
+.peso-tecla { display: inline-grid; place-items: center; min-width: 26px; height: 26px; border-radius: var(--r-control); box-shadow: inset 0 0 0 1px var(--linea-fuerte); font: 600 12px / 1 var(--f-mono); color: var(--ink-dim); }
+.peso-carta.on .peso-tecla { background: var(--luz-texto); box-shadow: none; color: var(--bg-void); }
+.peso-ejes { display: grid; gap: 8px; }
+.peso-eje { display: grid; grid-template-columns: 14px 54px 30px 100px 26px; align-items: center; gap: 9px; font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); transition: opacity 400ms ease; }
+.peso-eje .ico { color: var(--ink-dim); }
+.pe-hoy { font: 900 14px / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; text-align: right; color: var(--ink); }
+.pe-barra { position: relative; height: 4px; border-radius: var(--r-chip); background: var(--linea); }
+.pe-barra i { position: absolute; top: 0; bottom: 0; border-radius: inherit; }
+.pe-valor { left: 0; background: var(--ink-dim); }
+.pe-barra .pe-fantasma { top: -2px; bottom: -2px; opacity: 0.85; }
+.peso-eje.sube .pe-fantasma { background: var(--up); }
+.peso-eje.baja .pe-fantasma { background: var(--down); }
+.peso-eje.movio.sube .pe-valor { background: var(--up); }
+.peso-eje.movio.baja .pe-valor { background: var(--down); }
+.peso-eje.movio.sube .pe-hoy { color: var(--up); }
+.peso-eje.movio.baja .pe-hoy { color: var(--down); }
+.peso-eje.quieto { opacity: 0.55; }
+
+/* ---------- movimiento reducido: todo quieto ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .esc-luces rect.titila, .esc-haz .haz-nucleo, .inv-giro { animation: none; }
+  .dec-peso { transition: none; }
+}
+html[data-reducido] :is(.esc-luces rect.titila, .esc-haz .haz-nucleo, .inv-giro) { animation: none; }
+html[data-reducido] .dec-peso { transition: none; }
+
+/* ---------- celular ---------- */
+@media (max-width: 640px) {
+  :root { --dec-logo-casa: 44px; --dec-logo-org: 32px; --dec-logo-destino: 64px; --dec-anillo: 196px; }
+  .esc-rotulo { display: none; }
+  .dec-escena[data-modo='haces'], .dec-escena :is(.esc-casa, .esc-destino, .esc-cometa, .esc-candado, .esc-hogar, .esc-arco, .esc-arco-halo, .esc-arco-traza, .esc-vuelta) { display: none; }
+  .inv-logo { width: 100px; height: 100px; }
+  .inv-aceptar { min-width: 240px; }
+  .peso-carta { display: none; }
+  .peso-cap-1 { font-size: 56px; }
+}

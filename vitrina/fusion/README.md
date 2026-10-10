@@ -198,3 +198,63 @@ violácea; la diferencia se ve en los libres, las cartas y con el aura. Con Aniv
 vistazo. La carta holográfica de la final queda en el duotono de su rareza (es un objeto). En `paso`, el campeón de
 cada mapa entra en tiempo real (no entra en `congelar`). Sin WebGL, `lugar` queda en la luz sola. La banda del video
 de la Tribuna se mide al montar.
+
+## Opciones (PLANUI §4.7)
+
+### La decisión: `op=escena|cliente|bisagra` (`js/escena.js`, el final de `estilos/decision.css`, su bloque de `tokens.css`)
+
+El usuario, sobre la decisión del import a Corea: *"me gusta como está diseñada pero siento que es muy aburrida, interactúa
+poco con el fondo, y principalmente, representa poco lo que está pasando"*. Las tres opciones **no tocan el panel** (las
+opciones con glifos, el inspector y "vos" quedan iguales) y le suman escena, interacción y oficio. **Sin `op` la pantalla
+es la de hoy, píxel a píxel** (medido: 0 píxeles distintos contra el código anterior en evento, plan, los dos resultados y
+el celular, con INST y sin WebGL).
+
+| Opción | Hash | Qué es |
+|---|---|---|
+| **La escena** | `#pantalla=decision&muestra=evento&op=escena` | El fondo cuenta la situación. A la izquierda, tu lugar: el logo de tu liga y el de tu club (CBLOL y FURIA, logos oficiales). A la derecha, la liga que te llama sobre su ciudad de noche: el logo de la LCK flotando sobre Seúl (la silueta con la N Seoul Tower y la Lotte World Tower, ventanas encendidas, la luz de contra de la era como neón). Entre las dos, un arco de luz por el que un pulso viaja de ellos a vos ("te están llamando"). **Apuntar una opción cruza la escena a ese camino**: el bootcamp enciende el arco y suma la vuelta punteada por abajo (el viaje corto, ida y vuelta); "seguir en tu liga" apaga la ciudad y devuelve la luz a casa; la cerrada deja el arco punteado, gris y con candado. Elegir deja la traza del camino elegido. El campeón sale del fondo: la escena lo reemplaza. |
+| **El momento del cliente** | `…&op=cliente` | La bisagra llega como "partida encontrada": el anillo con el logo de quien llama, el reloj dorado que se vacía (12 s) y **Aceptar** (Enter, Espacio o clic; 1-9 aceptan y eligen directo; si se acaba el reloj, se acepta solo). Aceptar abre el panel de siempre con el filete y el rombo hextech; al elegir, la tecla y la barra del resultado se "bloquean" en oro (el lock-in). El hextech vive **solo** en la bisagra: el plan amateur entra sin invitación, igual que hoy. |
+| **El peso** | `…&op=bisagra` | La bisagra como capítulo: el mundo se oscurece, entra "DECISIÓN BISAGRA · 2032" en la voz de los momentos y se va. Desde el panel se abren los caminos, uno a cada lado, y al final de cada uno lo que arriesgás: cada eje que mueve la opción, su valor de hoy (de la ficha) y su barra con lo que se corre por la magnitud (antes → después, sin inventar números). **Apuntar un camino tira la luz hacia su lado** (el hueco de la oscuridad viaja, la carta se enciende, la luz corre por el camino); la cerrada es un tramo punteado que se corta. Elegir apaga el otro camino y lleva las barras de la carta elegida a los valores reales del resultado. Las decisiones comunes lo llevan atenuado: sin capítulo ni cartas, oscuridad a la mitad y un camino por opción. |
+
+**Campo del evento → elemento de la escena** (nunca se parsea prosa; lo que falta, no se dibuja):
+
+| Campo | Escena | Cliente | Peso |
+|---|---|---|---|
+| `ficha.jugador.liga` / `org` (o `contrato`) | tu lugar: logo de la liga + del club | la ruta chica (tu liga → la de ellos) | — |
+| sin liga ni org (amateur) | tu servidor (`ranked.servidor`) en un escudo-monograma | — | — |
+| efecto con `liga` en las opciones (`decision.datos.evento.options[].outcomes[].effects`) | la liga que llama, su ciudad (`LIGAS`) y el arco | el logo del anillo y "Invitación · LCK" | — |
+| efectos de cada opción: `liga` en todos sus resultados / `camino` abierto / el resto | el camino al apuntarla: **ir** (mudanza), **viaje** (ida y vuelta), **casa** (te quedás) | — | — |
+| `opcionesBloqueadas` (emparejadas por id con las del evento) | el arco apagado con candado | — | el tramo punteado que se corta |
+| `esBisagra` | — | invitación + hextech (sin bisagra: el panel de hoy) | capítulo + cartas (sin bisagra: atenuado) |
+| `anio` | — | — | el año del capítulo |
+| `categoria` | el monograma si no hay liga ni servidor | quien llama si no hay liga ni org | — |
+| `previa[]` (`campo`, `signo`, `magnitud`) | — | — | las filas de cada carta: glifo, valor de hoy, barra y ▲/▼ por cantidad |
+| `riesgo` | sin geografía, la forma del haz: firme, cortado, titila, en rojo | — | — |
+| `rareza` (≠ común) | sin geografía, el final del haz en oro | — | — |
+| `resultados[].inmediato.cambios` | — | — | al elegir, las barras van al valor real |
+| sin destino (el plan, una decisión de vida) | un haz por opción desde tu lugar, en el hueco libre sobre "vos" | — | — |
+
+**Logos.** `LOGOS` en `js/escena.js` (con el comentario `// → logos.js`, para unificar con el mapa del mercado): LCK, CBLOL,
+LEC, LPL y FURIA, del CDN oficial (`static.lolesports.com`, vía `esports-api.lolesports.com` `getLeagues`/`getTeams`), cada
+uno verificado con 200 `image/png`. Van en `<img>`; el de FURIA es negro y se pasa a la tinta con un filtro. Una org o liga
+que no está en el mapa, o que no carga, lleva el escudo-monograma del sistema (iniciales + el filete de la luz). LCS se
+dejó afuera porque su URL responde `binary/octet-stream`.
+
+**Trasladable.** `leerEvento()` (la lectura del evento por campos, con la clasificación ir/viaje/casa), las tablas `LIGAS`,
+`CAMPO_FICHA` y `LARGO_MAGNITUD`, la ciudad determinista por su nombre (`crearAzar('ciudad:<ciudad>')`), los tres estados
+de la escena como atributos (`data-estado`, `data-lado`) que el CSS cruza, la invitación como un `role="dialog"` con el
+foco en Aceptar, y el contrato con `decision.js`: `apuntar(i)` (solo lo que apunta el jugador: hover, flechas, foco, "más"),
+`soltar()`, `elegir(i, resultado)`, `entrar()`, `destruir()`. **Solo de prototipo**: los logos enlazados del CDN (antes
+de publicar se revisa la política de uso, §15) y los hitos dibujados solo para Seúl (las otras ciudades llevan la silueta
+genérica).
+
+**Verificación (2026-10-09).** Hoja de contactos de 5 filas (evento en reposo, apuntando la 1, apuntando la 2, el
+resultado de elegir y el plan en reposo) × 4 columnas (hoy, escena, cliente, bisagra), a 1440×900: 0 errores de consola y 0
+`requestfailed`. Contraste por píxeles (la copia de `c-pantallas/contraste.mjs` apuntada a `fusion/`): 15 casos (las tres
+opciones en reposo, eligiendo la 1 y la 2, el plan y el celular): 985 textos, 0 debajo de 4,5:1; el peor, 5,63 (la línea "antes" con la escena). Movimiento
+reducido, INST y sin WebGL: las tres andan (sin WebGL la escena se ve igual de clara). `verificar.mjs` en verde.
+
+**Límites.** En el cliente, después de aceptar, el fondo es el de hoy: la opción es el momento de llegada, no la escena. Los
+halos de los caminos no llevan desenfoque (un `filter: blur()` sobre el SVG dejaba un fantasma de las cartas con el WebGL de
+SwiftShader): son dos trazos anchos y tenues. Con el plan amateur, la escena es chica (el escudo del servidor y cuatro haces
+sobre "vos") porque la planilla ocupa casi toda la pantalla. En el celular la escena es solo la ciudad abajo, en el espacio
+libre, y el peso no muestra las cartas.
