@@ -182,3 +182,54 @@
   .cu-titulo .cu-bloque { max-width: none; }
   .cu-titulo .tk-titulo { font-size: 72px; }
 }
+
+/* ---------- el campeon, la liga y el equipo (op=linea, PLANUI §4.10): "ahi podrias poner tipo el campeon, la liga y el
+   equipo". La liga encabeza el bloque con su logo grande; el escudo de la org golpea junto al marcador; la carta de carga
+   del campeon que cerro la final queda parada al lado de la copa, girada hacia ella ---------- */
+.cu-liga { display: flex; align-items: center; gap: 20px; margin: 0; }
+.cu-liga-logo {
+  display: grid; place-items: center; flex: none; height: var(--cu-liga-alto); min-width: var(--cu-liga-alto); padding-right: 20px;
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--gold) 40%, transparent);
+}
+.cu-liga-logo img { display: block; height: var(--cu-liga-alto); width: auto; max-width: calc(var(--cu-liga-alto) * 1.8); object-fit: contain; filter: drop-shadow(0 4px 18px var(--sombra)) drop-shadow(0 0 26px color-mix(in srgb, var(--gold) 30%, transparent)); }
+.cu-liga-logo .escudo { width: calc(var(--cu-liga-alto) * 0.88); height: var(--cu-liga-alto); overflow: visible; }
+.cu-escudo-logo .escudo { width: calc(var(--cu-escudo-alto) * 0.88); height: var(--cu-escudo-alto); overflow: visible; }
+.cu-liga-txt { display: grid; gap: 9px; }
+.cu-liga-txt b { font: 800 var(--cu-liga-t) / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.03em; color: var(--carta-oro-a); }
+.cu-liga-txt span { font: 600 13px / 1 var(--f-mono); letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); }
+.cu-equipo { display: flex; align-items: center; gap: 22px; margin-top: 24px; }
+.cu-equipo .tk-marcador { flex-wrap: wrap; row-gap: 6px; min-width: 0; margin: 0; }
+.cu-equipo .tk-marcador > * { white-space: nowrap; }
+.cu-escudo { position: relative; display: grid; place-items: center; flex: none; width: var(--cu-escudo-alto); height: var(--cu-escudo-alto); }
+.cu-escudo-logo { display: grid; place-items: center; width: 100%; height: 100%; }
+.cu-escudo-logo img { display: block; width: var(--cu-escudo-alto); height: var(--cu-escudo-alto); object-fit: contain; filter: drop-shadow(0 6px 22px var(--sombra)) drop-shadow(0 0 30px color-mix(in srgb, var(--gold) 32%, transparent)); }
+.cu-escudo-logo img[data-tinta='oscura'] { filter: brightness(0) invert(1) drop-shadow(0 6px 22px var(--sombra)) drop-shadow(0 0 30px color-mix(in srgb, var(--gold) 32%, transparent)); }
+.cu-onda {
+  position: absolute; inset: -12%; border-radius: 50%; opacity: 0; pointer-events: none;
+  box-shadow: 0 0 0 2px var(--gold), 0 0 26px 4px color-mix(in srgb, var(--gold) 55%, transparent), inset 0 0 22px color-mix(in srgb, var(--luz-blanca) 40%, transparent);
+}
+.cu-carta { position: absolute; z-index: 2; right: var(--cu-carta-der); bottom: var(--cu-carta-abajo); width: var(--cu-carta-ancho); margin: 0; perspective: 900px; }
+.cu-carta-cara {
+  position: relative; display: block; aspect-ratio: 308 / 560; border-radius: 10px; overflow: hidden; transform: rotateY(-14deg); transform-origin: 50% 60%;
+  background: var(--tono-oro-noche);
+  box-shadow: 0 0 0 1px var(--carta-oro-a), 0 0 0 4px color-mix(in srgb, var(--gold) 22%, transparent), 0 34px 70px var(--sombra), 0 0 70px color-mix(in srgb, var(--gold) 30%, transparent);
+}
+.cu-carta-cara::after { content: ''; position: absolute; inset: 8px; border-radius: 6px; pointer-events: none; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--carta-oro-a) 55%, transparent); }
+.cu-carta-arte { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.cu-carta-brillo {
+  position: absolute; inset: 0; opacity: 0; pointer-events: none; mix-blend-mode: screen;
+  background: linear-gradient(110deg, var(--velo-nada) 38%, color-mix(in srgb, var(--luz-blanca) 70%, transparent) 50%, var(--velo-nada) 62%); background-size: 260% 100%; background-position: -60% 0;
+}
+.cu-carta-pie { position: absolute; left: 0; right: 0; bottom: 0; display: grid; gap: 7px; padding: 48px 13px 15px; background: linear-gradient(0deg, var(--velo-lectura) 44%, transparent); }
+.cu-carta-k { font: 600 11px / 1.25 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
+.cu-carta-nombre { font: 900 var(--cu-carta-t) / 0.9 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: -0.005em; text-transform: uppercase; color: var(--ink); overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .cu-liga { gap: 14px; }
+  .cu-liga-logo { padding-right: 14px; }
+  .cu-liga-txt span { font-size: 10px; letter-spacing: 0.2em; }
+  .cu-equipo { gap: 14px; margin-top: 18px; }
+  .cu-carta { top: 12px; right: 12px; bottom: auto; width: var(--cu-carta-ancho-cel); }
+  .cu-carta-pie { gap: 4px; padding: 26px 8px 8px; }
+  .cu-carta-k { display: none; }
+  .cu-carta-nombre { font-size: var(--cu-carta-t-cel); }
+}

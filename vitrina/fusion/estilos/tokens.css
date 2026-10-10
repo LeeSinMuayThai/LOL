@@ -702,6 +702,21 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 
 /* ===== PLANUI §4.10 · ultimas · I, el inicio y el titulo (el champ select, la identidad del titulo, el selector de final.html). Sus tokens van entre esta linea y su cierre ===== */
 :root {
+  /* el champ select del inicio (op=linea): el nombre del apuntado sobre su arte y el de cada carta de carga */
+  --in-cs-foco-t: clamp(64px, 7.4vw, 112px);
+  --in-cs-foco-t-cel: 52px;
+  --in-cs-foco-largo: 7;              /* hasta 7 letras el nombre va a su tamaño; mas largo, se achica en proporcion */
+  --in-cs-carta-t: 17px;
+  /* el titulo (op=linea): el logo de la liga, el escudo de la org y la carta del campeon */
+  --cu-liga-alto: clamp(56px, 6vw, 88px);
+  --cu-liga-t: clamp(22px, 2.1vw, 30px);
+  --cu-escudo-alto: clamp(64px, 7vw, 104px);
+  --cu-carta-ancho: clamp(112px, 11.6vw, 172px);
+  --cu-carta-ancho-cel: 86px;
+  --cu-carta-der: clamp(16px, 3.4vw, 52px);
+  --cu-carta-abajo: clamp(24px, 6vh, 64px);
+  --cu-carta-t: clamp(26px, 2.6vw, 40px);
+  --cu-carta-t-cel: 19px;
 }
 /* ===== fin §4.10 I ===== */
 
@@ -711,6 +726,37 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 
 /* ===== PLANUI §4.10 · ultimas · D, la decision (las costuras copas y liga). Sus tokens van entre esta linea y su cierre ===== */
 :root {
+  /* los heroes de las costuras sin campeon (js/escena.js, estilos/decision.css): su cruce, cuanto sube el apuntado (en su
+     alto) y cuanto queda del otro (la copa ya se apaga con su foco; el monumento, con esto) */
+  --dc-heroe-cruce: 520ms;
+  --dc-heroe-sube: 3.5%;
+  --dc-heroe-apagado: 0.9;
+  --dc-heroe-apagado-liga: 0.4;
+  /* copas: el charco de luz bajo el pedestal (su alto, en altos de la copa, y cuanto del tono) */
+  --dc-charco-alto: 14%;
+  --dc-charco: 46%;
+  /* liga: el monumento. El logo, la ciudad, un escudo de la pared, el marcado, los huecos */
+  --dc-mon-logo: 128px;
+  --dc-mon-ciudad: 34px;
+  --dc-mon-hueco: 12px;
+  --dc-escudo: 34px;
+  --dc-escudo-yo: 40px;
+  --dc-pared-hueco: 10px;
+  /* el grabado de la pared: cuanto de la luz del tono (contra la tinta) y su opacidad; por defecto sin filtro (cada
+     pared pone el suyo: url(#dc-grabado-a|b)) */
+  --dc-grabado-mezcla: 72%;
+  --dc-grabado-k: 0.8;
+  --dc-grabado: none;
+  /* el escudo sin nombre del que te llama: respira (lento: no es un destello) */
+  --dc-llama: 1400ms;
+  /* celular: la banda de arriba del panel con heroe (sin heroe, --dc-banda-cel) */
+  --dc-banda-cel-heroe: 420px;
+  --dc-mon-logo-cel: 56px;
+  --dc-mon-ciudad-cel: 18px;
+  --dc-mon-hueco-cel: 6px;
+  --dc-escudo-cel: 17px;
+  --dc-escudo-yo-cel: 22px;
+  --dc-pared-hueco-cel: 5px;
 }
 /* ===== fin §4.10 D ===== */
 
@@ -719,7 +765,15 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 /* (separador entre bloques de §4.10: no tocar) */
 
 /* ===== PLANUI §4.10 · ultimas · T, la serie y el Swiss (VICTORIA verde, el suspenso del mapa decisivo, el stream casi negro). Sus tokens van entre esta linea y su cierre ===== */
+/* VICTORIA en verde (el usuario: "como estaba antes, la victoria me gustaria que sea verde"): el verde de VICTORIA en la
+   fusion de antes (sin op y op=final: .pg-titulo, var(--up)) hecho metal, con el filete y el brillo de la ceremonia
+   (js/ceremonia.js victoriaDerrota). Del claro al hondo, como el degrade del oro; el oro queda para ¡ACEPTAR! y la copa. */
 :root {
+  --ln-verde-claro: #effff7;
+  --ln-verde-luz: #a2ffd3;
+  --ln-verde: var(--up);
+  --ln-verde-medio: #1fbf78;
+  --ln-verde-hondo: #0c6a42;
 }
 /* ===== fin §4.10 T ===== */
 
@@ -728,6 +782,31 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 /* (separador entre bloques de §4.10: no tocar) */
 
 /* ===== PLANUI §4.10 · ultimas · E, el mercado (la llegada de las ofertas, camiseta, plantel, ofertas). Sus tokens van entre esta linea y su cierre ===== */
+/* La llegada (el reloj de la ventana) y la derecha sin campeon (js/mercado.js, el final de estilos/mercado.css). Los
+   colores de cada org salen de sus --tono-org-* (bloque de K); aca solo lo que no es de nadie: el papel de las cartas y
+   el gris neutro del mapa de alturas de la camiseta. */
 :root {
+  /* la derecha: el alto util entre la franja y la cinta (el heroe es sticky), y su franja en el celular */
+  --ms-heroe-alto: calc(100vh - var(--franja-alto) - var(--barra-alto) - var(--ln-tv-cinta) - 40px);
+  --ms-heroe-cel: 236px;
+  /* los terminos del aura, en una fila: el numero y el aire entre terminos se achican por debajo de 1440 */
+  --ms-num-aura: clamp(32px, 3.05vw, 44px);
+  --ms-terminos-gap: clamp(22px, 3.05vw, 44px);
+  /* el reloj: la celda de un dia de la ventana */
+  --ms-reloj-celda: 12px;
+  --ms-reloj-celda-alto: 22px;
+  /* la camiseta: la base del mapa de alturas (gris medio = tela plana: la luz no cambia donde no hay pliegue) */
+  --ms-cam-gris: #808080;
+  /* el plantel: el nombre de la org (titulo, <= 56 px) y tu handle en tu lugar */
+  --ms-pl-org: clamp(28px, 2.8vw, 44px);
+  --ms-pl-handle: clamp(30px, 2.9vw, 44px);
+  --ms-pl-handle-ancho: 280px;          /* el handle largo se achica hasta entrar en este ancho (js pone --ms-n: sus letras) */
+  --ms-pl-handle-ancho-cel: 150px;
+  /* las cartas: el papel (marfil), su canto, la tinta y la tinta suave (>= 7:1 sobre el papel mas oscuro), y el alto */
+  --ms-papel: #ece6d9;
+  --ms-papel-canto: #cfc6b4;
+  --ms-tinta-papel: #1b1d25;
+  --ms-tinta-papel-suave: #474a55;
+  --ms-carta-alto: 500px;
 }
 /* ===== fin §4.10 E ===== */

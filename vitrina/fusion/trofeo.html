@@ -31,12 +31,14 @@
     <label>Material <select id="material"><option value="oro">oro</option><option value="plata">plata</option></select></label>
     <label>Perfil <select id="perfil"></select></label>
     <label>Girar <select id="girar"><option value="1">sí</option><option value="0">no (quieta)</option></select></label>
+    <label>Foco <select id="foco"><option value="">sin foco (título)</option><option value="1">1 · apuntada</option><option value="0.62">0,62 · reposo</option><option value="0.1">0,1 · la otra</option></select></label>
     <button type="button" id="entrar">Ver la subida</button>
     <p class="tf-medida" id="medida">—</p>
   </form>
   <script type="module">
     // Pagina de prueba de js/trofeo.js: material, perfil, girar y los fps reales de la copa (cuadros dibujados por
     // segundo, no los del rAF). ?webgl=0 fuerza la copa en SVG. window.copa expone lo mismo para medir en headless.
+    // (PLANUI §4.10) Foco: copa.foco(k, t), el de las dos copas de la bisagra (var=copas); "sin foco" es el titulo.
     import { crearTrofeo, COPAS, PERFILES } from './js/trofeo.js';
     import { el } from './js/util.js';
     const q = new URLSearchParams(location.search);
@@ -66,6 +68,10 @@
       montar();
     });
     $('material').addEventListener('change', montar);
+    $('foco').addEventListener('change', () => {
+      if ($('foco').value === '') montar();
+      else copa.foco(Number($('foco').value), ahoraT());
+    });
     $('perfil').addEventListener('change', montar);
     $('entrar').addEventListener('click', () => {
       inicio = performance.now();
@@ -77,6 +83,7 @@
     $('perfil').value = q.get('perfil') ?? c0.perfil;
     montar();
     let quieta = 0;
+    const ahoraT = () => ($('girar').value === '1' ? performance.now() - inicio : quieta);
     function bucle(ahora) {
       requestAnimationFrame(bucle);
       if (document.hidden || ahora - ultimo < 1000 / copa.fps - 2) return;

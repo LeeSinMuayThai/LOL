@@ -1191,7 +1191,35 @@ La perilla `var=<id>` elige la variante dentro de `op=linea` (`js/main.js` la le
 
 ### El inicio y el título (I): el champ select y el campeón, la liga y el equipo
 
-(pendiente)
+**El inicio con `op=linea`: un champ select** (`js/inicio.js` `crearChampSelect`, `estilos/inicio.css` `.in-cs-*`). Sin
+`op` (y con `op=final` y las de §4.7) el inicio es el de siempre: se compararon por píxeles antes y después (0,00 %).
+- **El rol son las pestañas con glifos** arriba de la grilla, con tu rol preseleccionado. El motor solo deja mains de
+  tu rol (`src/ui/screens/inicio.js`), así que la pestaña *es* el rol: reemplaza a la fila "Rol" y cada rol recuerda
+  sus mains.
+- **Retratos grandes** (el tile de Data Dragon, ~64 px) en el bitono del inicio (`pintarCampeon` de `color.js`: en el
+  inicio, duotono al 100 %, con la luz de la era llevada hacia la tinta para que se reconozcan); apuntar es el aura.
+- **El foco**: el nombre del apuntado, grande, sobre su arte, con el rol, sus arquetipos y "Main N". Escucha al aura
+  (`aura.alCambiar`): el nombre y la luz cambian juntos.
+- **Las ranuras son cartas de carga verticales** (308×560): se llenan de abajo hacia arriba con una línea de luz. La
+  primera libre muestra al apuntado a media luz (el "hover" del cliente) antes de elegirlo; con las tres llenas, otra
+  elección hace temblar las ranuras.
+- **BLOQUEAR es `bloquear()` de la ceremonia**: las cartas se traban (golpe, filete de oro, marca turquesa) y el botón
+  da su único destello. "Cambiar mains" lo deshace. Enter sobre un retrato o una pestaña los activa (no bloquea); Enter
+  sin foco en un control bloquea; durante la intro, Enter la saltea.
+- 1440×900 y 1280×720 entran sin scroll (en lo bajo se aprietan el aire y el título); 390×844 sin scroll horizontal.
+
+**El título con `op=linea`: el campeón, la liga y el equipo** (`js/cumbre.js` `crearLevantar`, `estilos/cumbre.css`
+`.cu-liga`, `.cu-equipo`, `.cu-carta`). Dentro de los mismos 5 s (asentarse en 4600, Espacio salta ahí):
+- 1350 **la liga**: su logo grande (`<img>`, `logos.js`) encabeza el bloque con la edición y "Final · edad".
+- 2980-3200 **el equipo**: el escudo de la org cae y golpea junto al marcador; su onda pasa por `bt.destello` (tercer
+  destello: 220, 1800, 3200). Los logos en tinta oscura (FURIA) se pasan a la tinta clara.
+- 3350-4100 **el campeón**: la carta de carga del que cerró la final (el último mapa ganado) entra girando hacia la copa,
+  al 70 % de su color (la política de momento), con "M4 · cerró la final" y su nombre; su brillo vuelve cada 6,5 s.
+
+**`final.html`**: "El inicio" es `op=linea` (0 compara contra el de hoy, sin op). "La decisión" y "El mercado" tienen
+un **selector de variantes** (control segmentado en la barra; V las recorre): la variante vive en el hash de la página
+(`#p=decision&v=copas`), suma `&var=<id>` al juego y tiene su "qué mirar"; 0 va a `antes`, sin `var`. Las teclas no
+actúan mientras se escribe en un campo (el invocador).
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->
@@ -1199,7 +1227,25 @@ La perilla `var=<id>` elige la variante dentro de `op=linea` (`js/main.js` la le
 
 ### La decisión (D): las costuras `campeones`, `copas` y `liga`
 
-(pendiente)
+La bisagra (`decision/evento`, CBLOL contra la invitación de la LCK) con `op=linea&var=<id>`. El ¡OFERTA ENCONTRADA! con el aro, ¡ACEPTAR!, el portal y la mecánica son los mismos en las tres: apuntar un camino corre la costura hacia su lado, elegir abre ese destino (los números ruedan en el panel) y la cerrada queda apagada con su candado. Cambia lo que muestra cada lado de la costura.
+
+| `var` | Cada lado | Arte de campeón |
+|---|---|---|
+| `campeones` (o sin `var`, o un id desconocido) | la de §4.9, intacta: tu main en los dos lados, cada uno en su tono | sí |
+| `copas` | **la copa 3D de su liga** (`trofeo.js`: la del CBLOL, plata y rojo cromado; la de la LCK, la alta de las estrías), con el logo de la liga como `<img>` en la placa del pedestal y un charco de luz debajo | no (ni detrás del aviso) |
+| `liga` | **el monumento de la liga**: el logo grande, la ciudad («São Paulo», «CBLOL · Brasil»), la pared con los escudos de sus equipos reales grabados en la luz de su tono, y lo marcado: **tu equipo** a color (FURIA) de un lado y **«Te llama · un equipo de la LCK»** del otro, con un escudo sin nombre (el motor no dice qué equipo llama: no se inventa) | no |
+
+- **Dónde.** `js/escena.js` (`crearCostura(lec, { …, variante })`; `js/decision.js` le pasa `ctx.variante` normalizada y pone `data-var` en la pantalla). Clases `dc-heroe`, `dc-copa`, `dc-monumento`, `dc-pared`, `dc-escudo`, `dc-marca` en `estilos/decision.css`; los tamaños en el bloque «§4.10 · D» de `tokens.css`.
+- **El héroe.** En `copas` y `liga` la costura es la del shader (la diagonal, cada mitad en su tono) con `arte: null` en los dos lados. Donde caían las caras va el héroe de cada lado, arriba del panel, entre su destino (contra el borde) y la línea. `acomodar()` prueba, de mayor a menor alto, dos lugares por lado (al lado del destino o contra la línea) y se queda con el primero que no tapa lo escrito en la línea «antes», el panel ni «vos», y no cruza la costura; los dos héroes van del mismo alto. Las caras del ambiente (`costura.caras`) se ponen en el centro de cada héroe: los abanicos de luz lo iluminan. Si el panel crece (elegir), el héroe se achica con una transición (`--dc-heroe-k`): nunca queda tapado.
+- **Apuntar.** El héroe del lado apuntado sube (`--dc-heroe-sube`) y toma la luz; el otro se apaga. La copa usa `foco()` de `trofeo.js` (abajo); la pared de la liga se enciende de a uno (una ola por columnas) y en el otro lado se apagan el logo y la pared, no lo escrito (sigue ≥ 4,5:1). Elegir: el héroe del otro lado se va, como su destino.
+- **Celular (390×844).** La costura partida en vertical; la banda es más alta con héroe (`--dc-banda-cel-heroe`: 420 px) y cada héroe va donde iban las caras (A arriba a la derecha, B abajo a la izquierda), del alto que deja la diagonal. El monumento lleva su pared en chico; el rótulo de lo marcado queda sin el nombre.
+- **1280×720.** La franja libre es baja (~110 px): las copas van de ese alto, contra la línea (no tapa el panel); el monumento va compacto (el logo y la ciudad, sin la pared).
+- **Sin WebGL.** La copa en SVG de `trofeo.js` y la costura en `clip-path` del ambiente, sin arte.
+- **El foco de la copa (`js/trofeo.js`, aditivo).** `crearTrofeo(lienzo, { …, foco })` y `copa.foco(k, t, dur)`: la luz de la copa (k = 1, la de siempre; 0, apagada) en el reloj de `en(t)`. Al subir, un impulso de giro que frena solo y una pasada del brillo; al bajar, la exposición (`uExpo`), el foco de arriba y el halo. Es función pura de t (congelar es fiel). Sin `foco` (el título), la copa pasa por el mismo camino de siempre (`uExpo` = 1).
+- **Las copas se iluminan con el tono de su competición** (la luz blanca arriba y el color de la liga en las varas de contra), no con el del destino dado vuelta: con el rojo como luz, la del CBLOL se veía roja entera.
+- **Los logos (`js/logos.js`).** Se sumaron T1 y KT Rolster (getTeams de LoL Esports, 2026-10-10: los dos `active` con homeLeague LCK), los planteles 2026 de CBLOL y LCK en el orden de `src/data/leagues.json` (CONCEPTO §12) con `equiposDe(liga)`, y `tinta: 'oscura'` en FURIA. Las 18 URLs de la pared cargan: las 21 `<img>` de `liga` (18 escudos, 2 logos y el marcado) con imagen, 0 monogramas de reemplazo y 0 requestfailed.
+- **La copa de la LCK.** Se buscó el material (4 búsquedas: Inven Global y Upcomer, 2019): las fuentes confirman las 140 líneas de metal, la estrella de arriba y las asas como alas de águila, pero no dicen si es oro o plata. La tabla queda como estaba (`oro`, sin fuente del material).
+- **Medido.** El costo de dibujar cada copa en la bisagra (181×282, ≤ 30 fps), repitiendo su último cuadro en la RTX 2060 del headless (ANGLE/D3D11): 0,07-0,10 ms por cuadro (la del título, 428×648: 0,35 ms). No hizo falta un lienzo para las dos. Montar y desmontar `var=copas` 10 veces (20 contextos creados): el contexto del ambiente sigue vivo, 3 contextos vivos al final y 0 avisos. Contraste por píxeles en `.dc-costura` (reposo, apuntando cada lado, elegido, celular, 1280×720, `webgl=0`): 166 textos, 0 debajo de 4,5:1, el peor 6,63:1.
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->
@@ -1207,7 +1253,32 @@ La perilla `var=<id>` elige la variante dentro de `op=linea` (`js/main.js` la le
 
 ### La serie y el Swiss (T): VICTORIA verde, el suspenso del mapa decisivo y el stream casi negro
 
-(pendiente)
+- **VICTORIA en verde** (`estilos/ceremonia.css`, tokens `--ln-verde-*` del bloque T): el verde de VICTORIA en la fusión
+  de antes (`--up`, el de `.pg-titulo`) hecho metal, del claro al hondo como el oro, con el filete (un canto claro de
+  0,7 px) y el brillo de la ceremonia (el ojo turquesa, el interior petróleo). DERROTA no cambia y el oro queda para
+  ¡ACEPTAR! y la copa. Vale para todo `victoriaDerrota`: la serie, el Swiss y `linea.html`. La palabra, medida por
+  píxeles sobre la costura: p5 8,7:1 (mediana 12,3).
+- **El suspenso del mapa decisivo** (`js/partido.js`, `TX_SUS`).
+  - Cuándo: el mapa que puede cerrar la serie con los dos a un mapa de ganarla (`esDecisivo`, del marcador del motor;
+    en las muestras, el 5 de `serie` opciones 2-3 y de `serieReplan` 1-3) y el Bo1 de vida o muerte del Swiss
+    (`esVidaOMuerte`, del record; espejo de `BALANCE.mundial`). Los demás mapas, igual que antes.
+  - Qué: 3 s entre las cartas de carga y el golpe. Las cartas se abren y entra la placa del decisivo ("En juego · 2–2",
+    lo que se juega y la chance del motor partida entre los dos); la costura tira de un lado al otro cada vez más rápido
+    (0,5 → 1,4 vueltas/s) y las cartas la acompañan; la luz va de un tono al otro; el público de lightsticks se levanta
+    y se enciende; un pulso que se acelera (6 latidos, de 760 a 340 ms) late en la línea, la luz, la placa y el pip del
+    decisivo; un colchón de tensión y el latido (`sonido.js`: `tension()`, `latido()`, mudos como el resto); un
+    silencio, y el golpe. En el Swiss, EN JUEGO le deja el lugar a la placa, abajo en el video. El mapa decisivo dura
+    5,4 s (la regla 8 dice ≤ 2,4 s por mapa: el suspenso es el pedido del usuario).
+  - Reglas: todo va en el reloj de los beats y en el del ambiente, así `congelar(ms)` fotografía cualquier instante.
+    Espacio salta al asentarse (el resultado revelado) y apaga el suspenso del ambiente y el sonido; con INST o
+    movimiento reducido no hay suspenso. Cada latido pasa por `beats.destello`. Medido cuadro a cuadro (cada 25 ms): 0
+    destellos WCAG (≥ 10 % de luminancia) y los pulsos del cuadro entero, máx. 3 por segundo (los latidos y el golpe).
+  - El ambiente (aditivo, `js/ambiente.js`): `ambiente({ suspenso: { dura, vaiven, tonos, publico, latidos } | null })`.
+    Son curvas leídas con el reloj del ambiente: el tira y afloje de la costura, la luz entre los dos tonos, el público
+    que se levanta y latidos propios que no ocupan la lista de `pulso()`. Sin el campo nada cambia; sin WebGL se ignora.
+- **El stream casi negro** (`estilos/partido.css`, `.tx-sw`): la página es el vacío del tono (`--tono-vacio` al 72 % con
+  la noche: `#040a13` con Worlds, antes `#162133`) y los paneles, la noche con un pelo de luz. El color queda en el video
+  y los acentos. Contraste por píxeles: chat p5 7,5:1, info 10,1, cruces 8,7, predicción 7,6, decisión 11,0.
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->
@@ -1215,4 +1286,39 @@ La perilla `var=<id>` elige la variante dentro de `op=linea` (`js/main.js` la le
 
 ### El mercado (E): las ofertas que llegan y `camiseta`, `plantel`, `ofertas`
 
-(pendiente)
+`mercado/mercado` con `op=linea` (`js/mercado.js`: `crearOfertasLinea` y los heroes de arriba; el bloque §4.10 · E al
+final de `estilos/mercado.css` y en `tokens.css`). `crearFirmaLinea` no cambió.
+
+- **La llegada.** La entrada es la ventana de pases como tiempo que pasa (`T_LL`, un solo reloj de `beats.js`, 5,6 s):
+  el bumper la abre (0-800 ms), el panel sube con la grilla vacía y el **reloj de la ventana** (en la cabeza del panel:
+  "Día 01…13", 14 celdas, cada oferta marca su día en el color de su org, "Llegó <org>") corre a 335 ms por día. Cada
+  oferta **cae** a su lugar en su día: acelera, toca aplastándose (el polvo, el borde y la carta que se hunde: el golpe
+  sordo, `sonido.golpe`), rebota y se asienta; el aviso es el `ding` del kit (los dos, mudos por defecto) y un
+  `amb.pulso('apuntar')` por `bt.destello` (≤ 3/s). "Te llaman" y "la más alta" del reposo cuentan solo las que llegaron.
+  - **El calendario sale de los datos** (`diasDeLlegada`): los clubes chicos (tier más alto en número) se mueven primero,
+    en su tier de menor a mayor sueldo, y el bombazo cierra; los saltos entre días, del PRNG de `comun/azar.js` sembrado
+    con la seed de la muestra y las orgs. En la muestra: Onda día 1, Enclave 4, Ecos 6, LOUD 8, FURIA 11, Vórtice 13.
+  - **Se usa mientras llegan**: las que ya están se apuntan y se eligen sin cortar la llegada; Espacio, un clic afuera
+    o elegir (clic o 1-6) una que no llegó hacen llegar todas. FIRMAR también. INST o movimiento reducido: todas
+    presentes. `congelar(ms)` mueve el reloj (es un participante de `beats`).
+- **La derecha, sin campeón** (`var=`; el mundo queda en luz sola, en el tono de la org apuntada, con el cruce de
+  siempre). El héroe cruza al apuntar otra org y es `sticky` en su columna; en el celular es una franja de 236 px entre
+  el aura y el panel.
+  - **`camiseta`** (sin `var`): tu camiseta de espaldas con tu handle (en arco) y tu dorsal (los dígitos del final del
+    handle; si no tiene, uno del PRNG), en los colores de la org (`--tono-org-*`), con el escudo en la nuca y el parche
+    de la liga en la manga (`<img>`). Es SVG en capas dentro de un grupo aislado: el color plano (una capa por org: es lo
+    que cruza), la luz difusa (multiply) y la especular más el filo de la luz del mundo (screen), las dos de un mapa de
+    alturas (pliegues de una camiseta colgada + `feTurbulence` + la trama fina) que se dibuja una sola vez. Sin club, la
+    camiseta apagada en la noche de la era. En la llegada, la luz de cada org la cruza cuando cae su oferta; loop vivo,
+    se mece apenas.
+  - **`plantel`**: la formación de la org sobre la Grieta (el mapa de los glifos de rol, en grande) con su logo de marca
+    en el piso, los 5 roles en su lugar y el tuyo iluminado con tu handle. **El motor no trae el plantel de las orgs que
+    ofertan**: los otros cuatro van "por anunciar"; de tu lugar se muestra, tal cual, el paréntesis de `motivoDemanda`
+    ("mejorás claramente sobre Ashnis"). Cada oferta que llega es un ping en tu lugar, en el color de su org.
+  - **`ofertas`**: las ofertas como cartas formales en papel (membrete en la noche de la org con su escudo, para quién,
+    la prosa del motor, los términos, la firma "Por <org>" y el sello), que caen sobre la pila al llegar (la última,
+    arriba). Apuntar una la saca de la pila y la pone al frente; FIRMAR le estampa "Firmada" con el golpe.
+  - **`campeon`**: la derecha de §4.9 (tu main en el bitono), para comparar. Un id desconocido cae en `camiseta`.
+- **De paso (afecta a todas las variantes):** desde 1024 px los términos del aura van en una sola fila (el número y el aire se
+  achican por debajo de 1440). En 1280×720 los cuatro términos de una org saltaban a dos filas, el panel bajaba, el escudo
+  apuntado se iba de abajo del mouse y volvía el reposo: un bucle de hover que ya estaba en §4.9.

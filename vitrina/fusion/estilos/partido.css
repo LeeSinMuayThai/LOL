@@ -1087,9 +1087,11 @@ html[data-sin-webgl] .lugar-pantalla { display: none; }
 /* ---------- el Swiss: la pagina del stream (teñida de la noche de Worlds) y el video adentro del reproductor ---------- */
 .tx-swiss { height: 100vh; padding: calc(var(--franja-alto) + 12px) var(--margen) calc(var(--barra-alto) + 12px); }
 .tx-sw {
-  --tx-sw-pagina: color-mix(in srgb, var(--tono-noche) 90%, var(--tono-luz));
-  --tx-sw-panel: color-mix(in srgb, var(--tono-luz) 8%, var(--tono-noche));
-  --tx-sw-alto: color-mix(in srgb, var(--tono-luz) 15%, var(--tono-noche));
+  /* PLANUI §4.10 (T), "mas oscuro, casi negro": la pagina es el vacio del tono (apenas teñido de Worlds: nunca un negro
+     neutro); los paneles, la noche con un pelo de luz, y el color queda en el video y los acentos */
+  --tx-sw-pagina: color-mix(in srgb, var(--tono-vacio) 72%, var(--tono-noche));
+  --tx-sw-panel: color-mix(in srgb, var(--tono-luz) 4%, var(--tono-noche));
+  --tx-sw-alto: color-mix(in srgb, var(--tono-luz) 9%, var(--tono-noche));
   --tx-sw-bajo: 212px;
   position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; height: 100%;
 }
@@ -1319,9 +1321,36 @@ html[data-sin-webgl] .lugar-pantalla { display: none; }
 .tx-af-delta.sube { color: var(--up); }
 .tx-af-delta.baja { color: var(--down); }
 
+/* ---------- PLANUI §4.10 (T): el suspenso del mapa decisivo. La placa del decisivo: entre las dos cartas (la serie) o
+   abajo al medio del video (el Swiss). Queda quieta: el tira y afloje es de la costura y de las cartas (`translate` y `scale`,
+   que se suman al `transform` de su entrada) ---------- */
+.tx-sus {
+  --tx-sus-carta: clamp(120px, 11.6vw, 176px); /* el ancho de .tx-carga: la placa cae a media carta */
+  position: absolute; left: 50%; top: calc(12% + var(--tx-sus-carta) * 280 / 308); z-index: 2; width: min(200px, 80%);
+  display: grid; justify-items: center; gap: 8px; padding: 14px 16px 12px; text-align: center; visibility: hidden;
+  transform: translate(-50%, -50%);
+  background: var(--ln-tv-placa); box-shadow: inset 0 2px 0 var(--luz), inset 0 0 0 1px var(--ln-tv-raya), 0 26px 56px -20px var(--sombra);
+}
+.tx-sus-brillo { position: absolute; inset: 0; pointer-events: none; opacity: 0; box-shadow: inset 0 2px 0 var(--ink), 0 0 0 1px var(--ink), 0 0 0 4px var(--luz-fuerte), 0 0 40px 6px var(--luz-fuerte), inset 0 0 26px var(--luz-suave); }
+.tx-sus-k { display: flex; align-items: center; gap: 9px; font: 700 12px / 1 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink); white-space: nowrap; }
+.tx-sus-punto { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--down); box-shadow: 0 0 10px var(--down); animation: latido-vivo 1.2s ease-in-out infinite; }
+.tx-sus-linea { font: 600 12.5px / 1.3 var(--f-cuerpo); color: var(--ink-dim); text-wrap: balance; }
+.tx-sus-p { display: grid; gap: 5px; width: 100%; margin-top: 2px; }
+.tx-sus-nums { display: flex; align-items: baseline; justify-content: space-between; }
+.tx-sus-nums b { font-size: var(--t-num-s); line-height: 1; color: var(--ink); text-shadow: 0 0 18px var(--tx-a); }
+.tx-sus-nums b[data-lado='b'] { font-size: 20px; color: var(--ink-dim); text-shadow: none; }
+.tx-sus-fila { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px; }
+.tx-sus-logo { display: grid; width: 24px; height: 24px; }
+.tx-sus-barra { position: relative; display: block; height: 8px; overflow: hidden; transform: skewX(-22deg); background: var(--tx-b); box-shadow: 0 0 12px color-mix(in srgb, var(--tx-b) 40%, transparent); }
+.tx-sus-si { position: absolute; top: 0; bottom: 0; left: 0; width: calc(var(--v) * 100%); transform-origin: left; background: var(--tx-a); box-shadow: 0 0 14px var(--tx-a); }
+.tx-sus-si::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 2px; background: var(--ink); }
+.tx-sus-pie { font: 500 10.5px / 1.3 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+/* en el Swiss va abajo al medio del video: arriba quedan las caras y la costura */
+.tx-sw-sus { top: 73%; width: min(280px, 58%); }
+
 /* el camino quieto: nada late ni respira */
-@media (prefers-reduced-motion: reduce) { .tx-mp[data-siguiente], .tx-af-t, .tx-sw-vivo i, .tx-sw-punto { animation: none; } }
-html:is([data-reducido], [data-inst]) :is(.tx-mp[data-siguiente], .tx-af-t, .tx-sw-vivo i, .tx-sw-punto) { animation: none; }
+@media (prefers-reduced-motion: reduce) { .tx-mp[data-siguiente], .tx-af-t, .tx-sw-vivo i, .tx-sw-punto, .tx-sus-punto { animation: none; } }
+html:is([data-reducido], [data-inst]) :is(.tx-mp[data-siguiente], .tx-af-t, .tx-sw-vivo i, .tx-sw-punto, .tx-sus-punto) { animation: none; }
 
 @media (max-width: 640px) {
   .tx-swiss { display: flex; flex-direction: column; padding: var(--franja-alto) 0 var(--barra-alto); }
@@ -1337,6 +1366,13 @@ html:is([data-reducido], [data-inst]) :is(.tx-mp[data-siguiente], .tx-af-t, .tx-
   .tx-sw-cara[data-lado='b'] .tx-cara-n { font-size: 16px; }
   .tx-sw-logo-b { width: 64px; height: 64px; }
   .tx-sw-vom, .tx-camino { display: none; }
+  /* el suspenso: en la serie, la placa va debajo de las cartas; en el video del Swiss, chica y sin la letra de mas */
+  .tx-sus { top: 87%; width: min(260px, 74%); gap: 6px; padding: 10px 12px; }
+  .tx-sw-sus { top: 73%; width: min(230px, 66%); gap: 4px; padding: 7px 10px; }
+  .tx-sw-sus :is(.tx-sus-linea, .tx-sus-pie) { display: none; }
+  .tx-sw-sus .tx-sus-k { font-size: 10px; }
+  .tx-sw-sus .tx-sus-nums b { font-size: 18px; }
+  .tx-sw-sus .tx-sus-nums b[data-lado='b'] { font-size: 15px; }
   .tx-sw-info { grid-template-columns: 44px minmax(0, 1fr); }
   .tx-sw-avatar { width: 44px; height: 44px; }
   .tx-sw-acciones { grid-column: 1 / -1; justify-items: start; margin-top: 10px; }
