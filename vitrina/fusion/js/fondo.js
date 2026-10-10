@@ -75,12 +75,37 @@ const LUGARES = {
   'mercado/mercado': { ancla: '.contexto', crear: 'banda', foco: [0.56, 0.5], escala: 2.6 },
 };
 
+// PLANUI §4.7 (op=escenario del partido): la ARENA. El campeon vive en la pantalla gigante del escenario (un lugar fijo,
+// con la mecanica de `lugar`: el aura cambia lo que se ve ahi) y apenas se derrama afuera; el resto del mundo es la
+// sala (los cabezales, el humo y el publico, en ambiente.js). Una pantalla la pide con `escena: 'arena'` y gana sobre
+// la perilla `fondo`: es la composicion de esa opcion, no un nivel de intensidad.
+const ARENA = { ...PLENO, presencia: 0.12, profundidad: 0.6, ventana: 1, enLugar: 1, contra: 0.5, polvo: 1.3 };
+const ESCENAS = {
+  arena: { reposo: ARENA, aura: ARENA, momento: ARENA, takeover: ARENA, lugar: true },
+};
+// La pantalla gigante: `crear: 'pantalla'` (estilos/partido.css la ubica adentro del escenario del draft o del player).
+const LUGARES_ESCENA = {
+  arena: {
+    'partido/serie': { ancla: '.escenario', crear: 'pantalla', foco: [0.5, 0.44], escala: 1.75 },
+    'partido/serieReplan': { ancla: '.escenario', crear: 'pantalla', foco: [0.5, 0.44], escala: 1.75 },
+    'partido/swiss': { ancla: '.player', crear: 'pantalla', foco: [0.5, 0.46], escala: 1.75 },
+  },
+};
+
 const clave = (pantalla, muestra) => `${pantalla}/${muestra ?? ''}`;
 const plena = (pantalla, muestra) => SIEMPRE_PLENO.includes(pantalla) || SIEMPRE_PLENO.includes(clave(pantalla, muestra));
 
 // La politica de una variante para una pantalla: los estados que el ambiente usa (con el color de js/color.js) y el
 // lugar (si hay).
-export function politica(nombre, pantalla, muestra, color = COLOR_DEF) {
+// `escena` (opcional): la composicion que pide la pantalla montada (PLANUI §4.7: 'arena'); gana sobre la perilla.
+export function politica(nombre, pantalla, muestra, color = COLOR_DEF, escena = null) {
+  const lugarEscena = escena ? LUGARES_ESCENA[escena]?.[clave(pantalla, muestra)] : null;
+  if (lugarEscena) {
+    const e = ESCENAS[escena];
+    const c = colorDe(color, pantalla, muestra);
+    const estado = (k) => conColor(e[k], c, { takeover: k === 'takeover' });
+    return { nombre: escena, color: c, reposo: estado('reposo'), aura: estado('aura'), momento: estado('momento'), takeover: estado('takeover'), campeonDelMomento: false, lugar: lugarEscena };
+  }
   const p = POLITICAS[normalizarFondo(nombre)];
   const todoPleno = plena(pantalla, muestra);
   const c = colorDe(color, pantalla, muestra);

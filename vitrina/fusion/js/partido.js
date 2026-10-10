@@ -18,6 +18,7 @@ import { icono, triangulos, glifoDeCampo } from './iconos.js';
 import { franja, trayectoria, cuartos } from './marco.js';
 import { claveCampeon } from './aura.js';
 import { pintarCampeon } from './color.js';
+import { competicionDe, logoOrg, logoComp, siglaDe, logosListos } from './competicion.js';
 
 const MAPA = 980; // lo que dura cada mapa al jugar la serie (ms)
 const CHARLA = 760; // la charla del coach entre mapas
@@ -39,6 +40,70 @@ const ventanaDeTiempo = (nodo, desde, dura, { entra = 0.12, sale = 0.9 } = {}) =
   anim(nodo, [{ opacity: 0, visibility: 'visible' }, { opacity: 1, visibility: 'visible', offset: entra }, { opacity: 1, visibility: 'visible', offset: sale }, { opacity: 0, visibility: 'visible' }], { delay: desde, duration: dura });
 const rgbDe = (token) => `rgb(${leerColor(token).map((v) => Math.round(v * 255)).join(', ')})`;
 
+// ---------- PLANUI §4.7: las opciones del partido (ctx.op). Sin `op`, la pantalla es la de hoy. ----------
+//   luz          la luz del evento: el mundo toma la paleta de la competicion; su logo en la cabecera, los de los
+//                equipos en el marcador, las columnas y el camino
+//   transmision  la transmision oficial: el marcador como "score bug", las placas inferiores y una cortina de entrada
+//   escenario    la arena: el campeon en la pantalla gigante, los cabezales en la paleta del torneo, el publico
+const OPCIONES = ['luz', 'transmision', 'escenario'];
+// cuanto toma la paleta de la competicion el lugar de la luz de la era (el resto sigue siendo la era)
+const K_PALETA = { luz: 0.85, transmision: 0.55, escenario: 1 };
+const CORTINA = 1500; // la cortina de entrada de la transmision (ms); Espacio o Esc la saltean
+// el publico de la arena: la linea de las cabezas (uv, desde abajo) segun la forma de la pantalla
+const SUELO_ARENA = { draft: 0.37, tribuna: 0.3 };
+let duenoComp = null; // la pantalla que puso html[data-comp]: la vieja no se lo saca a la nueva
+
+function identidad(op, datos, muestra, forma) {
+  if (!OPCIONES.includes(op)) return { activa: false, op: null, comp: null, props: {}, marcar() {}, soltar() {}, luz: (era) => leerColor(`--luz-${era}`) };
+  const comp = competicionDe(datos, muestra);
+  const yo = {};
+  const k = K_PALETA[op];
+  return {
+    activa: true,
+    op,
+    comp,
+    // lo que main.js le pasa al mundo: la paleta, la arena y la escena (js/fondo.js)
+    props: { paleta: { luz: comp.tokens.luz, contra: comp.tokens.contra, k }, arena: op === 'escenario' ? { k: 1, suelo: SUELO_ARENA[forma] } : 0, escena: op === 'escenario' ? 'arena' : null },
+    marcar() {
+      duenoComp = yo;
+      document.documentElement.dataset.comp = comp.id;
+    },
+    soltar() {
+      if (duenoComp !== yo) return;
+      duenoComp = null;
+      delete document.documentElement.dataset.comp;
+    },
+    // la luz con la que se pinta el duotono de las piezas: la de la era, llevada a la de la competicion como el mundo
+    luz: (era) => {
+      const a = leerColor(`--luz-${era}`);
+      const b = leerColor(comp.tokens.luz);
+      return a.map((v, i) => v + (b[i] - v) * k);
+    },
+  };
+}
+
+// La cortina de entrada de la transmision: "CBLOL 2030 · La final". Corta, y Espacio/Esc la saltean. Es WAAPI con
+// fill backwards: al terminar (o congelada despues) no esta.
+function cortina(contenedor, comp, titulo, sub) {
+  if (quieto()) return null;
+  const nodo = el('div', { class: 'tv-cortina', 'aria-hidden': 'true' }, [
+    el('i', { class: 'tv-cortina-filo' }),
+    el('div', { class: 'tv-cortina-cuerpo' }, [logoComp(comp, { clase: 'tv-cortina-logo' }), el('p', { class: 'tv-cortina-t', text: titulo }), el('p', { class: 'tv-cortina-sub', text: sub })]),
+  ]);
+  contenedor.append(nodo);
+  anim(nodo, [{ visibility: 'visible', clipPath: 'inset(0 100% 0 0)' }, { visibility: 'visible', clipPath: 'inset(0 0 0 0)', offset: 0.16 }, { visibility: 'visible', clipPath: 'inset(0 0 0 0)', offset: 0.8 }, { visibility: 'visible', clipPath: 'inset(0 0 0 100%)' }], { duration: CORTINA, easing: 'cubic-bezier(0.7, 0, 0.3, 1)' });
+  anim(nodo.querySelector('.tv-cortina-filo'), [{ transform: 'translateX(-100%)' }, { transform: 'translateX(100%)' }], { duration: CORTINA * 0.45, delay: 60, easing: EXPO });
+  anim(nodo.querySelector('.tv-cortina-logo'), [{ opacity: 0, transform: 'scale(0.7)' }, { opacity: 1, transform: 'none' }], { duration: 420, delay: 180, easing: EXPO });
+  anim(nodo.querySelector('.tv-cortina-t'), [{ opacity: 0, letterSpacing: '0.3em' }, { opacity: 1, letterSpacing: '0.01em' }], { duration: 520, delay: 240, easing: EXPO });
+  anim(nodo.querySelector('.tv-cortina-sub'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 320, delay: 420, easing: EXPO });
+  return {
+    saltar() {
+      for (const a of nodo.getAnimations({ subtree: true })) a.finish();
+    },
+    viva: () => nodo.getAnimations({ subtree: true }).some((a) => a.playState === 'running'),
+  };
+}
+
 // nombre y etiquetas desde el catalogo real del inicio; si no esta, la clave misma
 function fichaDe(datos, k) {
   const key = claveCampeon(k);
@@ -47,9 +112,9 @@ function fichaDe(datos, k) {
 }
 // El arte en el duotono de la era (A): sombra = el vacio, luz = la luz de la era, recortado por la cara. Cuanto color
 // real lleva encima lo decide la politica del color (js/color.js).
-function pintar(canvas, img, era, foco) {
+function pintar(canvas, img, era, foco, luz = leerColor(`--luz-${era}`)) {
   if (!img) return;
-  pintarCampeon(canvas, img, leerColor('--bg-void'), leerColor(`--luz-${era}`), { foco, brillo: 1.12 });
+  pintarCampeon(canvas, img, leerColor('--bg-void'), luz, { foco, brillo: 1.12 });
 }
 const eraDe = () => document.documentElement.dataset.era || 'escenario';
 
@@ -110,8 +175,10 @@ export function crearPartido(ctx) {
 // ======================================================================================================================
 // La serie: el draft
 // ======================================================================================================================
-function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
+function crearDraft({ datos, muestra, amb, aura, sonido, peor, op }) {
   const m = datos[muestra];
+  const ident = identidad(op, datos, muestra, 'draft');
+  ident.marcar();
   const pc = peor ? datos.peorCaso : null;
   const replan = Boolean(m.esReplan || m.decision?.datos?.replan);
   const dec = m.decision;
@@ -142,7 +209,7 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
     lienzos.push(reg);
     cargas.push(cargarImagen(url(k, meta)).then((img) => {
       reg[1] = img;
-      pintar(c, img, eraDe(), foco);
+      pintar(c, img, eraDe(), foco, ident.luz(eraDe()));
     }));
     return c;
   };
@@ -155,6 +222,7 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
     ]));
     const nodo = el('section', { class: `equipo equipo-${lado}`, 'aria-label': nombre }, [
       el('header', { class: 'eq-cab' }, [
+        ident.activa ? logoOrg(nombre, { clase: 'eq-logo' }) : null,
         el('p', { class: 'eq-kicker', text: kicker }),
         el('p', { class: 'eq-nombre', text: nombre }),
         el('p', { class: 'eq-fuerza' }, [el('b', { class: 'num', text: fuerza }), el('span', { text: lado === 'nos' ? 'fuerza' : `fuerza · vs ${pg.propio?.texto ?? ''}` })]),
@@ -250,10 +318,19 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
     libresNodos.set(k, b);
     return el('li', {}, b);
   }));
-  const marcador = el('p', { class: 'marcador-serie', 'aria-label': 'Marcador de la serie' }, [el('span', { class: 'ms-eq', text: nos }), marcadorRodante([], marcadorAhora), el('span', { class: 'ms-eq', text: ellos })]);
+  // §4.7: con una opcion, el marcador lleva los logos y las siglas de la transmision; en `transmision` es el "score bug"
+  const msEq = (n) => (ident.activa ? el('span', { class: 'ms-eq ms-eq-logo' }, [logoOrg(n, { clase: 'ms-logo' }), el('b', { class: 'ms-sigla', text: siglaDe(n) })]) : el('span', { class: 'ms-eq', text: n }));
+  const marcador = el('p', { class: 'marcador-serie', 'aria-label': ident.activa ? `Marcador de la serie: ${nos} contra ${ellos}` : 'Marcador de la serie' }, [msEq(nos), marcadorRodante([], marcadorAhora), msEq(ellos)]);
+  if (ident.op === 'transmision') {
+    marcador.classList.add('tv-bug');
+    marcador.prepend(logoComp(ident.comp, { clase: 'tv-bug-comp' }));
+    marcador.append(el('span', { class: 'tv-bug-fase', text: `${ident.comp.fase} · Bo${formato}` }));
+  }
   const juego = el('div', { class: 'juego', 'aria-live': 'polite' });
+  // §4.7 transmision: lo apuntado es una placa inferior, con quien juega (tu handle, tu rol, tu equipo)
+  const quien = ident.op === 'transmision' ? el('p', { class: 'tv-placa-quien' }, [logoOrg(nos, { clase: 'tv-placa-logo' }), el('b', { text: fr.quien?.handle ?? '' }), el('span', { text: `${fr.quien?.rolEtiqueta ?? ''} · ${siglaDe(nos)}` })]) : null;
   const escenario = el('div', { class: 'escenario' }, [
-    el('div', { class: 'ap' }, [el('p', { class: 'eq-kicker', text: replan ? 'Te lo leyeron' : 'Apuntando' }), nombreAp, tagsAp]),
+    el('div', { class: 'ap' }, [el('p', { class: 'eq-kicker', text: replan ? 'Te lo leyeron' : 'Apuntando' }), nombreAp, tagsAp, quien]),
     el('div', { class: 'escenario-pie' }, [el('p', { class: 'eq-kicker' }, [el('span', { text: 'Tus libres' }), el('b', { class: 'libres-n', text: String(libres.length) })]), libresRow]),
     marcador,
     juego,
@@ -267,6 +344,8 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
     descripcion: dec.descripcion,
     alerta: replan ? 'Replan' : null,
   });
+  // §4.7: el logo del torneo en la cabecera, en el lugar del punto de luz
+  if (ident.activa) cab.rotulo.querySelector('.punto-luz')?.replaceWith(logoComp(ident.comp, { clase: 'rot-logo' }));
 
   // ---------- los planes: label + 5 barritas (la p de cada mapa) + el % de la serie; el inspector con la prosa ----------
   const mejor = Math.max(...ops.map((o) => o.pSerie ?? 0));
@@ -319,14 +398,16 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
   const centro = el('div', { class: 'draft-centro' }, [cab.nodo, escenario, decide, ocultas]);
   const draft = el('div', { class: 'draft', 'data-replan': replan ? '' : null }, [colNos.nodo, centro, colEllos.nodo]);
 
-  const raiz = el('section', { class: 'parada partido', 'data-pieza': 'partido', 'data-forma': 'draft', 'data-muestra': muestra });
+  const raiz = el('section', { class: 'parada partido', 'data-pieza': 'partido', 'data-forma': 'draft', 'data-muestra': muestra, 'data-op': ident.op, 'data-comp': ident.comp?.id });
   const frN = franja(fr, { peor: pc ? { handle: pc.handle, org: pc.org?.nombre } : null });
   const tray = trayectoria(datos.final?.tarjeta?.historia ?? [], m.anio, m.edad);
   raiz.append(frN, draft, cuartos('temporada', null, tray));
   apuntar(0);
 
   // ---------- entrada: luz -> rotulo -> titulo -> los equipos por los costados -> planes ----------
+  let telon = null;
   function entrada() {
+    if (ident.op === 'transmision') telon = cortina(draft, ident.comp, `${ident.comp.nombre} ${ident.comp.anio ?? ''}`.trim(), `${ident.comp.fase} · Bo${formato} · Fearless`);
     entrar(frN, 0, -10);
     anim(draft, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { delay: 80, duration: 320, easing: EXPO });
     entrar(cab.rotulo, 160, 8);
@@ -368,6 +449,7 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
     const op = ops[n - 1];
     if (!op || elegida) return;
     elegida = n;
+    telon?.saltar(); // elegir saltea la cortina de la transmision (si sigue)
     const r = m.resultados?.find((x) => x.opcionId === op.id);
     const logs = r?.logsDeLaSerie ?? r?.inmediato?.logs ?? [];
     const iMapas = logs.map((l, i) => (l.mapa ? i : -1)).filter((i) => i >= 0);
@@ -432,8 +514,8 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
       [pn, pe].forEach((p) => p && anim(p.querySelector('.ranura-res'), [{ opacity: 0, transform: 'scale(1.8)' }, { opacity: 1, transform: 'none' }], { delay: t0 + 430, duration: 220, easing: EXPO }));
       // el escenario: la pantalla de carga del mapa (tu pick contra el del rival) y su post-game
       const capa = el('div', { class: 'mapa-capa', 'data-res': l.resultado }, [
-        el('div', { class: 'carga carga-nos' }, [retratoDe(k, urlCarga, 176, 320, [0.5, 0.2], 'carga-arte'), el('b', { text: fichaDe(datos, k).nombre })]),
-        el('div', { class: 'carga carga-ellos' }, [rk ? retratoDe(rk, urlCarga, 176, 320, [0.5, 0.2], 'carga-arte') : null, el('b', { text: rk ? fichaDe(datos, rk).nombre : '' })]),
+        el('div', { class: 'carga carga-nos' }, [retratoDe(k, urlCarga, 176, 320, [0.5, 0.2], 'carga-arte'), el('b', { text: fichaDe(datos, k).nombre }), ident.activa ? logoOrg(nos, { clase: 'carga-logo' }) : null]),
+        el('div', { class: 'carga carga-ellos' }, [rk ? retratoDe(rk, urlCarga, 176, 320, [0.5, 0.2], 'carga-arte') : null, el('b', { text: rk ? fichaDe(datos, rk).nombre : '' }), ident.activa ? logoOrg(ellos, { clase: 'carga-logo' }) : null]),
         el('p', { class: 'mapa-n', text: `Mapa ${l.mapa}${l.mapa === formato ? ' · el decisivo' : ''}` }),
         el('div', { class: 'postgame' }, [
           emblema(gano),
@@ -511,7 +593,7 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
     const card = el('div', { class: 'serie-final', 'data-gano': sigue ? 'sigue' : String(Boolean(gano)) }, [
       emblema(sigue ? true : gano),
       el('div', { class: 'sf-cuerpo' }, [
-        el('p', { class: 'eq-kicker', text: `${liga} ${m.anio} · ${ronda} · Bo${formato}${sigue ? ' · sigue' : ''}` }),
+        el('p', { class: 'eq-kicker' }, [ident.activa ? logoComp(ident.comp, { clase: 'rot-logo' }) : null, `${liga} ${m.anio} · ${ronda} · Bo${formato}${sigue ? ' · sigue' : ''}`]),
         el('p', { class: 'sf-marcador num', text: (ultimo?.marcador ?? '').replace('-', '–') }),
         el('ol', { class: 'sf-mapas' }, todos.map((mp) => el('li', { 'data-res': mp.resultado, 'data-campeon': claveCampeon(mp.campeon), tabindex: '0' }, [el('span', { text: `M${mp.mapa}` }), el('b', { text: fichaDe(datos, mp.campeon).nombre })]))),
         texto ? el('p', { class: 'sf-texto', text: texto }) : null,
@@ -535,7 +617,10 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
   // teclado: 1-3 eligen, flechas recorren, Esc/Espacio saltea, R repite
   function tecla(e) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
-    if (/^[1-9]$/.test(e.key) && Number(e.key) <= ops.length && !elegida) {
+    if ((e.key === 'Escape' || e.code === 'Space') && telon?.viva()) {
+      e.preventDefault();
+      telon.saltar();
+    } else if (/^[1-9]$/.test(e.key) && Number(e.key) <= ops.length && !elegida) {
       e.preventDefault();
       elegir(Number(e.key));
     } else if ((e.key === 'Escape' || e.code === 'Space') && saltar) {
@@ -556,23 +641,29 @@ function crearDraft({ datos, muestra, amb, aura, sonido, peor }) {
     entrar: entrada,
     elegir,
     tecla,
-    listo: () => Promise.all([...cargas, ...precarga]),
+    listo: () => Promise.all([...cargas, ...precarga, logosListos(raiz)]),
     alCambiarEra(e) {
-      for (const [c, img, foco] of lienzos) pintar(c, img, e, foco);
+      for (const [c, img, foco] of lienzos) pintar(c, img, e, foco, ident.luz(e));
     },
-    destruir: () => desuscribir?.(),
+    destruir: () => {
+      desuscribir?.();
+      ident.soltar();
+    },
     arte: base,
     animo: 'normal',
     encuadre: celular() ? 'celular' : 'draft',
     velo: 0.4,
+    ...ident.props,
   };
 }
 
 // ======================================================================================================================
 // El Swiss: la Tribuna
 // ======================================================================================================================
-function crearSwiss({ datos, muestra, amb, sonido, peor }) {
+function crearSwiss({ datos, muestra, amb, sonido, peor, op }) {
   const m = datos[muestra];
+  const ident = identidad(op, datos, muestra, 'tribuna');
+  ident.marcar();
   const pc = peor ? datos.peorCaso : null;
   const dec = m.decision;
   const ops = dec.opciones;
@@ -596,23 +687,38 @@ function crearSwiss({ datos, muestra, amb, sonido, peor }) {
     const gano = r.ganador === org;
     const otro = r.a === org ? r.b : r.a;
     return el('li', { 'data-res': gano ? 'W' : 'L', title: `Ronda ${r.ronda}: ${gano ? 'le ganaste a' : 'perdiste con'} ${otro}${r.p != null ? ` · tenías ${pct(r.p)}` : ''}` }, [
-      el('span', { text: `R${r.ronda}` }), el('b', { text: gano ? 'V' : 'D' }), el('small', { text: otro }),
+      el('span', { text: `R${r.ronda}` }), el('b', { text: gano ? 'V' : 'D' }), quienPip(otro),
     ]);
   };
-  const r5 = el('li', { 'data-res': 'vivo' }, [el('span', { text: `R${proxima}` }), el('b', { text: '?' }), el('small', { text: rival })]);
+  // §4.7: en el camino, el logo y la sigla de cada rival (se lee de un vistazo; el nombre entero queda en el title)
+  function quienPip(n) {
+    return ident.activa ? el('small', { class: 'pip-quien' }, [logoOrg(n, { clase: 'pip-logo' }), el('b', { text: siglaDe(n) })]) : el('small', { text: n });
+  }
+  const r5 = el('li', { 'data-res': 'vivo', title: ident.activa ? `Ronda ${proxima}: ${rival}` : null }, [el('span', { text: `R${proxima}` }), el('b', { text: '?' }), quienPip(rival)]);
   const camino = el('ol', { class: 'swiss-camino', 'aria-label': `Swiss: vas ${rec.v}-${rec.d}` }, [...rondas.map(pipNodo), r5]);
   const recViejo = el('span', { text: `${rec.v}-${rec.d}` });
   const vom = el('div', { class: 'vom' }, [
     el('p', { class: 'vom-band', text: 'Vida o muerte' }),
-    el('p', { class: 'vom-sub' }, [el('b', { class: 'vom-rec num' }, recViejo), el('span', { text: `vs ${rival}` }), ligaRival ? el('small', { text: ligaRival }) : null]),
+    el('p', { class: 'vom-sub' }, [el('b', { class: 'vom-rec num' }, recViejo), el('span', { text: `vs ${rival}` }), ident.activa ? logoOrg(rival, { clase: 'vom-logo' }) : null, ligaRival ? el('small', { text: ligaRival }) : null]),
   ]);
   const cabPlayer = el('div', { class: 'player-cab' }, [
     el('span', { class: 'en-vivo' }, [el('i'), 'En vivo']),
-    el('span', { class: 'eq-kicker', text: `Tribuna · Mundial ${anio} · Swiss` }),
+    ident.activa ? logoComp(ident.comp, { clase: 'cab-logo' }) : null,
+    // con el logo del torneo, el rotulo se acorta (el logo ya dice que torneo es)
+    el('span', { class: 'eq-kicker', text: ident.activa ? 'Tribuna · Swiss' : `Tribuna · Mundial ${anio} · Swiss` }),
   ]);
+  // §4.7 transmision: el "score bug" (los dos equipos con su record del Swiss) debajo de la cabecera
+  const recRival = it.swiss?.record?.[rival];
+  const bug = ident.op === 'transmision' ? el('p', { class: 'tv-bug tv-bug-swiss', 'aria-label': `${orgVista} ${rec.v}-${rec.d}, ${rival} ${recRival ? `${recRival.v}-${recRival.d}` : ''}` }, [
+    logoOrg(orgVista, { clase: 'ms-logo' }), el('b', { class: 'ms-sigla', text: siglaDe(orgVista) }), el('span', { class: 'tv-bug-rec num' }, el('span', { text: `${rec.v}–${rec.d}` })),
+    el('i', { class: 'tv-bug-vs', text: 'vs' }),
+    el('span', { class: 'tv-bug-rec num', text: recRival ? `${recRival.v}–${recRival.d}` : '' }), el('b', { class: 'ms-sigla', text: siglaDe(rival) }), logoOrg(rival, { clase: 'ms-logo' }),
+    el('span', { class: 'tv-bug-fase', text: `${ident.comp.fase} · Bo1` }),
+  ]) : null;
 
   // ---------- la parada: el panel abajo a la izquierda (cabecera + opciones | previa) ----------
   const cab = cabecera({ rotulo: [`Mundial ${anio}`, `Swiss · ronda ${proxima} · Bo1`], titulo: dec.titulo, descripcion: dec.descripcion });
+  if (ident.activa) cab.rotulo.querySelector('.punto-luz')?.replaceWith(logoComp(ident.comp, { clase: 'rot-logo' }));
   const ICONOS = { charla: 'charla', sinCharla: 'sinCharla' };
   const insp = el('p', { class: 'sw-insp', 'aria-live': 'polite' });
   const filas = ops.map((o, i) => el('button', { class: 'opcion sw-opcion', type: 'button', 'data-atajo': String(i + 1), 'aria-describedby': `desc-sw-${i + 1}` }, [
@@ -642,7 +748,14 @@ function crearSwiss({ datos, muestra, amb, sonido, peor }) {
     el('p', { class: 'sw-vs' }, [el('b', { class: 'num', text: pg.propio?.texto ?? '' }), ` ${orgVista} vs ${rival} `, el('b', { class: 'num', text: pg.rival?.texto ?? '' })]),
     pg.nota ? el('p', { class: 'sw-nota' }, [icono('charla'), pg.nota]) : null,
   ]);
+  // §4.7 transmision: la placa inferior de quien juega, apoyada sobre la parada
+  const placa = ident.op === 'transmision' ? el('div', { class: 'tv-placa' }, [
+    logoOrg(orgVista, { clase: 'tv-placa-logo' }),
+    el('p', { class: 'tv-placa-t' }, [el('b', { text: handle }), el('span', { text: `${fr.quien?.rolEtiqueta ?? ''} · ${siglaDe(orgVista)}` })]),
+    el('p', { class: 'tv-placa-campeon', text: fichaDe(datos, camara).nombre }),
+  ]) : null;
   const parada = el('section', { class: 'sw-parada', 'data-pieza': 'decision', 'aria-label': dec.titulo }, [
+    placa,
     cab.nodo,
     el('div', { class: 'sw-cuerpo' }, [el('div', { class: 'sw-col' }, [opsNodo, insp]), previa]),
     ocultas,
@@ -650,7 +763,7 @@ function crearSwiss({ datos, muestra, amb, sonido, peor }) {
   apuntar(0);
 
   const juego = el('div', { class: 'juego sw-juego', 'aria-live': 'polite' });
-  const player = el('div', { class: 'player' }, [cabPlayer, vom, camino, parada, juego]);
+  const player = el('div', { class: 'player' }, [cabPlayer, bug, vom, camino, parada, juego]);
 
   // ---------- el chat ----------
   const chat = chatSwiss(m, { handle, org: orgVista, rival, ligaRival, rec, rondas, camara: fichaDe(datos, camara).nombre }, 'antes');
@@ -663,13 +776,15 @@ function crearSwiss({ datos, muestra, amb, sonido, peor }) {
   ]);
   const tribuna = el('div', { class: 'tribuna' }, [player, aside]);
 
-  const raiz = el('section', { class: 'parada partido swiss', 'data-pieza': 'partido', 'data-forma': 'tribuna', 'data-muestra': muestra });
+  const raiz = el('section', { class: 'parada partido swiss', 'data-pieza': 'partido', 'data-forma': 'tribuna', 'data-muestra': muestra, 'data-op': ident.op, 'data-comp': ident.comp?.id });
   const frN = franja(fr, { peor: pc ? { handle: pc.handle, org: pc.org?.nombre } : null });
   const tray = trayectoria(datos.final?.tarjeta?.historia ?? [], m.anio, m.edad);
   raiz.append(frN, tribuna, cuartos('mundo', null, tray));
 
   // ---------- entrada: la luz, la banda, el camino, la parada; el chat ya corre ----------
+  let telon = null;
   function entrada() {
+    if (ident.op === 'transmision') telon = cortina(tribuna, ident.comp, `${ident.comp.nombre} ${anio}`, `${ident.comp.fase} · Bo1`);
     entrar(frN, 0, -10);
     anim(tribuna, [{ opacity: 0 }, { opacity: 1 }], { duration: 260 });
     anim(vom.querySelector('.vom-band'), [{ opacity: 0, transform: 'scaleX(0.3)', letterSpacing: '0.4em' }, { opacity: 1, transform: 'none' }], { delay: 160, duration: 420, easing: EXPO });
@@ -692,6 +807,7 @@ function crearSwiss({ datos, muestra, amb, sonido, peor }) {
     const op = ops[n - 1];
     if (!op || elegida) return;
     elegida = n;
+    telon?.saltar(); // elegir saltea la cortina de la transmision (si sigue)
     const r = m.resultados?.find((x) => x.opcionId === op.id);
     const logs = r?.inmediato?.logs ?? [];
     const partido = logs.find((l) => l.etapa === 'swiss' && l.ronda != null);
@@ -713,15 +829,15 @@ function crearSwiss({ datos, muestra, amb, sonido, peor }) {
     juego.replaceChildren();
     // la charla (si la usaste) como zocalo de la transmision
     for (const l of antes) {
-      const z = el('div', { class: 'zocalo' }, [el('span', { class: 'eq-kicker' }, [icono('coach'), 'Vestuario']), el('p', { text: l.message })]);
+      const z = el('div', { class: 'zocalo' }, [el('span', { class: 'eq-kicker' }, [icono('coach'), 'Vestuario', ident.activa ? logoComp(ident.comp, { clase: 'zocalo-logo' }) : null]), el('p', { text: l.message })]);
       juego.append(z);
       ventanaDeTiempo(z, t, 820, { entra: 0.14, sale: 0.86 });
       t += 720;
     }
     // el Bo1 en juego: tu chance real, que no cambia lo que sale
     const enJuego = el('div', { class: 'zocalo zocalo-juego' }, [
-      el('span', { class: 'eq-kicker' }, [el('i', { class: 'punto-vivo' }), 'En juego · Bo1']),
-      el('p', {}, el('b', { text: `${orgVista} vs ${rival}` })),
+      el('span', { class: 'eq-kicker' }, [el('i', { class: 'punto-vivo' }), 'En juego · Bo1', ident.activa ? logoComp(ident.comp, { clase: 'zocalo-logo' }) : null]),
+      el('p', { class: ident.activa ? 'zocalo-vs' : null }, ident.activa ? [logoOrg(orgVista, { clase: 'ms-logo' }), el('b', { text: `${orgVista} vs ${rival}` }), logoOrg(rival, { clase: 'ms-logo' })] : el('b', { text: `${orgVista} vs ${rival}` })),
       el('span', { class: 'sw-medidor', style: { '--v': String(partido?.p ?? 0) } }, el('i')),
       el('small', { text: `tu chance: ${pct(partido?.p)}` }),
     ]);
@@ -749,6 +865,16 @@ function crearSwiss({ datos, muestra, amb, sonido, peor }) {
     recViejo.style.opacity = '0';
     anim(recViejo, [{ opacity: 1 }, { opacity: 0 }], { delay: tPost + 120, duration: 160 });
     anim(recNuevo, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { delay: tPost + 160, duration: 260, easing: EXPO });
+    // §4.7 transmision: el record del score bug rueda igual
+    const bugRec = bug?.querySelector('.tv-bug-rec');
+    if (bugRec) {
+      const v0 = bugRec.firstElementChild;
+      const v1 = el('span', { text: recFinal.replace('-', '–') });
+      bugRec.append(v1);
+      v0.style.opacity = '0';
+      anim(v0, [{ opacity: 1 }, { opacity: 0 }], { delay: tPost + 120, duration: 160 });
+      anim(v1, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { delay: tPost + 160, duration: 260, easing: EXPO });
+    }
     // la luz cae (sin color, sin latido) y AFUERA entra despacio: el takeover de A, con la decision que fue real
     const tCae = tPost + 260;
     const tAfuera = tPost + 1250;
@@ -758,7 +884,7 @@ function crearSwiss({ datos, muestra, amb, sonido, peor }) {
     amb.takeover?.(quieto() ? 0 : tAfuera - 160);
     const cambios = (r?.inmediato?.cambios ?? []).filter((c) => ETQ_CAMBIO[c.campo] && Math.round(c.antes) !== Math.round(c.despues));
     const afuera = el('div', { class: 'sw-afuera', 'data-fuera': fuera ? '' : null }, [
-      el('p', { class: 'eq-kicker', text: `Mundial ${anio} · Swiss · fin de la transmisión` }),
+      el('p', { class: 'eq-kicker' }, [ident.activa ? logoComp(ident.comp, { clase: 'rot-logo' }) : null, `Mundial ${anio} · Swiss · fin de la transmisión`]),
       el('p', { class: 'sw-afuera-t', text: fuera ? 'Afuera' : 'Adentro' }),
       el('p', { class: 'sw-afuera-rec' }, [el('b', { class: 'num', text: recFinal.replace('-', '–') }), el('span', { text: fin?.message ?? partido?.message ?? '' })]),
       el('div', { class: 'sw-dos-p' }, [
@@ -807,7 +933,10 @@ function crearSwiss({ datos, muestra, amb, sonido, peor }) {
 
   function tecla(e) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
-    if (/^[1-9]$/.test(e.key) && Number(e.key) <= ops.length && !elegida) {
+    if ((e.key === 'Escape' || e.code === 'Space') && telon?.viva()) {
+      e.preventDefault();
+      telon.saltar();
+    } else if (/^[1-9]$/.test(e.key) && Number(e.key) <= ops.length && !elegida) {
       e.preventDefault();
       elegir(Number(e.key));
     } else if ((e.key === 'Escape' || e.code === 'Space') && saltar) {
@@ -824,10 +953,12 @@ function crearSwiss({ datos, muestra, amb, sonido, peor }) {
     entrar: entrada,
     elegir,
     tecla,
+    ...(ident.activa ? { listo: () => logosListos(raiz), destruir: () => ident.soltar() } : {}),
     arte: camara,
     animo: 'normal',
     encuadre: celular() ? 'celular' : 'tribuna',
     velo: 0.4,
+    ...ident.props,
   };
 }
 

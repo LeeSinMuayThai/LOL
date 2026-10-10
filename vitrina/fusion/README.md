@@ -258,3 +258,70 @@ halos de los caminos no llevan desenfoque (un `filter: blur()` sobre el SVG deja
 SwiftShader): son dos trazos anchos y tenues. Con el plan amateur, la escena es chica (el escudo del servidor y cuatro haces
 sobre "vos") porque la planilla ocupa casi toda la pantalla. En el celular la escena es solo la ciudad abajo, en el espacio
 libre, y el peso no muestra las cartas.
+
+### Partido: la serie, el replan y el Swiss (`op=luz|transmision|escenario`)
+
+El usuario, de la serie: *"que el fondo tenga más calidad y que los campeones tengan un 15 % más de color mientras que
+el fondo un 10 % más"*; del Swiss: *"un 20 % menos amarilla y más estética de la competición (LEC WORLDS MSI LO QUE SE
+ESTÉ JUGANDO)"*. Abrir: `index.html#pantalla=partido&muestra=serie&op=luz` (o `serieReplan`, `swiss`; y
+`transmision`, `escenario`).
+
+**Lo que llevan las tres** (y que va más allá del partido):
+- **La receta de color (`color=receta`, `js/color.js`).** Parte de `mitad`: las piezas de campeón a 65 % color / 35 %
+  duotono y el campeón de fondo a 60/40. El inicio y los takeovers siguen en duotono. Con cualquier `op=` en el hash y
+  sin `color=`, `main.js` la usa por defecto (`COLOR_OP`); `color=` explícito manda. También está en el selector
+  "Color" del panel.
+- **El fondo nítido, en todas las variantes y también sin `op`** (es la única excepción a "sin `op`, como hoy"). La
+  "poca calidad" tenía tres causas, medidas sobre la cara de Sylas: (1) todo el shader pintaba a escala 0,5 y el
+  navegador lo estiraba ×2, así que el arte de 720 px de alto quedaba en ~430 (papilla); (2) la textura no tenía mipmaps
+  y, achicada, las líneas finas y brillantes saltaban de texel en texel; el duotono, que dispara la contra en los
+  brillos, marcaba esos dientes (el rosa dentado); (3) el "vivo" desplazaba cada píxel según su propia luminancia, y dos
+  vecinos de luz distinta se corrían distinto. Arreglo (`js/ambiente.js`): **dos pasadas**. La luz (bruma, haces,
+  polvo, la escena) se sigue pintando a 0,5 en dos texturas (`RGBA16F` si hay `EXT_color_buffer_float`; si no, 8 bits
+  con la luz a la mitad); el arte se compone a resolución nativa encima, con mipmaps y `textureLod` al nivel de su
+  escala; la profundidad 2,5D y el flujo del vivo salen de un nivel borroso del mip (un campo suave) y el flujo bajó
+  de 0,016 a 0,007. La cuenta de la luz es la misma, partida en dos: sin WebGL la fusión da idéntica (máx. 1 nivel en
+  serie, Swiss, evento, mercado y replan) y con WebGL la diferencia queda en el arte. 29-30 cuadros/s del ambiente con
+  la GPU real (la página, p95 4,3 ms).
+- **La competición (`js/competicion.js`).** Cada pantalla sabe qué se juega por la muestra (la liga de la ficha; la
+  clave del internacional): la serie es CBLOL 2030 y el Swiss es Worlds 2033. Sus tokens son `--comp-<id>-luz`, `-contra`
+  y `-acento` (Worlds, MSI, First Stand, CBLOL, LEC, LCK, LPL, LCS, LCP, en el bloque §4.7 · partido de `tokens.css`).
+  - La paleta sale del color dominante del logo oficial, medido por píxeles, y de su motivo. Worlds es la plata de la
+    Copa con un oro viejo en la contra; CBLOL es el blanco hueso del símbolo con el rojo de su trofeo. Ningún brand
+    book público da los hex, y donde el logo es blanco el segundo color es nuestro (está anotado).
+  - Con una opción, `html[data-comp]` cambia el acento de la interfaz (`--luz`) por el de la competición, y el mundo
+    recibe `ambiente({ paleta })`. El oro (`--gold`) queda para el logro.
+- **Los logos** (`<img>` del CDN de LoL Esports, constantes `// → logos.js`):
+  - el del torneo en el rótulo de la cabecera y en los kickers;
+  - los de los equipos en las columnas del draft, el marcador, las pantallas de carga de cada mapa, el rival de VIDA O
+    MUERTE y el camino del Swiss (logo + sigla, con el nombre en el `title`);
+  - si no cargan, o la org es inventada, va el escudo-monograma (`.escudo`: las iniciales con el filete de la luz).
+
+| Opción | Qué es |
+|---|---|
+| `luz` · La luz del evento | El cambio mínimo: el mundo toma la paleta de la competición (85 %), la interfaz su acento, y los logos. |
+| `transmision` · La transmisión | El mundo a mitad de camino (55 %). El marcador es el *score bug* (el logo del torneo, logo + sigla + marcador de cada equipo y la fase debajo). Lo apuntado del draft es una placa inferior con quién juega; en el Swiss, un bug con el récord de los dos (rueda al terminar) y la placa de Elurah89 · Anivia sobre la parada. Al entrar, una cortina de 1,5 s ("WORLDS 2033 · SWISS · RONDA 5 · BO1"): Espacio, Esc o elegir la saltean. En el celular se compacta: el bug vuelve al lugar del marcador y no hay placas. |
+| `escenario` · La arena | El mundo es el estadio (`ambiente({ arena })` + `escena: 'arena'` en `js/fondo.js`). El campeón vive en la pantalla gigante, que emite como un LED: es un lugar fijo, y el aura cambia lo que se ve ahí. Seis cabezales móviles cuelgan del techo en la paleta del torneo, con humo en el piso, el resplandor del escenario y dos filas de público en silueta con celulares. La interfaz flota adelante. |
+
+**Trasladable.**
+- Tal cual: las dos pasadas del ambiente (vale para todo el juego, no solo el partido), `POLITICAS_COLOR.receta`,
+  `competicionDe()` + los tokens `--comp-*` + `html[data-comp]`, `logoOrg`/`logoComp` con el escudo de respaldo, y
+  `ambiente({ paleta, arena })`.
+- La opción que se elija: el score bug, las placas y la cortina (`partido.css`), o `ESCENAS.arena` con su pantalla.
+
+**Solo de prototipo.** Las URLs de logos enlazadas al CDN (antes de publicar, §15, se revisa la política de uso). El
+default `op → receta` de `main.js`.
+
+**Verificación.**
+- `verificar.mjs` en verde.
+- Contraste por píxeles (la copia de `contraste.mjs` de la fusión), 24 casos: las tres opciones × serie, VICTORIA, el
+  final, replan, Swiss, DERROTA, AFUERA y celular. 2151 textos y después 828 del Swiss y el celular corregidos: 0
+  debajo de 4,5:1; el peor da 6,13.
+- 0 errores de consola.
+- El amarillo del Swiss (b* medio sobre los tonos oro): hoy 5,5 en duotono y 0,8 con la receta; `luz` 0,0,
+  `transmision` 0,0, `escenario` 0,4.
+
+**Límites.**
+- Sin WebGL no hay paleta ni arena: el respaldo CSS queda en la luz de la era y la pantalla gigante no se dibuja.
+- En el CBLOL la luz `luz` es blanco hueso, y la identidad la cargan sobre todo los logos.
+- AFUERA es un takeover: se ve igual en las cuatro columnas.
