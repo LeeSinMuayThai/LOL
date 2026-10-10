@@ -5,6 +5,8 @@
 // del usuario, porque los navegadores lo exigen: uno creado antes de una
 // interacción queda `suspended` y nunca suena.
 
+import { crearAzar } from './fx/azar.js';
+
 const CLAVE_HABILITADO = 'lolcs-sonido-habilitado';
 
 let ctx = null;
@@ -110,3 +112,313 @@ export function arpegioTitulo() {
     setTimeout(() => tono({ freq, duracion: 0.25, tipo: 'triangle', volumen: 0.08 }), i * 90);
   });
 }
+
+// --- Los sonidos del kit de efectos (PLANUI §4.9, LINEA.md §4.7) ----------
+// Portados de vitrina/fusion/js/sonido.js (U1k). Aditivos: nada de lo de
+// arriba cambia. Todos sintetizados con WebAudio y MUDOS con el sonido
+// apagado (el mismo `habilitado` y el mismo `AudioContext` de arriba). El
+// ruido sale del PRNG decorativo del kit (fx/azar.js), nunca de `rngUi`.
+//   ding      el aviso de PARTIDA ENCONTRADA: dos campanas (Mi y Si) sobre un colchón suave
+//   golpe     el impacto de una letra o un logo: un bombo que cae de tono + un chasquido de ruido
+//   quemado   la brasa del Fearless: un siseo que baja + chispas (ráfagas cortas del PRNG)
+//   confeti   el estallido: un soplo agudo + destellos de campanita a alturas del PRNG
+//   victoriaCeremonia  un acorde mayor que sube, con un brillo arriba (el VICTORIA del kit)
+//   derrotaCeremonia   dos notas menores que caen, oscuras (el DERROTA del kit)
+//   flash     el golpe de luz: un barrido de ruido brillante + un ping agudo
+//   tension   (§4.10) el colchón grave que sube antes del mapa decisivo; devuelve { parar() }
+//   latido    (§4.10) el corazón: dos golpes sordos (lub-dub), el segundo más suave
+// `victoria` y `derrota` ya existían (los usa el reproductor) y no se tocan:
+// las del kit se llaman `victoriaCeremonia` y `derrotaCeremonia`, y el
+// objeto `sonidoFx` las expone con el nombre de LINEA.md §4.7 (`victoria`,
+// `derrota`) para pasarlo como `sonido` a fx/ceremonia.js y a las pantallas
+// (`sonido.golpe?.()`).
+
+const azarSonido = crearAzar('a-luz-sonido');
+const SEGUNDOS_DE_RUIDO = 2;
+let ruido = null;
+const SIN_SONIDO = Object.freeze({ parar() {} });
+
+function audioDelKit() {
+  if (!habilitado) return null;
+  const audio = asegurarContexto();
+  if (!audio) return null;
+  if (!ruido || ruido.sampleRate !== audio.sampleRate) {
+    ruido = audio.createBuffer(1, audio.sampleRate * SEGUNDOS_DE_RUIDO, audio.sampleRate);
+    const d = ruido.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = azarSonido.siguiente() * 2 - 1;
+  }
+  return audio;
+}
+
+function envolvente(g, t, a, s, r, pico) {
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(pico, t + a);
+  g.gain.setValueAtTime(pico, t + a + s);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + a + s + r);
+}
+
+export function ding() {
+  const c = audioDelKit();
+  if (!c) return;
+  const t = c.currentTime;
+  for (const [i, [hz, pico]] of [[1318.5, 0.07], [1975.5, 0.05]].entries()) {
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = 'sine';
+    o.frequency.value = hz;
+    envolvente(g, t + i * 0.09, 0.006, 0.04, 1.3, pico);
+    o.connect(g).connect(c.destination);
+    o.start(t + i * 0.09);
+    o.stop(t + 1.6);
+  }
+  const o = c.createOscillator();
+  const g = c.createGain();
+  o.type = 'triangle';
+  o.frequency.value = 659.25;
+  envolvente(g, t, 0.02, 0.1, 0.9, 0.035);
+  o.connect(g).connect(c.destination);
+  o.start(t);
+  o.stop(t + 1.2);
+}
+
+export function golpe() {
+  const c = audioDelKit();
+  if (!c) return;
+  const t = c.currentTime;
+  const o = c.createOscillator();
+  const g = c.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(140, t);
+  o.frequency.exponentialRampToValueAtTime(42, t + 0.28);
+  envolvente(g, t, 0.004, 0.03, 0.32, 0.32);
+  o.connect(g).connect(c.destination);
+  o.start(t);
+  o.stop(t + 0.45);
+  const s = c.createBufferSource();
+  s.buffer = ruido;
+  const f = c.createBiquadFilter();
+  f.type = 'lowpass';
+  f.frequency.value = 2400;
+  const gr = c.createGain();
+  envolvente(gr, t, 0.002, 0.01, 0.09, 0.12);
+  s.connect(f).connect(gr).connect(c.destination);
+  s.start(t);
+  s.stop(t + 0.15);
+}
+
+export function quemado() {
+  const c = audioDelKit();
+  if (!c) return;
+  const t = c.currentTime;
+  const s = c.createBufferSource();
+  s.buffer = ruido;
+  const f = c.createBiquadFilter();
+  f.type = 'bandpass';
+  f.Q.value = 2.5;
+  f.frequency.setValueAtTime(2600, t);
+  f.frequency.exponentialRampToValueAtTime(500, t + 0.55);
+  const g = c.createGain();
+  envolvente(g, t, 0.02, 0.18, 0.4, 0.16);
+  s.connect(f).connect(g).connect(c.destination);
+  s.start(t);
+  s.stop(t + 0.7);
+  for (let i = 0; i < 7; i++) {
+    const tc = t + 0.05 + azarSonido.siguiente() * 0.5;
+    const ch = c.createBufferSource();
+    ch.buffer = ruido;
+    const fh = c.createBiquadFilter();
+    fh.type = 'highpass';
+    fh.frequency.value = 3000 + azarSonido.siguiente() * 3000;
+    const gh = c.createGain();
+    envolvente(gh, tc, 0.001, 0.004, 0.02, 0.09);
+    ch.connect(fh).connect(gh).connect(c.destination);
+    ch.start(tc, azarSonido.siguiente());
+    ch.stop(tc + 0.04);
+  }
+}
+
+export function confeti() {
+  const c = audioDelKit();
+  if (!c) return;
+  const t = c.currentTime;
+  const s = c.createBufferSource();
+  s.buffer = ruido;
+  const f = c.createBiquadFilter();
+  f.type = 'highpass';
+  f.frequency.value = 4000;
+  const g = c.createGain();
+  envolvente(g, t, 0.01, 0.05, 0.35, 0.08);
+  s.connect(f).connect(g).connect(c.destination);
+  s.start(t);
+  s.stop(t + 0.5);
+  for (let i = 0; i < 9; i++) {
+    const tc = t + 0.04 + azarSonido.siguiente() * 0.7;
+    const o = c.createOscillator();
+    const go = c.createGain();
+    o.type = 'sine';
+    o.frequency.value = 2200 + azarSonido.siguiente() * 2600;
+    envolvente(go, tc, 0.002, 0.01, 0.16, 0.025);
+    o.connect(go).connect(c.destination);
+    o.start(tc);
+    o.stop(tc + 0.2);
+  }
+}
+
+export function victoriaCeremonia() {
+  const c = audioDelKit();
+  if (!c) return;
+  const t = c.currentTime;
+  const f = c.createBiquadFilter();
+  f.type = 'lowpass';
+  f.frequency.setValueAtTime(900, t);
+  f.frequency.exponentialRampToValueAtTime(3200, t + 0.6);
+  f.connect(c.destination);
+  for (const [i, hz] of [261.63, 329.63, 392, 523.25, 659.25].entries()) {
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = 'sawtooth';
+    o.frequency.value = hz;
+    envolvente(g, t + i * 0.06, 0.03, 0.7, 1.4, 0.03);
+    o.connect(g).connect(f);
+    o.start(t + i * 0.06);
+    o.stop(t + 2.6);
+  }
+}
+
+export function derrotaCeremonia() {
+  const c = audioDelKit();
+  if (!c) return;
+  const t = c.currentTime;
+  const f = c.createBiquadFilter();
+  f.type = 'lowpass';
+  f.frequency.setValueAtTime(1400, t);
+  f.frequency.exponentialRampToValueAtTime(380, t + 1.6);
+  f.connect(c.destination);
+  for (const [i, [hz, hz2]] of [[220, 207.65], [174.61, 164.81]].entries()) {
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(hz, t + i * 0.42);
+    o.frequency.linearRampToValueAtTime(hz2, t + i * 0.42 + 0.9);
+    envolvente(g, t + i * 0.42, 0.05, 0.5, 0.9, 0.04);
+    o.connect(g).connect(f);
+    o.start(t + i * 0.42);
+    o.stop(t + i * 0.42 + 1.6);
+  }
+}
+
+export function flash() {
+  const c = audioDelKit();
+  if (!c) return;
+  const t = c.currentTime;
+  const s = c.createBufferSource();
+  s.buffer = ruido;
+  const f = c.createBiquadFilter();
+  f.type = 'bandpass';
+  f.Q.value = 1.2;
+  f.frequency.setValueAtTime(1200, t);
+  f.frequency.exponentialRampToValueAtTime(9000, t + 0.25);
+  const g = c.createGain();
+  envolvente(g, t, 0.01, 0.04, 0.3, 0.14);
+  s.connect(f).connect(g).connect(c.destination);
+  s.start(t);
+  s.stop(t + 0.4);
+  const o = c.createOscillator();
+  const go = c.createGain();
+  o.type = 'sine';
+  o.frequency.value = 2637;
+  envolvente(go, t + 0.03, 0.003, 0.02, 0.5, 0.04);
+  o.connect(go).connect(c.destination);
+  o.start(t + 0.03);
+  o.stop(t + 0.7);
+}
+
+export function tension(segundos = 3) {
+  const c = audioDelKit();
+  if (!c) return SIN_SONIDO;
+  const t = c.currentTime;
+  const fin = t + Math.max(0.5, segundos);
+  const f = c.createBiquadFilter();
+  f.type = 'lowpass';
+  f.Q.value = 4;
+  f.frequency.setValueAtTime(160, t);
+  f.frequency.exponentialRampToValueAtTime(1500, fin);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.055, fin - 0.08);
+  g.gain.exponentialRampToValueAtTime(0.0001, fin);
+  f.connect(g).connect(c.destination);
+  const fuentes = [];
+  for (const hz of [55, 55.7, 110.4]) {
+    const o = c.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.value = hz;
+    o.connect(f);
+    fuentes.push(o);
+  }
+  // el brillo que trepa (una octava, de La a La)
+  const b = c.createOscillator();
+  const gb = c.createGain();
+  b.type = 'sine';
+  b.frequency.setValueAtTime(440, t);
+  b.frequency.exponentialRampToValueAtTime(880, fin);
+  gb.gain.setValueAtTime(0.0001, t);
+  gb.gain.exponentialRampToValueAtTime(0.018, fin - 0.08);
+  gb.gain.exponentialRampToValueAtTime(0.0001, fin);
+  b.connect(gb).connect(c.destination);
+  fuentes.push(b);
+  for (const o of fuentes) {
+    o.start(t);
+    o.stop(fin + 0.02);
+  }
+  return {
+    parar() {
+      const ahora = c.currentTime;
+      for (const x of [g, gb]) {
+        x.gain.cancelScheduledValues(ahora);
+        x.gain.setTargetAtTime(0.0001, ahora, 0.03);
+      }
+      for (const o of fuentes) {
+        try {
+          o.stop(ahora + 0.15);
+        } catch {
+          /* ya parado */
+        }
+      }
+    },
+  };
+}
+
+export function latido(k = 1) {
+  const c = audioDelKit();
+  if (!c) return;
+  const t = c.currentTime;
+  for (const [i, pico] of [0.3, 0.18].entries()) {
+    const ti = t + i * 0.15;
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(62, ti);
+    o.frequency.exponentialRampToValueAtTime(38, ti + 0.16);
+    envolvente(g, ti, 0.006, 0.02, 0.17, Math.max(0.0002, pico * Math.min(1, k)));
+    o.connect(g).connect(c.destination);
+    o.start(ti);
+    o.stop(ti + 0.24);
+  }
+}
+
+// El `sonido` que reciben el kit (fx/ceremonia.js: clic, ding, golpe,
+// quemado) y las pantallas: los nombres de LINEA.md §4.7. `clic` es el click
+// de siempre.
+export const sonidoFx = Object.freeze({
+  clic: click,
+  ding,
+  golpe,
+  quemado,
+  confeti,
+  victoria: victoriaCeremonia,
+  derrota: derrotaCeremonia,
+  flash,
+  tension,
+  latido,
+});

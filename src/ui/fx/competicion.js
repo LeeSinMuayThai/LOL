@@ -1,0 +1,122 @@
+// LA COMPETICION (PLANUI §4.7; portado de vitrina/fusion/js/competicion.js). Cada pantalla de partido sabe que se juega
+// (la liga de la ficha; el internacional y su clave) y lo dice con la identidad de esa competicion: su logo oficial, su
+// paleta y su motivo. La paleta vive en tokens (--comp-<id>-luz/-contra/-acento, estilos/tokens.css):
+//   luz     la luz del mundo durante el partido (ambiente({ paleta }))
+//   contra  la luz de contra (el filo del campeon)
+//   acento  el acento de la interfaz (el filete, la barra apuntada, la banda de VIDA O MUERTE)
+// De donde sale cada paleta: el color dominante del logo oficial (static.lolesports.com, medido por pixeles) y su motivo
+// conocido. Ningun brand book publico da los hex: donde el logo es blanco, el segundo color es una decision nuestra.
+// Logos: SOLO <img> enlazado (nunca canvas, nunca versionado). Si no carga, o la org es inventada, va el monograma
+// (las iniciales). Es lo que usa transmision.js (el marcador, la cinta). Clases (estilos/fx.css): ln-tv-logo,
+// ln-tv-logo-org | ln-tv-logo-comp, ln-tv-mono. Importarlo no toca el DOM.
+import { el } from './util.js';
+import { logoOrg as logoDeOrg, logoLiga } from './logos.js';
+
+// Las URLs de los logos (equipos y ligas) viven en js/logos.js, la fuente unica de la fusion (PLANUI §4.8: se cierra
+// el pendiente de §4.7, "unificar sus URLs en logos.js"). Aca quedan el id de cada competicion y los tricodes.
+const LIGA_DE_COMP = { worlds: 'mundial', msi: 'msi', firststand: 'first stand', cblol: 'cblol', lec: 'lec', lck: 'lck', lpl: 'lpl', lcs: 'lcs', lcp: 'lcp' };
+export const LOGOS_LIGA = Object.fromEntries(Object.entries(LIGA_DE_COMP).map(([id, k]) => [id, logoLiga(k).src]));
+// `sigla`: el tricode de la transmision (el `code` de la API publica de LoL Esports, getTeams). Las orgs que no estan
+// usan sus iniciales.
+const SIGLAS = {
+  'red canids kalunga': 'RED', 'fluxo w7m': 'FX', 'los grandes': 'LOS', 'pain gaming': 'PAIN', loud: 'LOUD', furia: 'FUR', leviatán: 'LEV',
+  'vivo keyd stars': 'VKS', 'movistar koi': 'MKOI', 'karmine corp': 'KC', 'top esports': 'TES', 'team secret whales': 'TSW', 'ninjas in pyjamas': 'NIP',
+  'ground zero gaming': 'GZ', 'oh my god': 'OMG', giantx: 'GX', 'gen.g': 'GEN', 'dplus kia': 'DK', 'dn soopers': 'DNS', 'shopify rebellion': 'SR',
+  'team liquid': 'TL', flyquest: 'FLY', 'g2 esports': 'G2', fnatic: 'FNC',
+};
+
+// Las competiciones de 2026 (CONCEPTO §12.3: 6 ligas tier-1 y 3 internacionales). `motivo`: lo reconocible de cada una,
+// que la transmision usa como gesto (no se dibuja ningun asset de Riot: el motivo es un patron).
+export const COMPETICIONES = {
+  worlds: { nombre: 'Worlds', largo: 'Campeonato Mundial', motivo: 'la Copa del Invocador: la plata' },
+  msi: { nombre: 'MSI', largo: 'Mid-Season Invitational', motivo: 'el fuego ("ignite the fire within", 2025)' },
+  firststand: { nombre: 'First Stand', largo: 'First Stand', motivo: 'el naranja volt del logo' },
+  cblol: { nombre: 'CBLOL', largo: 'Campeonato Brasileiro', motivo: 'el simbolo blanco hueso y el rojo cromado de su trofeo' },
+  lec: { nombre: 'LEC', largo: 'LoL EMEA Championship', motivo: 'el turquesa' },
+  lck: { nombre: 'LCK', largo: 'LoL Champions Korea', motivo: 'el chevron blanco' },
+  lpl: { nombre: 'LPL', largo: 'LoL Pro League', motivo: 'el rojo' },
+  lcs: { nombre: 'LCS', largo: 'LoL Championship Series', motivo: 'la plata' },
+  lcp: { nombre: 'LCP', largo: 'LoL Championship Pacific', motivo: 'el dorado anaranjado' },
+};
+const DE_LIGA = { CBLOL: 'cblol', LEC: 'lec', LCK: 'lck', LPL: 'lpl', LCS: 'lcs', LCP: 'lcp' };
+const DE_INTERNACIONAL = { mundial: 'worlds', msi: 'msi', firstStand: 'firststand', firststand: 'firststand' };
+const RONDAS = { final: 'La final', semis: 'Semifinal', semifinal: 'Semifinal', cuartos: 'Cuartos de final' };
+
+// Que se juega: { id, nombre, largo, anio, fase, logo, tokens }. `m` es la vista de la pantalla (la forma de las
+// muestras de la vitrina, que son fotos de la vista): { anio, ficha: { jugador: { liga } }, serieEnCurso | acompanante.datos
+// .serie: { ronda }, internacional | acompanante.datos.internacional }. `swiss`: la pantalla es el Swiss del internacional.
+export function competicionDe(m = {}, { swiss = false } = {}) {
+  const it = m.internacional ?? m.acompanante?.datos?.internacional ?? null;
+  let id;
+  let fase;
+  let anio = m.anio;
+  if (swiss && it) {
+    id = DE_INTERNACIONAL[it.clave] ?? 'worlds';
+    anio = it.anio ?? anio;
+    const rec = it.swiss?.record?.[it.jugador];
+    const ronda = rec ? rec.v + rec.d + 1 : null;
+    fase = ronda ? `Swiss · ronda ${ronda}` : 'Swiss';
+  } else {
+    id = DE_LIGA[m.ficha?.jugador?.liga] ?? 'cblol';
+    const se = m.serieEnCurso ?? m.acompanante?.datos?.serie ?? {};
+    fase = RONDAS[se.ronda] ?? 'Playoffs';
+  }
+  const c = COMPETICIONES[id];
+  return {
+    id,
+    nombre: c.nombre,
+    largo: c.largo,
+    anio,
+    fase,
+    logo: LOGOS_LIGA[id] ?? null,
+    tokens: { luz: `--comp-${id}-luz`, contra: `--comp-${id}-contra`, acento: `--comp-${id}-acento` },
+  };
+}
+
+const clave = (nombre) => String(nombre ?? '').trim().toLowerCase();
+// { url, sigla } de una org real (el logo de js/logos.js), o null si la simulacion la invento
+export function equipoReal(nombre) {
+  const src = logoDeOrg(nombre).src;
+  return src ? { url: src, sigla: SIGLAS[clave(nombre)] ?? iniciales(nombre) } : null;
+}
+// las iniciales de una org (para el escudo y la sigla de las inventadas)
+export function iniciales(nombre) {
+  const p = String(nombre ?? '').replace(/[^\p{L}\p{N} ]/gu, ' ').split(/\s+/).filter(Boolean);
+  if (!p.length) return '?';
+  return (p.length === 1 ? p[0].slice(0, 3) : p.slice(0, 3).map((x) => x[0]).join('')).toUpperCase();
+}
+export const siglaDe = (nombre) => equipoReal(nombre)?.sigla ?? iniciales(nombre);
+
+// El logo de una org: el oficial (<img>) o, si no hay o no carga, el escudo-monograma del sistema.
+export function logoOrg(nombre, { clase = '' } = {}) {
+  const real = equipoReal(nombre);
+  const escudo = () => el('span', { class: 'ln-tv-mono', 'aria-hidden': 'true', text: iniciales(nombre) });
+  const caja = el('i', { class: `ln-tv-logo ln-tv-logo-org ${clase}`.trim(), 'aria-hidden': 'true' });
+  if (!real) {
+    caja.append(escudo());
+    return caja;
+  }
+  const img = el('img', { src: real.url, alt: '', decoding: 'async', loading: 'eager', referrerpolicy: 'no-referrer' });
+  img.addEventListener('error', () => img.replaceWith(escudo()), { once: true });
+  caja.append(img);
+  return caja;
+}
+// El logo de la competicion (o su nombre, si no carga).
+export function logoComp(comp, { clase = '' } = {}) {
+  const caja = el('i', { class: `ln-tv-logo ln-tv-logo-comp ${clase}`.trim(), 'aria-hidden': 'true' });
+  if (!comp?.logo) {
+    caja.append(el('span', { class: 'ln-tv-mono', text: comp?.nombre ?? '' }));
+    return caja;
+  }
+  const img = el('img', { src: comp.logo, alt: '', decoding: 'async', loading: 'eager', referrerpolicy: 'no-referrer' });
+  img.addEventListener('error', () => img.replaceWith(el('span', { class: 'ln-tv-mono', text: comp.nombre })), { once: true });
+  caja.append(img);
+  return caja;
+}
+// Las imagenes de una pantalla, para su listo(): resuelve cuando todas cargaron o fallaron (nunca rechaza).
+export function logosListos(raiz) {
+  return Promise.all([...raiz.querySelectorAll('.ln-tv-logo img')].map((i) => (i.complete ? null : new Promise((r) => {
+    i.addEventListener('load', r, { once: true });
+    i.addEventListener('error', r, { once: true });
+  }))));
+}
