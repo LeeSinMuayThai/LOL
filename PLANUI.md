@@ -26,7 +26,7 @@
 | **U0 · intensidad** | Una página con tres variantes de color del campeón (a color, mitad, fondo en duotono y retratos a color) y el espacio "un poco" menos (§4.6) | ✅ 2026-10-09 (`899ed27`, merge `81993d4`); el usuario respondió con capturas (§4.7) |
 | **U0 · opciones** | La serie con la receta de color y el fondo nítido; tres opciones por pantalla para el partido (la competición), la decisión y el mercado (logos reales) (§4.7) | ✅ 2026-10-09 (merges `66c6cc4`, `4c2de5f`, `67764bd`, `94dc50a`); el usuario eligió y combinó (§4.8) |
 | **U0 · demostración final** | Una versión por pantalla (`op=final`): serie con las pantallas del stage, Swiss como stream, decisión B+C, mercado A+C sin campeón de fondo; `final.html` (§4.8) | ✅ 2026-10-10 (merges `b45543c`, `fcd297b`, `5a8c891`, `c0297b7`); el usuario la miró y pidió correcciones (§4.9) |
-| **U0 · una línea** | La mini auditoría y la corrección (`op=linea`): el bitono del inicio como gradación de todo, el segundo tono por contexto, la costura, la ceremonia del LoL, los momentos con beats y la copa en 3D (§4.9) | 🔶 2026-10-10: plan aprobado; ola 1 (kit + momentos) |
+| **U0 · una línea** | La mini auditoría y la corrección (`op=linea`): el bitono del inicio como gradación de todo, el segundo tono por contexto, la costura, la ceremonia del LoL, los momentos con beats y la copa en 3D (§4.9) | ✅ 2026-10-10 (merge `f7b2e7d`: K, M, A, B, C y la unificación); esperando que el usuario mire `final.html` en el 8095 |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
@@ -916,7 +916,55 @@ Pantalla por pantalla:
 **La lección de proceso** (va a `workflows.md`): workers en paralelo por pantalla con libertad creativa producen estilos
 divergentes. El remedio es el kit primero, los conceptos fijados por el supervisor y una pasada de unificación.
 
-**Resultado:** *(pendiente)*
+**Resultado (2026-10-10; merge `f7b2e7d` en `u-integracion`, rama de la ronda `u-linea`).**
+- **Ola 1.**
+  - **K, el kit:**
+    - la política `linea`;
+    - el segundo tono, con 43 orgs medidas de sus logos;
+    - la costura en el shader, con 3 texturas y partida en vertical en el celular;
+    - la ceremonia, la transmisión y 7 sonidos;
+    - el odómetro, que ya no deja ver los dígitos vecinos;
+    - `linea.html`, y `final.html` con `{ op, antes }` y "Las 7 juntas".
+  - **M, los momentos:**
+    - `beats.js`;
+    - la copa por raymarching (perfil en textura, GGX, 30 fps), con su copa SVG de respaldo;
+    - el confeti como función pura del tiempo;
+    - el título, en unos 5 s.
+    - La tabla de copas salió de una investigación:
+      - de plata: Worlds, LEC y LPL;
+      - CBLOL: plata con rojo cromado;
+      - LCS: dorada, en forma de reloj de arena;
+      - el resto, una copa genérica.
+- **Ola 2.**
+  - **A, la transmisión:**
+    - la serie como cara a cara, con 25 números en reposo y cada mapa en 2,4 s de beats;
+    - el Swiss como stream, con `costura.marco` para que el video quede adentro del reproductor.
+  - **B, la decisión:** ¡OFERTA ENCONTRADA! con el aro de 12 s, el portal y la costura CBLOL | LCK.
+  - **C, el mercado y la firma:** "tu segunda selección" (ELEGÍ TU EQUIPO) y el walkout de 4,6 s.
+  - Un límite de uso cortó a A y a B, y se retomaron con su contexto.
+- **Ola 3, la unificación.**
+  - La caída ahora tiene color (`animoConColor`): la saturación de AFUERA pasó de 0,24 a 0,54.
+  - `costura.caras`.
+  - Siete arreglos del kit:
+    - el Enter de `bloquear()`;
+    - los pulsos que se superponen;
+    - el velo del aviso;
+    - `ARO`;
+    - las caras sin WebGL;
+    - `.escudo` acotado;
+    - el ambiente quieto con INST.
+  - El contraste de la franja era un error de medición: el glifo da 13,5:1.
+- **Verificación.**
+  - `verificar.mjs` en verde.
+  - 0 errores de consola y 0 `requestfailed` en todas las combinaciones de pantalla y op, más `webgl=0`, INST,
+    390×844 y `final.html` en el 8095.
+  - Contraste medido por píxeles: ningún texto debajo de 4,5:1.
+  - Sin op, `final` y las opciones de §4.7: dentro del ruido.
+  - `src/` intacto.
+  - La hoja de contactos queda en `vitrina/referencia/linea/hoja-de-contactos.jpg`.
+- **Lo que queda.**
+  - En 1280×720, las caras de la costura de la decisión quedan chicas.
+  - Nadie vio el movimiento en vivo en la GPU de un usuario. La excepción es la costura, que K midió con una RTX 2060.
 
 ---
 

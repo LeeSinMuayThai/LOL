@@ -34,6 +34,60 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-10 — PLANUI, U0: "una línea", la mini auditoría y la corrección de la demostración final (PLANUI §4.9)
+
+**Por qué.** El usuario miró la demostración final (`op=final`, §4.8) y la reacción en frío, textual, fue: *"siento que
+son como varios estilos distintos en el mismo juego"*. Sobre la serie: *"el stage se ve muy falso… todo negro y dorado
+lo hace muy aburrido"*. Sobre la firma: *"muy basica y simple"*. Del título: *"se podria poner la copa"*.
+- La auditoría encontró la causa: tres workers en paralelo, uno por pantalla, habían inventado cada uno su escenario
+  (un estadio de CSS, un skyline SVG, una planilla de aeropuerto), y el arte había desaparecido de cinco de las siete
+  pantallas.
+- Dos respuestas del usuario fijaron el rumbo: la serie es un **cara a cara** (el motor solo simula dos campeones por
+  mapa) y en los momentos van *"los campeones con 70% de su color real"*.
+
+**Qué se hizo** (`op=linea` en la vitrina; `src/` intacto). Las 8 reglas y las interfaces están en
+`vitrina/fusion/LINEA.md`.
+- **El kit:**
+  - la política de color `linea`: inicio 100% bitono, pantallas al 65/60% de color y momentos al 70%;
+  - el segundo tono por contexto: era, destino, competición, org (43 medidas de sus logos) u oro;
+  - la costura en el shader, la ceremonia del LoL (el aviso de aceptar, BLOQUEAR, VICTORIA/DERROTA, el quemado), la
+    gráfica de transmisión y los sonidos sintetizados.
+- **Los momentos:**
+  - `beats.js`;
+  - la copa en 3D por raymarching, con la tabla de copas reales investigada (la de Worlds es de plata; la del CBLOL,
+    plata con rojo cromado);
+  - el confeti y el título como "levantar la copa".
+- **La serie:** el cara a cara, con cada mapa como secuencia (cartas de carga, VICTORIA/DERROTA, pip, quemado).
+- **El Swiss:** un stream con el video en costura, la predicción con el número del motor, el chat vivo con emotes
+  propios y AFUERA con beats.
+- **La decisión:** ¡OFERTA ENCONTRADA!, que al aceptarla abre la costura CBLOL | LCK.
+- **El mercado:** "tu segunda selección": tu main en el bitono de la org apuntada, y FIRMAR = BLOQUEAR.
+- **La firma:** el walkout de 4,6 s.
+- **La unificación:**
+  - AFUERA y el cierre de la serie a color (la caída se cuenta con la luz);
+  - las caras de la costura visibles;
+  - siete arreglos del kit.
+
+**Cómo** (WF-012):
+- El supervisor dejó el andamio y el contrato antes de empezar.
+- **Ola 1:** K (el kit) y M (los momentos).
+- **Ola 2:** A (la serie y el Swiss), B (la decisión) y C (el mercado y la firma). Un límite de uso cortó a A y a B a
+  mitad de camino; se retomaron con su contexto, sin rehacer nada.
+- **Ola 3:** la hoja de contactos y un unificador.
+- Son 6 workers Opus xhigh y 0 conflictos de merge.
+
+**Medido:**
+- `verificar.mjs` en verde;
+- 0 errores de consola y 0 `requestfailed` en todas las combinaciones pantalla × (sin op, `final`, `linea`), más
+  `webgl=0`, INST, 390×844 y `final.html` servido en el 8095;
+- contraste por píxeles sin textos debajo de 4,5:1 (unos 5800 textos medidos entre los seis workers);
+- la costura y la copa a 30 fps, el tope (la costura con GPU real; la copa en swiftshader);
+- sin op, `final` y las ops de §4.7 dentro del ruido de dos corridas del mismo código;
+- la serie muestra 25 números en reposo (antes rondaba el tope de 45).
+
+**Queda:** el usuario mira `final.html` en el 8095 (`0` compara contra la versión que criticó). Si la aprueba, se cierran
+PLANUI §5, §8 y §11 y viene la compuerta 2. En 1280×720 las caras de la costura de la decisión quedan chicas.
+
 ### 2026-10-09 — PLANUI, U0: la vitrina, ronda 1 (tres direcciones de arte) y la compuerta 1
 
 **Por qué.** Es el tercer plan de UI. El usuario dijo que los dos anteriores *"terminaron muy parecidos… los diseños eran
