@@ -858,3 +858,214 @@ html:is([data-reducido], [data-inst]) :is(.mk-telon, .mk-tablero) { transition: 
   .ms-fm-glifo { width: 84px; height: 84px; }
   .ms-fm-intro { gap: 32px; }
 }
+
+/* ======================================================================================================================
+   PLANUI §4.10 · E: LA LLEGADA (el reloj de la ventana y las ofertas que caen) y LA DERECHA SIN CAMPEON (var=camiseta,
+   plantel, ofertas). Prefijo ms-. Colores: el tono del mundo (--tono-*, la org apuntada o la era) y, en cada pieza de
+   una org, sus tokens (--h-luz/-contra/-acento/-noche, que js/mercado.js pone con nombres de token).
+   ==================================================================================================================== */
+/* la grilla le deja lugar a la derecha */
+.ms-mercado[data-heroe] .ms-panel { grid-column: 1 / span 8; }
+
+/* ---------- el reloj de la ventana, en la cabeza del panel ---------- */
+.ms-cab-der { display: grid; justify-items: end; gap: 12px; flex: none; }
+.ms-reloj { display: grid; justify-items: end; gap: 7px; }
+.ms-reloj-k { display: flex; gap: 10px; margin: 0; font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.ms-reloj-de { color: color-mix(in oklab, var(--ink-dim) 60%, var(--ink)); }
+.ms-reloj-fila { display: flex; align-items: center; gap: 12px; }
+.ms-reloj-dia { display: flex; align-items: baseline; gap: 6px; margin: 0; font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: color-mix(in oklab, var(--ink-dim) 60%, var(--ink)); }
+.ms-reloj-n { min-width: 2ch; font: 900 30px / 0.9 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--ink); }
+.ms-reloj-dias { display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.ms-reloj-d { position: relative; width: var(--ms-reloj-celda); height: var(--ms-reloj-celda-alto); border-radius: 2px; box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+.ms-reloj-d.pasado { background: var(--luz-tenue); box-shadow: inset 0 0 0 1px var(--filete); }
+.ms-reloj-d.hoy { background: var(--luz-suave); box-shadow: inset 0 0 0 1px var(--tono-acento), 0 0 10px var(--luz-fuerte); }
+.ms-reloj-marca { position: absolute; left: 2px; right: 2px; bottom: 2px; height: 5px; border-radius: 1px; opacity: 0; background: var(--ms-acento); box-shadow: 0 0 8px var(--ms-acento); }
+.ms-reloj-marca.llego { opacity: 1; }
+.ms-reloj-ult { display: flex; align-items: center; gap: 6px; min-height: 16px; margin: 0; font: 500 12px / 1 var(--f-cuerpo); color: color-mix(in oklab, var(--ink-dim) 60%, var(--ink)); }
+.ms-reloj-ult b { font-weight: 700; color: var(--ink); }
+.ms-reloj-ult .logo { --logo-tam: 16px; }
+
+/* ---------- la llegada en la grilla: el lugar que todavia espera, y el polvo del golpe ---------- */
+.ms-op[data-llego='0'] { cursor: default; }
+.ms-op[data-llego='0']:hover { transform: none; }
+.ms-op-polvo {
+  position: absolute; left: 16%; right: 16%; top: 80px; z-index: 2; height: 12px; border-radius: 50%; pointer-events: none; opacity: 0;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ms-acento) 75%, transparent), color-mix(in srgb, var(--ms-acento) 0%, transparent));
+}
+
+/* ---------- la derecha: el heroe, quieto en su columna mientras la pagina baja ---------- */
+.ms-heroe {
+  position: sticky; top: calc(var(--franja-alto) + 20px); z-index: 0; grid-column: 8 / span 5; grid-row: 1 / span 3; align-self: start;
+  height: var(--ms-heroe-alto); min-width: 0; pointer-events: none;
+}
+.ms-heroe-in { position: relative; width: 100%; height: 100%; }
+/* los colores de una pieza de org (js/mercado.js los pone con los tokens de la org); por defecto, los del tono del mundo */
+.ms-heroe { --h-luz: var(--tono-luz); --h-contra: var(--tono-contra); --h-acento: var(--tono-acento); --h-noche: var(--tono-noche); }
+
+/* ---------- camiseta: la tela en capas (color plano, luz multiply, brillo screen) bajo la luz del mundo ---------- */
+.ms-h-camiseta { display: grid; grid-template-rows: minmax(0, 1fr) auto; justify-items: center; align-items: center; gap: 14px; }
+.ms-h-camiseta::before {
+  content: ''; position: absolute; left: -14%; right: -14%; top: -6%; bottom: 4%; z-index: -1; pointer-events: none;
+  background: radial-gradient(50% 46% at 50% 42%, color-mix(in srgb, var(--tono-luz) 20%, transparent), color-mix(in srgb, var(--tono-luz) 0%, transparent) 72%);
+}
+.ms-cam { position: relative; isolation: isolate; width: min(100%, calc((var(--ms-heroe-alto) - 80px) * 0.909)); aspect-ratio: 600 / 660; transform-origin: 50% 4%; will-change: transform; }
+.ms-cam > svg, .ms-cam-capas, .ms-cam-capa, .ms-cam-capa > svg, .ms-cam-barridos { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ms-cam-sombra { filter: blur(18px); opacity: 0.75; transform: translate(2%, 4%); }
+.ms-cam-sombra path { fill: var(--oscuro-total); }
+.ms-cam-luz { mix-blend-mode: multiply; }
+.ms-cam-brillo { mix-blend-mode: screen; opacity: 0.42; }
+.ms-cam-barridos { mix-blend-mode: screen; }
+.ms-cam-barrido { position: absolute; inset: 0; opacity: 0; background: linear-gradient(105deg, color-mix(in srgb, var(--ms-luz) 0%, transparent) 30%, color-mix(in srgb, var(--ms-luz) 62%, transparent) 50%, color-mix(in srgb, var(--ms-luz) 0%, transparent) 70%); }
+.ms-cam-base { fill: var(--ms-cam-gris); }
+.ms-cam-cresta { fill: none; stroke: var(--luz-blanca); stroke-linecap: round; }
+.ms-cam-valle { fill: none; stroke: var(--oscuro-total); stroke-linecap: round; }
+.ms-cam-difusa { lighting-color: var(--luz-blanca); }
+.ms-cam-especular { lighting-color: color-mix(in srgb, var(--luz-blanca) 72%, var(--tono-luz)); }
+.ms-cam-sombra-stop { stop-color: var(--oscuro-total); }
+.ms-cam-filo { fill: none; stroke: var(--tono-luz); stroke-width: 8; opacity: 0.5; }
+/* el color: cada capa trae los tokens de su org (o los de la era: tu camiseta sin club, apagada) */
+.ms-cam-capa { --h-cuerpo: color-mix(in oklab, var(--h-noche) 92%, var(--h-luz)); --h-manga: color-mix(in oklab, var(--h-noche) 87%, var(--h-luz)); --h-vivo: var(--h-luz); --h-tinta: var(--h-luz); --h-borde: var(--h-contra); }
+.ms-cam-capa[data-reposo] {
+  --h-cuerpo: color-mix(in oklab, var(--h-noche) 80%, var(--ink-mute)); --h-manga: color-mix(in oklab, var(--h-noche) 75%, var(--ink-mute));
+  --h-vivo: color-mix(in oklab, var(--ink-mute) 55%, var(--h-noche)); --h-tinta: color-mix(in oklab, var(--ink) 80%, var(--h-noche)); --h-borde: color-mix(in oklab, var(--ink-mute) 45%, var(--h-noche));
+}
+.ms-cam-cuerpo { fill: var(--h-cuerpo); }
+.ms-cam-manga { fill: var(--h-manga); }
+.ms-cam-interior { fill: color-mix(in oklab, var(--h-noche) 45%, var(--oscuro-total)); }
+.ms-cam-vivo { fill: var(--h-vivo); }
+.ms-cam-lat-a { stop-color: var(--h-vivo); }
+.ms-cam-lat-b { stop-color: var(--h-vivo); stop-opacity: 0.5; }
+.ms-cam-esq-a { stop-color: var(--h-luz); stop-opacity: 0.16; }
+.ms-cam-esq-b { stop-color: var(--h-luz); stop-opacity: 0; }
+.ms-cam-nombre { font: 800 38px / 1 var(--f-display); font-stretch: 125%; letter-spacing: 8px; fill: var(--h-tinta); }
+.ms-cam-num { font: 900 232px / 1 var(--f-display); font-stretch: 78%; letter-spacing: 2px; }
+.ms-cam-num-borde { fill: none; stroke: var(--h-borde); stroke-width: 14px; stroke-linejoin: round; }
+.ms-cam-num-hueco { fill: none; stroke: var(--h-cuerpo); stroke-width: 6px; stroke-linejoin: round; }
+.ms-cam-num-tinta { fill: var(--h-tinta); }
+.ms-cam-escudo, .ms-cam-parche { position: absolute; z-index: 1; display: grid; place-items: center; aspect-ratio: 1; translate: -50% -50%; }
+.ms-cam-escudo { left: 50%; top: 13.6%; width: 6.6%; }
+.ms-cam-parche { left: 17.8%; top: 26.6%; width: 6.2%; rotate: -14deg; filter: saturate(0.85) brightness(0.92); }
+.ms-cam-escudo .logo, .ms-cam-parche .logo { width: 100%; height: 100%; }
+.ms-cam-escudo .logo img, .ms-cam-parche .logo img { width: 100%; height: 100%; object-fit: contain; }
+.ms-cam-escudo .escudo-forma { fill: var(--h-noche); stroke: var(--h-acento); }
+.ms-cam-pie { display: grid; justify-items: center; gap: 6px; text-align: center; }
+.ms-cam-pie-k { display: inline-flex; align-items: center; gap: 8px; margin: 0; font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.ms-cam-pie-t { margin: 0; font: 500 13px / 1.2 var(--f-cuerpo); color: color-mix(in oklab, var(--ink-dim) 60%, var(--ink)); }
+.ms-cam-pie-t b { font-weight: 700; color: var(--ink); }
+
+/* ---------- plantel: la formacion en la Grieta, tu lugar iluminado ---------- */
+.ms-h-plantel { display: grid; grid-template-rows: auto minmax(0, 1fr); justify-items: center; align-content: start; gap: 22px; padding-top: 4px; }
+.ms-pl-cabs { display: grid; width: 100%; justify-items: center; }
+.ms-pl-cab { grid-area: 1 / 1; display: grid; justify-items: center; gap: 8px; text-align: center; }
+.ms-pl-k { display: inline-flex; align-items: center; gap: 8px; margin: 0; font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.ms-pl-org { max-width: 100%; margin: 0; overflow-wrap: anywhere; text-wrap: balance; font: 800 var(--ms-pl-org) / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.03em; color: var(--ink); }
+.ms-pl-mapa { position: relative; width: min(100%, calc(var(--ms-heroe-alto) - 150px)); aspect-ratio: 1; }
+.ms-pl-marcas { position: absolute; inset: 10%; display: grid; }
+.ms-pl-marca { grid-area: 1 / 1; display: grid; place-items: center; opacity: 0.18; }
+.ms-pl-marca .logo { width: 100%; height: 100%; }
+.ms-pl-marca .logo img { width: 100%; height: 100%; object-fit: contain; }
+.ms-pl-marca > .escudo { width: 40%; height: 46%; }
+.ms-pl-marca > .escudo .escudo-forma { fill: none; stroke: var(--luz-fuerte); stroke-width: 0.6; stroke-dasharray: 2 2; }
+.ms-pl-marca > .escudo .escudo-canto { display: none; }
+.ms-pl-marca .escudo-ini { display: none; }
+.ms-pl-grieta { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.ms-pl-borde { stroke: var(--filete); stroke-width: 0.1; transition: stroke 380ms ease; }
+.ms-pl-rio { stroke: var(--tono-luz); stroke-width: 1.1; opacity: 0.1; transition: stroke 380ms ease; }
+.ms-pl-carril { stroke: var(--linea-fuerte); stroke-width: 0.2; }
+.ms-pl-carril-vos { stroke: var(--tono-acento); stroke-width: 0.26; opacity: 0.8; transition: stroke 380ms ease; }
+.ms-pl-base { stroke: var(--filete); stroke-width: 0.14; }
+.ms-pl-pos { position: absolute; z-index: 1; display: grid; justify-items: center; gap: 7px; translate: -50% -22px; text-align: center; }
+.ms-pl-nodo { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--panel-hondo); box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+.ms-pl-glifo { width: 24px; height: 24px; }
+.ms-pl-glifo .carril { stroke: var(--ink-dim); }
+.ms-pl-txt { display: grid; justify-items: center; gap: 4px; padding: 5px 8px; border-radius: var(--r-control); background: color-mix(in srgb, var(--tono-vacio) 74%, transparent); }
+.ms-pl-rol { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink); }
+.ms-pl-quien { font: 500 11px / 1 var(--f-mono); letter-spacing: 0.06em; color: var(--ink-dim); }
+.ms-pl-vos { z-index: 2; translate: -50% -48px; }
+.ms-pl-vos .ms-pl-nodo { width: 96px; height: 96px; background: color-mix(in srgb, var(--tono-luz) 14%, var(--panel-hondo)); box-shadow: inset 0 0 0 2px var(--tono-acento), 0 0 34px color-mix(in srgb, var(--tono-luz) 50%, transparent); transition: box-shadow 380ms ease, background-color 380ms ease; }
+.ms-pl-vos .ms-pl-glifo { width: 50px; height: 50px; }
+.ms-pl-vos .ms-pl-glifo .carril { stroke: var(--tono-acento); transition: stroke 380ms ease; }
+.ms-pl-halo { position: absolute; inset: -14px; border-radius: 50%; box-shadow: 0 0 0 1px color-mix(in srgb, var(--tono-acento) 50%, transparent); animation: ms-pl-respira 3200ms ease-in-out infinite; }
+@keyframes ms-pl-respira { 50% { transform: scale(1.08); opacity: 0.45; } }
+.ms-pl-vos .ms-pl-rol { color: var(--luz-texto); }
+.ms-pl-handle { white-space: nowrap; font: 900 var(--ms-pl-handle) / 0.9 var(--f-display); font-size: min(var(--ms-pl-handle), calc(var(--ms-pl-handle-ancho) / (var(--ms-n, 8) * 0.62))); font-stretch: var(--ancho-momento); letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink); text-shadow: 0 0 30px color-mix(in srgb, var(--tono-luz) 45%, transparent); }
+.ms-pl-hoy { max-width: 24ch; font: 500 12.5px / 1.3 var(--f-cuerpo); color: color-mix(in oklab, var(--ink-dim) 50%, var(--ink)); }
+.ms-pl-pings { position: absolute; z-index: 1; width: 0; height: 0; }
+.ms-pl-ping { position: absolute; left: 0; top: 0; width: 96px; height: 96px; border-radius: 50%; opacity: 0; transform: translate(-50%, -50%); box-shadow: 0 0 0 3px var(--ms-acento), 0 0 22px var(--ms-acento); }
+
+/* ---------- ofertas: las cartas formales, en pila ---------- */
+.ms-h-ofertas { display: grid; place-items: center end; padding-right: 3%; }
+.ms-cartas { position: relative; height: min(var(--ms-carta-alto), calc(var(--ms-heroe-alto) - 50px)); aspect-ratio: 0.74; max-width: 86%; }
+.ms-cartas-bandeja { position: absolute; inset: 0; opacity: 0; display: grid; place-items: end center; padding-bottom: 20px; border: 1px dashed var(--linea-fuerte); border-radius: 6px; }
+.ms-cartas-bandeja span { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.ms-carta {
+  position: absolute; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; border-radius: 4px; transform-origin: 50% 60%;
+  background: linear-gradient(172deg, color-mix(in srgb, var(--tono-luz) 9%, transparent), color-mix(in srgb, var(--oscuro-total) 0%, transparent) 38%, color-mix(in srgb, var(--oscuro-total) 14%, transparent)), var(--ms-papel);
+  box-shadow: inset 0 -1px 0 var(--ms-papel-canto), 0 22px 46px var(--sombra), 0 3px 8px var(--sombra);
+  color: var(--ms-tinta-papel);
+  --ms-sello: color-mix(in oklab, var(--h-luz) 28%, var(--ms-tinta-papel));
+}
+.ms-carta.al-frente { box-shadow: inset 0 -1px 0 var(--ms-papel-canto), 0 30px 60px var(--sombra), 0 0 0 1px color-mix(in srgb, var(--h-acento) 40%, transparent), 0 0 40px color-mix(in srgb, var(--h-luz) 22%, transparent); }
+.ms-carta-membrete {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px 16px;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--h-noche) 86%, var(--h-luz)), var(--h-noche)); box-shadow: inset 0 -3px 0 var(--h-acento);
+}
+.ms-carta-escudo { display: grid; place-items: center; width: 44px; height: 44px; }
+.ms-carta-escudo .escudo-forma { fill: var(--h-noche); stroke: var(--h-acento); }
+.ms-carta-quien { display: grid; gap: 5px; min-width: 0; }
+.ms-carta-org { overflow: hidden; font: 800 18px / 1.05 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.02em; white-space: nowrap; text-overflow: ellipsis; color: var(--ink); }
+.ms-carta-liga { display: inline-flex; align-items: center; gap: 5px; font: 500 10px / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); }
+.ms-carta-dia { align-self: start; font: 600 10px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); }
+.ms-carta-cuerpo { display: flex; flex-direction: column; gap: 10px; min-height: 0; padding: 18px 20px 16px; }
+.ms-carta-k { margin: 0; font: 600 10.5px / 1.2 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ms-tinta-papel-suave); }
+.ms-carta-para { margin: 0; font: 500 14px / 1.3 var(--f-cuerpo); color: var(--ms-tinta-papel); }
+.ms-carta-para b { font-weight: 700; }
+.ms-carta-texto { margin: 0; font: 400 13.5px / 1.45 var(--f-cuerpo); color: var(--ms-tinta-papel); }
+.ms-carta-terminos { display: grid; margin: 4px 0 0; border-top: 1px solid color-mix(in srgb, var(--ms-tinta-papel) 18%, transparent); }
+.ms-carta-fila { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid color-mix(in srgb, var(--ms-tinta-papel) 12%, transparent); }
+.ms-carta-fila dt { font: 600 10px / 1.3 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ms-tinta-papel-suave); }
+.ms-carta-fila dd { margin: 0; font: 700 13px / 1.3 var(--f-cuerpo); font-variant-numeric: tabular-nums; text-align: right; color: var(--ms-tinta-papel); }
+.ms-carta-pie { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 10px; }
+.ms-carta-firma { display: grid; flex: 1; gap: 6px; max-width: 150px; }
+.ms-carta-firma i { display: block; height: 1px; background: color-mix(in srgb, var(--ms-tinta-papel) 45%, transparent); }
+.ms-carta-firma span { font: 500 10px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ms-tinta-papel-suave); }
+.ms-carta-sello { display: block; width: 84px; height: 84px; rotate: -12deg; mix-blend-mode: multiply; }
+.ms-carta-anillo { width: 100%; height: 100%; overflow: visible; }
+.ms-carta-aro { fill: none; stroke: var(--ms-sello); stroke-width: 1.6; }
+.ms-carta-sello-txt { font: 700 8.6px / 1 var(--f-mono); letter-spacing: 1.2px; fill: var(--ms-sello); }
+.ms-carta-sello-ini { font: 900 22px / 1 var(--f-display); font-stretch: var(--ancho-momento); fill: var(--ms-sello); }
+.ms-carta-firmada {
+  position: absolute; right: 18px; top: 46%; z-index: 3; padding: 8px 14px; border-radius: 4px; rotate: -9deg; mix-blend-mode: multiply;
+  box-shadow: inset 0 0 0 3px var(--ms-sello); font: 900 26px / 1 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ms-sello);
+}
+
+html:is([data-reducido], [data-inst]) .ms-pl-halo { animation: none; }
+html:is([data-reducido], [data-inst]) :is(.ms-pl-borde, .ms-pl-rio, .ms-pl-carril-vos, .ms-pl-vos .ms-pl-nodo, .ms-pl-vos .ms-pl-glifo .carril) { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ms-pl-halo { animation: none; }
+  :is(.ms-pl-borde, .ms-pl-rio, .ms-pl-carril-vos, .ms-pl-vos .ms-pl-nodo, .ms-pl-vos .ms-pl-glifo .carril) { transition: none; }
+}
+
+@media (max-width: 640px) {
+  .ms-cab-der, .ms-reloj { justify-items: start; }
+  .ms-cab-der { margin-top: 12px; }
+  .ms-mercado[data-heroe] .ms-heroe { position: relative; top: auto; height: var(--ms-heroe-cel); margin: 0 0 16px; }
+  .ms-h-camiseta { gap: 8px; }
+  .ms-cam { width: auto; height: calc(var(--ms-heroe-cel) - 34px); }
+  .ms-h-camiseta::before { left: 0; right: 0; }
+  .ms-cam-pie-t { display: none; }
+  .ms-h-plantel { gap: 8px; }
+  .ms-pl-cab { gap: 4px; }
+  .ms-pl-org { font-size: 20px; }
+  .ms-pl-mapa { width: calc(var(--ms-heroe-cel) - 62px); }
+  .ms-pl-quien, .ms-pl-hoy { display: none; }
+  .ms-pl-pos { gap: 4px; translate: -50% -16px; }
+  .ms-pl-nodo { width: 32px; height: 32px; }
+  .ms-pl-glifo { width: 18px; height: 18px; }
+  .ms-pl-vos { translate: -50% -30px; }
+  .ms-pl-vos .ms-pl-nodo, .ms-pl-ping { width: 60px; height: 60px; }
+  .ms-pl-vos .ms-pl-glifo { width: 32px; height: 32px; }
+  .ms-pl-handle { font-size: min(24px, calc(var(--ms-pl-handle-ancho-cel) / (var(--ms-n, 8) * 0.62))); }
+  .ms-h-ofertas { place-items: center; padding-right: 0; }
+  .ms-cartas { zoom: 0.44; height: var(--ms-carta-alto); max-width: none; }
+}

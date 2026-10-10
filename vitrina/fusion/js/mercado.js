@@ -10,7 +10,7 @@
 import { el, svg, entrar, animar, esperar, lineasConMascara, primeraOracion, num, reducido, inst, celular, odometro, plegar, EXPO, DUR } from './util.js';
 import { icono, glifoRol } from './iconos.js';
 import { franja, trayectoria, cuartos } from './marco.js';
-import { pintarLogo, tonoOrg, logoOrg, escudo } from './logos.js';
+import { pintarLogo, tonoOrg, logoOrg, escudo, iniciales } from './logos.js';
 import { crearAzar } from '../../comun/azar.js';
 import { cargarImagen, urlCentrada } from '../../comun/arte.js';
 // PLANUI §4.9 (op=linea): el kit de la linea (K) y los momentos (M), sin cambiarlos
@@ -1632,12 +1632,12 @@ function crearFirmaFinal({ datos, muestra, amb, sonido, peor }) {
 // atras", sino algo que "represente mas lo del fichaje".
 // `op=linea`, EL MERCADO ES TU SEGUNDA SELECCION. A los 15 elegiste tus campeones; ahora elegis tu equipo, con el mismo
 // gesto del inicio:
-//   - la entrada (beats.js, 2,4 s, Espacio salta): el bumper VENTANA DE PASES ABIERTA se cierra en una linea de luz, y de
-//     esa linea caen las ofertas, de a una, a la grilla de escudos (cada una con su "ding" y el borde encendido en el
-//     acento de su org);
-//   - apuntar una org (mouse, foco, 1-6) es el aura: el mundo cruza a su tono (ambiente({ paleta, cruce })) y TU MAIN
-//     (no un campeon cualquiera) queda en su bitono: "imaginate en LOUD". Encima, el logo monumental, el nombre gigante y
-//     los terminos como numeros grandes con referente. Sin apuntar, el reposo en el tono de la era: vos en el mercado;
+//   - la entrada es LA LLEGADA de §4.10 (beats.js, <= 6 s, Espacio salta; ver T_LL): el bumper VENTANA DE PASES ABIERTA,
+//     el reloj de la ventana que corre los dias y cada oferta que cae a la grilla en el suyo;
+//   - apuntar una org (mouse, foco, 1-6) es el aura: el mundo cruza a su tono (ambiente({ paleta, cruce })) y la derecha
+//     (§4.10: la camiseta, el plantel o la carta; con var=campeon, TU MAIN en su bitono) cruza a esa org. Encima, el logo
+//     monumental, el nombre gigante y los terminos como numeros grandes con referente. Sin apuntar, el reposo en el tono
+//     de la era: vos en el mercado;
 //   - la comparacion es la grilla (cada escudo con sus barras de sueldo y jerarquia) y el detalle va al inspector: los
 //     numeros grandes estan una sola vez, en el aura;
 //   - FIRMAR es el BLOQUEAR del inicio (ceremonia.js): el contrato sube, la firma se traza y cae el sello. Con LOUD (la
@@ -1645,14 +1645,7 @@ function crearFirmaFinal({ datos, muestra, amb, sonido, peor }) {
 //   - "Mientras tanto" (los fichajes del resto del mundo) es la cinta de la transmision, abajo.
 // Todo lo que se mueve en la entrada y en la firma va por UN reloj (beats.js): congelar(t) es fiel.
 const T_MS = {
-  duracion: 2400, asentarse: 2300,
-  bumperDur: 1000, abre: 0.26, cierra: 0.7, // la banda se abre, se sostiene y se cierra en una linea (fracciones)
-  linea: 940, lineaFin: 2100, // la linea de luz que queda de la banda (de aca caen las ofertas) y cuando se apaga
-  panel: 180, panelDur: 460,
-  llega: 760, llegaPaso: 215, llegaDur: 420, toca: 0.62, // las ofertas caen de la linea a su lugar de la grilla
-  borde: 620, // el borde encendido en el acento de la org, que se asienta
-  reposo: 1880, // el aura en reposo (vos en el mercado: ELEGI TU EQUIPO) entra cuando ya llegaron las ofertas
-  cinta: 1950,
+  borde: 620, // el borde encendido en el acento de la org cuando cae su oferta, que se asienta
   aura: 120, vuelta: 600, cruce: 350, // el aura de las orgs: entra a los 120 ms, vuelve a los 600, el mundo cruza en 350
 };
 const T_FIRMAR = {
@@ -1716,14 +1709,427 @@ function terminosDe(x, yo, valor) {
   ].filter(Boolean);
 }
 const terminoNodo = (t) =>
-  el('div', { class: 'ms-termino' }, [
+  el('div', { class: 'ms-termino', 'data-t': t.id ?? null }, [
     el('dt', { class: 'ms-termino-k', text: t.k }),
     el('dd', { class: 'ms-termino-v' }, [el('b', { class: 'ms-num', text: t.n }), t.u ? el('span', { class: 'ms-unidad', text: t.u }) : null]),
     t.ref ? el('dd', { class: 'ms-ref', text: t.ref }) : null,
   ]);
 
+// ================================================================================================= §4.10 (E): la llegada y la derecha
+// PLANUI §4.10, el usuario: "que te van llegando las ofertas… momento por momento" y "no es representativo de elegir un
+// equipo que esté el campeón atrás". Dos cosas sobre el mercado de §4.9 (la grilla, la comparacion y FIRMAR quedan):
+//   1. LA LLEGADA: la ventana de pases como tiempo que pasa. Un reloj de VENTANA_DIAS dias avanza y cada oferta CAE a su
+//      lugar en su dia (cae, toca con un golpe sordo, rebota y se asienta), con su aviso (el ding del kit) y el color de
+//      su org. El orden y los dias salen de los datos (diasDeLlegada). La pantalla se usa mientras llegan (las que ya
+//      estan se apuntan y se eligen); Espacio, un clic afuera o elegir una que no llego: llegan todas.
+//   2. LA DERECHA (var=): algo que diga "estas fichando con un equipo", sin campeon. El heroe cambia con la org apuntada
+//      (un cruce, no un corte) y la luz del mundo cruza a su tono, como siempre:
+//        camiseta (sin var): tu camiseta de espaldas, con tu handle y tu dorsal, en los colores de la org y su escudo;
+//        plantel: la formacion de la org en la Grieta, con tu lugar esperandote;
+//        ofertas: las ofertas como cartas formales que se apilan al llegar; apuntar una la trae al frente.
+//      var=campeon deja la derecha de §4.9 (tu main) para comparar.
+const VARIANTES_MS = ['camiseta', 'plantel', 'ofertas', 'campeon'];
+const VENTANA_DIAS = 14;
+const T_LL = {
+  bumperDur: 800, abre: 0.3, cierra: 0.72,
+  panel: 160, panelDur: 460,
+  heroe: 200, heroeDur: 900,
+  reloj: 760, // el dia 1 de la ventana
+  dia: 335, // ms por dia: una llegada por dia como mucho, y >= la separacion de destellos de beats.js (334)
+  cae: 280, // del aviso (el ding) al golpe
+  asienta: 340, // del golpe al reposo (el rebote)
+  final: 20, // lo que espera el reloj despues de que se asienta la ultima
+  cola: 200, // de asentarse al final del reloj
+  caidaMax: 230, // px que cae una oferta en la grilla (desde arriba de su lugar), tope
+  caidaSobre: 70, // y cuanto por encima del borde del panel arranca
+  reposo: 880, cinta: 1150,
+  cruceHeroe: 380, // el cruce del heroe al apuntar otra org
+};
+const LLEGADA_PESO = { min: 0.7, max: 1.3 }; // el peso de cada salto entre dias (PRNG decorativo, sembrado por los datos)
+
+// El dia de la ventana en que llega cada oferta (por indice de la grilla) y el orden de llegada. El orden sale de los
+// datos: los clubes chicos (tier mas alto en numero) se mueven primero y, en su tier, de menor a mayor sueldo; el bombazo
+// cierra la ventana. Los saltos entre dias, del PRNG decorativo sembrado con la seed de la muestra y las orgs: el mismo
+// calendario en cada visita y en cada captura. La ultima llega el dia VENTANA_DIAS - 1.
+function diasDeLlegada(ofertas, semilla) {
+  const orden = ofertas.map((_, i) => i).sort((a, b) => {
+    const A = ofertas[a];
+    const B = ofertas[b];
+    return (A.tag === 'bombazo') - (B.tag === 'bombazo') || (B.tier ?? 0) - (A.tier ?? 0) || sueldoDe(A) - sueldoDe(B) || a - b;
+  });
+  const dias = ofertas.map(() => 1);
+  if (ofertas.length < 2) return { dias, orden };
+  const azar = crearAzar(`ventana|${semilla}|${ofertas.map((o) => o.org).join('|')}`);
+  const pesos = orden.slice(1).map(() => azar.entre(LLEGADA_PESO.min, LLEGADA_PESO.max));
+  const total = pesos.reduce((a, b) => a + b, 0);
+  const tramo = VENTANA_DIAS - 2;
+  let acum = 0;
+  let previo = 1;
+  orden.forEach((i, k) => {
+    if (!k) return;
+    acum += pesos[k - 1];
+    previo = Math.min(VENTANA_DIAS - 1, Math.max(previo + 1, 1 + Math.round((acum / total) * tramo)));
+    dias[i] = previo;
+  });
+  return { dias, orden };
+}
+
+// El dorsal: los digitos del final del handle (Elurah89 -> 89); si no tiene, uno del PRNG decorativo sembrado con el handle.
+const DORSAL = { min: 1, max: 99 };
+function dorsalDe(handle) {
+  const m = /(\d{1,2})$/.exec(String(handle ?? ''));
+  if (m && Number(m[1]) >= DORSAL.min) return String(Number(m[1]));
+  return String(crearAzar(`dorsal|${handle}`).entero(DORSAL.min, DORSAL.max));
+}
+// Las variables de color de un heroe para un tono (nombres de token: el hex vive en tokens.css)
+const varsDeTono = (t) => ({ '--h-luz': `var(${t.luz})`, '--h-contra': `var(${t.contra})`, '--h-acento': `var(${t.acento})`, '--h-noche': `var(${t.noche})` });
+const estiloSvg = (o) => Object.entries(o).map(([k, v]) => `${k}: ${v}`).join('; ');
+let serieHeroe = 0;
+
+// ---------------------------------------------------------------------------------------------- la camiseta
+// SVG en capas dentro de un grupo aislado: el COLOR (plano, una capa por org: es lo que cruza), la LUZ (difusa, multiply)
+// y el BRILLO (especular + el filo de la luz del mundo, screen). La luz y el brillo salen de un mapa de alturas (los
+// pliegues de una camiseta colgada de los hombros, ondas de feTurbulence y la trama fina) y se dibujan una sola vez:
+// todas las orgs comparten la tela, solo cambia el tinte. El escudo (la nuca) y el parche de la liga (la manga) son <img>.
+const CAM = { w: 600, h: 660, nombreLargo: 10, nombreAncho: 268 };
+const CAM_CAJA = `0 0 ${CAM.w} ${CAM.h}`;
+const CAM_SILUETA = 'M 248 52 Q 300 68 352 52 C 384 60 420 70 448 84 C 488 110 526 150 554 196 L 494 264 C 476 254 460 246 442 240 C 436 300 432 360 434 420 C 436 490 442 560 446 606 C 400 618 352 624 300 624 C 248 624 200 618 154 606 C 158 560 164 490 166 420 C 168 360 164 300 158 240 C 140 246 124 254 106 264 L 46 196 C 74 150 112 110 152 84 C 180 70 216 60 248 52 Z';
+const CAM_MANGAS = ['M 448 84 C 488 110 526 150 554 196 L 494 264 C 476 254 460 246 442 240 C 452 190 454 130 448 84 Z', 'M 152 84 C 112 110 74 150 46 196 L 106 264 C 124 254 140 246 158 240 C 148 190 146 130 152 84 Z'];
+const CAM_VIVOS = [
+  'M 554 196 L 494 264 L 482 253 L 542 186 Z', 'M 46 196 L 106 264 L 118 253 L 58 186 Z', // los punos
+  'M 536 176 L 476 245 L 471 240 L 531 171 Z', 'M 64 176 L 124 245 L 129 240 L 69 171 Z', // el filete de la manga
+  'M 244 50 Q 300 66 356 50 L 360 61 Q 300 82 240 61 Z', // el cuello
+];
+const CAM_LATERALES = ['M 442 240 C 436 300 432 360 434 420 C 436 490 442 560 446 606 L 426 609 C 420 520 414 420 412 330 C 412 300 418 270 428 246 Z', 'M 158 240 C 164 300 168 360 166 420 C 164 490 158 560 154 606 L 174 609 C 180 520 186 420 188 330 C 188 300 182 270 172 246 Z'];
+const CAM_ESQUIRLAS = ['M 448 84 L 470 100 L 330 360 L 300 380 Z', 'M 152 84 L 130 100 L 270 360 L 300 380 Z']; // el grafico sublimado
+const CAM_INTERIOR = 'M 248 52 Q 300 22 352 52 Q 300 68 248 52 Z'; // el cuello por dentro
+const CAM_ARCO = 'M 170 180 Q 300 164 430 180'; // el handle, en arco sobre los hombros
+const CAM_DORSAL = { x: 300, y: 452 };
+// el mapa de alturas: las crestas (los pliegues que bajan de los hombros, los de las mangas y los de los costados) y los
+// valles al lado de cada una (el pliegue tiene un filo y una sombra)
+const CAM_CRESTAS = [
+  ['M 444 98 C 414 150 384 220 354 296', 16], ['M 156 98 C 186 150 216 220 246 296', 16], ['M 300 84 C 302 116 300 150 298 182', 8],
+  ['M 424 262 C 418 360 416 470 422 598', 12], ['M 176 262 C 182 360 184 470 178 598', 12],
+  ['M 476 118 C 488 160 496 200 502 250', 10], ['M 124 118 C 112 160 104 200 98 250', 10],
+  ['M 332 330 C 352 400 354 480 342 592', 8], ['M 266 340 C 250 410 248 490 260 592', 8],
+  ['M 380 300 C 392 330 396 352 398 380', 6], ['M 220 300 C 208 330 204 352 202 380', 6],
+];
+const CAM_VALLES = [
+  ['M 432 104 C 404 156 376 222 346 300', 10], ['M 168 104 C 196 156 224 222 254 300', 10],
+  ['M 410 270 C 406 360 404 470 408 598', 8], ['M 190 270 C 194 360 196 470 192 598', 8],
+  ['M 488 130 C 498 170 504 210 508 252', 7], ['M 112 130 C 102 170 96 210 92 252', 7],
+];
+const CAM_LUZ = {
+  blur: 8, onda: '0.007 0.012', ondaOctavas: 2, ondaK: 0.3, semillaOnda: 11, fino: '0.85', finoK: 0.04, semillaFino: 4,
+  relieve: 12, kd: 1.22, ks: 0.8, exp: 14, azimut: 235, elev: 54, elevBrillo: 38, filo: 6, filoDx: -3,
+};
+// las sombras de forma (multiply): el cuerpo como cilindro (los costados se van) y la luz clave de arriba a la izquierda
+const CAM_CILINDRO = [[0, 0.5], [0.28, 0.05], [0.5, 0], [0.8, 0.18], [1, 0.62]];
+const CAM_CLAVE = [[0, 0], [0.55, 0.12], [1, 0.5]];
+const SOLO_ALFA = '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0';
+const CAM_BARRIDO = { antes: 120, dur: 620 }; // la luz de la org que cruza la camiseta cuando llega su oferta
+const CAM_VAIVEN = { giro: 0.5, dur: 7000 }; // el loop vivo: la camiseta colgada se mece apenas
+const mascaraSilueta = () => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='${CAM_CAJA}'><path d='${CAM_SILUETA}'/></svg>`)}")`;
+
+function heroeCamiseta({ ofertas, tonos, yo, tonoReposo }) {
+  const id = `ms-cam-${++serieHeroe}`;
+  const dorsal = dorsalDe(yo.handle);
+  const nombre = String(yo.handle || '').toUpperCase();
+  let serieCapa = 0;
+  // ---- la tela: el mapa de alturas y sus dos luces (una sola vez)
+  const mapa = () => [
+    svg('rect', { class: 'ms-cam-base', x: '0', y: '0', width: String(CAM.w), height: String(CAM.h) }),
+    ...CAM_CRESTAS.map(([d, a]) => svg('path', { class: 'ms-cam-cresta', d, 'stroke-width': String(a) })),
+    ...CAM_VALLES.map(([d, a]) => svg('path', { class: 'ms-cam-valle', d, 'stroke-width': String(a) })),
+  ];
+  const alturas = (p) => [
+    svg('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: String(CAM_LUZ.blur), result: `${p}p` }),
+    svg('feTurbulence', { type: 'fractalNoise', baseFrequency: CAM_LUZ.onda, numOctaves: String(CAM_LUZ.ondaOctavas), seed: String(CAM_LUZ.semillaOnda), result: `${p}o` }),
+    svg('feComposite', { in: `${p}p`, in2: `${p}o`, operator: 'arithmetic', k1: '0', k2: '1', k3: String(CAM_LUZ.ondaK), k4: '0', result: `${p}h` }),
+  ];
+  const filtro = (fid, hijos) => svg('filter', { id: fid, x: '0', y: '0', width: String(CAM.w), height: String(CAM.h), filterUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB' }, hijos);
+  const recorte = (cid) => svg('clipPath', { id: cid }, svg('path', { d: CAM_SILUETA }));
+  const degrade = (gid, attrs, paradas) => svg('linearGradient', { id: gid, ...attrs }, paradas.map(([o, a]) => svg('stop', { class: 'ms-cam-sombra-stop', offset: String(o), 'stop-opacity': String(a) })));
+  const luz = svg('svg', { class: 'ms-cam-luz', viewBox: CAM_CAJA, 'aria-hidden': 'true' }, [
+    svg('defs', {}, [
+      recorte(`${id}-l`),
+      filtro(`${id}-tela`, [
+        ...alturas('a'),
+        svg('feTurbulence', { type: 'fractalNoise', baseFrequency: CAM_LUZ.fino, numOctaves: '1', seed: String(CAM_LUZ.semillaFino), result: 'af' }),
+        svg('feComposite', { in: 'ah', in2: 'af', operator: 'arithmetic', k1: '0', k2: '1', k3: String(CAM_LUZ.finoK), k4: '0', result: 'aa' }),
+        svg('feColorMatrix', { in: 'aa', type: 'matrix', values: SOLO_ALFA, result: 'am' }),
+        svg('feDiffuseLighting', { class: 'ms-cam-difusa', in: 'am', surfaceScale: String(CAM_LUZ.relieve), diffuseConstant: String(CAM_LUZ.kd) }, svg('feDistantLight', { azimuth: String(CAM_LUZ.azimut), elevation: String(CAM_LUZ.elev) })),
+      ]),
+      degrade(`${id}-cil`, { x1: '0', y1: '0', x2: '1', y2: '0' }, CAM_CILINDRO),
+      degrade(`${id}-clave`, { x1: '0.15', y1: '0', x2: '0.85', y2: '1' }, CAM_CLAVE),
+    ]),
+    svg('g', { 'clip-path': `url(#${id}-l)` }, [
+      svg('g', { filter: `url(#${id}-tela)` }, mapa()),
+      svg('rect', { x: '40', y: '0', width: String(CAM.w - 80), height: String(CAM.h), fill: `url(#${id}-cil)` }),
+      svg('rect', { x: '0', y: '0', width: String(CAM.w), height: String(CAM.h), fill: `url(#${id}-clave)` }),
+    ]),
+  ]);
+  const brillo = svg('svg', { class: 'ms-cam-brillo', viewBox: CAM_CAJA, 'aria-hidden': 'true' }, [
+    svg('defs', {}, [
+      recorte(`${id}-b`),
+      filtro(`${id}-esp`, [
+        ...alturas('b'),
+        svg('feColorMatrix', { in: 'bh', type: 'matrix', values: SOLO_ALFA, result: 'bm' }),
+        svg('feSpecularLighting', { class: 'ms-cam-especular', in: 'bm', surfaceScale: String(CAM_LUZ.relieve), specularConstant: String(CAM_LUZ.ks), specularExponent: String(CAM_LUZ.exp) }, svg('feDistantLight', { azimuth: String(CAM_LUZ.azimut), elevation: String(CAM_LUZ.elevBrillo) })),
+      ]),
+      svg('filter', { id: `${id}-filo` }, svg('feGaussianBlur', { stdDeviation: String(CAM_LUZ.filo) })),
+    ]),
+    svg('g', { 'clip-path': `url(#${id}-b)` }, [
+      svg('g', { filter: `url(#${id}-esp)` }, mapa()),
+      svg('path', { class: 'ms-cam-filo', d: CAM_SILUETA, filter: `url(#${id}-filo)`, transform: `translate(${CAM_LUZ.filoDx} 0)` }),
+    ]),
+  ]);
+  const sombra = svg('svg', { class: 'ms-cam-sombra', viewBox: CAM_CAJA, 'aria-hidden': 'true' }, svg('path', { d: CAM_SILUETA }));
+  const capas = el('div', { class: 'ms-cam-capas' });
+  const barridos = el('div', { class: 'ms-cam-barridos', style: { maskImage: mascaraSilueta(), webkitMaskImage: mascaraSilueta() } });
+  const caja = el('div', { class: 'ms-cam' }, [sombra, capas, luz, brillo, barridos]);
+  const pie = el('div', { class: 'ms-cam-pie' });
+  const nodo = el('div', { class: 'ms-heroe-in ms-h-camiseta' }, [caja, pie]);
+
+  // ---- el color de una org (o el de tu camiseta sin club): una capa plana
+  function capaColor(i) {
+    const o = i == null ? null : ofertas[i];
+    const cid = `${id}-c${++serieCapa}`;
+    const num = (clase) => svg('text', { class: `ms-cam-num ${clase}`, x: String(CAM_DORSAL.x), y: String(CAM_DORSAL.y), 'text-anchor': 'middle' }, document.createTextNode(dorsal));
+    const tramo = svg('textPath', { href: `#${cid}-arco`, startOffset: '50%' }, document.createTextNode(nombre));
+    if (nombre.length > CAM.nombreLargo) {
+      tramo.setAttribute('textLength', String(CAM.nombreAncho));
+      tramo.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+    }
+    const s = svg('svg', { class: 'ms-cam-color', viewBox: CAM_CAJA, 'aria-hidden': 'true' }, [
+      svg('defs', {}, [
+        recorte(`${cid}-r`),
+        svg('linearGradient', { id: `${cid}-lat`, x1: '0', y1: '0', x2: '0', y2: '1' }, [svg('stop', { class: 'ms-cam-lat-a', offset: '0' }), svg('stop', { class: 'ms-cam-lat-b', offset: '1' })]),
+        svg('linearGradient', { id: `${cid}-esq`, x1: '0', y1: '0', x2: '0', y2: '1' }, [svg('stop', { class: 'ms-cam-esq-a', offset: '0' }), svg('stop', { class: 'ms-cam-esq-b', offset: '1' })]),
+        svg('path', { id: `${cid}-arco`, d: CAM_ARCO }),
+      ]),
+      svg('g', { 'clip-path': `url(#${cid}-r)` }, [
+        svg('path', { class: 'ms-cam-cuerpo', d: CAM_SILUETA }),
+        ...CAM_ESQUIRLAS.map((d) => svg('path', { d, fill: `url(#${cid}-esq)` })),
+        svg('path', { class: 'ms-cam-interior', d: CAM_INTERIOR }),
+        ...CAM_MANGAS.map((d) => svg('path', { class: 'ms-cam-manga', d })),
+        ...CAM_LATERALES.map((d) => svg('path', { d, fill: `url(#${cid}-lat)` })),
+        ...CAM_VIVOS.map((d) => svg('path', { class: 'ms-cam-vivo', d })),
+        svg('text', { class: 'ms-cam-nombre', 'text-anchor': 'middle' }, tramo),
+        num('ms-cam-num-borde'),
+        num('ms-cam-num-hueco'),
+        num('ms-cam-num-tinta'),
+      ]),
+    ]);
+    const tono = o ? tonos[i] : tonoReposo();
+    return el('div', { class: 'ms-cam-capa', 'data-reposo': o ? null : '', style: varsDeTono(tono) }, [
+      s,
+      o ? el('span', { class: 'ms-cam-escudo' }, pintarLogo(o.org, { tam: 40, alt: '' })) : null,
+      o ? el('span', { class: 'ms-cam-parche' }, pintarLogo(o.liga, { liga: true, tam: 36, alt: '' })) : null,
+    ]);
+  }
+  function pintarPie(i) {
+    const o = i == null ? null : ofertas[i];
+    pie.replaceChildren(
+      el('p', { class: 'ms-cam-pie-k' }, o ? [pintarLogo(o.liga, { liga: true, tam: 14, alt: '' }), `${o.org} · temporada ${yo.anio}`] : [`Agente libre · ${yo.anio}`]),
+      el('p', { class: 'ms-cam-pie-t' }, [el('b', { text: yo.handle }), ` · dorsal ${dorsal}${yo.rolEtiqueta ? ` · ${yo.rolEtiqueta}` : ''}`]),
+    );
+  }
+  let actual;
+  function mostrar(i, { animado = true, forzar = false } = {}) {
+    const clave = i ?? -1;
+    if (clave === actual && !forzar) return;
+    actual = clave;
+    const nueva = capaColor(i);
+    const viejas = [...capas.children];
+    capas.append(nueva);
+    pintarPie(i);
+    const a = animado ? animar(nueva, [{ opacity: 0, transform: 'scale(1.012)', filter: 'brightness(1.5)' }, { opacity: 1, transform: 'none', filter: 'none' }], { dur: T_LL.cruceHeroe }) : null;
+    if (!a) return viejas.forEach((v) => v.remove());
+    animar(pie, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { dur: DUR.entra });
+    a.finished.then(() => viejas.forEach((v) => v.remove())).catch(() => {});
+  }
+  // La llegada: la luz de cada org cruza la camiseta en el momento en que cae su oferta.
+  function llegada({ w, tToca }) {
+    const bs = ofertas.map((_, i) => el('i', { class: 'ms-cam-barrido', style: { '--ms-luz': `var(${tonos[i].luz})` } }));
+    barridos.replaceChildren(...bs);
+    bs.forEach((b, i) => w(animar(b, [{ opacity: 0, transform: 'translateX(-60%)' }, { opacity: 1, transform: 'translateX(0%)', offset: 0.4 }, { opacity: 0, transform: 'translateX(60%)' }], { delay: tToca[i] - CAM_BARRIDO.antes, dur: CAM_BARRIDO.dur, easing: 'linear' })));
+    w(animar(caja, [{ opacity: 0, filter: 'brightness(.2)' }, { opacity: 1, filter: 'none' }], { delay: T_LL.heroe, dur: T_LL.heroeDur }));
+    w(entrar(pie, T_LL.heroe + 300, 8));
+  }
+  mostrar(null, { animado: false });
+  animarLoop(caja, [{ transform: `rotate(${-CAM_VAIVEN.giro}deg)` }, { transform: `rotate(${CAM_VAIVEN.giro}deg)` }], { duration: CAM_VAIVEN.dur, direction: 'alternate', iterations: Infinity, easing: 'ease-in-out' });
+  return { nodo, mostrar, llegada, alCambiarEra: () => actual === -1 && mostrar(null, { animado: false, forzar: true }) };
+}
+
+// ---------------------------------------------------------------------------------------------- el plantel
+// La formacion de la org sobre la Grieta (el mapa de los glifos de rol, en grande): los 5 roles en su lugar del mapa y tu
+// lugar iluminado, con el logo de la org de marca en el piso. El motor no trae el plantel de las orgs que ofertan: los
+// otros cuatro van con su rol y "por anunciar". De tu lugar, lo unico que dice el motor: el parentesis de motivoDemanda
+// ("mejorás claramente sobre <el mid de hoy>"), tal cual.
+const ROLES_PL = ['top', 'jungla', 'mid', 'adc', 'support'];
+const ROL_NOMBRE = { top: 'Top', jungla: 'Jungla', mid: 'Mid', adc: 'ADC', support: 'Support' };
+const PL_POS = { top: [20, 17], jungla: [27, 43], mid: [50, 50], adc: [80, 83], support: [57, 86] }; // % del mapa
+const PL_PING = { dur: 900, escala: 2.6 };
+function heroePlantel({ ofertas, tonos, yo }) {
+  const rol = ROLES_PL.includes(yo.rol) ? yo.rol : 'mid';
+  const parentesis = (o) => /\(([^)]+)\)/.exec(String(o?.motivoDemanda ?? ''))?.[1] ?? null;
+  const cabs = el('div', { class: 'ms-pl-cabs' });
+  const marcas = el('div', { class: 'ms-pl-marcas', 'aria-hidden': 'true' });
+  const grieta = svg('svg', { class: 'ms-pl-grieta', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, [
+    svg('path', { class: 'ms-pl-borde', d: 'M2.5 2.5h19v19h-19z' }),
+    svg('path', { class: 'ms-pl-rio', d: 'M4.6 4.6L19.4 19.4' }),
+    svg('path', { class: 'ms-pl-carril', d: 'M4.6 19.4V4.6h14.8' }),
+    svg('path', { class: 'ms-pl-carril', d: 'M4.6 19.4h14.8V4.6' }),
+    svg('path', { class: 'ms-pl-carril ms-pl-carril-vos', d: 'M4.6 19.4L19.4 4.6' }),
+    svg('path', { class: 'ms-pl-base', d: 'M2.5 18a3.5 3.5 0 0 1 3.5 3.5' }),
+    svg('path', { class: 'ms-pl-base', d: 'M21.5 6a3.5 3.5 0 0 1 -3.5 -3.5' }),
+  ]);
+  const textos = {};
+  const pos = ROLES_PL.map((r) => {
+    const [x, y] = PL_POS[r];
+    const vos = r === rol;
+    const quien = el('span', { class: vos ? 'ms-pl-hoy' : 'ms-pl-quien' });
+    textos[r] = quien;
+    return el('div', { class: `ms-pl-pos${vos ? ' ms-pl-vos' : ''}`, 'data-rol': r, style: { left: `${x}%`, top: `${y}%` } }, [
+      el('span', { class: 'ms-pl-nodo' }, [glifoRol(r, 'glifo-rol ms-pl-glifo'), vos ? el('i', { class: 'ms-pl-halo' }) : null]),
+      el('span', { class: 'ms-pl-txt' }, vos ? [el('span', { class: 'ms-pl-rol', text: `${ROL_NOMBRE[r]} · tu lugar` }), el('b', { class: 'ms-pl-handle', text: yo.handle, style: { '--ms-n': String(Math.max(1, String(yo.handle).length)) } }), quien] : [el('span', { class: 'ms-pl-rol', text: ROL_NOMBRE[r] }), quien]),
+    ]);
+  });
+  const pings = el('div', { class: 'ms-pl-pings', 'aria-hidden': 'true', style: { left: `${PL_POS[rol][0]}%`, top: `${PL_POS[rol][1]}%` } });
+  const mapa = el('div', { class: 'ms-pl-mapa' }, [marcas, grieta, pings, ...pos]);
+  const nodo = el('div', { class: 'ms-heroe-in ms-h-plantel' }, [cabs, mapa]);
+  const cruzar = (cont, nuevo, animado) => {
+    const viejos = [...cont.children];
+    cont.append(nuevo);
+    const a = animado ? animar(nuevo, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { dur: T_LL.cruceHeroe }) : null;
+    if (!a) return viejos.forEach((v) => v.remove());
+    viejos.forEach((v) => animar(v, [{ opacity: 1 }, { opacity: 0 }], { dur: T_LL.cruceHeroe, easing: 'linear', fill: 'forwards' }));
+    a.finished.then(() => viejos.forEach((v) => v.remove())).catch(() => {});
+  };
+  let actual;
+  function mostrar(i, { animado = true } = {}) {
+    const clave = i ?? -1;
+    if (clave === actual) return;
+    actual = clave;
+    const o = i == null ? null : ofertas[i];
+    nodo.toggleAttribute('data-reposo', !o);
+    cruzar(cabs, el('header', { class: 'ms-pl-cab' }, [
+      el('p', { class: 'ms-pl-k' }, o ? [pintarLogo(o.liga, { liga: true, tam: 14, alt: '' }), `${ligaLarga(o.liga)}${o.tier ? ` · tier ${o.tier}` : ''} · plantel ${yo.anio}`] : [`Agente libre · ${yo.anio}`]),
+      el('p', { class: 'ms-pl-org', text: o ? o.org : 'Tu lugar, sin equipo' }),
+    ]), animado);
+    cruzar(marcas, el('span', { class: 'ms-pl-marca' }, o ? pintarLogo(o.org, { tam: 320, alt: '' }) : escudo('?')), animado);
+    for (const r of ROLES_PL) textos[r].textContent = r === rol ? (o ? (parentesis(o) ?? 'te espera') : 'elegí un equipo') : o ? 'por anunciar' : '—';
+  }
+  // La llegada: cada oferta es un ping en tu lugar, en el color de su org (el aviso del mapa).
+  function llegada({ w, tToca }) {
+    const ps = ofertas.map((_, i) => el('i', { class: 'ms-pl-ping', style: { '--ms-acento': `var(${tonos[i].acento})` } }));
+    pings.replaceChildren(...ps);
+    ps.forEach((p, i) => w(animar(p, [{ opacity: 0.95, transform: 'translate(-50%, -50%) scale(.35)' }, { opacity: 0, transform: `translate(-50%, -50%) scale(${PL_PING.escala})` }], { delay: tToca[i], dur: PL_PING.dur, easing: EXPO, fill: 'none' })));
+    w(animar(mapa, [{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], { delay: T_LL.heroe, dur: T_LL.heroeDur }));
+    w(entrar(cabs, T_LL.heroe + 120, 10));
+    pos.forEach((p, k) => w(animar(p, [{ opacity: 0 }, { opacity: 1 }], { delay: T_LL.heroe + 260 + k * 70, dur: DUR.entra, easing: 'linear' })));
+  }
+  mostrar(null, { animado: false });
+  return { nodo, mostrar, llegada };
+}
+
+// ---------------------------------------------------------------------------------------------- las cartas
+// Las ofertas como cartas formales: el membrete (la banda en la noche de la org, con su escudo), a quien va, los
+// terminos y el sello. Caen sobre la pila en el orden en que llegan (la ultima, arriba); apuntar una org la saca de la pila
+// y la pone al frente; al soltar vuelve a su lugar. Los giros y corrimientos de la pila, del PRNG decorativo.
+const CARTA = { giro: 6, dx: 16, dy: 12, caida: 300, giroCaida: 10, frente: 60, sale: { x: 12, y: -40, giro: 7 }, alFrente: { x: 1, y: -2, giro: -1.2, escala: 1.03 }, mueve: 440, corte: 0.45 };
+const CARTA_SELLO = { r: 38, giro: -12 };
+function heroeOfertas({ ofertas, tonos, norm, yo, dias, orden, semilla }) {
+  const id = `ms-carta-${++serieHeroe}`;
+  const azar = crearAzar(`cartas|${semilla}`);
+  const altura = ofertas.map(() => 0);
+  orden.forEach((i, k) => (altura[i] = k + 1)); // la pila: la que llega despues queda arriba
+  const pila = ofertas.map(() => ({ r: azar.entre(-CARTA.giro, CARTA.giro), dx: azar.entre(-CARTA.dx, CARTA.dx), dy: azar.entre(-CARTA.dy, CARTA.dy) }));
+  const enPila = (i, extra = {}) => `translate(${(pila[i].dx + (extra.dx ?? 0)).toFixed(1)}px, ${(pila[i].dy + (extra.dy ?? 0)).toFixed(1)}px) rotate(${(pila[i].r + (extra.r ?? 0)).toFixed(2)}deg) scale(${extra.s ?? 1})`;
+  const sale = (i) => `translate(${CARTA.sale.x}%, ${CARTA.sale.y}%) rotate(${(pila[i].r + CARTA.sale.giro).toFixed(2)}deg)`;
+  const frente = `translate(${CARTA.alFrente.x}%, ${CARTA.alFrente.y}%) rotate(${CARTA.alFrente.giro}deg) scale(${CARTA.alFrente.escala})`;
+  const fila = (k, v) => el('div', { class: 'ms-carta-fila' }, [el('dt', { text: k }), el('dd', { text: v })]);
+  const cartas = ofertas.map((o, i) => {
+    const x = norm[i];
+    const t = tonos[i];
+    const anillo = svg('svg', { class: 'ms-carta-anillo', viewBox: '0 0 100 100', 'aria-hidden': 'true' }, [
+      svg('defs', {}, svg('path', { id: `${id}-sello-${i}`, d: `M 50 ${50 - CARTA_SELLO.r} a ${CARTA_SELLO.r} ${CARTA_SELLO.r} 0 1 1 -0.01 0` })),
+      svg('circle', { class: 'ms-carta-aro', cx: '50', cy: '50', r: String(CARTA_SELLO.r + 8) }),
+      svg('circle', { class: 'ms-carta-aro', cx: '50', cy: '50', r: String(CARTA_SELLO.r - 8) }),
+      svg('text', { class: 'ms-carta-sello-txt' }, svg('textPath', { href: `#${id}-sello-${i}`, startOffset: '0' }, document.createTextNode(`${o.org} · ${o.liga} · ${yo.anio} · `.toUpperCase()))),
+      svg('text', { class: 'ms-carta-sello-ini', x: '50', y: '57', 'text-anchor': 'middle' }, document.createTextNode(iniciales(o.org))),
+    ]);
+    return el('article', { class: 'ms-carta', 'data-i': String(i), style: { ...varsDeTono(t), zIndex: String(altura[i]), transform: enPila(i) } }, [
+      el('header', { class: 'ms-carta-membrete' }, [
+        el('span', { class: 'ms-carta-escudo' }, pintarLogo(o.org, { tam: 44, alt: '' })),
+        el('div', { class: 'ms-carta-quien' }, [el('b', { class: 'ms-carta-org', text: o.org }), el('span', { class: 'ms-carta-liga' }, [pintarLogo(o.liga, { liga: true, tam: 12, alt: '' }), `${ligaLarga(o.liga)}${o.tier ? ` · tier ${o.tier}` : ''}`])]),
+        el('span', { class: 'ms-carta-dia', text: `Día ${dias[i]}` }),
+      ]),
+      el('div', { class: 'ms-carta-cuerpo' }, [
+        el('p', { class: 'ms-carta-k', text: `Oferta de contrato · ${yo.ventana} ${yo.anio}` }),
+        el('p', { class: 'ms-carta-para' }, ['Para ', el('b', { text: yo.handle }), yo.rolEtiqueta ? ` · ${yo.rolEtiqueta}` : '']),
+        o.descripcion || o.motivoDemanda ? el('p', { class: 'ms-carta-texto', text: [o.descripcion, o.motivoDemanda ? `${o.motivoDemanda}.` : null].filter(Boolean).join(' ') }) : null,
+        el('dl', { class: 'ms-carta-terminos' }, [
+          fila('Sueldo', `USD ${num(x.sueldo)} / año`),
+          fila('Contrato', `${aniosTxt(x.anios)} · ${periodo(yo.anio, x.anios)}`),
+          x.tipo ? fila('Modalidad', `${x.tipo}${x.clausula ? ', con cláusula' : ''}`) : null,
+          x.jer ? fila('Jerarquía', `${x.jer.hasta} de 100, proyectada`) : null,
+          x.plantel ? fila('Plantel', `${x.plantel.puesto}.º de ${x.plantel.de} en ${ligaLarga(x.plantel.liga ?? o.liga)}`) : null,
+        ]),
+        el('footer', { class: 'ms-carta-pie' }, [el('div', { class: 'ms-carta-firma' }, [el('i'), el('span', { text: `Por ${o.org}` })]), el('span', { class: 'ms-carta-sello' }, anillo)]),
+      ]),
+    ]);
+  });
+  const bandeja = el('div', { class: 'ms-cartas-bandeja' }, el('span', { text: 'La bandeja de ofertas' }));
+  const mesa = el('div', { class: 'ms-cartas' }, [bandeja, ...cartas]);
+  const nodo = el('div', { class: 'ms-heroe-in ms-h-ofertas' }, mesa);
+  let alFrente = null;
+  function mostrar(i, { animado = true } = {}) {
+    if (i === alFrente) return;
+    const antes = alFrente;
+    alFrente = i;
+    if (antes != null) {
+      const c = cartas[antes];
+      c.classList.remove('al-frente');
+      c.style.zIndex = String(altura[antes]);
+      c.style.transform = enPila(antes);
+      if (animado) animar(c, [{ transform: frente, zIndex: CARTA.frente }, { transform: sale(antes), zIndex: CARTA.frente, offset: CARTA.corte }, { transform: sale(antes), zIndex: altura[antes], offset: CARTA.corte + 0.01 }, { transform: enPila(antes), zIndex: altura[antes] }], { dur: CARTA.mueve });
+    }
+    if (i != null) {
+      const c = cartas[i];
+      c.classList.add('al-frente');
+      c.style.zIndex = String(CARTA.frente);
+      c.style.transform = frente;
+      if (animado) animar(c, [{ transform: enPila(i), zIndex: altura[i] }, { transform: sale(i), zIndex: altura[i], offset: CARTA.corte }, { transform: sale(i), zIndex: CARTA.frente, offset: CARTA.corte + 0.01 }, { transform: frente, zIndex: CARTA.frente }], { dur: CARTA.mueve });
+    }
+  }
+  // La llegada: cada carta cae sobre la pila en su dia (acelera, golpea, se asienta); la bandeja vacia se va con la primera.
+  function llegada({ w, tCae, tToca }) {
+    const D = T_LL.cae + T_LL.asienta;
+    const toca = T_LL.cae / D;
+    cartas.forEach((c, i) => w(animar(c, [
+      { opacity: 0, transform: enPila(i, { dy: -CARTA.caida, r: -CARTA.giroCaida, s: 1.05 }), easing: 'cubic-bezier(.5,0,.85,.4)' },
+      { opacity: 1, transform: enPila(i, { dy: -CARTA.caida * 0.8, r: -CARTA.giroCaida * 0.8, s: 1.05 }), offset: 0.14, easing: 'cubic-bezier(.5,0,.85,.4)' },
+      { opacity: 1, transform: enPila(i, { dy: 3, s: 0.99 }), offset: toca, easing: EXPO },
+      { opacity: 1, transform: enPila(i) },
+    ], { delay: tCae[i], dur: D, easing: 'linear' })));
+    w(animar(bandeja, [{ opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }], { delay: T_LL.heroe, dur: Math.max(DUR.larga, Math.min(...tToca) - T_LL.heroe), easing: 'linear', fill: 'none' }));
+  }
+  // FIRMAR: la carta de la org elegida (al frente) recibe su sello de firmada con el golpe.
+  function firmar(i, { w, t }) {
+    const c = cartas[i];
+    if (!c) return;
+    c.querySelector('.ms-carta-firmada')?.remove();
+    const f = el('span', { class: 'ms-carta-firmada', 'aria-hidden': 'true', text: 'Firmada' });
+    c.append(f);
+    w(animar(f, [{ opacity: 0, transform: 'rotate(-14deg) scale(2.4)', easing: 'cubic-bezier(.55,0,1,.45)' }, { opacity: 1, transform: 'rotate(-9deg) scale(.92)', offset: 0.7, easing: EXPO }, { opacity: 1, transform: 'rotate(-9deg)' }], { delay: t - T_FIRMAR.selloDur * 0.7, dur: T_FIRMAR.selloDur, easing: 'linear' }));
+  }
+  return { nodo, mostrar, llegada, firmar };
+}
+
 // ================================================================================================= el mercado, linea
-function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
+function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado, variante }) {
   const m = datos[muestra];
   const pc = peor ? datos.peorCaso : null;
   const botElige = (m.resultados ?? []).find((r) => r.eligioElBot)?.opcionId;
@@ -1749,10 +2155,20 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
   const tonos = tonosDeGrilla(ofertas);
   const valor = vos.valorUSD ?? 0;
   const html = document.documentElement;
-  const raiz = el('section', { class: 'ms-mercado', 'data-pieza': 'decision', 'data-forma': 'mercado', 'data-muestra': muestra, 'data-op': 'linea' });
+  // PLANUI §4.10 (E): la variante de la derecha y el calendario de la llegada (los dias salen de los datos)
+  const v = VARIANTES_MS.includes(variante) ? variante : VARIANTES_MS[0];
+  const conHeroe = v !== 'campeon';
+  const semilla = m.seed ?? muestra;
+  const { dias, orden } = diasDeLlegada(ofertas, semilla);
+  const tCae = dias.map((d) => T_LL.reloj + (d - 1) * T_LL.dia);
+  const tToca = tCae.map((t) => t + T_LL.cae);
+  const diaFinal = Math.max(...dias);
+  const asentarseLl = Math.max(...tToca) + T_LL.asienta + T_LL.final;
+  const raiz = el('section', { class: 'ms-mercado', 'data-pieza': 'decision', 'data-forma': 'mercado', 'data-muestra': muestra, 'data-op': 'linea', 'data-var': v, 'data-heroe': conHeroe ? '' : null });
 
   // Lo de cada montaje: repetir() reconstruye la pantalla y vuelve a pasar la entrada desde cero.
   let s = null;
+  let heroe = null; // la derecha (camiseta, plantel u ofertas); null con var=campeon
   let beats = null; // el reloj vigente: el de la entrada o el de la firma (congelar va a este)
   let vivo = true;
   let elegido = false;
@@ -1761,6 +2177,12 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
   let elegida = -1; // la org elegida (clic, foco, 1-6): la que firma FIRMAR y la que vuelve al soltar el mouse
   let mostrada = null; // la que muestra el aura ahora (null: el reposo)
   let tAura = 0;
+  let ultDia = -1; // lo ultimo que pinto el reloj (el dia y cuantas llegaron)
+  let ultN = -1;
+  // El tiempo de la llegada: el del reloj mientras entra; fuera de la entrada, todas llegaron.
+  const tLlegada = () => (entrando && beats && !beats.quieto ? beats.ahora() : Infinity);
+  const llego = (i) => tToca[i] <= tLlegada();
+  const llegadas = (t = tLlegada()) => ofertas.map((_, i) => i).filter((i) => tToca[i] <= t);
 
   // ---------------------------------------------------------------------------------------------- armar
   function construir() {
@@ -1779,9 +2201,23 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
     const bumper = el('div', { class: 'ms-bumper', 'aria-hidden': 'true' }, [
       el('i', { class: 'ms-bumper-banda' }),
       el('p', { class: 'ms-bumper-txt' }, [el('span', { text: 'Ventana de pases' }), el('b', { text: 'abierta' })]),
-      el('p', { class: 'ms-bumper-sub', text: `${yo.ventana} ${m.anio} · ${ofertas.length} ofertas para ${yo.rolEtiqueta || 'tu rol'}` }),
+      el('p', { class: 'ms-bumper-sub', text: `${yo.ventana} ${m.anio} · ${VENTANA_DIAS} días · buscan ${yo.rolEtiqueta || 'tu rol'}` }),
     ]);
     const lineaLuz = el('i', { class: 'ms-linea-luz', 'aria-hidden': 'true' });
+
+    // ---- el reloj de la ventana (decorativo: la grilla y el rotulo dicen cuantas llegaron): el dia que corre, los
+    // VENTANA_DIAS dias (cada oferta marca el suyo en el color de su org) y la ultima que llego
+    const celdas = Array.from({ length: VENTANA_DIAS }, (_, k) => el('li', { class: 'ms-reloj-d' }, ofertas.map((o, i) => (dias[i] === k + 1 ? el('i', { class: 'ms-reloj-marca', 'data-i': String(i), style: { '--ms-acento': `var(${tonos[i].acento})` } }) : null))));
+    const relojN = el('b', { class: 'ms-reloj-n', text: '01' });
+    const relojUlt = el('p', { class: 'ms-reloj-ult' });
+    const reloj = el('div', { class: 'ms-reloj', 'aria-hidden': 'true' }, [
+      el('p', { class: 'ms-reloj-k' }, [el('span', { text: 'Ventana de pases' }), el('span', { class: 'ms-reloj-de', text: `${VENTANA_DIAS} días` })]),
+      el('div', { class: 'ms-reloj-fila' }, [el('p', { class: 'ms-reloj-dia' }, [el('span', { text: 'Día' }), relojN]), el('ol', { class: 'ms-reloj-dias' }, celdas)]),
+      relojUlt,
+    ]);
+    // ---- la derecha (PLANUI §4.10): el heroe de la variante, sin campeon
+    heroe = !conHeroe ? null : v === 'plantel' ? heroePlantel({ ofertas, tonos, yo }) : v === 'ofertas' ? heroeOfertas({ ofertas, tonos, norm, yo, dias, orden, semilla }) : heroeCamiseta({ ofertas, tonos, yo, tonoReposo });
+    const heroeNodo = heroe ? el('aside', { class: 'ms-heroe', 'aria-hidden': 'true' }, heroe.nodo) : null;
 
     // ---- el aura: el escudo monumental, el nombre gigante y los terminos (o el reposo: vos en el mercado)
     const velo = el('div', { class: 'ms-velo', 'aria-hidden': 'true' });
@@ -1797,11 +2233,14 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
       btnMas.setAttribute('aria-expanded', String(a));
       btnMas.textContent = a ? 'menos' : 'más';
     });
-    const rotulo = el('p', { class: 'rotulo-cat' }, [el('i', { class: 'punto-luz' }), el('span', { text: 'Mercado' }), el('span', { class: 'bisagra', text: `${yo.ventana} ${m.anio}` }), el('span', { class: 'bisagra', text: `${ofertas.length} ofertas` })]);
+    const rotulo = el('p', { class: 'rotulo-cat' }, [el('i', { class: 'punto-luz' }), el('span', { text: 'Mercado' }), el('span', { class: 'bisagra', text: `${yo.ventana} ${m.anio}` }), el('span', { class: 'bisagra ms-rot-n', text: `${ofertas.length} ofertas` })]);
     const titulo = el('h1', { class: 'ms-titulo', id: 'ms-titulo', 'data-foco': '', tabindex: '-1', text: m.decision.titulo });
     const cab = el('header', { class: 'ms-cab' }, [
       el('div', { class: 'ms-cab-t' }, [rotulo, titulo, planteo]),
-      el('p', { class: 'ms-leyenda', 'aria-hidden': 'true' }, [el('span', {}, [el('i', { class: 'ms-ley-sueldo' }), el('span', { text: 'sueldo / año' })]), el('span', {}, [el('i', { class: 'ms-ley-jer' }), el('span', { text: 'jerarquía proyectada' })])]),
+      el('div', { class: 'ms-cab-der' }, [
+        reloj,
+        el('p', { class: 'ms-leyenda', 'aria-hidden': 'true' }, [el('span', {}, [el('i', { class: 'ms-ley-sueldo' }), el('span', { text: 'sueldo / año' })]), el('span', {}, [el('i', { class: 'ms-ley-jer' }), el('span', { text: 'jerarquía proyectada' })])]),
+      ]),
     ]);
     const escudos = ofertas.map((o, i) => {
       const x = norm[i];
@@ -1827,6 +2266,7 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
         ]),
         el('i', { class: 'ms-op-borde', 'aria-hidden': 'true' }),
         el('i', { class: 'ms-op-estela', 'aria-hidden': 'true' }),
+        el('i', { class: 'ms-op-polvo', 'aria-hidden': 'true' }),
         desc,
       ]);
     });
@@ -1845,13 +2285,16 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
     ];
     const tira = items.length ? el('div', { class: 'ms-cinta' }, cinta({ rotulo: 'Mientras tanto', items })) : null;
 
-    raiz.replaceChildren(...[velo, fr, aura, panel, tira, cuartos('mundo', null, trayectoria(datos.final?.tarjeta?.historia ?? [], m.anio, m.edad)), bumper, lineaLuz].filter(Boolean));
-    s = { fr, bumper, lineaLuz, velo, aura, panel, cab, rotulo, titulo, planteo, grilla, escudos, ranura, inspector, boton, cierre, tira };
+    raiz.replaceChildren(...[velo, fr, aura, heroeNodo, panel, tira, cuartos('mundo', null, trayectoria(datos.final?.tarjeta?.historia ?? [], m.anio, m.edad)), bumper, lineaLuz].filter(Boolean));
+    s = { fr, bumper, lineaLuz, velo, aura, panel, cab, rotulo, titulo, planteo, grilla, escudos, ranura, inspector, boton, cierre, tira, reloj, relojN, relojUlt, celdas, heroeNodo };
+    ultDia = -1;
+    ultN = -1;
 
     escudos.forEach((b, i) => {
       b.addEventListener('pointerenter', () => !celular() && previsualizar(i));
       b.addEventListener('pointerleave', () => !celular() && soltar());
-      b.addEventListener('focus', () => elegir1(i));
+      // el foco (Tab) solo elige una que ya llego; el clic en una que no llego hace llegar todas (elegir1)
+      b.addEventListener('focus', () => llego(i) && elegir1(i));
       b.addEventListener('click', () => elegir1(i));
     });
     pintarAura(null, { animado: false });
@@ -1871,12 +2314,8 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
       escudoNodo = el('span', { class: 'ms-aura-escudo ms-aura-vacio' }, escudo('?'));
       kicker = [el('span', { text: m.franja?.club?.fase ?? 'Agente libre' }), el('span', { text: `${yo.edad} años` }), el('span', { text: yo.rolEtiqueta })];
       nombre = 'Elegí tu equipo';
-      const mejor = ofertas.reduce((a, b) => (sueldoDe(b) > sueldoDe(a) ? b : a), ofertas[0]);
-      terminos = [
-        { k: 'Tu valor', n: num(valor), u: 'USD', ref: vos.contrato ? 'con contrato' : 'sin contrato: agente libre' },
-        { k: 'Te llaman', n: String(ofertas.length), u: ofertas.length === 1 ? 'club' : 'clubes', ref: `buscan ${yo.rolEtiqueta || 'tu rol'}` },
-        mejor ? { k: 'La más alta', n: num(sueldoDe(mejor)), u: 'USD / año', ref: valor ? `${fmt1.format(sueldoDe(mejor) / valor)}× tu valor · ${mejor.org}` : mejor.org } : null,
-      ].filter(Boolean);
+      // (§4.10) cuentan solo las que ya llegaron: mientras corre la ventana, el reloj los va actualizando
+      terminos = [{ k: 'Tu valor', n: num(valor), u: 'USD', ref: vos.contrato ? 'con contrato' : 'sin contrato: agente libre' }, ...terminosLlegadas(llegadas())];
     } else {
       const o = ofertas[i];
       const x = norm[i];
@@ -1896,6 +2335,40 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
     nom.querySelectorAll('.ms-aura-letra').forEach((l, j) => animar(l, [{ opacity: 0, transform: 'translateY(34%)' }, { opacity: 1, transform: 'none' }], { delay: 40 + j * T_LETRA_AURA, dur: 300 }));
     animar(k, [{ opacity: 0, transform: 'translateX(-10px)' }, { opacity: 1, transform: 'none' }], { delay: 60, dur: 280 });
     dl.querySelectorAll('.ms-termino').forEach((t, j) => animar(t, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: 120 + j * 50, dur: 300 }));
+  }
+  // Los terminos del reposo que dependen de cuantas llegaron: cuantos te llaman y la mas alta.
+  function terminosLlegadas(ya) {
+    const mejor = ya.reduce((a, i) => (a == null || sueldoDe(ofertas[i]) > sueldoDe(ofertas[a]) ? i : a), null);
+    const o = mejor == null ? null : ofertas[mejor];
+    return [
+      { id: 'llaman', k: 'Te llaman', n: String(ya.length), u: ya.length === 1 ? 'club' : 'clubes', ref: `buscan ${yo.rolEtiqueta || 'tu rol'}` },
+      { id: 'alta', k: 'La más alta', n: o ? num(sueldoDe(o)) : '—', u: 'USD / año', ref: !o ? 'esperando ofertas' : valor ? `${fmt1.format(sueldoDe(o) / valor)}× tu valor · ${o.org}` : o.org },
+    ];
+  }
+  // El reloj pinta las llegadas en t: los escudos que ya se pueden apuntar, las marcas de los dias, la ultima que llego,
+  // el rotulo y los terminos del reposo (si el aura esta en reposo).
+  function pintarLlegadas(t) {
+    const ya = llegadas(t);
+    s.escudos.forEach((b, i) => {
+      const si = ya.includes(i);
+      b.dataset.llego = si ? '1' : '0';
+      if (si) b.removeAttribute('aria-disabled');
+      else b.setAttribute('aria-disabled', 'true');
+    });
+    s.reloj.querySelectorAll('.ms-reloj-marca').forEach((x) => x.classList.toggle('llego', ya.includes(Number(x.dataset.i))));
+    s.rotulo.querySelector('.ms-rot-n').textContent = `${ya.length} ${ya.length === 1 ? 'oferta' : 'ofertas'}`;
+    const ult = ya.length ? ya.reduce((a, i) => (tToca[i] > tToca[a] ? i : a)) : null;
+    s.relojUlt.replaceChildren(...(ult == null ? [el('span', { text: 'Esperando ofertas' })] : ya.length === ofertas.length ? [el('b', { text: `${ya.length} ofertas` }), ` en ${diaFinal} días`] : [pintarLogo(ofertas[ult].org, { tam: 16, alt: '' }), el('span', { text: 'Llegó ' }), el('b', { text: ofertas[ult].org })]));
+    if (mostrada != null || s.aura.dataset.estado !== 'reposo') return;
+    for (const x of terminosLlegadas(ya)) {
+      const nodo = s.aura.querySelector(`[data-t='${x.id}']`);
+      if (!nodo) continue;
+      nodo.querySelector('.ms-num').textContent = x.n;
+      const u = nodo.querySelector('.ms-unidad');
+      if (u) u.textContent = x.u;
+      const r = nodo.querySelector('.ms-ref');
+      if (r) r.textContent = x.ref;
+    }
   }
   // El cierre del panel: la ranura ("tu equipo"), el inspector (la prosa de la oferta) y FIRMAR.
   function pintarCierre(i) {
@@ -1933,6 +2406,7 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
     s.escudos.forEach((b, k) => b.classList.toggle('apuntada', k === i));
     raiz.dataset.aura = i == null ? 'reposo' : tonos[i].id;
     pintarAura(i);
+    heroe?.mostrar(i);
     ponerTono(i == null ? tonoReposo() : tonos[i]);
     if (i != null) amb.pulso('apuntar');
   }
@@ -1940,7 +2414,7 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
   const sigue = () => vivo && raiz.isConnected && raiz.style.pointerEvents !== 'none';
   // Pasar el mouse: el aura entra a los 120 ms (barrer la grilla no dispara seis cruces).
   function previsualizar(i) {
-    if (elegido) return;
+    if (elegido || !llego(i)) return;
     clearTimeout(tAura);
     if (quieto()) return mostrar(i);
     tAura = setTimeout(() => sigue() && mostrar(i), T_MS.aura);
@@ -1956,7 +2430,8 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
   // Elegir (clic, foco, 1-6): queda como la de la pantalla; FIRMAR la firma. `mover`: el foco va a su escudo.
   function elegir1(i, { mover = false } = {}) {
     if (elegido || i < 0 || i >= ofertas.length) return;
-    if (entrando) saltarEntrada();
+    // (§4.10) elegir una que todavia no llego hace llegar todas (como Espacio); las que ya estan se eligen sin cortar
+    if (entrando && !llego(i)) saltarEntrada();
     clearTimeout(tAura);
     if (i !== elegida) {
       elegida = i;
@@ -1969,79 +2444,110 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
   }
 
   // ---------------------------------------------------------------------------------------------- la entrada
+  // (PLANUI §4.10) La entrada es la LLEGADA: el bumper abre la ventana, el panel sube con la grilla vacia y el reloj corre
+  // los dias; cada oferta cae en el suyo. Todo por un reloj (beats.js): congelar(t) muestra la ventana en t.
   function entrada() {
-    const { bumper, lineaLuz, aura, panel, rotulo, titulo, planteo, grilla, escudos, cierre, tira, fr, cab } = s;
-    const bt = crearBeats({ duracion: T_MS.duracion, asentarse: T_MS.asentarse });
+    const { bumper, lineaLuz, aura, panel, rotulo, titulo, planteo, escudos, cierre, tira, fr, cab, reloj, relojN, celdas } = s;
+    const bt = crearBeats({ duracion: asentarseLl + T_LL.cola, asentarse: asentarseLl });
     beats = bt;
     entrando = !quieto();
     const w = (a) => bt.waapi(a);
     // el golpe de luz del bumper (un destello, por beats)
     const td = bt.destello(60);
     if (td != null) amb.pulso('elegir', td);
-    // ---- el bumper: la banda se abre, el rotulo entra apretandose, y la banda se cierra en una linea de luz
-    const D = T_MS.bumperDur;
+    // ---- el bumper: la banda se abre, el rotulo entra apretandose, y la banda se cierra en una linea de luz que se apaga
+    const D = T_LL.bumperDur;
     w(animar(bumper, [{ opacity: 1 }, { opacity: 1, offset: 0.97 }, { opacity: 0 }], { dur: D, easing: 'linear' }));
     w(animar(bumper.querySelector('.ms-bumper-banda'), [
       { transform: 'scaleY(0)', easing: EXPO },
-      { transform: 'scaleY(1)', offset: T_MS.abre, easing: 'linear' },
-      { transform: 'scaleY(1)', offset: T_MS.cierra, easing: 'cubic-bezier(.7,0,.3,1)' },
+      { transform: 'scaleY(1)', offset: T_LL.abre, easing: 'linear' },
+      { transform: 'scaleY(1)', offset: T_LL.cierra, easing: 'cubic-bezier(.7,0,.3,1)' },
       { transform: 'scaleY(.01)' },
     ], { dur: D, easing: 'linear' }));
     w(animar(bumper.querySelector('.ms-bumper-txt'), [
       { opacity: 0, letterSpacing: '0.42em', filter: 'blur(8px)', easing: EXPO },
       { opacity: 1, letterSpacing: '0em', filter: 'blur(0px)', offset: 0.36, easing: 'linear' },
-      { opacity: 1, letterSpacing: '0em', transform: 'none', filter: 'blur(0px)', offset: T_MS.cierra - 0.04, easing: 'cubic-bezier(.7,0,.3,1)' },
+      { opacity: 1, letterSpacing: '0em', transform: 'none', filter: 'blur(0px)', offset: T_LL.cierra - 0.04, easing: 'cubic-bezier(.7,0,.3,1)' },
       { opacity: 0, letterSpacing: '0em', transform: 'scaleY(.2)', filter: 'blur(4px)', offset: 0.9 },
       { opacity: 0, letterSpacing: '0em', transform: 'scaleY(.2)', filter: 'blur(4px)' },
     ], { dur: D, easing: 'linear' }));
-    w(animar(bumper.querySelector('.ms-bumper-sub'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none', offset: 0.45 }, { opacity: 1, transform: 'none', offset: T_MS.cierra - 0.06 }, { opacity: 0, transform: 'none', offset: 0.82 }, { opacity: 0, transform: 'none' }], { delay: 120, dur: D - 120, easing: 'linear' }));
-    // la linea de luz que queda: de aca caen las ofertas, y se apaga cuando cae la ultima
-    w(animar(lineaLuz, [{ opacity: 0, transform: 'scaleX(.6)' }, { opacity: 1, transform: 'none', offset: 0.05 }, { opacity: 1, transform: 'none', offset: 0.86 }, { opacity: 0, transform: 'scaleX(1.06)' }], { delay: T_MS.linea, dur: T_MS.lineaFin - T_MS.linea, easing: 'linear' }));
-    // ---- el panel sube; adentro, el orden de siempre (luz -> rotulo -> titulo -> opciones)
-    w(animar(panel, [{ opacity: 0, transform: 'translateY(22px)' }, { opacity: 1, transform: 'none' }], { delay: T_MS.panel, dur: T_MS.panelDur }));
+    w(animar(bumper.querySelector('.ms-bumper-sub'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none', offset: 0.45 }, { opacity: 1, transform: 'none', offset: T_LL.cierra - 0.06 }, { opacity: 0, transform: 'none', offset: 0.82 }, { opacity: 0, transform: 'none' }], { delay: 120, dur: D - 120, easing: 'linear' }));
+    w(animar(lineaLuz, [{ opacity: 0, transform: 'scaleX(.6)' }, { opacity: 1, transform: 'none', offset: 0.2 }, { opacity: 0, transform: 'scaleX(1.06)' }], { delay: D * T_LL.cierra, dur: D * (1 - T_LL.cierra) + 240, easing: 'linear' }));
+    // ---- el panel sube con la grilla vacia; adentro, el orden de siempre (luz -> rotulo -> titulo -> opciones)
+    w(animar(panel, [{ opacity: 0, transform: 'translateY(22px)' }, { opacity: 1, transform: 'none' }], { delay: T_LL.panel, dur: T_LL.panelDur }));
     w(entrar(fr, 0, -10));
-    w(entrar(rotulo, T_MS.panel + 120, 10));
-    w(animar(titulo, [{ opacity: 0, transform: 'translateY(40%)' }, { opacity: 1, transform: 'none' }], { delay: T_MS.panel + 200, dur: 420 }));
-    w(entrar(planteo, T_MS.panel + 300, 10));
-    w(entrar(cab.querySelector('.ms-leyenda'), T_MS.panel + 380, 6));
-    w(entrar(cierre, 1150, 10));
-    // ---- las ofertas caen de la linea a su lugar (medido: la grilla esta quieta en su lugar final)
-    const yLinea = lineaLuz.getBoundingClientRect().top;
+    w(entrar(rotulo, T_LL.panel + 120, 10));
+    w(animar(titulo, [{ opacity: 0, transform: 'translateY(40%)' }, { opacity: 1, transform: 'none' }], { delay: T_LL.panel + 200, dur: 420 }));
+    w(entrar(planteo, T_LL.panel + 300, 10));
+    w(entrar(cab.querySelector('.ms-leyenda'), T_LL.panel + 380, 6));
+    w(entrar(cierre, T_LL.panel + 520, 10));
+    w(entrar(reloj, T_LL.reloj - 220, 8));
+    // ---- el reloj: el dia que corre, las celdas que pasan y las llegadas (un participante de beats: congelar lo mueve)
+    bt.agregar({
+      en(t) {
+        const d = t < T_LL.reloj ? 1 : Math.min(diaFinal, 1 + Math.floor((t - T_LL.reloj) / T_LL.dia));
+        if (d !== ultDia) {
+          ultDia = d;
+          relojN.textContent = String(d).padStart(2, '0');
+          celdas.forEach((c, k) => {
+            c.classList.toggle('pasado', k + 1 < d);
+            c.classList.toggle('hoy', k + 1 === d);
+          });
+        }
+        const n = tToca.filter((x) => x <= t).length;
+        if (n !== ultN) {
+          ultN = n;
+          pintarLlegadas(t);
+        }
+      },
+    });
+    // ---- las ofertas caen a su lugar, cada una en su dia (medido: la grilla esta quieta en su lugar final)
+    const techo = panel.getBoundingClientRect().top - T_LL.caidaSobre;
+    const dur = T_LL.cae + T_LL.asienta;
+    const toca = T_LL.cae / dur;
     escudos.forEach((b, i) => {
-      const t0 = T_MS.llega + i * T_MS.llegaPaso;
-      const toca = t0 + T_MS.llegaDur * T_MS.toca;
+      const t0 = tCae[i];
+      const tt = tToca[i];
       const cresta = b.querySelector('.ms-op-cresta');
       const r = cresta.getBoundingClientRect();
-      const dy = Math.round(yLinea - (r.top + r.height / 2));
-      // la estela: un haz del acento de la org entre la linea y su lugar, mientras cae
+      const alto = Math.round(Math.max(0, Math.min(T_LL.caidaMax, r.top + r.height / 2 - techo)));
+      // la estela: un haz del acento de la org sobre su lugar, mientras cae
       const estela = b.querySelector('.ms-op-estela');
-      estela.style.height = `${Math.max(0, Math.round(b.getBoundingClientRect().top - yLinea))}px`;
-      w(animar(estela, [{ opacity: 0, transform: 'scaleY(.2)' }, { opacity: 1, transform: 'scaleY(1)', offset: 0.25 }, { opacity: 0.7, transform: 'scaleY(1)', offset: T_MS.toca }, { opacity: 0, transform: 'scaleY(.05)' }], { delay: t0, dur: T_MS.llegaDur + 160, easing: 'linear' }));
+      estela.style.height = `${Math.max(0, Math.round(alto - (r.top - b.getBoundingClientRect().top)))}px`;
+      w(animar(estela, [{ opacity: 0, transform: 'scaleY(.2)' }, { opacity: 1, transform: 'scaleY(1)', offset: 0.3 }, { opacity: 0.7, transform: 'scaleY(1)', offset: toca }, { opacity: 0, transform: 'scaleY(.05)' }], { delay: t0, dur, easing: 'linear' }));
+      // la caida: acelera, toca aplastandose, rebota y se asienta
       w(animar(cresta, [
-        { opacity: 0, transform: `translateY(${dy}px) scale(.3)`, filter: 'blur(6px)', easing: 'linear' },
-        { opacity: 1, transform: `translateY(${Math.round(dy * 0.9)}px) scale(.55)`, filter: 'blur(3px)', offset: 0.1, easing: 'cubic-bezier(.55,0,.9,.45)' },
-        { opacity: 1, transform: 'translateY(5%) scale(1.14, .86)', filter: 'blur(0px)', offset: T_MS.toca, easing: EXPO },
+        { opacity: 0, transform: `translateY(${-alto}px) scale(.62)`, filter: 'blur(5px)', easing: 'cubic-bezier(.5,0,.9,.4)' },
+        { opacity: 1, transform: `translateY(${Math.round(-alto * 0.86)}px) scale(.7)`, filter: 'blur(3px)', offset: 0.08, easing: 'cubic-bezier(.5,0,.9,.4)' },
+        { opacity: 1, transform: 'translateY(7%) scale(1.18, .8)', filter: 'blur(0px)', offset: toca, easing: 'cubic-bezier(.2,.7,.3,1)' },
+        { opacity: 1, transform: 'translateY(-9%) scale(.95, 1.06)', filter: 'blur(0px)', offset: toca + (1 - toca) * 0.45, easing: 'ease-in-out' },
         { opacity: 1, transform: 'none', filter: 'blur(0px)' },
-      ], { delay: t0, dur: T_MS.llegaDur, easing: 'linear' }));
-      // el lugar vacio (la tecla y el escudo punteado) se va cuando la oferta toca; el texto y las barras entran
-      w(animar(b.querySelector('.ms-op-vacio'), [{ opacity: 1 }, { opacity: 0 }], { delay: toca - 40, dur: 140, easing: 'linear' }));
-      w(animar(b.querySelector('.ms-op-txt'), [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { delay: toca, dur: 300 }));
-      b.querySelectorAll('.ms-op-barra').forEach((x, k) => w(animar(x, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: toca + 60 + k * 50, dur: 480 })));
+      ], { delay: t0, dur, easing: 'linear' }));
+      // el lugar vacio se va cuando la oferta toca; el texto y las barras entran; el polvo y el borde en su acento
+      w(animar(b.querySelector('.ms-op-vacio'), [{ opacity: 1 }, { opacity: 0 }], { delay: tt - 40, dur: 140, easing: 'linear' }));
+      w(animar(b.querySelector('.ms-op-txt'), [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { delay: tt + 40, dur: 300 }));
+      b.querySelectorAll('.ms-op-barra').forEach((x, k) => w(animar(x, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: tt + 100 + k * 50, dur: 480 })));
       const tag = b.querySelector('.ms-op-tag');
-      if (tag) w(animar(tag, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], { delay: toca + 120, dur: 260 }));
-      // el borde se enciende en el acento de su org y se asienta
-      w(animar(b.querySelector('.ms-op-borde'), [{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 0 }], { delay: toca - 20, dur: T_MS.borde, easing: 'ease-out' }));
-      w(animar(b, [{ transform: 'none' }, { transform: 'translateY(3px)', offset: 0.3 }, { transform: 'none' }], { delay: toca, dur: 220, easing: 'ease-out' }));
-      bt.esperar(toca).then((llego) => llego && sonido?.ding?.());
+      if (tag) w(animar(tag, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], { delay: tt + 160, dur: 260 }));
+      w(animar(b.querySelector('.ms-op-polvo'), [{ opacity: 0.9, transform: 'scaleX(.3)' }, { opacity: 0, transform: 'scaleX(1.7)' }], { delay: tt, dur: 520, fill: 'none' }));
+      w(animar(b.querySelector('.ms-op-borde'), [{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 0 }], { delay: tt - 20, dur: T_MS.borde, easing: 'ease-out' }));
+      // el golpe sordo: la carta se hunde y vuelve; el aviso suena cuando arranca a caer
+      w(animar(b, [{ transform: 'none' }, { transform: 'translateY(4px)', offset: 0.25 }, { transform: 'none' }], { delay: tt, dur: 260, easing: 'ease-out' }));
+      bt.esperar(t0).then((ya) => ya && sonido?.ding?.());
+      bt.esperar(tt).then((ya) => ya && sonido?.golpe?.());
+      const tp = bt.destello(tt);
+      if (tp != null) amb.pulso('apuntar', tp);
     });
-    // ---- el aura en reposo (vos en el mercado) y la cinta
-    w(animar(aura, [{ opacity: 0 }, { opacity: 1 }], { delay: T_MS.reposo, dur: 200, easing: 'linear' }));
-    w(animar(aura.querySelector('.ms-aura-escudo'), [{ opacity: 0, transform: 'scale(.8)', filter: 'blur(8px)' }, { opacity: 1, transform: 'none', filter: 'blur(0px)' }], { delay: T_MS.reposo, dur: 380 }));
-    w(animar(aura.querySelector('.ms-aura-k'), [{ opacity: 0, transform: 'translateX(-10px)' }, { opacity: 1, transform: 'none' }], { delay: T_MS.reposo + 40, dur: 300 }));
-    aura.querySelectorAll('.ms-aura-letra').forEach((l, j) => w(animar(l, [{ opacity: 0, transform: 'translateY(34%)' }, { opacity: 1, transform: 'none' }], { delay: T_MS.reposo + 60 + j * 16, dur: 300 })));
-    aura.querySelectorAll('.ms-termino').forEach((t, j) => w(entrar(t, T_MS.reposo + 140 + j * 50, 10)));
-    if (tira) w(animar(tira, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { delay: T_MS.cinta, dur: 420 }));
-    bt.esperar(T_MS.asentarse).then(() => {
+    // ---- la derecha: entra y recibe cada llegada (la luz de la org en la camiseta, el ping en tu lugar, la carta)
+    heroe?.llegada({ w, tCae, tToca });
+    // ---- el aura en reposo (vos en el mercado) y la cinta (el mundo se mueve mientras esperas)
+    w(animar(aura, [{ opacity: 0 }, { opacity: 1 }], { delay: T_LL.reposo, dur: 200, easing: 'linear' }));
+    w(animar(aura.querySelector('.ms-aura-escudo'), [{ opacity: 0, transform: 'scale(.8)', filter: 'blur(8px)' }, { opacity: 1, transform: 'none', filter: 'blur(0px)' }], { delay: T_LL.reposo, dur: 380 }));
+    w(animar(aura.querySelector('.ms-aura-k'), [{ opacity: 0, transform: 'translateX(-10px)' }, { opacity: 1, transform: 'none' }], { delay: T_LL.reposo + 40, dur: 300 }));
+    aura.querySelectorAll('.ms-aura-letra').forEach((l, j) => w(animar(l, [{ opacity: 0, transform: 'translateY(34%)' }, { opacity: 1, transform: 'none' }], { delay: T_LL.reposo + 60 + j * 16, dur: 300 })));
+    aura.querySelectorAll('.ms-termino').forEach((t, j) => w(entrar(t, T_LL.reposo + 140 + j * 50, 10)));
+    if (tira) w(animar(tira, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { delay: T_LL.cinta, dur: 420 }));
+    bt.esperar(asentarseLl).then(() => {
       if (beats !== bt) return;
       entrando = false;
       amb.aquietar(true);
@@ -2131,6 +2637,8 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
     const td = bt.destello(T_FIRMAR.golpe);
     if (td != null) amb.pulso('logro', td);
     bt.esperar(T_FIRMAR.golpe).then((llego) => llego && (sonido?.golpe?.(), sonido?.acorde?.()));
+    // (§4.10) la derecha firma con el mismo golpe (la carta de la org recibe su sello)
+    heroe?.firmar?.(i, { w, t: T_FIRMAR.golpe });
     // a donde lleva: la prueba de ingreso (lo que dice el motor para TODAS); con LOUD, lo que paso de verdad
     w(animar(res, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: T_FIRMAR.resultado, dur: DUR.larga }));
     [...res.children].forEach((c, k) => w(entrar(c, T_FIRMAR.resultado + 80 + k * 70, 8)));
@@ -2175,6 +2683,8 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
   }
   raiz.addEventListener('click', (e) => {
     if (elegido && !asentado && !e.target.closest('button')) saltarFirma();
+    // (§4.10) un clic afuera de los escudos y los botones mientras llegan: llegan todas
+    else if (entrando && !elegido && !e.target.closest('button, a, input, select, summary')) saltarEntrada();
   });
   const alRedimensionar = () => {
     const nom = s?.aura.querySelector('.ms-aura-nombre');
@@ -2206,6 +2716,7 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
     // la era cambia (el panel): el reposo la sigue; una org apuntada se queda con su tono
     alCambiarEra(era) {
       if (mostrada == null) aplicarTono(html, tonoEra(era));
+      heroe?.alCambiarEra?.();
     },
     congelar: (ms) => beats?.congelar(ms),
     pausar: () => beats?.pausar(),
@@ -2217,8 +2728,9 @@ function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
       removeEventListener('resize', alRedimensionar);
       beats?.destruir();
     },
-    // el arte es TU MAIN (no un campeon cualquiera): el aura lo tiñe del tono de la org
-    arte: datos.inicio?.jugador?.mains?.[0]?.ddragon ?? 'Yone',
+    // (§4.10) sin campeon en el mercado: la derecha es el heroe de la variante y el mundo es solo luz en el tono. Con
+    // var=campeon, el arte de §4.9 (TU MAIN, teñido del tono de la org apuntada)
+    arte: conHeroe ? null : datos.inicio?.jugador?.mains?.[0]?.ddragon ?? 'Yone',
     tono: tonoEra(estado?.eraEfectiva),
     animo: 'normal',
     encuadre: 'derecha',
