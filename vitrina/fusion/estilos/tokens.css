@@ -362,7 +362,28 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 /* (separador entre bloques de §4.9: no tocar) */
 
 /* ===== PLANUI §4.9 · linea · M, los momentos (la copa, el confeti, el titulo). Sus tokens van entre esta linea y su cierre ===== */
+/* La copa (js/trofeo.js): el color de cada metal es su reflectancia a incidencia normal (F0) en sRGB; el shader la pasa
+   a lineal. El oro (1, 0,71, 0,29 lineal) y la plata (0,95, 0,93, 0,88) son los valores medidos de esos metales; el
+   rojo cromado es el del trofeo del CBLOL 2024 (la fuente dice "vermelho cromado"; el tono exacto es nuestro). La noche
+   de cada metal es el negro tenido del fondo que refleja. */
 :root {
+  --cu-metal-oro: #ffda91;
+  --cu-metal-plata: #f9f7f1;
+  --cu-metal-rojo: #e04a35;
+  --cu-gema-azul: #3d7bff;
+  --cu-laca: #0b0a10;
+  --cu-madera: #4a2c1a;
+  --cu-noche-oro: #140d04;
+  --cu-noche-plata: #070a12;
+  /* la copa en SVG (sin WebGL): el hondo de cada metal para el degrade */
+  --cu-metal-oro-hondo: #7a4f17;
+  --cu-metal-plata-hondo: #545b6a;
+  --cu-metal-rojo-hondo: #6e1a10;
+  /* el titulo con la copa: el polvo que levantan las letras al caer y la caja de la copa */
+  --cu-polvo: #ffd27ad9;
+  --cu-polvo-nada: #ffd27a00;
+  --cu-copa-alto: min(72vh, 680px);
+  --cu-copa-aspecto: 0.66;
 }
 /* ===== fin §4.9 momentos ===== */
 

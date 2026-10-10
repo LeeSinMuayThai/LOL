@@ -1,1 +1,30 @@
-/* UNA LINEA (PLANUI §4.9): los momentos. Aca se muda la clase base .takeover (hoy en cumbre.css; la firma tambien la usa). Prefijo cu-. Lo implementa M. */
+/* UNA LINEA (PLANUI §4.9): los momentos. La clase base .takeover (mudada de cumbre.css: la usan el titulo y la firma) y
+   las piezas de los momentos que comparten pantallas: la copa (js/trofeo.js) y el confeti (js/confeti.js). Prefijo cu-. */
+
+/* ---------- la base de un takeover (la firma y el titulo) ---------- */
+.takeover { display: grid; align-content: center; padding: 64px var(--margen) 56px; overflow: hidden; }
+@media (max-width: 640px) {
+  .takeover { padding: 40px 20px 40px; align-content: center; }
+}
+
+/* ---------- la copa: el lienzo (canvas WebGL o la copa en SVG) llena su caja ---------- */
+.cu-lienzo { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.cu-copa-svg { --cu-m: var(--cu-metal-oro); --cu-m-hondo: var(--cu-metal-oro-hondo); overflow: visible; }
+.cu-copa-svg[data-material='plata'] { --cu-m: var(--cu-metal-plata); --cu-m-hondo: var(--cu-metal-plata-hondo); }
+.cu-svg-p0, .cu-svg-p4 { stop-color: var(--cu-m-hondo); }
+.cu-svg-p1 { stop-color: var(--cu-m); }
+.cu-svg-p2 { stop-color: var(--cu-m-hondo); }
+.cu-svg-p3 { stop-color: var(--luz-blanca); }
+.cu-svg-a0 { stop-color: var(--cu-metal-rojo-hondo); }
+.cu-svg-a1 { stop-color: var(--cu-metal-rojo); }
+.cu-svg-luz { stop-color: var(--luz-blanca); stop-opacity: 0.85; }
+.cu-svg-nada { stop-color: var(--luz-blanca); stop-opacity: 0; }
+.cu-svg-asa { fill: none; stroke-linecap: round; }
+.cu-svg-pedestal { fill: var(--cu-laca); stroke: var(--linea-fuerte); stroke-width: 2; }
+.cu-svg-placa { fill: var(--oscuro-total); stroke: var(--cu-m); stroke-width: 3; }
+.cu-svg-gema { fill: var(--cu-gema-azul); stroke: var(--luz-blanca); stroke-width: 2; }
+.cu-svg-barrido { mix-blend-mode: screen; }
+.cu-svg-sombra { fill: var(--oscuro-total); opacity: 0; }
+
+/* ---------- el confeti: una capa de canvas a pantalla completa, sin eventos ---------- */
+.cu-confeti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
