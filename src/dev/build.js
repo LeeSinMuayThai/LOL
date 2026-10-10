@@ -112,7 +112,14 @@ const SPLITS_DE_VERIFICACION = 30;
 // cuartos con la ficha única (V3e), el cuarto Carrera con `ui/core/trayectoria.js` y la medalla del Golden Road (V5), y
 // el movimiento (V4: los deltas animados, los carteles de página, la pausa del cierre de año). Subido a 2700: ~79 KB
 // (3%) de margen sobre el peso medido ese día, no una expectativa. V7 re-mide con el CSS muerto borrado.
-const PESO_MAXIMO_KB = 2700;
+//
+// Re-medido en U1k (2026-10-10, `u1k-kit`): 2934 KB contra 2700. Lo que creció es el kit de efectos de la UI nueva que
+// pide PLANUI §11 (U1k, el contrato de vitrina/fusion/LINEA.md §4), no algo que sobre: src/ui/fx/ +254 KB en crudo (el
+// ambiente WebGL2 con su respaldo CSS 97, la copa 3D 43, la ceremonia, la transmisión, los logos, el movimiento, los
+// beats, el confeti, su README), estilos/fx.css +43 y los sonidos del kit en sonido.js +10. La UI vieja convive hasta la
+// ola 2, que la reemplaza. Subido a 3000: ~66 KB (2,2%) de margen sobre el peso medido ese día, no una expectativa. U1
+// suma las fuentes de la vitrina y re-mide.
+const PESO_MAXIMO_KB = 3000;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
