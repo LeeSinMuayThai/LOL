@@ -209,3 +209,16 @@ const ROTULO_DE_MINIJUEGO = {
 export function rotuloDeMinijuego(decision) {
   return ROTULO_DE_MINIJUEGO[decision?.datos?.momento] ?? 'Minijuego';
 }
+
+/* U2b */
+// Dorsal por defecto, sin RNG: los dígitos finales del handle si caen en 1-99; si no, el hash del handle y la seed de vista.
+export function numeroDeJerseyPorDefecto(handle, semilla) {
+  const texto = String(handle ?? '').trim();
+  const digitos = /(\d{1,2})$/.exec(texto);
+  if (digitos) {
+    const n = Number(digitos[1]);
+    if (n >= 1 && n <= 99) return n;
+  }
+  const base = hashCadena(`${semilla ?? ''}|${texto}|jersey`);
+  return (base % 99) + 1;
+}

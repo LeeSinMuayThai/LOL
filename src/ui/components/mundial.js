@@ -1,4 +1,5 @@
 import { nombreVisibleDeLiga } from '../formatoUi.js';
+import { cinta } from '../fx/transmision.js';
 // K5-A (PLAN.md "K5 — decisiones de spec", K5-A, pantalla): el Mundial en una tarjeta. Arriba, tu Swiss resumido
 // (tu récord y cada cruce, con su resultado); abajo, el bracket de 8 con tu camino marcado. Lee solo el resumen que
 // el motor dejó en el log de cierre del Mundial (`core/internacional.js:resumenDelMundial`): no calcula nada.
@@ -38,30 +39,20 @@ function filaSwiss(resumen) {
   return fila;
 }
 
-function filaSerie(serie, jugador) {
-  const tuya = serie.a === jugador || serie.b === jugador;
-  const fila = el('div', `mundial-serie${tuya ? ' mundial-serie--tuya' : ''}`);
-  const lado = (nombre, mapas) => {
-    const gano = serie.ganador === nombre;
-    const nodo = el('span', `mundial-equipo${gano ? ' mundial-equipo--gano' : ''}`);
-    nodo.append(el('span', 'mundial-equipo-nombre', nombre), el('span', 'mundial-equipo-mapas', String(mapas)));
-    return nodo;
-  };
-  fila.append(lado(serie.a, serie.marcador[0]), lado(serie.b, serie.marcador[1]));
-  return fila;
-}
-
 function bloqueBracket(resumen) {
-  const bracket = el('div', 'mundial-bracket');
+  const items = [];
   for (const { etapa, series } of resumen.bracket) {
-    const columna = el('div', 'mundial-etapa');
-    columna.appendChild(el('div', 'mundial-rotulo', ETIQUETA_ETAPA[etapa]));
+    const rotulo = ETIQUETA_ETAPA[etapa] ?? etapa;
     for (const serie of series) {
-      columna.appendChild(filaSerie(serie, resumen.jugador));
+      const tuya = serie.a === resumen.jugador || serie.b === resumen.jugador;
+      items.push({
+        texto: `${rotulo}${tuya ? ' · tu serie' : ''} · ${serie.a} ${serie.marcador[0]}-${serie.marcador[1]} ${serie.b}`
+      });
     }
-    bracket.appendChild(columna);
   }
-  return bracket;
+  const nodo = cinta({ rotulo: 'Bracket', items });
+  nodo.classList.add('mundial-bracket');
+  return nodo;
 }
 
 export function crearTarjetaMundial(entry) {
