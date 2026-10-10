@@ -30,14 +30,50 @@
 | **U0 · las últimas correcciones** | La última ronda del usuario sobre `op=linea` (§4.10), con la perilla `var=`: el champ select del inicio, las costuras `copas` y `liga` de la bisagra, VICTORIA verde y el suspenso del mapa decisivo, el stream casi negro, las ofertas que llegan con `camiseta`/`plantel`/`ofertas` y el título con el campeón, la liga y el equipo | ✅ 2026-10-10 (merge `24d9009`: I, D, T, E); esperando que el usuario mire `final.html` en el 8095 |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⏭️ 2026-10-10: salteada. La fusión con `op=linea` ya cubre serie, Swiss y mercado; el celular, la trayectoria y el PNG se diseñan en U2/U3 con el mismo kit |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ✅ 2026-10-10: "Aprobar y migrar", después de ver que lolero.lol salió con la UI vieja. La especificación es la fusión con `op=linea` y las variantes de §4.10 (§2) |
-| **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
-| **C1** | El usuario prueba luz, tipografía, ritmo y rendimiento en su máquina | ⬜ |
-| **U2 + U2c** | Las pantallas del norte (inicio + decisión; partido + mercado) + franja, cuartos y contenedor de minijuegos | ⬜ |
+| **U1 + U1k + U1a** | Cimientos (tokens, fuentes, shell, era, transiciones, guards) + el kit `src/ui/fx/` + andamio liviano | ✅ 2026-10-10 (merges en `u-integracion`; ver §11 "Ola 1 cerrada") |
+| **C1** | El usuario prueba luz, tipografía, ritmo y rendimiento en su máquina | ⬜ movida a después de U2 |
+| **U2 + U2c** | Las pantallas del norte (inicio + decisión; partido + mercado) + franja, cuartos y contenedor de minijuegos | ⬜ **siguiente**. Los briefs están en el apéndice B. Se lanzó y se frenó el 2026-10-10 sin cambios: el usuario lo termina con Grok |
 | **U3** | Los momentos + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
 
 ---
+
+### 0.1 Traspaso (2026-10-10): dónde quedó y cómo seguir
+
+- **Rama:** `u-integracion`, sin push. Tiene la ola 1 entera. `master` y lolero.lol siguen con la UI vieja.
+- **El juego hoy:** los cimientos nuevos. Son los tokens y las fuentes de la fusión, el shell de 12 columnas, `data-era`
+  desde `ui/core/era.js` y el ambiente WebGL del kit, montado como `window.__fx`. Las familias todavía tienen el layout
+  viejo: eso lo rehace la ola 2.
+- **Para seguir, leer:**
+  - `CLAUDE.md`;
+  - la cabecera de `src/ui/escena.js` (el contrato de las familias);
+  - `src/ui/fx/README.md` (la API del kit, que no se cambia);
+  - §2 (las decisiones del usuario, sobre todo las filas "Compuerta 2");
+  - §11 ("Ajuste de la ola 1" y "Ola 1 cerrada");
+  - `vitrina/fusion/LINEA.md`;
+  - el apéndice B (los briefs de la ola 2).
+- **La referencia visual:** `node vitrina/servir.mjs --puerto 8095` → `http://localhost:8095/fusion/final.html`. La
+  vitrina con `op=linea` es la especificación.
+- **Herramientas:**
+  - `node src/dev/estrella.mjs --muestras a,b --salida dir`: capturas juego | vitrina en el mismo estado;
+  - `node src/dev/recorrido.mjs`: con la regla f2 nueva;
+  - `node src/dev/validate.js --rapido`;
+  - `node src/dev/build.js`: techo de 3150 KB, hoy 3061.
+- **Orden:**
+  1. la ola 2 (U2a, U2b y U2c en paralelo, archivos disjuntos);
+  2. C1, el usuario mira;
+  3. la ola 3 (U3a momentos, U3b la carta);
+  4. C2;
+  5. la ola 4 (pulido y la Definición de terminado de `CLAUDE.md`).
+- **Publicar:** primero el merge a `master`; después `npm run build && npx wrangler deploy`. La config está en
+  `wrangler.jsonc`: Worker `lolero`, dominios lolero.lol y www.
+- **Invariantes:**
+  - el motor no cambia (`HUELLA_JUEGO` 79304237, `VERSION` 15, `node src/dev/huella.js` = 1844448410);
+  - cero `Math.random`;
+  - colores literales solo en `tokens.css`;
+  - `index.html` ≤ 200 líneas;
+  - en `tokens.css`, `formatoUi.js` y `almacenamiento.js`, solo se agrega al final.
 
 ## 1. Por qué un tercer plan
 
@@ -1590,3 +1626,113 @@ la ventana de selección) · decisión (la ventana de la decisión al frente, el
 notificación con lo último que pasó; elegir → el resultado como notificación del sistema; el plan amateur como planilla)
 · cumbre (el stream a pantalla completa con el chat cayendo y "CAMPEONES", que desemboca en el salón de la fama con la
 carta) · tira de eras (el mismo escritorio de 2026 a 2040) · celular (el teléfono).
+
+---
+
+## Apéndice B — los briefs de la ola 2 (listos para despachar)
+
+**Común a los tres:**
+- Una rama y un worktree por subfase, desde `u-integracion`.
+- Leer lo de §0.1. El contrato de las familias de `ui/escena.js` es ley. El kit `fx/` se usa sin modificarlo.
+- No se tocan `fx/**`, `index.html`, `app.js`, `ui/escena.js`, `teclado.js`, `shell.*`, `primitivos.css`, `base.css`,
+  `guards.js` ni el motor.
+- En `tokens.css`, `formatoUi.js` y `almacenamiento.js` solo se agrega al final, con un rótulo `/* U2x */`.
+- Prefijos de clase propios; nada genérico.
+- Verificar con:
+  - `validate.js --rapido` y `build.js` (si se pasa el techo, se sube en un commit propio con el número);
+  - `recorrido.mjs` con 1 seed y `--max-paradas 25`;
+  - `estrella.mjs` sobre las muestras de cada uno, mirando las composiciones;
+  - el navegador a 1440×900 y 390×844, con INST y movimiento reducido, y 0 errores de consola.
+- Matar solo el PID propio. No tocar los puertos 8090, 8095 ni 8120.
+- ≤ 2 niveles de contenedor. Títulos ≤ 56 px.
+
+### U2a · inicio y decisión
+
+**Dueño de:** `screens/inicio.js`, `estilos/inicio.css`, `components/{feed,cierre,decision}.js`,
+`estilos/{feed,decision}.css`, `paradas/decision.js`.
+**Referencia:** `vitrina/fusion/js/{inicio,decision,escena}.js` y sus hojas.
+**Muestras:** `inicio,evento,planAmateur,cierreAnio`.
+
+1. **Inicio.**
+   - La intro de §6.8.
+   - El champ select de §4.10 I: pestañas de rol con glifos, el campeón apuntado grande en bitono 100% (era `pieza`),
+     tres ranuras como cartas de carga y BLOQUEAR con `ceremonia.bloquear`.
+   - Handle, región como selector de servidor y perfil en una línea; el desafío y el historial, chicos.
+   - Los textos literales que exigen los guards de `inicio.js` se conservan o se actualizan en el mismo commit.
+2. **Relato y cierres** (§8): íconos por `log.type`, el odómetro de `fx/movimiento.js` y la nota del año grande.
+   `data-era` queda quieto mientras cuenta.
+3. **Decisión.**
+   - Rótulo, título ≤ 56 px y primera oración.
+   - Franjas con ▲/▲▲/▲▲▲ y ▼ (la magnitud por cantidad de flechas) y un medidor con su %.
+   - **Un** inspector con la prosa de la opción apuntada, y el aura.
+   - La elegida se transforma en su resultado (el envoltorio de `revelar`).
+   - Nada del texto del motor se pierde (§7.5). Con `html[data-textos="completos"]`, la prosa va entera.
+4. **La bisagra:** la costura del ambiente (`api.ambiente({ costura })`), con la variante **según el contexto**:
+   - dos ligas en juego → `liga` (`fx/logos.js`);
+   - una copa en juego → `copas` (`fx/trofeo.js`);
+   - si no, `campeones`.
+   El contexto sale de datos estructurados de la decisión, **nunca de parsear prosa**.
+5. **Plan amateur y plan del año** como matriz (§7.4).
+
+### U2b · partido y mercado
+
+**Dueño de:** `paradas/{partido,mercado}.js`, `components/{serie,previaPartido,mundial,mercado}.js`,
+`estilos/{serie,mercado}.css` y un agregado al final de `almacenamiento.js`.
+**Referencia:** `vitrina/fusion/js/{partido,mercado}.js` y sus hojas.
+**Muestras:** `serie,serieReplan,swiss,mercado`.
+
+1. **Partido.**
+   - La fecha como cruce, con la p grande.
+   - Fearless: la pared de retratos de carga y `ceremonia.quemar`, y las cartas de plan con 5 barritas y el % de la
+     serie.
+   - El decisivo con `ambiente({ suspenso })`: el Bo5 2-2 y el Bo1 de vida o muerte del Swiss.
+   - El Swiss 2-2 a pantalla completa como stream: `transmision.*`, el récord en 5 marcas y Aceptar con anillo.
+   - El bracket como cinta.
+   - VICTORIA/DERROTA por mapa con `ceremonia.victoriaDerrota` y la costura cara a cara.
+   - Sin MVP, KDA, oro ni torres.
+2. **Mercado: el flujo de la compuerta 2 (§2).**
+   - **a.** Las ofertas llegan con el reloj de la ventana: días deterministas, el bombazo al final, 5,6 s, salteable y
+     usable mientras llegan. Atrás va la variante **`ofertas`**: cartas formales con membrete y sello que se apilan, y
+     apuntar una la trae al frente. Sin campeón.
+   - **b.** Al elegir, la carta se aprieta y **la firma se dibuja sobre el contrato**, con `beats`.
+   - **c.** **Tu línea cae desde arriba sobre el mapa de la Grieta con las cinco líneas** (el `plantel` de la vitrina).
+     Los otros 4 lugares dicen "por anunciar" (D102).
+   - **d. "La firma".** La camiseta de la org de espaldas, en SVG con pliegues, con sus colores, su escudo, el handle
+     y **un número que el jugador elige**: 1-99, con teclado y con un valor por defecto determinista. Se guarda con
+     `leerNumeroCamiseta`/`guardarNumeroCamiseta`, al final de `almacenamiento.js`, junto a `lolcs-vista` y nunca en
+     el `state`. Retomar lo conserva.
+   - Todo se saltea con Espacio. INST y reducido muestran el cuadro final. **Un solo `responder`.**
+   - Si una espera cambia los espejos de `simulate.js` ("K0 espejos"), se actualizan en el mismo commit.
+
+### U2c · franja, acompañante, cuartos y minijuegos
+
+**Dueño de:** `franja.js`, `acompanante.js`, `paneles/*`, `cuartos.js`, `cuartos/*` (menos `carrera.js`),
+`components/ficha.js`, `paradas/minijuego.js`, `estilos/{paneles,cuartos,ficha,minijuegos,hud,overlay}.css`. No toca
+las mecánicas de `components/minijuegos/*.js`.
+**Referencia:** `vitrina/fusion/js/marco.js`, `estilos/{base,linea}.css`, `vitrina/comun/{panel,celular}.*`.
+
+1. **Franja** translúcida de 52 px, con el ajuste **"Textos: breves | completos"** → `html[data-textos]`.
+   - Se guarda como preferencia de la vista; "breves" por defecto.
+   - Se conservan los ids del recorrido y las teclas de los cuartos.
+2. **Acompañante** en una sola placa translúcida, sin cambios de lógica en `acompananteDe`.
+3. **Cuartos.**
+   - El `<dialog>` con el sistema nuevo.
+   - Vos suma el radar de `graficos/hexa.js`. Carrera queda para U3b.
+   - Al abrir un cuarto, `window.__fx?.pausar?.()`; al cerrarlo, `reanudar`. Solo si el shell no lo hace ya.
+4. **Minijuegos, prueba y prensa.**
+   - La previa con la apuesta en una placa, y "¡Vamos!" como el anillo de `ceremonia`.
+   - El jugo: destello, sacudón ≤ 4 px y chispas.
+   - **Sacar las escuadras** de `minijuegos.css`.
+   - Se conservan los checks de texto literal de `paradas/minijuego.js`.
+5. **Celular:** franja compacta, acompañante en su hoja y cuartos a pantalla completa.
+
+### Después
+
+- **Ola 3, U3a · momentos** (§6.5, §11).
+  - `ui/core/momentos.js` y `fx/momento.js` (la base `.takeover`) con las 3 variantes, más banners y ceremonias.
+  - El gancho `alBeat` en `reproductor.js`, el sonido, `momentosVistos` en `lolcs-vista` y el espejo de `simulate.js`.
+  - El takeover del primer contrato reusa la pantalla "la firma" de U2b.
+- **Ola 3, U3b · la carta** (§6.6, §6.7): un canvas único que también es el PNG, la final, la trayectoria redibujada y
+  `exportar.js`. Puede mostrar el número de camiseta.
+- **Ola 4:** pulido (D98, D99), contraste, celular, rendimiento, CSS muerto y docs. Después, la Definición de terminado
+  de `CLAUDE.md`, el merge a `master` y el deploy.
