@@ -285,6 +285,14 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
   --dec-logo-org: 54px;
   --dec-logo-destino: 128px;
   --dec-anillo: 240px;
+  /* la demostracion final (op=final, PLANUI §4.8): el mundo detras del portal, la oscuridad del capitulo con destinos
+     (mas liviana que la de la bisagra: los destinos se tienen que ver), las ventanas de tu ciudad y el logo de cada carta */
+  --dec-borroso: 7px;
+  --dec-fin-oscuro: #010205e0;
+  --dec-fin-oscuro-medio: #01020594;
+  --dec-ventana-casa: #ffc58a;
+  --dec-logo-cab: 28px;
+  --dec-logo-portal: 92px;
 }
 /* ===== fin §4.7 decision ===== */
 
