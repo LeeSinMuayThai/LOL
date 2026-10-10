@@ -25,7 +25,7 @@
 | **Compuerta 1b** | El usuario mira la fusión | 🔶 2026-10-09: "está bien", pero el duotono "blanco y negro + violeta" de los campeones se vuelve repetitivo después del inicio; pidió tres variantes (§4.6) |
 | **U0 · intensidad** | Una página con tres variantes de color del campeón (a color, mitad, fondo en duotono y retratos a color) y el espacio "un poco" menos (§4.6) | ✅ 2026-10-09 (`899ed27`, merge `81993d4`); el usuario respondió con capturas (§4.7) |
 | **U0 · opciones** | La serie con la receta de color y el fondo nítido; tres opciones por pantalla para el partido (la competición), la decisión y el mercado (logos reales) (§4.7) | ✅ 2026-10-09 (merges `66c6cc4`, `4c2de5f`, `67764bd`, `94dc50a`); el usuario eligió y combinó (§4.8) |
-| **U0 · demostración final** | Una versión por pantalla (`op=final`): serie con las pantallas del stage, Swiss como stream, decisión B+C, mercado A+C sin campeón de fondo; `final.html` (§4.8) | 🔶 en curso |
+| **U0 · demostración final** | Una versión por pantalla (`op=final`): serie con las pantallas del stage, Swiss como stream, decisión B+C, mercado A+C sin campeón de fondo; `final.html` (§4.8) | ✅ 2026-10-10 (merges `b45543c`, `fcd297b`, `5a8c891`, `c0297b7`); esperando que el usuario la mire |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
@@ -731,6 +731,54 @@ para `opciones.html`. Cero choques de código: solo el README, que se resolvió 
   "como hoy".
 - Después: revisión de las capturas, merge, servir, y el usuario mira **la última demostración**. Con su visto bueno,
   la fusión + `op=final` es la especificación. Se cierran §5, §8 y §11, y queda la compuerta 2.
+
+**Resultado (2026-10-10; merges `b45543c` página, `fcd297b` mercado, `5a8c891` partido, `c0297b7` decisión).**
+
+- **Serie (`op=final`).**
+  - **El escenario:** el estadio del CBLOL arriba. La pantalla LED central muestra el matchup de mid (tu pick contra el
+    del rival) con los logos y el marcador. Las laterales, inclinadas, llevan el logo de cada equipo y tu plantel
+    (handle y rol, sin campeón).
+  - **Fearless y el público:** una faja LED muestra los quemados, y el público va en siluetas.
+  - **Luces:** las de recital quedaron al 30% y casi quietas.
+  - **El aura** pone el campeón en la pantalla central.
+  - **Cada mapa:** su carga y VICTORIA/DERROTA en la LED. Al final, CAMPEONES o "FX GANA LA FINAL".
+  - El draft queda delante, compactado.
+- **Swiss (`op=final`).**
+  - **El reproductor:** la página entera de un stream, con pausa, volumen, EN VIVO, calidad y pantalla completa.
+  - **Adentro**, el escenario de Worlds con el marcador, la placa del jugador y el camino R1-R5.
+  - **Abajo:** el título del stream, el canal, los espectadores y **los cruces reales de la ronda**
+    (`partidoEnCurso.cruces`).
+  - El chat va al costado. La parada está arriba del chat.
+- **Decisión (`op=final`).**
+  - **La invitación es un portal:** atrás, `escena` atenuada (São Paulo con CBLOL y FURIA, Seúl con la LCK), y a través
+    del anillo, Seúl nítida.
+  - **Aceptar** agranda el anillo y abre el capítulo. Cada camino termina en su destino, encima de su carta de lo que
+    arriesgás.
+  - **Apuntar** mueve la luz y la cámara. **Elegir** abre el destino y los números ruedan.
+  - Las comunes llevan el capítulo atenuado. El plan amateur cae a la versión simple.
+- **Mercado (`op=final`).**
+  - **La entrada:** las ofertas entran una por una (2,45 s, salteable).
+  - **Sin campeón:** en reposo, el tablero de pases con letras que caen y los 6 fichajes reales de "Mientras tanto" más
+    2 cupos abiertos.
+  - **Al apuntar:** el telón de prensa de la org.
+  - **Al firmar:** el trazo, el sello con golpe y la conferencia con flashes (≤ 3/s).
+  - **La firma de LOUD:** su telón en vez del campeón.
+- **`final.html`:** 7 pestañas con una pantalla grande viva, 0 para "como estaba" y R para repetir.
+
+**Verificación:**
+- **El supervisor:** 39 combinaciones de pantalla × opción (sin `op`, §4.7 y `final`) más `final.html`,
+  `opciones.html` y `variantes.html`, en el 8095, sin errores ni avisos. `verificar.mjs` en verde. Capturas
+  post-merge revisadas.
+- **Los workers:** contraste medido, incluidas las capas `aria-hidden`, con 0 textos debajo de 4,5:1 (864 + 399 + 1066
+  + 1296 + 1147).
+- **Lo que no se probó:** nadie vio el movimiento en vivo, solo tiras cuadro a cuadro.
+
+**Lo que no convence o falta (para la producción):**
+- en el celular no hay tablero, telón, caminos ni pantallas laterales;
+- solo Seúl tiene sus hitos dibujados;
+- el público es una fila pareja;
+- sin WebGL, el estadio queda en la luz de la era;
+- los colores de las orgs inventadas difieren entre `final` y las opciones de §4.7.
 
 ---
 
