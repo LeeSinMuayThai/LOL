@@ -281,3 +281,18 @@ sintetizados con WebAudio y mudos si el sonido está apagado. Las pantallas los 
 - **Un informe de ≤ 15 líneas**: qué hiciste y dónde, las decisiones que tomaste, lo que pedís de un archivo congelado,
   los números medidos (contraste, fps) y la ruta de tu hoja de contactos.
 - No pegues archivos.
+
+## 10. Lo que sumó la unificación (ola 3)
+
+El detalle está en la subsección "La unificación (ola 3)" del README.
+
+- **`costura.caras: { a: { x, y }, b: { x, y }, alto }`** fija dónde cae cada cara, cada una de su lado de la línea, con
+  y sin WebGL. La decisión la usa para que las caras queden arriba del panel.
+- **`anilloAceptar({ velo })`** acepta un número o un token. **`ARO`** es la geometría del aro, exportada por
+  `ceremonia.js`.
+- **`animoConColor`** en la política `linea` (`color.js`): con `linea`, la caída y el peligro oscurecen y enfrían la
+  luz, pero no le sacan color al arte. Así los momentos se quedan al 70%.
+- **`amb.pulso`** suma pulsos superpuestos, con ≥ 335 ms entre uno y otro. La tecla de `bloquear()` ya no saltea en el
+  mismo evento. Sin WebGL, `amb.costura()` devuelve las caras. Con INST, el ambiente queda quieto.
+- **La hoja de contactos de las 7 pantallas** está en `vitrina/referencia/linea/hoja-de-contactos.jpg` y se ve en la
+  pestaña "Las 7 juntas" de `final.html`.

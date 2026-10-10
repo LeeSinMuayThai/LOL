@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="es" data-era="escenario">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>El kit de la línea — la fusión — Un Split Más</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../comun/fuentes.css">
+  <link rel="stylesheet" href="../comun/tokens.css">
+  <link rel="stylesheet" href="estilos/tokens.css">
+  <link rel="stylesheet" href="estilos/base.css">
+  <link rel="stylesheet" href="estilos/ambiente.css">
+  <link rel="stylesheet" href="estilos/ceremonia.css">
+  <link rel="stylesheet" href="estilos/transmision.css">
+  <link rel="stylesheet" href="estilos/linea.css">
+</head>
+<body class="ln-hoja">
+  <div id="ambiente" class="ambiente" aria-hidden="true"></div>
+  <div class="ln-hoja-logo-b" id="logo-b" hidden aria-hidden="true"></div>
+  <main class="ln-hoja-main">
+    <section class="ln-hoja-heroe" aria-labelledby="t-hoja">
+      <header>
+        <p class="rotulo-cat"><i class="punto-luz"></i><span>La fusión</span><span class="bisagra">una línea · el kit</span></p>
+        <h1 class="ln-hoja-titulo" id="t-hoja">el kit de la línea</h1>
+        <p class="ln-hoja-bajada">La referencia de la ola 2. Atrás, en vivo: la costura del shader (dos mundos, una diagonal de luz, cada mitad en su tono). Abajo: el segundo tono, la ceremonia y la transmisión.</p>
+      </header>
+      <div></div>
+      <div class="ln-hoja-panel ln-hoja-mandos" id="mandos">
+        <div class="ln-hoja-fila"><span class="ln-hoja-k">La costura</span>
+          <button type="button" class="boton ln-hoja-boton" data-costura="cara">Cara a cara · Sylas | Ahri</button>
+          <button type="button" class="boton ln-hoja-boton" data-costura="bisagra">Bisagra · CBLOL | LCK</button>
+          <button type="button" class="boton ln-hoja-boton" data-costura="solo">Un lado solo tono</button>
+          <button type="button" class="boton ln-hoja-boton" data-costura="apagada">Apagada</button>
+        </div>
+        <label><span class="ln-hoja-k">Posición</span><input type="range" id="posicion" min="0.25" max="0.75" step="0.01" value="0.5"><output id="posicion-v">0,50</output></label>
+        <label><span class="ln-hoja-k">Ángulo</span><input type="range" id="angulo" min="-24" max="24" step="1" value="12"><output id="angulo-v">12°</output></label>
+        <div class="ln-hoja-fila"><span class="ln-hoja-k">El aura (lado A)</span>
+          <button type="button" class="boton ln-hoja-boton" data-campeon="Yone">Yone</button>
+          <button type="button" class="boton ln-hoja-boton" data-campeon="Anivia">Anivia</button>
+          <button type="button" class="boton ln-hoja-boton" data-campeon="Corki">Corki</button>
+        </div>
+        <p class="ln-hoja-nota" id="nota-costura" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="ln-hoja-sec" aria-labelledby="t-tonos">
+      <h2 class="ln-hoja-h2" id="t-tonos">el mismo campeón, cinco tonos</h2>
+      <p class="ln-hoja-nota">El bitono es noche + luz; el tono dice dónde estás. Mismo arte (al 60 % de su color, la política <code>linea</code>), la escena del escenario y la luz, la contra, la noche y el vacío de cada tono.</p>
+      <div class="ln-hoja-tonos" id="tonos"></div>
+    </section>
+
+    <section class="ln-hoja-sec" aria-labelledby="t-cer" id="ceremonias">
+      <h2 class="ln-hoja-h2" id="t-cer">la ceremonia</h2>
+      <div class="ln-hoja-cer">
+        <article class="ln-hoja-panel ln-hoja-celda" id="cel-aviso">
+          <div class="ln-hoja-cab"><b>¡Aceptar!</b><button type="button" class="boton" data-repetir="aviso">Repetir</button></div>
+          <div class="ln-hoja-escenario" data-ln-caja data-alto id="esc-aviso"></div>
+        </article>
+        <div class="ln-hoja-pila">
+          <article class="ln-hoja-panel ln-hoja-celda" id="cel-bloquear">
+            <div class="ln-hoja-cab"><b>Bloquear / firmar</b><button type="button" class="boton" data-repetir="bloquear">Repetir</button></div>
+            <div class="ln-hoja-escenario" id="esc-bloquear"></div>
+          </article>
+          <article class="ln-hoja-panel ln-hoja-celda" id="cel-quemar">
+            <div class="ln-hoja-cab"><b>El quemado de Fearless</b><button type="button" class="boton" data-repetir="quemar">Repetir</button></div>
+            <div class="ln-hoja-escenario" id="esc-quemar"></div>
+          </article>
+        </div>
+        <article class="ln-hoja-panel ln-hoja-celda" id="cel-victoria">
+          <div class="ln-hoja-cab"><b>Victoria</b><button type="button" class="boton" data-repetir="victoria">Repetir</button></div>
+          <div class="ln-hoja-escenario" id="esc-victoria"></div>
+        </article>
+        <article class="ln-hoja-panel ln-hoja-celda" id="cel-derrota">
+          <div class="ln-hoja-cab"><b>Derrota</b><button type="button" class="boton" data-repetir="derrota">Repetir</button></div>
+          <div class="ln-hoja-escenario" id="esc-derrota"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="ln-hoja-sec" aria-labelledby="t-tv">
+      <h2 class="ln-hoja-h2" id="t-tv">la transmisión</h2>
+      <div class="ln-hoja-panel ln-hoja-tv" id="tv">
+        <div class="ln-hoja-fila"><button type="button" class="boton" data-repetir="marcador">Repetir el marcador</button><span class="ln-hoja-nota">Los cuartos de la serie con replan: mapa 1 perdido, mapa 2 ganado.</span></div>
+      </div>
+    </section>
+
+    <section class="ln-hoja-sec" aria-labelledby="t-odo">
+      <h2 class="ln-hoja-h2" id="t-odo">el odómetro</h2>
+      <div class="ln-hoja-panel ln-hoja-tv">
+        <div class="ln-hoja-odo" id="odo"><span></span><span></span><span></span></div>
+        <button type="button" class="boton" data-repetir="odometro">Repetir</button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    // La hoja del kit (PLANUI §4.9). Solo usa las APIs del kit: ambiente({ costura, paleta, cruce, lightsticks }),
+    // fotografiarTonos, js/tono.js, js/ceremonia.js, js/transmision.js, el odometro de js/util.js.
+    // Para las capturas: window.linea = { listo(), costura(nombre), ceremonia(nombre), congelar(ms), cuadros() }.
+    // #reducido=1 o #inst=1 en el hash muestran el camino quieto.
+    import { cargarMuestras } from '../comun/datos.js';
+    import { urlCarga } from '../comun/arte.js';
+    import { crearAmbiente, fotografiarTonos } from './js/ambiente.js';
+    import { tonoEra, tonoDestino, tonoCompeticion, tonoOrg, TONO_ORO, aplicarTono, separar, parecidos } from './js/tono.js';
+    import { anilloAceptar, bloquear, victoriaDerrota, quemar } from './js/ceremonia.js';
+    import { marcador, placaInferior, cinta } from './js/transmision.js';
+    import { crearSonido } from './js/sonido.js';
+    import { logoOrg, competicionDe, siglaDe } from './js/competicion.js';
+    import { logoLiga } from './js/logos.js';
+    import { el, odometro, celular } from './js/util.js';
+    import { politica } from './js/fondo.js';
+
+    const html = document.documentElement;
+    const hash = new URLSearchParams(location.hash.slice(1));
+    if (hash.get('reducido') === '1') html.setAttribute('data-reducido', '');
+    if (hash.get('inst') === '1') html.setAttribute('data-inst', '');
+    if (hash.get('webgl') === '0') html.setAttribute('data-sin-webgl', '');
+    const datos = await cargarMuestras();
+    const meta = datos.meta;
+    const sonido = crearSonido();
+    await Promise.all(['800 52px "Mona Sans"', '900 52px "Mona Sans"', '400 17px Geist', '500 12px "Geist Mono"'].map((f) => document.fonts.load(f))).catch(() => {});
+
+    // ---------- la costura, en vivo ----------
+    const amb = crearAmbiente(document.getElementById('ambiente'), { meta });
+    // el mundo como en el juego con op=linea: la escena `costura` (sin campeon doble, mas luz y polvo) y el color de la
+    // politica `linea` (la costura es una pieza: 65 % de su color real)
+    amb.fondo({ politica: politica('pleno', 'partido', 'serie', 'linea', 'costura'), instantaneo: true });
+    const RED = 'RED Canids Kalunga';
+    const FX = 'Fluxo W7M';
+    const tRED = tonoOrg(RED);
+    const tFX = separar(tRED, tonoOrg(FX), tonoCompeticion('cblol'));
+    const PRESETS = {
+      cara: { nota: `Tu Sylas (${RED}) contra la intención del rival, Ahri (${FX}). ${parecidos(tRED, tonoOrg(FX)) ? 'Los dos tonos se parecían: el lado B tomó otra luz (separar()).' : ''}`, costura: { a: { arte: 'Sylas', tono: tRED }, b: { arte: 'Ahri', tono: tFX } } },
+      bisagra: { nota: 'La bisagra: tu main en dos destinos, cada mitad en el tono de su competición.', costura: { a: { arte: 'Sylas', tono: tonoDestino('CBLOL') }, b: { arte: 'Sylas', tono: tonoDestino('LCK') } } },
+      solo: { nota: 'Un lado solo tono: tu Anivia (FURIA) contra Movistar KOI, que va como logo (<img>) arriba de su luz.', costura: { a: { arte: 'Anivia', tono: tonoOrg('FURIA') }, b: { arte: null, tono: tonoOrg('Movistar KOI') } }, logo: 'Movistar KOI' },
+      apagada: { nota: 'Sin costura: el campeón de siempre, en la luz de la era.', costura: null },
+    };
+    let actual = 'cara';
+    const logoB = document.getElementById('logo-b');
+    const pos = document.getElementById('posicion');
+    const ang = document.getElementById('angulo');
+    const fmt = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    let cargaCostura = Promise.resolve();
+    function ponerCostura(nombre, { cruce = 750 } = {}) {
+      actual = nombre;
+      const p = PRESETS[nombre];
+      document.querySelectorAll('[data-costura]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.costura === nombre)));
+      document.getElementById('nota-costura').textContent = p.nota;
+      const costura = p.costura ? { ...p.costura, posicion: Number(pos.value), angulo: Number(ang.value), k: 1 } : null;
+      aplicarTono(html, p.costura?.a.tono ?? null);
+      cargaCostura = amb.ambiente({ era: 'escenario', encuadre: celular() ? 'celular' : 'derecha', arte: p.costura?.a.arte ?? 'Sylas', costura, cruce, lightsticks: 1 });
+      logoB.textContent = '';
+      logoB.hidden = !p.logo;
+      if (p.logo) logoB.append(logoOrg(p.logo));
+      return cargaCostura;
+    }
+    document.querySelectorAll('[data-costura]').forEach((b) => b.addEventListener('click', () => ponerCostura(b.dataset.costura)));
+    pos.addEventListener('input', () => {
+      document.getElementById('posicion-v').textContent = fmt.format(Number(pos.value));
+      if (PRESETS[actual].costura) amb.ambiente({ costura: { posicion: Number(pos.value) }, cruce: 300 });
+    });
+    ang.addEventListener('input', () => {
+      document.getElementById('angulo-v').textContent = `${ang.value}°`;
+      if (PRESETS[actual].costura) amb.ambiente({ costura: { angulo: Number(ang.value) }, cruce: 300 });
+    });
+    // el aura: apuntar un campeon cambia el lado A (como el aura del juego: ambiente({ arte }))
+    document.querySelectorAll('[data-campeon]').forEach((b) => {
+      b.addEventListener('pointerenter', () => amb.ambiente({ arte: b.dataset.campeon, cruce: 750 }));
+      b.addEventListener('pointerleave', () => amb.ambiente({ arte: PRESETS[actual].costura?.a.arte ?? 'Sylas', cruce: 750 }));
+    });
+    // el logo del lado solo tono sigue a la cara de B
+    (function seguir() {
+      const g = amb.costura();
+      if (!logoB.hidden && g.b) {
+        logoB.style.left = `${g.b.x * 100}vw`;
+        logoB.style.top = `${g.b.y * 100}vh`;
+        logoB.style.opacity = String(g.k);
+      }
+      requestAnimationFrame(seguir);
+    })();
+
+    // ---------- el mismo campeon en cinco tonos ----------
+    const TONOS = [
+      { t: tonoEra('escenario'), titulo: 'Era · el escenario', uso: 'el inicio, las decisiones comunes' },
+      { t: tonoDestino('LCK'), titulo: 'Destino · la LCK', uso: 'cada mitad de la bisagra' },
+      { t: tonoCompeticion('cblol'), titulo: 'Competición · el CBLOL', uso: 'la serie y el Swiss' },
+      { t: tonoOrg('LOUD'), titulo: 'Org · LOUD', uso: 'el mercado al apuntar, la firma' },
+      { t: TONO_ORO, titulo: 'Oro', uso: 'solo la ceremonia y el título' },
+    ];
+    const caja = document.getElementById('tonos');
+    const hex = (token) => getComputedStyle(html).getPropertyValue(token).trim();
+    const lienzos = TONOS.map(({ t, titulo, uso }) => {
+      const lienzo = el('canvas', { width: 640, height: 400, role: 'img', 'aria-label': `Sylas en el tono ${titulo}` });
+      const muestras = ['luz', 'contra', 'noche'].map((k) => el('span', { class: 'ln-hoja-muestra' }, [el('i', { style: { background: `var(${t[k]})` } }), `${k} ${hex(t[k])}`]));
+      caja.append(el('figure', { class: 'ln-hoja-panel ln-hoja-tono' }, [lienzo, el('figcaption', {}, [el('b', { text: titulo }), el('span', { class: 'ln-hoja-k', text: `${t.id} · ${uso}` }), el('span', { class: 'ln-hoja-muestras' }, muestras)])]));
+      return lienzo;
+    });
+    const fotos = fotografiarTonos(TONOS.map((x) => x.t), { ancho: 640, alto: 400, meta, arte: 'Sylas', era: 'escenario', marco: [0.6, 0.64, 1.7, 1], mezcla: 0.6 }).then((f) => {
+      if (!f) return;
+      TONOS.forEach((x, i) => lienzos[i].getContext('2d').drawImage(f[x.t.id], 0, 0, 640, 400));
+    });
+
+    // ---------- la ceremonia ----------
+    const replan = datos.serieReplan.serieEnCurso;
+    const [m1, m2] = replan.mapas;
+    const LOS = replan.rival.org;
+    const logoImg = (id) => {
+      const l = logoLiga(id);
+      return el('img', { src: l.src, alt: '', decoding: 'async', referrerpolicy: 'no-referrer' });
+    };
+    const vivas = {};
+    const FABRICAS = {
+      aviso() {
+        const esc = document.getElementById('esc-aviso');
+        vivas.aviso?.destruir();
+        esc.textContent = '';
+        const a = anilloAceptar({ escudo: logoImg('lck'), encabezado: '¡Oferta encontrada!', cola: 'Cupo de import · LCK', tono: tonoDestino('LCK'), segundos: 12, sonido, alAceptar: () => setTimeout(() => FABRICAS.aviso(), 1400) });
+        esc.append(a.nodo);
+        vivas.aviso = a;
+        return a.animaciones;
+      },
+      bloquear() {
+        const esc = document.getElementById('esc-bloquear');
+        esc.textContent = '';
+        const b = bloquear({ texto: 'Firmar', sonido });
+        esc.append(b.nodo);
+        vivas.bloquear = b;
+        return [];
+      },
+      victoria() {
+        const esc = document.getElementById('esc-victoria');
+        esc.textContent = '';
+        const v = victoriaDerrota({ gano: true, sub: `Mapa ${m2.mapa} · ${m2.marcador} · ${m2.campeon}` });
+        esc.append(v.nodo);
+        sonido.victoria?.();
+        return v.animaciones;
+      },
+      derrota() {
+        const esc = document.getElementById('esc-derrota');
+        esc.textContent = '';
+        const v = victoriaDerrota({ gano: false, sub: `Mapa ${m1.mapa} · ${m1.marcador} · ${m1.campeon}` });
+        esc.append(v.nodo);
+        sonido.derrota?.();
+        return v.animaciones;
+      },
+      quemar() {
+        const esc = document.getElementById('esc-quemar');
+        esc.textContent = '';
+        const cartas = [m1.campeon, m2.campeon, 'Sylas'].map((k) => el('div', { class: 'ln-hoja-carta' }, [el('img', { src: urlCarga(k, meta), alt: '', crossorigin: 'anonymous', decoding: 'async' }), el('span', { text: k })]));
+        esc.append(el('div', { class: 'ln-hoja-cartas' }, cartas));
+        return [...quemar(cartas[0], { retardo: 200, sonido }), ...quemar(cartas[1], { retardo: 520 })];
+      },
+    };
+    document.querySelectorAll('[data-repetir]').forEach((b) => b.addEventListener('click', () => (FABRICAS[b.dataset.repetir] ?? TV[b.dataset.repetir])?.()));
+
+    // ---------- la transmision ----------
+    const tv = document.getElementById('tv');
+    aplicarTono(tv, tonoCompeticion('cblol'));
+    const comp = competicionDe(datos, 'serieReplan');
+    const eq = (nombre) => ({ nombre, sigla: siglaDe(nombre), logo: logoOrg(nombre) });
+    let mc = null;
+    const TV = {
+      marcador() {
+        mc?.nodo.remove();
+        mc = marcador({ comp, rotulo: 'Cuartos de final', local: eq(datos.serieReplan.org), visita: eq(LOS), formato: replan.formato, mapas: [] });
+        tv.prepend(mc.nodo);
+        setTimeout(() => mc.actualizar({ mapas: [m1].map((m) => ({ resultado: m.resultado })) }), 900);
+        setTimeout(() => mc.actualizar({ mapas: [m1, m2].map((m) => ({ resultado: m.resultado })) }), 1800);
+      },
+      odometro() {
+        const [a, b, c] = document.getElementById('odo').children;
+        odometro(a, 74, 75);
+        odometro(b, 95, 96);
+        odometro(c, 1, 1142, { dur: 1400 });
+      },
+    };
+    TV.marcador();
+    tv.append(placaInferior({ rotulo: `Mapa ${m2.mapa} · cuartos de final`, titulo: m2.cierre, sub: `${siglaDe(datos.serieReplan.org)} ${m2.marcador.replace('-', '–')} ${siglaDe(LOS)} · al mejor de ${replan.formato}` }));
+    const traspasos = datos.mercado.mercadoDelMundo.traspasosMundo.slice(0, 6);
+    tv.append(cinta({ rotulo: 'Mientras tanto', items: traspasos.map((t) => ({ texto: t.motivo, logo: logoOrg(t.org) })) }));
+    TV.odometro();
+    for (const f of Object.keys(FABRICAS)) FABRICAS[f]();
+
+    // ---------- para las capturas ----------
+    const enCeremonias = (a) => document.getElementById('ceremonias').contains(a.effect?.target ?? null);
+    window.linea = {
+      amb,
+      listo: () => Promise.all([cargaCostura, fotos, document.fonts.ready, ...[...document.images].map((i) => (i.complete ? null : new Promise((r) => { i.addEventListener('load', r, { once: true }); i.addEventListener('error', r, { once: true }); })))]).then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))),
+      costura: (n) => ponerCostura(n),
+      ceremonia: (n) => FABRICAS[n](),
+      presionar: () => vivas.bloquear?.bloquear(),
+      congelar(ms) {
+        for (const a of document.getAnimations().filter(enCeremonias)) {
+          a.pause();
+          a.currentTime = ms;
+        }
+      },
+      cuadros: () => amb.cuadros(),
+    };
+    await ponerCostura('cara', { cruce: 0 });
+  </script>
+</body>
+</html>

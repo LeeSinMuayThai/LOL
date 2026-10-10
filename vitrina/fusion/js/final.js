@@ -1,21 +1,23 @@
-// final.html (PLANUI §4.8): la ultima demostracion. UN solo iframe grande con la fusion entera (index.html, 1440x900 escalado,
-// viva e interactiva, panel de la vitrina oculto, era=auto). Las pestañas cambian su hash; 0 alterna entre la version final
-// (op=final) y "como estaba" (el mismo hash sin op); R recarga el iframe para ver otra vez las animaciones de entrada.
+// final.html (PLANUI §4.8, §4.9): la demostracion. UN solo iframe grande con la fusion entera (index.html, 1440x900
+// escalado, viva e interactiva, panel de la vitrina oculto, era=auto). Las pestañas cambian su hash; cada una tiene su
+// version (`op`, hoy `linea`: "una linea") y la de antes (`antes`: la demostracion final de §4.8, o null = sin op); 0
+// alterna entre las dos; R recarga el iframe para ver otra vez las animaciones de entrada. "Las 7 juntas" no es el juego:
+// es la hoja de contactos de las siete pantallas (la arma el supervisor al final de la ronda).
 // Las teclas funcionan con el foco en la pagina o adentro del juego (mismo origen: se escucha tambien en la ventana del marco).
 import { eraEfectiva } from '../../comun/catalogo.js';
 
-// Lo que el supervisor puede ajustar: las pestañas, su hash y la linea de "que mirar". `op: false` = sin version final
-// (es la referencia o no cambia): ahi 0 no tiene nada con que comparar.
+// Lo que el supervisor puede ajustar: las pestañas, su hash y la linea de "que mirar". `op: null` = sin version nueva
+// (el inicio es la referencia): ahi 0 no tiene nada con que comparar. `imagen`: la pestaña muestra esa imagen y no el juego.
 const PESTANAS = [
-  { id: 'inicio', titulo: 'El inicio', pantalla: 'inicio', muestra: null, op: false, mirar: 'Así arranca: tu main al 100%.' },
-  { id: 'decision', titulo: 'La decisión', pantalla: 'decision', muestra: 'evento', op: true, mirar: 'La invitación de la LCK: aceptala y se abre el capítulo con los dos caminos.' },
-  { id: 'serie', titulo: 'La serie', pantalla: 'partido', muestra: 'serie', op: true, mirar: 'Las pantallas del estadio muestran tu pick y el del rival; apuntá campeones y jugá con 1-3.' },
-  { id: 'swiss', titulo: 'El Swiss', pantalla: 'partido', muestra: 'swiss', op: true, mirar: 'Lo ves como un stream: la transmisión en el player y el chat al costado.' },
-  { id: 'mercado', titulo: 'El mercado', pantalla: 'mercado', muestra: 'mercado', op: true, mirar: 'Las ofertas entran; apuntá una org, leé su contrato y firmá con Enter.' },
-  { id: 'firma', titulo: 'La firma', pantalla: 'mercado', muestra: 'firma', op: true, mirar: 'LOUD.' },
-  { id: 'titulo', titulo: 'El título', pantalla: 'cumbre', muestra: 'titulo', op: false, mirar: 'CAMPEONES.' },
+  { id: 'inicio', titulo: 'El inicio', pantalla: 'inicio', muestra: null, op: null, antes: null, mirar: 'Así arranca: tu main al 100 %, en bitono dentro de la luz. Es la línea que siguen todas.' },
+  { id: 'decision', titulo: 'La decisión', pantalla: 'decision', muestra: 'evento', op: 'linea', antes: 'final', mirar: 'La invitación de la LCK como el aviso de aceptar partida; aceptala y se abre la costura con los dos destinos.' },
+  { id: 'serie', titulo: 'La serie', pantalla: 'partido', muestra: 'serie', op: 'linea', antes: 'final', mirar: 'El cara a cara: tu campeón contra el del rival, cada mitad en el tono de su equipo; jugá con 1-3.' },
+  { id: 'swiss', titulo: 'El Swiss', pantalla: 'partido', muestra: 'swiss', op: 'linea', antes: 'final', mirar: 'El stream de verdad: la transmisión con la gráfica de Worlds y el chat vivo.' },
+  { id: 'mercado', titulo: 'El mercado', pantalla: 'mercado', muestra: 'mercado', op: 'linea', antes: 'final', mirar: 'Tu segunda selección: apuntá una org y la pantalla se vuelve su splash; firmá con Enter.' },
+  { id: 'firma', titulo: 'La firma', pantalla: 'mercado', muestra: 'firma', op: 'linea', antes: 'final', mirar: 'El anuncio: LOUD da la bienvenida.' },
+  { id: 'titulo', titulo: 'El título', pantalla: 'cumbre', muestra: 'titulo', op: 'linea', antes: null, mirar: 'Levantar la copa: CAMPEONES.' },
+  { id: 'juntas', titulo: 'Las 7 juntas', imagen: '../referencia/linea/hoja-de-contactos.jpg', op: null, antes: null, mirar: 'Las siete pantallas en una sola hoja: la prueba de que es una línea.' },
 ];
-const OP_FINAL = 'final';
 const ANCHO = 1440;
 const ALTO = 900;
 
@@ -29,14 +31,25 @@ const mirarTxt = document.getElementById('mirar-txt');
 const btnComparar = document.getElementById('comparar');
 const txtComparar = document.getElementById('comparar-txt');
 const btnRepetir = document.getElementById('repetir');
+const juntas = document.getElementById('juntas');
+const juntasImg = document.getElementById('juntas-img');
+// sin la hoja todavia (se arma al final de la ronda) queda el texto; cuando carga, la imagen lo tapa
+juntasImg.addEventListener('error', () => (juntasImg.hidden = true));
+juntasImg.addEventListener('load', () => juntas.querySelector('.fn-juntas-txt').setAttribute('hidden', ''));
 
 // ---------- estado: la pestaña vive en el hash de la pagina (#p=serie) ----------
 const deHash = () => new URLSearchParams(location.hash.slice(1));
 let pestana = PESTANAS.find((p) => p.id === deHash().get('p')) ?? PESTANAS[0];
-let estaba = false; // true = "como estaba" (sin op)
+let estaba = false; // true = la version de antes (`antes`: op=final o sin op)
+// la ultima pestaña del juego (la de imagen no tiene hash propio: el juego se queda donde estaba, en pausa)
+let ultimaJuego = pestana.imagen ? PESTANAS[0] : pestana;
 
-const hashDe = (p, conOp) => `pantalla=${p.pantalla}${p.muestra ? `&muestra=${p.muestra}` : ''}${p.op && conOp ? `&op=${OP_FINAL}` : ''}&era=auto&panel=0`;
+const hashDe = (p, conOp) => {
+  const op = conOp ? p.op : p.antes;
+  return `pantalla=${p.pantalla}${p.muestra ? `&muestra=${p.muestra}` : ''}${op ? `&op=${op}` : ''}&era=auto&panel=0`;
+};
 const srcDe = (p) => `index.html#${hashDe(p, true)}`;
+const comparable = (p) => Boolean(p.op);
 
 // ---------- pestañas ----------
 const botones = PESTANAS.map((p) => {
@@ -58,13 +71,23 @@ function pintar() {
     b.setAttribute('aria-selected', String(PESTANAS[i] === pestana));
     b.classList.toggle('activo', PESTANAS[i] === pestana);
   });
-  html.dataset.era = eraEfectiva('auto', pestana.pantalla, pestana.muestra);
+  if (!pestana.imagen) html.dataset.era = eraEfectiva('auto', pestana.pantalla, pestana.muestra);
   mirarTxt.textContent = pestana.mirar;
-  const vista = !pestana.op ? 'referencia' : estaba ? 'estaba' : 'final';
+  const vista = pestana.imagen ? 'juntas' : !comparable(pestana) ? 'referencia' : estaba ? 'estaba' : 'linea';
   indicador.dataset.vista = vista;
-  indTxt.textContent = vista === 'referencia' ? 'sin cambios: es la referencia' : vista === 'estaba' ? 'como estaba' : 'final';
-  btnComparar.disabled = !pestana.op;
-  txtComparar.textContent = estaba ? 'Volver a la final' : 'Como estaba';
+  const antes = pestana.antes === 'final' ? 'la demostración final' : 'sin opciones';
+  indTxt.textContent = { juntas: 'la hoja de contactos', referencia: 'la referencia: no cambia', estaba: `antes: ${antes}`, linea: 'una línea' }[vista];
+  btnComparar.disabled = !comparable(pestana);
+  txtComparar.textContent = estaba ? 'Volver a una línea' : 'Como estaba';
+  // la hoja de contactos: el juego se esconde (y se pausa); la imagen se pide recien la primera vez que se abre
+  escenario.dataset.vista = pestana.imagen ? 'imagen' : 'juego';
+  juntas.hidden = !pestana.imagen;
+  if (pestana.imagen && !juntasImg.getAttribute('src')) juntasImg.src = pestana.imagen;
+  btnRepetir.disabled = Boolean(pestana.imagen);
+}
+// pausa el mundo del juego mientras se mira la hoja de contactos (main.js escucha este mensaje)
+function pausarJuego(si) {
+  marco.contentWindow?.postMessage({ vitrina: 'ambiente', pausar: si }, location.origin);
 }
 function irA(p) {
   if (p === pestana) return;
@@ -72,6 +95,9 @@ function irA(p) {
   estaba = false;
   history.replaceState(null, '', `#p=${p.id}`);
   pintar();
+  pausarJuego(Boolean(p.imagen));
+  if (p.imagen) return;
+  ultimaJuego = p;
   marco.contentWindow.location.hash = hashDe(p, true);
 }
 function paso(d) {
@@ -79,13 +105,14 @@ function paso(d) {
   irA(PESTANAS[(i + d + PESTANAS.length) % PESTANAS.length]);
 }
 function comparar() {
-  if (!pestana.op) return;
+  if (!comparable(pestana)) return;
   estaba = !estaba;
   pintar();
   marco.contentWindow.location.hash = hashDe(pestana, !estaba);
 }
 // recarga el iframe (con el hash de ahora) para ver otra vez las animaciones de entrada
 function repetir() {
+  if (pestana.imagen) return;
   marco.contentWindow.location.reload();
 }
 function enfocarJuego() {
@@ -140,5 +167,6 @@ addEventListener('hashchange', () => {
 
 pintar();
 escalar();
-marco.src = srcDe(pestana);
+marco.src = srcDe(ultimaJuego);
+if (pestana.imagen) marco.addEventListener('load', () => pausarJuego(true), { once: true });
 window.final = { irA: (id) => irA(PESTANAS.find((p) => p.id === id) ?? pestana), comparar, repetir, estado: () => ({ pestana: pestana.id, estaba }) };

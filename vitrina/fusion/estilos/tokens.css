@@ -353,7 +353,204 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 /* (separador entre bloques de §4.9: no tocar) */
 
 /* ===== PLANUI §4.9 · linea · K, el kit (el tono, la noche tenida, la ceremonia, la transmision). Sus tokens van entre esta linea y su cierre ===== */
+/* EL SEGUNDO TONO (js/tono.js, LINEA.md §3): --tono-<id>-{luz,contra,acento,noche,vacio}. La noche es un oscuro del matiz
+   del tono (L 7,5 %), el vacio uno mas hondo (L 3,4 %): con ellos el ambiente tiñe las sombras del arte y el fondo del
+   mundo. Generados offline (un script de Playwright que mide cada logo por pixeles; nunca un canvas de la pagina). */
 :root {
+  /* ---- las eras: luz y contra de siempre; la noche y el vacio, del matiz de la luz ---- */
+  /* era pieza: la noche del matiz de --luz-pieza */
+  --tono-era-pieza-luz: var(--luz-pieza); --tono-era-pieza-contra: var(--contra-pieza); --tono-era-pieza-acento: var(--luz-pieza); --tono-era-pieza-noche: #070e1f; --tono-era-pieza-vacio: #03060e;
+  /* era academia: la noche del matiz de --luz-academia */
+  --tono-era-academia-luz: var(--luz-academia); --tono-era-academia-contra: var(--contra-academia); --tono-era-academia-acento: var(--luz-academia); --tono-era-academia-noche: #071f1a; --tono-era-academia-vacio: #030e0c;
+  /* era escenario: la noche violeta, entre su luz azul y su contra magenta (decision nuestra) */
+  --tono-era-escenario-luz: var(--luz-escenario); --tono-era-escenario-contra: var(--contra-escenario); --tono-era-escenario-acento: var(--luz-escenario); --tono-era-escenario-noche: #0b071f; --tono-era-escenario-vacio: #05030e;
+  /* era mundial: la noche del matiz de --luz-mundial */
+  --tono-era-mundial-luz: var(--luz-mundial); --tono-era-mundial-contra: var(--contra-mundial); --tono-era-mundial-acento: var(--luz-mundial); --tono-era-mundial-noche: #1f1807; --tono-era-mundial-vacio: #0e0b03;
+  /* era leyenda: la noche del matiz de --luz-leyenda */
+  --tono-era-leyenda-luz: var(--luz-leyenda); --tono-era-leyenda-contra: var(--contra-leyenda); --tono-era-leyenda-acento: var(--luz-leyenda); --tono-era-leyenda-noche: #1f1007; --tono-era-leyenda-vacio: #0e0703;
+  /* ---- las competiciones: luz, contra y acento de --comp-<id>-* (js/competicion.js); se suman la noche y el vacio ---- */
+  /* worlds: la noche del matiz de su luz */
+  --tono-worlds-luz: var(--comp-worlds-luz); --tono-worlds-contra: var(--comp-worlds-contra); --tono-worlds-acento: var(--comp-worlds-acento); --tono-worlds-noche: #07101f; --tono-worlds-vacio: #03070e;
+  /* msi: la noche del matiz de su luz */
+  --tono-msi-luz: var(--comp-msi-luz); --tono-msi-contra: var(--comp-msi-contra); --tono-msi-acento: var(--comp-msi-acento); --tono-msi-noche: #1f0e07; --tono-msi-vacio: #0e0603;
+  /* firststand: la noche del matiz de su luz */
+  --tono-firststand-luz: var(--comp-firststand-luz); --tono-firststand-contra: var(--comp-firststand-contra); --tono-firststand-acento: var(--comp-firststand-acento); --tono-firststand-noche: #1f0e07; --tono-firststand-vacio: #0e0603;
+  /* cblol: la noche del matiz de su contra (la luz es blanca) */
+  --tono-cblol-luz: var(--comp-cblol-luz); --tono-cblol-contra: var(--comp-cblol-contra); --tono-cblol-acento: var(--comp-cblol-acento); --tono-cblol-noche: #1f0b07; --tono-cblol-vacio: #0e0503;
+  /* lec: la noche del matiz de su luz */
+  --tono-lec-luz: var(--comp-lec-luz); --tono-lec-contra: var(--comp-lec-contra); --tono-lec-acento: var(--comp-lec-acento); --tono-lec-noche: #071f1d; --tono-lec-vacio: #030e0d;
+  /* lck: la noche del matiz de su contra (la luz es blanca) */
+  --tono-lck-luz: var(--comp-lck-luz); --tono-lck-contra: var(--comp-lck-contra); --tono-lck-acento: var(--comp-lck-acento); --tono-lck-noche: #070f1f; --tono-lck-vacio: #03070e;
+  /* lpl: la noche del matiz de su luz */
+  --tono-lpl-luz: var(--comp-lpl-luz); --tono-lpl-contra: var(--comp-lpl-contra); --tono-lpl-acento: var(--comp-lpl-acento); --tono-lpl-noche: #1f0707; --tono-lpl-vacio: #0e0303;
+  /* lcs: la noche del matiz de su contra (la luz es blanca) */
+  --tono-lcs-luz: var(--comp-lcs-luz); --tono-lcs-contra: var(--comp-lcs-contra); --tono-lcs-acento: var(--comp-lcs-acento); --tono-lcs-noche: #070f1f; --tono-lcs-vacio: #03070e;
+  /* lcp: la noche del matiz de su luz */
+  --tono-lcp-luz: var(--comp-lcp-luz); --tono-lcp-contra: var(--comp-lcp-contra); --tono-lcp-acento: var(--comp-lcp-acento); --tono-lcp-noche: #1f1007; --tono-lcp-vacio: #0e0703;
+  /* ---- el oro (el titulo, la ceremonia) y la plata (la Copa del Invocador) ---- */
+  /* oro: --gold y su blanco tibio; la noche, un pardo dorado */
+  --tono-oro-luz: var(--gold); --tono-oro-contra: #fff3d6; --tono-oro-acento: var(--gold); --tono-oro-noche: #1f1708; --tono-oro-vacio: #0e0a03;
+  /* plata: la Copa del Invocador (fria); la noche, un acero azulado */
+  --tono-plata-luz: #c9d6ea; --tono-plata-contra: #ffffff; --tono-plata-acento: #dfe7f3; --tono-plata-noche: #0c111a; --tono-plata-vacio: #06080c;
+  /* ---- las orgs reales: el color dominante de su logo (static.lolesports.com, medido por pixeles: matiz con mas peso
+     de los pixeles con croma > 0,18). Con < 8 % de pixeles con color el logo es blanco: la luz es ese blanco y la contra
+     es su acento medido o, si no tiene, una decision nuestra (anotada) ---- */
+  /* FURIA: logo blanco #f9f9f9; contra #8fa3c4, decision nuestra (marca blanca y negra: la contra es un acero frio) */
+  --tono-org-furia-luz: #f9f9f9; --tono-org-furia-contra: #8fa3c4; --tono-org-furia-acento: #f9f9f9; --tono-org-furia-noche: #0d1119; --tono-org-furia-vacio: #06080b;
+  /* LOUD: dominante #13ff00 (100 % con color) */
+  --tono-org-loud-luz: #2fff1f; --tono-org-loud-contra: #d8f5d6; --tono-org-loud-acento: #2fff1f; --tono-org-loud-noche: #091f07; --tono-org-loud-vacio: #040e03;
+  /* RED Canids Kalunga: dominante #b52433 (14 % con color), blanco #f2f2f2 */
+  --tono-org-red-canids-kalunga-luz: #e03e4f; --tono-org-red-canids-kalunga-contra: #f2f2f2; --tono-org-red-canids-kalunga-acento: #e76e7b; --tono-org-red-canids-kalunga-noche: #1f070a; --tono-org-red-canids-kalunga-vacio: #0e0304;
+  /* Fluxo W7M: dominante #ea2267 (16 % con color), segundo #b520e0 */
+  --tono-org-fluxo-w7m-luz: #ec3272; --tono-org-fluxo-w7m-contra: #bd3ae4; --tono-org-fluxo-w7m-acento: #f16595; --tono-org-fluxo-w7m-noche: #1f070f; --tono-org-fluxo-w7m-vacio: #0e0307;
+  /* Vivo Keyd Stars: logo blanco #ffffff; contra #6a5cff, decision nuestra (el violeta de Keyd) */
+  --tono-org-vivo-keyd-stars-luz: #ffffff; --tono-org-vivo-keyd-stars-contra: #6a5cff; --tono-org-vivo-keyd-stars-acento: #ffffff; --tono-org-vivo-keyd-stars-noche: #09071f; --tono-org-vivo-keyd-stars-vacio: #04030e;
+  /* paiN Gaming: logo blanco #ffffff; contra su acento medido #ed314a (5 %) */
+  --tono-org-pain-gaming-luz: #ffffff; --tono-org-pain-gaming-contra: #ed314a; --tono-org-pain-gaming-acento: #ffffff; --tono-org-pain-gaming-noche: #1f070a; --tono-org-pain-gaming-vacio: #0e0304;
+  /* Leviatán: logo blanco #ffffff; contra #58b6ff, decision nuestra (el celeste de su marca) */
+  --tono-org-leviatan-luz: #ffffff; --tono-org-leviatan-contra: #58b6ff; --tono-org-leviatan-acento: #ffffff; --tono-org-leviatan-noche: #07151f; --tono-org-leviatan-vacio: #03090e;
+  /* Los Grandes: dominante #f15832 (100 % con color) */
+  --tono-org-los-grandes-luz: #f15832; --tono-org-los-grandes-contra: #f5dcd6; --tono-org-los-grandes-acento: #f36b4a; --tono-org-los-grandes-noche: #1f0c07; --tono-org-los-grandes-vacio: #0e0503;
+  /* Karmine Corp: dominante #00e7ff (100 % con color) */
+  --tono-org-karmine-corp-luz: #1feaff; --tono-org-karmine-corp-contra: #d6f2f5; --tono-org-karmine-corp-acento: #1feaff; --tono-org-karmine-corp-noche: #071d1f; --tono-org-karmine-corp-vacio: #030d0e;
+  /* Movistar KOI: dominante #4b9bec (100 % con color) */
+  --tono-org-movistar-koi-luz: #4b9bec; --tono-org-movistar-koi-contra: #d6e5f5; --tono-org-movistar-koi-acento: #4b9bec; --tono-org-movistar-koi-noche: #07131f; --tono-org-movistar-koi-vacio: #03090e;
+  /* G2 Esports: logo blanco #ffffff; contra su acento medido #f05039 (1 %) */
+  --tono-org-g2-esports-luz: #ffffff; --tono-org-g2-esports-contra: #f05039; --tono-org-g2-esports-acento: #ffffff; --tono-org-g2-esports-noche: #1f0a07; --tono-org-g2-esports-vacio: #0e0403;
+  /* Fnatic: dominante #ff5900 (100 % con color) */
+  --tono-org-fnatic-luz: #ff6d1f; --tono-org-fnatic-contra: #f5e1d6; --tono-org-fnatic-acento: #ff6d1f; --tono-org-fnatic-noche: #1f1007; --tono-org-fnatic-vacio: #0e0703;
+  /* GIANTX: logo blanco #ffffff; contra #9aa8ff, decision nuestra (marca blanca: una contra fria) */
+  --tono-org-giantx-luz: #ffffff; --tono-org-giantx-contra: #9aa8ff; --tono-org-giantx-acento: #ffffff; --tono-org-giantx-noche: #070b1f; --tono-org-giantx-vacio: #03050e;
+  /* Natus Vincere: dominante #fcea00 (48 % con color) */
+  --tono-org-natus-vincere-luz: #ffee1f; --tono-org-natus-vincere-contra: #f5f3d6; --tono-org-natus-vincere-acento: #ffee1f; --tono-org-natus-vincere-noche: #1f1d07; --tono-org-natus-vincere-vacio: #0e0e03;
+  /* Gen.G: dominante #d2b883 (100 % con color) */
+  --tono-org-gen-g-luz: #e7bf6e; --tono-org-gen-g-contra: #f5ebd6; --tono-org-gen-g-acento: #e7bf6e; --tono-org-gen-g-noche: #1f1707; --tono-org-gen-g-vacio: #0e0b03;
+  /* Dplus KIA: logo blanco #ffffff; contra #47e0d0, decision nuestra (el menta de su marca) */
+  --tono-org-dplus-kia-luz: #ffffff; --tono-org-dplus-kia-contra: #47e0d0; --tono-org-dplus-kia-acento: #ffffff; --tono-org-dplus-kia-noche: #071f1d; --tono-org-dplus-kia-vacio: #030e0d;
+  /* Hanwha Life Esports: dominante #f37321 (30 % con color), blanco #e3e4e5 */
+  --tono-org-hanwha-life-esports-luz: #f3792a; --tono-org-hanwha-life-esports-contra: #e3e4e5; --tono-org-hanwha-life-esports-acento: #f3792a; --tono-org-hanwha-life-esports-noche: #1f1107; --tono-org-hanwha-life-esports-vacio: #0e0703;
+  /* KIWOOM DRX: logo blanco #f2f1f0; contra #4f7dff, decision nuestra (el azul de DRX) */
+  --tono-org-kiwoom-drx-luz: #f2f1f0; --tono-org-kiwoom-drx-contra: #4f7dff; --tono-org-kiwoom-drx-acento: #f2f1f0; --tono-org-kiwoom-drx-noche: #070d1f; --tono-org-kiwoom-drx-vacio: #03060e;
+  /* Nongshim RedForce: dominante #e91d25 (42 % con color), blanco #fcfcfc */
+  --tono-org-nongshim-redforce-luz: #eb3239; --tono-org-nongshim-redforce-contra: #fcfcfc; --tono-org-nongshim-redforce-acento: #f16a6f; --tono-org-nongshim-redforce-noche: #1f0708; --tono-org-nongshim-redforce-vacio: #0e0303;
+  /* Hanjin Brion: dominante #04492b (62 % con color), blanco #f6f9f8 */
+  --tono-org-hanjin-brion-luz: #2af39c; --tono-org-hanjin-brion-contra: #f6f9f8; --tono-org-hanjin-brion-acento: #2af39c; --tono-org-hanjin-brion-noche: #071f15; --tono-org-hanjin-brion-vacio: #030e09;
+  /* BNK FearX: dominante #f3c602 (26 % con color), blanco #efefef */
+  --tono-org-bnk-fearx-luz: #fdd421; --tono-org-bnk-fearx-contra: #efefef; --tono-org-bnk-fearx-acento: #fdd421; --tono-org-bnk-fearx-noche: #1f1b07; --tono-org-bnk-fearx-vacio: #0e0c03;
+  /* DN SOOPers: dominante #0b51ef (100 % con color) */
+  --tono-org-dn-soopers-luz: #2967f5; --tono-org-dn-soopers-contra: #d6e0f5; --tono-org-dn-soopers-acento: #6391f8; --tono-org-dn-soopers-noche: #070f1f; --tono-org-dn-soopers-vacio: #03060e;
+  /* Top Esports: dominante #ff3e24 (100 % con color) */
+  --tono-org-top-esports-luz: #ff3e24; --tono-org-top-esports-contra: #f5dad6; --tono-org-top-esports-acento: #ff5d48; --tono-org-top-esports-noche: #1f0a07; --tono-org-top-esports-vacio: #0e0403;
+  /* Ninjas in Pyjamas: dominante #d8ff00 (100 % con color) */
+  --tono-org-ninjas-in-pyjamas-luz: #ddff1f; --tono-org-ninjas-in-pyjamas-contra: #f0f5d6; --tono-org-ninjas-in-pyjamas-acento: #ddff1f; --tono-org-ninjas-in-pyjamas-noche: #1b1f07; --tono-org-ninjas-in-pyjamas-vacio: #0d0e03;
+  /* Invictus Gaming: logo blanco #fbfbfb; contra #e8303a, decision nuestra (el rojo de iG) */
+  --tono-org-invictus-gaming-luz: #fbfbfb; --tono-org-invictus-gaming-contra: #e8303a; --tono-org-invictus-gaming-acento: #fbfbfb; --tono-org-invictus-gaming-noche: #1f0709; --tono-org-invictus-gaming-vacio: #0e0304;
+  /* Bilibili Gaming: dominante #34d0f4 (100 % con color) */
+  --tono-org-bilibili-gaming-luz: #34d0f4; --tono-org-bilibili-gaming-contra: #d6eff5; --tono-org-bilibili-gaming-acento: #34d0f4; --tono-org-bilibili-gaming-noche: #071b1f; --tono-org-bilibili-gaming-vacio: #030c0e;
+  /* Anyone's Legend: dominante #c22b2b (48 % con color), blanco #fdfdfd */
+  --tono-org-anyone-s-legend-luz: #e03e3e; --tono-org-anyone-s-legend-contra: #fdfdfd; --tono-org-anyone-s-legend-acento: #e87373; --tono-org-anyone-s-legend-noche: #1f0707; --tono-org-anyone-s-legend-vacio: #0e0303;
+  /* ThunderTalk Gaming: dominante #1fbdea (100 % con color) */
+  --tono-org-thundertalk-gaming-luz: #31c3ec; --tono-org-thundertalk-gaming-contra: #d6eef5; --tono-org-thundertalk-gaming-acento: #31c3ec; --tono-org-thundertalk-gaming-noche: #071a1f; --tono-org-thundertalk-gaming-vacio: #030c0e;
+  /* Team WE: dominante #e51b20 (100 % con color) */
+  --tono-org-team-we-luz: #e8363a; --tono-org-team-we-contra: #f5d6d7; --tono-org-team-we-acento: #ee6c70; --tono-org-team-we-noche: #1f0708; --tono-org-team-we-vacio: #0e0303;
+  /* Oh My God: dominante #fe9f35 (100 % con color) */
+  --tono-org-oh-my-god-luz: #fe9f35; --tono-org-oh-my-god-contra: #f5e6d6; --tono-org-oh-my-god-acento: #fe9f35; --tono-org-oh-my-god-noche: #1f1407; --tono-org-oh-my-god-vacio: #0e0903;
+  /* LGD Gaming: dominante #ff080a (53 % con color), segundo #04398b */
+  --tono-org-lgd-gaming-luz: #ff1f20; --tono-org-lgd-gaming-contra: #2578f9; --tono-org-lgd-gaming-acento: #ff5c5d; --tono-org-lgd-gaming-noche: #1f0707; --tono-org-lgd-gaming-vacio: #0e0303;
+  /* Edward Gaming: logo blanco #f7f7f7; contra #d8333f, decision nuestra (el rojo de EDG) */
+  --tono-org-edward-gaming-luz: #f7f7f7; --tono-org-edward-gaming-contra: #d8333f; --tono-org-edward-gaming-acento: #f7f7f7; --tono-org-edward-gaming-noche: #1f0709; --tono-org-edward-gaming-vacio: #0e0304;
+  /* JD Gaming: dominante #cd1733 (100 % con color) */
+  --tono-org-jd-gaming-luz: #e83551; --tono-org-jd-gaming-contra: #f5d6db; --tono-org-jd-gaming-acento: #ef6c80; --tono-org-jd-gaming-noche: #1f070b; --tono-org-jd-gaming-vacio: #0e0305;
+  /* Ultra Prime: dominante #5a46db (39 % con color), segundo #5fe1e6 */
+  --tono-org-ultra-prime-luz: #5641e0; --tono-org-ultra-prime-contra: #5fe1e6; --tono-org-ultra-prime-acento: #9487eb; --tono-org-ultra-prime-noche: #0a071f; --tono-org-ultra-prime-vacio: #04030e;
+  /* FlyQuest: dominante #02894b (100 % con color) */
+  --tono-org-flyquest-luz: #22fc98; --tono-org-flyquest-contra: #d6f5e7; --tono-org-flyquest-acento: #22fc98; --tono-org-flyquest-noche: #071f14; --tono-org-flyquest-vacio: #030e09;
+  /* Team Liquid: logo blanco #eeefef; contra #4f8bff, decision nuestra (el azul de Liquid) */
+  --tono-org-team-liquid-luz: #eeefef; --tono-org-team-liquid-contra: #4f8bff; --tono-org-team-liquid-acento: #eeefef; --tono-org-team-liquid-noche: #070f1f; --tono-org-team-liquid-vacio: #03070e;
+  /* Shopify Rebellion: logo blanco #ffffff; contra #95bf47, decision nuestra (el verde de Shopify) */
+  --tono-org-shopify-rebellion-luz: #ffffff; --tono-org-shopify-rebellion-contra: #95bf47; --tono-org-shopify-rebellion-acento: #ffffff; --tono-org-shopify-rebellion-noche: #161c0a; --tono-org-shopify-rebellion-vacio: #0a0d04;
+  /* Sentinels: dominante #ce0037 (100 % con color) */
+  --tono-org-sentinels-luz: #ff1f5b; --tono-org-sentinels-contra: #f5d6de; --tono-org-sentinels-acento: #ff5784; --tono-org-sentinels-noche: #1f070e; --tono-org-sentinels-vacio: #0e0306;
+  /* Disguised: dominante #fab450 (100 % con color) */
+  --tono-org-disguised-luz: #fab450; --tono-org-disguised-contra: #f5e8d6; --tono-org-disguised-acento: #fab450; --tono-org-disguised-noche: #1f1507; --tono-org-disguised-vacio: #0e0a03;
+  /* Team Secret Whales: logo blanco #ffffff; contra #7cc4ff, decision nuestra (marca blanca: una contra celeste) */
+  --tono-org-team-secret-whales-luz: #ffffff; --tono-org-team-secret-whales-contra: #7cc4ff; --tono-org-team-secret-whales-acento: #ffffff; --tono-org-team-secret-whales-noche: #07141f; --tono-org-team-secret-whales-vacio: #03090e;
+  /* Deep Cross Gaming: dominante #1067cf (45 % con color), blanco #ffffff */
+  --tono-org-deep-cross-gaming-luz: #2f86ef; --tono-org-deep-cross-gaming-contra: #ffffff; --tono-org-deep-cross-gaming-acento: #4b96f1; --tono-org-deep-cross-gaming-noche: #07121f; --tono-org-deep-cross-gaming-vacio: #03080e;
+  /* Ground Zero Gaming: dominante #8ce12a (32 % con color), blanco #fcfcfc */
+  --tono-org-ground-zero-gaming-luz: #95e33b; --tono-org-ground-zero-gaming-contra: #fcfcfc; --tono-org-ground-zero-gaming-acento: #95e33b; --tono-org-ground-zero-gaming-noche: #141f07; --tono-org-ground-zero-gaming-vacio: #090e03;
+  /* Fukuoka SoftBank HAWKS gaming: logo blanco #ffffff; contra su acento medido #ffb32f (2 %) */
+  --tono-org-fukuoka-softbank-hawks-gaming-luz: #ffffff; --tono-org-fukuoka-softbank-hawks-gaming-contra: #ffb32f; --tono-org-fukuoka-softbank-hawks-gaming-acento: #ffffff; --tono-org-fukuoka-softbank-hawks-gaming-noche: #1f1607; --tono-org-fukuoka-softbank-hawks-gaming-vacio: #0e0a03;
+  /* CTBC Flying Oyster: dominante #f3b20f (65 % con color), segundo #0e2544 */
+  --tono-org-ctbc-flying-oyster-luz: #f4bb29; --tono-org-ctbc-flying-oyster-contra: #0e2544; --tono-org-ctbc-flying-oyster-acento: #f4bb29; --tono-org-ctbc-flying-oyster-noche: #1f1807; --tono-org-ctbc-flying-oyster-vacio: #0e0b03;
+  /* ---- las orgs inventadas: las paletas del sistema (--org-p1...p4, por hash del nombre, como js/logos.js) ---- */
+  /* paleta p1: su luz es --org-p1; la contra, la misma aclarada */
+  --tono-org-p1-luz: var(--org-p1); --tono-org-p1-contra: #ffd9cc; --tono-org-p1-acento: var(--org-p1); --tono-org-p1-noche: #1f0d07; --tono-org-p1-vacio: #0e0603;
+  /* paleta p2: su luz es --org-p2; la contra, la misma aclarada */
+  --tono-org-p2-luz: var(--org-p2); --tono-org-p2-contra: #deccff; --tono-org-p2-acento: var(--org-p2); --tono-org-p2-noche: #10071f; --tono-org-p2-vacio: #07030e;
+  /* paleta p3: su luz es --org-p3; la contra, la misma aclarada */
+  --tono-org-p3-luz: var(--org-p3); --tono-org-p3-contra: #d0f1fb; --tono-org-p3-acento: var(--org-p3); --tono-org-p3-noche: #07191f; --tono-org-p3-vacio: #030c0e;
+  /* paleta p4: su luz es --org-p4; la contra, la misma aclarada */
+  --tono-org-p4-luz: var(--org-p4); --tono-org-p4-contra: #fcf1cf; --tono-org-p4-acento: var(--org-p4); --tono-org-p4-noche: #1f1907; --tono-org-p4-vacio: #0e0c03;
+}
+/* El tono en tiempo de ejecucion (aplicarTono(nodo, tono) los pisa en un nodo). Por defecto: la luz de la era sobre la
+   noche de siempre, asi una hoja que los use sin tono aplicado se ve como hoy. */
+:root {
+  --tono-luz: var(--luz);
+  --tono-contra: var(--contra);
+  --tono-acento: var(--luz);
+  --tono-noche: var(--bg-surface);
+  --tono-vacio: var(--bg-void);
+}
+/* LA CEREMONIA DEL LOL (js/ceremonia.js, estilos/ceremonia.css): un estilo de inspiracion hextech, propio (no assets de
+   Riot). Filete de oro fino en degrade (claro -> hondo), relleno azul petroleo y un turquesa propio para el brillo. El
+   turquesa se eligio y se midio: 10,2:1 sobre el petroleo hondo (como brillo, nunca como texto chico). */
+:root {
+  --ln-oro-claro: #f4e4b4;
+  --ln-oro: #c9a45a;
+  --ln-oro-hondo: #6b4f22;
+  --ln-petroleo-claro: #17596a;
+  --ln-petroleo: #0d3a47;
+  --ln-petroleo-hondo: #061d25;
+  --ln-turquesa: #5fd9d1;
+  --ln-turquesa-suave: #5fd9d159;
+  --ln-turquesa-tenue: #5fd9d126;
+  --ln-turquesa-nada: #5fd9d100;
+  --ln-crema: #f5ecd6;
+  --ln-crema-dim: #cdbf9f;
+  --ln-destello: #fff7e0;
+  --ln-destello-nada: #fff7e000;
+  --ln-velo: #01070ae6;
+  --ln-velo-nada: #01070a00;
+  /* VICTORIA: un metal oro-blanco; DERROTA: un carmesi metalico */
+  --ln-vic-1: #fffbf0;
+  --ln-vic-2: #ffe9ad;
+  --ln-vic-3: #dcae55;
+  --ln-vic-4: #c2923f;
+  --ln-der-1: #ffe6e8;
+  --ln-der-2: #ff8a95;
+  --ln-der-3: #ec4a5a;
+  --ln-der-4: #8a1622;
+  --ln-der-brillo: #ff4d5e;
+  /* el quemado de Fearless: la brasa que cruza la carta y el tajo que queda */
+  --ln-brasa: #ff7a2e;
+  --ln-brasa-claro: #ffd28c;
+  --ln-brasa-nada: #ff7a2e00;
+  --ln-tajo: #000000c2;
+  /* tamaños */
+  --ln-aro: 240px;
+  --ln-aceptar-ancho: 320px;
+  --ln-aceptar-alto: 64px;
+  /* LA TRANSMISION (js/transmision.js, estilos/transmision.css): la grafica de LoL Esports. Placas finas y oscuras, el
+     acento del tono en un filo de 2 px */
+  --ln-tv-placa: #050910f2;
+  --ln-tv-placa-alta: #0c1220f2;
+  --ln-tv-placa-sola: #050910;
+  --ln-tv-raya: #f4f6fb21;
+  --ln-tv-alto: 56px;
+  --ln-tv-cinta: 40px;
+  /* el odometro: el borde de la mascara de cada columna (deja ver solo el digito, no sus vecinos) */
+  --ln-odo-borde: 0.16em;
 }
 /* ===== fin §4.9 kit ===== */
 
@@ -362,7 +559,28 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 /* (separador entre bloques de §4.9: no tocar) */
 
 /* ===== PLANUI §4.9 · linea · M, los momentos (la copa, el confeti, el titulo). Sus tokens van entre esta linea y su cierre ===== */
+/* La copa (js/trofeo.js): el color de cada metal es su reflectancia a incidencia normal (F0) en sRGB; el shader la pasa
+   a lineal. El oro (1, 0,71, 0,29 lineal) y la plata (0,95, 0,93, 0,88) son los valores medidos de esos metales; el
+   rojo cromado es el del trofeo del CBLOL 2024 (la fuente dice "vermelho cromado"; el tono exacto es nuestro). La noche
+   de cada metal es el negro tenido del fondo que refleja. */
 :root {
+  --cu-metal-oro: #ffda91;
+  --cu-metal-plata: #f9f7f1;
+  --cu-metal-rojo: #e04a35;
+  --cu-gema-azul: #3d7bff;
+  --cu-laca: #0b0a10;
+  --cu-madera: #4a2c1a;
+  --cu-noche-oro: #140d04;
+  --cu-noche-plata: #070a12;
+  /* la copa en SVG (sin WebGL): el hondo de cada metal para el degrade */
+  --cu-metal-oro-hondo: #7a4f17;
+  --cu-metal-plata-hondo: #545b6a;
+  --cu-metal-rojo-hondo: #6e1a10;
+  /* el titulo con la copa: el polvo que levantan las letras al caer y la caja de la copa */
+  --cu-polvo: #ffd27ad9;
+  --cu-polvo-nada: #ffd27a00;
+  --cu-copa-alto: min(72vh, 680px);
+  --cu-copa-aspecto: 0.66;
 }
 /* ===== fin §4.9 momentos ===== */
 
@@ -371,7 +589,61 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 /* (separador entre bloques de §4.9: no tocar) */
 
 /* ===== PLANUI §4.9 · linea · A, la transmision (la serie y el Swiss). Sus tokens van entre esta linea y su cierre ===== */
+/* La serie (el cara a cara) y el Swiss (el stream) con op=linea: estilos/partido.css, prefijo tx-. Cada mitad de la
+   costura tiene el tono de su org; partido.js pone --tx-a/--tx-b (y su luz y su noche) en la pantalla con los nombres de
+   token de js/tono.js. Aca, su valor por defecto y lo propio del stream: los nombres del chat, las insignias, los emotes. */
 :root {
+  /* cada lado del cara a cara (por defecto, el tono de la pantalla) */
+  --tx-a: var(--tono-acento);
+  --tx-a-luz: var(--tono-luz);
+  --tx-a-noche: var(--tono-noche);
+  --tx-b: var(--tono-contra);
+  --tx-b-luz: var(--tono-contra);
+  --tx-b-noche: var(--tono-noche);
+  /* la sombra de los nombres gigantes sobre la costura y el alto de un mensaje del chat */
+  --tx-sombra-nombre: #000000a8;
+  --tx-msg-alto: 28px;
+  /* los nombres del chat: ocho colores (decorativos), todos >= 4,5:1 sobre el panel del chat teñido de Worlds */
+  --tx-chat-c1: #ff8f80;
+  --tx-chat-c2: #7fd4ff;
+  --tx-chat-c3: #b9f27c;
+  --tx-chat-c4: #ffcf6b;
+  --tx-chat-c5: #c9a8ff;
+  --tx-chat-c6: #6ff0d0;
+  --tx-chat-c7: #ff9fd4;
+  --tx-chat-c8: #a3b8ff;
+  /* las insignias propias: sub por niveles de meses (1 / 3 / 6 / 12 / 24+), moderador y VIP */
+  --tx-ins-sub1: #a9c2ee;
+  --tx-ins-sub2: #7fa8ff;
+  --tx-ins-sub3: #ffd27a;
+  --tx-ins-sub4: #ff9a5a;
+  --tx-ins-sub5: #f4f6fb;
+  --tx-ins-sub5-b: #8fd8ff;
+  --tx-ins-mod: #3df2a0;
+  --tx-ins-vip: #ff6fcf;
+  --tx-ins-tinta: #05060b;
+  /* los emotes propios: fondo, tinta y luz de cada uno */
+  --tx-em-garra-f: #1d2a44;
+  --tx-em-garra-t: #f4f6fb;
+  --tx-em-vamo-f: #1f8a55;
+  --tx-em-vamo-t: #eafff3;
+  --tx-em-fe-f: #ff6a2a;
+  --tx-em-fe-l: #ffd28c;
+  --tx-em-gg-f: #2b4fa0;
+  --tx-em-gg-t: #f4f6fb;
+  --tx-em-f-f: #2a1220;
+  --tx-em-f-l: #f4f6fb;
+  --tx-em-f-t: #7fd4ff;
+  --tx-em-nervio-f: #ffcf6b;
+  --tx-em-nervio-l: #3a2a08;
+  --tx-em-nervio-t: #3a2a08;
+  --tx-em-nervio-gota: #7fd4ff;
+  --tx-em-ojos-l: #f4f6fb;
+  --tx-em-ojos-f: #0a0d16;
+  --tx-em-copa-f: #d6e2f5;
+  --tx-em-copa-t: #9fbcef;
+  /* el clip que destella en el resultado */
+  --tx-sw-clip-brillo: #ffcc6680;
 }
 /* ===== fin §4.9 transmision ===== */
 
@@ -380,7 +652,24 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 /* (separador entre bloques de §4.9: no tocar) */
 
 /* ===== PLANUI §4.9 · linea · B, la decision (la oferta encontrada y la costura). Sus tokens van entre esta linea y su cierre ===== */
+/* (js/escena.js crearCostura, estilos/decision.css: el bloque dc-). Sin colores nuevos: los destinos usan el tono de su
+   liga (--tono-* en cada lado, aplicarTono) y el portal la ceremonia del kit (--ln-oro*, --ln-velo). */
 :root {
+  /* los destinos sobre la costura: el logo de la liga, el de tu org y cuanto bajan desde la franja */
+  /* (U) mas chicos y contra los bordes: las dos caras van arriba del panel, al lado de cada destino */
+  --dc-logo: 72px;
+  --dc-logo-org: 48px;
+  --dc-aire: 22px;
+  --dc-lado-ancho: 340px;
+  /* el velo del aviso: cuanto tapa la pantalla de atras (detras se reconoce tu main en la era) */
+  --dc-aviso-velo: 80%;
+  /* el velo de lectura detras de cada destino (cuanto del vacio de su tono) y el fondo de los chips */
+  --dc-velo-lado: 74%;
+  --dc-chip-fondo: 86%;
+  /* celular: la banda de arriba del panel donde la costura se ve partida en vertical */
+  --dc-banda-cel: 330px;
+  --dc-logo-cel: 46px;
+  --dc-logo-org-cel: 34px;
 }
 /* ===== fin §4.9 decision ===== */
 
@@ -389,6 +678,20 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 /* (separador entre bloques de §4.9: no tocar) */
 
 /* ===== PLANUI §4.9 · linea · C, el mercado y la firma. Sus tokens van entre esta linea y su cierre ===== */
+/* El mercado como tu segunda seleccion y la firma como el anuncio (js/mercado.js, el final de estilos/mercado.css). Sin
+   colores propios: todo sale del tono (--tono-*, la org apuntada o la era) y de la noche de siempre. */
 :root {
+  /* el aura: el escudo monumental y el nombre gigante (js/mercado.js achica la letra si el nombre no entra) */
+  --ms-aura-escudo: 172px;
+  --ms-nombre: clamp(64px, 8.2vw, 124px);
+  --ms-nombre-cel: 46px;
+  /* la entrada: donde cruza el bumper (y la linea de luz de la que caen las ofertas), su alto y su letra */
+  --ms-bumper-y: 34vh;
+  --ms-bumper-alto: 196px;
+  --ms-bumper-letra: clamp(52px, 6.6vw, 100px);
+  /* la firma: la bienvenida y el handle en el celular */
+  --ms-bienvenida: clamp(26px, 3vw, 44px);
+  --ms-handle-cel: 84px;
+  --ms-handle-max: 54vw;              /* el handle largo se achica antes de meterse en el arte */
 }
 /* ===== fin §4.9 mercado ===== */

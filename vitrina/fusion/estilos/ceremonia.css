@@ -1,1 +1,205 @@
-/* UNA LINEA (PLANUI §4.9): la ceremonia del LoL (el aro de aceptar, bloquear, victoria/derrota, el quemado). Prefijo ln-. Lo implementa K. */
+/* UNA LINEA (PLANUI §4.9): LA CEREMONIA DEL LOL (js/ceremonia.js). Un estilo de inspiracion hextech, propio: filete de oro
+   fino en degrade (--ln-oro-claro -> --ln-oro-hondo), relleno azul petroleo y un turquesa propio para el brillo. Nitido,
+   sin esquineros. Solo lo usan el aro de ¡ACEPTAR!, BLOQUEAR/FIRMAR, VICTORIA/DERROTA y el quemado de Fearless.
+   Prefijo ln-. Los colores, solo de tokens.css. */
+
+/* ---------- el degrade de oro de los SVG ---------- */
+.ln-oro-0 { stop-color: var(--ln-oro-claro); }
+.ln-oro-1 { stop-color: var(--ln-oro); }
+.ln-oro-2 { stop-color: var(--ln-oro-hondo); }
+
+/* ======================================================================================================================
+   anilloAceptar: el aviso tipo PARTIDA ENCONTRADA
+   ====================================================================================================================== */
+.ln-aviso { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; }
+/* dentro de una caja (la hoja del kit): ocupa la caja, no la pantalla */
+[data-ln-caja] > .ln-aviso { position: absolute; }
+.ln-aviso-velo {
+  position: absolute; inset: 0;
+  background: radial-gradient(70% 70% at 50% 48%, color-mix(in srgb, var(--tono-noche) 55%, var(--ln-velo)) 0%, var(--ln-velo) 70%);
+}
+/* anilloAceptar({ velo }): cuanto tapa el velo (la opacidad, --ln-aviso-velo-k en el nodo; sin la opcion, el de arriba) */
+.ln-aviso[data-velo] > .ln-aviso-velo {
+  background: radial-gradient(70% 70% at 50% 48%, color-mix(in srgb, color-mix(in srgb, var(--tono-noche) 55%, var(--ln-velo)) var(--ln-aviso-velo-k, 100%), transparent) 0%, color-mix(in srgb, var(--ln-velo) var(--ln-aviso-velo-k, 100%), transparent) 70%);
+}
+.ln-aviso-fogonazo {
+  position: absolute; left: 50%; top: 50%; width: 1000px; height: 1000px; margin: -500px 0 0 -500px; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--ln-destello), color-mix(in srgb, var(--ln-oro-claro) 45%, transparent) 26%, color-mix(in srgb, var(--tono-luz) 18%, transparent) 50%, transparent 72%);
+  opacity: 0; pointer-events: none; mix-blend-mode: screen;
+}
+.ln-aviso-tarjeta {
+  position: relative; display: grid; justify-items: center; gap: 18px; width: min(470px, 100%); padding: 30px 32px 32px;
+  border: 1px solid transparent; border-radius: 3px;
+  background:
+    radial-gradient(90% 60% at 50% 0%, color-mix(in srgb, var(--ln-petroleo) 70%, transparent), transparent 70%) padding-box,
+    linear-gradient(180deg, var(--ln-petroleo-hondo), var(--panel-opaco)) padding-box,
+    linear-gradient(180deg, var(--ln-oro-claro), var(--ln-oro) 40%, var(--ln-oro-hondo)) border-box;
+  box-shadow: 0 0 0 1px var(--oscuro-total), 0 36px 90px -24px var(--sombra), 0 0 60px -20px var(--ln-turquesa-tenue);
+}
+.ln-aviso-enc {
+  margin: 0; max-width: 100%; text-align: center; text-wrap: balance;
+  font: 800 30px / 1.02 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: 0.01em; text-transform: uppercase;
+  color: var(--ln-crema); text-shadow: 0 0 26px color-mix(in srgb, var(--ln-oro) 40%, transparent);
+}
+.ln-aviso-anillo { position: relative; width: var(--ln-aro); height: var(--ln-aro); }
+.ln-aviso-resplandor {
+  position: absolute; inset: 12%; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tono-luz) 50%, transparent), color-mix(in srgb, var(--tono-luz) 14%, transparent) 68%, transparent);
+}
+.ln-aviso-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ln-aviso-marco { fill: none; stroke-width: 1.2; }
+.ln-aviso-pista { fill: none; stroke: color-mix(in srgb, var(--ln-petroleo-claro) 55%, transparent); stroke-width: 8; }
+.ln-aviso-aro { fill: none; stroke-width: 8; stroke-linecap: butt; filter: drop-shadow(0 0 5px var(--ln-turquesa-suave)); }
+.ln-aviso-interior { fill: color-mix(in srgb, var(--ln-petroleo-hondo) 72%, transparent); stroke-width: 1; }
+.ln-aviso-cabeza { transform-box: view-box; transform-origin: 50% 50%; }
+.ln-aviso-halo { fill: var(--ln-turquesa-suave); }
+.ln-aviso-punta { fill: var(--ln-destello); filter: drop-shadow(0 0 4px var(--ln-turquesa)); }
+.ln-aviso-escudo { position: absolute; inset: 24%; display: grid; place-items: center; }
+.ln-aviso-escudo > * { max-width: 100%; max-height: 100%; }
+.ln-aviso-escudo img, .ln-aviso-escudo svg { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 14px var(--sombra)); }
+.ln-aviso-cola {
+  margin: -2px 0 0; text-align: center;
+  font: 500 var(--t-rotulo-g) / 1.4 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ln-crema-dim);
+}
+.ln-aceptar {
+  all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 16px;
+  width: min(var(--ln-aceptar-ancho), 100%); height: var(--ln-aceptar-alto); margin-top: 4px;
+  border: 1px solid transparent; border-radius: 3px;
+  background:
+    linear-gradient(180deg, var(--ln-petroleo-claro), var(--ln-petroleo) 52%, var(--ln-petroleo-hondo)) padding-box,
+    linear-gradient(180deg, var(--ln-oro-claro), var(--ln-oro) 45%, var(--ln-oro-hondo)) border-box;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ln-turquesa) 30%, transparent), 0 12px 28px -14px var(--sombra);
+  font: 800 23px / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ln-crema);
+  transition: box-shadow 160ms ease, transform 90ms ease, filter 160ms ease, color 160ms ease;
+}
+.ln-aceptar:hover, .ln-aceptar:focus-visible {
+  color: var(--ln-destello); outline: none;
+  box-shadow: inset 0 0 22px var(--ln-turquesa-tenue), inset 0 1px 0 var(--ln-turquesa-suave), 0 0 0 1px var(--ln-turquesa-suave), 0 0 30px var(--ln-turquesa-suave);
+}
+/* se hunde al apretar */
+.ln-aceptar:active, .ln-aviso[data-aceptado] .ln-aceptar {
+  transform: translateY(2px) scale(0.985); filter: brightness(0.94);
+  box-shadow: inset 0 4px 12px var(--sombra), 0 0 0 1px var(--ln-turquesa-suave), 0 0 18px var(--ln-turquesa-tenue);
+}
+.ln-aceptar-tecla {
+  height: 20px; padding: 0 6px; display: inline-grid; place-items: center; border-radius: 3px;
+  font: 600 10.5px / 1 var(--f-mono); letter-spacing: 0.06em; color: var(--ln-crema); background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ln-crema) 55%, transparent);
+}
+
+/* ======================================================================================================================
+   bloquear: el BLOQUEAR del inicio (el mismo look: estilos/inicio.css .in-bloquear) con el destello de ceremonia
+   ====================================================================================================================== */
+.ln-bloquear {
+  --ln-bq-texto: color-mix(in oklab, var(--tono-luz) 52%, var(--ink));
+  --ln-bq-fuerte: color-mix(in srgb, var(--tono-luz) 40%, transparent);
+  --ln-bq-suave: color-mix(in srgb, var(--tono-luz) 22%, transparent);
+  all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 15px 30px; border-radius: var(--r-control); background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--linea-fuerte);
+  font: 700 14px / 1 var(--f-mono); letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-dim);
+  transition: transform 110ms ease, filter 140ms ease;
+}
+.ln-bloquear:disabled { cursor: not-allowed; }
+.ln-bloquear:not(:disabled):active { transform: translateY(1px) scale(0.97); }
+.ln-bloquear:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.ln-bloquear.encendido {
+  color: var(--bg-void); background: var(--ln-bq-texto);
+  box-shadow: 0 0 0 1px var(--tono-luz), 0 0 40px var(--ln-bq-fuerte), 0 0 100px var(--ln-bq-suave);
+  animation: ln-respira 2400ms ease-in-out infinite;
+}
+@keyframes ln-respira { 50% { box-shadow: 0 0 0 1px var(--tono-luz), 0 0 60px var(--ln-bq-fuerte), 0 0 140px var(--ln-bq-fuerte); } }
+/* bloqueado: la ceremonia (petroleo con filete de oro) y la marca */
+.ln-bloquear[data-estado='bloqueado'] {
+  cursor: default; animation: none; color: var(--ln-crema);
+  background: linear-gradient(180deg, var(--ln-petroleo), var(--ln-petroleo-hondo));
+  box-shadow: inset 0 0 0 1px var(--ln-oro), inset 0 1px 0 var(--ln-oro-claro), 0 0 26px var(--ln-turquesa-tenue);
+}
+.ln-bloquear[data-estado='bloqueado'] .ln-bq-txt::before {
+  content: ''; display: inline-block; width: 5px; height: 10px; margin: 0 12px 2px 0; vertical-align: middle;
+  border: solid var(--ln-turquesa); border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.ln-bq-onda {
+  position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; opacity: 0;
+  box-shadow: 0 0 0 2px var(--ln-oro-claro), 0 0 18px 2px var(--ln-turquesa-suave), inset 0 0 12px var(--ln-turquesa-tenue);
+}
+
+/* ======================================================================================================================
+   victoriaDerrota: la palabra metalica, su emblema y el estallido
+   ====================================================================================================================== */
+.ln-vd { position: relative; isolation: isolate; display: grid; justify-items: center; gap: 2px; padding: 26px 44px 30px; text-align: center; }
+/* el velo de lectura: la palabra se lee sobre cualquier fondo */
+.ln-vd::before {
+  content: ''; position: absolute; inset: -12% -24%; z-index: -2; pointer-events: none;
+  background: radial-gradient(50% 50% at 50% 56%, var(--ln-velo) 0%, color-mix(in srgb, var(--ln-velo) 70%, transparent) 50%, transparent 78%);
+}
+.ln-vd-estallido {
+  position: absolute; left: 50%; top: 44%; width: 820px; height: 820px; margin: -410px 0 0 -410px; z-index: -1; border-radius: 50%;
+  pointer-events: none; opacity: 0.32; mix-blend-mode: screen;
+  background:
+    radial-gradient(closest-side, color-mix(in srgb, var(--ln-vic-2) 60%, transparent), color-mix(in srgb, var(--ln-oro) 22%, transparent) 40%, transparent 70%),
+    conic-gradient(from 8deg, transparent 0deg, color-mix(in srgb, var(--ln-vic-2) 30%, transparent) 4deg, transparent 9deg 52deg, color-mix(in srgb, var(--ln-vic-2) 24%, transparent) 56deg, transparent 61deg 118deg, color-mix(in srgb, var(--ln-vic-2) 30%, transparent) 122deg, transparent 127deg 178deg, color-mix(in srgb, var(--ln-vic-2) 22%, transparent) 182deg, transparent 187deg 242deg, color-mix(in srgb, var(--ln-vic-2) 28%, transparent) 246deg, transparent 251deg 302deg, color-mix(in srgb, var(--ln-vic-2) 24%, transparent) 306deg, transparent 311deg 360deg);
+  mask-image: radial-gradient(closest-side, var(--mascara) 30%, transparent 100%);
+}
+.ln-vd[data-gano='no'] .ln-vd-estallido {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ln-der-brillo) 42%, transparent), color-mix(in srgb, var(--ln-der-4) 30%, transparent) 45%, transparent 70%);
+}
+.ln-vd-emblema { width: min(340px, 72vw); height: auto; overflow: visible; margin-bottom: -10px; filter: drop-shadow(0 0 16px color-mix(in srgb, var(--ln-oro) 42%, transparent)); }
+.ln-vd[data-gano='no'] .ln-vd-emblema { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--ln-der-brillo) 36%, transparent)); }
+.ln-vd-ala-giro { transform-box: fill-box; transform-origin: 100% 25%; }
+.ln-vd-pluma { stroke: color-mix(in srgb, var(--ln-oro-claro) 55%, transparent); stroke-width: 0.6; }
+.ln-vd[data-gano='no'] .ln-vd-pluma { stroke: color-mix(in srgb, var(--ln-der-1) 40%, transparent); }
+.ln-vd-cresta { stroke: var(--ln-oro-claro); stroke-width: 1; }
+.ln-vd[data-gano='no'] .ln-vd-cresta { stroke: var(--ln-der-2); }
+.ln-vd-cresta-in { fill: var(--ln-petroleo-hondo); stroke: var(--ln-oro-claro); stroke-width: 1; }
+.ln-vd-ojo { fill: var(--ln-turquesa); filter: drop-shadow(0 0 6px var(--ln-turquesa)); }
+.ln-vd-grieta { fill: none; stroke: var(--ln-der-1); stroke-width: 1.6; filter: drop-shadow(0 0 4px var(--ln-der-brillo)); }
+.ln-vic-g0 { stop-color: var(--ln-vic-1); }
+.ln-vic-g1 { stop-color: var(--ln-vic-3); }
+.ln-vic-g2 { stop-color: var(--ln-oro-hondo); }
+.ln-der-g0 { stop-color: var(--ln-der-2); }
+.ln-der-g1 { stop-color: var(--ln-der-3); }
+.ln-der-g2 { stop-color: var(--ln-der-4); }
+.ln-vd-palabra {
+  margin: 0; padding: 0 0.04em;
+  font: 900 clamp(88px, 10.5vw, 164px) / 0.9 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.01em; text-transform: uppercase;
+  background: linear-gradient(180deg, var(--ln-vic-1) 10%, var(--ln-vic-2) 42%, var(--ln-vic-3) 70%, var(--ln-vic-4) 94%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--ln-oro-hondo) 85%, transparent)) drop-shadow(0 0 30px color-mix(in srgb, var(--ln-oro) 38%, transparent));
+}
+.ln-vd[data-gano='no'] .ln-vd-palabra {
+  background-image: linear-gradient(180deg, var(--ln-der-1) 10%, var(--ln-der-2) 46%, var(--ln-der-3) 92%);
+  filter: drop-shadow(0 2px 0 var(--ln-der-4)) drop-shadow(0 0 28px color-mix(in srgb, var(--ln-der-brillo) 34%, transparent));
+}
+.ln-vd-sub {
+  margin: 10px 0 0; max-width: 46ch;
+  font: 500 var(--t-chico) / 1.45 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ln-crema);
+}
+
+/* ======================================================================================================================
+   quemar: el quemado de Fearless (el estado final; la animacion es WAAPI)
+   ====================================================================================================================== */
+.ln-quemada > :not(.ln-quema) { filter: grayscale(1) brightness(0.45); }
+.ln-quema { position: absolute; inset: 0; z-index: 2; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.ln-quema-brasa {
+  position: absolute; left: 50%; top: 50%; width: 190%; height: 9px; opacity: 0;
+  transform: translate(-50%, -50%) rotate(-38deg) translateX(130%);
+  background: linear-gradient(180deg, transparent, var(--ln-brasa) 28%, var(--ln-brasa-claro) 50%, var(--ln-brasa) 72%, transparent);
+  box-shadow: 0 0 18px 5px color-mix(in srgb, var(--ln-brasa) 55%, transparent);
+}
+.ln-quema-tajo {
+  position: absolute; left: 50%; top: 50%; width: 190%; height: 2px;
+  transform: translate(-50%, -50%) rotate(-38deg);
+  background: var(--ln-tajo);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ln-brasa) 55%, transparent), 0 -1px 0 color-mix(in srgb, var(--ln-brasa) 28%, transparent);
+}
+
+/* ---------- el camino quieto ---------- */
+@media (prefers-reduced-motion: reduce) { .ln-bloquear.encendido { animation: none; } }
+html[data-reducido] .ln-bloquear.encendido, html[data-inst] .ln-bloquear.encendido { animation: none; }
+
+@media (max-width: 640px) {
+  .ln-aviso-tarjeta { padding: 24px 18px 22px; gap: 14px; }
+  .ln-aviso-enc { font-size: 24px; }
+  .ln-aviso-anillo { width: 200px; height: 200px; }
+  .ln-vd { padding: 20px 12px 24px; }
+}

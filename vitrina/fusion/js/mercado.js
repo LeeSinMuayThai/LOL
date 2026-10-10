@@ -7,12 +7,18 @@
 // `firma`: el takeover del primer contrato (<= 2,4 s, salteable, Repetir lo vuelve a pasar): la luz de la pieza se
 // abre en la de la sala de practica, LOUD grande, CBLOL 2029, 1 ano, USD 40.000 en mono, y tu handle trazado como
 // firma de luz.
-import { el, entrar, animar, esperar, lineasConMascara, primeraOracion, num, reducido, inst, celular, odometro, plegar, EXPO, DUR } from './util.js';
+import { el, svg, entrar, animar, esperar, lineasConMascara, primeraOracion, num, reducido, inst, celular, odometro, plegar, EXPO, DUR } from './util.js';
 import { icono, glifoRol } from './iconos.js';
 import { franja, trayectoria, cuartos } from './marco.js';
-import { pintarLogo, tonoOrg, logoOrg } from './logos.js';
+import { pintarLogo, tonoOrg, logoOrg, escudo } from './logos.js';
 import { crearAzar } from '../../comun/azar.js';
 import { cargarImagen, urlCentrada } from '../../comun/arte.js';
+// PLANUI §4.9 (op=linea): el kit de la linea (K) y los momentos (M), sin cambiarlos
+import { tonoOrg as tonoOrgLinea, tonoEra, aplicarTono, paletaDe } from './tono.js';
+import { bloquear } from './ceremonia.js';
+import { cinta, placaInferior } from './transmision.js';
+import { crearBeats } from './beats.js';
+import { crearConfeti } from './confeti.js';
 
 const PLANTEL = {
   abajo: { ico: 'margen', corto: 'Margen', largo: 'plantel flojo' },
@@ -34,6 +40,8 @@ const usd = (n) => `USD ${num(n)}`;
 
 // `op=mesa|anuncio|orgs` (PLANUI §4.7): la opcion de diseño. Sin `op` (o con uno ajeno), el mercado y la firma de hoy.
 export function crearMercado(ctx) {
+  // `op=linea` (PLANUI §4.9): una linea. El mercado es tu segunda seleccion; la firma, el anuncio (un walkout)
+  if (ctx.op === 'linea') return ctx.muestra === 'firma' ? crearFirmaLinea(ctx) : crearOfertasLinea(ctx);
   // `op=final` (PLANUI §4.8): la ultima demostracion, la mesa (A) + los logos de C, con el fichaje de fondo
   if (ctx.op === 'final') return ctx.muestra === 'firma' ? crearFirmaFinal(ctx) : crearOfertasFinal(ctx);
   const op = OPCIONES.includes(ctx.op) ? ctx.op : null;
@@ -1614,5 +1622,861 @@ function crearFirmaFinal({ datos, muestra, amb, sonido, peor }) {
     animo: 'normal',
     encuadre: 'firma',
     velo: 0.5,
+  };
+}
+
+// ================================================================================================= una linea (§4.9)
+// El usuario: "'el mercado' esta aceptable, pero creo que se podria hacer un concepto mejor y mas original"; "'la firma'
+// es muy basica y simple no como el disseño avanzado que yo habia pedido"; de antes, "eso de que se firme con
+// animacion", "una mini animacion de como que van entrando las ofertas en pantalla", y nada de "el campeon random
+// atras", sino algo que "represente mas lo del fichaje".
+// `op=linea`, EL MERCADO ES TU SEGUNDA SELECCION. A los 15 elegiste tus campeones; ahora elegis tu equipo, con el mismo
+// gesto del inicio:
+//   - la entrada (beats.js, 2,4 s, Espacio salta): el bumper VENTANA DE PASES ABIERTA se cierra en una linea de luz, y de
+//     esa linea caen las ofertas, de a una, a la grilla de escudos (cada una con su "ding" y el borde encendido en el
+//     acento de su org);
+//   - apuntar una org (mouse, foco, 1-6) es el aura: el mundo cruza a su tono (ambiente({ paleta, cruce })) y TU MAIN
+//     (no un campeon cualquiera) queda en su bitono: "imaginate en LOUD". Encima, el logo monumental, el nombre gigante y
+//     los terminos como numeros grandes con referente. Sin apuntar, el reposo en el tono de la era: vos en el mercado;
+//   - la comparacion es la grilla (cada escudo con sus barras de sueldo y jerarquia) y el detalle va al inspector: los
+//     numeros grandes estan una sola vez, en el aura;
+//   - FIRMAR es el BLOQUEAR del inicio (ceremonia.js): el contrato sube, la firma se traza y cae el sello. Con LOUD (la
+//     unica que el motor jugo) encadena a la firma; con las otras, "hasta aca llega esta muestra";
+//   - "Mientras tanto" (los fichajes del resto del mundo) es la cinta de la transmision, abajo.
+// Todo lo que se mueve en la entrada y en la firma va por UN reloj (beats.js): congelar(t) es fiel.
+const T_MS = {
+  duracion: 2400, asentarse: 2300,
+  bumperDur: 1000, abre: 0.26, cierra: 0.7, // la banda se abre, se sostiene y se cierra en una linea (fracciones)
+  linea: 940, lineaFin: 2100, // la linea de luz que queda de la banda (de aca caen las ofertas) y cuando se apaga
+  panel: 180, panelDur: 460,
+  llega: 760, llegaPaso: 215, llegaDur: 420, toca: 0.62, // las ofertas caen de la linea a su lugar de la grilla
+  borde: 620, // el borde encendido en el acento de la org, que se asienta
+  reposo: 1880, // el aura en reposo (vos en el mercado: ELEGI TU EQUIPO) entra cuando ya llegaron las ofertas
+  cinta: 1950,
+  aura: 120, vuelta: 600, cruce: 350, // el aura de las orgs: entra a los 120 ms, vuelve a los 600, el mundo cruza en 350
+};
+const T_FIRMAR = {
+  duracion: 4000, asentarse: 2400,
+  apaga: 300, sube: 120, subeDur: 480, trazo: 520, trazoDur: 1050, rubrica: 1420, rubricaDur: 420,
+  sello: 1650, selloDur: 380, golpe: 1916, onda: 620, sacude: 220, resultado: 2150, encadena: 3900,
+};
+const T_LETRA_AURA = 26; // la entrada del nombre en el aura, letra por letra (ms)
+// el nombre gigante del aura y el handle de la firma achican la letra hasta entrar en su ancho (px)
+const LETRA_MIN = 34;
+// los tonos de las orgs de la grilla: el medido de su logo (js/tono.js) y, para las inventadas, una paleta distinta para
+// cada una en el orden de la grilla (con el hash de tonoOrg, tres de las cuatro de la muestra caian en la misma)
+const PALETAS_ORG = 4;
+const CAMPOS_TONO = ['luz', 'contra', 'acento', 'noche', 'vacio'];
+const tonoPaleta = (k) => Object.freeze({ id: `org-p${k}`, ...Object.fromEntries(CAMPOS_TONO.map((c) => [c, `--tono-org-p${k}-${c}`])) });
+// un texto del motor con la org del caso peor en lugar de la real (peor=1: los textos siguen a esa org)
+const conOrg = (texto, de, a) => (de && a && typeof texto === 'string' ? texto.replaceAll(de, a) : texto);
+function tonosDeGrilla(ofertas) {
+  const inventadas = ofertas.filter((o) => !logoOrg(o.org).src).map((o) => o.org);
+  return ofertas.map((o) => (inventadas.includes(o.org) ? tonoPaleta((inventadas.indexOf(o.org) % PALETAS_ORG) + 1) : tonoOrgLinea(o.org)));
+}
+// una animacion WAAPI con iteraciones (util.animar no las tiene: el loop vivo); nada con INST o movimiento reducido
+const animarLoop = (nodo, cuadros, opciones) => (!nodo || inst() || reducido() ? null : nodo.animate(cuadros, opciones));
+// la letra mas grande con la que `nodo` entra en su ancho (sin pasar de la del CSS)
+function ajustarLetra(nodo, { min = LETRA_MIN } = {}) {
+  if (!nodo?.isConnected) return;
+  nodo.style.fontSize = '';
+  const ancho = nodo.clientWidth;
+  const largo = nodo.scrollWidth;
+  if (!ancho || largo <= ancho) return;
+  const base = parseFloat(getComputedStyle(nodo).fontSize);
+  nodo.style.fontSize = `${Math.max(min, Math.floor(base * (ancho / largo) * 0.98))}px`;
+}
+// la firma trazada en la linea: el handle con trazo (y la letra apretada si es largo) y la rubrica
+const FIRMA_ANCHO = 640;
+const FIRMA_LARGA = 11; // desde estas letras, el handle se aprieta al ancho de la firma (textLength)
+function firmaLinea(handle, clase) {
+  const texto = svg('text', { x: '8', y: '104', class: `${clase}-trazo` }, document.createTextNode(handle));
+  if (String(handle).length >= FIRMA_LARGA) {
+    texto.setAttribute('textLength', String(FIRMA_ANCHO - 30));
+    texto.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+  }
+  texto.style.strokeDasharray = String(LARGO_TRAZO);
+  const rubrica = svg('path', { class: `${clase}-rubrica`, d: 'M14 128 C 140 112, 300 140, 420 120 S 600 96, 628 112' });
+  const nodo = svg('svg', { class: clase, viewBox: `0 0 ${FIRMA_ANCHO} 150`, role: 'img', 'aria-label': `Firma: ${handle}` }, [texto, rubrica]);
+  return { nodo, texto, rubrica };
+}
+const trazar = (f, t0, dur) => animar(f.texto, [{ strokeDashoffset: LARGO_TRAZO, fillOpacity: 0 }, { strokeDashoffset: 0, fillOpacity: 0, offset: 0.78 }, { strokeDashoffset: 0, fillOpacity: 1 }], { delay: t0, dur, easing: 'cubic-bezier(.45,0,.2,1)' });
+const rubricar = (f, t0, dur) => animar(f.rubrica, [{ strokeDashoffset: LARGO_RUBRICA }, { strokeDashoffset: 0 }], { delay: t0, dur, easing: EXPO });
+// la region de una liga (CBLOL -> BR), del catalogo del inicio
+const regionDe = (datos, liga) => datos.inicio?.catalogos?.regiones?.find((r) => r.liga === liga)?.regionId ?? '';
+
+// Los terminos de una oferta como numeros grandes con su referente (regla 13).
+function terminosDe(x, yo, valor) {
+  const pl = PLANTEL[x.plantel?.banda] ?? null;
+  return [
+    { k: 'Sueldo', n: num(x.sueldo), u: 'USD / año', ref: valor ? `${fmt1.format(x.sueldo / valor)}× tu valor (${num(valor)})` : null },
+    { k: 'Contrato', n: String(x.anios), u: x.anios === 1 ? 'año' : 'años', ref: periodo(yo.anio, x.anios) },
+    x.jer ? { k: 'Jerarquía', n: String(x.jer.hasta), u: 'de 100', ref: ['proyectada', x.jer.etiqueta ? x.jer.etiqueta.toLowerCase() : null].filter(Boolean).join(' · ') } : null,
+    x.plantel ? { k: 'Plantel', n: `${x.plantel.puesto}.º`, u: `de ${x.plantel.de}`, ref: pl?.largo ?? null } : null,
+  ].filter(Boolean);
+}
+const terminoNodo = (t) =>
+  el('div', { class: 'ms-termino' }, [
+    el('dt', { class: 'ms-termino-k', text: t.k }),
+    el('dd', { class: 'ms-termino-v' }, [el('b', { class: 'ms-num', text: t.n }), t.u ? el('span', { class: 'ms-unidad', text: t.u }) : null]),
+    t.ref ? el('dd', { class: 'ms-ref', text: t.ref }) : null,
+  ]);
+
+// ================================================================================================= el mercado, linea
+function crearOfertasLinea({ datos, muestra, amb, sonido, peor, estado }) {
+  const m = datos[muestra];
+  const pc = peor ? datos.peorCaso : null;
+  const botElige = (m.resultados ?? []).find((r) => r.eligioElBot)?.opcionId;
+  // con peor=1 la oferta que se juega pasa a ser la org del caso peor (el nombre mas largo): su logo, su tono y sus textos
+  const orgPeor = pc?.org?.nombre;
+  const ofertas = m.decision.opciones.map((o) => (orgPeor && o.id === botElige
+    ? { ...o, org: orgPeor, liga: pc.org.liga ?? o.liga, descripcion: conOrg(o.descripcion, o.org, orgPeor), motivoDemanda: conOrg(o.motivoDemanda, o.org, orgPeor) }
+    : o));
+  const resultados = Object.fromEntries((m.resultados ?? []).map((r) => [r.opcionId, r]));
+  const vos = m.vosEnElMercado ?? {};
+  const mundo = m.mercadoDelMundo ?? {};
+  const maxSueldo = Math.max(1, ...ofertas.map(sueldoDe));
+  const laReal = ofertas.find((z) => z.id === botElige);
+  const yo = {
+    handle: pc?.handle ?? m.franja?.quien?.handle ?? datos.inicio?.jugador?.handle ?? '',
+    rol: m.franja?.quien?.rol ?? '',
+    rolEtiqueta: m.franja?.quien?.rolEtiqueta ?? '',
+    anio: m.anio,
+    edad: m.edad,
+    ventana: m.franja?.cuando?.ventana?.texto ?? 'Pretemporada',
+  };
+  const norm = ofertas.map((o) => normalizar(o));
+  const tonos = tonosDeGrilla(ofertas);
+  const valor = vos.valorUSD ?? 0;
+  const html = document.documentElement;
+  const raiz = el('section', { class: 'ms-mercado', 'data-pieza': 'decision', 'data-forma': 'mercado', 'data-muestra': muestra, 'data-op': 'linea' });
+
+  // Lo de cada montaje: repetir() reconstruye la pantalla y vuelve a pasar la entrada desde cero.
+  let s = null;
+  let beats = null; // el reloj vigente: el de la entrada o el de la firma (congelar va a este)
+  let vivo = true;
+  let elegido = false;
+  let asentado = true;
+  let entrando = false;
+  let elegida = -1; // la org elegida (clic, foco, 1-6): la que firma FIRMAR y la que vuelve al soltar el mouse
+  let mostrada = null; // la que muestra el aura ahora (null: el reposo)
+  let tAura = 0;
+
+  // ---------------------------------------------------------------------------------------------- armar
+  function construir() {
+    clearTimeout(tAura);
+    beats?.destruir();
+    beats = null;
+    elegido = false;
+    asentado = true;
+    entrando = false;
+    elegida = -1;
+    mostrada = null;
+    raiz.classList.remove('ms-firmando');
+    const fr = franja(m.franja, { peor: pc ? { handle: pc.handle, org: pc.org?.nombre } : null });
+
+    // ---- el bumper y la linea de luz (decorativos: el rotulo del panel dice lo mismo)
+    const bumper = el('div', { class: 'ms-bumper', 'aria-hidden': 'true' }, [
+      el('i', { class: 'ms-bumper-banda' }),
+      el('p', { class: 'ms-bumper-txt' }, [el('span', { text: 'Ventana de pases' }), el('b', { text: 'abierta' })]),
+      el('p', { class: 'ms-bumper-sub', text: `${yo.ventana} ${m.anio} · ${ofertas.length} ofertas para ${yo.rolEtiqueta || 'tu rol'}` }),
+    ]);
+    const lineaLuz = el('i', { class: 'ms-linea-luz', 'aria-hidden': 'true' });
+
+    // ---- el aura: el escudo monumental, el nombre gigante y los terminos (o el reposo: vos en el mercado)
+    const velo = el('div', { class: 'ms-velo', 'aria-hidden': 'true' });
+    const aura = el('section', { class: 'ms-aura', 'aria-live': 'polite', 'aria-label': 'La oferta apuntada' });
+
+    // ---- el panel: la grilla de escudos (la comparacion), el inspector (el detalle) y FIRMAR
+    const [primera, resto] = primeraOracion(m.decision.descripcion);
+    const btnMas = resto ? el('button', { type: 'button', class: 'btn-mas', 'aria-expanded': 'false', text: 'más' }) : null;
+    const planteo = el('p', { class: 'planteo ms-planteo' }, [el('span', { class: 'planteo-1', text: primera }), resto ? el('span', { class: 'planteo-resto', text: ' ' + resto }) : null, btnMas]);
+    btnMas?.addEventListener('click', () => {
+      const a = !planteo.classList.contains('abierto');
+      planteo.classList.toggle('abierto', a);
+      btnMas.setAttribute('aria-expanded', String(a));
+      btnMas.textContent = a ? 'menos' : 'más';
+    });
+    const rotulo = el('p', { class: 'rotulo-cat' }, [el('i', { class: 'punto-luz' }), el('span', { text: 'Mercado' }), el('span', { class: 'bisagra', text: `${yo.ventana} ${m.anio}` }), el('span', { class: 'bisagra', text: `${ofertas.length} ofertas` })]);
+    const titulo = el('h1', { class: 'ms-titulo', id: 'ms-titulo', 'data-foco': '', tabindex: '-1', text: m.decision.titulo });
+    const cab = el('header', { class: 'ms-cab' }, [
+      el('div', { class: 'ms-cab-t' }, [rotulo, titulo, planteo]),
+      el('p', { class: 'ms-leyenda', 'aria-hidden': 'true' }, [el('span', {}, [el('i', { class: 'ms-ley-sueldo' }), el('span', { text: 'sueldo / año' })]), el('span', {}, [el('i', { class: 'ms-ley-jer' }), el('span', { text: 'jerarquía proyectada' })])]),
+    ]);
+    const escudos = ofertas.map((o, i) => {
+      const x = norm[i];
+      const t = tonos[i];
+      const desc = el('span', { class: 'sr', id: `ms-desc-${i}` }, [
+        `USD ${num(x.sueldo)} por año, ${aniosTxt(x.anios)}`,
+        x.jer ? `, jerarquía proyectada ${x.jer.hasta} de 100` : '',
+        x.plantel ? `, ${x.plantel.puesto}.º de ${x.plantel.de} en su liga` : '',
+        '.',
+      ]);
+      return el('button', { type: 'button', class: 'ms-op', 'data-atajo': String(i + 1), 'data-tono': t.id, 'aria-pressed': 'false', 'aria-keyshortcuts': String(i + 1), 'aria-label': `${o.org}, ${ligaLarga(o.liga)}${o.tier ? `, tier ${o.tier}` : ''}`, 'aria-describedby': desc.id, style: { '--ms-acento': `var(${t.acento})`, '--ms-luz': `var(${t.luz})` } }, [
+        el('span', { class: 'ms-op-vacio', 'aria-hidden': 'true' }, escudo('?')),
+        el('span', { class: 'ms-op-tecla', 'aria-hidden': 'true', text: String(i + 1) }),
+        o.tag === 'bombazo' ? el('span', { class: 'ms-op-tag', text: 'bombazo' }) : null,
+        el('span', { class: 'ms-op-cresta' }, pintarLogo(o.org, { tam: 54, alt: '' })),
+        el('span', { class: 'ms-op-txt' }, [
+          el('b', { class: 'ms-op-org', text: o.org }),
+          el('span', { class: 'ms-op-liga' }, [pintarLogo(o.liga, { liga: true, tam: 13, alt: '' }), LIGA_TABLA[o.liga] ?? o.liga, o.tier ? ` · T${o.tier}` : '']),
+        ]),
+        el('span', { class: 'ms-op-barras', 'aria-hidden': 'true' }, [
+          el('i', { class: 'ms-op-barra ms-op-sueldo', style: { '--v': (x.sueldo / maxSueldo).toFixed(3) } }),
+          el('i', { class: 'ms-op-barra ms-op-jer', style: { '--v': ((x.jer?.hasta ?? 0) / 100).toFixed(3) } }),
+        ]),
+        el('i', { class: 'ms-op-borde', 'aria-hidden': 'true' }),
+        el('i', { class: 'ms-op-estela', 'aria-hidden': 'true' }),
+        desc,
+      ]);
+    });
+    const grilla = el('div', { class: 'ms-grilla', role: 'group', 'aria-label': 'Ofertas: elegí tu equipo (1 a 6)' }, escudos);
+    const ranura = el('div', { class: 'ms-ranura' });
+    const inspector = el('div', { class: 'ms-insp', 'aria-live': 'polite' });
+    const boton = bloquear({ texto: 'Firmar', sonido, alBloquear: () => firmar(elegida) });
+    boton.habilitar(false);
+    const cierre = el('footer', { class: 'ms-cierre' }, [ranura, inspector, el('div', { class: 'ms-firmar' }, [boton.nodo, el('span', { class: 'ms-firmar-k' }, [el('kbd', { text: 'Enter' }), 'firma'])])]);
+    const panel = el('section', { class: 'panel ms-panel', 'aria-labelledby': 'ms-titulo' }, [cab, grilla, cierre]);
+
+    // ---- "mientras tanto": la cinta de la transmision (los fichajes reales del resto del mundo)
+    const items = [
+      ...(mundo.traspasosMundo ?? []).map((t) => ({ texto: t.motivo, logo: pintarLogo(t.org, { tam: 22, alt: '' }) })),
+      ...(mundo.asientosAbiertos ?? []).map((a) => ({ texto: `${a.org} (${ligaLarga(a.liga)}) tiene un asiento abierto`, logo: pintarLogo(a.org, { tam: 22, alt: '' }) })),
+    ];
+    const tira = items.length ? el('div', { class: 'ms-cinta' }, cinta({ rotulo: 'Mientras tanto', items })) : null;
+
+    raiz.replaceChildren(...[velo, fr, aura, panel, tira, cuartos('mundo', null, trayectoria(datos.final?.tarjeta?.historia ?? [], m.anio, m.edad)), bumper, lineaLuz].filter(Boolean));
+    s = { fr, bumper, lineaLuz, velo, aura, panel, cab, rotulo, titulo, planteo, grilla, escudos, ranura, inspector, boton, cierre, tira };
+
+    escudos.forEach((b, i) => {
+      b.addEventListener('pointerenter', () => !celular() && previsualizar(i));
+      b.addEventListener('pointerleave', () => !celular() && soltar());
+      b.addEventListener('focus', () => elegir1(i));
+      b.addEventListener('click', () => elegir1(i));
+    });
+    pintarAura(null, { animado: false });
+    pintarCierre(-1);
+  }
+
+  // ---------------------------------------------------------------------------------------------- el aura
+  // El aura en el DOM: el reposo (vos en el mercado) o la org i. `animado`: la entrada corta (expo-out, 320 ms).
+  function pintarAura(i, { animado = true } = {}) {
+    const { aura } = s;
+    aura.dataset.estado = i == null ? 'reposo' : 'org';
+    let escudoNodo;
+    let nombre;
+    let kicker;
+    let terminos;
+    if (i == null) {
+      escudoNodo = el('span', { class: 'ms-aura-escudo ms-aura-vacio' }, escudo('?'));
+      kicker = [el('span', { text: m.franja?.club?.fase ?? 'Agente libre' }), el('span', { text: `${yo.edad} años` }), el('span', { text: yo.rolEtiqueta })];
+      nombre = 'Elegí tu equipo';
+      const mejor = ofertas.reduce((a, b) => (sueldoDe(b) > sueldoDe(a) ? b : a), ofertas[0]);
+      terminos = [
+        { k: 'Tu valor', n: num(valor), u: 'USD', ref: vos.contrato ? 'con contrato' : 'sin contrato: agente libre' },
+        { k: 'Te llaman', n: String(ofertas.length), u: ofertas.length === 1 ? 'club' : 'clubes', ref: `buscan ${yo.rolEtiqueta || 'tu rol'}` },
+        mejor ? { k: 'La más alta', n: num(sueldoDe(mejor)), u: 'USD / año', ref: valor ? `${fmt1.format(sueldoDe(mejor) / valor)}× tu valor · ${mejor.org}` : mejor.org } : null,
+      ].filter(Boolean);
+    } else {
+      const o = ofertas[i];
+      const x = norm[i];
+      escudoNodo = el('span', { class: 'ms-aura-escudo' }, pintarLogo(o.org, { tam: 172, alt: '' }));
+      kicker = [el('span', {}, [pintarLogo(o.liga, { liga: true, tam: 16, alt: '' }), ligaLarga(o.liga)]), o.tier ? el('span', { text: `tier ${o.tier}` }) : null, x.tipo ? el('span', { text: `${x.tipo}${x.clausula ? ', con cláusula' : ''}` }) : null, el('span', { text: `oferta ${i + 1} de ${ofertas.length}` }), o.tag === 'bombazo' ? el('span', { class: 'ms-aura-tag', text: 'bombazo' }) : null];
+      nombre = o.org;
+      terminos = terminosDe(x, yo, valor);
+    }
+    const nom = el('h2', { class: 'ms-aura-nombre' }, String(nombre).split('').map((c) => el('span', { class: 'ms-aura-letra', text: c })));
+    nom.setAttribute('aria-label', nombre);
+    const k = el('p', { class: 'ms-aura-k' }, kicker.filter(Boolean));
+    const dl = el('dl', { class: 'ms-terminos' }, terminos.map(terminoNodo));
+    aura.replaceChildren(el('div', { class: 'ms-aura-cab' }, [escudoNodo, el('div', { class: 'ms-aura-t' }, [k, nom])]), dl);
+    ajustarLetra(nom);
+    if (!animado) return;
+    animar(escudoNodo, [{ opacity: 0, transform: 'scale(.86)', filter: 'blur(8px)' }, { opacity: 1, transform: 'none', filter: 'blur(0px)' }], { dur: 360 });
+    nom.querySelectorAll('.ms-aura-letra').forEach((l, j) => animar(l, [{ opacity: 0, transform: 'translateY(34%)' }, { opacity: 1, transform: 'none' }], { delay: 40 + j * T_LETRA_AURA, dur: 300 }));
+    animar(k, [{ opacity: 0, transform: 'translateX(-10px)' }, { opacity: 1, transform: 'none' }], { delay: 60, dur: 280 });
+    dl.querySelectorAll('.ms-termino').forEach((t, j) => animar(t, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: 120 + j * 50, dur: 300 }));
+  }
+  // El cierre del panel: la ranura ("tu equipo"), el inspector (la prosa de la oferta) y FIRMAR.
+  function pintarCierre(i) {
+    const { ranura, inspector, boton } = s;
+    if (i < 0) {
+      ranura.replaceChildren(el('span', { class: 'ms-ranura-cara ms-ranura-libre', 'aria-hidden': 'true' }, escudo('?')), el('span', { class: 'ms-ranura-t' }, [el('span', { class: 'ms-ranura-k', text: 'Tu equipo' }), el('b', { text: 'Libre' })]));
+      inspector.replaceChildren(el('p', { class: 'ms-insp-texto', text: 'Apuntá un escudo para verte en ese equipo. 1 a 6 eligen; Enter firma.' }));
+      boton.habilitar(false);
+      return;
+    }
+    const o = ofertas[i];
+    const x = norm[i];
+    const pl = PLANTEL[x.plantel?.banda] ?? PLANTEL.medio;
+    ranura.replaceChildren(el('span', { class: 'ms-ranura-cara' }, pintarLogo(o.org, { tam: 40, alt: '' })), el('span', { class: 'ms-ranura-t' }, [el('span', { class: 'ms-ranura-k', text: 'Tu equipo' }), el('b', { text: o.org })]));
+    inspector.replaceChildren(
+      el('p', { class: 'ms-insp-texto', text: [o.descripcion, o.motivoDemanda ? `${o.motivoDemanda}.` : null].filter(Boolean).join(' ') }),
+      el('ul', { class: 'insp-previa ms-insp-previa' }, [
+        x.riesgo ? el('li', {}, [icono(pl.ico), x.riesgo]) : null,
+        o.arraigoInicial ? el('li', {}, [icono('arraigo'), o.arraigoInicial.etiqueta]) : null,
+        x.riesgoTexto ? el('li', { class: 'insp-riesgo' }, [icono('incierto'), x.riesgoTexto]) : null,
+      ]),
+    );
+    boton.habilitar(true);
+  }
+  // La luz: el mundo cruza al tono (la paleta tiñe la luz, la noche y las sombras de tu main) y el CSS lo sigue.
+  function ponerTono(tono) {
+    aplicarTono(html, tono);
+    amb.ambiente({ paleta: paletaDe(tono), cruce: T_MS.cruce });
+  }
+  const tonoReposo = () => tonoEra(html.dataset.era);
+  // Mostrar la org i (o el reposo, null) en el aura y en la luz.
+  function mostrar(i) {
+    if (i === mostrada || !vivo) return;
+    mostrada = i;
+    s.escudos.forEach((b, k) => b.classList.toggle('apuntada', k === i));
+    raiz.dataset.aura = i == null ? 'reposo' : tonos[i].id;
+    pintarAura(i);
+    ponerTono(i == null ? tonoReposo() : tonos[i]);
+    if (i != null) amb.pulso('apuntar');
+  }
+  // el que se va (la pantalla sale) no toca la luz de la que entra: main.js le saca los eventos al nodo viejo
+  const sigue = () => vivo && raiz.isConnected && raiz.style.pointerEvents !== 'none';
+  // Pasar el mouse: el aura entra a los 120 ms (barrer la grilla no dispara seis cruces).
+  function previsualizar(i) {
+    if (elegido) return;
+    clearTimeout(tAura);
+    if (quieto()) return mostrar(i);
+    tAura = setTimeout(() => sigue() && mostrar(i), T_MS.aura);
+  }
+  // Soltar: a los 600 ms vuelve a la elegida (o al reposo).
+  function soltar() {
+    if (elegido) return;
+    clearTimeout(tAura);
+    const base = elegida >= 0 ? elegida : null;
+    if (quieto()) return mostrar(base);
+    tAura = setTimeout(() => sigue() && mostrar(base), T_MS.vuelta);
+  }
+  // Elegir (clic, foco, 1-6): queda como la de la pantalla; FIRMAR la firma. `mover`: el foco va a su escudo.
+  function elegir1(i, { mover = false } = {}) {
+    if (elegido || i < 0 || i >= ofertas.length) return;
+    if (entrando) saltarEntrada();
+    clearTimeout(tAura);
+    if (i !== elegida) {
+      elegida = i;
+      s.escudos.forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+      pintarCierre(i);
+      sonido?.clic?.();
+    }
+    mostrar(i);
+    if (mover && document.activeElement !== s.escudos[i]) s.escudos[i].focus({ preventScroll: true });
+  }
+
+  // ---------------------------------------------------------------------------------------------- la entrada
+  function entrada() {
+    const { bumper, lineaLuz, aura, panel, rotulo, titulo, planteo, grilla, escudos, cierre, tira, fr, cab } = s;
+    const bt = crearBeats({ duracion: T_MS.duracion, asentarse: T_MS.asentarse });
+    beats = bt;
+    entrando = !quieto();
+    const w = (a) => bt.waapi(a);
+    // el golpe de luz del bumper (un destello, por beats)
+    const td = bt.destello(60);
+    if (td != null) amb.pulso('elegir', td);
+    // ---- el bumper: la banda se abre, el rotulo entra apretandose, y la banda se cierra en una linea de luz
+    const D = T_MS.bumperDur;
+    w(animar(bumper, [{ opacity: 1 }, { opacity: 1, offset: 0.97 }, { opacity: 0 }], { dur: D, easing: 'linear' }));
+    w(animar(bumper.querySelector('.ms-bumper-banda'), [
+      { transform: 'scaleY(0)', easing: EXPO },
+      { transform: 'scaleY(1)', offset: T_MS.abre, easing: 'linear' },
+      { transform: 'scaleY(1)', offset: T_MS.cierra, easing: 'cubic-bezier(.7,0,.3,1)' },
+      { transform: 'scaleY(.01)' },
+    ], { dur: D, easing: 'linear' }));
+    w(animar(bumper.querySelector('.ms-bumper-txt'), [
+      { opacity: 0, letterSpacing: '0.42em', filter: 'blur(8px)', easing: EXPO },
+      { opacity: 1, letterSpacing: '0em', filter: 'blur(0px)', offset: 0.36, easing: 'linear' },
+      { opacity: 1, letterSpacing: '0em', transform: 'none', filter: 'blur(0px)', offset: T_MS.cierra - 0.04, easing: 'cubic-bezier(.7,0,.3,1)' },
+      { opacity: 0, letterSpacing: '0em', transform: 'scaleY(.2)', filter: 'blur(4px)', offset: 0.9 },
+      { opacity: 0, letterSpacing: '0em', transform: 'scaleY(.2)', filter: 'blur(4px)' },
+    ], { dur: D, easing: 'linear' }));
+    w(animar(bumper.querySelector('.ms-bumper-sub'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none', offset: 0.45 }, { opacity: 1, transform: 'none', offset: T_MS.cierra - 0.06 }, { opacity: 0, transform: 'none', offset: 0.82 }, { opacity: 0, transform: 'none' }], { delay: 120, dur: D - 120, easing: 'linear' }));
+    // la linea de luz que queda: de aca caen las ofertas, y se apaga cuando cae la ultima
+    w(animar(lineaLuz, [{ opacity: 0, transform: 'scaleX(.6)' }, { opacity: 1, transform: 'none', offset: 0.05 }, { opacity: 1, transform: 'none', offset: 0.86 }, { opacity: 0, transform: 'scaleX(1.06)' }], { delay: T_MS.linea, dur: T_MS.lineaFin - T_MS.linea, easing: 'linear' }));
+    // ---- el panel sube; adentro, el orden de siempre (luz -> rotulo -> titulo -> opciones)
+    w(animar(panel, [{ opacity: 0, transform: 'translateY(22px)' }, { opacity: 1, transform: 'none' }], { delay: T_MS.panel, dur: T_MS.panelDur }));
+    w(entrar(fr, 0, -10));
+    w(entrar(rotulo, T_MS.panel + 120, 10));
+    w(animar(titulo, [{ opacity: 0, transform: 'translateY(40%)' }, { opacity: 1, transform: 'none' }], { delay: T_MS.panel + 200, dur: 420 }));
+    w(entrar(planteo, T_MS.panel + 300, 10));
+    w(entrar(cab.querySelector('.ms-leyenda'), T_MS.panel + 380, 6));
+    w(entrar(cierre, 1150, 10));
+    // ---- las ofertas caen de la linea a su lugar (medido: la grilla esta quieta en su lugar final)
+    const yLinea = lineaLuz.getBoundingClientRect().top;
+    escudos.forEach((b, i) => {
+      const t0 = T_MS.llega + i * T_MS.llegaPaso;
+      const toca = t0 + T_MS.llegaDur * T_MS.toca;
+      const cresta = b.querySelector('.ms-op-cresta');
+      const r = cresta.getBoundingClientRect();
+      const dy = Math.round(yLinea - (r.top + r.height / 2));
+      // la estela: un haz del acento de la org entre la linea y su lugar, mientras cae
+      const estela = b.querySelector('.ms-op-estela');
+      estela.style.height = `${Math.max(0, Math.round(b.getBoundingClientRect().top - yLinea))}px`;
+      w(animar(estela, [{ opacity: 0, transform: 'scaleY(.2)' }, { opacity: 1, transform: 'scaleY(1)', offset: 0.25 }, { opacity: 0.7, transform: 'scaleY(1)', offset: T_MS.toca }, { opacity: 0, transform: 'scaleY(.05)' }], { delay: t0, dur: T_MS.llegaDur + 160, easing: 'linear' }));
+      w(animar(cresta, [
+        { opacity: 0, transform: `translateY(${dy}px) scale(.3)`, filter: 'blur(6px)', easing: 'linear' },
+        { opacity: 1, transform: `translateY(${Math.round(dy * 0.9)}px) scale(.55)`, filter: 'blur(3px)', offset: 0.1, easing: 'cubic-bezier(.55,0,.9,.45)' },
+        { opacity: 1, transform: 'translateY(5%) scale(1.14, .86)', filter: 'blur(0px)', offset: T_MS.toca, easing: EXPO },
+        { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+      ], { delay: t0, dur: T_MS.llegaDur, easing: 'linear' }));
+      // el lugar vacio (la tecla y el escudo punteado) se va cuando la oferta toca; el texto y las barras entran
+      w(animar(b.querySelector('.ms-op-vacio'), [{ opacity: 1 }, { opacity: 0 }], { delay: toca - 40, dur: 140, easing: 'linear' }));
+      w(animar(b.querySelector('.ms-op-txt'), [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { delay: toca, dur: 300 }));
+      b.querySelectorAll('.ms-op-barra').forEach((x, k) => w(animar(x, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: toca + 60 + k * 50, dur: 480 })));
+      const tag = b.querySelector('.ms-op-tag');
+      if (tag) w(animar(tag, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], { delay: toca + 120, dur: 260 }));
+      // el borde se enciende en el acento de su org y se asienta
+      w(animar(b.querySelector('.ms-op-borde'), [{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 0 }], { delay: toca - 20, dur: T_MS.borde, easing: 'ease-out' }));
+      w(animar(b, [{ transform: 'none' }, { transform: 'translateY(3px)', offset: 0.3 }, { transform: 'none' }], { delay: toca, dur: 220, easing: 'ease-out' }));
+      bt.esperar(toca).then((llego) => llego && sonido?.ding?.());
+    });
+    // ---- el aura en reposo (vos en el mercado) y la cinta
+    w(animar(aura, [{ opacity: 0 }, { opacity: 1 }], { delay: T_MS.reposo, dur: 200, easing: 'linear' }));
+    w(animar(aura.querySelector('.ms-aura-escudo'), [{ opacity: 0, transform: 'scale(.8)', filter: 'blur(8px)' }, { opacity: 1, transform: 'none', filter: 'blur(0px)' }], { delay: T_MS.reposo, dur: 380 }));
+    w(animar(aura.querySelector('.ms-aura-k'), [{ opacity: 0, transform: 'translateX(-10px)' }, { opacity: 1, transform: 'none' }], { delay: T_MS.reposo + 40, dur: 300 }));
+    aura.querySelectorAll('.ms-aura-letra').forEach((l, j) => w(animar(l, [{ opacity: 0, transform: 'translateY(34%)' }, { opacity: 1, transform: 'none' }], { delay: T_MS.reposo + 60 + j * 16, dur: 300 })));
+    aura.querySelectorAll('.ms-termino').forEach((t, j) => w(entrar(t, T_MS.reposo + 140 + j * 50, 10)));
+    if (tira) w(animar(tira, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { delay: T_MS.cinta, dur: 420 }));
+    bt.esperar(T_MS.asentarse).then(() => {
+      if (beats !== bt) return;
+      entrando = false;
+      amb.aquietar(true);
+    });
+    if (quieto()) amb.aquietar(true);
+    bt.iniciar();
+  }
+  function saltarEntrada() {
+    if (!entrando) return;
+    entrando = false;
+    beats?.saltar();
+  }
+
+  // ---------------------------------------------------------------------------------------------- firmar
+  // FIRMAR (el BLOQUEAR del inicio): el contrato sube, la firma se traza, el sello cae con un golpe. El aura queda arriba
+  // (los terminos ya estan ahi: el contrato no los repite).
+  function firmar(i) {
+    if (elegido || i < 0 || !ofertas[i]) return;
+    saltarEntrada();
+    clearTimeout(tAura);
+    elegido = true;
+    asentado = false;
+    mostrar(i);
+    const o = ofertas[i];
+    const x = norm[i];
+    const tono = tonos[i];
+    const esLaReal = o.id === botElige && Boolean(datos.firma);
+    const enc = resultados[o.id]?.inmediato?.encadenaOtraParada;
+    const { panel, cab, grilla, cierre, inspector } = s;
+    raiz.classList.add('ms-firmando');
+    // el contrato tapa la cabeza y la grilla; abajo queda FIRMAR, ya en su estado de ceremonia (bloqueado)
+    panel.style.setProperty('--ms-cierre', `${cierre.offsetHeight}px`);
+    for (const n of [cab, grilla, inspector]) {
+      n.setAttribute('inert', '');
+      n.setAttribute('aria-hidden', 'true');
+    }
+    // ---- el contrato: quien firma con quien, la firma, el sello y a donde lleva
+    const f = firmaLinea(yo.handle, 'ms-ct-firma');
+    const onda = el('i', { class: 'ms-onda', 'aria-hidden': 'true' });
+    const sello = el('span', { class: 'ms-sello', 'aria-hidden': 'true' }, [el('b', { text: 'Firmado' }), el('span', { text: `${yo.ventana} ${yo.anio}` }), onda]);
+    const res = el('div', { class: 'ms-res', tabindex: '-1', 'aria-label': `Resultado: ${o.label}` }, [
+      el('p', { class: 'ms-res-sigue' }, [icono('flecha'), el('span', { text: enc?.titulo ?? 'La prueba de ingreso' }), el('b', { text: `en ${o.org}` })]),
+      el('p', { class: 'ms-res-texto', text: esLaReal ? 'En esta carrera, esta fue la elección. La prueba salió así:' : `Hasta acá llega esta muestra: el motor no jugó esta prueba, y no se inventa cómo salía. En esta carrera, la elección fue ${laReal?.org ?? 'otra'}.` }),
+      el('div', { class: 'ms-res-botones' }, [
+        datos.firma && laReal ? el('button', { type: 'button', class: 'mk-seguir', onclick: () => window.vitrina?.muestra('firma') }, [icono('firma'), esLaReal ? 'La firma' : `Ver lo que pasó en ${laReal.org}`, el('kbd', { text: 'Espacio' })]) : null,
+        el('button', { type: 'button', class: 'res-otra', onclick: () => window.vitrina?.repetir() }, ['Volver a decidir', el('kbd', { text: 'R' })]),
+      ]),
+    ]);
+    const contrato = el('article', { class: 'ms-contrato', 'data-tono': tono.id, 'aria-label': `Contrato con ${o.org}`, style: { '--ms-acento': `var(${tono.acento})`, '--ms-luz': `var(${tono.luz})` } }, [
+      el('header', { class: 'ms-ct-cab' }, [
+        el('span', { class: 'ms-ct-logo' }, pintarLogo(o.org, { tam: 54, alt: '' })),
+        el('div', { class: 'ms-ct-quien' }, [
+          el('p', { class: 'ms-ct-k', text: 'Contrato de jugador profesional' }),
+          el('h2', { class: 'ms-ct-t' }, [el('span', { text: o.org }), el('i', { text: '×' }), el('span', { text: yo.handle })]),
+          el('p', { class: 'ms-ct-sub', text: [ligaLarga(o.liga), periodo(yo.anio, x.anios), x.tipo ? `${x.tipo}${x.clausula ? ', con cláusula' : ''}` : null].filter(Boolean).join(' · ') }),
+        ]),
+      ]),
+      el('div', { class: 'ms-ct-firmas' }, [
+        el('div', { class: 'ms-ct-parte' }, [el('span', { class: 'ms-ct-sello-org', 'aria-hidden': 'true' }, pintarLogo(o.org, { tam: 34, alt: '' })), el('i', { class: 'ms-ct-linea' }), el('span', { class: 'ms-ct-firmante', text: `Por ${o.org}` })]),
+        el('div', { class: 'ms-ct-parte ms-ct-vos' }, [f.nodo, sello, el('i', { class: 'ms-ct-linea' }), el('span', { class: 'ms-ct-firmante', text: `${yo.handle} · el jugador` })]),
+      ]),
+      res,
+    ]);
+    panel.append(contrato);
+    // ---- un reloj para todo el momento
+    beats?.destruir();
+    const bt = crearBeats({ duracion: T_FIRMAR.duracion, asentarse: T_FIRMAR.asentarse });
+    beats = bt;
+    const w = (a) => bt.waapi(a);
+    amb.aquietar(true);
+    // lo apartado se apaga; el contrato sube y se llena de arriba abajo
+    for (const n of [cab, grilla]) w(animar(n, [{ opacity: 1 }, { opacity: 0 }], { dur: T_FIRMAR.apaga, easing: 'linear' }));
+    w(animar(inspector, [{ opacity: 1, visibility: 'visible' }, { opacity: 0, visibility: 'visible' }], { dur: T_FIRMAR.apaga, easing: 'linear' }));
+    w(animar(contrato, [{ opacity: 0, transform: 'translateY(46px) scale(.98)' }, { opacity: 1, transform: 'none' }], { delay: T_FIRMAR.sube, dur: T_FIRMAR.subeDur }));
+    [...contrato.querySelectorAll('.ms-ct-cab, .ms-ct-parte')].forEach((n, k) => w(entrar(n, T_FIRMAR.sube + 120 + k * 70, 8)));
+    // la firma se traza y la rubrica
+    w(trazar(f, T_FIRMAR.trazo, T_FIRMAR.trazoDur));
+    w(rubricar(f, T_FIRMAR.rubrica, T_FIRMAR.rubricaDur));
+    // el sello cae: acelera hasta el papel, se aplasta un poco y se asienta; el golpe: la onda y el papel que tiembla
+    w(animar(sello, [
+      { opacity: 0, transform: 'rotate(-15deg) scale(2.6)', easing: 'cubic-bezier(.55,0,1,.45)' },
+      { opacity: 1, transform: 'rotate(-7deg) scale(.9)', offset: (T_FIRMAR.golpe - T_FIRMAR.sello) / T_FIRMAR.selloDur, easing: EXPO },
+      { opacity: 1, transform: 'rotate(-7deg)' },
+    ], { delay: T_FIRMAR.sello, dur: T_FIRMAR.selloDur, easing: 'linear' }));
+    w(animar(onda, [{ opacity: 0, transform: 'scale(1)' }, { opacity: 0.9, transform: 'scale(1)', offset: 0.02 }, { opacity: 0, transform: 'scale(2.8)' }], { delay: T_FIRMAR.golpe, dur: T_FIRMAR.onda }));
+    w(animar(contrato, [{ translate: '0 0' }, { translate: '0 4px', offset: 0.18 }, { translate: '-3px -1px', offset: 0.42 }, { translate: '2px 1px', offset: 0.7 }, { translate: '0 0' }], { delay: T_FIRMAR.golpe, dur: T_FIRMAR.sacude, easing: 'linear' }));
+    const td = bt.destello(T_FIRMAR.golpe);
+    if (td != null) amb.pulso('logro', td);
+    bt.esperar(T_FIRMAR.golpe).then((llego) => llego && (sonido?.golpe?.(), sonido?.acorde?.()));
+    // a donde lleva: la prueba de ingreso (lo que dice el motor para TODAS); con LOUD, lo que paso de verdad
+    w(animar(res, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: T_FIRMAR.resultado, dur: DUR.larga }));
+    [...res.children].forEach((c, k) => w(entrar(c, T_FIRMAR.resultado + 80 + k * 70, 8)));
+    bt.esperar(T_FIRMAR.asentarse).then(() => {
+      if (beats !== bt) return;
+      asentado = true;
+      res.focus({ preventScroll: true });
+    });
+    if (esLaReal) bt.esperar(T_FIRMAR.encadena).then((llego) => llego && beats === bt && raiz.isConnected && window.vitrina?.muestra('firma'));
+    bt.iniciar();
+    if (quieto()) {
+      asentado = true;
+      res.focus({ preventScroll: true });
+    }
+  }
+  function saltarFirma() {
+    if (!elegido || asentado) return;
+    beats?.saltar();
+    asentado = true;
+    raiz.querySelector('.ms-res')?.focus({ preventScroll: true });
+  }
+
+  // ---------------------------------------------------------------------------------------------- teclado
+  // 1-6 eligen (y apuntan), Tab recorre la grilla, Enter firma (lo escucha el boton de ceremonia.js), Espacio saltea.
+  // Las flechas izquierda y derecha son de final.html: aca no se usan.
+  function tecla(e) {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (entrando && !elegido && e.code === 'Space') {
+      e.preventDefault();
+      saltarEntrada();
+    } else if (elegido && !asentado && !e.repeat && (e.key === 'Enter' || e.code === 'Space')) {
+      // el Enter que firma lo consume el boton (js/ceremonia.js): ese mismo evento no llega aca; el siguiente saltea
+      e.preventDefault();
+      saltarFirma();
+    } else if (/^[1-9]$/.test(e.key) && Number(e.key) <= ofertas.length && !elegido) {
+      e.preventDefault();
+      elegir1(Number(e.key) - 1, { mover: true });
+    } else if (e.code === 'Space' && elegido && asentado && laReal && datos.firma) {
+      e.preventDefault();
+      window.vitrina?.muestra('firma');
+    } else if ((e.key === 'r' || e.key === 'R') && elegido) window.vitrina?.repetir();
+  }
+  raiz.addEventListener('click', (e) => {
+    if (elegido && !asentado && !e.target.closest('button')) saltarFirma();
+  });
+  const alRedimensionar = () => {
+    const nom = s?.aura.querySelector('.ms-aura-nombre');
+    if (nom) ajustarLetra(nom);
+  };
+  addEventListener('resize', alRedimensionar);
+
+  construir();
+  return {
+    nodo: raiz,
+    entrar() {
+      ajustarLetra(s.aura.querySelector('.ms-aura-nombre'));
+      entrada();
+    },
+    // elegir(n) (el panel de la vitrina, las tiras): elige la oferta n y la firma
+    elegir(n) {
+      if (elegido || !ofertas[n - 1]) return;
+      elegir1(n - 1);
+      s.boton.bloquear();
+    },
+    tecla,
+    // vuelve a pasar la pantalla en el lugar (sincrono: la tira de capturas congela la entrada desde el cuadro 0)
+    repetir() {
+      construir();
+      ponerTono(tonoReposo());
+      amb.aquietar(false);
+      entrada();
+    },
+    // la era cambia (el panel): el reposo la sigue; una org apuntada se queda con su tono
+    alCambiarEra(era) {
+      if (mostrada == null) aplicarTono(html, tonoEra(era));
+    },
+    congelar: (ms) => beats?.congelar(ms),
+    pausar: () => beats?.pausar(),
+    reanudar: () => beats?.reanudar(),
+    listo: () => logosListos(raiz),
+    destruir() {
+      vivo = false;
+      clearTimeout(tAura);
+      removeEventListener('resize', alRedimensionar);
+      beats?.destruir();
+    },
+    // el arte es TU MAIN (no un campeon cualquiera): el aura lo tiñe del tono de la org
+    arte: datos.inicio?.jugador?.mains?.[0]?.ddragon ?? 'Yone',
+    tono: tonoEra(estado?.eraEfectiva),
+    animo: 'normal',
+    encuadre: 'derecha',
+    velo: 0.55,
+  };
+}
+
+// ================================================================================================= la firma, linea
+// EL ANUNCIO: un walkout de ~4,5 s con un solo reloj (beats.js). Espacio salta al asentarse; con INST o movimiento
+// reducido, el cuadro final.
+//   0-620      apagon, y un haz de luz que baja
+//   300-1150   en el haz, la region y el logo de la liga; despues el glifo del rol, que gira
+//   1150-1430  la liga, la region y el rol suben al rotulo
+//   1440       EL GOLPE: el logo de la org entra con una onda de choque y la pantalla se inunda de su tono (la paleta del
+//              mundo cruza en 260 ms; un destello, por beats); el apagon se barre en diagonal y aparece tu main en su
+//              bitono (el 70 % de color lo pone la politica del momento)
+//   1840-2360  el logo viaja a su lugar
+//   1990-2800  el handle gigante, letra por letra con peso; 2500-3580 la firma se traza encima
+//   2950-3750  los terminos como placas de transmision (placaInferior)
+//   3450-4300  "LOUD DA LA BIENVENIDA A …", el confeti en los colores de la org y el loop vivo (la lluvia, el halo del
+//              logo, el haz que se mece y el brillo que cruza el handle)
+const T_FL = {
+  duracion: 4600, asentarse: 4300,
+  haz: 60, hazDur: 560,
+  liga: 300, ligaDur: 420,
+  rol: 600, rolDur: 320, giro: 650, giroDur: 560,
+  sube: 1150, subeDur: 280,
+  rotulo: 1300,
+  golpe: 1440, cruce: 260, inundaDur: 1300, ondaDur: 720, ondaPaso: 110,
+  barre: 1480, barreDur: 640,
+  logoDur: 920, logoLlega: 0.14, logoQueda: 0.43,
+  handle: 1990, letraPaso: 55, letraDur: 400, impacto: 0.6,
+  trazo: 2500, trazoDur: 950, rubrica: 3200, rubricaDur: 380,
+  placas: 2950, placaPaso: 170, placaDur: 460,
+  bienvenida: 3450, bienvenidaDur: 520,
+  confeti: 3500, cortina: 3620, lluvia: 4300,
+  log: 3750, seguir: 3900,
+  lsCruce: 900,
+  halo: 2420, haloPeriodo: 3200, mecer: 2200, mecerPeriodo: 7000, brillo: 4400, brilloPeriodo: 5600,
+};
+// La escena del mundo en la firma: la de la era del Mundial (el abanico de haces mas abierto y las brasas que suben). Solo la
+// escena: los colores son los del tono de la org (la paleta). Medido contra el escenario, la pieza, la academia y la
+// leyenda: con el verde de LOUD, el escenario lavaba la cara de tu main; el Mundial la deja leer y da profundidad.
+const ERA_FIRMA = 'mundial';
+// el logo en el centro del haz (fraccion del alto de la pantalla) y cuanto crece ahi
+const LOGO_CENTRO = 0.46;
+const LOGO_ESCALA = 2.2;
+// el confeti de la bienvenida: "un poco" (en el celular, menos)
+const CONFETI_FIRMA = 130;
+const CONFETI_CELULAR = 0.6;
+const CALMA_FIRMA = { dur: 600, alfa: 0.16 };
+
+function crearFirmaLinea({ datos, muestra, amb, sonido, peor, estado }) {
+  const f = datos[muestra];
+  const pc = peor ? datos.peorCaso : null;
+  const handle = pc?.handle ?? f.franja?.quien?.handle ?? datos.inicio?.jugador?.handle ?? '';
+  const org = pc?.org?.nombre ?? f.org;
+  const c = f.contrato ?? {};
+  const liga = pc?.org?.liga ?? c.liga ?? f.liga;
+  const anios = c.anios ?? f.anios;
+  const monto = c.salarioAnualUSD ?? f.sueldoAnualUSD;
+  const tipo = c.tipo ?? f.tipoDeContrato;
+  const rol = f.franja?.quien?.rol ?? datos.inicio?.jugador?.rol ?? 'mid';
+  const rolEtiqueta = f.franja?.quien?.rolEtiqueta ?? datos.inicio?.jugador?.rolEtiqueta ?? '';
+  const region = regionDe(datos, liga);
+  const valor = datos.mercado?.vosEnElMercado?.valorUSD;
+  const tono = tonoOrgLinea(org);
+  const tonoAntes = tonoEra(estado?.eraEfectiva);
+  const bienvenida = `${org} da la bienvenida a ${handle}`;
+
+  const raiz = el('section', { class: 'takeover ms-firma', 'data-pieza': 'cumbre', 'data-fase': 'firma', 'data-op': 'linea', 'aria-labelledby': 'ms-fm-handle' });
+  aplicarTono(raiz, tono);
+  // ---- las capas: el apagon, la inundacion, el haz, la onda, el confeti y el velo de lectura
+  const negro = el('div', { class: 'ms-fm-negro', 'aria-hidden': 'true' });
+  const inunda = el('div', { class: 'ms-fm-inunda', 'aria-hidden': 'true' });
+  const haz = el('div', { class: 'ms-fm-haz', 'aria-hidden': 'true' });
+  const ondas = [0, 1].map(() => el('i', { class: 'ms-fm-onda', 'aria-hidden': 'true' }));
+  const velo = el('div', { class: 'ms-fm-velo', 'aria-hidden': 'true' });
+  // ---- en el haz: la liga, la region y el rol (decorativos: el rotulo los dice)
+  const introLiga = el('div', { class: 'ms-fm-intro-liga' }, [pintarLogo(liga, { liga: true, tam: 120, alt: '' }), el('b', { class: 'ms-fm-region', text: region || liga }), el('span', { class: 'ms-fm-region-k', text: `${ligaLarga(liga)} ${f.anio}` })]);
+  const introRol = el('div', { class: 'ms-fm-intro-rol' }, [glifoRol(rol, 'glifo-rol ms-fm-glifo'), el('span', { text: rolEtiqueta })]);
+  const intro = el('div', { class: 'ms-fm-intro', 'aria-hidden': 'true' }, [introLiga, introRol]);
+  // ---- el bloque: el rotulo, el logo, el handle con la firma, la bienvenida, las placas
+  const kicker = el('p', { class: 'ms-fm-k' }, [
+    el('span', { class: 'ms-fm-k-liga' }, [pintarLogo(liga, { liga: true, tam: 20, alt: '' }), region ? el('b', { text: region }) : null, el('span', { text: `${ligaLarga(liga)} ${f.anio}` })]),
+    el('span', { class: 'ms-fm-k-rol' }, [glifoRol(rol), el('span', { text: rolEtiqueta })]),
+    el('span', { text: 'Primer contrato' }),
+  ]);
+  const halo = el('i', { class: 'ms-fm-halo', 'aria-hidden': 'true' });
+  const logo = el('div', { class: 'ms-fm-logo' }, [halo, pintarLogo(org, { tam: 150, alt: org })]);
+  const letras = handle.split('').map((ch) => el('span', { class: 'ms-fm-letra', text: ch }));
+  const brillo = el('span', { class: 'ms-fm-brillo', 'aria-hidden': 'true', text: handle });
+  const firma = firmaLinea(handle, 'ms-fm-firma');
+  firma.nodo.setAttribute('aria-hidden', 'true');
+  const nombre = el('h1', { class: 'ms-fm-handle', id: 'ms-fm-handle', 'data-foco': '', tabindex: '-1', 'aria-label': bienvenida }, [el('span', { class: 'ms-fm-letras', 'aria-hidden': 'true' }, letras), brillo]);
+  const cabeza = el('div', { class: 'ms-fm-cabeza' }, [nombre, firma.nodo]);
+  const linea = el('p', { class: 'ms-fm-bienvenida', 'aria-hidden': 'true' }, el('span', { text: bienvenida }));
+  const placas = el('div', { class: 'ms-fm-placas' }, [
+    placaInferior({ rotulo: 'Primer contrato', titulo: `USD ${num(monto)} / año`, sub: valor ? `${fmt1.format(monto / valor)}× tu valor de mercado (${num(valor)})` : '', tono }),
+    placaInferior({ rotulo: `${ligaLarga(liga)} ${f.anio}`, titulo: aniosTxt(anios), sub: [tipo ? `${tipo[0].toUpperCase()}${tipo.slice(1)}` : null, c.clausula ? 'con cláusula de salida' : 'sin cláusula de salida'].filter(Boolean).join(' · '), tono }),
+  ]);
+  const log = el('p', { class: 'ms-fm-log', text: conOrg(f.log?.message ?? '', pc ? f.org : null, org) });
+  const otros = el('ul', { class: 'sr', 'aria-label': 'El resto del mercado' }, (f.logsDelMercado ?? []).slice(2).map((l) => el('li', { text: conOrg(l.message, pc ? f.org : null, org) })));
+  const seguir = el('button', { type: 'button', class: 'tk-seguir ms-fm-seguir', onclick: (e) => (e.stopPropagation(), window.vitrina?.repetir()) }, ['Otra vez', el('kbd', { text: 'R' })]);
+  const bloque = el('div', { class: 'ms-fm-bloque' }, [kicker, logo, cabeza, linea, placas, log, otros, seguir]);
+  // ---- el confeti de la bienvenida: los colores de la org (y el blanco), desde abajo a los costados
+  const confeti = crearConfeti(el('canvas', { class: 'cu-confeti ms-fm-confeti', 'aria-hidden': 'true' }), {
+    colores: [tono.luz, tono.contra, '--luz-blanca'],
+    semilla: `firma-${org}-${handle}`,
+    cantidad: Math.round(CONFETI_FIRMA * (celular() ? CONFETI_CELULAR : 1)),
+    calma: { desde: T_FL.bienvenida, dur: CALMA_FIRMA.dur, alfa: CALMA_FIRMA.alfa, zonas: () => [bloque.getBoundingClientRect()] },
+    origenes: [
+      { tipo: 'canon', x: 0, y: 1.02, angulo: 24, t: T_FL.confeti },
+      { tipo: 'canon', x: 1, y: 1.02, angulo: -24, t: T_FL.confeti },
+      { tipo: 'cortina', t: T_FL.cortina },
+      { tipo: 'lluvia', t: T_FL.lluvia },
+    ],
+  });
+  raiz.append(negro, haz, inunda, velo, ...ondas, confeti.nodo, intro, bloque);
+
+  let beats = null;
+  let asentado = false;
+  // el handle entra en su ancho (un handle de 16 letras no puede romper la pantalla)
+  const ajustar = () => ajustarLetra(nombre, { min: LETRA_MIN });
+  addEventListener('resize', ajustar);
+
+  function secuencia() {
+    beats?.destruir({ participantes: false });
+    const bt = crearBeats({ duracion: T_FL.duracion, asentarse: T_FL.asentarse });
+    beats = bt;
+    asentado = false;
+    const w = (a) => bt.waapi(a);
+    bt.agregar(confeti);
+    ajustar();
+    // ---- el mundo: a oscuras en el tono de antes; en el golpe, el tono de la org y el publico
+    amb.ambiente({ era: ERA_FIRMA, animo: 'normal', paleta: paletaDe(tonoAntes), lightsticks: 0, instantaneo: true });
+    amb.ambiente({ paleta: paletaDe(tono), cruce: T_FL.cruce, retardo: T_FL.golpe });
+    amb.ambiente({ lightsticks: 1, cruce: T_FL.lsCruce, retardo: T_FL.golpe });
+    const golpe = bt.destello(T_FL.golpe);
+    if (golpe != null) amb.pulso('golpe', golpe);
+    const sonar = (ms, fn) => bt.esperar(ms).then((llego) => llego && fn());
+    if (!inst() && !reducido()) {
+      sonido?.barrido?.();
+      sonar(T_FL.golpe, () => (sonido?.golpe?.(), sonido?.flash?.()));
+      sonar(T_FL.confeti, () => sonido?.confeti?.());
+      sonar(T_FL.bienvenida, () => sonido?.acorde?.());
+    }
+    // ---- 0: el apagon, y el haz que baja
+    w(animar(negro, [
+      { opacity: 1, clipPath: 'polygon(-40% 0, 140% 0, 140% 100%, -60% 100%)', easing: 'linear' },
+      { opacity: 1, clipPath: 'polygon(-40% 0, 140% 0, 140% 100%, -60% 100%)', offset: T_FL.barre / (T_FL.barre + T_FL.barreDur), easing: 'cubic-bezier(.6,0,.3,1)' },
+      { opacity: 1, clipPath: 'polygon(140% 0, 140% 0, 140% 100%, 120% 100%)' },
+    ], { dur: T_FL.barre + T_FL.barreDur, easing: 'linear' }));
+    w(animar(haz, [
+      { opacity: 0, transform: 'translateX(-50%) scaleY(0)', easing: EXPO },
+      { opacity: 1, transform: 'translateX(-50%) scaleY(1)', offset: T_FL.hazDur / T_FL.golpe, easing: 'linear' },
+      { opacity: 1, transform: 'translateX(-50%) scaleY(1)', offset: 0.97, easing: 'ease-out' },
+      { opacity: 0.16, transform: 'translateX(-50%) scaleY(1)' },
+    ], { delay: T_FL.haz, dur: T_FL.golpe - T_FL.haz + 200, easing: 'linear' }));
+    // ---- la liga y la region en el haz; el rol que gira; despues suben al rotulo
+    const sube = { opacity: 0, transform: 'translateY(-26vh) scale(.3)', filter: 'blur(6px)' };
+    w(animar(introLiga, [
+      { opacity: 0, transform: 'scale(.82)', filter: 'blur(10px)', easing: EXPO },
+      { opacity: 1, transform: 'none', filter: 'blur(0px)', offset: T_FL.ligaDur / (T_FL.sube + T_FL.subeDur - T_FL.liga), easing: 'linear' },
+      { opacity: 1, transform: 'none', filter: 'blur(0px)', offset: (T_FL.sube - T_FL.liga) / (T_FL.sube + T_FL.subeDur - T_FL.liga), easing: 'cubic-bezier(.6,0,.4,1)' },
+      sube,
+    ], { delay: T_FL.liga, dur: T_FL.sube + T_FL.subeDur - T_FL.liga, easing: 'linear' }));
+    w(animar(introRol, [
+      { opacity: 0, transform: 'translateY(14px)', easing: EXPO },
+      { opacity: 1, transform: 'none', offset: T_FL.rolDur / (T_FL.sube + T_FL.subeDur - T_FL.rol), easing: 'linear' },
+      { opacity: 1, transform: 'none', offset: (T_FL.sube - T_FL.rol) / (T_FL.sube + T_FL.subeDur - T_FL.rol), easing: 'cubic-bezier(.6,0,.4,1)' },
+      sube,
+    ], { delay: T_FL.rol, dur: T_FL.sube + T_FL.subeDur - T_FL.rol, easing: 'linear' }));
+    w(animar(introRol.querySelector('.ms-fm-glifo'), [{ transform: 'perspective(400px) rotateY(-180deg)' }, { transform: 'perspective(400px) rotateY(360deg)' }], { delay: T_FL.giro, dur: T_FL.giroDur, easing: 'cubic-bezier(.3,.6,.25,1)' }));
+    w(animar(kicker, [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { delay: T_FL.rotulo, dur: 360 }));
+    kicker.querySelectorAll(':scope > span').forEach((x, k) => w(entrar(x, T_FL.rotulo + 60 + k * 70, -6)));
+    // ---- 1500: EL GOLPE. El logo entra en el centro del haz (medido: su lugar final es el del bloque) y viaja a su lugar
+    const r = logo.getBoundingClientRect();
+    const dx = Math.round(innerWidth / 2 - (r.left + r.width / 2));
+    const dy = Math.round(innerHeight * LOGO_CENTRO - (r.top + r.height / 2));
+    const enCentro = (k) => `translate(${dx}px, ${dy}px) scale(${k})`;
+    w(animar(logo, [
+      { opacity: 0, transform: enCentro(LOGO_ESCALA * 1.6), filter: 'blur(12px)', easing: 'cubic-bezier(.2,.9,.25,1)' },
+      { opacity: 1, transform: enCentro(LOGO_ESCALA), filter: 'blur(0px)', offset: T_FL.logoLlega, easing: 'linear' },
+      { opacity: 1, transform: enCentro(LOGO_ESCALA * 0.96), filter: 'blur(0px)', offset: T_FL.logoQueda, easing: 'cubic-bezier(.6,0,.2,1)' },
+      { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+    ], { delay: T_FL.golpe, dur: T_FL.logoDur, easing: 'linear' }));
+    ondas.forEach((o, k) => w(animar(o, [{ opacity: 0, transform: 'translate(-50%, -50%) scale(.2)' }, { opacity: 0.95, transform: 'translate(-50%, -50%) scale(.24)', offset: 0.02 }, { opacity: 0, transform: 'translate(-50%, -50%) scale(4.6)' }], { delay: T_FL.golpe + 60 + k * T_FL.ondaPaso, dur: T_FL.ondaDur - k * 120, easing: 'cubic-bezier(.15,.7,.3,1)' })));
+    if (golpe != null) w(animar(inunda, [{ opacity: 0 }, { opacity: 0.92, offset: 0.06 }, { opacity: 0.34, offset: 0.4 }, { opacity: 0 }], { delay: golpe, dur: T_FL.inundaDur, easing: 'ease-out' }));
+    // ---- el handle gigante, letra por letra con peso, y la firma que se traza encima
+    letras.forEach((l, i) => {
+      const t0 = T_FL.handle + i * T_FL.letraPaso;
+      w(animar(l, [
+        { opacity: 0, transform: 'translateY(-70%) scale(1.06, 1.3)', filter: 'blur(6px)', easing: 'cubic-bezier(.55,0,.9,.4)' },
+        { opacity: 1, transform: 'translateY(3%) scale(1.1, .82)', filter: 'blur(0px)', offset: T_FL.impacto, easing: 'cubic-bezier(.2,.7,.3,1)' },
+        { opacity: 1, transform: 'translateY(-2%) scale(.98, 1.04)', filter: 'blur(0px)', offset: 0.82 },
+        { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+      ], { delay: t0, dur: T_FL.letraDur, easing: 'linear' }));
+    });
+    const golpeLetra = T_FL.handle + T_FL.letraDur * T_FL.impacto;
+    sonar(golpeLetra, () => sonido?.golpe?.());
+    sonar(golpeLetra + (letras.length - 1) * T_FL.letraPaso, () => sonido?.golpe?.());
+    w(trazar(firma, T_FL.trazo, T_FL.trazoDur));
+    w(rubricar(firma, T_FL.rubrica, T_FL.rubricaDur));
+    // ---- los terminos como placas de transmision, la bienvenida, el registro del motor y "otra vez"
+    [...placas.children].forEach((p, k) => w(animar(p, [{ opacity: 0, clipPath: 'inset(0 100% 0 0)', transform: 'translateX(-14px)' }, { opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'none' }], { delay: T_FL.placas + k * T_FL.placaPaso, dur: T_FL.placaDur })));
+    w(animar(linea.firstElementChild, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: T_FL.bienvenida, dur: T_FL.bienvenidaDur }));
+    w(entrar(log, T_FL.log, 8));
+    w(entrar(seguir, T_FL.seguir, 6));
+    // ---- el loop vivo: el halo del logo respira, el haz se mece, el brillo cruza el handle (y la lluvia del confeti)
+    w(animarLoop(halo, [{ opacity: 0.55, transform: 'scale(.94)' }, { opacity: 1, transform: 'scale(1.06)' }], { delay: T_FL.halo, duration: T_FL.haloPeriodo, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' }));
+    w(animarLoop(haz, [{ rotate: '-2.2deg' }, { rotate: '2.2deg' }], { delay: T_FL.mecer, duration: T_FL.mecerPeriodo, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' }));
+    w(animarLoop(brillo, [{ backgroundPosition: '160% 0', opacity: 1 }, { backgroundPosition: '-60% 0', opacity: 1, offset: 0.2 }, { backgroundPosition: '-60% 0', opacity: 1 }], { delay: T_FL.brillo, duration: T_FL.brilloPeriodo, iterations: Infinity, easing: 'cubic-bezier(.4,0,.2,1)' }));
+    bt.esperar(T_FL.asentarse).then(() => {
+      if (beats === bt) asentado = true;
+    });
+    bt.iniciar();
+    if (bt.quieto) asentado = true;
+  }
+  // Espacio: al asentarse. Si el golpe todavia no llego, el mundo va ya al tono de la org (la paleta ya iba hacia ese
+  // tono, programada: con la misma no cambia nada, por eso va con una presencia apenas distinta)
+  function saltar() {
+    if (asentado || !beats) return;
+    if (beats.ahora() < T_FL.golpe) {
+      amb.ambiente({ paleta: paletaDe(tono, 0.999), instantaneo: true });
+      amb.ambiente({ lightsticks: 1, cruce: T_FL.lsCruce });
+    }
+    beats.saltar();
+    asentado = true;
+  }
+  raiz.addEventListener('click', () => (asentado ? null : saltar()));
+
+  return {
+    nodo: raiz,
+    entrar: secuencia,
+    repetir: secuencia,
+    tecla(e) {
+      if ((e.code === 'Space' || e.key === 'Enter') && !asentado) {
+        e.preventDefault();
+        saltar();
+      } else if (e.key === 'r' || e.key === 'R') window.vitrina?.repetir();
+    },
+    congelar: (ms) => beats?.congelar(ms),
+    pausar: () => beats?.pausar(),
+    reanudar: () => beats?.reanudar(),
+    listo: () => logosListos(raiz),
+    destruir() {
+      removeEventListener('resize', ajustar);
+      beats?.destruir({ participantes: false });
+      confeti.destruir?.();
+    },
+    arte: datos.inicio?.jugador?.mains?.[0]?.ddragon ?? 'Yone',
+    // el CSS va en el tono de la org desde el principio (el apagon lo tapa); el mundo arranca en el de antes y se inunda
+    tono,
+    paleta: paletaDe(tonoAntes),
+    era: ERA_FIRMA,
+    animo: 'normal',
+    encuadre: 'firma',
+    velo: 0.45,
   };
 }

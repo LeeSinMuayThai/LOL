@@ -513,3 +513,139 @@ html[data-reducido] .dec-final .fin-ventana > .dec-escena { transition: none; }
    ve por el portal (el de adelante es el mismo) */
 .inv-portal .logo.inv-logo { position: absolute; left: 50%; top: 19%; width: var(--dec-logo-portal); height: var(--dec-logo-portal); transform: translateX(-50%); filter: drop-shadow(0 4px 18px var(--velo-lectura)); }
 .dec-final[data-fase='invitacion'] .fin-ventana .esc-destino { opacity: 0; }
+
+/* ======================================================================================================================
+   PLANUI §4.9 · UNA LINEA (`op=linea`, crearCostura en js/escena.js). La bisagra llega como ¡OFERTA ENCONTRADA! (el aviso
+   del kit, estilos/ceremonia.css) sobre la pantalla atenuada; aceptar agranda el anillo como un portal y el mundo cruza
+   a la costura del ambiente (la dibuja el shader: aca solo van los destinos encima, con sus logos y lo que arriesgas).
+   Las comunes van simples: la pantalla de siempre dentro de la linea. Todo cuelga de [data-op='linea'] o de clases dc-.
+   ==================================================================================================================== */
+@property --dc-pr { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --dc-pa { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* ---------- el aviso: lo de atras es la pantalla atenuada (se ve, no se usa); el panel entra al aceptar ---------- */
+.parada-decision.dc-espera > .parada-col { visibility: hidden; }
+/* detras del aviso se tiene que reconocer tu contexto (tu main en la luz de la era): el velo del kit, un poco mas liviano
+   (la opcion `velo` de anilloAceptar con --dc-aviso-velo, js/escena.js) */
+
+/* ---------- el portal: un velo con el hueco del anillo que crece; su borde es el aro dorado de la ceremonia ---------- */
+.dc-portal {
+  --dc-px: 50%; --dc-py: 50%; --dc-pr: 0px; --dc-pa: 1;
+  position: fixed; inset: 0; z-index: 39; pointer-events: none;
+  background: radial-gradient(circle at var(--dc-px) var(--dc-py),
+    var(--ln-velo-nada) var(--dc-pr),
+    color-mix(in srgb, var(--ln-oro-claro) calc(var(--dc-pa) * 100%), var(--ln-velo-nada)) calc(var(--dc-pr) + 1px),
+    color-mix(in srgb, var(--ln-oro) calc(var(--dc-pa) * 100%), var(--ln-velo)) calc(var(--dc-pr) + 3px),
+    color-mix(in srgb, var(--tono-luz) calc(var(--dc-pa) * 34%), var(--ln-velo)) calc(var(--dc-pr) + 7px),
+    var(--ln-velo) calc(var(--dc-pr) + 56px));
+}
+
+/* ---------- la costura: los dos destinos, cada uno en el tono de su liga (aplicarTono en cada lado) ---------- */
+.dc-costura { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.dc-banda { display: none; }
+.dc-lado {
+  position: absolute; left: 0; top: calc(var(--franja-alto) + var(--dc-aire)); display: grid; justify-items: start; gap: 12px;
+  width: max-content; max-width: min(var(--dc-lado-ancho), 42vw); transition: opacity 520ms var(--expo);
+}
+/* (U) cada destino contra su borde y su cara al lado, del lado de la linea (js/escena.js): A a la izquierda, B a la derecha */
+.dc-lado[data-lado='b'] { justify-items: end; }
+/* el velo de lectura: el vacio de SU tono detras del destino (los textos se leen sobre la luz de la costura) */
+.dc-lado::before {
+  content: ''; position: absolute; inset: -54px -84px -40px; z-index: -1; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tono-vacio) var(--dc-velo-lado), transparent) 0%, color-mix(in srgb, var(--tono-vacio) calc(var(--dc-velo-lado) * 0.75), transparent) 55%, transparent 100%);
+}
+.dc-costura[data-fase='aviso'] .dc-lado { opacity: 0; }
+.dc-logos { display: flex; align-items: center; gap: 22px; }
+.logo.dc-logo-liga { width: var(--dc-logo); height: var(--dc-logo); filter: drop-shadow(0 8px 26px var(--sombra)) drop-shadow(0 0 34px color-mix(in srgb, var(--tono-luz) 42%, transparent)); }
+.logo.dc-logo-org { width: var(--dc-logo-org); height: var(--dc-logo-org); filter: drop-shadow(0 8px 22px var(--sombra)); }
+.dc-lugar { display: grid; justify-items: inherit; gap: 7px; margin: 0; text-align: left; }
+.dc-lado[data-lado='b'] .dc-lugar { text-align: right; }
+.dc-lugar b { font: 800 30px / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.025em; color: var(--ink); text-shadow: 0 2px 18px var(--tono-vacio); }
+.dc-lugar span { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: color-mix(in oklab, var(--tono-luz) 45%, var(--ink)); }
+/* lo que arriesgas: una fila por camino de ese lado, con su tecla, su nombre corto y la previa del motor en chips */
+.dc-filas { display: grid; gap: 8px; justify-items: inherit; margin: 4px 0 0; padding: 0; }
+.dc-fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 8px 10px; transition: opacity 420ms var(--expo); }
+.dc-lado[data-lado='b'] .dc-fila { justify-content: flex-end; }
+/* la cabeza de cada camino: su tecla y su nombre corto, en una pastilla (se lee sobre la cara del campeon) */
+.dc-cabeza {
+  display: inline-flex; align-items: center; gap: 9px; height: 26px; padding: 0 12px 0 0; border-radius: var(--r-control);
+  background: color-mix(in srgb, var(--tono-vacio) var(--dc-chip-fondo), transparent);
+}
+.dc-tecla {
+  display: inline-grid; place-items: center; min-width: 26px; height: 26px; border-radius: var(--r-control); flex: none;
+  box-shadow: inset 0 0 0 1px var(--linea-fuerte);
+  font: 600 12px / 1 var(--f-mono); color: var(--ink); transition: background-color 200ms ease, color 200ms ease, box-shadow 200ms ease;
+}
+.dc-tecla .ico { width: 14px; height: 14px; }
+.dc-camino { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink); }
+.dc-chips { flex-basis: 100%; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 6px; margin: 0; padding: 0; }
+.dc-lado[data-lado='b'] .dc-chips { justify-content: flex-end; }
+.dc-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: var(--r-chip);
+  background: color-mix(in srgb, var(--tono-vacio) var(--dc-chip-fondo), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tono-luz) 24%, transparent);
+  font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim);
+  transition: box-shadow 200ms ease, color 200ms ease;
+}
+.dc-chip .ico { width: 13px; height: 13px; }
+.dc-chip.sube .ico { color: var(--up); }
+.dc-chip.baja .ico { color: var(--down); }
+.dc-chip-riesgo { color: var(--warn); }
+.dc-chip-riesgo[data-riesgo='seguro'] { color: var(--ink-dim); }
+.dc-chip-riesgo[data-riesgo='alto'] { color: var(--danger); }
+/* apuntar un camino: su fila se enciende en el tono de su destino (la costura ya se corrio hacia ese lado) */
+.dc-fila.on .dc-tecla { background: var(--tono-acento); box-shadow: none; color: var(--bg-void); }
+.dc-fila.on .dc-chip { color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tono-luz) 70%, transparent), 0 0 18px -6px var(--tono-luz); }
+.dc-fila.on .dc-chip-riesgo { color: var(--warn); }
+/* la cerrada: apagada, con su candado (se enciende el candado al apuntarla) */
+.dc-cerrada .dc-tecla { color: var(--ink-dim); }
+.dc-cerrada .dc-camino { color: var(--ink-dim); }
+.dc-cerrada.on .dc-tecla { color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink-dim), 0 0 20px -4px var(--tono-luz); }
+/* elegido: el otro destino se va; en el elegido quedan su logo y su lugar (lo que paso lo dice el panel, que crece) */
+.dc-costura[data-elegido='a'] .dc-lado[data-lado='b'], .dc-costura[data-elegido='b'] .dc-lado[data-lado='a'] { opacity: 0; }
+.dc-costura:is([data-elegido='a'], [data-elegido='b']) .dc-filas { opacity: 0; transition: opacity 320ms var(--expo); }
+/* compacto (el panel crecio hasta el destino): sin las filas; mini (tampoco entra): solo los logos, del alto que queda */
+.dc-lado { --dc-logo-cabe: var(--dc-logo); }
+.dc-lado.dc-compacto .dc-filas { display: none; }
+.dc-lado.dc-mini .dc-lugar { display: none; }
+.dc-lado.dc-mini .logo.dc-logo-liga { width: min(var(--dc-logo), var(--dc-logo-cabe)); height: min(var(--dc-logo), var(--dc-logo-cabe)); }
+.dc-lado.dc-mini .logo.dc-logo-org { width: min(var(--dc-logo-org), var(--dc-logo-cabe)); height: min(var(--dc-logo-org), var(--dc-logo-cabe)); }
+
+/* ---------- el panel de decision, abajo: el titulo una sola vez, las opciones con glifos y el inspector ---------- */
+/* al aceptar, el foco pasa al titulo (un ancla, tabindex -1): sin el recuadro del foco de teclado */
+.parada-decision[data-op='linea'] .titulo-parada:focus-visible { box-shadow: none; }
+/* el inspector no repite el nombre de la opcion (la fila apuntada ya lo dice): "leer menos" */
+.parada-decision[data-op='linea'][data-forma='lista'] .insp-kicker { display: none; }
+.parada-decision[data-op='linea'][data-forma='lista'] .insp-texto { margin-top: 0; }
+/* la linea "antes" queda sobre la costura: un velo suave detras, para leerla sobre la luz */
+.parada-decision[data-op='linea']:has(> .dc-costura) .antes { margin-left: -12px; padding: 6px 12px 6px 16px; border-radius: var(--r-chip); background: linear-gradient(90deg, var(--velo-lectura), var(--velo-medio) 70%, var(--velo-nada)); }
+
+/* ---------- movimiento reducido ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .dc-lado, .dc-fila, .dc-tecla, .dc-chip { transition: none; }
+}
+html[data-reducido] :is(.dc-lado, .dc-fila, .dc-tecla, .dc-chip) { transition: none; }
+
+/* ---------- celular: la costura partida en vertical (A arriba, B abajo) en la banda de arriba; el panel debajo ---------- */
+@media (max-width: 640px) {
+  .dc-banda { display: block; height: var(--dc-banda-cel); }
+  .dc-lado { top: 0; justify-items: start; gap: 6px; max-width: calc(100vw - 20px); }
+  .dc-lado[data-lado='b'] { justify-items: end; }
+  .dc-lado::before { inset: -26px -36px; }
+  .dc-logos { gap: 12px; }
+  .logo.dc-logo-liga { width: var(--dc-logo-cel); height: var(--dc-logo-cel); }
+  .logo.dc-logo-org { width: var(--dc-logo-org-cel); height: var(--dc-logo-org-cel); }
+  .dc-lado[data-lado='b'] .dc-logos { flex-direction: row-reverse; }
+  .dc-lugar { justify-items: inherit; text-align: inherit; gap: 5px; }
+  .dc-lado[data-lado='b'] .dc-lugar { text-align: right; }
+  .dc-lugar b { font-size: 18px; }
+  .dc-filas { justify-items: inherit; gap: 5px; margin-top: 2px; }
+  .dc-fila { justify-content: inherit; gap: 5px 6px; }
+  .dc-lado[data-lado='b'] .dc-fila { flex-direction: row-reverse; }
+  .dc-chips { justify-content: inherit; gap: 4px; }
+  .dc-lado[data-lado='b'] .dc-chips { flex-direction: row-reverse; }
+  /* en el celular, lo que arriesgas ya esta en las opciones del panel (los mismos glifos): el destino lleva su camino */
+  .dc-chips { display: none; }
+  .dc-cabeza { height: 22px; gap: 7px; padding-right: 9px; }
+  .dc-lado[data-lado='b'] .dc-cabeza { flex-direction: row-reverse; padding: 0 0 0 9px; }
+  .dc-tecla { min-width: 22px; height: 22px; font-size: 11px; }
+}

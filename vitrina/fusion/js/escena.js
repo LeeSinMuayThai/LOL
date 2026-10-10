@@ -10,12 +10,18 @@
 //              de una ventana a la ciudad que te llama, con el mundo de `escena` atenuado y desenfocado detras); Aceptar
 //              lo abre, la camara se aleja y cae el capitulo, con cada camino terminando en SU destino dibujado (tu
 //              ciudad y tu club, la ciudad que te llama, la cerrada apagada con su candado).
+//   linea    · (PLANUI §4.9, "una linea") la bisagra llega como ¡OFERTA ENCONTRADA! (el aviso de aceptar partida del
+//              kit, js/ceremonia.js) sobre la pantalla atenuada; aceptar agranda el anillo como un portal y el mundo cruza
+//              a la COSTURA del ambiente: tu main en los dos destinos, cada mitad en su tono, con sus logos y lo que
+//              arriesgas en chips. Apuntar un camino corre la costura; elegir abre ese destino.
 // Todo sale de CAMPOS del evento (nunca de su prosa): categoria, esBisagra, anio, la liga y el club de la ficha, los
 // efectos estructurados de cada opcion (`liga`, `camino` abierto/cerrado), previa[] (campo, signo, magnitud), riesgo y
-// rareza. Lo decorativo usa el PRNG de la vitrina. Nada toca el ambiente por dentro: solo su API (pulso).
+// rareza. Lo decorativo usa el PRNG de la vitrina. Nada toca el ambiente por dentro: solo su API (pulso, ambiente, costura).
 import { el, svg, animar, esperar, reducido, inst, celular, num, EXPO, SALE, DUR } from './util.js';
 import { icono, glifoDeCampo, triangulos, ABREVIATURA } from './iconos.js';
 import { crearAzar } from '../../comun/azar.js';
+import { anilloAceptar, ARO } from './ceremonia.js';
+import { tonoDestino, aplicarTono } from './tono.js';
 
 // → logos.js — los logos oficiales del CDN de LoL Esports (esports-api.lolesports.com getLeagues/getTeams, 2026-10-09;
 // cada URL respondio 200 image/png). `tinta`: 'clara' se ve sobre la noche tal cual; 'oscura' se pasa a la tinta.
@@ -108,6 +114,46 @@ const T_FIN = {
   rotulo: 1050, // el rotulo del capitulo se queda quieto
   panel: 460, // el panel entra (el corrimiento de su orden de siempre)
 };
+
+// UNA LINEA (op=linea, PLANUI §4.9). La costura en reposo, cuanto se corre al apuntar un camino (hacia el lado que crece:
+// apuntar un destino lo agranda, como un adelanto de elegirlo) y los cruces del ambiente (ms). En el celular la costura
+// se parte en vertical y su reposo es el medio de la banda de arriba (se mide: `banda`), con un corrimiento mas chico.
+const COSTURA = {
+  centro: 0.5,
+  corre: 0.13,
+  correCel: 0.05,
+  angulo: 12, // el de la costura del kit (grados respecto de la vertical); al elegir se endereza (0)
+  segundos: 12, // el aro del aviso
+  cruce: 1100, // aceptar: el mundo cruza a la costura (y la linea se traza de abajo hacia arriba)
+  apunta: 700, // apuntar o soltar un camino
+  abre: 1300, // elegir: la costura se va al otro borde y el destino elegido llena la pantalla
+  aire: 12, // lo que separa cada destino de la linea (celular) y del panel (px)
+  logoMin: 40, // el logo mas chico de un destino cuando no entra nada mas (px)
+  // (U) las dos caras arriba del panel: en escritorio, en el medio de la franja libre entre la barra de arriba y la linea
+  // "antes", cada una al lado de su destino (los destinos van contra los bordes); en el celular, adentro de la banda (A
+  // arriba a la derecha, B abajo a la izquierda: cada destino al costado de su cara). `alto`: el alto del arte en altos
+  // de esa franja (o de la banda), y nunca menos que `altoMin` de la pantalla (en una pantalla baja la franja casi no
+  // existe: la cara se ve igual, aunque toque la linea "antes"); `junto`: lo que separa la cara del destino, en altos
+  // del arte; `cel`: x e y de cada cara en la banda (fracciones)
+  caras: { alto: 2.1, altoMin: 0.45, junto: 0.1, altoCel: 1.5, cel: { a: [0.69, 0.27], b: [0.31, 0.76] } },
+};
+// El portal: el hueco y el aro, en fracciones de la caja del anillo del aviso (el interior y el aro del SVG de
+// js/ceremonia.js, que exporta su geometria).
+const PORTAL_LN = { hueco: ARO.interior / ARO.lado, aro: ARO.radio / ARO.lado };
+// Tiempos de la apertura, desde Aceptar (ms)
+const T_LN = {
+  crece: 60, // el portal empieza a crecer (la tarjeta del aviso ya se esta yendo)
+  creceDur: 1000, // el borde del portal sale de la pantalla
+  curva: 'cubic-bezier(0.55, 0, 0.25, 1)', // arranca lento desde el anillo y sale disparado (un expo-out se veia abierto de golpe)
+  aroSale: 380, // el aro dorado se apaga mientras crece
+  aroDur: 520,
+  fin: 1100, // el portal ya no hace falta
+  lados: 560, // los destinos entran (logos, lugar, chips)
+  panel: 120, // el corrimiento del orden de entrada del panel (la columna entra a los 640 + esto)
+  foco: 900, // el foco pasa al titulo de la parada
+};
+// el lado de cada camino en la costura: lo tuyo (te quedas) a la izquierda / arriba; lo que te llama a la derecha / abajo
+const LADO_LN = { casa: 'a', viaje: 'b', ir: 'b' };
 
 // ------------------------------------------------------------------------------------------------ la lectura del evento
 export function leerEvento(m, dec) {
@@ -1030,6 +1076,300 @@ export function crearFinal(lec, dec, { col, antesFila, placa, alAceptar }) {
       mundo.destruir();
       borrosa?.destruir();
       peso.destruir();
+    },
+  };
+}
+
+// ------------------------------------------------------------------------------------------------ 5 · UNA LINEA
+// (PLANUI §4.9, op=linea) La bisagra llega como el aviso de aceptar partida del cliente (anilloAceptar, js/ceremonia.js):
+// el escudo de la liga que llama, ¡OFERTA ENCONTRADA!, el cupo y el aro que se vacia; detras, la pantalla atenuada con tu
+// main en la luz de la era. Aceptar (Enter, clic, o el reloj en cero: entra solo, nunca decide) agranda el anillo como
+// un PORTAL y el mundo cruza a la COSTURA del ambiente: tu main en los dos destinos, cada mitad en el tono de su liga
+// (tonoDestino), con los logos grandes (<img>) y lo que arriesgas en chips (la previa del motor), ubicados con
+// amb.costura(). Apuntar un camino corre la costura hacia su lado (crece, como un adelanto); elegir abre ese destino:
+// la costura se va al otro borde y el resultado real entra en el panel. Sin aviso (una decision con destino que no es
+// bisagra), la costura entra con la pantalla. El DOM no dibuja el mundo: solo se apoya encima.
+// Contrato con decision.js: { nodo, banda, entrar(), apuntar(i), soltar(), elegir(i), aceptarYa(), destruir(),
+// avisoAbierto, retardoAceptar, focoAceptar } y `alAceptar({ instantaneo })` cuando se abre la costura.
+const RIESGO_LN = { seguro: 'seguro', incierto: 'incierto', ruleta: 'ruleta', alto: 'alto', peligroso: 'alto' };
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+export function crearCostura(lec, { amb, arte, sonido, contenedor, limite, lateral, alAceptar }) {
+  const ligaA = lec.casa.liga;
+  const ligaB = lec.destino.liga;
+  const tonos = { a: ligaA ? tonoDestino(ligaA) : null, b: tonoDestino(ligaB) };
+  const capa = el('div', { class: 'dc-costura', 'aria-hidden': 'true', 'data-fase': lec.bisagra ? 'aviso' : 'costura', 'data-apunta': '', 'data-elegido': '' });
+  // en el celular la costura se parte en vertical: la banda (en el flujo, arriba del panel) le deja lugar
+  const banda = el('div', { class: 'dc-banda', 'aria-hidden': 'true' });
+
+  // ---------- los dos destinos: logos, lugar y lo que arriesgas ----------
+  const chip = (p) => {
+    const k = glifoDeCampo(p.campo);
+    return el('li', { class: `dc-chip ${p.signo === '-' ? 'baja' : 'sube'}` }, [icono(k), el('span', { class: 'dc-chip-nom', text: ABREVIATURA[k] ?? p.etiqueta }), triangulos(p.magnitud, p.signo)]);
+  };
+  const chipRiesgo = (r) => {
+    const k = RIESGO_LN[r] ?? 'incierto';
+    return el('li', { class: 'dc-chip dc-chip-riesgo', 'data-riesgo': k }, [icono(k), el('span', { class: 'dc-chip-nom', text: r })]);
+  };
+  const filaDe = (c, n) =>
+    c.bloqueada
+      ? el('li', { class: 'dc-fila dc-cerrada', 'data-i': String(n) }, el('span', { class: 'dc-cabeza' }, [el('span', { class: 'dc-tecla' }, icono('candado')), el('span', { class: 'dc-camino', text: [CAMINO[c.camino], 'cerrada'].filter(Boolean).join(' · ') })]))
+      : el('li', { class: 'dc-fila', 'data-i': String(n) }, [
+          el('span', { class: 'dc-cabeza' }, [el('span', { class: 'dc-tecla', text: String(n + 1) }), el('span', { class: 'dc-camino', text: CAMINO[c.camino] ?? '' })]),
+          el('ul', { class: 'dc-chips' }, [...c.previa.map(chip), c.riesgo ? chipRiesgo(c.riesgo) : null]),
+        ]);
+  function lado(l) {
+    const enA = l === 'a';
+    const liga = enA ? ligaA : ligaB;
+    const logos = enA
+      ? [logo(liga ?? lec.casa.servidor ?? CATEGORIA[lec.categoria] ?? '?', { clase: 'dc-logo-liga' }), lec.casa.org ? logo(lec.casa.org, { clase: 'dc-logo-org' }) : null]
+      : [logo(liga, { clase: 'dc-logo-liga' })];
+    const lugar = enA ? lec.casa.ciudad ?? lec.casa.org ?? liga : lec.destino.ciudad ?? liga;
+    const sub = (enA ? [liga, lec.casa.org] : [liga, lec.destino.region]).filter(Boolean).join(' · ');
+    // los caminos de este lado, con su numero de opcion (las cerradas al final, como en el panel)
+    const filas = lec.caminos.map((c, n) => (LADO_LN[c.camino] === l ? filaDe(c, n) : null)).filter(Boolean);
+    return el('div', { class: 'dc-lado', 'data-lado': l }, [
+      el('div', { class: 'dc-logos' }, logos),
+      el('p', { class: 'dc-lugar' }, [el('b', { text: lugar ?? '' }), sub ? el('span', { text: sub }) : null]),
+      filas.length ? el('ul', { class: 'dc-filas' }, filas) : null,
+    ]);
+  }
+  const lados = { a: lado('a'), b: lado('b') };
+  if (tonos.a) aplicarTono(lados.a, tonos.a);
+  aplicarTono(lados.b, tonos.b);
+  capa.append(lados.a, lados.b);
+
+  // ---------- donde va la costura y donde caen los destinos ----------
+  // el reposo: el medio de la pantalla; en el celular, el medio de la banda (A arriba de la linea, B abajo)
+  function reposo() {
+    if (!celular() || !banda.isConnected) return COSTURA.centro;
+    const r = banda.getBoundingClientRect();
+    return clamp((r.top + r.height / 2) / innerHeight, 0, 1);
+  }
+  let base = COSTURA.centro;
+  const corre = () => (celular() ? COSTURA.correCel : COSTURA.corre);
+  // la posicion de la costura con un lado apuntado: crece ese lado (B, a la derecha o abajo: la costura baja de valor)
+  const posDe = (l) => (l === 'b' ? base - corre() : l === 'a' ? base + corre() : base);
+  // la posicion con un lado elegido: la costura se va al otro borde
+  const posElegido = (l) => (l === 'b' ? 0 : 1);
+  let medidas = { a: [0, 0], b: [0, 0], margen: 0 };
+  // Lo que tiene debajo cada destino: el panel (`limite`, la linea "antes" que lo encabeza) o, si el destino cae sobre
+  // la columna de "vos" (`lateral`), "vos". Si un destino no entra hasta ahi (un titulo largo, una pantalla baja), va
+  // compacto, sin las filas de lo que arriesgas (las opciones del panel ya las dicen); si tampoco entra, solo sus logos,
+  // del alto que quede.
+  function topeDe(l) {
+    const r = lateral?.getBoundingClientRect();
+    if (l === 'b' && r?.height && (((1 + base) / 2) * innerWidth > r.left)) return r.top;
+    return limite?.getBoundingClientRect().top ?? null;
+  }
+  const medir = () => {
+    for (const l of ['a', 'b']) {
+      const n = lados[l];
+      n.classList.remove('dc-compacto', 'dc-mini');
+      const tope = celular() ? null : topeDe(l);
+      if (tope == null) continue;
+      const libre = tope - n.offsetTop - COSTURA.aire;
+      if (n.offsetHeight > libre) n.classList.add('dc-compacto');
+      if (n.offsetHeight > libre) {
+        n.classList.add('dc-mini');
+        n.style.setProperty('--dc-logo-cabe', `${Math.max(COSTURA.logoMin, libre).toFixed(0)}px`);
+      }
+    }
+    medidas = { a: [lados.a.offsetWidth, lados.a.offsetHeight], b: [lados.b.offsetWidth, lados.b.offsetHeight], margen: parseFloat(getComputedStyle(contenedor).paddingLeft) || 0 };
+  };
+  // cada cuadro: los destinos siguen a sus caras (amb.costura(), con y sin WebGL: tambien mientras la costura cruza, y
+  // congelada en las tiras). En escritorio cada destino va al lado de su cara, del lado del borde; en el celular, a la
+  // altura de su cara, contra su borde (A a la izquierda, B a la derecha), adentro de la banda.
+  let raf = 0;
+  const px = (v) => `${v.toFixed(1)}px`;
+  function ubicar() {
+    raf = requestAnimationFrame(ubicar);
+    const g = amb.costura();
+    const W = innerWidth;
+    const H = innerHeight;
+    const { a: [wa, ha], b: [wb, hb], margen: m } = medidas;
+    const cz = g.k > 0 && g.a && g.b ? g : null;
+    const cr = carasYa ?? caras();
+    if (!celular()) {
+      const junto = (cr?.alto ?? 0) * H * COSTURA.caras.junto;
+      // sin costura todavia (el aviso), donde van a quedar
+      const ca = cz ? g.a.x * W : (cr?.a.x ?? 0.25) * W;
+      const cb = cz ? g.b.x * W : (cr?.b.x ?? 0.75) * W;
+      const xa = clamp(ca - junto - wa, m, W - m - wa);
+      const xb = clamp(cb + junto, m, W - m - wb);
+      lados.a.style.transform = `translate(${px(xa)}, 0)`;
+      lados.b.style.transform = `translate(${px(xb)}, 0)`;
+      return;
+    }
+    // celular: los dos adentro de la banda (que se mueve con el panel). Elegido, el destino que queda sube al principio
+    // de la banda.
+    const r = banda.getBoundingClientRect();
+    const aire = COSTURA.aire;
+    const yaC = (cz ? g.a.y : cr?.a.y ?? 0.25) * H;
+    const ybC = (cz ? g.b.y : cr?.b.y ?? 0.75) * H;
+    const e = capa.dataset.elegido;
+    const ya = e === 'a' ? r.top + aire : clamp(yaC - ha / 2, r.top + aire, r.bottom - ha - aire);
+    const yb = e === 'b' ? r.top + aire : clamp(ybC - hb / 2, r.top + aire, r.bottom - hb - aire);
+    lados.a.style.transform = `translate(${px(m)}, ${px(ya)})`;
+    lados.b.style.transform = `translate(${px(W - m - wb)}, ${px(yb)})`;
+  }
+  const costura = (cambio, cruce) => amb.ambiente({ costura: cambio, cruce });
+  // (U) donde caen las caras (costura.caras del kit): arriba del panel, al lado de cada destino. Las caras se quedan
+  // quietas al apuntar y al elegir (corre la linea, no ellas): el lado apuntado crece hacia la otra cara.
+  let carasYa = null; // las ultimas pedidas (las usa ubicar() en cada cuadro sin volver a medir)
+  function caras() {
+    carasYa = medirCaras();
+    return carasYa;
+  }
+  function medirCaras() {
+    const W = innerWidth;
+    const H = innerHeight;
+    if (celular()) {
+      const r = banda.getBoundingClientRect();
+      if (!(r.height > 0)) return null;
+      const [ax, ay] = COSTURA.caras.cel.a;
+      const [bx, by] = COSTURA.caras.cel.b;
+      return { a: { x: ax, y: (r.top + r.height * ay) / H }, b: { x: bx, y: (r.top + r.height * by) / H }, alto: Math.min(1, (r.height * COSTURA.caras.altoCel) / H) };
+    }
+    const arriba = franjaAbajo();
+    const abajo = limite?.getBoundingClientRect().top ?? H / 2;
+    const libre = Math.max(0, abajo - arriba);
+    const alto = Math.min(1, Math.max(COSTURA.caras.altoMin, (libre * COSTURA.caras.alto) / H));
+    const y = (arriba + abajo) / 2 / H;
+    // las dos a la misma distancia del borde: al lado del destino mas ancho
+    const lado = Math.max(medidas.a[0], medidas.b[0]) + medidas.margen + alto * H * COSTURA.caras.junto;
+    return { a: { x: lado / W, y }, b: { x: 1 - lado / W, y }, alto };
+  }
+  const franjaAbajo = () => document.querySelector('.franja')?.getBoundingClientRect().bottom ?? 0;
+  const prender = (cruce) => costura({ a: { arte, tono: tonos.a }, b: { arte, tono: tonos.b }, posicion: base, angulo: COSTURA.angulo, k: 1, caras: caras() }, cruce);
+  const alRedimensionar = () => {
+    medir();
+    if (capa.dataset.fase !== 'costura') return;
+    base = reposo();
+    const e = capa.dataset.elegido;
+    costura({ posicion: e ? posElegido(e) : posDe(capa.dataset.apunta), caras: caras() }, 0);
+  };
+  addEventListener('resize', alRedimensionar);
+
+  // ---------- el aviso: ¡OFERTA ENCONTRADA! ----------
+  let aviso = null;
+  let avisoAbierto = false;
+  let ya = false; // aceptar sin la apertura (elegir con el aviso abierto)
+  function escudo() {
+    const info = LOGOS[ligaB];
+    if (!info) return monograma(ligaB);
+    const img = el('img', { src: info.url, alt: ligaB, decoding: 'async', draggable: 'false' });
+    img.addEventListener('error', () => img.replaceWith(monograma(ligaB)), { once: true });
+    return img;
+  }
+
+  // ---------- aceptar: el anillo se agranda como un portal y el mundo cruza a la costura ----------
+  function abrir() {
+    if (!avisoAbierto) return;
+    avisoAbierto = false;
+    const instantaneo = ya || quieto();
+    const r = aviso?.nodo.querySelector('.ln-aviso-anillo')?.getBoundingClientRect();
+    capa.dataset.fase = 'costura';
+    medir();
+    base = reposo();
+    prender(instantaneo ? 0 : COSTURA.cruce);
+    if (instantaneo || !r) {
+      aviso?.destruir();
+      aviso = null;
+      alAceptar({ instantaneo: true });
+      return;
+    }
+    // el portal: un velo con el hueco del anillo, que crece hasta salir de la pantalla; su borde es el aro dorado
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const hueco = r.width * PORTAL_LN.hueco;
+    const lejos = Math.hypot(Math.max(cx, innerWidth - cx), Math.max(cy, innerHeight - cy)) + r.width * PORTAL_LN.aro;
+    const portal = el('div', { class: 'dc-portal', 'aria-hidden': 'true', style: { '--dc-px': px(cx), '--dc-py': px(cy), '--dc-pr': px(hueco) } });
+    aplicarTono(portal, tonos.b);
+    contenedor.append(portal);
+    animar(portal, [{ '--dc-pr': px(hueco) }, { '--dc-pr': px(lejos) }], { delay: T_LN.crece, dur: T_LN.creceDur, easing: T_LN.curva, fill: 'both' });
+    animar(portal, [{ '--dc-pa': 1 }, { '--dc-pa': 0 }], { delay: T_LN.aroSale, dur: T_LN.aroDur, easing: 'linear', fill: 'both' });
+    // los destinos entran desde la costura (cada uno hacia su lado), los logos y despues los chips de a uno
+    for (const l of ['a', 'b']) {
+      animar(lados[l], [{ opacity: 0, translate: `${l === 'a' ? 24 : -24}px 0` }, { opacity: 1, translate: '0 0' }], { delay: T_LN.lados, dur: DUR.larga });
+      lados[l].querySelectorAll('.dc-logos > *').forEach((x, k) => animar(x, [{ opacity: 0, transform: 'scale(.82)' }, { opacity: 1, transform: 'none' }], { delay: T_LN.lados + k * 70, dur: DUR.larga }));
+      lados[l].querySelectorAll('.dc-chip, .dc-cerrada').forEach((x, k) => animar(x, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { delay: T_LN.lados + 160 + k * 40 }));
+    }
+    esperar(portal, T_LN.fin).then(() => {
+      portal.remove();
+      aviso?.destruir();
+      aviso = null;
+    });
+    alAceptar({ instantaneo: false });
+  }
+
+  return {
+    nodo: capa,
+    banda,
+    retardoAceptar: T_LN.panel,
+    focoAceptar: T_LN.foco,
+    get avisoAbierto() {
+      return avisoAbierto;
+    },
+    entrar() {
+      medir();
+      cancelAnimationFrame(raf);
+      ubicar();
+      if (!lec.bisagra) {
+        // sin aviso: la costura entra con la pantalla
+        base = reposo();
+        prender(COSTURA.cruce);
+        return;
+      }
+      // el velo del kit, un poco mas liviano en esta pantalla: detras se reconoce tu main en la luz de la era
+      aviso = anilloAceptar({ escudo: escudo(), encabezado: '¡Oferta encontrada!', cola: [lec.cupo, ligaB].filter(Boolean).join(' · '), tono: tonos.b, segundos: COSTURA.segundos, alAceptar: abrir, sonido, velo: '--dc-aviso-velo' });
+      avisoAbierto = true;
+      contenedor.append(aviso.nodo);
+      // el foco va al ¡ACEPTAR! (Enter ya lo escucha el aviso)
+      const boton = aviso.nodo.querySelector('.ln-aceptar');
+      if (quieto()) boton?.focus({ preventScroll: true });
+      else esperar(aviso.nodo, T_LN.lados).then(() => avisoAbierto && boton?.focus({ preventScroll: true }));
+    },
+    // elegir con el aviso abierto (window.vitrina.elegir): se acepta sin la apertura
+    aceptarYa() {
+      if (!avisoAbierto) return;
+      ya = true;
+      aviso.aceptar();
+    },
+    apuntar(i) {
+      const c = lec.caminos[i];
+      if (!c || capa.dataset.fase !== 'costura' || capa.dataset.elegido) return;
+      const l = c.bloqueada ? '' : LADO_LN[c.camino] ?? '';
+      capa.dataset.apunta = l;
+      capa.dataset.cerrada = c.bloqueada ? 'si' : '';
+      capa.querySelectorAll('.dc-fila').forEach((f) => f.classList.toggle('on', f.dataset.i === String(i)));
+      costura({ posicion: posDe(l) }, COSTURA.apunta);
+    },
+    soltar() {
+      if (capa.dataset.fase !== 'costura' || capa.dataset.elegido) return;
+      capa.dataset.apunta = '';
+      capa.dataset.cerrada = '';
+      capa.querySelectorAll('.dc-fila').forEach((f) => f.classList.remove('on'));
+      costura({ posicion: base }, COSTURA.apunta);
+    },
+    // elegir abre ese destino: la costura se va al otro borde (y se endereza), el destino elegido llena la pantalla y la
+    // noche de la interfaz toma su tono; el otro destino se apaga
+    elegir(i) {
+      const c = lec.caminos[i];
+      const l = c && !c.bloqueada ? LADO_LN[c.camino] ?? '' : '';
+      capa.dataset.cerrada = '';
+      capa.querySelectorAll('.dc-fila').forEach((f) => f.classList.toggle('on', f.dataset.i === String(i)));
+      if (!l) return;
+      capa.dataset.apunta = l;
+      capa.dataset.elegido = l;
+      costura({ posicion: posElegido(l), angulo: 0 }, quieto() ? 0 : COSTURA.abre);
+      if (tonos[l]) aplicarTono(document.documentElement, tonos[l]);
+    },
+    destruir() {
+      cancelAnimationFrame(raf);
+      removeEventListener('resize', alRedimensionar);
+      aviso?.destruir();
+      aviso = null;
     },
   };
 }

@@ -2,8 +2,7 @@
    lista en el mismo panel del sistema. Los momentos gritan en condensada; la interfaz habla en ancha. */
 .cumbre { position: relative; min-height: 100vh; }
 
-/* ---------- takeover ---------- */
-.takeover { display: grid; align-content: center; padding: 64px var(--margen) 56px; overflow: hidden; }
+/* ---------- takeover (la clase base .takeover vive en momento.css: la comparte la firma) ---------- */
 .tk-negro { position: fixed; inset: 0; z-index: 0; background: var(--oscuro-total); opacity: 0; pointer-events: none; }
 .tk-barrido {
   position: fixed; top: -10vh; bottom: -10vh; left: 0; width: 42vw; z-index: 1; opacity: 0; pointer-events: none; mix-blend-mode: screen;
@@ -131,7 +130,6 @@
 .td-gr { position: absolute; margin: -20px 0 0 14px; transform: translate(0, -50%); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font: 600 10.5px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--gold); }
 
 @media (max-width: 640px) {
-  .takeover { padding: 40px 20px 40px; align-content: center; }
   .tk-kicker { gap: 12px; font-size: 10px; letter-spacing: 0.2em; }
   .tk-kicker span + span { padding-left: 12px; }
   .tk-titulo { font-size: 72px; margin-top: 18px; }
@@ -149,4 +147,38 @@
   .carta-handle { font-size: 32px; }
   .tray-dibujada { height: 130px; }
   .td-org-nom { display: none; }
+}
+
+/* ---------- levantar la copa (op=linea, PLANUI §4.9): el apagon, el golpe de luz, la copa, el confeti y las letras
+   con peso. El bloque de CAMPEONES queda a la izquierda; la copa, al centro-derecha, delante del arte ---------- */
+.cu-negro { position: fixed; inset: 0; z-index: 0; background: var(--oscuro-total); opacity: 0; pointer-events: none; }
+.cu-velo { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(90deg, var(--velo-medio) 0%, var(--velo-medio) 42%, var(--velo-suave) 58%, var(--velo-nada) 70%); }
+.cu-golpe {
+  position: fixed; inset: 0; z-index: 1; opacity: 0; pointer-events: none; mix-blend-mode: screen;
+  background: radial-gradient(48% 62% at 70% 66%, color-mix(in srgb, var(--luz-blanca) 70%, transparent) 0%, color-mix(in srgb, var(--gold) 60%, transparent) 20%, color-mix(in srgb, var(--gold) 18%, transparent) 48%, var(--velo-nada) 76%);
+}
+.cu-copa { position: absolute; z-index: 1; right: 12vw; bottom: 3vh; height: var(--cu-copa-alto); aspect-ratio: var(--cu-copa-aspecto); pointer-events: none; }
+.cu-copa-sube { position: absolute; inset: 0; }
+.cu-hilo {
+  position: absolute; left: 6%; right: 6%; bottom: 0; height: 2px; opacity: 0; pointer-events: none; border-radius: 2px;
+  background: linear-gradient(90deg, var(--velo-nada), var(--gold) 30%, var(--luz-blanca) 50%, var(--gold) 70%, var(--velo-nada));
+  box-shadow: 0 0 18px 2px color-mix(in srgb, var(--gold) 55%, transparent);
+}
+.cu-placa { position: absolute; display: flex; align-items: center; justify-content: center; gap: 0.7em; padding: 0.5em 0.8em; overflow: hidden; }
+.cu-placa img { display: block; height: 100%; max-width: 46%; object-fit: contain; filter: drop-shadow(0 1px 2px var(--sombra)); }
+.cu-placa-texto { font-family: var(--f-mono); font-weight: 700; line-height: 1; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; color: var(--gold); }
+.cu-confeti { z-index: 1; }
+.cu-titulo .cu-bloque { max-width: min(58vw, 880px); }
+.cu-titulo .tk-titulo { font-size: var(--t-momento); }
+.cu-letra { position: relative; transform-origin: 50% 100%; }
+.cu-polvo {
+  position: absolute; left: -16%; right: -16%; bottom: -0.03em; height: 0.18em; opacity: 0; pointer-events: none; mix-blend-mode: screen;
+  background: radial-gradient(50% 50% at 50% 62%, var(--cu-polvo) 0%, var(--cu-polvo-nada) 72%);
+}
+@media (max-width: 640px) {
+  .cu-copa { right: auto; left: 50%; top: 8px; bottom: auto; height: 36vh; transform: translateX(-50%); }
+  .cu-velo { background: linear-gradient(180deg, var(--velo-nada) 0%, var(--velo-nada) 30%, var(--velo-medio) 46%, var(--velo-medio) 100%); }
+  .cu-titulo { align-content: start; padding-top: calc(36vh + 16px); }
+  .cu-titulo .cu-bloque { max-width: none; }
+  .cu-titulo .tk-titulo { font-size: 72px; }
 }

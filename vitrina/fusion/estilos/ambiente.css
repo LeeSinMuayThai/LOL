@@ -1,6 +1,7 @@
 /* LA FUSION (de A · LUZ) — el ambiente de respaldo sin WebGL: capas radiales por era, haces con conic-gradient, la luz de contra,
    la escena (monitor, tubos, bokeh) y el arte en duotono (canvas 2D) mezclado en "pantalla". */
-.luz-css { --lc-velo: 0.6; --lc-presencia: 1; --lc-desenfoque: 0px; --lc-cruce: 900ms; position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-void) 70%); }
+/* --lc-noche/--lc-vacio: la noche del fondo; la paleta (PLANUI §4.9) las pisa con las de su tono */
+.luz-css { --lc-velo: 0.6; --lc-presencia: 1; --lc-desenfoque: 0px; --lc-cruce: 900ms; --lc-noche: var(--bg-surface); --lc-vacio: var(--bg-void); position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, var(--lc-noche) 0%, var(--lc-vacio) 70%); }
 .luz-css-era { position: absolute; inset: 0; opacity: 0; transition: opacity var(--dur-era) ease; }
 .luz-css[data-era='pieza'] .luz-css-era[data-era='pieza'],
 .luz-css[data-era='academia'] .luz-css-era[data-era='academia'],
@@ -79,7 +80,37 @@
 .luz-css[data-animo='peligro'] { filter: saturate(0.45) brightness(0.8); }
 .luz-css[data-animo='peligro']::after { content: ''; position: absolute; inset: 0; background: var(--velo-medio); animation: lc-latido 1250ms ease-in-out infinite alternate; }
 .luz-css[data-animo='gloria'] .luz-css-era { filter: brightness(1.3) saturate(1.1); }
+/* (PLANUI §4.9, U) con la politica de color `linea` (data-animo-color, js/color.js) ningun animo saca el color: la caida
+   y el peligro se cuentan con la luz, que baja, y el arte del momento conserva su color (regla 3: nada de gris neutro) */
+.luz-css[data-animo-color][data-animo='caida'] { filter: brightness(0.62); }
+.luz-css[data-animo-color][data-animo='peligro'] { filter: brightness(0.8); }
 .luz-css[data-congelado]::after, .luz-css[data-congelado] * { animation-play-state: paused !important; }
 @keyframes lc-latido { from { opacity: 0; } to { opacity: 0.5; } }
 @media (prefers-reduced-motion: reduce) { .luz-css *, .luz-css::after { animation: none !important; transition: none !important; } }
 html[data-reducido] .luz-css *, html[data-reducido] .luz-css::after, html[data-inst] .luz-css *, html[data-inst] .luz-css::after { animation: none !important; transition: none !important; }
+
+/* PLANUI §4.9 · LA COSTURA sin WebGL: dos capas recortadas por la diagonal (clip-path, js/ambiente.js), cada una con la
+   noche y la luz de su tono y el arte en su bitono; entre las dos, la linea de luz. El campeon de siempre le deja el lugar. */
+.lc-costura { position: absolute; inset: 0; opacity: 0; transition: opacity var(--lc-cruce) ease; pointer-events: none; }
+.luz-css[data-costura] .lc-costura { opacity: var(--lc-cos-k, 1); }
+.luz-css[data-costura] .lc-arte { opacity: 0; }
+.luz-css[data-sin-costura] .lc-costura { opacity: 0; }
+.luz-css[data-sin-costura] .lc-arte[data-visible] { opacity: calc(0.92 * var(--lc-presencia)); }
+.lc-cos-lado {
+  --lc-cos-luz: var(--luz); --lc-cos-contra: var(--contra); --lc-cos-noche: var(--lc-noche); --lc-cos-vacio: var(--lc-vacio); --lc-cos-x: 50%; --lc-cos-y: 40%;
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(42% 60% at var(--lc-cos-x) var(--lc-cos-y), color-mix(in srgb, var(--lc-cos-luz) 30%, transparent), transparent 75%),
+    linear-gradient(180deg, var(--lc-cos-noche) 0%, var(--lc-cos-vacio) 80%);
+}
+.lc-cos-arte {
+  position: absolute; left: var(--lc-cos-x); top: var(--lc-cos-y); width: calc(62vw * var(--lc-cos-escala, 1)); height: auto; transform: translate(-50%, -38%); opacity: 0; mix-blend-mode: screen;
+  mask-image: radial-gradient(closest-side, var(--mascara) 52%, transparent 100%);
+}
+.lc-cos-arte[data-visible] { opacity: 0.92; }
+.luz-css[data-encuadre='celular'] .lc-cos-arte { width: calc(120vw * var(--lc-cos-escala, 1)); }
+.lc-cos-linea {
+  position: absolute; transform-origin: 50% 50%;
+  background: var(--luz-blanca);
+  box-shadow: 0 0 6px 1px var(--luz-blanca), 0 0 26px 6px color-mix(in srgb, var(--luz) 60%, transparent), 0 0 70px 18px color-mix(in srgb, var(--luz) 22%, transparent);
+}

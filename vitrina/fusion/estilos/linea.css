@@ -1,1 +1,83 @@
-/* UNA LINEA (PLANUI §4.9): lo comun del kit con op=linea (la noche tenida, los tonos en tiempo de ejecucion). Lo implementa K. */
+/* UNA LINEA (PLANUI §4.9): lo comun del kit con op=linea (la noche teñida, los tonos en tiempo de ejecucion) y la hoja del
+   kit (linea.html, prefijo ln-hoja-). Lo implementa K. */
+
+/* ---------- op=linea: los negros se tiñen del tono (LINEA regla 3). main.js pone --tono-* en <html> (aplicarTono) ---------- */
+html[data-op='linea'] {
+  background: var(--tono-vacio);
+  --velo-lectura: color-mix(in srgb, var(--tono-vacio) 94%, transparent);
+  --velo-medio: color-mix(in srgb, var(--tono-vacio) 66%, transparent);
+  --velo-suave: color-mix(in srgb, var(--tono-vacio) 40%, transparent);
+  --velo-nada: color-mix(in srgb, var(--tono-vacio) 0%, transparent);
+}
+html[data-op='linea'] body { background: var(--tono-vacio); }
+
+/* ======================================================================================================================
+   linea.html: la hoja del kit (la referencia visual de la ola 2)
+   ====================================================================================================================== */
+body.ln-hoja { overflow-x: hidden; overflow-y: auto; height: auto; min-height: 100%; background: var(--tono-vacio); }
+.ln-hoja-main { position: relative; z-index: 2; display: grid; gap: 28px; padding: 0 var(--margen) 80px; }
+.ln-hoja-heroe { position: relative; min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; padding: 36px 0 28px; }
+.ln-hoja-main > * { min-width: 0; }
+.ln-hoja-boton { white-space: normal; text-align: left; }
+.ln-hoja-titulo {
+  margin: 12px 0 0; font: 800 var(--t-titulo) / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.035em; color: var(--ink);
+}
+.ln-hoja-bajada { margin: 10px 0 0; max-width: 60ch; font-size: var(--t-cuerpo); color: var(--ink-dim); }
+.ln-hoja-panel {
+  background: var(--panel); border-radius: var(--r-panel); box-shadow: inset 0 0 0 1px var(--filete), 0 28px 70px -30px var(--sombra);
+  padding: 18px 20px 20px;
+}
+.ln-hoja-mandos { align-self: end; justify-self: start; display: grid; gap: 14px; width: min(560px, 100%); }
+.ln-hoja-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.ln-hoja-k { font: 500 var(--t-rotulo) / 1.3 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.ln-hoja-mandos label { display: grid; grid-template-columns: 92px minmax(0, 1fr) 44px; align-items: center; gap: 10px; }
+.ln-hoja-mandos input[type='range'] { width: 100%; accent-color: var(--tono-acento); }
+.ln-hoja-mandos output { font: 600 12px / 1 var(--f-mono); color: var(--ink); text-align: right; }
+.ln-hoja-boton[aria-pressed='true'] { box-shadow: inset 0 0 0 1px var(--tono-acento); background: color-mix(in srgb, var(--tono-acento) 18%, transparent); color: var(--ink); }
+.ln-hoja-nota { font-size: var(--t-chico); color: color-mix(in oklab, var(--ink-dim) 55%, var(--ink)); max-width: 62ch; }
+.ln-hoja-logo-b { position: fixed; z-index: 1; width: 132px; height: 132px; transform: translate(-50%, -50%); pointer-events: none; display: grid; place-items: center; transition: left 700ms var(--expo), top 700ms var(--expo), opacity 300ms; }
+.ln-hoja-logo-b img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 8px 30px var(--sombra)); }
+.ln-hoja-logo-b[hidden] { display: none; }
+
+.ln-hoja-sec { display: grid; gap: 14px; }
+.ln-hoja-h2 { margin: 0; font: 800 var(--t-titulo-s) / 1.05 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.03em; color: var(--ink); }
+
+/* el mismo campeon en cinco tonos */
+.ln-hoja-tonos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.ln-hoja-tono { display: grid; gap: 10px; padding: 10px 10px 14px; }
+.ln-hoja-tono canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; border-radius: var(--r-control); background: var(--bg-sunken); }
+.ln-hoja-tono figcaption { display: grid; gap: 6px; padding: 0 4px; }
+.ln-hoja-tono b { font: 700 16px / 1.15 var(--f-display); font-stretch: var(--ancho-titulo); color: var(--ink); }
+.ln-hoja-muestras { display: flex; flex-wrap: wrap; gap: 6px; }
+.ln-hoja-muestra { display: inline-flex; align-items: center; gap: 6px; font: 500 10.5px / 1 var(--f-mono); color: var(--ink-dim); }
+.ln-hoja-muestra i { width: 14px; height: 14px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+
+/* las ceremonias */
+.ln-hoja-cer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.ln-hoja-pila { display: grid; gap: 14px; min-width: 0; }
+.ln-hoja-celda { display: grid; grid-template-rows: auto 1fr; gap: 12px; padding: 14px 14px 16px; min-width: 0; }
+.ln-hoja-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ln-hoja-cab b { font: 700 18px / 1.1 var(--f-display); font-stretch: var(--ancho-titulo); color: var(--ink); }
+.ln-hoja-escenario {
+  position: relative; display: grid; place-items: center; min-height: 300px; overflow: hidden; border-radius: var(--r-control);
+  background: radial-gradient(80% 80% at 50% 40%, color-mix(in srgb, var(--tono-luz) 14%, var(--tono-noche)), var(--tono-vacio));
+}
+.ln-hoja-escenario[data-alto] { min-height: 600px; }
+.ln-hoja-cartas { display: flex; gap: 14px; }
+.ln-hoja-carta { position: relative; width: 120px; height: 218px; border-radius: var(--r-control); overflow: hidden; box-shadow: inset 0 0 0 1px var(--filete); background: var(--bg-raised); }
+.ln-hoja-carta img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ln-hoja-carta span { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 8px 8px; font: 600 12px / 1 var(--f-cuerpo); color: var(--ink); background: linear-gradient(0deg, var(--velo-lectura), var(--velo-nada)); }
+.ln-hoja-tv { display: grid; gap: 18px; justify-items: start; padding: 20px; }
+.ln-hoja-tv .ln-cinta { justify-self: stretch; }
+.ln-hoja-odo { display: flex; align-items: baseline; gap: 28px; font: 900 var(--t-num-l) / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--ink); }
+
+@media (max-width: 900px) {
+  .ln-hoja-cer { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .ln-hoja-heroe { padding-top: 24px; }
+  .ln-hoja-titulo { font-size: var(--t-titulo-s); }
+  .ln-hoja-mandos label { grid-template-columns: 76px minmax(0, 1fr) 40px; }
+  .ln-hoja-escenario[data-alto] { min-height: 560px; }
+  .ln-hoja-logo-b { width: 92px; height: 92px; }
+}

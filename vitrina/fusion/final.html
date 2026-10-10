@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>La última demostración — la fusión — Un Split Más</title>
+  <title>Una línea — la fusión — Un Split Más</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../comun/fuentes.css">
   <link rel="stylesheet" href="estilos/tokens.css">
@@ -13,16 +13,16 @@
 <body class="final">
   <header class="fn-cab">
     <div class="fn-titulos">
-      <p class="rotulo-cat"><i class="punto-luz"></i><span>La fusión</span><span class="bisagra">la última demostración</span></p>
+      <p class="rotulo-cat"><i class="punto-luz"></i><span>La fusión</span><span class="bisagra">una línea</span></p>
       <h1 class="fn-titulo">así se juega</h1>
-      <p class="fn-invita">Una versión por pantalla. Jugala adentro: el mouse, <kbd>1</kbd>-<kbd>3</kbd> para elegir, <kbd>Enter</kbd>, <kbd>Espacio</kbd>. <kbd>0</kbd> para comparar con cómo estaba.</p>
+      <p class="fn-invita">Una sola línea: la del inicio, en todas las pantallas, con el color del lugar. Jugala adentro: el mouse, <kbd>1</kbd>-<kbd>3</kbd> para elegir, <kbd>Enter</kbd>, <kbd>Espacio</kbd>. <kbd>0</kbd> para comparar con la versión de antes.</p>
     </div>
     <div class="fn-lado">
       <nav class="fn-pestanas" role="tablist" aria-label="Pantalla"></nav>
     </div>
   </header>
   <div class="fn-barra">
-    <p class="fn-indicador" id="indicador" aria-live="polite"><span class="fn-ind-k">Viendo</span><b id="ind-txt">final</b></p>
+    <p class="fn-indicador" id="indicador" aria-live="polite"><span class="fn-ind-k">Viendo</span><b id="ind-txt">una línea</b></p>
     <div class="fn-botones">
       <button type="button" class="boton" id="comparar"><span id="comparar-txt">Como estaba</span><kbd>0</kbd></button>
       <button type="button" class="boton" id="repetir">Repetir<kbd>R</kbd></button>
@@ -30,9 +30,13 @@
   </div>
   <main class="fn-escenario" id="escenario">
     <iframe class="fn-marco" id="marco" title="La fusión, en vivo" width="1440" height="900" tabindex="-1"></iframe>
+    <figure class="fn-juntas" id="juntas" hidden>
+      <figcaption class="fn-juntas-txt">La hoja de contactos de las siete se arma al final de la ronda.</figcaption>
+      <img class="fn-juntas-img" id="juntas-img" alt="Las siete pantallas de una línea, juntas en una hoja de contactos" decoding="async">
+    </figure>
   </main>
   <p class="fn-mirar" id="mirar"><span class="fn-mirar-k">Qué mirar</span><span id="mirar-txt"></span></p>
-  <p class="fn-ayuda"><kbd>←</kbd> <kbd>→</kbd> cambia de pantalla · <kbd>0</kbd> como estaba / final · <kbd>R</kbd> repite la entrada</p>
+  <p class="fn-ayuda"><kbd>←</kbd> <kbd>→</kbd> cambia de pantalla · <kbd>0</kbd> una línea / la de antes · <kbd>R</kbd> repite la entrada</p>
   <script type="module" src="js/final.js"></script>
 </body>
 </html>

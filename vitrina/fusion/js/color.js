@@ -12,14 +12,19 @@
 //   receta   (PLANUI §4.7) la de la tercera vuelta, con los numeros del usuario: parte de `mitad` y "los campeones
 //            tienen un 15 % mas de color mientras que el fondo un 10 % mas": piezas 65/35, fondo 60/40. Es la base de
 //            todas las opciones de §4.7: con `op` en el hash y sin `color`, main.js la usa por defecto.
+//   linea    (PLANUI §4.9, "una linea") la receta + los momentos al 70 %: "los campeones con 70% de su color real" en la
+//            firma, el titulo y AFUERA. Con `op=linea` y sin `color`, main.js la usa por defecto (colorDeOp).
 //
-// Lo mismo en las cuatro: el inicio y los takeovers (CAMPEONES, la firma, AFUERA) van siempre en duotono.
+// Lo mismo en todas: el inicio y las eras van siempre en duotono. Los takeovers (CAMPEONES, la firma, AFUERA) tambien,
+// salvo en una politica con `momento` (linea): ahi van con su `momento`.
 import { duotono } from './util.js';
 
-export const COLORES = ['duotono', 'real', 'mitad', 'capas', 'receta'];
+export const COLORES = ['duotono', 'real', 'mitad', 'capas', 'receta', 'linea'];
 export const COLOR_DEF = 'duotono';
 // el color por defecto cuando el hash trae una opcion de §4.7 (`op=`)
 export const COLOR_OP = 'receta';
+// el color por defecto de cada `op`: `linea` lleva la suya; el resto de las opciones, la receta
+export const colorDeOp = (op) => (op === 'linea' ? 'linea' : COLOR_OP);
 export const normalizarColor = (c) => (COLORES.includes(c) ? c : COLOR_DEF);
 
 // Cada variante (0 = duotono, 1 = color real):
@@ -34,18 +39,30 @@ export const POLITICAS_COLOR = {
   capas: { etiqueta: 'Fondo en duotono, retratos a color', linea: 'El fondo sigue en duotono, más suave; los retratos y las cartas, a color, como en el cliente.', fondo: 0, lavado: 0, pieza: 1, presencia: 0.72, contraste: 0.8 },
   receta: { etiqueta: 'La receta', linea: 'Medio duotono, con un poco más de color: los campeones 65 %, el fondo 60 %.', fondo: 0.6, lavado: 0, pieza: 0.65, presencia: 1, contraste: 1 },
 };
+// PLANUI §4.9: la receta, y los momentos (firma, titulo, AFUERA) con el 70 % del color real en el fondo y en las piezas
+// `animoConColor` (PLANUI §4.9, U): ningun animo del mundo saca el color (la caida y el peligro se cuentan con la luz, mas
+// oscura y fria): sin eso, AFUERA y el cierre de una serie perdida quedaban casi en blanco y negro.
+POLITICAS_COLOR.linea = { ...POLITICAS_COLOR.receta, etiqueta: 'Una línea', linea: 'La receta, y los momentos con el 70 % de su color real.', momento: { fondo: 0.7, pieza: 0.7 }, animoConColor: true };
 const DUOTONO = POLITICAS_COLOR.duotono;
 
-// Las pantallas que siempre van en duotono (el inicio, los takeovers; las eras son la demostracion de las cinco luces).
-const SIEMPRE_DUOTONO = ['inicio', 'eras', 'cumbre/titulo', 'mercado/firma'];
-const siempre = (pantalla, muestra) => SIEMPRE_DUOTONO.includes(pantalla) || SIEMPRE_DUOTONO.includes(`${pantalla}/${muestra ?? ''}`);
+// Las pantallas que siempre van en duotono: el inicio y las eras (la demostracion de las cinco luces).
+const SIEMPRE_DUOTONO = ['inicio', 'eras'];
+// Los momentos de pantalla completa (CAMPEONES, la firma): en duotono, o en el `momento` de la politica si tiene (linea).
+const MOMENTOS = ['cumbre/titulo', 'mercado/firma'];
+const en = (lista, pantalla, muestra) => lista.includes(pantalla) || lista.includes(`${pantalla}/${muestra ?? ''}`);
+// La politica de un momento: la de la variante con su `momento` encima, o el duotono si no tiene.
+const deMomento = (c) => (c.momento ? { ...c, ...c.momento } : DUOTONO);
 
 // La politica de color de una pantalla.
-export const colorDe = (nombre, pantalla, muestra) => (siempre(pantalla, muestra) ? DUOTONO : POLITICAS_COLOR[normalizarColor(nombre)]);
+export const colorDe = (nombre, pantalla, muestra) => {
+  if (en(SIEMPRE_DUOTONO, pantalla, muestra)) return DUOTONO;
+  const c = POLITICAS_COLOR[normalizarColor(nombre)];
+  return en(MOMENTOS, pantalla, muestra) ? deMomento(c) : c;
+};
 
-// Un estado del mundo (js/fondo.js) con el color: `takeover` vuelve al duotono (AFUERA).
+// Un estado del mundo (js/fondo.js) con el color: `takeover` vuelve al duotono (AFUERA), o al `momento` de la politica.
 export function conColor(estado, c, { takeover = false } = {}) {
-  const k = takeover ? DUOTONO : c;
+  const k = takeover ? deMomento(c) : c;
   return { ...estado, presencia: estado.presencia * k.presencia, contraste: estado.contraste * k.contraste, colorFondo: k.fondo, lavado: k.lavado, colorLugar: k.pieza };
 }
 
