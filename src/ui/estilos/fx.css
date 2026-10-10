@@ -1,0 +1,533 @@
+/* EL KIT DE EFECTOS (PLANUI §9.2, LINEA.md §4; U1k). Las hojas del kit de la fusion con `op=linea`, portadas de
+   vitrina/fusion/estilos/{ambiente,ceremonia,transmision,momento,linea,base}.css: el respaldo del ambiente sin WebGL, la
+   ceremonia del LoL, la grafica de transmision, la copa y el confeti, y las piezas compartidas del kit (logos, glifos, el
+   odometro, el titulo por linea). Prefijos: ln- (el kit, la ceremonia y la transmision) y cu- (los momentos); nada
+   generico. Los colores, solo de tokens.css (los mismos nombres que la vitrina). Las variables locales de cada pieza
+   (--lc-*, --ln-bq-*, --ln-tv-acento-txt, --cu-m*, --ln-logo-tam) llevan su valor por defecto como fallback en cada uso:
+   no viven en tokens.css. El camino quieto: html[data-reducido], html[data-inst] y prefers-reduced-motion. */
+
+/* ======================================================================================================================
+   EL AMBIENTE (src/ui/fx/ambiente.js): el canvas WebGL y su respaldo CSS
+   ====================================================================================================================== */
+.ln-luz-gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* el respaldo sin WebGL: capas radiales por era, haces con conic-gradient, la luz de contra, la escena (monitor, tubos,
+   bokeh) y el arte en duotono (canvas 2D) mezclado en "pantalla". */
+/* --lc-noche/--lc-vacio: la noche del fondo; la paleta (PLANUI §4.9) las pisa con las de su tono */
+.ln-luz-css { --lc-velo: 0.6; --lc-presencia: 1; --lc-desenfoque: 0px; --lc-cruce: 900ms; --lc-noche: var(--bg-surface); --lc-vacio: var(--bg-void); position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, var(--lc-noche, var(--bg-surface)) 0%, var(--lc-vacio, var(--bg-void)) 70%); }
+.ln-luz-css-era { position: absolute; inset: 0; opacity: 0; transition: opacity var(--dur-era) ease; }
+.ln-luz-css[data-era='pieza'] .ln-luz-css-era[data-era='pieza'],
+.ln-luz-css[data-era='academia'] .ln-luz-css-era[data-era='academia'],
+.ln-luz-css[data-era='escenario'] .ln-luz-css-era[data-era='escenario'],
+.ln-luz-css[data-era='mundial'] .ln-luz-css-era[data-era='mundial'],
+.ln-luz-css[data-era='leyenda'] .ln-luz-css-era[data-era='leyenda'] { opacity: 1; }
+.ln-luz-css[data-quieto] .ln-luz-css-era, .ln-luz-css[data-quieto] .ln-lc-arte { transition: none; }
+.ln-luz-css-era > div { position: absolute; inset: 0; }
+.ln-lc-haces { mask-image: radial-gradient(120% 95% at 72% 0%, var(--mascara) 25%, transparent 85%); mix-blend-mode: screen; opacity: 0.9; transition: opacity 800ms ease; }
+.ln-luz-css[data-calma] .ln-lc-haces { opacity: 0.6; }
+
+/* pieza: el monitor desde abajo, el velador tibio arriba a la derecha */
+.ln-luz-css-era[data-era='pieza'] .ln-lc-fuente { background: radial-gradient(70% 60% at 68% 108%, color-mix(in srgb, var(--luz-pieza) 62%, transparent) 0%, color-mix(in srgb, var(--luz-pieza) 16%, transparent) 45%, transparent 75%); }
+.ln-luz-css-era[data-era='pieza'] .ln-lc-haces { background: conic-gradient(from 330deg at 70% 112%, transparent 0deg, color-mix(in srgb, var(--luz-pieza) 22%, transparent) 14deg, transparent 26deg, color-mix(in srgb, var(--luz-pieza) 14%, transparent) 40deg, transparent 52deg, transparent 360deg); }
+.ln-luz-css-era[data-era='pieza'] .ln-lc-contra { background: radial-gradient(30% 34% at 98% 12%, color-mix(in srgb, var(--contra-pieza) 34%, transparent), transparent 70%); }
+/* academia: tubos horizontales frios */
+.ln-luz-css-era[data-era='academia'] .ln-lc-fuente { background: radial-gradient(80% 50% at 60% -6%, color-mix(in srgb, var(--luz-academia) 30%, transparent), transparent 70%); }
+.ln-luz-css-era[data-era='academia'] .ln-lc-escena {
+  background:
+    radial-gradient(16% 1.2% at 22% 7%, color-mix(in srgb, var(--contra-academia) 90%, transparent), transparent 100%),
+    radial-gradient(16% 1.2% at 50% 13%, color-mix(in srgb, var(--contra-academia) 80%, transparent), transparent 100%),
+    radial-gradient(16% 1.2% at 78% 7%, color-mix(in srgb, var(--contra-academia) 85%, transparent), transparent 100%),
+    radial-gradient(30% 12% at 50% 9%, color-mix(in srgb, var(--luz-academia) 24%, transparent), transparent 100%);
+}
+.ln-luz-css-era[data-era='academia'] .ln-lc-contra { background: radial-gradient(34% 50% at 0% 50%, color-mix(in srgb, var(--contra-academia) 12%, transparent), transparent 70%); }
+/* escenario: haces cruzados, rim magenta, publico en bokeh */
+.ln-luz-css-era[data-era='escenario'] .ln-lc-fuente { background: radial-gradient(50% 40% at 72% -8%, color-mix(in srgb, var(--luz-escenario) 42%, transparent), transparent 75%); }
+.ln-luz-css-era[data-era='escenario'] .ln-lc-haces { background: conic-gradient(from 150deg at 72% -14%, transparent 0deg, color-mix(in srgb, var(--luz-escenario) 26%, transparent) 6deg, transparent 10deg, transparent 18deg, color-mix(in srgb, var(--luz-escenario) 20%, transparent) 23deg, transparent 27deg, transparent 33deg, color-mix(in srgb, var(--luz-escenario) 30%, transparent) 38deg, transparent 42deg, transparent 50deg, color-mix(in srgb, var(--luz-escenario) 18%, transparent) 54deg, transparent 58deg, transparent 360deg); }
+.ln-luz-css-era[data-era='escenario'] .ln-lc-contra { background: radial-gradient(26% 60% at 104% 45%, color-mix(in srgb, var(--contra-escenario) 40%, transparent), transparent 70%); }
+.ln-luz-css-era[data-era='escenario'] .ln-lc-escena {
+  background:
+    radial-gradient(1.6% 2.6% at 12% 90%, color-mix(in srgb, var(--luz-escenario) 50%, transparent), transparent),
+    radial-gradient(2.2% 3.4% at 26% 95%, color-mix(in srgb, var(--contra-escenario) 40%, transparent), transparent),
+    radial-gradient(1.4% 2.2% at 41% 88%, color-mix(in srgb, var(--luz-escenario) 46%, transparent), transparent),
+    radial-gradient(2.6% 4% at 58% 96%, color-mix(in srgb, var(--luz-escenario) 36%, transparent), transparent),
+    radial-gradient(1.8% 2.8% at 71% 89%, color-mix(in srgb, var(--contra-escenario) 46%, transparent), transparent),
+    radial-gradient(2% 3.2% at 86% 94%, color-mix(in srgb, var(--luz-escenario) 44%, transparent), transparent),
+    radial-gradient(1.2% 2% at 95% 87%, color-mix(in srgb, var(--luz-escenario) 50%, transparent), transparent);
+}
+/* mundial: oro desde arriba, polvo dorado */
+.ln-luz-css-era[data-era='mundial'] .ln-lc-fuente { background: radial-gradient(60% 50% at 60% -10%, color-mix(in srgb, var(--luz-mundial) 46%, transparent), transparent 75%); }
+.ln-luz-css-era[data-era='mundial'] .ln-lc-haces { background: conic-gradient(from 140deg at 60% -16%, transparent 0deg, color-mix(in srgb, var(--luz-mundial) 22%, transparent) 8deg, transparent 13deg, color-mix(in srgb, var(--luz-mundial) 26%, transparent) 24deg, transparent 29deg, color-mix(in srgb, var(--luz-mundial) 20%, transparent) 40deg, transparent 45deg, color-mix(in srgb, var(--luz-mundial) 24%, transparent) 56deg, transparent 61deg, color-mix(in srgb, var(--luz-mundial) 18%, transparent) 72deg, transparent 77deg, transparent 360deg); }
+.ln-luz-css-era[data-era='mundial'] .ln-lc-contra { background: radial-gradient(40% 30% at 20% 0%, color-mix(in srgb, var(--contra-mundial) 22%, transparent), transparent 70%); }
+.ln-luz-css-era[data-era='mundial'] .ln-lc-escena {
+  background:
+    radial-gradient(0.4% 0.6% at 64% 34%, var(--luz-mundial), transparent), radial-gradient(0.3% 0.5% at 71% 52%, var(--contra-mundial), transparent),
+    radial-gradient(0.5% 0.8% at 82% 28%, var(--luz-mundial), transparent), radial-gradient(0.3% 0.5% at 56% 61%, var(--luz-mundial), transparent),
+    radial-gradient(0.4% 0.7% at 90% 46%, var(--contra-mundial), transparent), radial-gradient(0.3% 0.4% at 77% 70%, var(--luz-mundial), transparent);
+}
+/* leyenda: luz baja y calida de atardecer */
+.ln-luz-css-era[data-era='leyenda'] .ln-lc-fuente { background: radial-gradient(60% 50% at 104% 66%, color-mix(in srgb, var(--luz-leyenda) 46%, transparent), transparent 75%); }
+.ln-luz-css-era[data-era='leyenda'] .ln-lc-haces { mask-image: radial-gradient(120% 90% at 100% 66%, var(--mascara) 20%, transparent 80%); background: conic-gradient(from 230deg at 104% 66%, transparent 0deg, color-mix(in srgb, var(--luz-leyenda) 18%, transparent) 10deg, transparent 18deg, color-mix(in srgb, var(--luz-leyenda) 14%, transparent) 30deg, transparent 40deg, color-mix(in srgb, var(--luz-leyenda) 12%, transparent) 54deg, transparent 64deg, transparent 360deg); }
+.ln-luz-css-era[data-era='leyenda'] .ln-lc-contra { background: radial-gradient(40% 40% at 0% 84%, color-mix(in srgb, var(--contra-leyenda) 22%, transparent), transparent 70%); }
+
+.ln-lc-arte {
+  position: absolute; right: -4vw; top: 50%; width: 66vw; height: auto; transform: translateY(-50%); opacity: 0; mix-blend-mode: screen;
+  mask-image: radial-gradient(closest-side, var(--mascara) 52%, transparent 100%); transition: opacity 900ms ease;
+}
+.ln-lc-arte[data-visible] { opacity: calc(0.92 * var(--lc-presencia, 1)); animation: lc-deriva 26s ease-in-out infinite alternate; }
+/* la politica del mundo (js/fondo.js) sin WebGL: el cruce de presencia y el desenfoque de `tenue` */
+.ln-luz-css[data-fondo] .ln-lc-arte { transition-duration: var(--lc-cruce, 900ms); }
+.ln-luz-css[data-suave] .ln-lc-arte { filter: blur(var(--lc-desenfoque, 0px)); }
+/* el splash vivo sin WebGL: solo la deriva lenta (Ken Burns) */
+@keyframes lc-deriva { from { transform: translateY(-50%) scale(1); } to { transform: translate(-1.2%, -51%) scale(1.05); } }
+.ln-luz-css[data-animo='caida'] { filter: saturate(0.18) brightness(0.62); transition: filter 900ms ease; }
+.ln-luz-css[data-encuadre='cumbre'] .ln-lc-arte { right: 2vw; width: 72vw; }
+.ln-luz-css[data-encuadre='carta'] .ln-lc-arte { right: auto; left: -6vw; opacity: 0; }
+.ln-luz-css[data-encuadre='carta'] .ln-lc-arte[data-visible] { opacity: calc(0.35 * var(--lc-presencia, 1)); }
+.ln-luz-css[data-encuadre='centro'] .ln-lc-arte { right: 17vw; }
+.ln-luz-css[data-encuadre='draft'] .ln-lc-arte { right: 10vw; width: 70vw; }
+.ln-luz-css[data-encuadre='tribuna'] .ln-lc-arte { right: 24vw; width: 76vw; }
+.ln-luz-css[data-encuadre='celular'] .ln-lc-arte { right: -40%; width: 180%; top: 66%; }
+.ln-lc-vineta { position: absolute; inset: 0; background: radial-gradient(130% 110% at 60% 45%, transparent 55%, var(--velo-lectura) 100%); }
+.ln-lc-velo { position: absolute; inset: 0; opacity: var(--lc-velo, 0.6); background: linear-gradient(90deg, var(--velo-lectura) 0%, var(--velo-nada) 60%); }
+.ln-lc-pulso { position: absolute; inset: 0; opacity: 0; background: radial-gradient(70% 70% at 70% 30%, color-mix(in srgb, var(--luz-blanca) 40%, transparent), transparent 70%); }
+.ln-luz-css[data-animo='peligro'] { filter: saturate(0.45) brightness(0.8); }
+.ln-luz-css[data-animo='peligro']::after { content: ''; position: absolute; inset: 0; background: var(--velo-medio); animation: lc-latido 1250ms ease-in-out infinite alternate; }
+.ln-luz-css[data-animo='gloria'] .ln-luz-css-era { filter: brightness(1.3) saturate(1.1); }
+/* (PLANUI §4.9, U) con la politica de color `linea` (data-animo-color, js/color.js) ningun animo saca el color: la caida
+   y el peligro se cuentan con la luz, que baja, y el arte del momento conserva su color (regla 3: nada de gris neutro) */
+.ln-luz-css[data-animo-color][data-animo='caida'] { filter: brightness(0.62); }
+.ln-luz-css[data-animo-color][data-animo='peligro'] { filter: brightness(0.8); }
+.ln-luz-css[data-congelado]::after, .ln-luz-css[data-congelado] * { animation-play-state: paused !important; }
+@keyframes lc-latido { from { opacity: 0; } to { opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) { .ln-luz-css *, .ln-luz-css::after { animation: none !important; transition: none !important; } }
+html[data-reducido] .ln-luz-css *, html[data-reducido] .ln-luz-css::after, html[data-inst] .ln-luz-css *, html[data-inst] .ln-luz-css::after { animation: none !important; transition: none !important; }
+
+/* PLANUI §4.9 · LA COSTURA sin WebGL: dos capas recortadas por la diagonal (clip-path, js/ambiente.js), cada una con la
+   noche y la luz de su tono y el arte en su bitono; entre las dos, la linea de luz. El campeon de siempre le deja el lugar. */
+.ln-lc-costura { position: absolute; inset: 0; opacity: 0; transition: opacity var(--lc-cruce, 900ms) ease; pointer-events: none; }
+.ln-luz-css[data-costura] .ln-lc-costura { opacity: var(--lc-cos-k, 1); }
+.ln-luz-css[data-costura] .ln-lc-arte { opacity: 0; }
+.ln-luz-css[data-sin-costura] .ln-lc-costura { opacity: 0; }
+.ln-luz-css[data-sin-costura] .ln-lc-arte[data-visible] { opacity: calc(0.92 * var(--lc-presencia, 1)); }
+.ln-lc-cos-lado {
+  --lc-cos-luz: var(--luz); --lc-cos-contra: var(--contra); --lc-cos-noche: var(--lc-noche, var(--bg-surface)); --lc-cos-vacio: var(--lc-vacio, var(--bg-void)); --lc-cos-x: 50%; --lc-cos-y: 40%;
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(42% 60% at var(--lc-cos-x, 50%) var(--lc-cos-y, 40%), color-mix(in srgb, var(--lc-cos-luz, var(--luz)) 30%, transparent), transparent 75%),
+    linear-gradient(180deg, var(--lc-cos-noche, var(--bg-surface)) 0%, var(--lc-cos-vacio, var(--bg-void)) 80%);
+}
+.ln-lc-cos-arte {
+  position: absolute; left: var(--lc-cos-x, 50%); top: var(--lc-cos-y, 40%); width: calc(62vw * var(--lc-cos-escala, 1)); height: auto; transform: translate(-50%, -38%); opacity: 0; mix-blend-mode: screen;
+  mask-image: radial-gradient(closest-side, var(--mascara) 52%, transparent 100%);
+}
+.ln-lc-cos-arte[data-visible] { opacity: 0.92; }
+.ln-luz-css[data-encuadre='celular'] .ln-lc-cos-arte { width: calc(120vw * var(--lc-cos-escala, 1)); }
+.ln-lc-cos-linea {
+  position: absolute; transform-origin: 50% 50%;
+  background: var(--luz-blanca);
+  box-shadow: 0 0 6px 1px var(--luz-blanca), 0 0 26px 6px color-mix(in srgb, var(--luz) 60%, transparent), 0 0 70px 18px color-mix(in srgb, var(--luz) 22%, transparent);
+}
+
+/* ======================================================================================================================
+   LA CEREMONIA DEL LOL (src/ui/fx/ceremonia.js; PLANUI §4.9, LINEA regla 7). Un estilo de inspiracion hextech, propio: filete de oro
+   fino en degrade (--ln-oro-claro -> --ln-oro-hondo), relleno azul petroleo y un turquesa propio para el brillo. Nitido,
+   sin esquineros. Solo lo usan el aro de ¡ACEPTAR!, BLOQUEAR/FIRMAR, VICTORIA/DERROTA y el quemado de Fearless.
+   Prefijo ln-. Los colores, solo de tokens.css. */
+
+/* ---------- el degrade de oro de los SVG ---------- */
+.ln-oro-0 { stop-color: var(--ln-oro-claro); }
+.ln-oro-1 { stop-color: var(--ln-oro); }
+.ln-oro-2 { stop-color: var(--ln-oro-hondo); }
+
+/* ======================================================================================================================
+   anilloAceptar: el aviso tipo PARTIDA ENCONTRADA
+   ====================================================================================================================== */
+.ln-aviso { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; }
+/* dentro de una caja (data-ln-caja): ocupa la caja, no la pantalla */
+[data-ln-caja] > .ln-aviso { position: absolute; }
+.ln-aviso-velo {
+  position: absolute; inset: 0;
+  background: radial-gradient(70% 70% at 50% 48%, color-mix(in srgb, var(--tono-noche) 55%, var(--ln-velo)) 0%, var(--ln-velo) 70%);
+}
+/* anilloAceptar({ velo }): cuanto tapa el velo (la opacidad, --ln-aviso-velo-k en el nodo; sin la opcion, el de arriba) */
+.ln-aviso[data-velo] > .ln-aviso-velo {
+  background: radial-gradient(70% 70% at 50% 48%, color-mix(in srgb, color-mix(in srgb, var(--tono-noche) 55%, var(--ln-velo)) var(--ln-aviso-velo-k, 100%), transparent) 0%, color-mix(in srgb, var(--ln-velo) var(--ln-aviso-velo-k, 100%), transparent) 70%);
+}
+.ln-aviso-fogonazo {
+  position: absolute; left: 50%; top: 50%; width: 1000px; height: 1000px; margin: -500px 0 0 -500px; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--ln-destello), color-mix(in srgb, var(--ln-oro-claro) 45%, transparent) 26%, color-mix(in srgb, var(--tono-luz) 18%, transparent) 50%, transparent 72%);
+  opacity: 0; pointer-events: none; mix-blend-mode: screen;
+}
+.ln-aviso-tarjeta {
+  position: relative; display: grid; justify-items: center; gap: 18px; width: min(470px, 100%); padding: 30px 32px 32px;
+  border: 1px solid transparent; border-radius: 3px;
+  background:
+    radial-gradient(90% 60% at 50% 0%, color-mix(in srgb, var(--ln-petroleo) 70%, transparent), transparent 70%) padding-box,
+    linear-gradient(180deg, var(--ln-petroleo-hondo), var(--panel-opaco)) padding-box,
+    linear-gradient(180deg, var(--ln-oro-claro), var(--ln-oro) 40%, var(--ln-oro-hondo)) border-box;
+  box-shadow: 0 0 0 1px var(--oscuro-total), 0 36px 90px -24px var(--sombra), 0 0 60px -20px var(--ln-turquesa-tenue);
+}
+.ln-aviso-enc {
+  margin: 0; max-width: 100%; text-align: center; text-wrap: balance;
+  font: 800 30px / 1.02 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: 0.01em; text-transform: uppercase;
+  color: var(--ln-crema); text-shadow: 0 0 26px color-mix(in srgb, var(--ln-oro) 40%, transparent);
+}
+.ln-aviso-anillo { position: relative; width: var(--ln-aro); height: var(--ln-aro); }
+.ln-aviso-resplandor {
+  position: absolute; inset: 12%; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tono-luz) 50%, transparent), color-mix(in srgb, var(--tono-luz) 14%, transparent) 68%, transparent);
+}
+.ln-aviso-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ln-aviso-marco { fill: none; stroke-width: 1.2; }
+.ln-aviso-pista { fill: none; stroke: color-mix(in srgb, var(--ln-petroleo-claro) 55%, transparent); stroke-width: 8; }
+.ln-aviso-aro { fill: none; stroke-width: 8; stroke-linecap: butt; filter: drop-shadow(0 0 5px var(--ln-turquesa-suave)); }
+.ln-aviso-interior { fill: color-mix(in srgb, var(--ln-petroleo-hondo) 72%, transparent); stroke-width: 1; }
+.ln-aviso-cabeza { transform-box: view-box; transform-origin: 50% 50%; }
+.ln-aviso-halo { fill: var(--ln-turquesa-suave); }
+.ln-aviso-punta { fill: var(--ln-destello); filter: drop-shadow(0 0 4px var(--ln-turquesa)); }
+.ln-aviso-escudo { position: absolute; inset: 24%; display: grid; place-items: center; }
+.ln-aviso-escudo > * { max-width: 100%; max-height: 100%; }
+.ln-aviso-escudo img, .ln-aviso-escudo svg { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 14px var(--sombra)); }
+.ln-aviso-cola {
+  margin: -2px 0 0; text-align: center;
+  font: 500 var(--t-rotulo-g) / 1.4 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ln-crema-dim);
+}
+.ln-aceptar {
+  all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 16px;
+  width: min(var(--ln-aceptar-ancho), 100%); height: var(--ln-aceptar-alto); margin-top: 4px;
+  border: 1px solid transparent; border-radius: 3px;
+  background:
+    linear-gradient(180deg, var(--ln-petroleo-claro), var(--ln-petroleo) 52%, var(--ln-petroleo-hondo)) padding-box,
+    linear-gradient(180deg, var(--ln-oro-claro), var(--ln-oro) 45%, var(--ln-oro-hondo)) border-box;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ln-turquesa) 30%, transparent), 0 12px 28px -14px var(--sombra);
+  font: 800 23px / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ln-crema);
+  transition: box-shadow 160ms ease, transform 90ms ease, filter 160ms ease, color 160ms ease;
+}
+.ln-aceptar:hover, .ln-aceptar:focus-visible {
+  color: var(--ln-destello); outline: none;
+  box-shadow: inset 0 0 22px var(--ln-turquesa-tenue), inset 0 1px 0 var(--ln-turquesa-suave), 0 0 0 1px var(--ln-turquesa-suave), 0 0 30px var(--ln-turquesa-suave);
+}
+/* se hunde al apretar */
+.ln-aceptar:active, .ln-aviso[data-aceptado] .ln-aceptar {
+  transform: translateY(2px) scale(0.985); filter: brightness(0.94);
+  box-shadow: inset 0 4px 12px var(--sombra), 0 0 0 1px var(--ln-turquesa-suave), 0 0 18px var(--ln-turquesa-tenue);
+}
+.ln-aceptar-tecla {
+  height: 20px; padding: 0 6px; display: inline-grid; place-items: center; border-radius: 3px;
+  font: 600 10.5px / 1 var(--f-mono); letter-spacing: 0.06em; color: var(--ln-crema); background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ln-crema) 55%, transparent);
+}
+
+/* ======================================================================================================================
+   bloquear: el BLOQUEAR del inicio (el mismo look: estilos/inicio.css .in-bloquear) con el destello de ceremonia
+   ====================================================================================================================== */
+.ln-bloquear {
+  --ln-bq-texto: color-mix(in oklab, var(--tono-luz) 52%, var(--ink));
+  --ln-bq-fuerte: color-mix(in srgb, var(--tono-luz) 40%, transparent);
+  --ln-bq-suave: color-mix(in srgb, var(--tono-luz) 22%, transparent);
+  all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 15px 30px; border-radius: var(--r-control); background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--linea-fuerte);
+  font: 700 14px / 1 var(--f-mono); letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-dim);
+  transition: transform 110ms ease, filter 140ms ease;
+}
+.ln-bloquear:disabled { cursor: not-allowed; }
+.ln-bloquear:not(:disabled):active { transform: translateY(1px) scale(0.97); }
+.ln-bloquear:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.ln-bloquear.encendido {
+  color: var(--bg-void); background: var(--ln-bq-texto, color-mix(in oklab, var(--tono-luz) 52%, var(--ink)));
+  box-shadow: 0 0 0 1px var(--tono-luz), 0 0 40px var(--ln-bq-fuerte, color-mix(in srgb, var(--tono-luz) 40%, transparent)), 0 0 100px var(--ln-bq-suave, color-mix(in srgb, var(--tono-luz) 22%, transparent));
+  animation: ln-respira 2400ms ease-in-out infinite;
+}
+@keyframes ln-respira { 50% { box-shadow: 0 0 0 1px var(--tono-luz), 0 0 60px var(--ln-bq-fuerte, color-mix(in srgb, var(--tono-luz) 40%, transparent)), 0 0 140px var(--ln-bq-fuerte, color-mix(in srgb, var(--tono-luz) 40%, transparent)); } }
+/* bloqueado: la ceremonia (petroleo con filete de oro) y la marca */
+.ln-bloquear[data-estado='bloqueado'] {
+  cursor: default; animation: none; color: var(--ln-crema);
+  background: linear-gradient(180deg, var(--ln-petroleo), var(--ln-petroleo-hondo));
+  box-shadow: inset 0 0 0 1px var(--ln-oro), inset 0 1px 0 var(--ln-oro-claro), 0 0 26px var(--ln-turquesa-tenue);
+}
+.ln-bloquear[data-estado='bloqueado'] .ln-bq-txt::before {
+  content: ''; display: inline-block; width: 5px; height: 10px; margin: 0 12px 2px 0; vertical-align: middle;
+  border: solid var(--ln-turquesa); border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.ln-bq-onda {
+  position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; opacity: 0;
+  box-shadow: 0 0 0 2px var(--ln-oro-claro), 0 0 18px 2px var(--ln-turquesa-suave), inset 0 0 12px var(--ln-turquesa-tenue);
+}
+
+/* ======================================================================================================================
+   victoriaDerrota: la palabra metalica, su emblema y el estallido. VICTORIA es verde metal (PLANUI §4.10: el verde de la
+   fusion, --ln-verde-*, con el filete y el brillo de la ceremonia: el ojo turquesa, el interior petroleo); DERROTA, carmesi
+   ====================================================================================================================== */
+.ln-vd { position: relative; isolation: isolate; display: grid; justify-items: center; gap: 2px; padding: 26px 44px 30px; text-align: center; }
+/* el velo de lectura: la palabra se lee sobre cualquier fondo */
+.ln-vd::before {
+  content: ''; position: absolute; inset: -12% -24%; z-index: -2; pointer-events: none;
+  background: radial-gradient(50% 50% at 50% 56%, var(--ln-velo) 0%, color-mix(in srgb, var(--ln-velo) 70%, transparent) 50%, transparent 78%);
+}
+.ln-vd-estallido {
+  position: absolute; left: 50%; top: 44%; width: 820px; height: 820px; margin: -410px 0 0 -410px; z-index: -1; border-radius: 50%;
+  pointer-events: none; opacity: 0.32; mix-blend-mode: screen;
+  background:
+    radial-gradient(closest-side, color-mix(in srgb, var(--ln-verde-luz) 56%, transparent), color-mix(in srgb, var(--ln-verde) 22%, transparent) 40%, transparent 70%),
+    conic-gradient(from 8deg, transparent 0deg, color-mix(in srgb, var(--ln-verde-luz) 30%, transparent) 4deg, transparent 9deg 52deg, color-mix(in srgb, var(--ln-verde-luz) 24%, transparent) 56deg, transparent 61deg 118deg, color-mix(in srgb, var(--ln-verde-luz) 30%, transparent) 122deg, transparent 127deg 178deg, color-mix(in srgb, var(--ln-verde-luz) 22%, transparent) 182deg, transparent 187deg 242deg, color-mix(in srgb, var(--ln-verde-luz) 28%, transparent) 246deg, transparent 251deg 302deg, color-mix(in srgb, var(--ln-verde-luz) 24%, transparent) 306deg, transparent 311deg 360deg);
+  mask-image: radial-gradient(closest-side, var(--mascara) 30%, transparent 100%);
+}
+.ln-vd[data-gano='no'] .ln-vd-estallido {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ln-der-brillo) 42%, transparent), color-mix(in srgb, var(--ln-der-4) 30%, transparent) 45%, transparent 70%);
+}
+.ln-vd-emblema { width: min(340px, 72vw); height: auto; overflow: visible; margin-bottom: -10px; filter: drop-shadow(0 0 16px color-mix(in srgb, var(--ln-verde) 42%, transparent)); }
+.ln-vd[data-gano='no'] .ln-vd-emblema { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--ln-der-brillo) 36%, transparent)); }
+.ln-vd-ala-giro { transform-box: fill-box; transform-origin: 100% 25%; }
+.ln-vd-pluma { stroke: color-mix(in srgb, var(--ln-verde-claro) 60%, transparent); stroke-width: 0.6; }
+.ln-vd[data-gano='no'] .ln-vd-pluma { stroke: color-mix(in srgb, var(--ln-der-1) 40%, transparent); }
+.ln-vd-cresta { stroke: var(--ln-verde-claro); stroke-width: 1; }
+.ln-vd[data-gano='no'] .ln-vd-cresta { stroke: var(--ln-der-2); }
+.ln-vd-cresta-in { fill: var(--ln-petroleo-hondo); stroke: var(--ln-verde-claro); stroke-width: 1; }
+.ln-vd-ojo { fill: var(--ln-turquesa); filter: drop-shadow(0 0 6px var(--ln-turquesa)); }
+.ln-vd-grieta { fill: none; stroke: var(--ln-der-1); stroke-width: 1.6; filter: drop-shadow(0 0 4px var(--ln-der-brillo)); }
+.ln-vic-g0 { stop-color: var(--ln-verde-claro); }
+.ln-vic-g1 { stop-color: var(--ln-verde); }
+.ln-vic-g2 { stop-color: var(--ln-verde-hondo); }
+.ln-der-g0 { stop-color: var(--ln-der-2); }
+.ln-der-g1 { stop-color: var(--ln-der-3); }
+.ln-der-g2 { stop-color: var(--ln-der-4); }
+.ln-vd-palabra {
+  margin: 0; padding: 0 0.04em;
+  font: 900 clamp(88px, 10.5vw, 164px) / 0.9 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.01em; text-transform: uppercase;
+  background: linear-gradient(180deg, var(--ln-verde-claro) 10%, var(--ln-verde-luz) 40%, var(--ln-verde) 68%, var(--ln-verde-medio) 94%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--ln-verde-hondo) 90%, transparent)) drop-shadow(0 0 30px color-mix(in srgb, var(--ln-verde) 40%, transparent));
+}
+/* el filete de la ceremonia: un canto claro y fino sobre el metal (solo VICTORIA) */
+.ln-vd[data-gano='si'] .ln-vd-palabra { -webkit-text-stroke: 0.7px color-mix(in srgb, var(--ln-verde-claro) 65%, transparent); }
+.ln-vd[data-gano='no'] .ln-vd-palabra {
+  background-image: linear-gradient(180deg, var(--ln-der-1) 10%, var(--ln-der-2) 46%, var(--ln-der-3) 92%);
+  filter: drop-shadow(0 2px 0 var(--ln-der-4)) drop-shadow(0 0 28px color-mix(in srgb, var(--ln-der-brillo) 34%, transparent));
+}
+.ln-vd-sub {
+  margin: 10px 0 0; max-width: 46ch;
+  font: 500 var(--t-chico) / 1.45 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ln-crema);
+}
+
+/* ======================================================================================================================
+   quemar: el quemado de Fearless (el estado final; la animacion es WAAPI)
+   ====================================================================================================================== */
+.ln-quemada > :not(.ln-quema) { filter: grayscale(1) brightness(0.45); }
+.ln-quema { position: absolute; inset: 0; z-index: 2; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.ln-quema-brasa {
+  position: absolute; left: 50%; top: 50%; width: 190%; height: 9px; opacity: 0;
+  transform: translate(-50%, -50%) rotate(-38deg) translateX(130%);
+  background: linear-gradient(180deg, transparent, var(--ln-brasa) 28%, var(--ln-brasa-claro) 50%, var(--ln-brasa) 72%, transparent);
+  box-shadow: 0 0 18px 5px color-mix(in srgb, var(--ln-brasa) 55%, transparent);
+}
+.ln-quema-tajo {
+  position: absolute; left: 50%; top: 50%; width: 190%; height: 2px;
+  transform: translate(-50%, -50%) rotate(-38deg);
+  background: var(--ln-tajo);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ln-brasa) 55%, transparent), 0 -1px 0 color-mix(in srgb, var(--ln-brasa) 28%, transparent);
+}
+
+/* ---------- el camino quieto ---------- */
+@media (prefers-reduced-motion: reduce) { .ln-bloquear.encendido { animation: none; } }
+html[data-reducido] .ln-bloquear.encendido, html[data-inst] .ln-bloquear.encendido { animation: none; }
+
+@media (max-width: 640px) {
+  .ln-aviso-tarjeta { padding: 24px 18px 22px; gap: 14px; }
+  .ln-aviso-enc { font-size: 24px; }
+  .ln-aviso-anillo { width: 200px; height: 200px; }
+  .ln-vd { padding: 20px 12px 24px; }
+}
+
+/* ======================================================================================================================
+   LA GRAFICA DE TRANSMISION (src/ui/fx/transmision.js; PLANUI §4.9). El vocabulario de LoL Esports: placas oscuras y
+   finas, logos reales (<img>), siglas, el marcador en Mona expandida 900 tabular, los pips; la placa inferior y la
+   cinta. El color es el acento del tono (--tono-acento, con su valor por defecto en tokens.css). Prefijo ln-. */
+.ln-marcador, .ln-placa, .ln-cinta {
+  /* el acento como texto: llevado hacia la tinta para leerse sobre la placa (>= 4,5:1 con cualquier tono) */
+  --ln-tv-acento-txt: color-mix(in oklab, var(--tono-acento) 62%, var(--ink));
+}
+
+/* ---------- el marcador (score bug) ---------- */
+.ln-marcador {
+  position: relative; display: inline-grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch;
+  height: var(--ln-tv-alto); border-radius: 2px; overflow: hidden;
+  background: var(--ln-tv-placa); box-shadow: inset 0 0 0 1px var(--ln-tv-raya), 0 18px 44px -22px var(--sombra);
+}
+.ln-marcador::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; z-index: 1;
+  background: linear-gradient(90deg, transparent, var(--tono-acento) 18%, var(--tono-acento) 82%, transparent);
+}
+.ln-mc-eq { display: flex; align-items: center; gap: 12px; padding-left: 14px; min-width: 0; }
+.ln-mc-local { justify-content: flex-end; }
+.ln-mc-visita { flex-direction: row-reverse; justify-content: flex-end; padding: 0 14px 0 0; }
+.ln-mc-logo { flex: none; width: 34px; height: 34px; display: grid; place-items: center; }
+.ln-mc-logo .ln-tv-logo-org { display: grid; place-items: center; width: 100%; height: 100%; font-style: normal; }
+.ln-mc-logo img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+.ln-mc-logo .ln-tv-mono { font: 700 11px / 1 var(--f-mono); letter-spacing: 0.04em; color: var(--ink); }
+.ln-mc-nombre { display: grid; gap: 6px; justify-items: start; min-width: 0; }
+.ln-mc-visita .ln-mc-nombre { justify-items: end; }
+.ln-mc-sigla { font: 800 19px / 1 var(--f-display); font-stretch: 112%; letter-spacing: 0.02em; color: var(--ink); white-space: nowrap; }
+.ln-mc-pips { display: flex; gap: 4px; }
+.ln-mc-pip { width: 14px; height: 3px; border-radius: 1px; background: var(--ln-tv-raya); }
+.ln-mc-pip.ganado { background: var(--tono-acento); box-shadow: 0 0 8px color-mix(in srgb, var(--tono-acento) 60%, transparent); }
+.ln-mc-num {
+  flex: none; align-self: stretch; display: grid; place-items: center; min-width: 48px; padding: 0 4px;
+  font: 900 32px / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--ink);
+  background: var(--ln-tv-placa-alta);
+}
+.ln-mc-centro {
+  display: flex; align-items: center; gap: 10px; padding: 0 16px;
+  box-shadow: inset 1px 0 0 var(--ln-tv-raya), inset -1px 0 0 var(--ln-tv-raya);
+}
+.ln-mc-comp { display: grid; place-items: center; height: 28px; font-style: normal; }
+.ln-mc-comp img { display: block; height: 28px; width: auto; max-width: 64px; object-fit: contain; }
+.ln-mc-comp .ln-tv-mono { font: 700 11px / 1 var(--f-mono); color: var(--ink); }
+.ln-mc-rotulo { max-width: 18ch; font: 600 var(--t-rotulo) / 1.25 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink); }
+.ln-mc-formato { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: 0.08em; color: var(--ln-tv-acento-txt, color-mix(in oklab, var(--tono-acento) 62%, var(--ink))); }
+
+/* ---------- la placa inferior (lower third) ---------- */
+.ln-placa {
+  position: relative; display: inline-grid; grid-template-columns: 4px minmax(0, auto); max-width: min(640px, 100%);
+  background: var(--ln-tv-placa); box-shadow: inset 0 0 0 1px var(--ln-tv-raya), 0 22px 50px -26px var(--sombra);
+  animation: ln-placa-entra 420ms var(--expo) backwards;
+}
+.ln-placa-filo { background: var(--tono-acento); box-shadow: 0 0 16px color-mix(in srgb, var(--tono-acento) 55%, transparent); }
+.ln-placa-cuerpo { display: grid; gap: 4px; padding: 12px 20px 14px 16px; min-width: 0; }
+.ln-placa-rotulo { margin: 0; font: 600 var(--t-rotulo) / 1.3 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ln-tv-acento-txt, color-mix(in oklab, var(--tono-acento) 62%, var(--ink))); }
+.ln-placa-titulo { margin: 0; font: 800 26px / 1.05 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.025em; color: var(--ink); }
+.ln-placa-sub { margin: 2px 0 0; font: 400 var(--t-chico) / 1.4 var(--f-cuerpo); color: color-mix(in oklab, var(--ink-dim) 55%, var(--ink)); }
+@keyframes ln-placa-entra { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+/* ---------- la cinta (ticker) ---------- */
+.ln-cinta {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: stretch; height: var(--ln-tv-cinta); overflow: hidden;
+  background: var(--ln-tv-placa); box-shadow: inset 0 1px 0 var(--ln-tv-raya), inset 0 -1px 0 var(--ln-tv-raya);
+}
+.ln-cinta-rotulo {
+  position: relative; display: grid; place-items: center; padding: 0 16px 0 18px;
+  font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ln-tv-acento-txt, color-mix(in oklab, var(--tono-acento) 62%, var(--ink)));
+  background: color-mix(in srgb, var(--tono-acento) 16%, var(--ln-tv-placa-sola));
+  box-shadow: inset 3px 0 0 var(--tono-acento), inset -1px 0 0 var(--ln-tv-raya);
+}
+.ln-cinta-pista { position: relative; overflow: hidden; mask-image: linear-gradient(90deg, transparent, var(--mascara) 3%, var(--mascara) 97%, transparent); }
+.ln-cinta-tira { display: inline-flex; align-items: center; height: 100%; white-space: nowrap; animation: ln-cinta var(--ln-cinta-dur, 30s) linear infinite; }
+.ln-cinta-item { display: inline-flex; align-items: center; gap: 10px; padding: 0 22px; font: 500 14px / 1 var(--f-cuerpo); color: var(--ink); }
+.ln-cinta-item::after { content: ''; width: 5px; height: 5px; margin-left: 22px; transform: rotate(45deg); background: var(--tono-acento); opacity: 0.8; }
+.ln-cinta-item .ln-tv-logo-org { display: grid; place-items: center; width: 22px; height: 22px; font-style: normal; }
+.ln-cinta-item img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+.ln-cinta-item .ln-tv-mono { font: 700 9px / 1 var(--f-mono); color: var(--ink); }
+@keyframes ln-cinta { to { transform: translateX(-50%); } }
+
+/* ---------- el camino quieto: la cinta no corre (se ve el primer juego, sin el duplicado) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ln-cinta-tira, .ln-placa { animation: none; }
+  .ln-cinta-item[aria-hidden='true'] { display: none; }
+}
+html[data-reducido] :is(.ln-cinta-tira, .ln-placa), html[data-inst] :is(.ln-cinta-tira, .ln-placa) { animation: none; }
+html[data-reducido] .ln-cinta-item[aria-hidden='true'], html[data-inst] .ln-cinta-item[aria-hidden='true'] { display: none; }
+
+@media (max-width: 640px) {
+  .ln-marcador { height: 48px; }
+  .ln-mc-logo { width: 26px; height: 26px; }
+  .ln-mc-sigla { font-size: 15px; }
+  .ln-mc-num { min-width: 36px; font-size: 24px; }
+  .ln-mc-rotulo { display: none; }
+  .ln-mc-centro { padding: 0 10px; }
+  .ln-placa-titulo { font-size: 21px; }
+}
+
+/* ======================================================================================================================
+   LOS MOMENTOS (src/ui/fx/trofeo.js, src/ui/fx/confeti.js): la copa y el confeti. Prefijo cu-.
+   ====================================================================================================================== */
+/* ---------- la copa: el lienzo (canvas WebGL o la copa en SVG) llena su caja ---------- */
+.cu-lienzo { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.cu-copa-svg { --cu-m: var(--cu-metal-oro); --cu-m-hondo: var(--cu-metal-oro-hondo); overflow: visible; }
+.cu-copa-svg[data-material='plata'] { --cu-m: var(--cu-metal-plata); --cu-m-hondo: var(--cu-metal-plata-hondo); }
+.cu-svg-p0, .cu-svg-p4 { stop-color: var(--cu-m-hondo, var(--cu-metal-oro-hondo)); }
+.cu-svg-p1 { stop-color: var(--cu-m, var(--cu-metal-oro)); }
+.cu-svg-p2 { stop-color: var(--cu-m-hondo, var(--cu-metal-oro-hondo)); }
+.cu-svg-p3 { stop-color: var(--luz-blanca); }
+.cu-svg-a0 { stop-color: var(--cu-metal-rojo-hondo); }
+.cu-svg-a1 { stop-color: var(--cu-metal-rojo); }
+.cu-svg-luz { stop-color: var(--luz-blanca); stop-opacity: 0.85; }
+.cu-svg-nada { stop-color: var(--luz-blanca); stop-opacity: 0; }
+.cu-svg-asa { fill: none; stroke-linecap: round; }
+.cu-svg-pedestal { fill: var(--cu-laca); stroke: var(--linea-fuerte); stroke-width: 2; }
+.cu-svg-placa { fill: var(--oscuro-total); stroke: var(--cu-m, var(--cu-metal-oro)); stroke-width: 3; }
+.cu-svg-gema { fill: var(--cu-gema-azul); stroke: var(--luz-blanca); stroke-width: 2; }
+.cu-svg-barrido { mix-blend-mode: screen; }
+.cu-svg-sombra { fill: var(--oscuro-total); opacity: 0; }
+
+/* ---------- el confeti: una capa de canvas a pantalla completa, sin eventos ---------- */
+.cu-confeti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* ======================================================================================================================
+   LAS PIEZAS COMPARTIDAS DEL KIT: los logos (logos.js, competicion.js), los glifos (iconos.js), el odometro y el titulo
+   por linea (movimiento.js). Portadas de vitrina/fusion/estilos/{base,mercado,decision,partido}.css con prefijo ln-
+   (alla eran .logo, .escudo, .ico, .odometro...: genericas; una pisaba a otra pantalla, la leccion de PLANUI §4.8).
+   ====================================================================================================================== */
+/* ---------- el logo pintado (logos.js pintarLogo): la caja, el <img> y el escudo-monograma ---------- */
+.ln-logo { --ln-logo-tam: 32px; display: inline-grid; place-items: center; flex: none; width: var(--ln-logo-tam, 32px); height: var(--ln-logo-tam, 32px); vertical-align: middle; }
+.ln-logo img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+/* un logo negro (FURIA) pasa a la tinta clara sobre la noche */
+.ln-logo img[data-tinta='oscura'] { filter: brightness(0) invert(1); }
+.ln-logo .ln-escudo { width: 88%; height: 100%; overflow: visible; }
+.ln-escudo-forma { fill: var(--escudo-fondo); stroke: var(--luz); stroke-width: 1.3; }
+.ln-escudo-canto { fill: none; stroke: var(--luz-fuerte); stroke-width: 0.8; }
+.ln-escudo-ini { font: 900 14.5px / 1 var(--f-display); font-stretch: var(--ancho-numero); letter-spacing: -0.02em; fill: var(--ink); }
+
+/* ---------- los logos de la transmision (competicion.js logoOrg / logoComp) y su monograma ---------- */
+.ln-tv-logo { display: inline-flex; align-items: center; justify-content: center; flex: none; font-style: normal; }
+.ln-tv-logo-org img { width: 100%; height: 100%; min-width: 0; min-height: 0; display: block; object-fit: contain; }
+.ln-tv-logo-comp img { height: 100%; width: auto; min-height: 0; display: block; object-fit: contain; }
+.ln-tv-mono {
+  display: grid; place-items: center; width: 100%; height: 100%; min-width: 22px; padding: 0 3px; border-radius: var(--r-control); background: var(--panel-hondo);
+  box-shadow: inset 0 0 0 1px var(--filete-fuerte); font: 800 9px / 1 var(--f-mono); letter-spacing: 0.04em; color: var(--luz-texto);
+}
+
+/* ---------- los glifos (iconos.js) ---------- */
+.ln-ico { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.ln-ico .ln-lleno { fill: currentColor; stroke: none; }
+.ln-tri { flex: none; }
+.ln-tri.ln-tri-sube { fill: var(--up); }
+.ln-tri.ln-tri-baja { fill: var(--down); }
+/* el rol sobre la Grieta: el cuadrado del mapa tenue y el carril propio encendido */
+.ln-glifo-rol { width: 20px; height: 20px; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.ln-glifo-rol .ln-gr-mapa { stroke: var(--ink-mute); stroke-width: 1; opacity: 0.55; }
+.ln-glifo-rol .ln-gr-carril { stroke: var(--luz-texto); stroke-width: 2.6; }
+
+/* ---------- el numero que rueda (movimiento.js odometro, PLANUI §6.4) ---------- */
+.ln-odo { display: inline-flex; align-items: baseline; line-height: 1; vertical-align: baseline; }
+/* la ventana de cada digito se funde en sus bordes (el digito de Mona Sans 900 ocupa de 0,15 a 0,9 em de su celda): al
+   rodar no se ven los vecinos cortados (PLANUI §4.9) */
+.ln-odo-col {
+  display: inline-block; height: 1em; overflow: hidden;
+  mask-image: linear-gradient(180deg, transparent 0, var(--mascara) var(--ln-odo-borde), var(--mascara) calc(1em - var(--ln-odo-borde) * 0.62), transparent 1em);
+}
+.ln-odo-tira { display: flex; flex-direction: column; }
+.ln-odo-tira span { display: block; height: 1em; line-height: 1; }
+/* el delta (▲3): chico, mono, en el color de su signo */
+.ln-odo-delta { align-self: center; margin-left: 0.4em; font: 600 max(11px, 0.36em) / 1 var(--f-mono); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; color: var(--ink-mute); }
+.ln-odo-delta[data-signo='sube'] { color: var(--up); }
+.ln-odo-delta[data-signo='baja'] { color: var(--down); }
+
+/* ---------- el titulo que entra por linea (movimiento.js lineasConMascara) y lo que se pliega (plegar) ---------- */
+.ln-linea { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.ln-linea-int { display: block; }
+.ln-plegado { display: none !important; }
+.ln-fantasma { pointer-events: none; z-index: 1; }
+.ln-fantasma > * { pointer-events: none; }
+
+/* ======================================================================================================================
+   LA NOCHE TEÑIDA (LINEA regla 3: los negros se tiñen del tono; portado de vitrina/fusion/estilos/linea.css, que lo
+   colgaba de html[data-op='linea']). api.tono(tono) de fx/index.js pone el tono en <html> (aplicarTono: --tono-* y
+   data-tono): desde ahi el fondo y los velos de lectura salen del vacio del tono, no de un negro neutro.
+   ====================================================================================================================== */
+html[data-tono] {
+  background: var(--tono-vacio);
+  --velo-lectura: color-mix(in srgb, var(--tono-vacio) 94%, transparent);
+  --velo-medio: color-mix(in srgb, var(--tono-vacio) 66%, transparent);
+  --velo-suave: color-mix(in srgb, var(--tono-vacio) 40%, transparent);
+  --velo-nada: color-mix(in srgb, var(--tono-vacio) 0%, transparent);
+}
+html[data-tono] body { background: var(--tono-vacio); }
