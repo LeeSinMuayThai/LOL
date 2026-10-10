@@ -902,7 +902,7 @@ html[data-sin-webgl] .lugar-pantalla { display: none; }
 .tx-arriba { position: relative; z-index: 3; display: grid; justify-items: center; gap: 8px; }
 .tx-mc { min-width: min(600px, 100%); }
 .tx-sub { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; width: min(600px, 100%); }
-.tx-fuerza { display: flex; align-items: center; gap: 9px; }
+.tx-fuerza { display: flex; align-items: center; gap: 9px; padding: 4px 9px; background: var(--ln-tv-placa); }
 .tx-fuerza[data-lado='a'] { justify-content: flex-end; }
 .tx-fuerza[data-lado='a'] .tx-fuerza-k { order: -1; justify-items: end; }
 .tx-fuerza b { font-size: var(--t-num-s); line-height: 1; color: var(--ink); text-shadow: 0 1px 8px var(--tx-sombra-nombre); }

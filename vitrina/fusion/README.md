@@ -848,7 +848,37 @@ b.iniciar();
 
 ### La transmisión (A): la serie y el Swiss
 
-*(lo escribe A)*
+`op=linea` en `partido/serie`, `partido/serieReplan` y `partido/swiss` (`crearSerieLinea` y `crearSwissLinea`
+al final de `js/partido.js`, el bloque `tx-` al final de `estilos/partido.css`, el bloque "A, la transmision" de
+`tokens.css`). Sin op, `op=final` y las ops de §4.7 no cambian (capturas antes/después: diferencia dentro del
+ruido de dos corridas iguales).
+
+- **La serie, cara a cara.** Arriba el `marcador()` del kit (y debajo la fuerza chica con su referencia y los
+  cinco pips de mapa). En el centro la escena `costura`: tu campeón del mapa en `tonoOrg` de tu org contra el que
+  juega el rival (o su intención), en el tono `separar()`. Sin campeón rival, el lado B es solo tono y el logo
+  del rival sigue a la cara B de `amb.costura()`. Nombres gigantes con handle y sigla. Abajo la franja de
+  transmisión: el plan en tres barras (label, chance por mapa en pips, % de la serie grande), los libres como
+  cartas de carga (apuntar una cruza el aura al lado A) y la tira de Fearless. El detalle mapa por mapa va al
+  inspector solo al apuntar.
+- **Cada mapa es una secuencia de `beats.js`** (2,4 s): la costura cambia de arte, las dos cartas entran de
+  los costados, `victoriaDerrota()` del lado del ganador, golpe en el marcador (pip y número) y `quemar()` de
+  los dos campeones en la tira. Cierra con la placa y el resultado grande. Espacio salta. El replan entra con
+  el quiebre y una alerta dentro de la misma línea. En el celular la costura es vertical y los nombres
+  gigantes del mapa se apagan (las cartas ya dicen quién juega).
+- **El Swiss, el stream.** La costura (tu campeón contra el logo de Movistar KOI) vive dentro del reproductor
+  con las gráficas de Worlds, el camino R1-R5 y una cámara lenta. La página es el stream (EN VIVO,
+  espectadores, canal, clip que destella en el resultado, racha de hype) teñida con la noche de Worlds. La
+  predicción muestra el número del motor y se mueve al apuntar. El chat tiene insignias y emotes SVG propios,
+  mensajes destacados y ráfagas sincronizadas. AFUERA/ADENTRO es un takeover con `beats.js`: apagón, golpe, la
+  palabra letra por letra, los datos, y el stream que se corta detrás ("Fin de la transmisión").
+- **`costura.marco: {x, y, w, h}`** (agregado a `js/ambiente.js`, fracciones del viewport, y desde arriba):
+  recorta la costura a una caja (el reproductor del Swiss). Es opcional y **no se hereda entre llamadas**: una
+  llamada a `ambiente({ costura })` sin `marco` vuelve a la pantalla entera, para que no se filtre a la
+  pantalla siguiente. `amb.costura()` devuelve las caras ya en coordenadas del viewport. El respaldo CSS (sin
+  WebGL) también lo respeta.
+- **Hueco conocido (para K):** con `congelar(ms)` puro, un cambio de arte de la costura (`ponerArte` /
+  `ponerArteB`) arranca en el reloj congelado y no avanza. Por eso las capturas de un mapa se sacan
+  "en tiempo real y después congelar" (elegir, esperar ms−70 reales, `congelar(ms)`).
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->
