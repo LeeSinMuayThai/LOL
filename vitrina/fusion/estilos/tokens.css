@@ -200,6 +200,30 @@ html[data-era='leyenda'] { --luz: var(--luz-leyenda); --contra: var(--contra-ley
 /* (separador entre bloques de §4.7: no tocar) */
 
 /* ===== PLANUI §4.7 · decision. Sus tokens van entre esta linea y su cierre ===== */
+  /* (bloque de la decision: js/escena.js y estilos/decision.css, las tres opciones `op=escena|cliente|bisagra`) */
+:root {
+  /* el hextech del cliente del LoL: SOLO en la decision bisagra (op=cliente), como acento puntual */
+  --hex-oro: #c8aa6e;
+  --hex-oro-claro: #f0d9a0;
+  --hex-oro-hondo: #785a28;
+  --hex-crema: #f0e6d2;
+  --hex-fondo: #010a13;
+  /* la ciudad de noche (op=escena): siluetas, ventanas tibias y frias */
+  --dec-silueta: #03050b;
+  --dec-silueta-lejos: #0a0e1b;
+  --dec-ventana: #ffd9a3;
+  --dec-ventana-fria: #cfe0ff;
+  --dec-hito: #ff6b6b;
+  /* el peso (op=bisagra): la oscuridad que cae sobre el mundo y su hueco de luz */
+  --dec-oscuro: #010205f5;
+  --dec-oscuro-medio: #010205b8;
+  --dec-oscuro-nada: #01020500;
+  /* tamaños de la escena */
+  --dec-logo-casa: 76px;
+  --dec-logo-org: 54px;
+  --dec-logo-destino: 128px;
+  --dec-anillo: 240px;
+}
 /* ===== fin §4.7 decision ===== */
 
 /* (separador entre bloques de §4.7: no tocar) */

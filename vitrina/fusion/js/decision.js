@@ -7,6 +7,7 @@
 import { el, entrar, salir, animar, esperar, lineasConMascara, primeraOracion, num, conSigno, odometro, reducido, inst, celular, EXPO, DUR } from './util.js';
 import { icono, glifoDeCampo, triangulos, ABREVIATURA } from './iconos.js';
 import { franja, trayectoria, contexto, rodarContexto, cuartos, entrarPanel } from './marco.js';
+import { leerEvento, crearEscena, crearInvitacion, crearPeso, cargados } from './escena.js';
 
 const ETIQUETAS = {
   mecanica: 'Mecánica', macro: 'Macro', laneo: 'Laneo', teamfight: 'Teamfight', shotcalling: 'Shotcalling',
@@ -22,8 +23,13 @@ const CORTO = { 'Confianza familiar': 'Casa', Consistencia: 'Cabeza', Adaptabili
 const campoCorto = (campo) => campo.split('.').pop();
 const etiquetaDe = (campo, mapa) => mapa[campo] ?? ETIQUETAS[campoCorto(campo)] ?? campoCorto(campo);
 const textoDeBeat = (log) => (log.titulo ? log.titulo : log.message);
+// Las opciones de diseño de esta pantalla (PLANUI §4.7, `op=` en el hash; js/escena.js). Sin `op`, la de hoy.
+const OPCIONES = ['escena', 'cliente', 'bisagra'];
 
-export function crearDecision({ datos, muestra, amb, sonido, peor }) {
+export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
+  const opDec = OPCIONES.includes(op) ? op : null;
+  let capa = null; // la escena o el peso (segun la opcion)
+  let invitacion = null; // el momento del cliente (solo en la bisagra)
   const m = datos[muestra];
   const pc = peor ? datos.peorCaso : null;
   const largos = pc?.textosMasLargos ?? {};
@@ -43,7 +49,7 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
   const j = m.ficha?.jugador ?? {};
 
   // ------------------------------------------------------------------ nodos
-  const raiz = el('section', { class: 'parada parada-decision', 'data-pieza': 'decision', 'data-forma': esMatriz ? 'matriz' : 'lista', 'data-muestra': muestra });
+  const raiz = el('section', { class: 'parada parada-decision', 'data-pieza': 'decision', 'data-forma': esMatriz ? 'matriz' : 'lista', 'data-muestra': muestra, 'data-op': opDec, 'data-bisagra': opDec && m.esBisagra ? '' : null });
   const fr = franja(m.franja, { peor: peorDatos });
   const col = el('div', { class: 'parada-col' });
   const beats = (m.pagina?.beats ?? []).filter((b) => !b.log.tecnico).slice(-MAX_BEATS);
@@ -123,7 +129,7 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
     const b = el('button', { type: 'button', class: 'op-mas', 'aria-label': `Más sobre ${o.label}`, text: 'más' });
     b.addEventListener('click', (e) => {
       e.stopPropagation();
-      apuntar(i, true);
+      apuntar(i, true, true);
     });
     return b;
   };
@@ -234,21 +240,23 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
       ]),
     );
   }
-  function apuntar(i, mover = false) {
+  function apuntar(i, mover = false, usuario = false) {
     apuntada = Math.max(0, Math.min(filas.length - 1, i));
     filas.forEach((f, k) => f.classList.toggle('apuntada', k === apuntada));
     pintarInspector(apuntada);
     if (mover) filas[apuntada].focus({ preventScroll: true });
     inspector.classList.toggle('expandido', mover);
+    // (op) la escena / el peso siguen a la opcion que apunta el jugador (no a la apuntada por defecto)
+    if (usuario && !elegido) capa?.apuntar(apuntada);
   }
   filas.forEach((f, i) => {
     f.addEventListener('pointerenter', () => {
       if (celular()) return;
       // la luz responde sutil a la opcion apuntada (un pulso leve), sin moverse
       if (i !== apuntada) amb.pulso('apuntar');
-      apuntar(i);
+      apuntar(i, false, true);
     });
-    f.addEventListener('focus', () => apuntar(i));
+    f.addEventListener('focus', () => apuntar(i, false, !!capa));
     if (!f.classList.contains('bloqueada')) f.addEventListener('click', () => elegir(i + 1));
   });
 
@@ -272,15 +280,35 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
   raiz.append(fr, relato, antesFila, col, placa, cuartos('vos', abrirCtx, tray));
   apuntar(0);
 
+  // ------------------------------------------------------------------ las opciones de diseño (PLANUI §4.7)
+  const lec = opDec ? leerEvento(m, dec) : null;
+  if (opDec === 'escena') capa = crearEscena(lec, { placa });
+  if (opDec === 'bisagra') capa = crearPeso(lec, { col, antesFila });
+  if (opDec === 'cliente' && lec.bisagra) {
+    invitacion = crearInvitacion(lec, dec, { alAceptar: () => abrirPanel() });
+    raiz.classList.add('en-espera');
+    raiz.append(invitacion.nodo);
+  }
+  if (capa) {
+    raiz.prepend(capa.nodo);
+    // soltar la lista devuelve la escena a su reposo (salvo que el foco siga adentro)
+    lista.addEventListener('pointerleave', () => {
+      if (!elegido && !lista.contains(document.activeElement)) capa.soltar();
+    });
+  }
+
   // ------------------------------------------------------------------ entrada
   let elegido = false;
   const quieto = () => inst() || reducido();
   function entrada() {
-    lineasConMascara(titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: 780 + i * 70, dur: 420 }));
+    // (op cliente, bisagra) el panel espera la invitacion: el titulo se mide igual, pero entra al aceptar
+    if (!invitacion) lineasConMascara(titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: 780 + i * 70, dur: 420 }));
     entrar(fr, 0, -10);
+    capa?.entrar();
     if (quieto()) {
       relato.remove();
       amb.aquietar(true);
+      invitacion?.entrar();
       return;
     }
     // el relato: cartel, beats de a uno, y se pliega en la linea "antes"
@@ -289,21 +317,34 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
     const fuera = salir(relato, 700);
     fuera?.finished.then(() => relato.remove(), () => {});
     esperar(raiz, 700).then(() => amb.aquietar(true));
-    entrar(antes, 700, 10);
-    animar(col, [{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], { delay: 640, dur: 320 });
-    entrar(rotulo, 740, 10);
-    entrar(planteo, 900, 10);
+    if (invitacion) invitacion.entrar();
+    else entradaPanel(capa?.retardoPanel ?? 0);
+  }
+  // la entrada del panel (antes, columna, rotulo, opciones, inspector, "vos", la barra); `d` corre todo el orden
+  function entradaPanel(d, conCuartos = true) {
+    entrar(antes, 700 + d, 10);
+    animar(col, [{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], { delay: 640 + d, dur: 320 });
+    entrar(rotulo, 740 + d, 10);
+    entrar(planteo, 900 + d, 10);
     filas.forEach((f, i) => {
-      entrar(f, 950 + i * 50, 16);
-      f.querySelectorAll('.eje, .riesgo, .mx-celda').forEach((g, k) => animar(g, [{ opacity: 0, transform: 'translateX(-6px)' }, { opacity: 1, transform: 'none' }], { delay: 1010 + i * 50 + k * 25, dur: 240 }));
+      entrar(f, 950 + d + i * 50, 16);
+      f.querySelectorAll('.eje, .riesgo, .mx-celda').forEach((g, k) => animar(g, [{ opacity: 0, transform: 'translateX(-6px)' }, { opacity: 1, transform: 'none' }], { delay: 1010 + d + i * 50 + k * 25, dur: 240 }));
     });
     if (esMatriz) {
-      entrar(lista.querySelector('.mx-cab'), 920, 8);
-      lista.querySelectorAll('.mx-barra i').forEach((b, k) => animar(b, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: 1040 + k * 12, dur: 520 }));
+      entrar(lista.querySelector('.mx-cab'), 920 + d, 8);
+      lista.querySelectorAll('.mx-barra i').forEach((b, k) => animar(b, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: 1040 + d + k * 12, dur: 520 }));
     }
-    entrar(inspector, 1120, 8);
-    entrarPanel(placa, 1060);
-    animar(raiz.querySelector('.cuartos'), [{ transform: 'translateY(100%)' }, { transform: 'none' }], { delay: 1100 });
+    entrar(inspector, 1120 + d, 8);
+    entrarPanel(placa, 1060 + d);
+    if (conCuartos) animar(raiz.querySelector('.cuartos'), [{ transform: 'translateY(100%)' }, { transform: 'none' }], { delay: 1100 + d });
+  }
+  // (op cliente) aceptar la invitacion abre el panel de siempre, con su orden de entrada
+  function abrirPanel() {
+    raiz.classList.remove('en-espera');
+    if (quieto()) return;
+    const d = -620;
+    lineasConMascara(titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: 780 + d + i * 70, dur: 420 }));
+    entradaPanel(d, false);
   }
 
   // ------------------------------------------------------------------ elegir -> la opcion se vuelve su resultado
@@ -367,6 +408,7 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
     const o = disponibles[i];
     const fila = filas[i];
     if (!o || !fila || fila.classList.contains('bloqueada')) return;
+    if (invitacion?.abierta) invitacion.aceptar({ instantaneo: true });
     elegido = true;
     raiz.classList.add('eligiendo');
     amb.pulso('elegir');
@@ -420,6 +462,7 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
       }
     }
     rodarContexto(raiz, res?.inmediato?.cambios ?? [], 520);
+    capa?.elegir(i, res);
     const n2 = (res?.inmediato?.cambios ?? []).some((c) => c.delta < 0) ? 'golpe' : 'logro';
     esperar(raiz, 420).then(() => amb.pulso(n2 === 'golpe' ? 'elegir' : 'logro'));
     if (quieto()) tarjeta.focus({ preventScroll: true });
@@ -428,6 +471,13 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
 
   function tecla(e) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
+    // (op cliente) con la invitacion abierta: Enter o Espacio aceptan; 1-9 aceptan y eligen
+    if (invitacion?.abierta && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      invitacion.aceptar();
+      return;
+    }
+    if (invitacion?.abierta && !/^[1-9]$/.test(e.key)) return;
     if (/^[1-9]$/.test(e.key)) {
       const n = Number(e.key);
       if (n <= disponibles.length) {
@@ -436,7 +486,7 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
       }
     } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !elegido) {
       e.preventDefault();
-      apuntar(apuntada + (e.key === 'ArrowDown' ? 1 : -1), true);
+      apuntar(apuntada + (e.key === 'ArrowDown' ? 1 : -1), true, true);
     } else if ((e.key === 'r' || e.key === 'R') && elegido) {
       window.vitrina?.repetir();
     } else if (e.key === 'Escape') {
@@ -449,8 +499,11 @@ export function crearDecision({ datos, muestra, amb, sonido, peor }) {
     entrar: entrada,
     elegir,
     tecla,
-    arte: j.campeonDelSplit ?? datos.inicio?.jugador?.mains?.[0]?.ddragon ?? null,
+    // (op escena) con geografia, el fondo es la escena: sin campeon
+    arte: opDec === 'escena' && lec.destino ? null : j.campeonDelSplit ?? datos.inicio?.jugador?.mains?.[0]?.ddragon ?? null,
     animo: 'normal',
     encuadre: 'derecha',
+    listo: opDec ? () => cargados(raiz) : undefined,
+    destruir: opDec ? () => capa?.destruir() : undefined,
   };
 }
