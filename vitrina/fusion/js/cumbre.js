@@ -189,9 +189,6 @@ const PLACA_LETRA = 0.22;
 const PLACA_LETRA_MIN = 6;
 // una animacion WAAPI con iteraciones (util.animar no las tiene); nada con INST o movimiento reducido
 const animarLoop = (nodo, cuadros, opciones) => (!nodo || inst() || reducido() ? null : nodo.animate(cuadros, opciones));
-// Los logos oficiales en tinta oscura (negros sobre transparente): sobre la noche se pasan a la tinta clara. Es la misma
-// marca que lleva js/escena.js (LOGOS.FURIA, tinta 'oscura'); js/logos.js todavia no la exporta.
-const TINTA_OSCURA = new Set(['furia']);
 // La carta de carga de Data Dragon (308x560), a su tamaño, y donde mira el recorte.
 const CARTA = { ancho: 308, alto: 560, foco: [0.5, 0.18] };
 
@@ -204,7 +201,7 @@ function logoImg(src, nombre, clase) {
     monograma();
     return { nodo: caja, listo: Promise.resolve() };
   }
-  const img = el('img', { src, alt: '', decoding: 'async', draggable: 'false', referrerpolicy: 'no-referrer', 'data-tinta': TINTA_OSCURA.has(String(nombre ?? '').trim().toLowerCase()) ? 'oscura' : null });
+  const img = el('img', { src, alt: '', decoding: 'async', draggable: 'false', referrerpolicy: 'no-referrer', 'data-tinta': nombre && logoOrg(nombre).tinta === 'oscura' ? 'oscura' : null });
   caja.append(img);
   const listo = new Promise((r) => {
     img.addEventListener('load', r, { once: true });
