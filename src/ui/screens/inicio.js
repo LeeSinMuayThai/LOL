@@ -1,8 +1,12 @@
-// La pantalla de inicio: rol + mains. U2 la vuelve un draft (carriles +
-// slots), no un formulario. El estado de la elección sigue acá adentro.
-import { marcaRol } from '../components/iconos.js';
-import { crearCampeonTile, keyDdragonDeCampeon } from '../components/campeonTile.js';
-import { crearSplash } from '../components/splash.js';
+// La pantalla de inicio (PLANUI U2a): champ select sobre el ambiente de la era pieza.
+// El estado de la elección sigue acá adentro. El kit se usa por window.__fx (lo monta shell.js).
+import { glifoRol } from '../fx/iconos.js';
+import { bloquear as bloquearCeremonia } from '../fx/ceremonia.js';
+import { urlCarga, urlIcono, cargarImagen } from '../fx/arte.js';
+import { pintarCampeon } from '../fx/color.js';
+import { leerColor, quieto } from '../fx/util.js';
+import { keyDdragonDeCampeon } from '../components/campeonTile.js';
+import { sonidoFx } from '../sonido.js';
 import { miles, linkDeResultado } from '../resultado.js';
 import { medallaDeGoldenRoad } from '../core/trayectoria.js';
 
@@ -10,6 +14,17 @@ const ETIQUETA_STAT = {
   mecanica: 'Mecánica', macro: 'Macro', teamfight: 'Teamfight', laneo: 'Laneo',
   shotcalling: 'Shotcalling', adaptabilidad: 'Adaptabilidad'
 };
+const CLAVE_INTRO = 'lolcs-intro-vista';
+const INTRO_MS = 3000;
+const ANCHO_CARGA = 154;
+const ALTO_CARGA = 280;
+
+function introVista() {
+  try { return localStorage.getItem(CLAVE_INTRO) === '1'; } catch { return true; }
+}
+function marcarIntroVista() {
+  try { localStorage.setItem(CLAVE_INTRO, '1'); } catch { /* sin almacenamiento */ }
+}
 
 export function crearPantallaInicio(elements, modulos) {
   const { rolGrid, campeonGrid, poolContador, runButton, draftSlots, perfilGrid, perfilTexto, regionGrid, regionTexto } = elements;
@@ -19,55 +34,241 @@ export function crearPantallaInicio(elements, modulos) {
   // K5-B: la región de origen (`regionId`). `null` = la sortea la seed.
   let regionElegida = null;
   let camposElegidos = [];
+  let apuntado = null;
+  let ceremonia = null;
+  let observadorRun = null;
+  let introNodo = null;
+  let introActiva = false;
+  let introTecla = null;
+  let introObs = null;
+  let soltarAura = null;
+  let esperaFx = 0;
 
-  // J9: el splash del último main elegido (`components/splash.js`): decoración, sin imagen queda el fondo de siempre.
-  let splash = null;
-  function actualizarSplash() {
-    const panel = campeonGrid.closest('#setup');
-    if (!panel) return;
-    splash ??= crearSplash(panel);
-    const nombre = camposElegidos[camposElegidos.length - 1];
-    splash.mostrar(nombre ? keyDdragonDeCampeon(nombre) : null);
+  function setup() {
+    return campeonGrid.closest('#setup');
+  }
+
+  function listoParaBloquear() {
+    return Boolean(rolElegido && camposElegidos.length === modulos.BALANCE.mundo.campeonesIniciales);
   }
 
   function actualizarBoton() {
-    runButton.disabled = !(rolElegido && camposElegidos.length === modulos.BALANCE.mundo.campeonesIniciales);
+    runButton.disabled = !listoParaBloquear();
+    ceremonia?.habilitar(listoParaBloquear() && !introActiva);
+  }
+
+  function sincronizarRun() {
+    if (!ceremonia) return;
+    if (!runButton.disabled && ceremonia.nodo.dataset.estado === 'bloqueado') {
+      ceremonia.destruir();
+      ceremonia = null;
+      asegurarCeremonia();
+      return;
+    }
+    actualizarBoton();
+  }
+
+  function asegurarCeremonia() {
+    if (ceremonia?.nodo?.isConnected) {
+      actualizarBoton();
+      return;
+    }
+    ceremonia = bloquearCeremonia({
+      texto: 'BLOQUEAR',
+      tecla: 'Enter',
+      sonido: sonidoFx,
+      alBloquear: () => runButton.click()
+    });
+    ceremonia.nodo.id = 'run';
+    if (runButton.id === 'run') runButton.removeAttribute('id');
+    if (runButton.isConnected) runButton.replaceWith(ceremonia.nodo);
+    else runButton.parentElement?.appendChild(ceremonia.nodo);
+    if (!observadorRun) {
+      observadorRun = new MutationObserver(() => sincronizarRun());
+      observadorRun.observe(runButton, { attributes: true, attributeFilter: ['disabled'] });
+    }
+    actualizarBoton();
+  }
+
+  function saltarIntro() {
+    introActiva = false;
+    if (introTecla) document.removeEventListener('keydown', introTecla, true);
+    introTecla = null;
+    introObs?.disconnect();
+    introObs = null;
+    introNodo?.remove();
+    introNodo = null;
+    marcarIntroVista();
+    actualizarBoton();
+  }
+
+  function correrIntro({ forzar = false } = {}) {
+    if (introNodo) saltarIntro();
+    if (!forzar && introVista()) return;
+    if (quieto()) {
+      marcarIntroVista();
+      actualizarBoton();
+      return;
+    }
+    const doc = campeonGrid.ownerDocument;
+    introActiva = true;
+    actualizarBoton();
+    const nodo = doc.createElement('div');
+    nodo.className = 'in-intro';
+    nodo.setAttribute('role', 'presentation');
+    const negro = doc.createElement('div');
+    negro.className = 'in-intro-negro';
+    const monitor = doc.createElement('div');
+    monitor.className = 'in-intro-monitor';
+    const frase = doc.createElement('p');
+    frase.className = 'in-intro-frase';
+    const a = doc.createElement('span');
+    a.textContent = '15 años.';
+    const b = doc.createElement('span');
+    b.textContent = 'Una pieza.';
+    frase.append(a, b);
+    const titulo = doc.createElement('p');
+    titulo.className = 'in-intro-titulo';
+    titulo.textContent = 'Lolero';
+    const saltear = doc.createElement('p');
+    saltear.className = 'in-intro-saltear';
+    saltear.textContent = 'Clic o tecla para saltear';
+    nodo.append(negro, monitor, frase, titulo, saltear);
+    doc.body.appendChild(nodo);
+    introNodo = nodo;
+    introTecla = (e) => {
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      saltarIntro();
+    };
+    doc.addEventListener('keydown', introTecla, true);
+    nodo.addEventListener('click', () => saltarIntro());
+    introObs = new MutationObserver(() => { if (quieto()) saltarIntro(); });
+    introObs.observe(doc.documentElement, { attributes: true, attributeFilter: ['data-inst', 'data-reducido'] });
+    doc.defaultView.setTimeout(() => { if (introNodo === nodo) saltarIntro(); }, INTRO_MS);
+  }
+
+  function asegurarMarco() {
+    const panel = setup();
+    if (!panel || panel.querySelector('.in-titulo')) return;
+    const titulo = panel.ownerDocument.createElement('p');
+    titulo.className = 'in-titulo';
+    titulo.textContent = 'Lolero';
+    panel.insertBefore(titulo, panel.firstChild);
+    const ver = panel.ownerDocument.createElement('button');
+    ver.type = 'button';
+    ver.className = 'in-ver-intro';
+    ver.textContent = 'ver intro';
+    ver.addEventListener('click', () => correrIntro({ forzar: true }));
+    titulo.after(ver);
+    panel.querySelector('#handleInput')?.closest('.paso')?.classList.add('in-identidad');
+    regionGrid.closest('.paso')?.classList.add('in-identidad');
+    perfilGrid?.closest('.paso')?.classList.add('in-identidad');
+    rolGrid.closest('.paso')?.classList.add('in-roles');
+    draftSlots?.closest('.paso')?.classList.add('in-mains');
+    if (draftSlots && !panel.querySelector('.in-apuntado')) {
+      const nombre = panel.ownerDocument.createElement('p');
+      nombre.className = 'in-apuntado';
+      nombre.setAttribute('aria-live', 'polite');
+      draftSlots.before(nombre);
+    }
+  }
+
+  function pintarCarta(canvas, nombre) {
+    const key = keyDdragonDeCampeon(nombre);
+    const sombra = leerColor('--tono-era-pieza-noche');
+    const luz = leerColor('--luz-pieza');
+    const listo = (img) => {
+      if (!canvas.isConnected) return;
+      pintarCampeon(canvas, img, sombra, luz, { mezcla: 0 });
+    };
+    if (!key) {
+      listo(null);
+      return;
+    }
+    cargarImagen(urlCarga(key)).then(listo);
+  }
+
+  function fijarApuntado(nombre) {
+    if (apuntado === nombre) return;
+    apuntado = nombre;
+    const nodo = setup()?.querySelector('.in-apuntado');
+    if (nodo) nodo.textContent = nombre ?? '';
+    renderSlots();
+  }
+
+  function nombreDeClave(key) {
+    if (!key) return '';
+    const c = modulos.CAMPEONES.find((x) => keyDdragonDeCampeon(x.name) === key);
+    return c?.name ?? '';
+  }
+
+  function engancharAura() {
+    const fx = globalThis.__fx;
+    if (!fx?.aura) return false;
+    soltarAura?.();
+    soltarAura = fx.aura.alCambiar((key) => fijarApuntado(nombreDeClave(key) || apuntado));
+    const key = keyDdragonDeCampeon(camposElegidos[0] ?? apuntado ?? '') 
+      ?? (rolElegido ? keyDdragonDeCampeon(modulos.CAMPEONES.find((c) => c.role === rolElegido && !c.debut)?.name) : null);
+    fx.aura.pantalla(key, { pegajosa: true });
+    if (key) fx.aura.ir(key);
+    if (setup()?.isConnected && fx.fondo) fx.fondo({ contexto: 'inicio', instantaneo: true });
+    return true;
+  }
+
+  function cuandoFx() {
+    if (engancharAura()) return;
+    const vista = campeonGrid.ownerDocument.defaultView;
+    vista.clearInterval(esperaFx);
+    let n = 0;
+    esperaFx = vista.setInterval(() => {
+      n += 1;
+      if (engancharAura() || n > 40) vista.clearInterval(esperaFx);
+    }, 50);
   }
 
   function renderSlots() {
     if (!draftSlots) return;
     const objetivo = modulos.BALANCE.mundo.campeonesIniciales;
-    const { CAMPEONES } = modulos;
+    let fantasmaUsado = false;
     draftSlots.replaceChildren(...Array.from({ length: objetivo }, (_, i) => {
       const nombre = camposElegidos[i];
+      const fantasma = !nombre && !fantasmaUsado && apuntado && !camposElegidos.includes(apuntado)
+        ? (fantasmaUsado = true, apuntado)
+        : null;
       const slot = document.createElement('button');
       slot.type = 'button';
-      slot.className = 'draft-slot' + (nombre ? ' draft-slot--lleno' : '');
+      slot.className = 'draft-slot in-ranura'
+        + (nombre ? ' draft-slot--lleno in-ranura--llena' : '')
+        + (fantasma ? ' in-ranura--fantasma' : '');
       slot.disabled = !nombre;
-      if (!nombre) {
-        slot.textContent = String(i + 1);
-        return slot;
-      }
-      const campeon = CAMPEONES.find((c) => c.name === nombre) ?? { name: nombre, tags: [] };
-      slot.appendChild(crearCampeonTile(campeon, { elegido: true, size: 'setup' }));
-      // K6a-U: el nombre a la vista, no solo en el `title` (las iniciales de "Aatrox" y "Ahri" son las mismas).
+      const canvas = document.createElement('canvas');
+      canvas.className = 'in-carga';
+      canvas.width = ANCHO_CARGA;
+      canvas.height = ALTO_CARGA;
+      slot.appendChild(canvas);
       const etiqueta = document.createElement('span');
       etiqueta.className = 'draft-slot-nombre';
-      etiqueta.textContent = nombre;
+      etiqueta.textContent = nombre || fantasma || String(i + 1);
       slot.appendChild(etiqueta);
-      slot.title = `Quitar ${nombre}`;
-      slot.addEventListener('click', () => {
-        camposElegidos = camposElegidos.filter((n) => n !== nombre);
-        renderCampeones();
-        actualizarBoton();
-      });
+      const quien = nombre || fantasma;
+      if (quien) pintarCarta(canvas, quien);
+      if (nombre) {
+        slot.title = `Quitar ${nombre}`;
+        slot.addEventListener('click', () => {
+          camposElegidos = camposElegidos.filter((n) => n !== nombre);
+          renderCampeones();
+          actualizarBoton();
+          cuandoFx();
+        });
+      }
       return slot;
     }));
   }
 
   function renderCampeones() {
     renderSlots();
-    actualizarSplash();
     if (!rolElegido) {
       campeonGrid.replaceChildren();
       poolContador.textContent = 'Elegí una línea primero.';
@@ -80,36 +281,42 @@ export function crearPantallaInicio(elements, modulos) {
 
     campeonGrid.replaceChildren(...elegibles.map((campeon) => {
       const elegido = camposElegidos.includes(campeon.name);
+      const key = keyDdragonDeCampeon(campeon.name);
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'campeon-card' + (elegido ? ' elegido' : '');
+      card.className = 'campeon-card campeon-tile' + (elegido ? ' elegido campeon-tile--elegido' : '');
       card.disabled = !elegido && camposElegidos.length >= objetivo;
+      card.setAttribute('aria-pressed', elegido ? 'true' : 'false');
+      card.setAttribute('aria-label', campeon.name);
+      if (key) card.dataset.campeon = key;
 
-      card.appendChild(crearCampeonTile(campeon, { elegido, size: 'setup' }));
+      if (key) {
+        const img = document.createElement('img');
+        img.className = 'in-retrato';
+        img.alt = '';
+        img.decoding = 'async';
+        img.draggable = false;
+        img.src = urlIcono(key);
+        img.addEventListener('error', () => img.remove(), { once: true });
+        card.appendChild(img);
+      }
 
-      const nombre = document.createElement('div');
+      const nombre = document.createElement('span');
       nombre.className = 'campeon-nombre';
       nombre.textContent = campeon.name;
       card.appendChild(nombre);
 
-      const tags = document.createElement('div');
-      tags.className = 'campeon-tags';
-      for (const tag of campeon.tags) {
-        const chip = document.createElement('span');
-        chip.className = 'campeon-tag-chip';
-        chip.textContent = tag.replaceAll('_', ' ');
-        tags.appendChild(chip);
-      }
-      card.appendChild(tags);
-
-      card.addEventListener('click', () => {
+      const elegir = () => {
         camposElegidos = elegido
           ? camposElegidos.filter((n) => n !== campeon.name)
           : [...camposElegidos, campeon.name].slice(0, objetivo);
+        fijarApuntado(campeon.name);
         renderCampeones();
         actualizarBoton();
-      });
-
+        cuandoFx();
+      };
+      card.addEventListener('click', elegir);
+      card.addEventListener('pointerenter', () => fijarApuntado(campeon.name));
       return card;
     }));
 
@@ -117,6 +324,15 @@ export function crearPantallaInicio(elements, modulos) {
       + (camposElegidos.length === objetivo
         ? ' Un pool ancho aguanta mejor un cambio de meta; uno angosto rinde más mientras el meta te acompañe.'
         : '');
+    if (!apuntado) {
+      const primero = camposElegidos[0] ?? elegibles[0]?.name ?? '';
+      if (primero) {
+        apuntado = primero;
+        const nodo = setup()?.querySelector('.in-apuntado');
+        if (nodo) nodo.textContent = primero;
+        renderSlots();
+      }
+    }
   }
 
   // K4-C: cuatro botones chicos en una fila (dos en 375 px) y una línea que dice qué hace el elegido. Tocar el
@@ -150,7 +366,7 @@ export function crearPantallaInicio(elements, modulos) {
     }
   }
 
-  // K5-B: la región, con los mismos chips del perfil. La línea de abajo es la dificultad de la elegida, tal
+  // K5-B: la región, como selector de servidor. La línea de abajo es la dificultad de la elegida, tal
   // como la escribe `core/mundo.js:regionesDeOrigen` desde `leagues.json` (sin ids crudos: nombre y texto).
   function renderRegiones() {
     if (!regionGrid) {
@@ -160,7 +376,7 @@ export function crearPantallaInicio(elements, modulos) {
     regionGrid.replaceChildren(...regiones.map((opcion) => {
       const boton = document.createElement('button');
       boton.type = 'button';
-      boton.className = 'perfil-chip' + (opcion.regionId === regionElegida ? ' elegido' : '');
+      boton.className = 'perfil-chip in-servidor' + (opcion.regionId === regionElegida ? ' elegido' : '');
       boton.setAttribute('role', 'radio');
       boton.setAttribute('aria-checked', opcion.regionId === regionElegida ? 'true' : 'false');
       boton.textContent = opcion.region;
@@ -184,41 +400,35 @@ export function crearPantallaInicio(elements, modulos) {
       const elegido = rol === rolElegido;
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'rol-card' + (elegido ? ' elegido' : '');
+      card.className = 'rol-card in-rol' + (elegido ? ' elegido' : '');
+      card.setAttribute('role', 'radio');
+      card.setAttribute('aria-checked', elegido ? 'true' : 'false');
+      card.setAttribute('aria-label', ROLES[rol].label);
+      card.appendChild(glifoRol(rol));
 
-      card.appendChild(marcaRol(rol));
-
-      const nombre = document.createElement('div');
+      const nombre = document.createElement('span');
       nombre.className = 'rol-nombre';
       nombre.textContent = ROLES[rol].label;
       card.appendChild(nombre);
 
-      const tono = document.createElement('div');
-      tono.className = 'rol-tono';
-      tono.textContent = ROLES[rol].tono;
-      card.appendChild(tono);
-
       if (elegido) {
-        const clave = document.createElement('div');
+        const clave = document.createElement('span');
         clave.className = 'rol-tono';
         clave.textContent = 'Vive de: ' + atributosClave(rol).map((stat) => ETIQUETA_STAT[stat]).join(' y ') + '.';
         card.appendChild(clave);
-
-        const costo = document.createElement('div');
-        costo.className = 'rol-costo';
-        costo.textContent = ROLES[rol].costo;
-        card.appendChild(costo);
       }
 
       card.addEventListener('click', () => {
-        if (rolElegido === rol) {
-          return;
-        }
+        if (rolElegido === rol) return;
         rolElegido = rol;
         camposElegidos = [];
+        apuntado = null;
+        const nombre = setup()?.querySelector('.in-apuntado');
+        if (nombre) nombre.textContent = '';
         renderRoles();
         renderCampeones();
         actualizarBoton();
+        cuandoFx();
       });
 
       return card;
@@ -227,22 +437,27 @@ export function crearPantallaInicio(elements, modulos) {
 
   return {
     render() {
+      asegurarMarco();
+      correrIntro();
       renderRegiones();
       renderPerfiles();
       renderRoles();
       renderCampeones();
-      actualizarBoton();
+      asegurarCeremonia();
+      cuandoFx();
     },
     reset() {
       rolElegido = null;
       perfilElegido = null;
       regionElegida = null;
+      apuntado = null;
+      camposElegidos = [];
       renderRegiones();
       renderPerfiles();
-      camposElegidos = [];
       renderRoles();
       renderCampeones();
       actualizarBoton();
+      cuandoFx();
     },
     getSeleccion() {
       return { rol: rolElegido, campeones: camposElegidos, perfil: perfilElegido, region: regionElegida };
