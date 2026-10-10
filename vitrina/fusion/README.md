@@ -394,4 +394,40 @@ muestra el chat.
 <!-- separador: no tocar -->
 
 ### Mercado: las ofertas que entran, el contrato animado y el telón del fichaje
-(lo escribe el worker de mercado)
+El usuario: *"el A y el C están muy buenos eso de que se firme con animación […] y también una mini animación de cómo
+van entrando las ofertas […] lo que no me copa tanto es el campeón atrás, se podría hacer algo más que represente el
+mercado de pases"*. `op=final` es **la mesa (A) + los logos que llegan (C), sin campeón**: el fondo es el fichaje.
+Hash: `#pantalla=mercado&muestra=mercado&op=final` y `…&muestra=firma&op=final`. Sin `op` y con `mesa|anuncio|orgs`,
+todo queda como estaba (las funciones nuevas son aparte: `crearOfertasFinal`, `crearFirmaFinal`).
+
+| Pieza | Qué es |
+|---|---|
+| **La pared** (sin campeón) | La pantalla declara `arte: null` y el mundo de atrás es una capa propia (`.mk-pared`, fija, detrás de los paneles). En reposo, arriba a la izquierda, **el tablero de la ventana de pases**: un tablero de paletas (estilo aeropuerto) con los movimientos reales de `mercadoDelMundo` (los 6 `traspasosMundo`: logo, jugador, rol, club, liga, FIRMÓ/ACADEMIA, y los 2 `asientosAbiertos` como VACANTE · ABIERTO). Cada letra es una tira que cae hasta la justa (`steps()`, las letras de paso salen del PRNG decorativo). El tablero es `aria-hidden`: el lector tiene la lista "Mientras tanto" con la frase entera del motor. |
+| **El telón de prensa** | Apuntar una fila (mouse, flechas, Tab) lleva la pared al **step-and-repeat de esa org**: su logo en patrón (`<img>` de `js/logos.js`, 14 × 8; el escudo-monograma en las inventadas), sus colores (`--org-*`/`--org-*-hondo`) y la luz cálida de una sala de conferencias (`--telon-luz`). Entra a los 120 ms y vuelve al tablero a los 600, como el aura de los campeones. Las orgs inventadas de la muestra tienen un tono distinto cada una (en el orden de la tabla): con el hash de `tonoOrg`, tres de las cuatro caían en el mismo. |
+| **La entrada** | Las ofertas **llegan una por una a la pared**, como los logos de C: de la de menos sueldo a la de más, de lejos y desenfocadas, con su nombre y su sueldo; **tamaño = sueldo** (60-150 px), **altura = jerarquía proyectada**. Mientras están en la pared, el tablero espera en penumbra y la tabla es un esqueleto (las teclas 1-6 y sus líneas: los lugares que esperan). Después cada logo **baja a su fila** (en el orden de la tabla) y la fila se llena al aterrizar; el tablero se despierta (las letras caen) y el contrato se apoya en la mesa. **2,45 s**; Espacio la saltea; con INST o movimiento reducido no existe (todo quieto en su lugar). |
+| **El contrato** | El de `mesa` (`crearContrato`), a la derecha, con el alto de la mesa: apuntar otra fila cambia de hoja. **Enter firma** (1-6 eligen directo): la pared se apaga (`--mk-silencio-hondo`), la tabla se aparta, el documento se levanta, el handle se traza (0,42-1,47 s), la rúbrica, y **el sello cae** acelerando, se aplasta y se asienta (1,65-2,03 s). **El golpe** (1,92 s): la onda del sello, la mesa que tiembla 220 ms, el pulso de logro y el acorde. Con el golpe **se prende la conferencia**: el telón de la elegida queda y empiezan los flashes de cámara. Después, la prueba de ingreso (2,3 s); con LOUD, la firma (3,9 s). |
+| **Los flashes** | Decorativos (PRNG `comun/azar.js`, semilla por org y handle): un punto blanco con su halo, la estría de la lente y un lavado suave de la sala, detrás de los paneles (no tocan el contraste del texto). Entre uno y otro, 360-640 ms: **≤ 3 por segundo**. Con movimiento reducido no hay ninguno. |
+| **La firma (LOUD)** | El takeover de siempre (la luz de la pieza a la de la academia, LOUD letra por letra, el sueldo que rueda, el handle trazado en luz) con la escenografía del fichaje: **el telón de LOUD en lugar de tu campeón**, que aparece cuando **la luz se abre** (una rendija sobre el logo que se abre a toda la pared, 1,3 s), el logo de LOUD en el foco y los flashes mientras firmás (desde 1,75 s). El resto del mercado queda para el lector. |
+
+**Hoja de contactos** (no se versiona; `scratchpad/fm/shots/h2/`): filas entrada (1,5 s) / reposo con el tablero /
+apuntando LOUD / apuntando Onda Collective / el sello / la firma de LOUD; columnas hoy y `final`; más las tiras de la
+entrada, de la firma de LOUD y del momento de firmar (0-2400 ms, congeladas con `vitrina.repetir()`/`elegir()` +
+`congelar(t)`: todo se programa de una vez).
+
+**Verificación (2026-10-10, puerto 8133):**
+- Contraste por píxeles (la copia de `contraste-fusion.mjs`, con apuntar): 14 casos (reposo, las 6 orgs apuntadas, firmar
+  LOUD y una inventada, la firma, reducido, sin WebGL, dos celulares) → **1147 textos, 0 debajo de 4,5:1**; el peor, 6,13
+  ("Mid" de la franja, 11 px). El tablero, las etiquetas de la llegada y los flashes son `aria-hidden` (no se miden).
+- `verificar.mjs` en verde; 0 errores de consola y 0 `requestfailed` en todas las capturas.
+- Recorrido con teclado: Espacio saltea la entrada (0 viajeros, 0 animaciones vivas), ↓ apunta LOUD (foco, telón y
+  contrato), Enter firma (sello, foco en la tarjeta, flashes, telón de LOUD) y encadena a la firma; "Volver a decidir"
+  después de firmar no encadena; 3 firma con Ecos Force ("Hasta acá llega esta muestra").
+
+**Trasladable:** el tablero (`crearTablero`: paletas con tiras y `steps()`), el telón (`crearTelon`) y la regla "el fondo
+del mercado es el fichaje" (`arte: null` + una capa de pared), la entrada por llegada (`programarLlegadas`: mide los
+destinos y programa todo de una vez), el sello con golpe, los flashes con su tope de frecuencia.
+**Solo de prototipo:** los flashes y las letras de paso del tablero (PRNG decorativo), el salto a la muestra `firma`.
+
+**Límites.** En el celular no hay pared (ni tablero, ni telón, ni llegada): la tabla y el contrato, como en `mesa`. Si la
+pantalla es más baja que 900 px, el tablero se recorta abajo. El tablero muestra 8 filas: si el motor trae más
+movimientos, el resto queda solo en la lista del lector (que los tiene todos).

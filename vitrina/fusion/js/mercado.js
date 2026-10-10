@@ -10,7 +10,7 @@
 import { el, entrar, animar, esperar, lineasConMascara, primeraOracion, num, reducido, inst, celular, odometro, plegar, EXPO, DUR } from './util.js';
 import { icono, glifoRol } from './iconos.js';
 import { franja, trayectoria, cuartos } from './marco.js';
-import { pintarLogo, tonoOrg } from './logos.js';
+import { pintarLogo, tonoOrg, logoOrg } from './logos.js';
 import { crearAzar } from '../../comun/azar.js';
 import { cargarImagen, urlCentrada } from '../../comun/arte.js';
 
@@ -34,6 +34,8 @@ const usd = (n) => `USD ${num(n)}`;
 
 // `op=mesa|anuncio|orgs` (PLANUI §4.7): la opcion de diseño. Sin `op` (o con uno ajeno), el mercado y la firma de hoy.
 export function crearMercado(ctx) {
+  // `op=final` (PLANUI §4.8): la ultima demostracion, la mesa (A) + los logos de C, con el fichaje de fondo
+  if (ctx.op === 'final') return ctx.muestra === 'firma' ? crearFirmaFinal(ctx) : crearOfertasFinal(ctx);
   const op = OPCIONES.includes(ctx.op) ? ctx.op : null;
   if (ctx.muestra === 'firma') return op ? crearFirmaOp(ctx, op) : crearFirma(ctx);
   return op ? crearOfertasOp(ctx, op) : crearOfertas(ctx);
@@ -1064,6 +1066,551 @@ function crearFirmaOp({ datos, muestra, amb, sonido, peor }, op) {
     },
     listo: () => logosListos(raiz),
     arte: datos.inicio?.jugador?.mains?.[0]?.ddragon ?? 'Yone',
+    animo: 'normal',
+    encuadre: 'firma',
+    velo: 0.5,
+  };
+}
+
+// ================================================================================================= la demostracion final (§4.8)
+// El usuario: "el mercado el A y el C estan muy buenos eso de que se firme con animacion […] y tambien una mini animacion
+// de como van entrando las ofertas en pantalla […] lo que no me copa tanto es el campeon atras, se podria hacer algo mas
+// que represente el mercado de pases". `op=final` es la mesa (A) + los logos de C, y el fondo es el fichaje:
+// - LA PARED (sin campeon). En reposo, EL TABLERO de la ventana de pases: los traspasos reales de "Mientras tanto" y los
+//   asientos abiertos, en paletas cuyas letras caen. Al apuntar una org, SU TELON DE PRENSA (el step-and-repeat: su logo
+//   en patron, sus colores, la luz de una sala de conferencias). Al firmar, LA CONFERENCIA: flashes de camara
+//   (decorativos, del PRNG, <= 3 por segundo) y el telon de la elegida queda.
+// - LA ENTRADA. Las ofertas llegan una por una a la pared, como los logos de C (tamaño = sueldo, altura = jerarquia
+//   proyectada; de la de menos sueldo a la de mas), y despues cada una baja a su fila de la tabla. ~2,4 s; Espacio la
+//   saltea; con INST o movimiento reducido no existe.
+// - EL CONTRATO de A, a la derecha. Enter firma: el mundo se aquieta, la firma se traza, el sello cae con un golpe y
+//   arranca la conferencia. Despues, la prueba de ingreso; con LOUD, la firma (el takeover con el telon de LOUD).
+// Todo se programa de una vez (animaciones con retardo): congelar(t) fotografia cualquier instante de la entrada
+// (repetir() la vuelve a pasar en el lugar), de la firma (elegir) y del takeover.
+const T_FIN = {
+  llega: 240, llegaPaso: 150, llegaDur: 560, // las ofertas llegan a la pared, de lejos y desenfocadas
+  baja: 1520, bajaPaso: 64, bajaDur: 480, // y bajan a su fila, en el orden de la tabla
+  tablero: 1380, tableroFila: 56, tableroCelda: 7, flapPaso: 62, // el tablero se despierta: las letras caen
+  contrato: 1640, // el documento se apoya en la mesa
+  fin: 2450, // fin de la entrada
+  aura: 120, vuelta: 600, // el telon entra a los 120 ms y vuelve al tablero a los 600 (como el aura de los campeones)
+  selloDur: 380, golpe: 1916, // el sello cae en T_FIRMA.sello y toca el papel al 70 % de su caida
+  sacude: 220, onda: 620, flash: 160,
+  resultado: 2300, encadena: 3900,
+};
+// la llegada: tamaño por sueldo (px, lineal contra el mas alto); el alto de la etiqueta; el margen dentro de la pared
+const LLEGADA = { tamMin: 60, tamMax: 150, gap: 34, etiqueta: 46, margen: 12, desde: 18, escala: 0.42, blur: 14 };
+// el tablero: el ancho de cada columna en paletas, cuantas letras pasan antes de la justa y cuantas filas entran
+const TABLERO = { handle: 9, rol: 3, org: 15, liga: 3, estado: 8, flaps: 3, filas: 8 };
+const FLAP_ABC = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'];
+const ROL_CORTO = { top: 'TOP', jungla: 'JNG', mid: 'MID', adc: 'ADC', support: 'SUP' };
+// el telon de prensa: la grilla del patron (px) y el logo
+const TELON = { celdaX: 150, celdaY: 120, tam: 50, columnas: 14, filas: 8 };
+// la conferencia: los flashes (ms entre uno y otro, >= 340: <= 3 por segundo) y donde caen (% de la pantalla)
+const FLASH = { gapMin: 360, gapMax: 640, dur: 200, x: [3, 60], y: [9, 46], hasta: 3700 };
+// el takeover de la firma: la luz que se abre sobre el telon, el logo en el foco y los flashes mientras firmas
+const T_FM = { abre: 160, abreDur: 1300, heroe: 300, heroeDur: 1250, flash: 1750, flashHasta: 3400 };
+
+// "Hanwha Life Esports" -> "HANWHA LIFE": el tablero abrevia como los de verdad
+const enTablero = (s, n) => String(s ?? '').replace(/\s+esports$/i, '').toUpperCase().slice(0, n);
+
+// ---------- el tablero de la ventana de pases (aria-hidden: el lector tiene la lista "Mientras tanto") ----------
+function crearTablero(mundo, { anio, ventana, semilla }) {
+  const azar = crearAzar(`tablero-${semilla}`);
+  const todas = [
+    ...(mundo.traspasosMundo ?? []).map((t) => ({ org: t.org, handle: t.handle, rol: ROL_CORTO[t.rol] ?? '', liga: t.liga, estado: t.desde === 'cantera' ? 'ACADEMIA' : 'FIRMÓ', tipo: t.desde === 'cantera' ? 'academia' : 'firmo', texto: t.motivo })),
+    ...(mundo.asientosAbiertos ?? []).map((a) => ({ org: a.org, handle: 'VACANTE', rol: '', liga: a.liga, estado: 'ABIERTO', tipo: 'abierto', texto: `${a.org} (${a.liga}): un asiento abierto` })),
+  ];
+  const filas = todas.slice(0, TABLERO.filas);
+  const tiras = [];
+  // cada letra es una paleta: una tira [la justa, las que pasan, en blanco] que cae hasta la justa
+  const paletas = (txt, n, fila, col0, clase) => {
+    const t = enTablero(txt, n).padEnd(n, ' ');
+    return el('span', { class: `tb-grupo ${clase}` }, [...t].map((ch, k) => {
+      const tira = el('span', { class: 'tb-tira' }, [ch, ...Array.from({ length: TABLERO.flaps - 1 }, () => azar.elegir(FLAP_ABC)), ' '].map((c) => el('i', { text: c })));
+      tiras.push({ tira, fila, col: col0 + k });
+      return el('span', { class: 'tb-c' }, tira);
+    }));
+  };
+  const c = { rol: TABLERO.handle, org: TABLERO.handle + TABLERO.rol + 1 };
+  c.liga = c.org + TABLERO.org;
+  c.estado = c.liga + TABLERO.liga;
+  const nodo = el('div', { class: 'mk-tablero', 'aria-hidden': 'true' }, [
+    el('header', { class: 'tb-cab' }, [el('i', { class: 'punto-luz' }), el('span', { class: 'tb-titulo', text: 'Ventana de pases' }), el('span', { text: `${ventana} ${anio}` }), el('span', { class: 'tb-mundo', text: 'Fichajes del mundo' })]),
+    el('div', { class: 'tb-rejilla' }, [
+      el('div', { class: 'tb-fila tb-rotulos' }, [el('span'), el('span', { text: 'Jugador' }), el('span', { text: 'Rol' }), el('span'), el('span', { text: 'Club' }), el('span', { text: 'Liga' }), el('span', { text: 'Estado' })]),
+      ...filas.map((f, i) => el('div', { class: 'tb-fila', 'data-tipo': f.tipo }, [
+        pintarLogo(f.org, { tam: 20, alt: '' }),
+        paletas(f.handle, TABLERO.handle, i, 0, 'tb-g-handle'),
+        paletas(f.rol, TABLERO.rol, i, c.rol, 'tb-g-rol'),
+        icono('flecha'),
+        paletas(f.org, TABLERO.org, i, c.org, 'tb-g-org'),
+        paletas(f.liga, TABLERO.liga, i, c.liga, 'tb-g-liga'),
+        paletas(f.estado, TABLERO.estado, i, c.estado, 'tb-g-estado'),
+      ])),
+    ]),
+  ]);
+  return {
+    nodo,
+    // todos los movimientos (el tablero muestra los primeros; el lector los tiene todos)
+    todas,
+    // las letras caen desde `t0`: fila por fila, de izquierda a derecha, cada paleta pasa por sus letras (steps)
+    caer(t0) {
+      const sube = `translateY(-${(TABLERO.flaps / (TABLERO.flaps + 1)) * 100}%)`;
+      for (const { tira, fila, col } of tiras) animar(tira, [{ transform: sube }, { transform: 'none' }], { delay: t0 + fila * T_FIN.tableroFila + col * T_FIN.tableroCelda, dur: TABLERO.flaps * T_FIN.flapPaso, easing: `steps(${TABLERO.flaps}, end)` });
+    },
+  };
+}
+
+// ---------- el telon de prensa de una org: su logo en patron (step-and-repeat), sus colores, la luz de la sala ----------
+function crearTelon(org, tono = tonoOrg(org)) {
+  const filas = Array.from({ length: TELON.filas }, () => el('div', { class: 'mk-telon-fila' }, Array.from({ length: TELON.columnas }, () => pintarLogo(org, { tam: TELON.tam, alt: '' }))));
+  return el('div', { class: 'mk-telon', 'data-tono': tono, 'data-org': org, style: { '--telon-x': `${TELON.celdaX}px`, '--telon-y': `${TELON.celdaY}px`, '--telon-tam': `${TELON.tam}px` } }, [
+    el('div', { class: 'mk-telon-patron' }, filas),
+    el('span', { class: 'mk-telon-luz' }),
+  ]);
+}
+
+// ---------- la conferencia: flashes de camara (decorativos, PRNG; <= 3 por segundo; nada con movimiento reducido) ----------
+function programarFlashes(capa, t0, semilla, hasta = FLASH.hasta) {
+  capa.textContent = '';
+  if (quieto()) return;
+  const azar = crearAzar(`flashes-${semilla}`);
+  for (let t = t0; t < hasta; t += azar.entre(FLASH.gapMin, FLASH.gapMax)) {
+    const f = el('i', { class: 'mk-flash', style: { left: `${azar.entre(...FLASH.x)}%`, top: `${azar.entre(...FLASH.y)}%` } });
+    capa.append(f);
+    animar(f, [{ opacity: 0 }, { opacity: 1, offset: 0.1 }, { opacity: 0 }], { delay: Math.round(t), dur: FLASH.dur, easing: 'ease-out' });
+  }
+}
+
+// ================================================================================================= las ofertas, final
+function crearOfertasFinal({ datos, muestra, amb, sonido, peor }) {
+  const m = datos[muestra];
+  const pc = peor ? datos.peorCaso : null;
+  const ofertas = m.decision.opciones;
+  const resultados = Object.fromEntries((m.resultados ?? []).map((r) => [r.opcionId, r]));
+  const vos = m.vosEnElMercado ?? {};
+  const mundo = m.mercadoDelMundo ?? {};
+  const maxSueldo = Math.max(1, ...ofertas.map(sueldoDe));
+  const maxJer = Math.max(1, ...ofertas.map((o) => jerDe(o)?.hasta ?? 0));
+  const botElige = (m.resultados ?? []).find((r) => r.eligioElBot)?.opcionId;
+  const laReal = ofertas.find((z) => z.id === botElige);
+  const yo = {
+    handle: pc?.handle ?? m.franja?.quien?.handle ?? datos.inicio?.jugador?.handle ?? '',
+    rol: m.franja?.quien?.rol ?? '',
+    rolEtiqueta: m.franja?.quien?.rolEtiqueta ?? '',
+    anio: m.anio,
+    ventana: m.franja?.cuando?.ventana?.texto ?? 'Pretemporada',
+    main: datos.inicio?.jugador?.mains?.[0] ?? null,
+  };
+  const norm = ofertas.map((o) => normalizar(o));
+  // el color de cada org en la pared: el suyo para las reales; las inventadas, uno distinto cada una (en el orden de la
+  // tabla), para que sus telones no se confundan (el hash de tonoOrg le da el mismo a tres de las cuatro de la muestra)
+  const inventadas = ofertas.filter((o) => !logoOrg(o.org).src).map((o) => o.org);
+  const tonoDe = (org) => (inventadas.includes(org) ? `p${(inventadas.indexOf(org) % 4) + 1}` : tonoOrg(org));
+  const raiz = el('section', { class: 'parada parada-decision mercado mk-op mk-final', 'data-pieza': 'decision', 'data-forma': 'mercado', 'data-muestra': muestra, 'data-op': 'final' });
+
+  // Lo de cada montaje: repetir() reconstruye la pantalla y vuelve a pasar la entrada desde cero. `vez` invalida lo que
+  // quedo programado del montaje anterior (las esperas resuelven tambien al cancelarse).
+  let s = null;
+  let vez = 0;
+  let elegido = false;
+  let asentado = true;
+  let entrando = false;
+  let apuntada = -1;
+  let tAura = 0;
+
+  function construir() {
+    clearTimeout(tAura);
+    vez++;
+    elegido = false;
+    asentado = true;
+    entrando = false;
+    apuntada = -1;
+    raiz.classList.remove('eligiendo', 'con-telon');
+    const fr = franja(m.franja, { peor: pc ? { handle: pc.handle, org: pc.org?.nombre } : null });
+    const [primera, resto] = primeraOracion(m.decision.descripcion);
+    const btnMas = resto ? el('button', { type: 'button', class: 'btn-mas', 'aria-expanded': 'false', text: 'más' }) : null;
+    const planteo = el('p', { class: 'planteo' }, [el('span', { class: 'planteo-1', text: primera }), resto ? el('span', { class: 'planteo-resto', text: ' ' + resto }) : null, btnMas]);
+    btnMas?.addEventListener('click', () => {
+      const a = !planteo.classList.contains('abierto');
+      planteo.classList.toggle('abierto', a);
+      btnMas.setAttribute('aria-expanded', String(a));
+      btnMas.textContent = a ? 'menos' : 'más';
+    });
+    const rotulo = el('p', { class: 'rotulo-cat' }, [el('i', { class: 'punto-luz' }), el('span', { text: 'Mercado' }), el('span', { class: 'bisagra', text: `${yo.ventana} ${m.anio}` }), el('span', { class: 'bisagra', text: `${ofertas.length} ofertas` })]);
+    const titulo = el('h1', { class: 'titulo-parada', 'data-foco': '', tabindex: '-1', text: m.decision.titulo });
+    const cabeza = el('header', { class: 'panel-cab' }, [rotulo, titulo, planteo]);
+    const { tabla, filas } = tablaConLogos(ofertas, { muestra, vos, maxSueldo });
+    const cuerpo = el('div', { class: 'panel-cuerpo' }, [tabla]);
+    const tablero = crearTablero(mundo, { anio: m.anio, ventana: yo.ventana, semilla: `${muestra}-${yo.handle}` });
+    const mientras = el('ol', { class: 'sr', 'aria-label': 'Mientras tanto, en el mercado' }, tablero.todas.map((f) => el('li', { text: f.texto })));
+    const col = el('div', { class: 'parada-col' }, [m.antes?.log ? el('p', { class: 'sr', text: m.antes.mensaje }) : null, cabeza, cuerpo, mientras]);
+    const telones = ofertas.map((o) => crearTelon(o.org, tonoDe(o.org)));
+    const silencio = el('div', { class: 'mk-silencio' });
+    const flashes = el('div', { class: 'mk-flashes' });
+    const pared = el('div', { class: 'mk-mundo-op mk-pared', 'aria-hidden': 'true' }, [...telones, silencio, flashes]);
+    const hueco = el('div', { class: 'mk-hueco' });
+    const viajeros = el('div', { class: 'mk-viajeros', 'aria-hidden': 'true' });
+    raiz.replaceChildren(pared, fr, tablero.nodo, col, hueco, viajeros, cuartos('mundo', null, trayectoria(datos.final?.tarjeta?.historia ?? [], m.anio, m.edad)));
+    s = { fr, rotulo, titulo, planteo, tabla, filas, cuerpo, tablero, col, telones, silencio, flashes, hueco, viajeros, lector: null };
+    filas.forEach((f, i) => {
+      f.addEventListener('pointerenter', () => !celular() && sobre(i));
+      f.addEventListener('pointerleave', () => auraOrg(-1));
+      f.addEventListener('focus', () => (apuntar(i), auraOrg(i)));
+      f.addEventListener('blur', () => auraOrg(-1));
+      f.addEventListener('click', () => elegir(i + 1));
+    });
+    apuntar(0, { animado: false });
+  }
+
+  // ---- el contrato de la oferta apuntada (A): apuntar otra fila cambia de hoja
+  function apuntar(i, { mover = false, animado = true } = {}) {
+    i = Math.max(0, Math.min(s.filas.length - 1, i));
+    if (i === apuntada) return;
+    apuntada = i;
+    s.filas.forEach((f, k) => f.classList.toggle('apuntada', k === i));
+    s.lector = crearContrato(norm[i], yo, { n: i + 1, total: ofertas.length, valor: vos.valorUSD, maxSueldo });
+    s.lector.nodo.dataset.tono = tonoDe(norm[i].org);
+    s.lector.boton.addEventListener('click', (e) => (e.stopPropagation(), elegir(i + 1)));
+    s.hueco.replaceChildren(s.lector.nodo);
+    if (animado) animar(s.lector.nodo, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { dur: DUR.entra });
+    if (mover) s.filas[i].focus({ preventScroll: true });
+  }
+  // ---- la pared: el tablero en reposo, el telon de la org apuntada (entra a los 120 ms, vuelve a los 600)
+  function ponerTelon(i) {
+    s.telones.forEach((t, k) => t.classList.toggle('on', k === i));
+    s.tablero.nodo.classList.toggle('apagado', i >= 0);
+    raiz.classList.toggle('con-telon', i >= 0);
+  }
+  function auraOrg(i) {
+    if (elegido) return;
+    clearTimeout(tAura);
+    if (quieto()) ponerTelon(i);
+    else tAura = setTimeout(() => ponerTelon(i), i >= 0 ? T_FIN.aura : T_FIN.vuelta);
+  }
+  function sobre(i) {
+    if (elegido) return;
+    if (i !== apuntada) amb.pulso('apuntar');
+    apuntar(i);
+    auraOrg(i);
+  }
+
+  // ---- la entrada: las ofertas llegan a la pared y bajan a su fila; despues el tablero y el contrato
+  // Devuelve, por fila, cuando aterriza su logo (ms). Mide todo antes de animar (los destinos son las cajas quietas).
+  function programarLlegadas() {
+    const { tablero, filas, viajeros } = s;
+    const pared = tablero.nodo.getBoundingClientRect();
+    const orden = ofertas.map((_, i) => i).sort((a, b) => sueldoDe(ofertas[a]) - sueldoDe(ofertas[b]) || a - b);
+    const tam = ofertas.map((o) => LLEGADA.tamMin + (LLEGADA.tamMax - LLEGADA.tamMin) * (sueldoDe(o) / maxSueldo));
+    const ancho = tam.reduce((a, b) => a + b, 0) + LLEGADA.gap * (ofertas.length - 1);
+    const k = Math.min(1, (pared.width - 2 * LLEGADA.margen) / ancho);
+    const alto = pared.height - 2 * LLEGADA.margen - LLEGADA.etiqueta;
+    let x = pared.left + (pared.width - ancho * k) / 2;
+    const aterriza = [];
+    viajeros.textContent = '';
+    orden.forEach((i, paso) => {
+      const o = ofertas[i];
+      const lado = Math.round(tam[i] * k);
+      const cx = x + lado / 2;
+      x += lado + LLEGADA.gap * k;
+      const arriba = pared.top + LLEGADA.margen + (1 - (jerDe(o)?.hasta ?? 0) / maxJer) * Math.max(0, alto - lado);
+      const cy = arriba + lado / 2;
+      const slot = filas[i].querySelector('.logo').getBoundingClientRect();
+      const t0 = T_FIN.llega + paso * T_FIN.llegaPaso;
+      const tA = t0 + T_FIN.llegaDur;
+      const tB = Math.max(tA + DUR.sale, T_FIN.baja + i * T_FIN.bajaPaso);
+      const tC = tB + T_FIN.bajaDur;
+      aterriza[i] = tC;
+      const dato = el('span', { class: 'mk-llega-dato' }, [el('b', { text: o.org }), el('span', { text: usd(sueldoDe(o)) })]);
+      const halo = el('span', { class: 'mk-llega-halo' });
+      const v = el('div', { class: 'mk-llega', 'data-tono': tonoDe(o.org), style: { left: `${cx - lado / 2}px`, top: `${arriba}px`, width: `${lado}px`, height: `${lado}px` } }, [halo, pintarLogo(o.org, { tam: lado, alt: '' }), dato]);
+      viajeros.append(v);
+      const d = tC - t0;
+      const f = (ms) => Math.min(1, Math.max(0, (ms - t0) / d));
+      animar(v, [
+        { offset: 0, opacity: 0, transform: `translateY(${LLEGADA.desde}px) scale(${LLEGADA.escala})`, filter: `blur(${LLEGADA.blur}px)`, easing: EXPO },
+        { offset: f(tA), opacity: 1, transform: 'none', filter: 'blur(0px)', easing: 'linear' },
+        { offset: f(tB), opacity: 1, transform: 'none', filter: 'blur(0px)', easing: 'cubic-bezier(.55,0,.2,1)' },
+        { offset: 1, opacity: 1, transform: `translate(${slot.left + slot.width / 2 - cx}px, ${slot.top + slot.height / 2 - cy}px) scale(${slot.width / lado})`, filter: 'blur(0px)' },
+      ], { delay: t0, dur: d, easing: 'linear' });
+      // la etiqueta (nombre y sueldo) y el halo de su color se van antes de bajar: a la fila llega solo el logo
+      const lleva = [{ opacity: 0, offset: 0 }, { opacity: 0, offset: f(t0 + DUR.entra) }, { opacity: 1, offset: f(tA) }, { opacity: 1, offset: f(tB - DUR.sale) }, { opacity: 0, offset: f(tB) }, { opacity: 0, offset: 1 }];
+      animar(dato, lleva, { delay: t0, dur: d, easing: 'linear' });
+      animar(halo, lleva, { delay: t0, dur: d, easing: 'linear' });
+    });
+    return aterriza;
+  }
+  function terminarEntrada() {
+    entrando = false;
+    s.viajeros.textContent = '';
+  }
+  // Espacio (o elegir) saltea la entrada: todo a su estado final
+  function saltarEntrada() {
+    if (!entrando) return;
+    for (const a of raiz.getAnimations({ subtree: true })) {
+      try {
+        if (a.effect?.getTiming?.().iterations !== Infinity) a.finish();
+      } catch {
+        /* sin fin */
+      }
+    }
+    terminarEntrada();
+  }
+  function entrada() {
+    const { fr, titulo, rotulo, planteo, tabla, filas, col, tablero } = s;
+    const mia = vez;
+    lineasConMascara(titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: 280 + i * 70, dur: 420 }));
+    entrar(fr, 0, -10);
+    esperar(raiz, 700).then(() => mia === vez && amb.aquietar(true));
+    if (quieto()) {
+      amb.aquietar(true);
+      return;
+    }
+    entrando = true;
+    animar(col, [{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], { delay: 80, dur: 320 });
+    entrar(rotulo, 140, 10);
+    entrar(planteo, 420, 10);
+    entrar(tabla.querySelector('.mk-cab'), 460, 8);
+    const llegan = !celular() && tablero.nodo.offsetParent ? programarLlegadas() : null;
+    filas.forEach((f, i) => {
+      const t = llegan ? llegan[i] : 500 + i * 50;
+      // con la llegada, la fila ya esta (su tecla y su linea: el lugar que espera la oferta) y se llena cuando aterriza
+      if (llegan) f.querySelectorAll('.mk-club-t, .mk-sueldo, .mk-anios, .mk-jer, .mk-plantel').forEach((x) => entrar(x, Math.max(0, t - DUR.sale), 8));
+      else entrar(f, t - DUR.sale, 12);
+      f.querySelectorAll('.mx-barra i').forEach((b) => animar(b, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: t, dur: 560 }));
+      animar(f.querySelector('.logo'), [{ opacity: 0 }, { opacity: 1 }], llegan ? { delay: t - 40, dur: 60, easing: 'linear' } : { delay: t, dur: 360 });
+    });
+    if (llegan) {
+      // mientras las ofertas estan en la pared, el tablero espera en penumbra; cuando bajan, se despierta
+      animar(tablero.nodo, [{ opacity: 0.38 }, { opacity: 0.38, offset: 0.62 }, { opacity: 1 }], { dur: T_FIN.baja + T_FIN.bajaDur, easing: 'linear' });
+      tablero.caer(T_FIN.tablero);
+    }
+    // el documento se apoya en la mesa: sube, y despues su contenido de arriba abajo
+    animar(s.lector.nodo, [{ opacity: 0, transform: 'translateY(26px) rotate(.6deg)' }, { opacity: 1, transform: 'none' }], { delay: T_FIN.contrato, dur: 520 });
+    [...s.lector.nodo.children].forEach((c, k) => entrar(c, T_FIN.contrato + 140 + k * 55, 8));
+    esperar(raiz, T_FIN.fin).then(() => mia === vez && terminarEntrada());
+  }
+
+  // ---- firmar: el silencio, el trazo, el sello que cae con un golpe, y la conferencia
+  function elegir(n) {
+    if (elegido) return;
+    const o = ofertas[n - 1];
+    if (!o) return;
+    saltarEntrada();
+    clearTimeout(tAura);
+    apuntar(n - 1, { animado: false });
+    elegido = true;
+    asentado = false;
+    const mia = vez;
+    const esLaReal = o.id === botElige && Boolean(datos.firma);
+    const { tabla, cuerpo, silencio, flashes, hueco } = s;
+    const doc = s.lector.nodo;
+    raiz.classList.add('eligiendo');
+    ponerTelon(n - 1);
+    amb.aquietar(true);
+    amb.pulso('elegir');
+    sonido?.clic();
+    // el silencio: la pared se apaga mientras firmas; con el golpe del sello se prende la conferencia (y queda tenue)
+    const dS = T_FIN.golpe + T_FIN.onda;
+    animar(silencio, [{ opacity: 0, easing: 'linear' }, { opacity: 1, offset: T_FIRMA.silencio / dS }, { opacity: 1, offset: T_FIN.golpe / dS, easing: EXPO }, { opacity: getComputedStyle(silencio).opacity }], { dur: dS, easing: 'linear' });
+    tabla.setAttribute('inert', '');
+    tabla.setAttribute('aria-hidden', 'true');
+    animar(tabla, [{ opacity: 1 }, { opacity: 0.22 }], { dur: T_FIRMA.silencio });
+    // el documento se levanta y se firma
+    doc.classList.add('firmado');
+    animar(doc, [{ transform: 'none' }, { transform: 'translateY(-6px) scale(1.012)' }], { dur: T_FIRMA.silencio, fill: 'forwards' });
+    const sello = doc.querySelector('.mk-firmado');
+    animar(doc.querySelector('.mk-ct-firmar'), [{ opacity: 1, transform: 'none', visibility: 'visible' }, { opacity: 0, transform: 'scale(.96)', visibility: 'visible' }], { dur: T_FIRMA.boton, easing: SALE_MK });
+    animar(doc.querySelector('.mk-trazo'), [{ strokeDashoffset: LARGO_TRAZO, fillOpacity: 0 }, { strokeDashoffset: 0, fillOpacity: 0, offset: 0.78 }, { strokeDashoffset: 0, fillOpacity: 1 }], { delay: T_FIRMA.trazo, dur: T_FIRMA.trazoDur, easing: 'cubic-bezier(.45,0,.2,1)' });
+    animar(doc.querySelector('.mk-rubrica'), [{ strokeDashoffset: LARGO_RUBRICA }, { strokeDashoffset: 0 }], { delay: T_FIRMA.rubrica, dur: T_FIRMA.rubricaDur, easing: EXPO });
+    // el sello cae: acelera hasta el papel, se aplasta un poco y se asienta
+    animar(sello, [
+      { opacity: 0, transform: 'rotate(-15deg) scale(2.5)', easing: 'cubic-bezier(.55,0,1,.45)' },
+      { opacity: 1, transform: 'rotate(-7deg) scale(.9)', offset: (T_FIN.golpe - T_FIRMA.sello) / T_FIN.selloDur, easing: EXPO },
+      { opacity: 1, transform: 'rotate(-7deg)' },
+    ], { delay: T_FIRMA.sello, dur: T_FIN.selloDur, easing: 'linear' });
+    // el golpe: la onda del sello y la mesa que tiembla
+    const onda = el('i', { class: 'mk-onda', 'aria-hidden': 'true' });
+    sello.append(onda);
+    animar(onda, [{ opacity: 0.9, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(2.8)' }], { delay: T_FIN.golpe, dur: T_FIN.onda, easing: EXPO });
+    animar(hueco, [{ transform: 'none' }, { transform: 'translate(0, 4px)', offset: 0.18 }, { transform: 'translate(-3px, -1px)', offset: 0.42 }, { transform: 'translate(2px, 1px)', offset: 0.7 }, { transform: 'none' }], { delay: T_FIN.golpe, dur: T_FIN.sacude, easing: 'linear' });
+    esperar(raiz, T_FIN.golpe).then(() => mia === vez && (amb.pulso('logro'), sonido?.acorde()));
+    // la conferencia: los flashes arrancan apenas cae el sello (cuando el silencio ya se levanta)
+    programarFlashes(flashes, T_FIN.golpe + T_FIN.flash, `${o.org}-${yo.handle}`);
+    // a donde lleva: la prueba de ingreso (lo que dice el motor para TODAS); con LOUD, lo que paso de verdad
+    const enc = resultados[o.id]?.inmediato?.encadenaOtraParada;
+    const tarjeta = el('div', { class: 'resultado mk-res mk-res-op', 'data-pieza': 'resultado', tabindex: '-1', 'aria-label': `Resultado: ${o.label}` }, [
+      el('div', { class: 'res-cab' }, [el('span', { class: 'op-tecla', text: String(n) }), pintarLogo(o.org, { tam: 30, alt: '' }), el('b', { class: 'mk-org', text: o.org })]),
+      el('p', { class: 'mk-sigue' }, [icono('flecha'), el('span', { text: enc?.titulo ?? 'La prueba de ingreso' }), el('b', { text: `en ${o.org}` })]),
+      el('p', { class: 'mk-res-datos', text: `${ligaLarga(o.liga)} · ${usd(sueldoDe(o))} / año · ${aniosTxt(o.anios)}` }),
+      el('p', { class: 'res-texto', text: esLaReal ? 'En esta carrera, esta fue la elección. La prueba salió así:' : `Hasta acá llega esta muestra: el motor no jugó esta prueba, y no se inventa cómo salía. En esta carrera, la elección fue ${laReal?.org ?? 'otra'}.` }),
+      el('div', { class: 'mk-res-botones' }, [
+        datos.firma && laReal ? el('button', { type: 'button', class: 'mk-seguir', onclick: () => window.vitrina?.muestra('firma') }, [icono('firma'), esLaReal ? 'La firma' : `Ver lo que pasó en ${laReal.org}`, el('kbd', { text: 'Espacio' })]) : null,
+        el('button', { type: 'button', class: 'res-otra', onclick: () => window.vitrina?.repetir() }, ['Volver a decidir', el('kbd', { text: 'R' })]),
+      ]),
+    ]);
+    cuerpo.append(tarjeta);
+    animar(tarjeta, [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }], { delay: T_FIN.resultado, dur: DUR.larga });
+    [...tarjeta.children].forEach((c, k) => entrar(c, T_FIN.resultado + 80 + k * 70, 8));
+    if (quieto()) {
+      asentado = true;
+      tarjeta.focus({ preventScroll: true });
+    } else esperar(raiz, T_FIN.resultado + 200).then(() => mia === vez && ((asentado = true), tarjeta.focus({ preventScroll: true })));
+    if (esLaReal && !quieto()) esperar(raiz, T_FIN.encadena).then(() => mia === vez && raiz.isConnected && window.vitrina?.muestra('firma'));
+  }
+  // Enter, Espacio o un clic durante la firma la saltean (los flashes, que son decorativos, terminan con ella)
+  function saltearFirma() {
+    for (const a of raiz.getAnimations({ subtree: true })) {
+      try {
+        if (a.effect?.getTiming?.().iterations !== Infinity) a.finish();
+      } catch {
+        /* sin fin */
+      }
+    }
+    asentado = true;
+  }
+
+  function tecla(e) {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (entrando && !elegido && e.code === 'Space') {
+      e.preventDefault();
+      saltarEntrada();
+    } else if (elegido && !asentado && (e.key === 'Enter' || e.code === 'Space')) {
+      e.preventDefault();
+      saltearFirma();
+    } else if (/^[1-9]$/.test(e.key) && Number(e.key) <= ofertas.length) {
+      e.preventDefault();
+      elegir(Number(e.key));
+    } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !elegido) {
+      e.preventDefault();
+      apuntar(apuntada + (e.key === 'ArrowDown' ? 1 : -1), { mover: true });
+    } else if (e.key === 'Enter' && !elegido && !(e.target instanceof HTMLButtonElement && !e.target.classList.contains('mk-fila'))) {
+      // Enter firma el contrato que estas leyendo
+      e.preventDefault();
+      elegir(apuntada + 1);
+    } else if (e.code === 'Space' && elegido) {
+      e.preventDefault();
+      window.vitrina?.muestra('firma');
+    } else if ((e.key === 'r' || e.key === 'R') && elegido) window.vitrina?.repetir();
+  }
+  raiz.addEventListener('click', (e) => {
+    if (elegido && !asentado && !e.target.closest('button')) saltearFirma();
+  });
+
+  construir();
+  return {
+    nodo: raiz,
+    entrar: entrada,
+    elegir,
+    tecla,
+    // vuelve a pasar la pantalla en el lugar (sincrono: la tira de capturas congela la entrada desde el cuadro 0)
+    repetir() {
+      for (const a of raiz.getAnimations({ subtree: true })) a.cancel();
+      construir();
+      amb.aquietar(false);
+      entrada();
+    },
+    listo: () => logosListos(raiz),
+    destruir: () => clearTimeout(tAura),
+    // sin campeon: el fondo es el fichaje (la pared)
+    arte: null,
+    animo: 'normal',
+    encuadre: 'derecha',
+    velo: 0.6,
+  };
+}
+
+// ================================================================================================= la firma, final
+// El takeover de siempre (la luz de la pieza se abre en la de la academia, LOUD, el sueldo, el handle trazado en luz),
+// con la escenografia del fichaje: el telon de LOUD en lugar de tu campeon, que aparece cuando la luz se abre; su logo
+// en el foco; y los flashes de la conferencia mientras firmas.
+function crearFirmaFinal({ datos, muestra, amb, sonido, peor }) {
+  const f = datos[muestra];
+  const pc = peor ? datos.peorCaso : null;
+  const handle = pc?.handle ?? f.franja?.quien?.handle ?? datos.inicio?.jugador?.handle;
+  const org = pc?.org?.nombre ?? f.org;
+  const c = f.contrato ?? {};
+  const anios = c.anios ?? f.anios;
+  const monto = c.salarioAnualUSD ?? f.sueldoAnualUSD;
+  const raiz = el('section', { class: 'firma takeover mk-firma-op mk-firma-final', 'data-pieza': 'cumbre', 'data-fase': 'firma', 'data-op': 'final', 'aria-labelledby': 'fm-org' });
+  const kicker = el('p', { class: 'fm-k' }, [el('i', { class: 'punto-luz' }), el('span', { text: 'Primer contrato' }), el('span', { text: `tier ${c.tier ?? f.tier}` }), el('span', { text: `${f.edad} años` })]);
+  const nombre = el('h1', { class: 'fm-org', id: 'fm-org', 'data-foco': '', tabindex: '-1', 'aria-label': `Firmás con ${org}` }, org.split('').map((l) => el('span', { class: 'fm-letra', 'aria-hidden': 'true', text: l })));
+  const sueldo = el('p', { class: 'fm-sueldo' }, [el('span', { class: 'fm-usd', text: 'USD' }), el('b', { class: 'fm-monto', text: num(monto) }), el('span', { class: 'fm-anio', text: '/ año' })]);
+  const datosC = el('dl', { class: 'fm-datos' }, [
+    ['Liga', `${c.liga ?? f.liga} ${f.anio}`],
+    ['Contrato', aniosTxt(anios)],
+    ['Tipo', c.tipo === 'transferencia' ? 'Transferencia' : c.tipo ?? f.tipoDeContrato],
+  ].map(([k, v]) => el('div', {}, [el('dt', { text: k }), el('dd', { text: v })])));
+  const firma = svgFirma(handle, 'fm-firma');
+  const linea = el('p', { class: 'fm-log', text: f.log?.message ?? '' });
+  const otros = el('ul', { class: 'sr', 'aria-label': 'El resto del mercado' }, (f.logsDelMercado ?? []).slice(2).map((l) => el('li', { text: l.message })));
+  const seguir = el('button', { type: 'button', class: 'tk-seguir fm-seguir', onclick: (e) => (e.stopPropagation(), window.vitrina?.repetir()) }, ['Otra vez', el('kbd', { text: 'R' })]);
+  const telon = crearTelon(org);
+  telon.classList.add('on');
+  const heroe = el('div', { class: 'mk-fm-heroe', 'data-tono': tonoOrg(org) }, [el('span', { class: 'mk-fm-foco' }), pintarLogo(org, { tam: 250, alt: '' })]);
+  const flashes = el('div', { class: 'mk-flashes' });
+  const pared = el('div', { class: 'mk-mundo-op mk-pared', 'aria-hidden': 'true' }, [telon, heroe, el('div', { class: 'mk-pared-velo' }), flashes]);
+  const bloque = el('div', { class: 'fm-bloque' }, [kicker, nombre, sueldo, datosC, firma.nodo, linea, otros, seguir]);
+  raiz.append(pared, bloque);
+
+  let asentado = false;
+  function saltear() {
+    for (const a of raiz.getAnimations({ subtree: true })) {
+      try {
+        a.finish();
+      } catch {
+        /* sin fin */
+      }
+    }
+    amb.ambiente({ era: 'academia', animo: 'normal', instantaneo: true });
+    asentado = true;
+  }
+  raiz.addEventListener('click', () => (asentado ? null : saltear()));
+
+  function entrada() {
+    amb.ambiente({ era: 'pieza', animo: 'normal', instantaneo: true });
+    amb.ambiente({ era: 'academia', retardo: quieto() ? 0 : 260 });
+    amb.pulso('logro', 700);
+    sonido?.barrido();
+    programarFlashes(flashes, T_FM.flash, `firma-${org}-${handle}`, T_FM.flashHasta);
+    if (quieto()) {
+      asentado = true;
+      return;
+    }
+    esperar(raiz, 500).then(() => sonido?.acorde());
+    // la luz se abre: el telon aparece desde una rendija de luz sobre el logo, y el logo llega al foco
+    animar(telon, [{ clipPath: 'inset(0 30% 0 70%)', opacity: 0.5 }, { clipPath: 'inset(0 0% 0 0%)', opacity: 1 }], { delay: T_FM.abre, dur: T_FM.abreDur, easing: EXPO });
+    animar(heroe.querySelector('.mk-fm-foco'), [{ opacity: 0, transform: 'translate(-50%, -50%) scale(.3)' }, { opacity: 1, transform: 'translate(-50%, -50%)' }], { delay: T_FM.abre, dur: T_FM.abreDur, easing: EXPO });
+    animar(heroe.querySelector('.logo'), [{ opacity: 0, transform: 'scale(.6)', filter: 'blur(18px)' }, { opacity: 1, transform: 'none', filter: 'blur(0px)' }], { delay: T_FM.heroe, dur: T_FM.heroeDur, easing: EXPO });
+    entrar(kicker, 120, 10);
+    nombre.querySelectorAll('.fm-letra').forEach((l, i) => animar(l, [{ opacity: 0, transform: 'translateY(30%)', filter: 'blur(12px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { delay: 260 + i * 70, dur: 560 }));
+    animar(sueldo, [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }], { delay: 700, dur: 380 });
+    odometro(sueldo.querySelector('.fm-monto'), 0, monto, { delay: 760, dur: 1000 });
+    datosC.querySelectorAll('div').forEach((d, i) => entrar(d, 900 + i * 70, 8));
+    animar(firma.texto, [{ strokeDashoffset: LARGO_TRAZO, fillOpacity: 0 }, { strokeDashoffset: 0, fillOpacity: 0, offset: 0.78 }, { strokeDashoffset: 0, fillOpacity: 1 }], { delay: 1080, dur: 1100, easing: 'cubic-bezier(.45,0,.2,1)' });
+    animar(firma.rubrica, [{ strokeDashoffset: LARGO_RUBRICA }, { strokeDashoffset: 0 }], { delay: 1700, dur: 600, easing: EXPO });
+    entrar(linea, 1900, 8);
+    entrar(seguir, 2200, 6);
+    esperar(raiz, TOMA + 600).then(() => (asentado = true));
+  }
+
+  return {
+    nodo: raiz,
+    entrar: entrada,
+    repetir() {
+      for (const a of raiz.getAnimations({ subtree: true })) a.cancel();
+      asentado = false;
+      entrada();
+    },
+    tecla(e) {
+      if ((e.code === 'Space' || e.key === 'Enter') && !asentado) {
+        e.preventDefault();
+        saltear();
+      } else if (e.key === 'r' || e.key === 'R') window.vitrina?.repetir();
+    },
+    listo: () => logosListos(raiz),
+    arte: null,
     animo: 'normal',
     encuadre: 'firma',
     velo: 0.5,
