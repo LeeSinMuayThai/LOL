@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es" data-era="escenario">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La última demostración — la fusión — Un Split Más</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../comun/fuentes.css">
+  <link rel="stylesheet" href="estilos/tokens.css">
+  <link rel="stylesheet" href="estilos/base.css">
+  <link rel="stylesheet" href="estilos/final.css">
+</head>
+<body class="final">
+  <header class="fn-cab">
+    <div class="fn-titulos">
+      <p class="rotulo-cat"><i class="punto-luz"></i><span>La fusión</span><span class="bisagra">la última demostración</span></p>
+      <h1 class="fn-titulo">así se juega</h1>
+      <p class="fn-invita">Una versión por pantalla. Jugala adentro: el mouse, <kbd>1</kbd>-<kbd>3</kbd> para elegir, <kbd>Enter</kbd>, <kbd>Espacio</kbd>. <kbd>0</kbd> para comparar con cómo estaba.</p>
+    </div>
+    <div class="fn-lado">
+      <nav class="fn-pestanas" role="tablist" aria-label="Pantalla"></nav>
+    </div>
+  </header>
+  <div class="fn-barra">
+    <p class="fn-indicador" id="indicador" aria-live="polite"><span class="fn-ind-k">Viendo</span><b id="ind-txt">final</b></p>
+    <div class="fn-botones">
+      <button type="button" class="boton" id="comparar"><span id="comparar-txt">Como estaba</span><kbd>0</kbd></button>
+      <button type="button" class="boton" id="repetir">Repetir<kbd>R</kbd></button>
+    </div>
+  </div>
+  <main class="fn-escenario" id="escenario">
+    <iframe class="fn-marco" id="marco" title="La fusión, en vivo" width="1440" height="900" tabindex="-1"></iframe>
+  </main>
+  <p class="fn-mirar" id="mirar"><span class="fn-mirar-k">Qué mirar</span><span id="mirar-txt"></span></p>
+  <p class="fn-ayuda"><kbd>←</kbd> <kbd>→</kbd> cambia de pantalla · <kbd>0</kbd> como estaba / final · <kbd>R</kbd> repite la entrada</p>
+  <script type="module" src="js/final.js"></script>
+</body>
+</html>
