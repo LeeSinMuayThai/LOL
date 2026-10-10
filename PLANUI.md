@@ -1468,6 +1468,15 @@ transmisión, beats, trofeo, confeti, logos). Portarlo junto con el shell es dem
 - **U1a · andamio** (Sonnet high, liviano según la compuerta 2): la regla f2 y las capturas lado a lado.
 - La interfaz entre U1 y U1k es `src/ui/fx/index.js` (`montarFx(contenedor) -> api`), que fijó el supervisor (`4e3ff8a`).
 
+**Ola 1 cerrada (2026-10-10).** Merges de `u1-cimientos`, `u1k-kit` y `u1a-andamio` en `u-integracion`. Build en 3061 KB
+contra un techo de 3150, huella intacta. **C1 se corre después de la ola 2**: con solo los cimientos, las familias todavía
+tienen el layout viejo, y lo que se vería es "la UI vieja con otras fuentes", que no sirve para juzgar la luz ni el ritmo.
+**Ajuste de la ola 2:**
+- **U2b** se queda con el flujo entero del mercado de la compuerta 2: las ofertas, la firma sobre el contrato, la caída
+  sobre el mapa y la pantalla "la firma" con la camiseta y la elección del número. El número se guarda con un agregado
+  en `almacenamiento.js`, al final.
+- **U3a** reusa esa pantalla de firma para el takeover del primer contrato.
+
 **Tamaño**: 7 workers en 4 olas (FASE V fueron 12 subfases en ~2 días); estimado ~1,5-2 días de agentes y ~3-4M tokens.
 
 **El contrato de las familias** se actualiza en la cabecera de `ui/escena.js` en U1: además de lo de V (`mostrar`,
