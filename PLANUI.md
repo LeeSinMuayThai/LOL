@@ -1458,6 +1458,16 @@ mismos guardados.
 | — | **C2** | El usuario juega una carrera completa; lo que encuentre abre una ronda corta | — | supervisor |
 | 4 | **U4 · pulido y cierre** | D98 (la espera del cierre de año), D99 (contraste), lo nuevo del contraste, el celular, el rendimiento, el CSS muerto, `DISENO.md` §4.5-4.6 y `CONCEPTO.md`; el cierre: `--rapido`, `simulate.js 1000`, determinismo, build, recorrido con 3 seeds × 2 tamaños, merge en `fase-9r`, `PROGRESO.md`; push solo con OK nuevo | lo que quede | Sonnet high + supervisor |
 
+**Ajuste de la ola 1 (2026-10-10, después de la compuerta 2).** La especificación pasó de A a la fusión con `op=linea`,
+que trae un kit entero (`vitrina/fusion/js/`: ambiente con costura y suspenso, tono, color, fondo, aura, ceremonia,
+transmisión, beats, trofeo, confeti, logos). Portarlo junto con el shell es demasiado para un solo worker, así que U1 se parte:
+- **U1 · cimientos** (Opus xhigh): lo de la tabla, menos `fx/` (solo `fx/transicion.js`, pegado a `revelar`). Copia el
+  `tokens.css` de la fusión **entero**, también los tokens del kit, para que U1k use los mismos nombres.
+- **U1k · el kit** (Opus xhigh): `src/ui/fx/**` (salvo `transicion.js`), `estilos/fx.css` y lo aditivo de `sonido.js`.
+  Solo la política `linea` y las variantes elegidas; las ops de comparación de la vitrina no se portan.
+- **U1a · andamio** (Sonnet high, liviano según la compuerta 2): la regla f2 y las capturas lado a lado.
+- La interfaz entre U1 y U1k es `src/ui/fx/index.js` (`montarFx(contenedor) -> api`), que fijó el supervisor (`4e3ff8a`).
+
 **Tamaño**: 7 workers en 4 olas (FASE V fueron 12 subfases en ~2 días); estimado ~1,5-2 días de agentes y ~3-4M tokens.
 
 **El contrato de las familias** se actualiza en la cabecera de `ui/escena.js` en U1: además de lo de V (`mostrar`,
