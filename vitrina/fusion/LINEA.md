@@ -120,6 +120,14 @@ ambiente({
 - **El celular** (`encuadre: 'celular'`) parte la costura en vertical.
 - **Sin WebGL**, el fallback CSS acepta la paleta y la costura (dos capas en `clip-path`).
 - **El presupuesto** puede subir a 3 texturas, para el cruce dentro de un lado.
+- **(§4.10, T) `suspenso: { dura, vaiven, tonos, publico, latidos }`**, opcional y aditivo. Son unos segundos que se
+  construyen antes de un resultado, como el mapa decisivo:
+  - el vaivén de la costura;
+  - la luz que va de un tono al otro;
+  - los lightsticks que se encienden;
+  - los latidos de la línea, separados por `beats.destello`.
+  La pantalla arma las curvas y el ambiente las lee con su reloj, así que `congelar` coincide. `null` lo apaga. Con
+  INST o movimiento reducido no corre. Sin WebGL se ignora.
 
 ### 4.3 `js/ceremonia.js` + `estilos/ceremonia.css` (K)
 
