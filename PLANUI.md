@@ -26,7 +26,8 @@
 | **U0 · intensidad** | Una página con tres variantes de color del campeón (a color, mitad, fondo en duotono y retratos a color) y el espacio "un poco" menos (§4.6) | ✅ 2026-10-09 (`899ed27`, merge `81993d4`); el usuario respondió con capturas (§4.7) |
 | **U0 · opciones** | La serie con la receta de color y el fondo nítido; tres opciones por pantalla para el partido (la competición), la decisión y el mercado (logos reales) (§4.7) | ✅ 2026-10-09 (merges `66c6cc4`, `4c2de5f`, `67764bd`, `94dc50a`); el usuario eligió y combinó (§4.8) |
 | **U0 · demostración final** | Una versión por pantalla (`op=final`): serie con las pantallas del stage, Swiss como stream, decisión B+C, mercado A+C sin campeón de fondo; `final.html` (§4.8) | ✅ 2026-10-10 (merges `b45543c`, `fcd297b`, `5a8c891`, `c0297b7`); el usuario la miró y pidió correcciones (§4.9) |
-| **U0 · una línea** | La mini auditoría y la corrección (`op=linea`): el bitono del inicio como gradación de todo, el segundo tono por contexto, la costura, la ceremonia del LoL, los momentos con beats y la copa en 3D (§4.9) | ✅ 2026-10-10 (merge `f7b2e7d`: K, M, A, B, C y la unificación); esperando que el usuario mire `final.html` en el 8095 |
+| **U0 · una línea** | La mini auditoría y la corrección (`op=linea`): el bitono del inicio como gradación de todo, el segundo tono por contexto, la costura, la ceremonia del LoL, los momentos con beats y la copa en 3D (§4.9) | ✅ 2026-10-10 (merge `f7b2e7d`: K, M, A, B, C y la unificación); superada por §4.10 |
+| **U0 · las últimas correcciones** | La última ronda del usuario sobre `op=linea` (§4.10), con la perilla `var=`: el champ select del inicio, las costuras `copas` y `liga` de la bisagra, VICTORIA verde y el suspenso del mapa decisivo, el stream casi negro, las ofertas que llegan con `camiseta`/`plantel`/`ofertas` y el título con el campeón, la liga y el equipo | ✅ 2026-10-10 (merge `24d9009`: I, D, T, E); esperando que el usuario mire `final.html` en el 8095 |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
@@ -1059,6 +1060,58 @@ selector de variantes por pestaña.
   - **T · serie y Swiss:** `partido.*`, y `ceremonia.*` para VICTORIA en verde.
   - **E · mercado:** `mercado.*`.
 - Después, la hoja de contactos y la revisión del supervisor.
+
+**El resultado (2026-10-10, merge `24d9009` en `u-integracion`, sin push).** Cuatro Opus xhigh en paralelo (I, D, T,
+E), con dueños disjuntos y el contrato de `LINEA.md` §11. No hizo falta una pasada de unificación: todos usaron el kit
+y la hoja de contactos se lee como una línea.
+
+- **I · el inicio.** Con `op=linea`, la elección de campeones es un champ select:
+  - las pestañas de rol con sus glifos;
+  - el nombre del campeón apuntado, grande sobre su arte;
+  - las tres ranuras como cartas de carga que se llenan, con el fantasma del campeón apuntado;
+  - BLOQUEAR con el gesto de la ceremonia.
+  Sin `op`, el inicio no cambia (0,00% de píxeles distintos). No hay filtro por otros roles, porque el motor solo deja
+  elegir mains de tu rol.
+- **I · el título.** En los mismos 5 s suma el logo de la liga, que encabeza el bloque, el golpe del escudo de la org
+  campeona y la carta de carga del campeón que cerró la final.
+- **I · `final.html`.** Tiene el selector de variantes de la decisión y el mercado (tecla V, `#p=…&v=…`), y la pestaña
+  del inicio compara contra sin op.
+- **D · la decisión.** `copas` muestra las copas 3D de CBLOL y LCK, cada una en el tono de su competición. `liga`
+  muestra el logo, la ciudad y la pared de escudos reales de cada liga. `campeones` queda intacta.
+  - Sin campeón detrás en las dos variantes nuevas: `a.arte = null` ya andaba y `ambiente.js` no cambió.
+  - `trofeo.js` suma la opción `foco`. `logos.js` suma `equiposDe(liga)`, T1, KT y la tinta oscura de FURIA.
+  - Del material de la copa de la LCK no hay fuentes. La tabla la deja en oro, y está anotado en el README.
+- **T · la serie y el Swiss.**
+  - **VICTORIA** usa el verde metálico de la fusión.
+  - **El suspenso del mapa decisivo** dura 3 s:
+    - la placa "En juego";
+    - el tira y afloje de la costura, que se acelera;
+    - la luz que va de un tono al otro;
+    - los lightsticks que se encienden;
+    - 6 latidos, con ≤ 3 por segundo y 0 destellos WCAG.
+    Se dispara en el mapa 5 de un Bo5 a 2-2 y en el Bo1 de vida o muerte del Swiss. La API es `ambiente({ suspenso })`,
+    aditiva (`LINEA.md` §4.2).
+  - **El stream del Swiss** pasa de `#162133` a `#040a13`.
+- **E · el mercado.**
+  - **La llegada:** un reloj de la ventana de 14 días en el que cada oferta cae en su día (5,6 s, salteable, usable
+    mientras llegan). Los días son deterministas: primero los tiers bajos y el bombazo al final.
+  - **Atrás, sin campeón:** `camiseta` (de espaldas, ELURAH89 89, en SVG con pliegues de luz), `plantel` (la formación
+    en la Grieta con tu lugar) y `ofertas` (cartas formales con membrete y sello, que se apilan).
+  - `var=campeon` deja la derecha de §4.9 para comparar.
+- **Lo medido:**
+  - el verificador en verde;
+  - 0 errores de consola y 0 requestfailed en todas las combinaciones de cada worker, más una pasada del supervisor
+    por las pestañas de `final.html` con las variantes, sin op, `op=final` y `webgl=0`;
+  - el contraste ≥ 4,5:1 en todo lo nuevo;
+  - `src/` intacto.
+- **La hoja de contactos** (`vitrina/referencia/linea/hoja-de-contactos.jpg`, la pestaña "Las 7 juntas") muestra las
+  7 pantallas y las variantes.
+- **Lo que queda:**
+  - **El plantel de las orgs que ofertan.** El motor no lo trae, así que los otros 4 lugares dicen "por anunciar". El
+    campo que falta es `opcion.plantel: [{ rol, handle }]` (deuda para cuando se escriba el plan de producción).
+  - **El celular.** La llegada del mercado pasa casi toda fuera de pantalla.
+  - **1280×720.** Las copas y la liga de la bisagra quedan chicas (~110 px), y la pared de escudos se cae.
+  - **El tono del título.** El sub de VICTORIA baja a 2,3:1 en el 1% de los píxeles sobre arte claro.
 
 ---
 

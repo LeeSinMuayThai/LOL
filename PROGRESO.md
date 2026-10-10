@@ -34,6 +34,41 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-10 — PLANUI, U0: las últimas correcciones (PLANUI §4.10)
+
+**Por qué.** El usuario miró "una línea" (§4.9): *"me gustó bastante el resultado y creo que nos estamos acercando a la
+versión final"*. Pidió una última ronda, con sus palabras (textual en §4.10):
+- el inicio: la elección de campeones es *"muy simple"*;
+- la decisión: otra opción a los dos Sylas, *"algo tipo la liga, el trofeo"*, sin descartar la de hoy;
+- la serie y el Swiss: *"la victoria me gustaría que sea verde"*, un *"suspensito"* antes del quinto mapa, y el fondo
+  del stream *"más oscuro, casi negro"*;
+- el mercado: que las ofertas *"vayan cayendo momento por momento"* y algo que represente fichar en lugar del campeón
+  (*"Probá las tres"*);
+- el título: *"el campeón, la liga y el equipo"*.
+
+**Qué se hizo.**
+- **La perilla `var=`** (`main.js`, `ctx.variante`). El contrato está en `LINEA.md` §11.
+- **Cuatro Opus xhigh en paralelo:**
+  - **I:** el champ select, el título y el selector de variantes de `final.html`.
+  - **D:** las costuras `copas` (las copas 3D de CBLOL y LCK) y `liga` (el logo, la ciudad y los escudos reales).
+  - **T:** VICTORIA verde, los 3 s de suspenso del mapa decisivo (`ambiente({ suspenso })`) y el stream `#040a13`.
+  - **E:** la llegada en 14 días y `camiseta`/`plantel`/`ofertas`.
+- Merge `24d9009` en `u-integracion`, sin push. El detalle está en PLANUI §4.10, "El resultado".
+
+**Medido.**
+- El verificador en verde.
+- 0 errores de consola y 0 requestfailed en todas las combinaciones (las pantallas × sin op, `final` y `linea` × las
+  variantes × `webgl=0` y `peor=1`).
+- El contraste ≥ 4,5:1 en lo nuevo (el peor, 5,46:1).
+- El suspenso, con 0 destellos WCAG y ≤ 3 pulsos/s.
+- Sin op, el inicio da 0,00% de píxeles distintos.
+- `src/` intacto.
+
+**Lo que queda.**
+- El motor no trae el plantel de las orgs que ofertan (`opcion.plantel`).
+- En el celular, la llegada del mercado pasa fuera de pantalla.
+- En 1280×720, las copas y la liga quedan chicas.
+
 ### 2026-10-10 — PLANUI, U0: "una línea", la mini auditoría y la corrección de la demostración final (PLANUI §4.9)
 
 **Por qué.** El usuario miró la demostración final (`op=final`, §4.8) y la reacción en frío, textual, fue: *"siento que
