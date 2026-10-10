@@ -593,7 +593,125 @@ verificador) está en [`LINEA.md`](LINEA.md). Cada worker escribe solo su subsec
 
 ### Los momentos (M): `beats.js`, la copa, el confeti y el título
 
-*(lo escribe M)*
+Archivos: `js/beats.js`, `js/trofeo.js`, `js/confeti.js`, la rama `op=linea` de `js/cumbre.js` (`crearLevantar`),
+`estilos/momento.css` (la base `.takeover`, mudada de `cumbre.css` sin cambiar la firma, y las piezas de la copa y el
+confeti), el final de `estilos/cumbre.css`, `trofeo.html` (la página de prueba de la copa) y el bloque M de
+`tokens.css` (`--cu-*`).
+
+**`beats.js`: un reloj para todo el momento.** Las animaciones WAAPI de la pantalla (con delays absolutos desde t = 0)
+y los participantes que no son WAAPI (un canvas con su `en(t)`) comparten el mismo `t`.
+
+```js
+const b = crearBeats({ duracion: 5000, asentarse: 4600 });
+b.agregar(copa);                                       // { en(t, fijo?), fps?, saltar?, pausar?, reanudar?, destruir? }
+b.waapi(animar(nodo, cuadros, { delay: 1200, dur: 400 }));
+const td = b.destello(220); if (td != null) amb.pulso('gloria', td);
+b.esperar(1800).then((llego) => llego && sonido.golpe?.());   // false si Espacio lo pasó de largo
+b.iniciar();
+// la pantalla: congelar(ms) -> b.congelar(ms) · Espacio -> b.saltar() · pausar/reanudar · destruir -> b.destruir()
+```
+
+- `congelar(t)` lleva todo a `t` y no dispara ningún `esperar()` (la trampa de `mercado.js`).
+- `saltar()` va a `asentarse`, nunca a `finish()`, que truena con un loop infinito.
+- `destello(t)` mantiene una separación de 335 ms (≤ 3 por segundo en cualquier ventana). Al que no entra lo corre
+  hasta 240 ms o lo descarta.
+- Con INST o movimiento reducido, `iniciar()` dibuja el cuadro final y queda quieto: `esperar()` resuelve `false` y
+  `destello()` da `null`.
+- `en(t, true)` marca un cuadro suelto (congelar, el cuadro final): la copa lo dibuja a escala plena.
+- `destruir({ participantes: false })` deja viva la copa: `repetir()` reusa su contexto WebGL.
+
+**La copa (`trofeo.js`), en 3D y en tiempo real.**
+- **La técnica.** WebGL2 y raymarching de una superficie de revolución.
+  - El perfil de cada copa es una tabla de puntos `(y, radio)` (copa, cuello, nudo, base) que se interpola en JS con
+    una cúbica monótona. Va al shader como una textura de 512 × 1 RGBA32F con el radio de afuera, el del hueco y un
+    factor de Lipschitz local, así que la distancia cuesta una lectura de textura.
+  - Con RGBA16F las normales salían rayadas: el medio flotante no alcanza.
+  - Por repetición polar: las asas (un toro recortado y achatado), las caras (sección de n lados), las estrías y la
+    gema del LCS.
+  - El pedestal es fijo y la copa gira sobre él. Su placa recibe el logo como `<img>` (`placa()` da el rectángulo).
+- **El material.** Fresnel de Schlick, GGX con Smith, rugosidad 0,22 (plata) o 0,27 (oro) y la aproximación de Karis
+  para el entorno.
+  - El entorno es procedural y sale de los tonos `luz`/`contra`/`noche`: el foco de arriba, dos varas de escenario, el
+    piso tenido, un relleno ancho y lightsticks en el horizonte.
+  - Encima: un brillo que barre (fuerte al llegar y después cada 6,5 s), borde de luz, oclusión barata, ACES, un halo
+    que se apaga en los bordes del lienzo y antialias del contorno por cobertura.
+- **El costo.** El rayo marcha solo dentro del cilindro envolvente, con ≤ 96 pasos y ≤ 30 fps. La resolución se adapta
+  si los cuadros llegan lentos.
+- **El ciclo de vida.** `listo` resuelve después del primer cuadro, con compilación en paralelo
+  (`KHR_parallel_shader_compile`). `destruir()` libera el contexto (`WEBGL_lose_context`).
+- **Sin WebGL** (`webgl=0`) o con el contexto perdido: una copa en SVG con el mismo perfil y su barrido de brillo.
+
+| Competición | Material | Perfil | Qué dice la fuente |
+|---|---|---|---|
+| Worlds | plata | `invocador` (cáliz ancho, 2 asas, pedestal de madera) | [LoL Esports (2022)](https://lolesports.com/en-US/news/lol-esports-tiffany-co-unveil-new-summoner-s-cup): Tiffany & Co., plata esterlina y fina, acero, bronce y **madera**; 20 kg, 68,6 cm. La silueta no la describe: va la histórica. |
+| CBLOL | plata + rojo cromado | `cblol` (5 caras, 5 asas agudas en rojo) | [O Hoje (2024)](https://ohoje.com/2024/04/05/cblol-2024-novo-trofeu-e-divulgado-pela-riot/): aluminio, "prata e vermelho cromados", 60 cm, 20 kg, "5 faces e 5 manoplas". Confirma el "rojo cromado" de `competicion.js`. La forma de las asas es nuestra lectura. |
+| LCK | oro (sin fuente del material) | `lck` (alta, sin asas, 35 estrías) | [Inven Global (2019)](https://www.invenglobal.com/articles/7988/riot-games-reveals-the-new-lck-championship-trophy-rise-victory): "Rise & Victory" (SWNA), 390 × 597 mm, 140 líneas por los 140 campeones, la parte de arriba del águila y la estrella. |
+| LEC | plata | `generica` | [Thomas Lyte](https://thomaslyte.com/makers-of-the-league-of-legends-european-championships-lec-trophy/): de plata (2019), inspirada en los 10 equipos. La silueta, sin fuente. |
+| LPL | plata | `generica` | [ONE Esports](https://www.oneesports.gg/lol/tiffany-and-co-lpl-trophy-shang-chi/) y la nota de LoL Esports: la Copa del Dragón de Plata (Tiffany & Co.). La silueta, sin fuente. |
+| LCS | oro + gema azul | `reloj` (reloj de arena) | [Volpin Props (2021)](https://www.volpinprops.com/portfoliopage/lcs_2021_rebrand/): "a simple hourglass design with a blue gem held aloft in its center". Lock-In en plata; la final, "gold, blue". |
+| MSI, First Stand, LCP | oro | `generica` | sin fuente en 6 búsquedas: la copa genérica dorada |
+
+**El confeti (`confeti.js`).** Un canvas 2D, determinista con el PRNG decorativo y ≤ 300 piezas.
+- Dos cañones abajo a los costados, una cortina de papelitos y serpentinas desde arriba, y una lluvia que recicla cada
+  papelito por generaciones con un hash entero (el loop vivo).
+- Cada papelito gira, se voltea (la escala Y oscila: una cara más oscura, y el oro destella de frente), cae con gravedad,
+  arrastre lineal y viento, y se mece.
+- `en(t)` es una función pura de t, en forma cerrada: `x(s) = x0 + w·s + (vx − w)(1 − e^−ks)/k`. No se re-simula nada.
+- `calma`: desde que entra el texto, lo que pasa por detrás del bloque baja al 14 % (la letra chica conserva su
+  contraste).
+- En el título los colores son el oro, el blanco, el color del equipo (`tonoOrg`) y la contra de la competición.
+
+**El título con `op=linea`: levantar la copa.**
+- **La secuencia (~5 s, salteable).**
+  - **0-220 ms, el apagón:** negro, con un hilo de luz donde va a subir la copa.
+  - **220, el golpe de luz:** el mundo ya está en el oro debajo del negro; entra la gloria, un fogonazo blanco-oro y
+    los cañones (260).
+  - **600-1800, la copa sube hasta el foco:** entra en la luz y frena el giro. Al llegar (1800), el brillo barre el
+    metal, el halo late y el ambiente da un pulso.
+  - **1500, el rótulo.**
+  - **1850-2910, CAMPEONES con peso:** cada letra cae, se aplasta contra la línea, rebota y levanta polvo de oro. Las
+    letras 1, 5 y 9 sacuden la palabra y llaman a `sonido.golpe?.()`.
+  - **2750-4100:** el marcador (el número golpea), los mapas y los créditos; el filete se traza con ellos.
+  - **4600, se asienta (Espacio salta hasta acá):** la copa gira lenta, el confeti sigue cayendo, el brillo vuelve a
+    cruzar CAMPEONES y el metal cada 6,5 s, y el arte queda vivo detrás.
+- **Los destellos:** dos (220 y 1800), a través de `destello()`.
+- **La composición.** CAMPEONES a la izquierda (`--t-momento`) y la copa al centro-derecha, delante del arte (el campeón
+  "levanta" la copa), con la placa grabada: el símbolo de la liga como `<img>` y "CBLOL 2031". Un velo de lectura
+  propio queda detrás del bloque. En el celular, la copa arriba y el texto abajo.
+- **La copa del título** sale de la competición del título (`copaDe`): el CBLOL de la muestra es la de plata con rojo,
+  bajo la luz del oro. En Worlds, el tono de la plata.
+- **INST y movimiento reducido:** el cuadro final, con la copa y el confeti quietos.
+- **Sin op y con las demás opciones:** el takeover de siempre.
+
+**Verificación (2026-10-10, SwiftShader en headless, 1440 × 900).**
+- **La tira** (0, 150, 400, 800, 1500, 2400, 4000 y 5000 ms) es una secuencia: apagón, hilo, golpe y cañones, la copa
+  subiendo, la copa en el foco, las letras cayendo, el marcador y el asentado.
+- **`congelar(t)` es fiel:** dos capturas en el mismo t, con otro t en el medio.
+  - La caja de la copa es idéntica en 800, 2400 y 5000 ms.
+  - Los píxeles del canvas del confeti, leídos con `getImageData`, son idénticos en 400, 800, 2400, 5000 y 9000 ms.
+  - La página entera es idéntica en 2400 y 5000. A 800 ms difieren 10 píxeles, en ≤ 2/765, dentro del fogonazo: es el
+    redondeo del compositor.
+- **Los fps de la copa:** 29,9 cuadros dibujados por segundo asentada (el tope es 30), a escala plena (428 × 648). Se
+  contaron los `drawArrays` en su canvas. SwiftShader es más lento que una GPU real.
+  - En `trofeo.html`, sola, da 30 por segundo con cada perfil.
+- **`node vitrina/comun/verificar.mjs`** en verde, y 0 errores de consola con `op=linea`, sin op y con la firma de
+  `op=final`.
+- **Repetir:** 10 × repetir y 10 × cambiar el hash (título ↔ final) dejan el contexto del ambiente vivo, con 0 avisos
+  de contextos.
+- **Lo que no tenía que cambiar:** el título sin op y la firma de `op=final` contra el commit base, con el ambiente
+  oculto, dan 0 píxeles distintos. La única excepción es la firma a 900 ms (0,23 %), menos que su ruido entre dos
+  corridas propias (0,42 %).
+- **El contraste**, medido por píxeles con una copia de `c-pantallas/contraste.mjs` que mide también las capas
+  `aria-hidden`: en los cuadros asentados, 0 textos por debajo de 4,5:1.
+  - Se midieron 280 textos en 7 casos: escritorio, `peor=1`, 390 × 844 (con y sin `peor`), `webgl=0` e INST.
+  - Los peores: "support" 6,05 (escritorio, 10,5 px), 6,44 (390 × 844) y "Fluxo w7m" 4,56 con `peor=1` (34 px).
+  - Sin op, el título de siempre da 4,17 en "support" y 2,61 con `peor=1`: viene de antes y no se tocó.
+
+**Límites.**
+- El ambiente (de K) sigue moviéndose en INST y con movimiento reducido. La copa y el confeti quedan quietos.
+- Las siluetas del CBLOL, la LCK y el LCS son lecturas de las descripciones de texto de la tabla.
+- La copa en SVG dibuja dos asas sin importar cuántas tenga.
+- En esta rama el arte del título sigue en duotono: el 70 % de color de los momentos es la política de K.
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->

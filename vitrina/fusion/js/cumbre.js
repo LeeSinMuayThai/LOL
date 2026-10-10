@@ -3,16 +3,24 @@
 // creditos y polvo dorado (PRNG comun). Desemboca en `final`: la carta holografica (5:7, el arte de carga del main en
 // duotono de la rareza, el puntaje como calificacion de carta, foil y brillo que siguen al puntero) con el veredicto,
 // los totales y la trayectoria dibujada (cinta de orgs + curva de nivel + hitos).
+// Con `op=linea` (PLANUI §4.9), `titulo` es levantar la copa: una secuencia de beats de ~5 s (js/beats.js) con la copa en
+// 3D (js/trofeo.js) y el confeti (js/confeti.js). Sin op y con las demas opciones, el takeover de siempre.
 import { crearAzar } from '../../comun/azar.js';
 import { cargarImagen, urlCarga } from '../../comun/arte.js';
 import { el, svg, entrar, animar, esperar, odometro, num, reducido, inst, celular, leerColor, duotono, EXPO, RESORTE } from './util.js';
 import { icono, glifoRol } from './iconos.js';
+import { crearBeats } from './beats.js';
+import { crearTrofeo, copaDe, SUBIDA } from './trofeo.js';
+import { crearConfeti } from './confeti.js';
+import { logoLiga, tonoOrg } from './logos.js';
 
 const POLVO = 46;
 const TOMA = 2400;
 
 export function crearCumbre(ctx) {
-  return ctx.muestra === 'final' ? crearCarta(ctx) : crearTakeover(ctx);
+  if (ctx.muestra === 'final') return crearCarta(ctx);
+  // PLANUI §4.9: con `op=linea`, el titulo es levantar la copa; sin op (y con las demas) queda el de siempre
+  return ctx.op === 'linea' ? crearLevantar(ctx) : crearTakeover(ctx);
 }
 
 // ====================================================================================================== takeover
@@ -97,6 +105,264 @@ function crearTakeover({ datos, amb, sonido, peor }) {
         if (!asentado) saltear();
         else window.vitrina?.muestra('final');
       }
+    },
+    arte: datos.inicio?.jugador?.mains?.[0]?.ddragon ?? 'Yone',
+    animo: 'normal',
+    encuadre: 'cumbre',
+    velo: 0.35,
+  };
+}
+
+// ====================================================================================================== levantar la copa
+// PLANUI §4.9 (op=linea): el titulo como una secuencia de beats de ~5 s, con un solo reloj (beats.js):
+//   0-220      apagon: la pantalla cae a negro
+//   220        golpe de luz: el mundo sube al oro (era mundial + gloria), un fogonazo y los dos canones de confeti
+//   600-1800   la copa sube desde abajo hasta el foco (WebGL: entra en la luz y frena el giro); al llegar, el brillo
+//              barre el metal y el halo late
+//   1500       el rotulo (final, la liga y el ano, la edad)
+//   1850-2910  CAMPEONES letra por letra, con peso: cada letra cae, se aplasta contra la linea y levanta polvo de oro
+//   2750-4100  el marcador, los mapas y los creditos del plantel
+//   4600       se asienta (Espacio salta hasta aca): la copa gira lenta, el confeti cae, el arte queda vivo detras
+// Con INST o movimiento reducido, el cuadro final (copa quieta, confeti quieto).
+const L = {
+  duracion: 5000,
+  asentarse: 4600,
+  golpe: 220,
+  apagon: 700,
+  hilo: 760,
+  fogonazo: 1000,
+  canones: 260,
+  cortina: 420,
+  lluvia: 2400,
+  copa: 600,
+  kicker: 1500,
+  letras: 1850,
+  letraPaso: 80,
+  letraDur: 420,
+  impacto: 0.58, // en que punto de la caida la letra toca la linea
+  polvoDur: 560,
+  sacudon: 170,
+  golpesEn: [0, 4, 8], // las letras que suenan (y sacuden la palabra) al caer
+  brillo: 2900,
+  brilloPeriodo: 6500,
+  marcador: 2750,
+  mapas: 2900,
+  mapaPaso: 90,
+  creditos: 3200,
+  creditoPaso: 90,
+  filete: 120,
+  fileteDur: 700,
+  seguir: 4100,
+  confeti: 270,
+  confetiCelular: 0.6, // en el celular, el mismo confeti en un lienzo mucho mas chico: menos papelitos
+  calmaDur: 700,
+  calmaAlfa: 0.14,
+};
+// el titulo dice la liga ('CBLOL', 'Mundial 2031'...): su competicion (la copa, los logos, el rojo del confeti)
+const COMP_DE_LIGA = { cblol: 'cblol', lec: 'lec', lck: 'lck', lpl: 'lpl', lcs: 'lcs', lcp: 'lcp', msi: 'msi', mundial: 'worlds', worlds: 'worlds', 'first stand': 'firststand' };
+const compDeTitulo = (nombre) => {
+  const k = String(nombre ?? '').trim().toLowerCase();
+  return COMP_DE_LIGA[k] ?? (k.startsWith('mundial') ? 'worlds' : null);
+};
+// el tono de la copa: el oro de la ceremonia; en Worlds, la plata (LINEA.md §3)
+const TONO_COPA = {
+  oro: { luz: '--luz-mundial', contra: '--contra-mundial', noche: '--cu-noche-oro' },
+  plata: { luz: '--comp-worlds-luz', contra: '--contra-mundial', noche: '--cu-noche-plata' },
+};
+// el grabado de la placa: su letra es una fraccion del alto de la placa (la copa cambia de tamano con la pantalla)
+const PLACA_LETRA = 0.22;
+const PLACA_LETRA_MIN = 6;
+// una animacion WAAPI con iteraciones (util.animar no las tiene); nada con INST o movimiento reducido
+const animarLoop = (nodo, cuadros, opciones) => (!nodo || inst() || reducido() ? null : nodo.animate(cuadros, opciones));
+
+function crearLevantar({ datos, amb, sonido, peor }) {
+  const t = datos.titulo;
+  const pc = peor ? datos.peorCaso : null;
+  const org = pc?.org?.nombre ?? t.titulo.org;
+  const yo = pc?.handle ?? t.plantel.find((p) => p.esJugador)?.handle;
+  const comp = compDeTitulo(t.titulo.nombre ?? t.titulo.liga);
+  const { material, perfil } = copaDe(comp);
+  const tonoCopa = comp === 'worlds' ? TONO_COPA.plata : TONO_COPA.oro;
+
+  const raiz = el('section', { class: 'cumbre takeover cu-titulo', 'data-pieza': 'cumbre', 'data-fase': 'takeover', 'data-op': 'linea', 'aria-labelledby': 'tk-titulo' });
+  const negro = el('div', { class: 'cu-negro', 'aria-hidden': 'true' });
+  const golpe = el('div', { class: 'cu-golpe', 'aria-hidden': 'true' });
+
+  // la copa: el lienzo (WebGL o SVG) y el logo de la competicion como <img> sobre la placa del pedestal
+  const copa = crearTrofeo(document.createElement('canvas'), { material, perfil, tonos: tonoCopa });
+  const logo = logoLiga(t.titulo.nombre ?? t.titulo.liga);
+  // la placa grabada: el simbolo de la liga y la edicion
+  const grabado = el('span', { class: 'cu-placa-texto', text: `${t.titulo.nombre} ${t.titulo.anio}` });
+  const placa = el('span', { class: 'cu-placa', 'aria-hidden': 'true' }, grabado);
+  const sinLogo = () => placa.querySelector('img')?.remove();
+  let logoListo = Promise.resolve();
+  if (logo.src) {
+    const img = el('img', { src: logo.src, alt: '', decoding: 'async', draggable: 'false', referrerpolicy: 'no-referrer' });
+    logoListo = new Promise((r) => {
+      img.addEventListener('load', r, { once: true });
+      img.addEventListener('error', () => (sinLogo(), r()), { once: true });
+    });
+    placa.prepend(img);
+  }
+  const sube = el('div', { class: 'cu-copa-sube' }, [copa.nodo, placa]);
+  // el hilo de luz: en el apagon, una linea de oro marca donde va a subir la copa
+  const hilo = el('i', { class: 'cu-hilo' });
+  const caja = el('div', { class: 'cu-copa', 'aria-hidden': 'true', 'data-copa': perfil, 'data-material': material }, [hilo, sube]);
+  const ubicarPlaca = () => {
+    const r = copa.placa();
+    if (!r) return;
+    Object.assign(placa.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.ancho}px`, height: `${r.alto}px`, fontSize: `${Math.max(PLACA_LETRA_MIN, r.alto * PLACA_LETRA)}px` });
+  };
+
+  // el confeti: el oro, el blanco, el color del equipo y el de la competicion
+  const colores = ['--gold', '--carta-oro-a', '--luz-blanca', `--org-${tonoOrg(org)}`];
+  if (comp) colores.push(`--comp-${comp}-contra`);
+  // (despues de que entra el texto, lo que pasa por detras del bloque se apaga: la letra chica conserva su contraste)
+  let bloque = null;
+  const confeti = crearConfeti(el('canvas', { class: 'cu-confeti', 'aria-hidden': 'true' }), {
+    colores,
+    semilla: `titulo-${t.titulo.anio}-${org}`,
+    cantidad: Math.round(L.confeti * (celular() ? L.confetiCelular : 1)),
+    calma: { desde: L.kicker, dur: L.calmaDur, alfa: L.calmaAlfa, zonas: () => (bloque ? [bloque.getBoundingClientRect()] : []) },
+    origenes: [
+      { tipo: 'canon', x: 0, y: 1.02, angulo: 21, t: L.canones },
+      { tipo: 'canon', x: 1, y: 1.02, angulo: -21, t: L.canones },
+      { tipo: 'cortina', t: L.cortina },
+      { tipo: 'lluvia', t: L.lluvia },
+    ],
+  });
+
+  // el bloque: el mismo de siempre (rotulo, CAMPEONES, marcador, mapas, plantel), con letras que caen con peso
+  const polvos = [];
+  const letras = 'CAMPEONES'.split('').map((c) => {
+    const p = el('i', { class: 'cu-polvo' });
+    polvos.push(p);
+    return el('span', { class: 'tk-letra cu-letra' }, [c, p]);
+  });
+  const brillo = el('span', { class: 'tk-brillo', 'aria-hidden': 'true', text: 'CAMPEONES' });
+  const titulo = el('h1', { class: 'tk-titulo', id: 'tk-titulo', 'data-foco': '', tabindex: '-1', 'aria-label': `¡Campeones de ${t.titulo.nombre}!` }, [el('span', { class: 'tk-letras', 'aria-hidden': 'true' }, letras), brillo]);
+  const kicker = el('p', { class: 'tk-kicker' }, [el('span', { text: 'Final' }), el('span', { text: `${t.titulo.nombre} ${t.titulo.anio}` }), el('span', { text: `${t.franja?.cuando?.edadTexto ?? ''}` })]);
+  const [a, b] = t.log.marcador;
+  const score = el('span', { class: 'tk-score', text: `${a}–${b}` });
+  const marcador = el('p', { class: 'tk-marcador' }, [el('b', { text: org }), score, el('b', { class: 'tk-rival', text: t.log.rival })]);
+  const mapas = el('ol', { class: 'tk-mapas', 'aria-label': 'La serie, mapa por mapa' }, t.log.mapas.map((m) => el('li', { class: m.resultado === 'W' ? 'gano' : 'perdio', title: m.cierre }, [el('span', { class: 'tk-m', text: `M${m.mapa}` }), el('b', { class: 'campeon-foco', 'data-campeon': m.campeon, tabindex: '0', text: m.campeon }), el('span', { class: 'tk-r', text: m.resultado === 'W' ? 'ganado' : 'perdido' })])));
+  const creditos = el('ol', { class: 'tk-creditos', 'aria-label': 'El plantel' }, t.plantel.map((p) => el('li', { class: p.esJugador ? 'vos' : '' }, [glifoRol(p.rol), el('b', { text: p.esJugador ? yo : p.handle }), el('span', { text: p.rol })])));
+  const seguir = el('button', { type: 'button', class: 'tk-seguir' }, ['La carta de tu carrera', icono('flecha'), el('kbd', { text: 'Espacio' })]);
+  seguir.addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.vitrina?.muestra('final');
+  });
+  bloque = el('div', { class: 'tk-bloque cu-bloque' }, [kicker, titulo, marcador, mapas, creditos, seguir]);
+  // el velo de lectura del bloque (la letra chica de los creditos cae sobre el arte iluminado)
+  const velo = el('div', { class: 'cu-velo', 'aria-hidden': 'true' });
+  raiz.append(negro, velo, golpe, caja, confeti.nodo, bloque);
+
+  let beats = null;
+  let asentado = false;
+  const observador = typeof ResizeObserver === 'function' ? new ResizeObserver(() => {
+    copa.redimensionar();
+    ubicarPlaca();
+  }) : null;
+
+  function secuencia() {
+    beats?.destruir({ participantes: false });
+    const bt = crearBeats({ duracion: L.duracion, asentarse: L.asentarse });
+    beats = bt;
+    asentado = false;
+    bt.agregar(copa);
+    bt.agregar(confeti);
+    copa.entrar(L.copa);
+    const llegada = L.copa + SUBIDA;
+    // el mundo: ya en el oro debajo del apagon (asi el golpe de luz es oro desde el primer cuadro) y la gloria al golpe
+    // (el ambiente programa el cambio en su reloj: congelar lo dibuja fiel)
+    amb.ambiente({ era: 'mundial', animo: 'normal', instantaneo: true });
+    amb.ambiente({ animo: 'gloria', retardo: L.golpe });
+    const fogonazo = bt.destello(L.golpe);
+    if (fogonazo != null) amb.pulso('gloria', fogonazo);
+    const brilloCopa = bt.destello(llegada);
+    if (brilloCopa != null) amb.pulso('logro', brilloCopa);
+    // los sonidos (K suma golpe y confeti; si no estan, no suenan): solo si el reloj llega solo
+    const sonar = (ms, fn) => bt.esperar(ms).then((llego) => llego && fn());
+    if (!bt.quieto && !inst() && !reducido()) {
+      sonido?.barrido?.();
+      sonar(L.golpe, () => {
+        sonido?.confeti?.();
+        sonido?.multitud?.((L.duracion - L.golpe) / 1000);
+      });
+      sonar(llegada, () => sonido?.acorde?.());
+    }
+    // apagon -> golpe de luz
+    bt.waapi(animar(negro, [{ opacity: 0.96 }, { opacity: 0.96, offset: L.golpe / L.apagon }, { opacity: 0 }], { dur: L.apagon, easing: 'cubic-bezier(.3,0,.2,1)' }));
+    bt.waapi(animar(hilo, [{ opacity: 0, transform: 'scaleX(0.05)' }, { opacity: 1, transform: 'scaleX(1)', offset: L.golpe / L.hilo }, { opacity: 0, transform: 'scaleX(1.3)' }], { dur: L.hilo, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'none' }));
+    if (fogonazo != null) bt.waapi(animar(golpe, [{ opacity: 0, transform: 'scale(0.7)' }, { opacity: 1, transform: 'scale(1)', offset: 0.16 }, { opacity: 0, transform: 'scale(1.3)' }], { delay: fogonazo, dur: L.fogonazo, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'none' }));
+    // la copa sube hasta el foco (el canvas dibuja su luz y su giro con el mismo reloj)
+    bt.waapi(animar(sube, [{ transform: 'translateY(118%)' }, { transform: 'translateY(-1.6%)', offset: 0.84 }, { transform: 'none' }], { delay: L.copa, dur: SUBIDA, easing: 'cubic-bezier(.22,.8,.3,1)' }));
+    // el rotulo, y CAMPEONES letra por letra con peso
+    bt.waapi(entrar(kicker, L.kicker, 10));
+    letras.forEach((l, i) => {
+      const t0 = L.letras + i * L.letraPaso;
+      const toca = t0 + L.letraDur * L.impacto;
+      bt.waapi(animar(l, [
+        { opacity: 0, transform: 'translateY(-82%) scale(1.06, 1.28)', filter: 'blur(6px)', easing: 'cubic-bezier(.55,0,.9,.4)' },
+        { opacity: 1, transform: 'translateY(3%) scale(1.1, 0.8)', filter: 'blur(0px)', offset: L.impacto, easing: 'cubic-bezier(.2,.7,.3,1)' },
+        { opacity: 1, transform: 'translateY(-2%) scale(0.98, 1.05)', filter: 'blur(0px)', offset: 0.8 },
+        { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+      ], { delay: t0, dur: L.letraDur, easing: 'linear' }));
+      bt.waapi(animar(polvos[i], [{ opacity: 0, transform: 'scaleX(0.3)' }, { opacity: 1, transform: 'scaleX(1)', offset: 0.14 }, { opacity: 0, transform: 'scaleX(1.9) translateY(-12%)' }], { delay: toca, dur: L.polvoDur, easing: EXPO, fill: 'none' }));
+      if (L.golpesEn.includes(i)) {
+        bt.waapi(animar(titulo, [{ transform: 'none' }, { transform: 'translateY(0.035em)', offset: 0.25 }, { transform: 'none' }], { delay: toca, dur: L.sacudon, easing: 'ease-out', fill: 'none' }));
+        sonar(toca, () => sonido?.golpe?.());
+      }
+    });
+    // el brillo especular cruza CAMPEONES y vuelve cada tanto (el loop vivo)
+    bt.waapi(animarLoop(brillo, [{ backgroundPosition: '160% 0', opacity: 1 }, { backgroundPosition: '-60% 0', opacity: 1, offset: 0.18 }, { backgroundPosition: '-60% 0', opacity: 1 }], { delay: L.brillo, duration: L.brilloPeriodo, iterations: Infinity, easing: 'cubic-bezier(.4,0,.2,1)' }));
+    // el marcador (el numero golpea), los mapas y los creditos
+    bt.waapi(entrar(marcador, L.marcador, 12));
+    bt.waapi(animar(score, [{ transform: 'scale(1.5)', opacity: 0 }, { transform: 'none', opacity: 1 }], { delay: L.marcador + 80, dur: 620, easing: RESORTE }));
+    mapas.querySelectorAll('li').forEach((li, i) => bt.waapi(entrar(li, L.mapas + i * L.mapaPaso, 8)));
+    // el filete de los creditos se traza con ellos (si no, queda una raya sola en la pantalla antes del texto)
+    bt.waapi(animar(creditos, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { delay: L.creditos - L.filete, dur: L.fileteDur, easing: EXPO }));
+    creditos.querySelectorAll('li').forEach((li, i) => bt.waapi(animar(li, [{ opacity: 0, transform: 'translateY(16px)', letterSpacing: '0.3em' }, { opacity: 1, transform: 'none' }], { delay: L.creditos + i * L.creditoPaso, dur: 400 })));
+    bt.waapi(entrar(seguir, L.seguir, 6));
+    bt.esperar(L.asentarse).then(() => {
+      if (beats === bt) asentado = true;
+    });
+    bt.iniciar();
+  }
+  function saltar() {
+    if (asentado || !beats) return;
+    // si el golpe de luz todavia no cruzo, el mundo va directo al oro
+    if (beats.ahora() < L.golpe) amb.ambiente({ era: 'mundial', animo: 'gloria', instantaneo: true });
+    beats.saltar();
+    asentado = true;
+  }
+  raiz.addEventListener('click', () => (asentado ? null : saltar()));
+
+  return {
+    nodo: raiz,
+    entrar() {
+      observador?.observe(caja);
+      copa.redimensionar();
+      ubicarPlaca();
+      secuencia();
+    },
+    repetir: secuencia,
+    tecla(e) {
+      if (e.code === 'Space' || e.key === 'Enter') {
+        e.preventDefault();
+        if (!asentado) saltar();
+        else window.vitrina?.muestra('final');
+      }
+    },
+    congelar: (ms) => beats?.congelar(ms),
+    pausar: () => beats?.pausar(),
+    reanudar: () => beats?.reanudar(),
+    listo: () => Promise.all([copa.listo, logoListo]).then(() => ubicarPlaca()),
+    destruir() {
+      observador?.disconnect();
+      beats?.destruir({ participantes: false });
+      copa.destruir();
+      confeti.destruir();
     },
     arte: datos.inicio?.jugador?.mains?.[0]?.ddragon ?? 'Yone',
     animo: 'normal',

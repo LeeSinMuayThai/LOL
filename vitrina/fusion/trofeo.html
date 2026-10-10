@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La copa — Un Split Más</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../comun/fuentes.css">
+  <link rel="stylesheet" href="../comun/tokens.css">
+  <link rel="stylesheet" href="estilos/tokens.css">
+  <link rel="stylesheet" href="estilos/momento.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; color: var(--ink); background: radial-gradient(70% 80% at 60% 40%, var(--cu-noche-oro), var(--bg-void)); }
+    body { font: 400 14px / 1.4 var(--f-cuerpo); overflow: hidden; }
+    .tf-escena { position: fixed; inset: 0; display: grid; place-items: center; }
+    .tf-copa { position: relative; height: var(--cu-copa-alto); aspect-ratio: var(--cu-copa-aspecto); }
+    .tf-panel { position: fixed; top: 16px; left: 16px; z-index: 2; display: grid; gap: 10px; padding: 14px 16px; border-radius: var(--r-panel); background: var(--panel); box-shadow: inset 0 0 0 1px var(--filete); }
+    .tf-panel h1 { margin: 0; font: 800 20px / 1 var(--f-display); font-stretch: 125%; letter-spacing: -0.02em; }
+    .tf-panel label { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 10px; font: 500 11px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+    .tf-panel select, .tf-panel button { font: 500 13px / 1 var(--f-cuerpo); color: var(--ink); background: var(--bg-raised); border: 1px solid var(--linea-fuerte); border-radius: var(--r-control); padding: 6px 8px; }
+    .tf-medida { font: 500 12px / 1.4 var(--f-mono); color: var(--ink-dim); }
+    .tf-medida b { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <div class="tf-escena"><div class="tf-copa" id="copa"></div></div>
+  <form class="tf-panel" id="panel" onsubmit="return false">
+    <h1>La copa</h1>
+    <label>Competición <select id="comp"></select></label>
+    <label>Material <select id="material"><option value="oro">oro</option><option value="plata">plata</option></select></label>
+    <label>Perfil <select id="perfil"></select></label>
+    <label>Girar <select id="girar"><option value="1">sí</option><option value="0">no (quieta)</option></select></label>
+    <button type="button" id="entrar">Ver la subida</button>
+    <p class="tf-medida" id="medida">—</p>
+  </form>
+  <script type="module">
+    // Pagina de prueba de js/trofeo.js: material, perfil, girar y los fps reales de la copa (cuadros dibujados por
+    // segundo, no los del rAF). ?webgl=0 fuerza la copa en SVG. window.copa expone lo mismo para medir en headless.
+    import { crearTrofeo, COPAS, PERFILES } from './js/trofeo.js';
+    import { el } from './js/util.js';
+    const q = new URLSearchParams(location.search);
+    if (q.get('webgl') === '0') document.documentElement.setAttribute('data-sin-webgl', '');
+    const $ = (id) => document.getElementById(id);
+    for (const id of Object.keys(COPAS)) $('comp').append(el('option', { value: id, text: id }));
+    for (const [id, p] of Object.entries(PERFILES)) $('perfil').append(el('option', { value: id, text: p.nombre }));
+    const caja = $('copa');
+    let copa = null;
+    let inicio = performance.now();
+    let cuadros = [];
+    let ultimo = 0;
+    function montar() {
+      copa?.destruir();
+      caja.textContent = '';
+      const lienzo = document.createElement('canvas');
+      const material = $('material').value;
+      copa = crearTrofeo(lienzo, { material, perfil: $('perfil').value, tonos: { luz: '--luz-mundial', contra: '--contra-mundial', noche: material === 'plata' ? '--cu-noche-plata' : '--cu-noche-oro' } });
+      caja.append(copa.nodo);
+      inicio = performance.now();
+      cuadros = [];
+    }
+    $('comp').addEventListener('change', () => {
+      const c = COPAS[$('comp').value];
+      $('material').value = c.material;
+      $('perfil').value = c.perfil;
+      montar();
+    });
+    $('material').addEventListener('change', montar);
+    $('perfil').addEventListener('change', montar);
+    $('entrar').addEventListener('click', () => {
+      inicio = performance.now();
+      copa.entrar(0);
+    });
+    const c0 = COPAS[q.get('comp') ?? 'cblol'] ?? COPAS.cblol;
+    $('comp').value = q.get('comp') ?? 'cblol';
+    $('material').value = q.get('material') ?? c0.material;
+    $('perfil').value = q.get('perfil') ?? c0.perfil;
+    montar();
+    let quieta = 0;
+    function bucle(ahora) {
+      requestAnimationFrame(bucle);
+      if (document.hidden || ahora - ultimo < 1000 / copa.fps - 2) return;
+      ultimo = ahora;
+      const t = $('girar').value === '1' ? ahora - inicio : quieta;
+      copa.en(t);
+      cuadros.push(ahora);
+      while (cuadros.length && cuadros[0] < ahora - 1000) cuadros.shift();
+    }
+    requestAnimationFrame(bucle);
+    setInterval(() => {
+      $('medida').innerHTML = `<b>${cuadros.length}</b> cuadros/s · escala <b>${copa.escala().toFixed(2)}</b> · ${copa.nodo instanceof HTMLCanvasElement ? `canvas ${copa.nodo.width}×${copa.nodo.height}` : 'svg (sin WebGL)'}`;
+    }, 500);
+    window.copa = { fps: () => cuadros.length, escala: () => copa.escala(), placa: () => copa.placa(), listo: () => copa.listo, nodo: () => copa.nodo };
+  </script>
+</body>
+</html>
