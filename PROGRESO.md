@@ -34,6 +34,19 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-10 — El juego se llama Lolero (lolero.lol)
+
+Pedido del usuario, para publicarlo. El nombre aparece en:
+- `index.html`: el título, la descripción, Open Graph/Twitter, la franja, el h1 y el favicon. El monograma pasa de S+ a L;
+- `NOMBRE_DEL_JUEGO` (`src/ui/resultado.js`), que va en el texto para compartir;
+- la tarjeta exportada y su archivo (`src/ui/exportar.js`);
+- la imagen de Open Graph (`assets/og-image.svg`, regenerada a PNG con ImageMagick);
+- `package.json`, el README y la vitrina (el título del inicio de la fusión y los `<title>`).
+
+El dominio va en `og:url`, `og:site_name`, `canonical` y `og:image`, que pasa a ser absoluta (`https://lolero.lol/assets/og-image.png`). El check K1-B de `validate.js` espera `Lolero · …`. Las frases "un split más" de los eventos son texto del relato y no cambian.
+
+**Medido:** `npm run build` OK (705 imports verificados, determinismo src vs dist en 12 carreras, 2617 KB).
+
 ### 2026-10-10 — PLANUI, U0: las últimas correcciones (PLANUI §4.10)
 
 **Por qué.** El usuario miró "una línea" (§4.9): *"me gustó bastante el resultado y creo que nos estamos acercando a la

@@ -3,22 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Un Split Más</title>
-    <meta name="description" content="Un Split Más: simulá la carrera de un jugador profesional de League of Legends, de los 15 años al retiro. Elegís tu línea y tus mains, y cada decisión — soloQ, el mercado, el draft Fearless — deja una marca real en cómo termina la historia." />
+    <title>Lolero</title>
+    <meta name="description" content="Lolero: simulá la carrera de un jugador profesional de League of Legends, de los 15 años al retiro. Elegís tu línea y tus mains, y cada decisión — soloQ, el mercado, el draft Fearless — deja una marca real en cómo termina la historia." />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Un Split Más — simulador de carrera de League of Legends" />
+    <meta property="og:url" content="https://lolero.lol/" />
+    <meta property="og:site_name" content="Lolero" />
+    <meta property="og:title" content="Lolero — simulador de carrera de League of Legends" />
     <meta property="og:description" content="De los 15 años al retiro. Cada decisión deja una marca real en cómo termina tu historia." />
-    <meta property="og:image" content="./assets/og-image.png" />
+    <meta property="og:image" content="https://lolero.lol/assets/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Un Split Más — simulador de carrera de League of Legends" />
+    <meta property="og:image:alt" content="Lolero — simulador de carrera de League of Legends" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Un Split Más — simulador de carrera de League of Legends" />
+    <meta name="twitter:title" content="Lolero — simulador de carrera de League of Legends" />
     <meta name="twitter:description" content="De los 15 años al retiro. Cada decisión deja una marca real en cómo termina tu historia." />
-    <meta name="twitter:image" content="./assets/og-image.png" />
+    <meta name="twitter:image" content="https://lolero.lol/assets/og-image.png" />
 
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='2' fill='%23030407'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='14' font-weight='700' fill='%232ee8ff' text-anchor='middle'%3ES%2B%3C/text%3E%3C/svg%3E" />
+    <link rel="canonical" href="https://lolero.lol/" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='2' fill='%23030407'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='14' font-weight='700' fill='%232ee8ff' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E" />
 
     <link rel="preload" href="./src/ui/estilos/fuentes/inter-var-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="./src/ui/estilos/fuentes/barlow-condensed-700-latin.woff2" as="font" type="font/woff2" crossorigin />
@@ -49,7 +52,7 @@
       <!-- La franja (FASE V, V2-C; PLAN.md §V.4): `#franjaEstado` lo llena src/ui/franja.js desde la `vista` (lo que la
            pantalla ya contó). Velocidad y sonido se encienden cuando cargan los módulos (app.js, iniciarSetup). -->
       <header class="franja" id="franja">
-        <div class="franja-lockup"><span class="franja-monograma">S+</span><span class="franja-nombre">Un Split Más</span></div>
+        <div class="franja-lockup"><span class="franja-monograma">L</span><span class="franja-nombre">Lolero</span></div>
         <div class="franja-estado" id="franjaEstado"></div>
         <!-- Los cuartos (V2-C): la letra de aria-keyshortcuts abre cada uno (teclado.js); en el celular, abajo y fija. -->
         <nav class="franja-cuartos" id="cuartosBarra" aria-label="Cuartos">
@@ -71,7 +74,7 @@
       <div class="shell-cuerpo">
         <div class="escenario" id="escenario">
           <div id="setup" class="panel" data-piezas="inicio">
-            <h1 class="solo-lectores">Un Split Más</h1>
+            <h1 class="solo-lectores">Lolero</h1>
             <p class="subtitle">Elegís tu línea y tus mains. El resto de la carrera sale de ahí.</p>
             <section id="desafioDia" class="desafio-dia" aria-label="Desafío del día" hidden></section>
 

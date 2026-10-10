@@ -1,4 +1,4 @@
-# Un Split Más
+# Lolero
 
 Un simulador narrativo de la carrera de un jugador profesional de League of
 Legends. Arrancás a los 15 años grindeando soloQ en tu pieza. Terminás

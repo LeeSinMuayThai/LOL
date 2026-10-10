@@ -16218,12 +16218,12 @@ check('K1-B compartir: el texto lleva juego, fecha del desafío, puntaje con mil
   const { textoParaCompartir, miles, desafioDeBusqueda, linkDeEstado } = resultadoK1B;
   const HREF = 'http://localhost:8000/?seed=9&otra=1#ancla';
   const conDesafio = textoParaCompartir(estadoK1B({ seed: seedDelDia('2026-10-02'), fecha: '2026-10-02' }), HREF);
-  const esperadoDesafio = `Un Split Más · Desafío 2026-10-02 · 1.512 pts · Campeón · v ${VERSION_JUEGO} · http://localhost:8000/?desafio=2026-10-02`;
+  const esperadoDesafio = `Lolero · Desafío 2026-10-02 · 1.512 pts · Campeón · v ${VERSION_JUEGO} · http://localhost:8000/?desafio=2026-10-02`;
   if (conDesafio !== esperadoDesafio) {
     throw new Error(`desafío: esperaba\n  ${esperadoDesafio}\ndio\n  ${conDesafio}`);
   }
   const libre = textoParaCompartir(estadoK1B({ seed: 777 }), HREF);
-  const esperadoLibre = `Un Split Más · 1.512 pts · Campeón · v ${VERSION_JUEGO} · http://localhost:8000/?seed=777`;
+  const esperadoLibre = `Lolero · 1.512 pts · Campeón · v ${VERSION_JUEGO} · http://localhost:8000/?seed=777`;
   if (libre !== esperadoLibre) {
     throw new Error(`carrera libre: esperaba\n  ${esperadoLibre}\ndio\n  ${libre}`);
   }

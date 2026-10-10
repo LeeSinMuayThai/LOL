@@ -1,5 +1,5 @@
 // El Inicio. La primera vez, una intro de ~3 s salteable: el brillo del monitor, "15 años. Una pieza.", la luz se abre
-// y entra UN SPLIT MÁS. Despues, la seleccion: invocador, servidor, perfil en una linea, los 5 roles como glifos sobre
+// y entra LOLERO. Despues, la seleccion: invocador, servidor, perfil en una linea, los 5 roles como glifos sobre
 // la Grieta, la grilla de retratos del rol (el campeon apuntado pasa a ser el arte del ambiente, con un cruce), las 3
 // ranuras y BLOQUEAR que se enciende con 3 mains. "Continuar" como placa con el arte de tu main; desafio e historial.
 // Con `op=linea` (PLANUI §4.10), la eleccion de campeones es un champ select (crearChampSelect, abajo): el rol como
@@ -29,7 +29,7 @@ export function crearInicio({ datos, amb, sonido, peor, op, aura }) {
   let apuntado = elegidos[0];
 
   const raiz = el('section', { class: 'inicio', 'data-pieza': 'inicio' });
-  const titulo = el('h1', { class: 'in-titulo', 'data-foco': '', tabindex: '-1', text: 'Un split más' });
+  const titulo = el('h1', { class: 'in-titulo', 'data-foco': '', tabindex: '-1', text: 'Lolero' });
   const cabeza = el('header', { class: 'in-cabeza' }, [
     el('p', { class: 'in-kicker' }, [el('i', { class: 'punto-luz' }), 'Nueva carrera']),
     titulo,
@@ -189,7 +189,7 @@ export function crearInicio({ datos, amb, sonido, peor, op, aura }) {
   let intro = null;
   function armarIntro() {
     const r = titulo.getBoundingClientRect();
-    const t = el('p', { class: 'intro-titulo', text: 'Un split más', style: { left: `${r.left}px`, top: `${r.top}px` } });
+    const t = el('p', { class: 'intro-titulo', text: 'Lolero', style: { left: `${r.left}px`, top: `${r.top}px` } });
     const nodo = el('div', { class: 'intro', 'aria-hidden': 'true' }, [
       el('div', { class: 'intro-negro' }),
       el('div', { class: 'intro-monitor' }),

@@ -7,7 +7,7 @@ import { esFechaDeDesafio } from '../core/desafio.js';
 import { VERSION_JUEGO } from '../data/version.js';
 import { goldenRoadsDeEstado, medallaDeGoldenRoad } from './core/trayectoria.js';
 
-export const NOMBRE_DEL_JUEGO = 'Un Split Más';
+export const NOMBRE_DEL_JUEGO = 'Lolero';
 export const CLAVE_HISTORIAL = 'lolcs-historial';
 // "Tus últimos resultados": cuántos se guardan. El récord personal vive aparte
 // y sobrevive al recorte.
@@ -53,7 +53,7 @@ export function linkDeEstado(state, href) {
   return linkDeResultado({ seed: state.seed, desafio: state.desafio?.fecha ?? null }, href);
 }
 
-// "Un Split Más · Desafío 2026-10-02 · 1.512 pts · Campeón · v K1 · <link>".
+// "Lolero · Desafío 2026-10-02 · 1.512 pts · Campeón · v K1 · <link>".
 // Fuera del desafío no hay fecha y el link es el de la seed. FASE V (V5): con un Golden Road, la medalla va entre el nivel y la
 // versión ("… · Campeón · Golden Road 2031 · v K6d · <link>"); sin ninguno no aparece nada.
 export function textoParaCompartir(state, href) {
