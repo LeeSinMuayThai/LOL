@@ -9,6 +9,7 @@
 //   copa.placa();                   // { x, y, ancho, alto } en px CSS dentro del lienzo: ahi va el <img> del logo
 //   copa.destruir();                // libera el contexto (WEBGL_lose_context): si no, visitar la pantalla N veces se
 //                                   // come los contextos y el navegador mata el mas viejo, que es el del ambiente
+//   copa.foco(0.3, t);              // (PLANUI §4.10) la luz de la copa en el reloj de en(t): la bisagra con dos copas
 //
 // La tecnica: WebGL2, un triangulo de pantalla completa y raymarching de una SUPERFICIE DE REVOLUCION. El perfil de
 // cada copa es una tabla de puntos (y, radio) -copa, cuello, nudo, base- que se interpola en JS (cubica monotona, sin
@@ -130,6 +131,13 @@ const TAU_GIRO = 0.75; // s: cuanto tarda en frenar
 const GIRO_INICIAL = -0.35;
 const BARRIDO = { adelanto: 160, dur: 900, periodo: 6500, durLoop: 1400, desde: -1.55, hasta: 1.55, kLoop: 0.65 };
 const HALO = { base: 0.55, golpe: 0.7, ancho: 320 };
+// (PLANUI §4.10, D) EL FOCO: dos copas enfrentadas (la bisagra, `var=copas`). foco(k, t, dur) lleva la luz de la copa a k
+// (1: la de siempre; 0: apagada) en `dur` ms desde t, en el reloj de en(t). Al subir, la copa toma la luz: un impulso de
+// giro que frena solo (como la subida, mas corto) y una pasada del brillo; al bajar se apaga (la exposicion, el foco de
+// arriba y el halo). Todo es funcion pura de t (congelar es fiel). Sin llamarlo (el titulo), la copa es la de siempre.
+//   expo, luz, halo: lo que queda de cada uno con el foco en 0 · giro: rad/s del impulso por unidad de foco que sube ·
+//   tau: s que tarda en frenar · adelanto: ms desde que sube hasta la pasada del brillo · max: eventos que se guardan
+const FOCO = { dur: 520, expo: 0.34, luz: 0.3, halo: 0.12, giro: (2 * Math.PI) / 1.8, tau: 0.55, adelanto: 90, max: 16 };
 
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
 const suave = (x) => x * x * (3 - 2 * x);
@@ -257,8 +265,26 @@ function rectPlaca(pf, cam, ancho, alto) {
 }
 
 // ---------------------------------------------------------------------------------------------------- el tiempo
+// El foco en t (PLANUI §4.10): { nivel, giro (rad extra), barrido ([pos, k] o null) }. `f`: { inicial, base, eventos }.
+function focoEn(t, f) {
+  let nivel = f.inicial;
+  let giro = f.base;
+  let barrido = null;
+  for (const e of f.eventos) {
+    if (e.t > t) break;
+    nivel = e.desde + (e.hacia - e.desde) * suave(clamp01((t - e.t) / e.dur));
+    const sube = e.hacia - e.desde;
+    if (sube <= 0) continue;
+    giro += sube * FOCO.giro * FOCO.tau * (1 - Math.exp(-(t - e.t) / 1000 / FOCO.tau));
+    const k = (t - e.t - FOCO.adelanto) / BARRIDO.dur;
+    if (k >= 0 && k <= 1) barrido = [BARRIDO.desde + (BARRIDO.hasta - BARRIDO.desde) * k, Math.sin(Math.PI * k) * Math.min(1, sube * 1.4)];
+  }
+  return { nivel, giro, barrido };
+}
+
 // Lo que cambia con t (funcion pura de t: congelar(t) es fiel). t0: cuando empieza la subida (null: ya asentada).
-function cuadroEn(t, t0) {
+// f: el foco (null: sin foco, la copa de siempre).
+function cuadroEn(t, t0, f = null) {
   const asentada = t0 == null;
   const s = asentada ? t / 1000 : (t - t0) / 1000;
   const prog = asentada ? 1 : clamp01((t - t0) / SUBIDA);
@@ -280,7 +306,11 @@ function cuadroEn(t, t0) {
     }
   }
   const golpe = asentada ? 0 : Math.exp(-(((t - llegada) / HALO.ancho) ** 2));
-  return { giro, luzK, barrido, halo: HALO.base * suave(prog) + HALO.golpe * golpe, oculta: !asentada && t < t0 };
+  const c = { giro, luzK, barrido, halo: HALO.base * suave(prog) + HALO.golpe * golpe, oculta: !asentada && t < t0, expo: 1 };
+  if (!f) return c;
+  const fo = focoEn(t, f);
+  const mix = (lo) => lo + (1 - lo) * fo.nivel;
+  return { ...c, giro: c.giro + fo.giro, luzK: c.luzK * mix(FOCO.luz), halo: c.halo * mix(FOCO.halo), expo: mix(FOCO.expo), barrido: fo.barrido && fo.barrido[1] > c.barrido[1] ? fo.barrido : c.barrido };
 }
 
 // ---------------------------------------------------------------------------------------------------- shaders
@@ -293,7 +323,7 @@ precision highp float;
 out vec4 salida;
 uniform vec2 uRes;
 uniform vec3 uCamPos, uCamR, uCamU, uCamF;
-uniform float uTan, uRot, uLuzK, uHalo, uRug, uLip, uAcentoEn;
+uniform float uTan, uRot, uLuzK, uHalo, uRug, uLip, uAcentoEn, uExpo;
 uniform vec2 uBarrido;
 uniform vec3 uLuz, uContra, uNoche, uMetal, uAcento, uGemaC, uLaca, uMadera, uBound;
 uniform vec4 uAsa, uAsa2, uForma, uPed, uPed2, uGema;
@@ -472,7 +502,7 @@ void main() {
       if (t > tb.y) break;
     }
     alfa = toco ? 1.0 : 1.0 - smoothstep(0.0, 1.0, mejor / pix);
-    if (alfa > 0.0) col = pow(aces(sombrear(ro + rd * tMejor, rd, tMejor, pix)), vec3(0.4545));
+    if (alfa > 0.0) col = pow(aces(sombrear(ro + rd * tMejor, rd, tMejor, pix) * uExpo), vec3(0.4545));
   }
   // el halo: la luz alrededor de la copa (cerca del eje, segun el perfil a esa altura), que se apaga en los bordes
   float a2 = dot(rd.xz, rd.xz);
@@ -485,7 +515,7 @@ void main() {
   salida = vec4(col * alfa + halo, alfa);
 }`;
 
-const UNIFORMES = ['uRes', 'uCamPos', 'uCamR', 'uCamU', 'uCamF', 'uTan', 'uRot', 'uLuzK', 'uHalo', 'uRug', 'uLip', 'uAcentoEn', 'uBarrido', 'uLuz', 'uContra', 'uNoche', 'uMetal', 'uAcento', 'uGemaC', 'uLaca', 'uMadera', 'uBound', 'uAsa', 'uAsa2', 'uForma', 'uPed', 'uPed2', 'uGema', 'uPerfil'];
+const UNIFORMES = ['uRes', 'uCamPos', 'uCamR', 'uCamU', 'uCamF', 'uTan', 'uRot', 'uLuzK', 'uHalo', 'uRug', 'uLip', 'uAcentoEn', 'uExpo', 'uBarrido', 'uLuz', 'uContra', 'uNoche', 'uMetal', 'uAcento', 'uGemaC', 'uLaca', 'uMadera', 'uBound', 'uAsa', 'uAsa2', 'uForma', 'uPed', 'uPed2', 'uGema', 'uPerfil'];
 
 // ---------------------------------------------------------------------------------------------------- WebGL2
 function crearGL(lienzo, { pf, material, tonos, alPerder }) {
@@ -643,6 +673,7 @@ function crearGL(lienzo, { pf, material, tonos, alPerder }) {
     gl.uniform1f(U.uLuzK, c.luzK);
     gl.uniform2f(U.uBarrido, c.barrido[0], c.barrido[1]);
     gl.uniform1f(U.uHalo, c.halo);
+    gl.uniform1f(U.uExpo, c.expo ?? 1);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   return {
@@ -741,7 +772,7 @@ function crearSvg({ pf, material }) {
       const x = -ancho * 0.25 + k * ancho * 1.25;
       brillo.setAttribute('gradientTransform', `translate(${x.toFixed(1)} 0)`);
       banda.setAttribute('opacity', (c.barrido[1] * 0.9).toFixed(3));
-      sombra.setAttribute('opacity', ((1 - c.luzK) * 0.8).toFixed(3));
+      sombra.setAttribute('opacity', ((1 - c.luzK * (c.expo ?? 1)) * 0.8).toFixed(3));
       raiz.style.visibility = c.oculta ? 'hidden' : '';
     },
     medir() {},
@@ -760,12 +791,16 @@ function crearSvg({ pf, material }) {
 }
 
 // ---------------------------------------------------------------------------------------------------- la copa
-export function crearTrofeo(lienzo, { material = 'oro', perfil = 'generica', tonos = TONOS_DEF } = {}) {
+// `foco` (PLANUI §4.10, opcional): el nivel de luz con que arranca (0-1); sin el, la copa de siempre hasta que se llame
+// a foco(). Con foco, `en(t)` lo aplica en el reloj de en(t).
+export function crearTrofeo(lienzo, { material = 'oro', perfil = 'generica', tonos = TONOS_DEF, foco = null } = {}) {
   const pf = PERFILES[perfil] ?? PERFILES.generica;
   const mat = METAL[material] ? material : 'oro';
   const ton = { ...TONOS_DEF, ...tonos };
   let t0 = null;
   let ultimoT = 0;
+  // el foco: null hasta que se usa (asi el titulo pasa por cuadroEn sin foco, bit a bit igual que antes)
+  let focos = Number.isFinite(foco) ? { inicial: clamp01(foco), base: 0, eventos: [] } : null;
   let impl = null;
   let observador = null;
   const aSvg = () => {
@@ -773,7 +808,7 @@ export function crearTrofeo(lienzo, { material = 'oro', perfil = 'generica', ton
     impl = crearSvg({ pf, material: mat });
     viejo?.nodo?.replaceWith?.(impl.nodo);
     viejo?.destruir?.();
-    impl.dibujar(cuadroEn(ultimoT, t0));
+    impl.dibujar(cuadroEn(ultimoT, t0, focos));
     api.nodo = impl.nodo;
   };
   const alPerder = (e) => {
@@ -798,7 +833,23 @@ export function crearTrofeo(lienzo, { material = 'oro', perfil = 'generica', ton
     // fijo: un cuadro suelto (congelar, el cuadro final): a escala plena, sin la resolucion adaptativa
     en(t, fijo = false) {
       ultimoT = t;
-      impl.dibujar(cuadroEn(t, t0), fijo);
+      impl.dibujar(cuadroEn(t, t0, focos), fijo);
+    },
+    // (PLANUI §4.10) la luz de la copa: k (0-1) desde t (el reloj de en(t)) en dur ms (0: ya)
+    foco(k, t, dur = FOCO.dur) {
+      focos ??= { inicial: 1, base: 0, eventos: [] };
+      const desde = focoEn(t, focos).nivel;
+      const hacia = clamp01(k);
+      if (Math.abs(hacia - desde) < 1e-3 && !focos.eventos.some((e) => e.t > t)) return;
+      // los eventos van en orden; si se vuelve atras en el tiempo, lo que venia despues ya no vale
+      focos.eventos = focos.eventos.filter((e) => e.t <= t);
+      focos.eventos.push({ t, desde, hacia, dur: Math.max(1, dur) });
+      // los viejos (con su impulso ya frenado) se pliegan en la base
+      while (focos.eventos.length > FOCO.max && t - focos.eventos[0].t > 5 * FOCO.tau * 1000) {
+        const e = focos.eventos.shift();
+        focos.base += Math.max(0, e.hacia - e.desde) * FOCO.giro * FOCO.tau;
+        focos.inicial = e.hacia;
+      }
     },
     get listo() {
       return impl.listo;
