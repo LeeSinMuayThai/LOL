@@ -1286,4 +1286,39 @@ La bisagra (`decision/evento`, CBLOL contra la invitación de la LCK) con `op=li
 
 ### El mercado (E): las ofertas que llegan y `camiseta`, `plantel`, `ofertas`
 
-(pendiente)
+`mercado/mercado` con `op=linea` (`js/mercado.js`: `crearOfertasLinea` y los heroes de arriba; el bloque §4.10 · E al
+final de `estilos/mercado.css` y en `tokens.css`). `crearFirmaLinea` no cambió.
+
+- **La llegada.** La entrada es la ventana de pases como tiempo que pasa (`T_LL`, un solo reloj de `beats.js`, 5,6 s):
+  el bumper la abre (0-800 ms), el panel sube con la grilla vacía y el **reloj de la ventana** (en la cabeza del panel:
+  "Día 01…13", 14 celdas, cada oferta marca su día en el color de su org, "Llegó <org>") corre a 335 ms por día. Cada
+  oferta **cae** a su lugar en su día: acelera, toca aplastándose (el polvo, el borde y la carta que se hunde: el golpe
+  sordo, `sonido.golpe`), rebota y se asienta; el aviso es el `ding` del kit (los dos, mudos por defecto) y un
+  `amb.pulso('apuntar')` por `bt.destello` (≤ 3/s). "Te llaman" y "la más alta" del reposo cuentan solo las que llegaron.
+  - **El calendario sale de los datos** (`diasDeLlegada`): los clubes chicos (tier más alto en número) se mueven primero,
+    en su tier de menor a mayor sueldo, y el bombazo cierra; los saltos entre días, del PRNG de `comun/azar.js` sembrado
+    con la seed de la muestra y las orgs. En la muestra: Onda día 1, Enclave 4, Ecos 6, LOUD 8, FURIA 11, Vórtice 13.
+  - **Se usa mientras llegan**: las que ya están se apuntan y se eligen sin cortar la llegada; Espacio, un clic afuera
+    o elegir (clic o 1-6) una que no llegó hacen llegar todas. FIRMAR también. INST o movimiento reducido: todas
+    presentes. `congelar(ms)` mueve el reloj (es un participante de `beats`).
+- **La derecha, sin campeón** (`var=`; el mundo queda en luz sola, en el tono de la org apuntada, con el cruce de
+  siempre). El héroe cruza al apuntar otra org y es `sticky` en su columna; en el celular es una franja de 236 px entre
+  el aura y el panel.
+  - **`camiseta`** (sin `var`): tu camiseta de espaldas con tu handle (en arco) y tu dorsal (los dígitos del final del
+    handle; si no tiene, uno del PRNG), en los colores de la org (`--tono-org-*`), con el escudo en la nuca y el parche
+    de la liga en la manga (`<img>`). Es SVG en capas dentro de un grupo aislado: el color plano (una capa por org: es lo
+    que cruza), la luz difusa (multiply) y la especular más el filo de la luz del mundo (screen), las dos de un mapa de
+    alturas (pliegues de una camiseta colgada + `feTurbulence` + la trama fina) que se dibuja una sola vez. Sin club, la
+    camiseta apagada en la noche de la era. En la llegada, la luz de cada org la cruza cuando cae su oferta; loop vivo,
+    se mece apenas.
+  - **`plantel`**: la formación de la org sobre la Grieta (el mapa de los glifos de rol, en grande) con su logo de marca
+    en el piso, los 5 roles en su lugar y el tuyo iluminado con tu handle. **El motor no trae el plantel de las orgs que
+    ofertan**: los otros cuatro van "por anunciar"; de tu lugar se muestra, tal cual, el paréntesis de `motivoDemanda`
+    ("mejorás claramente sobre Ashnis"). Cada oferta que llega es un ping en tu lugar, en el color de su org.
+  - **`ofertas`**: las ofertas como cartas formales en papel (membrete en la noche de la org con su escudo, para quién,
+    la prosa del motor, los términos, la firma "Por <org>" y el sello), que caen sobre la pila al llegar (la última,
+    arriba). Apuntar una la saca de la pila y la pone al frente; FIRMAR le estampa "Firmada" con el golpe.
+  - **`campeon`**: la derecha de §4.9 (tu main en el bitono), para comparar. Un id desconocido cae en `camiseta`.
+- **De paso (afecta a todas las variantes):** desde 1024 px los términos del aura van en una sola fila (el número y el aire se
+  achican por debajo de 1440). En 1280×720 los cuatro términos de una org saltaban a dos filas, el panel bajaba, el escudo
+  apuntado se iba de abajo del mouse y volvía el reposo: un bucle de hover que ya estaba en §4.9.
