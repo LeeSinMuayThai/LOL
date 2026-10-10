@@ -148,7 +148,12 @@ html[data-textos='breves'] .insp-previa { display: none; }
   font-family: var(--f-display); font-weight: 900; font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
 }
 .odometro { display: inline-flex; line-height: 1; vertical-align: baseline; }
-.odo-col { display: inline-block; height: 1em; overflow: hidden; }
+/* la ventana de cada digito se funde en sus bordes (el digito de Mona Sans 900 ocupa de 0,15 a 0,9 em de su celda): al
+   rodar no se ven los vecinos cortados (PLANUI §4.9) */
+.odo-col {
+  display: inline-block; height: 1em; overflow: hidden;
+  mask-image: linear-gradient(180deg, transparent 0, var(--mascara) var(--ln-odo-borde), var(--mascara) calc(1em - var(--ln-odo-borde) * 0.62), transparent 1em);
+}
 .odo-tira { display: flex; flex-direction: column; }
 .odo-tira span { display: block; height: 1em; line-height: 1; }
 

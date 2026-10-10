@@ -29,9 +29,11 @@ export const normalizarFondo = (f) => (FONDOS.includes(f) ? f : FONDO_DEF);
 //   contra       la luz de contra de la era (1 = la de hoy; menos = sin el derrame del borde)
 //   luz, polvo   cuanto mas haz y mas polvo de la era (1 = los de hoy): sin el campeon, la luz sola tiene que seguir
 //                dando profundidad, y no quedar un fondo plano
+//   costura      (PLANUI §4.9) cuanto se ve la costura que pidio la pantalla (1 = toda; el takeover de la escena
+//                `costura` la baja a 0 para que AFUERA tenga su campeon solo). Sin costura pedida no cambia nada.
 // Ademas, el color (js/color.js lo suma a cada estado): colorFondo, lavado y colorLugar (0 = duotono, 1 = color real).
-export const CAMPOS = ['presencia', 'profundidad', 'bruma', 'vineta', 'contraste', 'suave', 'enLugar', 'ventana', 'contra', 'luz', 'polvo', 'colorFondo', 'lavado', 'colorLugar'];
-const PLENO = { presencia: 1, profundidad: 1, bruma: 0, vineta: 0, contraste: 1, suave: 0, enLugar: 1, ventana: 0, contra: 1, luz: 1, polvo: 1, colorFondo: 0, lavado: 0, colorLugar: 0 };
+export const CAMPOS = ['presencia', 'profundidad', 'bruma', 'vineta', 'contraste', 'suave', 'enLugar', 'ventana', 'contra', 'luz', 'polvo', 'costura', 'colorFondo', 'lavado', 'colorLugar'];
+const PLENO = { presencia: 1, profundidad: 1, bruma: 0, vineta: 0, contraste: 1, suave: 0, enLugar: 1, ventana: 0, contra: 1, luz: 1, polvo: 1, costura: 1, colorFondo: 0, lavado: 0, colorLugar: 0 };
 // un poco menos: la misma composicion, el campeon a ~70 %, la contra de la era sin derramarse por el borde
 const MENOS = { ...PLENO, presencia: 0.7, contra: 0.4, vineta: 0.15 };
 // la luz sola: haces, bruma y polvo de la era, sin splash (un poco mas de haz y de polvo); si la pantalla tiene lugar
@@ -84,9 +86,15 @@ const ARENA = { ...PLENO, presencia: 0.12, profundidad: 0.6, ventana: 1, enLugar
 // (js/partido.js, crearEstadio), y el aura cambia lo que muestran. El mundo es la sala: la luz de ambiente, el humo, el
 // polvo y la contra baja; sin campeon y sin lugar fijo, en reposo, con el aura, en un momento y en el takeover.
 const ESTADIO = { ...PLENO, presencia: 0, profundidad: 0, ventana: 0, enLugar: 0, contra: 0.35, luz: 0.85, polvo: 1.1 };
+// PLANUI §4.9 (op=linea): LA COSTURA. Los campeones viven en las dos mitades de la costura (ambiente({ costura })), asi
+// que el campeon de siempre no se ve en reposo, con el aura ni en un momento (no hay campeon doble); en el takeover
+// (AFUERA tiene su campeon) vuelve al 100 % y la costura se va. Mas luz y mas polvo que el estadio: la sala es la luz.
+const COSTURA = { ...PLENO, presencia: 0, ventana: 0, enLugar: 0, contra: 0.8, luz: 1, polvo: 1.4 };
+const COSTURA_TAKEOVER = { ...PLENO, costura: 0 };
 const ESCENAS = {
   arena: { reposo: ARENA, aura: ARENA, momento: ARENA, takeover: ARENA, lugar: true },
   estadio: { reposo: ESTADIO, aura: ESTADIO, momento: ESTADIO, takeover: ESTADIO, lugar: false },
+  costura: { reposo: COSTURA, aura: COSTURA, momento: COSTURA, takeover: COSTURA_TAKEOVER, lugar: false },
 };
 // La pantalla gigante: `crear: 'pantalla'` (estilos/partido.css la ubica adentro del escenario del draft o del player).
 const LUGARES_ESCENA = {
