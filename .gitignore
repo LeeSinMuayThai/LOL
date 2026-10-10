@@ -12,3 +12,4 @@ node_modules/
 
 # Las capturas de la vitrina pesan ~70 MB por direccion y se regeneran con vitrina/comun/capturar.mjs.
 vitrina/*/capturas/
+estrella-salida/
