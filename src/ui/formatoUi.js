@@ -209,3 +209,28 @@ const ROTULO_DE_MINIJUEGO = {
 export function rotuloDeMinijuego(decision) {
   return ROTULO_DE_MINIJUEGO[decision?.datos?.momento] ?? 'Minijuego';
 }
+
+/* U2c */
+// Preferencia de la vista (no vive en el state): cuánto texto muestra la interfaz. "breves" por defecto.
+const CLAVE_TEXTOS = 'lolcs-textos';
+
+export function textosDeLaVista() {
+  try {
+    const guardado = globalThis.localStorage?.getItem(CLAVE_TEXTOS);
+    if (guardado === 'completos' || guardado === 'breves') return guardado;
+  } catch { /* sin almacenamiento: breves */ }
+  return 'breves';
+}
+
+export function guardarTextosDeLaVista(valor) {
+  const siguiente = valor === 'completos' ? 'completos' : 'breves';
+  try { globalThis.localStorage?.setItem(CLAVE_TEXTOS, siguiente); } catch { /* mejor esfuerzo */ }
+  if (typeof document !== 'undefined') document.documentElement.dataset.textos = siguiente;
+  return siguiente;
+}
+
+export function aplicarTextosDeLaVista() {
+  const valor = textosDeLaVista();
+  if (typeof document !== 'undefined') document.documentElement.dataset.textos = valor;
+  return valor;
+}

@@ -953,3 +953,11 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
 @media (max-width: 639px) {
   :root { --fs-6: 24px; --fs-7: 32px; --fs-8: 48px; --fs-9: 64px; }
 }
+
+/* U2c */
+:root {
+  /* el sacudon del jugo de un minijuego (PLANUI U2c: <= 4 px) */
+  --u2c-sacudon: 4px;
+  /* la hoja del acompañante en el celular, sobre la barra de cuartos */
+  --u2c-hoja-alto: 72vh;
+}

@@ -19,6 +19,7 @@ import { bandaDeNivel } from '../core/ficha.js';
 import { BALANCE } from '../data/balance.js';
 import { crearOrgChip } from './components/orgChip.js';
 import { marcaRol } from './components/iconos.js';
+import { aplicarTextosDeLaVista, guardarTextosDeLaVista } from './formatoUi.js';
 
 // Lo que antes decía la topbar (`shell.js`, T2): la ventana REAL de la pausa (`ventanaVisibleDe`, K6a-U). Los nombres son los de
 // los carteles de las páginas (`LABEL_DE_VENTANA`, ui/core/escena.js).
@@ -103,7 +104,37 @@ function crearPico(estado) {
 // `franja`: el `<header class="franja">`. `estadoEl`: `#franjaEstado`. `etiquetaRol`: la de `data/roles.js` (llega con
 // los módulos). `fotoDeLaPagina()`: la foto del split en curso (`app.js`, `pagina.fotoInicio`). `animar()`: si el número se mueve
 // ahora (`app.js`: no en INST ni con movimiento reducido); por defecto sí.
+// El ajuste "Textos: breves | completos" (PLANUI §7). Preferencia de la vista: `html[data-textos]`, "breves" por defecto.
+// Lo inyecta la franja (el HTML de la barra no se toca). Un clic avisa a quien pliega prosa (`u2c-textos`).
+function montarTextos(franja) {
+  aplicarTextosDeLaVista();
+  const controles = franja?.querySelector('.franja-controles');
+  if (!controles || controles.querySelector('#toggleTextos')) return;
+  const boton = document.createElement('button');
+  boton.type = 'button';
+  boton.id = 'toggleTextos';
+  boton.className = 'franja-toggle franja-textos';
+  boton.title = 'Textos: breves | completos';
+  const kicker = span('franja-textos-k', 'Textos');
+  const valor = span('franja-textos-v');
+  boton.append(kicker, valor);
+  const pintar = (modo) => {
+    valor.textContent = modo;
+    boton.setAttribute('aria-pressed', String(modo === 'completos'));
+    boton.setAttribute('aria-label', `Textos: ${modo}`);
+  };
+  pintar(document.documentElement.dataset.textos === 'completos' ? 'completos' : 'breves');
+  boton.addEventListener('click', () => {
+    const actual = document.documentElement.dataset.textos === 'completos' ? 'completos' : 'breves';
+    const siguiente = guardarTextosDeLaVista(actual === 'completos' ? 'breves' : 'completos');
+    pintar(siguiente);
+    document.documentElement.dispatchEvent(new Event('u2c-textos'));
+  });
+  controles.prepend(boton);
+}
+
 export function crearFranja({ franja, estadoEl, etiquetaRol, fotoDeLaPagina, animar = () => true }) {
+  montarTextos(franja);
   // El alto real de la franja (en el celular son dos líneas, o tres a 320 px): lo usan el cuarto y el acompañante
   // pegajoso para no quedar debajo. Con el token fijo de respaldo si esto no corre.
   if (franja && typeof ResizeObserver !== 'undefined') {

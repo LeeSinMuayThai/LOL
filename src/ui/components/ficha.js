@@ -5,6 +5,7 @@ import { valorDeMercado } from '../../core/valorMercado.js';
 import { plural } from '../../core/formato.js';
 import { titulosDeFila } from '../../core/registro.js';
 import { crearBarra, crearInstrumento } from './barra.js';
+import { crearHexa } from '../graficos/hexa.js';
 import { crearStatRow } from './statRow.js';
 import { crearOrgChip } from './orgChip.js';
 import { crearCampeonTile } from './campeonTile.js';
@@ -465,6 +466,7 @@ export function renderFicha(container, state, modulos, { dueno = container } = {
   identidad.append(nombreLinea, contextoLinea, estadoLinea);
   encabezado.append(nivelBox, identidad);
   container.appendChild(encabezado);
+  agregarRadar(container, state, ficha);
 
   if (state.phase === 'amateur') {
     const a = BALANCE.amateur;
@@ -523,6 +525,36 @@ export function renderFicha(container, state, modulos, { dueno = container } = {
     memoria
   ));
   return ficha;
+}
+
+// El radar de los seis atributos (PLANUI U2c). Solo la ficha viva del cuarto Vos: la compacta es rango y barras, y la
+// final muestra picos (los atributos del retiro ya decayeron).
+const EJES_DEL_RADAR = [
+  ['mecanica', 'MEC'],
+  ['macro', 'MACRO'],
+  ['teamfight', 'TF'],
+  ['laneo', 'LANEO'],
+  ['shotcalling', 'SHOT'],
+  ['adaptabilidad', 'ADAPT']
+];
+
+function agregarRadar(container, state, ficha) {
+  const stats = state.player?.stats;
+  if (!stats) return;
+  const ejes = EJES_DEL_RADAR.map(([clave, label]) => ({
+    label,
+    valor: Math.max(0, Math.min(1, Number(stats[clave]) / 100))
+  }));
+  try {
+    const { nodo } = crearHexa({ ejes, tono: `nivel-${ficha.bandaNivel}`, tamano: 220 });
+    nodo.classList.add('ficha-radar-svg');
+    const caja = document.createElement('div');
+    caja.className = 'ficha-radar';
+    caja.appendChild(nodo);
+    container.appendChild(caja);
+  } catch (error) {
+    console.error('No se pudo armar el radar de la ficha:', error);
+  }
 }
 
 // El club y la liga en una línea (sin la fecha ni la edad: la franja de arriba ya las dice).
