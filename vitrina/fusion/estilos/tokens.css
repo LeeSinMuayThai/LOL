@@ -207,4 +207,18 @@ html[data-era='leyenda'] { --luz: var(--luz-leyenda); --contra: var(--contra-ley
 /* (separador entre bloques de §4.7: no tocar) */
 
 /* ===== PLANUI §4.7 · mercado y logos. Sus tokens van entre esta linea y su cierre ===== */
+/* El color de una org aparece SOLO junto a su logo: su chip, la placa de su anuncio, el aura de su logo en la luz.
+   --org-<tono> (arriba, en la paleta de clubes) es el acento; --org-<tono>-hondo, el fondo de su placa. */
+:root {
+  --org-loud-hondo: #03150a;
+  --org-furia-hondo: #0c0c10;
+  --org-p1-hondo: #2a1108;
+  --org-p2-hondo: #191232;
+  --org-p3-hondo: #04202a;
+  --org-p4-hondo: #262006;
+  /* el escudo-monograma de las orgs inventadas (js/logos.js) */
+  --escudo-fondo: #0b111e;
+  /* la mesa de firma: el silencio antes de firmar (el mundo se aquieta) */
+  --mk-silencio: #020307c4;
+}
 /* ===== fin §4.7 mercado ===== */

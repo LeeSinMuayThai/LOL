@@ -198,3 +198,56 @@ violácea; la diferencia se ve en los libres, las cartas y con el aura. Con Aniv
 vistazo. La carta holográfica de la final queda en el duotono de su rareza (es un objeto). En `paso`, el campeón de
 cada mapa entra en tiempo real (no entra en `congelar`). Sin WebGL, `lugar` queda en la luz sola. La banda del video
 de la Tribuna se mide al montar.
+
+## Opciones (PLANUI §4.7)
+
+### Mercado y firma: `mesa`, `anuncio`, `orgs` (+ `js/logos.js`)
+
+El usuario: *"le falta representar lo que está pasando, falta ese aspecto de peso de decisión importante o formal, y
+también se deberían añadir los logos actuales de los equipos"*. Las tres opciones valen para `muestra=mercado` y para
+`muestra=firma`, todas llevan logos y la tabla de ofertas se queda. **Sin `op` el mercado y la firma son los de hoy**
+(`crearOfertas` y `crearFirma` no se tocaron).
+
+| Opción | Hash | Qué es |
+|---|---|---|
+| `mesa` · La mesa de firma | `#pantalla=mercado&muestra=mercado&op=mesa` | La oferta que leés es **un contrato**, a la derecha de la tabla: el logo grande de la org, su liga (con su logo), "Contrato de jugador profesional", las partes, cuatro cláusulas con número grande (sueldo con "×tu valor", duración, jerarquía proyectada, plantel), las notas en mono y la línea de firma: el sello de la org ya está, la tuya falta. Apuntar otra fila cambia de hoja. **Enter firma**: el mundo se aquieta (una capa de silencio y la tabla que se aparta), tu handle se traza en luz sobre la línea (0,42-1,47 s), la rúbrica y el sello FIRMADO (1,65 s). Después, la prueba de ingreso como hoy; con LOUD, la firma. En `firma`: el logo de LOUD junto al nombre gigante y el contrato que se firma solo. |
+| `anuncio` · El anuncio | `…&op=anuncio` | Cada oferta se previsualiza como **la placa de fichaje** que publicaría la org: su logo, sus colores (el arte de tu main llevado a los colores de la org con un `mix-blend-mode: color`, una luz de marca y la barra de marca abajo), "WELCOME Elurah89" o "NOSSO NOVO MID / ELURAH89" según la org, tu rol, la liga y los años. Apuntar otra fila barre la placa. Elegir la **publica**: la placa crece, un barrido de luz, los likes y los comentarios ruedan (decorativos, `comun/azar.js`, escala por tier; no son datos del motor) y cuatro comentarios entran al mundo. Solo se publica la oferta que de verdad se firmó en esta carrera (LOUD); las otras quedan como **BORRADOR · si pasás la prueba**, porque el motor no jugó esa prueba. En `firma`: la placa publicada con los likes y el chat. |
+| `orgs` · Te llaman | `…&op=orgs` | Los **logos flotan en la luz alrededor de tu campeón** (encuadre `centro`), cada uno con su nombre y su sueldo. Tamaño = sueldo (52-148 px, lineal contra el más alto); cercanía = jerarquía proyectada (los dos de más jerarquía, al lado de tu campeón; los dos siguientes, arriba; los dos últimos, afuera). La leyenda trae el referente: un círculo punteado del tamaño de **tu valor** (USD 19.291). "Mientras tanto" flota arriba a la derecha. **Apuntar una org lleva el mundo a sus colores** (el aura de las orgs: entra a los 120 ms, vuelve a los 600, como la de los campeones; las demás se apagan). La tabla queda abajo y compacta, con una línea de inspector. Elegir **acerca el logo** (crece en la luz y viaja hasta el encabezado del contrato) y **entra al contrato** de `mesa`, que se firma. En `firma`: el mundo en el color de LOUD y su logo llegando desde la luz, con el takeover de siempre. |
+
+**`js/logos.js`** (el dueño es este worker): `logoOrg(nombre)` → `{ src, iniciales, liga }` (o `{ src: null, iniciales }`),
+`logoLiga(id)` → `{ src, iniciales, nombre }` (acepta `CBLOL`, `CD`, `mundial`, `Mundial 2036`, `MSI`…),
+`pintarLogo(nombre, { tam, liga, alt, clase })` → `<span class="logo">` con el `<img>` (y `onerror` → el escudo; nunca
+aborta una carga), `escudo(iniciales)`, `tonoOrg(nombre)` (el token `--org-*`) e `INVENTADAS`.
+- **Fuente:** la API pública de LoL Esports (`esports-api.lolesports.com/persisted/gw/getTeams` y `getLeagues`), con las
+  imágenes oficiales y actuales de su CDN, `static.lolesports.com`; se eligió la versión para fondo oscuro. Los Grandes
+  usa el logo de **LØS**, su nombre de hoy (Leaguepedia redirige el logo de Los Grandes al de LØS).
+- **Verificado (2026-10-09):** cada URL respondió 200 con una imagen (por `fetch`, firma PNG/WebP) y las 53 cargan en
+  Chromium (`naturalWidth > 0`, 0 rotas). Cobertura contra `muestras.json`: **43 orgs reales con logo** (más Fukuoka
+  SoftBank HAWKS gaming y CTBC Flying Oyster, que aparecen en el peor caso y en textos), **7 inventadas con escudo**
+  (Ecos Force, Enclave Esports, Enclave Collective, Espectro Legion, Fénix Gaming, Onda Collective, Vórtice Squad), **0
+  sin resolver**; ligas: CBLOL, CD, LEC, LCK, LPL, LCS, LCP, LRN, LRS, Mundial, MSI y First Stand.
+- **Colores de org:** `--org-<tono>-hondo` en el bloque §4.7 de `tokens.css` (el fondo de la placa); el acento es el
+  `--org-<tono>` de siempre. Solo aparecen junto al logo (la placa, el aura del logo, su contrato).
+
+**Trasladable:** `js/logos.js` entero (el mapa, el escudo-monograma, `pintarLogo` con su `onerror`); la tabla con logos;
+el contrato como pieza (`crearContrato`: cláusulas, línea de firma, `firmar(t0)` programada de una vez); la placa
+(`crearPost`) con la regla "solo se publica lo que el motor confirmó"; el aura de las orgs (`.mk-tinte`, una capa
+delante del lienzo y detrás de los paneles) y los asientos por jerarquía (`ASIENTOS`). **Solo de prototipo:** los likes
+y los comentarios (PRNG decorativo), los estilos de anuncio por org (`ESTILO_ANUNCIO`), el salto a la muestra `firma`.
+
+**Verificación (2026-10-09, puerto 8123):**
+- Sin `op`, contra las capturas tomadas antes de tocar nada (congeladas, mismas tomas): reposo máx. 4 niveles, hover de
+  LOUD 8, firma 10; 0 píxeles con más de 16 (el grano del reloj da 6-9).
+- Contraste por píxeles (la copia de `c-pantallas/contraste.mjs` apuntada a `fusion/`): 15 casos (las tres en reposo,
+  los resultados de elegir, las placas de cuatro tonos, el borrador, las tres firmas, dos celulares) → **876 textos, 0
+  debajo de 4,5:1**; el peor, "Welcome" de 100 px en la firma del anuncio, 5,30; el resto ≥ 6,17. Lo apartado al elegir
+  queda `inert` y fuera del lector (la tarjeta del resultado lo reemplaza).
+- `verificar.mjs` en verde; 0 errores de consola y 0 `requestfailed` en todas las capturas (hoja de contactos, tiras,
+  celular).
+- Hoja de contactos (no se versiona): filas reposo / apuntando LOUD / apuntando Onda Collective / el momento de firmar /
+  la firma (LOUD); columnas hoy, `mesa`, `anuncio`, `orgs`.
+
+**Límites.** La firma de `mesa` dura 1,65 s hasta el sello y se saltea con un clic, Enter o Espacio. En `orgs` el
+contrato aparece arriba a la izquierda, encima del panel de abajo apagado. Los likes de la placa escalan por tier, pero
+siguen siendo decorativos. En el celular, `orgs` no muestra el cielo (queda la tabla con el inspector) y el anuncio no
+muestra el chat.
