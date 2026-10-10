@@ -7,12 +7,14 @@
 // 3D (js/trofeo.js) y el confeti (js/confeti.js). Sin op y con las demas opciones, el takeover de siempre.
 import { crearAzar } from '../../comun/azar.js';
 import { cargarImagen, urlCarga } from '../../comun/arte.js';
-import { el, svg, entrar, animar, esperar, odometro, num, reducido, inst, celular, leerColor, duotono, EXPO, RESORTE } from './util.js';
+import { el, svg, entrar, animar, esperar, odometro, num, reducido, inst, celular, leerColor, duotono, EXPO, RESORTE, DUR } from './util.js';
 import { icono, glifoRol } from './iconos.js';
 import { crearBeats } from './beats.js';
 import { crearTrofeo, copaDe, SUBIDA } from './trofeo.js';
 import { crearConfeti } from './confeti.js';
-import { logoLiga, tonoOrg } from './logos.js';
+import { logoLiga, logoOrg, tonoOrg, escudo, iniciales } from './logos.js';
+import { pintarCampeon } from './color.js';
+import { claveCampeon } from './aura.js';
 
 const POLVO = 46;
 const TOMA = 2400;
@@ -119,9 +121,11 @@ function crearTakeover({ datos, amb, sonido, peor }) {
 //   220        golpe de luz: el mundo sube al oro (era mundial + gloria), un fogonazo y los dos canones de confeti
 //   600-1800   la copa sube desde abajo hasta el foco (WebGL: entra en la luz y frena el giro); al llegar, el brillo
 //              barre el metal y el halo late
-//   1500       el rotulo (final, la liga y el ano, la edad)
-//   1850-2910  CAMPEONES letra por letra, con peso: cada letra cae, se aplasta contra la linea y levanta polvo de oro
-//   2750-4100  el marcador, los mapas y los creditos del plantel
+//   1350       la liga: su logo grande, la edicion y "final" (PLANUI §4.10: "poner tipo el campeon, la liga y el equipo")
+//   1850-2990  CAMPEONES letra por letra, con peso: cada letra cae, se aplasta contra la linea y levanta polvo de oro
+//   2980-3200  el equipo: el escudo de la org campeona cae y golpea (su golpe propio: la onda es el tercer destello)
+//   3100-4100  el marcador, los mapas y los creditos del plantel
+//   3350-4100  el campeon: la carta de carga del que cerro la final (70 % de su color) entra girando y dice su nombre
 //   4600       se asienta (Espacio salta hasta aca): la copa gira lenta, el confeti cae, el arte queda vivo detras
 // Con INST o movimiento reducido, el cuadro final (copa quieta, confeti quieto).
 const L = {
@@ -136,6 +140,9 @@ const L = {
   lluvia: 2400,
   copa: 600,
   kicker: 1500,
+  liga: 1350, // el logo de la liga entra con un brillo que lo cruza (sin destello)
+  ligaDur: 620,
+  ligaTexto: 1480,
   letras: 1850,
   letraPaso: 80,
   letraDur: 420,
@@ -145,14 +152,22 @@ const L = {
   golpesEn: [0, 4, 8], // las letras que suenan (y sacuden la palabra) al caer
   brillo: 2900,
   brilloPeriodo: 6500,
-  marcador: 2750,
-  mapas: 2900,
+  escudo: 2980, // el escudo empieza a caer
+  escudoCae: 220, // hasta el impacto
+  escudoDur: 640,
+  ondaDur: 720,
+  marcador: 3100,
+  mapas: 3280,
   mapaPaso: 90,
-  creditos: 3200,
+  creditos: 3500,
   creditoPaso: 90,
   filete: 120,
   fileteDur: 700,
-  seguir: 4100,
+  carta: 3350, // la carta del campeon gira y entra
+  cartaDur: 720,
+  cartaNombre: 3700,
+  cartaBrillo: 4300, // el brillo de la carta vuelve cada tanto (el loop vivo)
+  seguir: 4150,
   confeti: 270,
   confetiCelular: 0.6, // en el celular, el mismo confeti en un lienzo mucho mas chico: menos papelitos
   calmaDur: 700,
@@ -174,6 +189,34 @@ const PLACA_LETRA = 0.22;
 const PLACA_LETRA_MIN = 6;
 // una animacion WAAPI con iteraciones (util.animar no las tiene); nada con INST o movimiento reducido
 const animarLoop = (nodo, cuadros, opciones) => (!nodo || inst() || reducido() ? null : nodo.animate(cuadros, opciones));
+// Los logos oficiales en tinta oscura (negros sobre transparente): sobre la noche se pasan a la tinta clara. Es la misma
+// marca que lleva js/escena.js (LOGOS.FURIA, tinta 'oscura'); js/logos.js todavia no la exporta.
+const TINTA_OSCURA = new Set(['furia']);
+// La carta de carga de Data Dragon (308x560), a su tamaño, y donde mira el recorte.
+const CARTA = { ancho: 308, alto: 560, foco: [0.5, 0.18] };
+
+// Un logo oficial como <img> (nunca en un canvas), con el escudo-monograma si no hay o no carga. `listo` resuelve
+// cuando cargo o fallo (nunca rechaza).
+function logoImg(src, nombre, clase) {
+  const caja = el('span', { class: clase, 'aria-hidden': 'true' });
+  const monograma = () => caja.replaceChildren(escudo(iniciales(nombre)));
+  if (!src) {
+    monograma();
+    return { nodo: caja, listo: Promise.resolve() };
+  }
+  const img = el('img', { src, alt: '', decoding: 'async', draggable: 'false', referrerpolicy: 'no-referrer', 'data-tinta': TINTA_OSCURA.has(String(nombre ?? '').trim().toLowerCase()) ? 'oscura' : null });
+  caja.append(img);
+  const listo = new Promise((r) => {
+    img.addEventListener('load', r, { once: true });
+    img.addEventListener('error', () => (monograma(), r()), { once: true });
+  });
+  return { nodo: caja, listo };
+}
+// El nombre de un campeon del motor ('Kai'Sa', 'Wukong') -> su clave de Data Dragon, por el catalogo del inicio.
+function claveDe(datos, nombre) {
+  const c = Object.values(datos.inicio?.catalogos?.campeonesPorRol ?? {}).flat().find((x) => x.name === nombre || x.ddragon === nombre);
+  return c?.ddragon ?? claveCampeon(nombre);
+}
 
 function crearLevantar({ datos, amb, sonido, peor }) {
   const t = datos.titulo;
@@ -217,13 +260,15 @@ function crearLevantar({ datos, amb, sonido, peor }) {
   // el confeti: el oro, el blanco, el color del equipo y el de la competicion
   const colores = ['--gold', '--carta-oro-a', '--luz-blanca', `--org-${tonoOrg(org)}`];
   if (comp) colores.push(`--comp-${comp}-contra`);
-  // (despues de que entra el texto, lo que pasa por detras del bloque se apaga: la letra chica conserva su contraste)
+  // (despues de que entra el texto, lo que pasa por detras del bloque y de la carta se apaga: la letra chica conserva su
+  // contraste)
   let bloque = null;
+  let carta = null;
   const confeti = crearConfeti(el('canvas', { class: 'cu-confeti', 'aria-hidden': 'true' }), {
     colores,
     semilla: `titulo-${t.titulo.anio}-${org}`,
     cantidad: Math.round(L.confeti * (celular() ? L.confetiCelular : 1)),
-    calma: { desde: L.kicker, dur: L.calmaDur, alfa: L.calmaAlfa, zonas: () => (bloque ? [bloque.getBoundingClientRect()] : []) },
+    calma: { desde: L.kicker, dur: L.calmaDur, alfa: L.calmaAlfa, zonas: () => [bloque, carta].filter(Boolean).map((n) => n.getBoundingClientRect()) },
     origenes: [
       { tipo: 'canon', x: 0, y: 1.02, angulo: 21, t: L.canones },
       { tipo: 'canon', x: 1, y: 1.02, angulo: -21, t: L.canones },
@@ -241,10 +286,20 @@ function crearLevantar({ datos, amb, sonido, peor }) {
   });
   const brillo = el('span', { class: 'tk-brillo', 'aria-hidden': 'true', text: 'CAMPEONES' });
   const titulo = el('h1', { class: 'tk-titulo', id: 'tk-titulo', 'data-foco': '', tabindex: '-1', 'aria-label': `¡Campeones de ${t.titulo.nombre}!` }, [el('span', { class: 'tk-letras', 'aria-hidden': 'true' }, letras), brillo]);
-  const kicker = el('p', { class: 'tk-kicker' }, [el('span', { text: 'Final' }), el('span', { text: `${t.titulo.nombre} ${t.titulo.anio}` }), el('span', { text: `${t.franja?.cuando?.edadTexto ?? ''}` })]);
+  // PLANUI §4.10: la liga (su logo grande, la edicion y "final") en lugar del rotulo
+  const edad = t.franja?.cuando?.edadTexto ?? '';
+  const infoLiga = logoLiga(t.titulo.nombre ?? t.titulo.liga);
+  const logoDeLiga = logoImg(infoLiga.src, infoLiga.nombre, 'cu-liga-logo');
+  const ligaTexto = el('span', { class: 'cu-liga-txt' }, [el('b', { text: `${t.titulo.nombre} ${t.titulo.anio}` }), el('span', { text: edad ? `Final · ${edad}` : 'Final' })]);
+  const liga = el('p', { class: 'cu-liga' }, [logoDeLiga.nodo, ligaTexto]);
   const [a, b] = t.log.marcador;
   const score = el('span', { class: 'tk-score', text: `${a}–${b}` });
   const marcador = el('p', { class: 'tk-marcador' }, [el('b', { text: org }), score, el('b', { class: 'tk-rival', text: t.log.rival })]);
+  // el equipo: el escudo de la org campeona, grande, con su golpe (la onda de luz que abre al caer)
+  const escudoOrg = logoImg(logoOrg(org).src, org, 'cu-escudo-logo');
+  const onda = el('i', { class: 'cu-onda', 'aria-hidden': 'true' });
+  const escudoCaja = el('span', { class: 'cu-escudo' }, [onda, escudoOrg.nodo]);
+  const equipo = el('div', { class: 'cu-equipo' }, [escudoCaja, marcador]);
   const mapas = el('ol', { class: 'tk-mapas', 'aria-label': 'La serie, mapa por mapa' }, t.log.mapas.map((m) => el('li', { class: m.resultado === 'W' ? 'gano' : 'perdio', title: m.cierre }, [el('span', { class: 'tk-m', text: `M${m.mapa}` }), el('b', { class: 'campeon-foco', 'data-campeon': m.campeon, tabindex: '0', text: m.campeon }), el('span', { class: 'tk-r', text: m.resultado === 'W' ? 'ganado' : 'perdido' })])));
   const creditos = el('ol', { class: 'tk-creditos', 'aria-label': 'El plantel' }, t.plantel.map((p) => el('li', { class: p.esJugador ? 'vos' : '' }, [glifoRol(p.rol), el('b', { text: p.esJugador ? yo : p.handle }), el('span', { text: p.rol })])));
   const seguir = el('button', { type: 'button', class: 'tk-seguir' }, ['La carta de tu carrera', icono('flecha'), el('kbd', { text: 'Espacio' })]);
@@ -252,10 +307,23 @@ function crearLevantar({ datos, amb, sonido, peor }) {
     e.stopPropagation();
     window.vitrina?.muestra('final');
   });
-  bloque = el('div', { class: 'tk-bloque cu-bloque' }, [kicker, titulo, marcador, mapas, creditos, seguir]);
+  bloque = el('div', { class: 'tk-bloque cu-bloque' }, [liga, titulo, equipo, mapas, creditos, seguir]);
+  // el campeon: el que cerro la final (el ultimo mapa ganado), su carta de carga al 70 % de su color (la politica de
+  // momento de color.js) y su nombre
+  const cierre = [...t.log.mapas].reverse().find((m) => m.resultado === 'W') ?? t.log.mapas[t.log.mapas.length - 1];
+  const claveCierre = claveDe(datos, cierre.campeon);
+  const cartaArte = el('canvas', { class: 'cu-carta-arte', width: String(CARTA.ancho), height: String(CARTA.alto), 'aria-hidden': 'true' });
+  const cartaBrillo = el('span', { class: 'cu-carta-brillo', 'aria-hidden': 'true' });
+  const cartaNombre = el('b', { class: 'cu-carta-nombre', text: cierre.campeon });
+  const cartaPie = el('span', { class: 'cu-carta-pie', 'aria-hidden': 'true' }, [el('span', { class: 'cu-carta-k', text: `M${cierre.mapa} · cerró la final` }), cartaNombre]);
+  // (la cara lleva la inclinacion quieta hacia la copa; la carta, la entrada)
+  carta = el('figure', { class: 'cu-carta', 'data-campeon': claveCierre, 'aria-label': `${cierre.campeon}: cerró la final en el mapa ${cierre.mapa}` }, el('span', { class: 'cu-carta-cara' }, [cartaArte, cartaBrillo, cartaPie]));
+  const cartaLista = cargarImagen(urlCarga(claveCierre, datos.meta)).then((img) => {
+    if (img) pintarCampeon(cartaArte, img, leerColor('--tono-oro-noche'), leerColor('--gold'), { foco: CARTA.foco });
+  });
   // el velo de lectura del bloque (la letra chica de los creditos cae sobre el arte iluminado)
   const velo = el('div', { class: 'cu-velo', 'aria-hidden': 'true' });
-  raiz.append(negro, velo, golpe, caja, confeti.nodo, bloque);
+  raiz.append(negro, velo, golpe, caja, confeti.nodo, carta, bloque);
 
   let beats = null;
   let asentado = false;
@@ -297,8 +365,10 @@ function crearLevantar({ datos, amb, sonido, peor }) {
     if (fogonazo != null) bt.waapi(animar(golpe, [{ opacity: 0, transform: 'scale(0.7)' }, { opacity: 1, transform: 'scale(1)', offset: 0.16 }, { opacity: 0, transform: 'scale(1.3)' }], { delay: fogonazo, dur: L.fogonazo, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'none' }));
     // la copa sube hasta el foco (el canvas dibuja su luz y su giro con el mismo reloj)
     bt.waapi(animar(sube, [{ transform: 'translateY(118%)' }, { transform: 'translateY(-1.6%)', offset: 0.84 }, { transform: 'none' }], { delay: L.copa, dur: SUBIDA, easing: 'cubic-bezier(.22,.8,.3,1)' }));
-    // el rotulo, y CAMPEONES letra por letra con peso
-    bt.waapi(entrar(kicker, L.kicker, 10));
+    // la liga: el logo entra desde la luz (sin destello: un brillo lo cruza), despues la edicion; y CAMPEONES letra por
+    // letra con peso
+    bt.waapi(animar(logoDeLiga.nodo, [{ opacity: 0, transform: 'scale(0.86)', filter: 'blur(10px) brightness(2.2)' }, { opacity: 1, transform: 'none', filter: 'blur(0px) brightness(1)' }], { delay: L.liga, dur: L.ligaDur }));
+    bt.waapi(animar(ligaTexto, [{ opacity: 0, transform: 'translateX(-14px)' }, { opacity: 1, transform: 'none' }], { delay: L.ligaTexto, dur: DUR.entra }));
     letras.forEach((l, i) => {
       const t0 = L.letras + i * L.letraPaso;
       const toca = t0 + L.letraDur * L.impacto;
@@ -316,9 +386,27 @@ function crearLevantar({ datos, amb, sonido, peor }) {
     });
     // el brillo especular cruza CAMPEONES y vuelve cada tanto (el loop vivo)
     bt.waapi(animarLoop(brillo, [{ backgroundPosition: '160% 0', opacity: 1 }, { backgroundPosition: '-60% 0', opacity: 1, offset: 0.18 }, { backgroundPosition: '-60% 0', opacity: 1 }], { delay: L.brillo, duration: L.brilloPeriodo, iterations: Infinity, easing: 'cubic-bezier(.4,0,.2,1)' }));
+    // el equipo: el escudo cae, se aplasta contra la linea y abre una onda de luz (su golpe; la onda pasa por destello)
+    const impacto = L.escudo + L.escudoCae;
+    const pIm = L.escudoCae / L.escudoDur;
+    bt.waapi(animar(escudoOrg.nodo, [
+      { opacity: 0, transform: 'translateY(-46%) scale(1.7)', filter: 'blur(8px)', easing: 'cubic-bezier(.55,0,.9,.4)' },
+      { opacity: 1, transform: 'translateY(2%) scale(1.08, 0.9)', filter: 'blur(0px)', offset: pIm, easing: 'cubic-bezier(.2,.7,.3,1)' },
+      { opacity: 1, transform: 'translateY(-1%) scale(0.98, 1.03)', filter: 'blur(0px)', offset: pIm + (1 - pIm) * 0.45 },
+      { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+    ], { delay: L.escudo, dur: L.escudoDur, easing: 'linear' }));
+    const tOnda = bt.destello(impacto);
+    if (tOnda != null) bt.waapi(animar(onda, [{ opacity: 0.95, transform: 'scale(0.55)' }, { opacity: 0, transform: 'scale(2.3)' }], { delay: tOnda, dur: L.ondaDur, easing: EXPO, fill: 'none' }));
+    bt.waapi(animar(equipo, [{ transform: 'none' }, { transform: 'translateY(4px)', offset: 0.3 }, { transform: 'none' }], { delay: impacto, dur: L.sacudon, easing: 'ease-out', fill: 'none' }));
+    sonar(impacto, () => sonido?.golpe?.());
     // el marcador (el numero golpea), los mapas y los creditos
     bt.waapi(entrar(marcador, L.marcador, 12));
     bt.waapi(animar(score, [{ transform: 'scale(1.5)', opacity: 0 }, { transform: 'none', opacity: 1 }], { delay: L.marcador + 80, dur: 620, easing: RESORTE }));
+    // el campeon: la carta gira hacia la copa y entra, el brillo la cruza y su nombre se asienta
+    bt.waapi(animar(carta, [{ opacity: 0, transform: 'perspective(900px) translateX(18%) rotateY(-78deg) scale(0.92)' }, { opacity: 1, offset: 0.35 }, { opacity: 1, transform: 'none' }], { delay: L.carta, dur: L.cartaDur }));
+    bt.waapi(animar(cartaBrillo, [{ backgroundPosition: '160% 0', opacity: 1 }, { backgroundPosition: '-60% 0', opacity: 1 }], { delay: L.carta + L.cartaDur * 0.4, dur: L.cartaDur, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'none' }));
+    bt.waapi(animar(cartaNombre, [{ opacity: 0, transform: 'translateY(40%)', letterSpacing: '0.18em' }, { opacity: 1, transform: 'none' }], { delay: L.cartaNombre, dur: DUR.larga }));
+    bt.waapi(animarLoop(cartaBrillo, [{ backgroundPosition: '160% 0', opacity: 1 }, { backgroundPosition: '-60% 0', opacity: 1, offset: 0.16 }, { backgroundPosition: '-60% 0', opacity: 1 }], { delay: L.cartaBrillo, duration: L.brilloPeriodo, iterations: Infinity, easing: 'cubic-bezier(.4,0,.2,1)' }));
     mapas.querySelectorAll('li').forEach((li, i) => bt.waapi(entrar(li, L.mapas + i * L.mapaPaso, 8)));
     // el filete de los creditos se traza con ellos (si no, queda una raya sola en la pantalla antes del texto)
     bt.waapi(animar(creditos, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { delay: L.creditos - L.filete, dur: L.fileteDur, easing: EXPO }));
@@ -357,7 +445,7 @@ function crearLevantar({ datos, amb, sonido, peor }) {
     congelar: (ms) => beats?.congelar(ms),
     pausar: () => beats?.pausar(),
     reanudar: () => beats?.reanudar(),
-    listo: () => Promise.all([copa.listo, logoListo]).then(() => ubicarPlaca()),
+    listo: () => Promise.all([copa.listo, logoListo, logoDeLiga.listo, escudoOrg.listo, cartaLista]).then(() => ubicarPlaca()),
     destruir() {
       observador?.disconnect();
       beats?.destruir({ participantes: false });

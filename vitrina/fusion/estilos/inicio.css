@@ -152,3 +152,162 @@ html[data-reducido] .in-bloquear.encendido, html[data-inst] .in-bloquear.encendi
   .in-servidores { width: auto; }
   .intro-frase { font-size: 30px; top: 40%; }
 }
+
+/* ---------- el champ select (op=linea, PLANUI §4.10): el rol en pestañas con glifos, retratos grandes, el nombre del
+   apuntado grande sobre su arte, las ranuras como cartas de carga verticales y BLOQUEAR de la ceremonia. La luz y el
+   bitono del inicio no cambian: las piezas se pintan en duotono (color.js). Prefijo in-cs-. ---------- */
+.in-form-cs { gap: 16px; }
+.in-cs {
+  display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(0, 1fr); grid-template-areas: 'roles k' 'grilla cartas' 'texto accion';
+  column-gap: 24px; row-gap: 12px; align-items: start;
+  margin: 2px -26px -22px; padding: 14px 26px 18px; background: var(--panel-hondo); box-shadow: inset 0 1px 0 var(--linea); border-radius: 0 0 var(--r-panel) var(--r-panel);
+}
+/* el rol: las pestañas con glifos (la tuya, preseleccionada) */
+.in-cs-roles { grid-area: roles; display: flex; gap: 2px; box-shadow: inset 0 -1px 0 var(--linea); }
+.in-cs-rol {
+  all: unset; box-sizing: border-box; cursor: pointer; flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 7px; height: 36px;
+  font: 600 11px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim);
+  box-shadow: inset 0 -2px 0 transparent; transition: color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+.in-cs-rol .glifo-rol { width: 18px; height: 18px; flex: none; }
+.in-cs-rol .carril { stroke: var(--ink-mute); transition: stroke 140ms ease; }
+.in-cs-rol:hover { color: var(--ink); background: var(--luz-tenue); }
+.in-cs-rol:hover .carril { stroke: var(--ink); }
+.in-cs-rol[aria-checked='true'] { color: var(--ink); background: linear-gradient(0deg, var(--luz-suave), transparent 85%); box-shadow: inset 0 -2px 0 var(--luz); }
+.in-cs-rol[aria-checked='true'] .carril { stroke: var(--luz-texto); filter: drop-shadow(0 0 5px var(--luz)); }
+.in-cs-rol:focus-visible, .in-cs-retrato:focus-visible, .in-cs-cambiar:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.in-cs-k {
+  grid-area: k; display: flex; align-items: center; justify-content: space-between; height: 36px; margin: 0; box-shadow: inset 0 -1px 0 var(--linea);
+  font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim);
+}
+.in-cs-cuenta { font: 700 13px / 1 var(--f-mono); letter-spacing: 0.06em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.in-cs[data-listo] .in-cs-cuenta { color: var(--luz-texto); }
+
+/* los retratos: el tile de Data Dragon en bitono, que se enciende al apuntarlo */
+.in-cs-grilla { grid-area: grilla; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 7px; }
+.in-cs-retrato {
+  all: unset; box-sizing: border-box; cursor: pointer; position: relative; aspect-ratio: 1; border-radius: var(--r-control); overflow: hidden;
+  background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--linea); transition: transform 160ms var(--expo), box-shadow 160ms ease;
+}
+.in-cs-arte { display: block; width: 100%; height: 100%; transform: scale(1.04); filter: brightness(0.74) contrast(1.06); transition: filter 220ms ease, transform 360ms var(--expo); }
+.in-cs-retrato:hover, .in-cs-retrato:focus-visible { z-index: 1; transform: translateY(-2px); box-shadow: 0 0 0 1px var(--luz-texto), 0 12px 26px -12px var(--luz-fuerte); }
+.in-cs-retrato:hover .in-cs-arte, .in-cs-retrato:focus-visible .in-cs-arte { filter: brightness(1.12) contrast(1.04); transform: scale(1.13); }
+.in-cs-retrato:active { transform: scale(0.95); transition-duration: 60ms; }
+.in-cs-retrato[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--luz), 0 0 22px var(--luz-fuerte); }
+.in-cs-retrato[aria-pressed='true'] .in-cs-arte { filter: brightness(1.06) contrast(1.04); }
+.in-cs-mini {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 3px 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: center;
+  font: 700 11px / 1 var(--f-cuerpo); letter-spacing: 0.01em; color: var(--ink);
+  background: linear-gradient(0deg, var(--velo-lectura) 45%, transparent); opacity: 0; transform: translateY(4px); transition: opacity 160ms ease, transform 220ms var(--expo);
+}
+.in-cs-retrato:hover .in-cs-mini, .in-cs-retrato:focus-visible .in-cs-mini, .in-cs-retrato[aria-pressed='true'] .in-cs-mini { opacity: 1; transform: none; }
+.in-cs-orden {
+  position: absolute; top: 4px; right: 4px; z-index: 1; display: grid; place-items: center; min-width: 17px; height: 17px; border-radius: 50%;
+  background: var(--luz-texto); color: var(--bg-void); font: 700 10px / 1 var(--f-mono);
+}
+.in-cs-orden:empty { display: none; }
+.in-cs[data-bloqueado] .in-cs-retrato, .in-cs[data-bloqueado] .in-cs-rol { cursor: default; }
+.in-cs[data-bloqueado] .in-cs-retrato:not([aria-pressed='true']) .in-cs-arte { filter: brightness(0.34) saturate(0.6); transform: scale(1.04); }
+.in-cs[data-bloqueado] .in-cs-retrato:not([aria-pressed='true']) { transform: none; box-shadow: inset 0 0 0 1px var(--linea); }
+
+/* las ranuras: cartas de carga verticales (la proporcion de Data Dragon, 308x560) */
+.in-cs-cartas { grid-area: cartas; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 0; padding: 0; }
+.in-cs-carta {
+  position: relative; aspect-ratio: 308 / 560; border-radius: var(--r-control); overflow: hidden;
+  background: linear-gradient(180deg, var(--bg-raised), var(--bg-surface)); box-shadow: inset 0 0 0 1px var(--linea);
+}
+.in-cs-carta.llena { box-shadow: 0 0 0 1px var(--luz), 0 14px 30px -16px var(--luz-fuerte); }
+.in-cs-carta-vacia {
+  position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; border: 1px dashed var(--linea-fuerte); border-radius: inherit;
+  font: 500 11px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim);
+}
+.in-cs-carta-vacia b { font: 900 38px / 1 var(--f-display); font-stretch: var(--ancho-numero); color: var(--ink-mute); }
+.in-cs-carta.llena .in-cs-carta-vacia { display: none; }
+.in-cs-carta-arte { position: absolute; inset: 0; display: block; width: 100%; height: 100%; opacity: 0; }
+.in-cs-carta.llena .in-cs-carta-arte { opacity: 1; }
+.in-cs-carta-barrido {
+  position: absolute; inset: 0; opacity: 0; pointer-events: none; mix-blend-mode: screen;
+  background: linear-gradient(180deg, var(--luz-blanca) 0, color-mix(in srgb, var(--luz) 70%, transparent) 1.6%, color-mix(in srgb, var(--luz) 22%, transparent) 9%, transparent 26%);
+}
+.in-cs-carta-pie {
+  position: absolute; left: 0; right: 0; bottom: 0; display: grid; gap: 4px; padding: 30px 8px 9px; opacity: 0;
+  background: linear-gradient(0deg, var(--velo-lectura) 48%, transparent);
+}
+.in-cs-carta.llena .in-cs-carta-pie { opacity: 1; }
+/* el fantasma: la primera ranura libre muestra al apuntado, a media luz, antes de elegirlo */
+.in-cs-carta.fantasma { box-shadow: inset 0 0 0 1px var(--luz-fuerte); outline: 1px dashed var(--luz-texto); outline-offset: -1px; }
+.in-cs-carta.fantasma .in-cs-carta-vacia { display: none; }
+.in-cs-carta.fantasma .in-cs-carta-arte { opacity: 0.42; }
+.in-cs-carta.fantasma .in-cs-carta-pie { opacity: 1; }
+.in-cs-carta.fantasma .in-cs-carta-nombre { color: var(--ink-dim); }
+.in-cs-carta-k { font: 500 11px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.in-cs-carta-nombre { font: 900 var(--in-cs-carta-t) / 0.92 var(--f-display); font-stretch: var(--ancho-momento); text-transform: uppercase; color: var(--ink); overflow-wrap: anywhere; }
+/* trabada (BLOQUEAR): el filete de la ceremonia, el pie en petroleo y la marca */
+.in-cs-carta-marco {
+  position: absolute; inset: 0; border-radius: inherit; opacity: 0; pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--ln-oro), inset 0 1px 0 1px var(--ln-oro-claro), inset 0 0 20px var(--ln-turquesa-tenue);
+}
+.in-cs-carta.trabada { box-shadow: 0 0 0 1px var(--ln-oro-hondo), 0 0 26px var(--ln-turquesa-tenue); }
+.in-cs-carta.trabada .in-cs-carta-marco { opacity: 1; }
+.in-cs-carta.trabada .in-cs-carta-pie { background: linear-gradient(0deg, var(--ln-petroleo-hondo) 50%, transparent); }
+.in-cs-carta.trabada .in-cs-carta-k { color: var(--ln-crema-dim); }
+.in-cs-carta.trabada .in-cs-carta-nombre { color: var(--ln-crema); }
+.in-cs-carta.trabada::after {
+  content: ''; position: absolute; top: 9px; right: 10px; width: 5px; height: 10px;
+  border: solid var(--ln-turquesa); border-width: 0 2px 2px 0; transform: rotate(45deg); filter: drop-shadow(0 0 4px var(--ln-turquesa-suave));
+}
+.in-cs-rol-txt { grid-area: texto; align-self: center; max-width: none; margin: 0; }
+.in-cs-accion { grid-area: accion; display: grid; gap: 4px; }
+.in-cs-bloquear { width: 100%; }
+.in-cs-cambiar {
+  all: unset; cursor: pointer; margin: 0 12px 0 auto; padding: 4px 6px; border-radius: var(--r-control);
+  font: 500 11px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); transition: color 140ms ease;
+}
+.in-cs-cambiar:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.in-cs-cambiar[hidden] { display: none; }
+
+/* el foco: el nombre del apuntado, grande, sobre su arte (el aura lo trae a la luz de la derecha) */
+.in-cs-foco {
+  grid-column: 8 / -1; grid-row: 1; align-self: end; justify-self: end; z-index: 1; display: grid; justify-items: end; gap: 10px;
+  margin-bottom: -4px; text-align: right; pointer-events: none;
+}
+.in-cs-foco-k {
+  display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px 10px; margin: 0;
+  font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink);
+  text-shadow: 0 0 2px var(--velo-lectura), 0 0 5px var(--velo-lectura), 0 1px 10px var(--velo-lectura), 0 0 18px var(--velo-medio);
+}
+.in-cs-foco-k .glifo-rol { width: 16px; height: 16px; filter: drop-shadow(0 1px 4px var(--velo-lectura)); }
+.in-cs-foco-k span:not(.in-cs-foco-estado) + span:not(.in-cs-foco-estado)::before { content: '·'; margin-right: 10px; color: var(--ink-dim); }
+.in-cs-foco-estado { padding: 4px 8px 3px; border-radius: var(--r-pildora); background: var(--luz-texto); color: var(--bg-void); text-shadow: none; }
+.in-cs-foco-estado[hidden] { display: none; }
+.in-cs-foco-nombre {
+  margin: 0; white-space: nowrap; font: 900 calc(var(--in-cs-foco-t) * min(1, var(--in-cs-foco-largo) / var(--in-cs-largo, 1))) / 0.84 var(--f-display);
+  font-stretch: var(--ancho-momento); letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink);
+  text-shadow: 0 0 2px var(--velo-lectura), 0 4px 28px var(--velo-lectura), 0 0 80px var(--luz-fuerte);
+}
+.in-cs-foco-int { display: block; }
+
+@media (max-width: 640px) {
+  .in-cs { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'roles' 'grilla' 'texto' 'k' 'cartas' 'accion'; margin: 2px -16px -18px; padding: 12px 16px 16px; }
+  .in-cs-rol { flex-direction: column; gap: 5px; height: 52px; letter-spacing: 0.04em; }
+  .in-cs-grilla { gap: 6px; }
+  .in-cs-rol-txt { white-space: normal; }
+  .in-cs-foco { justify-self: start; justify-items: start; margin: 18px 0 0; text-align: left; }
+  .in-cs-foco-k { justify-content: flex-start; }
+  .in-cs-foco-nombre { font-size: calc(var(--in-cs-foco-t-cel) * min(1, var(--in-cs-foco-largo) / var(--in-cs-largo, 1))); }
+}
+
+/* lo bajo (1280x720): el champ select y el lado entran sin scroll; se aprietan el aire y el titulo, no el contenido */
+@media (min-width: 641px) and (max-height: 800px) {
+  .in-op-linea { padding-top: 26px; padding-bottom: 16px; }
+  .in-op-linea .in-titulo { font-size: clamp(96px, min(10.4vw, 15.4vh), 150px); margin-top: 10px; }
+  .in-op-linea .in-bajada { margin-top: 8px; font-size: var(--t-cuerpo); }
+  .in-op-linea .in-form { margin-top: 16px; padding-top: 16px; gap: 12px; }
+  .in-op-linea .in-linea { margin-top: 5px; }
+  .in-op-linea .in-cs { row-gap: 9px; padding-top: 10px; padding-bottom: 14px; }
+  .in-op-linea .in-cs-roles, .in-op-linea .in-cs-k { height: 32px; }
+  .in-op-linea .in-continuar { min-height: 118px; padding: 14px 18px; }
+  .in-op-linea .in-desafio, .in-op-linea .in-historial { padding: 10px 18px 12px; }
+  .in-op-linea .in-desafio-quien { margin-top: 8px; }
+  .in-op-linea .in-historial ol { gap: 4px; margin-top: 7px; }
+}

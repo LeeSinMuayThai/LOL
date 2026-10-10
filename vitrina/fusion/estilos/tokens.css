@@ -702,6 +702,21 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 
 /* ===== PLANUI §4.10 · ultimas · I, el inicio y el titulo (el champ select, la identidad del titulo, el selector de final.html). Sus tokens van entre esta linea y su cierre ===== */
 :root {
+  /* el champ select del inicio (op=linea): el nombre del apuntado sobre su arte y el de cada carta de carga */
+  --in-cs-foco-t: clamp(64px, 7.4vw, 112px);
+  --in-cs-foco-t-cel: 52px;
+  --in-cs-foco-largo: 7;              /* hasta 7 letras el nombre va a su tamaño; mas largo, se achica en proporcion */
+  --in-cs-carta-t: 17px;
+  /* el titulo (op=linea): el logo de la liga, el escudo de la org y la carta del campeon */
+  --cu-liga-alto: clamp(56px, 6vw, 88px);
+  --cu-liga-t: clamp(22px, 2.1vw, 30px);
+  --cu-escudo-alto: clamp(64px, 7vw, 104px);
+  --cu-carta-ancho: clamp(112px, 11.6vw, 172px);
+  --cu-carta-ancho-cel: 86px;
+  --cu-carta-der: clamp(16px, 3.4vw, 52px);
+  --cu-carta-abajo: clamp(24px, 6vh, 64px);
+  --cu-carta-t: clamp(26px, 2.6vw, 40px);
+  --cu-carta-t-cel: 19px;
 }
 /* ===== fin §4.10 I ===== */
 

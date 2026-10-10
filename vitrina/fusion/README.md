@@ -1191,7 +1191,35 @@ La perilla `var=<id>` elige la variante dentro de `op=linea` (`js/main.js` la le
 
 ### El inicio y el título (I): el champ select y el campeón, la liga y el equipo
 
-(pendiente)
+**El inicio con `op=linea`: un champ select** (`js/inicio.js` `crearChampSelect`, `estilos/inicio.css` `.in-cs-*`). Sin
+`op` (y con `op=final` y las de §4.7) el inicio es el de siempre: se compararon por píxeles antes y después (0,00 %).
+- **El rol son las pestañas con glifos** arriba de la grilla, con tu rol preseleccionado. El motor solo deja mains de
+  tu rol (`src/ui/screens/inicio.js`), así que la pestaña *es* el rol: reemplaza a la fila "Rol" y cada rol recuerda
+  sus mains.
+- **Retratos grandes** (el tile de Data Dragon, ~64 px) en el bitono del inicio (`pintarCampeon` de `color.js`: en el
+  inicio, duotono al 100 %, con la luz de la era llevada hacia la tinta para que se reconozcan); apuntar es el aura.
+- **El foco**: el nombre del apuntado, grande, sobre su arte, con el rol, sus arquetipos y "Main N". Escucha al aura
+  (`aura.alCambiar`): el nombre y la luz cambian juntos.
+- **Las ranuras son cartas de carga verticales** (308×560): se llenan de abajo hacia arriba con una línea de luz. La
+  primera libre muestra al apuntado a media luz (el "hover" del cliente) antes de elegirlo; con las tres llenas, otra
+  elección hace temblar las ranuras.
+- **BLOQUEAR es `bloquear()` de la ceremonia**: las cartas se traban (golpe, filete de oro, marca turquesa) y el botón
+  da su único destello. "Cambiar mains" lo deshace. Enter sobre un retrato o una pestaña los activa (no bloquea); Enter
+  sin foco en un control bloquea; durante la intro, Enter la saltea.
+- 1440×900 y 1280×720 entran sin scroll (en lo bajo se aprietan el aire y el título); 390×844 sin scroll horizontal.
+
+**El título con `op=linea`: el campeón, la liga y el equipo** (`js/cumbre.js` `crearLevantar`, `estilos/cumbre.css`
+`.cu-liga`, `.cu-equipo`, `.cu-carta`). Dentro de los mismos 5 s (asentarse en 4600, Espacio salta ahí):
+- 1350 **la liga**: su logo grande (`<img>`, `logos.js`) encabeza el bloque con la edición y "Final · edad".
+- 2980-3200 **el equipo**: el escudo de la org cae y golpea junto al marcador; su onda pasa por `bt.destello` (tercer
+  destello: 220, 1800, 3200). Los logos en tinta oscura (FURIA) se pasan a la tinta clara.
+- 3350-4100 **el campeón**: la carta de carga del que cerró la final (el último mapa ganado) entra girando hacia la copa,
+  al 70 % de su color (la política de momento), con "M4 · cerró la final" y su nombre; su brillo vuelve cada 6,5 s.
+
+**`final.html`**: "El inicio" es `op=linea` (0 compara contra el de hoy, sin op). "La decisión" y "El mercado" tienen
+un **selector de variantes** (control segmentado en la barra; V las recorre): la variante vive en el hash de la página
+(`#p=decision&v=copas`), suma `&var=<id>` al juego y tiene su "qué mirar"; 0 va a `antes`, sin `var`. Las teclas no
+actúan mientras se escribe en un campo (el invocador).
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->
