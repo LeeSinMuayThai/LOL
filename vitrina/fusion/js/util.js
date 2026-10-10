@@ -116,6 +116,9 @@ export function lineasConMascara(nodo) {
 
 // ---------- odometro: cada digito rueda en su columna ----------
 // `nodo` queda con el numero final escrito (aria-label) y una columna por digito.
+// PLANUI §4.9: rueda con expo-out, sin rebote (el resorte se pasaba de largo: con un salto de varios digitos dejaba ver
+// los vecinos) y la columna se funde en sus bordes (base.css, --ln-odo-borde): mientras rueda, el digito entra y sale
+// de la ventana sin cortes duros.
 export function odometro(nodo, desde, hasta, { delay = 0, dur = 900 } = {}) {
   const a = num(desde);
   const b = num(hasta);
@@ -145,7 +148,7 @@ export function odometro(nodo, desde, hasta, { delay = 0, dur = 900 } = {}) {
     animar(tira, [{ transform: `translateY(${desdeY}%)` }, { transform: `translateY(${-fin * 10}%)` }], {
       delay: delay + (largo - i) * 40,
       dur,
-      easing: RESORTE,
+      easing: EXPO,
     });
   }
   return nodo;

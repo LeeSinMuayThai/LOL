@@ -1,1 +1,96 @@
-/* UNA LINEA (PLANUI §4.9): la grafica de transmision (el marcador, la placa inferior, la cinta). Prefijo ln-. Lo implementa K. */
+/* UNA LINEA (PLANUI §4.9): LA GRAFICA DE TRANSMISION (js/transmision.js). El vocabulario de LoL Esports: placas oscuras y
+   finas, logos reales (<img>), siglas, el marcador en Mona expandida 900 tabular, los pips; la placa inferior y la
+   cinta. El color es el acento del tono (--tono-acento, con su valor por defecto en tokens.css). Prefijo ln-. */
+.ln-marcador, .ln-placa, .ln-cinta {
+  /* el acento como texto: llevado hacia la tinta para leerse sobre la placa (>= 4,5:1 con cualquier tono) */
+  --ln-tv-acento-txt: color-mix(in oklab, var(--tono-acento) 62%, var(--ink));
+}
+
+/* ---------- el marcador (score bug) ---------- */
+.ln-marcador {
+  position: relative; display: inline-grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch;
+  height: var(--ln-tv-alto); border-radius: 2px; overflow: hidden;
+  background: var(--ln-tv-placa); box-shadow: inset 0 0 0 1px var(--ln-tv-raya), 0 18px 44px -22px var(--sombra);
+}
+.ln-marcador::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; z-index: 1;
+  background: linear-gradient(90deg, transparent, var(--tono-acento) 18%, var(--tono-acento) 82%, transparent);
+}
+.ln-mc-eq { display: flex; align-items: center; gap: 12px; padding-left: 14px; min-width: 0; }
+.ln-mc-local { justify-content: flex-end; }
+.ln-mc-visita { flex-direction: row-reverse; justify-content: flex-end; padding: 0 14px 0 0; }
+.ln-mc-logo { flex: none; width: 34px; height: 34px; display: grid; place-items: center; }
+.ln-mc-logo .logo-org { display: grid; place-items: center; width: 100%; height: 100%; font-style: normal; }
+.ln-mc-logo img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+.ln-mc-logo .escudo { font: 700 11px / 1 var(--f-mono); letter-spacing: 0.04em; color: var(--ink); }
+.ln-mc-nombre { display: grid; gap: 6px; justify-items: start; min-width: 0; }
+.ln-mc-visita .ln-mc-nombre { justify-items: end; }
+.ln-mc-sigla { font: 800 19px / 1 var(--f-display); font-stretch: 112%; letter-spacing: 0.02em; color: var(--ink); white-space: nowrap; }
+.ln-mc-pips { display: flex; gap: 4px; }
+.ln-mc-pip { width: 14px; height: 3px; border-radius: 1px; background: var(--ln-tv-raya); }
+.ln-mc-pip.ganado { background: var(--tono-acento); box-shadow: 0 0 8px color-mix(in srgb, var(--tono-acento) 60%, transparent); }
+.ln-mc-num {
+  flex: none; align-self: stretch; display: grid; place-items: center; min-width: 48px; padding: 0 4px;
+  font: 900 32px / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--ink);
+  background: var(--ln-tv-placa-alta);
+}
+.ln-mc-centro {
+  display: flex; align-items: center; gap: 10px; padding: 0 16px;
+  box-shadow: inset 1px 0 0 var(--ln-tv-raya), inset -1px 0 0 var(--ln-tv-raya);
+}
+.ln-mc-comp { display: grid; place-items: center; height: 28px; font-style: normal; }
+.ln-mc-comp img { display: block; height: 28px; width: auto; max-width: 64px; object-fit: contain; }
+.ln-mc-comp .escudo { font: 700 11px / 1 var(--f-mono); color: var(--ink); }
+.ln-mc-rotulo { max-width: 18ch; font: 600 var(--t-rotulo) / 1.25 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink); }
+.ln-mc-formato { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: 0.08em; color: var(--ln-tv-acento-txt); }
+
+/* ---------- la placa inferior (lower third) ---------- */
+.ln-placa {
+  position: relative; display: inline-grid; grid-template-columns: 4px minmax(0, auto); max-width: min(640px, 100%);
+  background: var(--ln-tv-placa); box-shadow: inset 0 0 0 1px var(--ln-tv-raya), 0 22px 50px -26px var(--sombra);
+  animation: ln-placa-entra 420ms var(--expo) backwards;
+}
+.ln-placa-filo { background: var(--tono-acento); box-shadow: 0 0 16px color-mix(in srgb, var(--tono-acento) 55%, transparent); }
+.ln-placa-cuerpo { display: grid; gap: 4px; padding: 12px 20px 14px 16px; min-width: 0; }
+.ln-placa-rotulo { margin: 0; font: 600 var(--t-rotulo) / 1.3 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ln-tv-acento-txt); }
+.ln-placa-titulo { margin: 0; font: 800 26px / 1.05 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.025em; color: var(--ink); }
+.ln-placa-sub { margin: 2px 0 0; font: 400 var(--t-chico) / 1.4 var(--f-cuerpo); color: color-mix(in oklab, var(--ink-dim) 55%, var(--ink)); }
+@keyframes ln-placa-entra { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+/* ---------- la cinta (ticker) ---------- */
+.ln-cinta {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: stretch; height: var(--ln-tv-cinta); overflow: hidden;
+  background: var(--ln-tv-placa); box-shadow: inset 0 1px 0 var(--ln-tv-raya), inset 0 -1px 0 var(--ln-tv-raya);
+}
+.ln-cinta-rotulo {
+  position: relative; display: grid; place-items: center; padding: 0 16px 0 18px;
+  font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ln-tv-acento-txt);
+  background: color-mix(in srgb, var(--tono-acento) 16%, var(--ln-tv-placa-sola));
+  box-shadow: inset 3px 0 0 var(--tono-acento), inset -1px 0 0 var(--ln-tv-raya);
+}
+.ln-cinta-pista { position: relative; overflow: hidden; mask-image: linear-gradient(90deg, transparent, var(--mascara) 3%, var(--mascara) 97%, transparent); }
+.ln-cinta-tira { display: inline-flex; align-items: center; height: 100%; white-space: nowrap; animation: ln-cinta var(--ln-cinta-dur, 30s) linear infinite; }
+.ln-cinta-item { display: inline-flex; align-items: center; gap: 10px; padding: 0 22px; font: 500 14px / 1 var(--f-cuerpo); color: var(--ink); }
+.ln-cinta-item::after { content: ''; width: 5px; height: 5px; margin-left: 22px; transform: rotate(45deg); background: var(--tono-acento); opacity: 0.8; }
+.ln-cinta-item .logo-org { display: grid; place-items: center; width: 22px; height: 22px; font-style: normal; }
+.ln-cinta-item img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+.ln-cinta-item .escudo { font: 700 9px / 1 var(--f-mono); color: var(--ink); }
+@keyframes ln-cinta { to { transform: translateX(-50%); } }
+
+/* ---------- el camino quieto: la cinta no corre (se ve el primer juego, sin el duplicado) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ln-cinta-tira, .ln-placa { animation: none; }
+  .ln-cinta-item[aria-hidden='true'] { display: none; }
+}
+html[data-reducido] :is(.ln-cinta-tira, .ln-placa), html[data-inst] :is(.ln-cinta-tira, .ln-placa) { animation: none; }
+html[data-reducido] .ln-cinta-item[aria-hidden='true'], html[data-inst] .ln-cinta-item[aria-hidden='true'] { display: none; }
+
+@media (max-width: 640px) {
+  .ln-marcador { height: 48px; }
+  .ln-mc-logo { width: 26px; height: 26px; }
+  .ln-mc-sigla { font-size: 15px; }
+  .ln-mc-num { min-width: 36px; font-size: 24px; }
+  .ln-mc-rotulo { display: none; }
+  .ln-mc-centro { padding: 0 10px; }
+  .ln-placa-titulo { font-size: 21px; }
+}

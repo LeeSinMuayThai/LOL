@@ -1,4 +1,4 @@
-/* LA FUSION — final.html: la ultima demostracion, una pantalla grande por pestaña (PLANUI §4.8). Mismo juego: el panel, el
+/* LA FUSION — final.html: la demostracion, una pantalla grande por pestaña (PLANUI §4.8; §4.9: una linea). Mismo juego: el panel, el
    rotulo, la tecla, el cuarto y el titulo ancho de la fusion (base.css). Sin colores literales: viven en tokens.css. */
 body.final {
   overflow: hidden; height: 100vh; display: flex; flex-direction: column;
@@ -30,7 +30,7 @@ body.final {
   font: 600 12px / 1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); background: var(--luz-suave);
 }
 .fn-indicador[data-vista='estaba'] b { color: var(--ink-dim); background: transparent; box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
-.fn-indicador[data-vista='referencia'] b { color: var(--ink-dim); background: transparent; box-shadow: inset 0 0 0 1px var(--linea); }
+.fn-indicador[data-vista='referencia'] b, .fn-indicador[data-vista='juntas'] b { color: var(--ink-dim); background: transparent; box-shadow: inset 0 0 0 1px var(--linea); }
 .fn-botones { display: flex; gap: 8px; }
 .fn-botones .boton { white-space: nowrap; }
 .fn-botones .boton[disabled] { opacity: 0.4; cursor: default; pointer-events: none; }
@@ -43,6 +43,13 @@ body.final {
 }
 .fn-escenario::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--filete); }
 .fn-marco { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; display: block; }
+/* "Las 7 juntas": la hoja de contactos en lugar del juego (que queda pausado atras, invisible) */
+.fn-escenario[data-vista='imagen'] .fn-marco { visibility: hidden; }
+.fn-juntas { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; background: var(--bg-void); }
+.fn-juntas[hidden] { display: none; }
+.fn-juntas-txt { grid-area: 1 / 1; max-width: 40ch; text-align: center; font: 400 var(--t-cuerpo) / 1.5 var(--f-cuerpo); color: var(--ink-dim); }
+.fn-juntas-img { grid-area: 1 / 1; position: relative; max-width: 100%; max-height: 100%; object-fit: contain; }
+.fn-juntas-img:not([src]), .fn-juntas-img[hidden], .fn-juntas-txt[hidden] { display: none; }
 
 .fn-mirar {
   flex: none; display: flex; align-items: baseline; gap: 16px; margin: 0; padding: 10px var(--margen) 4px;

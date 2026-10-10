@@ -1,6 +1,7 @@
 // LA FUSION — arranque: datos, ambiente, panel de la vitrina y el montaje de cada pantalla.
 // Cada pantalla es una fabrica crearX(ctx) -> { nodo, entrar(), elegir?(n), repetir?(), tecla?(e), alCambiarEra?(era),
-// listo?(), destruir?(), arte, animo, encuadre, velo }. La pantalla no conoce el panel; main.js traduce.
+// listo?(), destruir?(), pausar?(), reanudar?(), arte, animo, encuadre, velo, paleta, arena, escena, costura, cruce,
+// lightsticks, tono }. La pantalla no conoce el panel; main.js traduce.
 import { crearPanel } from '../../comun/panel.js';
 import { cargarMuestras } from '../../comun/datos.js';
 import { PANTALLAS, ERAS } from '../../comun/catalogo.js';
@@ -15,7 +16,8 @@ import { crearSonido } from './sonido.js';
 import { crearAura } from './aura.js';
 import { celular, reducido, inst, SALE, DUR } from './util.js';
 import { FONDOS, FONDO_DEF, POLITICAS, TIEMPOS, normalizarFondo, politica, montarLugar } from './fondo.js';
-import { COLORES, COLOR_DEF, COLOR_OP, POLITICAS_COLOR, normalizarColor, fijarColor } from './color.js';
+import { COLORES, COLOR_DEF, colorDeOp, POLITICAS_COLOR, normalizarColor, fijarColor } from './color.js';
+import { tonoDe, aplicarTono, paletaDe } from './tono.js';
 
 const datos = await cargarMuestras();
 // Las lineas de los titulos se miden con la fuente real: se cargan antes del primer montaje.
@@ -32,6 +34,8 @@ const ambiente = {
   pulso: (t, r) => amb.pulso(t, r),
   quiebre: (r) => amb.quiebre(r),
   reloj: () => amb.reloj(),
+  // (PLANUI §4.9) la geometria de la costura, para ubicar el DOM encima
+  costura: () => amb.costura(),
   get impl() {
     return amb.impl;
   },
@@ -58,8 +62,9 @@ const PERILLAS = {
 // propios ids (ctx.op) y sin `op` es la de hoy. No tiene selector: la eligen opciones.html o el hash.
 const opDelHash = () => (new URLSearchParams(location.hash.slice(1)).get('op') ?? '').replace(/[^a-z0-9-]/g, '');
 let op = opDelHash();
-// Con una opcion de §4.7 en el hash, el color por defecto es la receta (js/color.js); `color=` explicito manda.
-const defDe = (k) => (k === 'color' && op ? COLOR_OP : PERILLAS[k].def);
+// Con una opcion de §4.7 en el hash, el color por defecto es la receta (js/color.js); con `op=linea`, la politica `linea`
+// (PLANUI §4.9). `color=` explicito manda.
+const defDe = (k) => (k === 'color' && op ? colorDeOp(op) : PERILLAS[k].def);
 const delHash = (k) => {
   const v = new URLSearchParams(location.hash.slice(1)).get(k);
   return v == null ? defDe(k) : PERILLAS[k].normalizar(v);
@@ -112,7 +117,13 @@ function cambiar(k, v) {
   aplicarEnVivo();
 }
 
+// PLANUI §4.9: el segundo tono de la pantalla. La fabrica lo declara (`tono`, un objeto de js/tono.js); con `op=linea` y
+// sin tono declarado, el de su contexto por defecto (la era; el oro en el titulo). Va al CSS (--tono-* en <html>) y, si
+// la pantalla no trae su propia paleta, tiñe la luz y la noche del mundo. Sin `op=linea` y sin tono, nada cambia.
+const tonoDePantalla = (estado, p) => p.tono ?? (op === 'linea' ? tonoDe({ pantalla: estado.pantalla, muestra: estado.muestra, era: estado.eraEfectiva }) : null);
 function aplicarAmbiente(estado, p) {
+  const tono = tonoDePantalla(estado, p);
+  aplicarTono(document.documentElement, tono);
   cargaArte = amb.ambiente({
     era: p.era ?? estado.eraEfectiva,
     animo: p.animo ?? 'normal',
@@ -120,8 +131,13 @@ function aplicarAmbiente(estado, p) {
     encuadre: celular() ? 'celular' : p.encuadre ?? 'derecha',
     velo: p.velo ?? 0.6,
     // PLANUI §4.7: la paleta de la competicion y la arena (solo las opciones del partido; el resto, null y 0)
-    paleta: p.paleta ?? null,
-    arena: p.arena ?? 0,
+    // PLANUI §4.9: o la del tono de la pantalla. Con `op=linea` la arena queda apagada: el publico son lightsticks
+    paleta: p.paleta ?? paletaDe(tono),
+    arena: op === 'linea' ? 0 : p.arena ?? 0,
+    // PLANUI §4.9: la costura (null la apaga), su cruce y los lightsticks (con `op=linea`, el partido los trae prendidos)
+    costura: p.costura ?? null,
+    lightsticks: p.lightsticks ?? (op === 'linea' && estado.pantalla === 'partido' ? 1 : 0),
+    ...(p.cruce != null ? { cruce: p.cruce } : {}),
   });
 }
 
@@ -187,10 +203,16 @@ addEventListener('hashchange', () => {
   });
 });
 // variantes.html pausa el mundo de las columnas que no se ven (tres WebGL a la vez)
+// (PLANUI §4.9: tambien a la pantalla, que puede tener su propio lienzo: la copa, el confeti)
 addEventListener('message', (e) => {
   if (e.origin !== location.origin || e.data?.vitrina !== 'ambiente') return;
-  if (e.data.pausar) amb.pausar();
-  else amb.reanudar();
+  if (e.data.pausar) {
+    amb.pausar();
+    actual?.pausar?.();
+  } else {
+    amb.reanudar();
+    actual?.reanudar?.();
+  }
 });
 
 crearPanel({
@@ -215,7 +237,10 @@ crearPanel({
     }
     if (cambios.includes('eraEfectiva') || cambios.includes('era')) {
       if (actual.alCambiarEra) actual.alCambiarEra(estado.eraEfectiva);
-      cargaArte = amb.ambiente({ era: estado.eraEfectiva });
+      // con el tono por defecto de `op=linea` (la era), la paleta sigue a la era nueva
+      const tono = actual.tono || actual.paleta ? null : tonoDePantalla(estado, actual);
+      if (tono) aplicarTono(document.documentElement, tono);
+      cargaArte = amb.ambiente(tono ? { era: estado.eraEfectiva, paleta: paletaDe(tono) } : { era: estado.eraEfectiva });
     }
   },
   acciones: {
