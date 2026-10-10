@@ -203,6 +203,7 @@
 /* ---------- los logos reales (<img> del CDN oficial) y el escudo-monograma del sistema ---------- */
 .logo { display: inline-grid; place-items: center; flex: none; }
 .logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+/* (mercado.css redefine .logo despues de esta hoja: los tamaños de la decision van con dos clases para ganarle) */
 .logo img[data-tinta='oscura'] { filter: brightness(0) invert(1); }
 .monograma { width: 100%; height: 100%; overflow: visible; }
 .mono-escudo { fill: var(--panel-hondo); stroke: var(--filete-fuerte); stroke-width: 1.2; }
@@ -218,9 +219,9 @@
 .esc-resplandor { background: radial-gradient(34% 34% at var(--esc-x) var(--esc-y), color-mix(in srgb, var(--contra) 24%, transparent), color-mix(in srgb, var(--luz) 9%, transparent) 55%, transparent 82%); }
 .esc-casa, .esc-destino { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 14px; transition: opacity 700ms var(--expo), filter 700ms var(--expo); }
 .esc-logos { display: flex; align-items: center; gap: 20px; }
-.esc-liga { width: var(--dec-logo-casa); height: var(--dec-logo-casa); }
-.esc-org { width: var(--dec-logo-org); height: var(--dec-logo-org); }
-.esc-liga-destino { width: var(--dec-logo-destino); height: var(--dec-logo-destino); filter: drop-shadow(0 0 26px color-mix(in srgb, var(--contra) 60%, transparent)); }
+.logo.esc-liga { width: var(--dec-logo-casa); height: var(--dec-logo-casa); }
+.logo.esc-org { width: var(--dec-logo-org); height: var(--dec-logo-org); }
+.logo.esc-liga-destino { width: var(--dec-logo-destino); height: var(--dec-logo-destino); filter: drop-shadow(0 0 26px color-mix(in srgb, var(--contra) 60%, transparent)); }
 .esc-rotulo { padding: 5px 9px; border-radius: var(--r-chip); background: var(--velo-medio); font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); white-space: nowrap; }
 .esc-lejos rect { fill: var(--dec-silueta-lejos); }
 .esc-cerca rect, .esc-hito > * { fill: var(--dec-silueta); }
@@ -274,7 +275,7 @@
 .haz-n { font: 600 12px / 1 var(--f-mono); fill: var(--ink); paint-order: stroke; stroke: var(--bg-void); stroke-width: 4px; stroke-linejoin: round; }
 .esc-haz[data-rara] .haz-fin { fill: var(--gold); }
 .dec-escena[data-modo='haces'] .esc-rotulo { display: none; }
-.dec-escena[data-modo='haces'] .esc-liga { width: var(--dec-logo-org); height: var(--dec-logo-org); }
+.dec-escena[data-modo='haces'] .logo.esc-liga { width: var(--dec-logo-org); height: var(--dec-logo-org); }
 .esc-haz[data-bloqueada] .haz-nucleo { stroke: var(--ink-mute); stroke-dasharray: 0.004 0.012; }
 .dec-escena[data-estado='apunta'] .esc-haz:not(.on), .dec-escena[data-estado='elegido'] .esc-haz:not(.on) { opacity: 0.35; }
 .esc-haz.on .haz-nucleo { opacity: 1; stroke-width: 2.2; }
@@ -303,11 +304,11 @@
 .inv-reloj { fill: none; stroke: var(--hex-oro); stroke-width: 4; filter: drop-shadow(0 0 6px var(--hex-oro)); }
 .inv-centro { fill: var(--hex-fondo); stroke: var(--hex-oro-hondo); stroke-width: 1; }
 .inv-rombo { fill: var(--hex-oro); }
-.inv-logo { position: relative; width: 124px; height: 124px; }
+.logo.inv-logo { position: relative; width: 124px; height: 124px; }
 .inv-titulo { margin: 0; max-width: 19ch; font: 800 var(--t-titulo-s) / 1.02 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.03em; color: var(--ink); text-wrap: balance; }
 .inv-ruta { display: flex; align-items: center; gap: 12px; color: var(--hex-oro); }
 .inv-ruta .ico { width: 18px; height: 18px; }
-.inv-mini { width: 30px; height: 30px; }
+.logo.inv-mini { width: 30px; height: 30px; }
 .inv-aceptar {
   all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 16px;
   min-width: 288px; height: 56px; padding: 0 28px; margin-top: 8px; border: 2px solid transparent; border-radius: var(--r-control);
@@ -394,8 +395,121 @@ html[data-reducido] .dec-peso { transition: none; }
   :root { --dec-logo-casa: 44px; --dec-logo-org: 32px; --dec-logo-destino: 64px; --dec-anillo: 196px; }
   .esc-rotulo { display: none; }
   .dec-escena[data-modo='haces'], .dec-escena :is(.esc-casa, .esc-destino, .esc-cometa, .esc-candado, .esc-hogar, .esc-arco, .esc-arco-halo, .esc-arco-traza, .esc-vuelta) { display: none; }
-  .inv-logo { width: 100px; height: 100px; }
+  .logo.inv-logo { width: 100px; height: 100px; }
   .inv-aceptar { min-width: 240px; }
   .peso-carta { display: none; }
   .peso-cap-1 { font-size: 56px; }
 }
+
+/* ======================================================================================================================
+   PLANUI §4.8 · LA DEMOSTRACION FINAL DE LA DECISION (`op=final`, crearFinal/crearPortal en js/escena.js).
+   La bisagra llega como invitacion y el anillo es el borde de un PORTAL a la ciudad que te llama; Aceptar lo abre y cae
+   el capitulo, con cada camino terminando en su destino dibujado. Todo cuelga de .dec-final, .inv-portal o
+   .dec-peso[data-final]: sin `op=final` nada de esto aplica.
+   ==================================================================================================================== */
+.dec-final { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+/* las tres capas en el mismo plano (z -1), en el orden del DOM: el mundo desenfocado, el mundo y el capitulo */
+.fin-ventana { position: fixed; inset: 0; z-index: -1; contain: strict; }
+/* el mundo detras del portal: el mismo, atenuado y desenfocado */
+.dec-escena.esc-borrosa { filter: blur(var(--dec-borroso)) brightness(0.5) saturate(0.7); }
+
+/* ---------- el mundo: tu ciudad (izquierda) y la que te llama (derecha), cada una con su luz ---------- */
+.esc-ciudad[data-lugar='casa'] .esc-luces { opacity: 0.55; }
+.esc-ciudad[data-lugar='casa'] .esc-luces rect { fill: var(--dec-ventana-casa); }
+.dec-final .esc-ciudad :is(.esc-lejos, .esc-cerca, .esc-hito, .esc-luces) { transition: opacity 700ms var(--expo), filter 700ms var(--expo); }
+/* en el capitulo, los logos grandes, el arco y el cometa dejan el lugar a las cartas con sus destinos */
+.dec-final .dec-escena :is(.esc-casa, .esc-destino, .esc-arco, .esc-arco-halo, .esc-arco-traza, .esc-vuelta, .esc-candado) { transition: opacity 700ms var(--expo), filter 700ms var(--expo); }
+.dec-final[data-fase='capitulo'] .dec-escena :is(.esc-casa, .esc-destino, .esc-arco, .esc-arco-halo, .esc-arco-traza, .esc-vuelta, .esc-candado) { opacity: 0; }
+.dec-final[data-fase='capitulo'] .esc-cometa { visibility: hidden; }
+/* apuntar tira la escena hacia su lado: la camara se inclina hacia ese destino */
+.dec-final .fin-ventana > .dec-escena { transition: transform 900ms var(--expo); }
+.dec-final[data-lado='casa'] .fin-ventana > .dec-escena { transform: scale(1.045); transform-origin: 16% 42%; }
+.dec-final[data-lado='destino'] .fin-ventana > .dec-escena { transform: scale(1.045); transform-origin: 78% 48%; }
+.dec-final[data-lado='cerrada'] .fin-ventana > .dec-escena { transform: scale(1.025); transform-origin: 86% 30%; }
+/* cada ciudad se enciende cuando su camino se apunta (y queda encendida si se elige) */
+.dec-final .dec-escena:is([data-estado^='viaje'], [data-estado='ir']) .esc-ciudad[data-lugar='destino'] .esc-luces { opacity: 1; }
+.dec-final .dec-escena:is([data-estado^='viaje'], [data-estado='ir']) .esc-ciudad[data-lugar='casa'] :is(.esc-luces, .esc-lejos) { opacity: 0.3; }
+.dec-final .dec-escena[data-estado^='casa'] .esc-ciudad[data-lugar='casa'] .esc-luces { opacity: 1; }
+.dec-final .dec-escena[data-estado^='casa'] .esc-ciudad[data-lugar='destino'] .esc-luces { opacity: 0.12; }
+.dec-final .dec-escena[data-estado^='casa'] .esc-ciudad[data-lugar='destino'] :is(.esc-lejos, .esc-hito) { opacity: 0.4; }
+.dec-final .dec-escena[data-estado='ir-cerrada'] .esc-ciudad[data-lugar='destino'] { filter: grayscale(1); }
+.dec-final .dec-escena[data-estado='ir-cerrada'] .esc-ciudad[data-lugar='destino'] .esc-luces { opacity: 0.08; }
+.dec-final .dec-escena[data-estado='ir-cerrada'] .esc-ciudad[data-lugar='destino'] :is(.esc-lejos, .esc-hito) { opacity: 0.5; }
+
+/* ---------- el portal: la invitacion del cliente con el anillo como borde de una ventana ---------- */
+.inv-portal {
+  /* el velo deja libre el hueco del anillo (js/escena.js pone su centro y su radio): adentro se ve el mundo nitido */
+  --portal-x: 50%; --portal-y: 40%; --portal-r: 0px;
+  background: radial-gradient(circle at var(--portal-x) var(--portal-y), var(--velo-nada) 0 var(--portal-r), var(--velo-medio) calc(var(--portal-r) + 2px), var(--velo-suave) 44%, var(--velo-nada) 74%);
+}
+.inv-portal.abriendo { background: none; }
+.inv-portal .inv-caja { gap: 16px; max-width: 760px; }
+.inv-portal .inv-anillo { margin: 4px 0 6px; }
+.inv-vineta { position: absolute; inset: calc(50% - var(--dec-anillo) * 0.3833); border-radius: 50%; box-shadow: inset 0 0 26px 8px var(--velo-lectura), inset 0 0 0 1px var(--hex-oro-hondo); }
+.inv-borde { fill: none; stroke: var(--hex-oro-claro); stroke-width: 1.2; opacity: 0.55; }
+.inv-portal .inv-titulo { max-width: 22ch; }
+.inv-datos { display: flex; align-items: stretch; margin: 2px 0 0; padding: 0; border-radius: var(--r-control); background: var(--panel-hondo); box-shadow: inset 0 0 0 1px var(--hex-oro-hondo); }
+.inv-dato { display: grid; gap: 8px; justify-items: start; padding: 11px 18px 12px; text-align: left; }
+.inv-dato + .inv-dato { box-shadow: inset 1px 0 0 var(--hex-oro-hondo); }
+.inv-dato dt { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--hex-oro); }
+.inv-dato dd { display: flex; align-items: center; gap: 9px; margin: 0; min-height: 26px; font-size: 14px; color: var(--ink-dim); white-space: nowrap; }
+.inv-dato dd b { font: 800 16px / 1 var(--f-display); font-stretch: var(--ancho-titulo); color: var(--hex-crema); }
+.inv-dato dd .ico { width: 16px; height: 16px; color: var(--hex-oro); }
+.inv-dato .logo.inv-mini { width: 26px; height: 26px; }
+
+/* ---------- el capitulo con destinos: cada carta lleva su lugar arriba ---------- */
+.dec-peso[data-final] .peso-oscuro { background: radial-gradient(34% 52% at var(--peso-x) var(--peso-y), var(--dec-oscuro-nada) 0%, var(--dec-fin-oscuro-medio) 56%, var(--dec-fin-oscuro) 100%); }
+.dec-peso[data-final][data-pesado='si'][data-elegido] .peso-oscuro { background: radial-gradient(52% 74% at var(--peso-x) var(--peso-y), var(--dec-oscuro-nada) 0%, var(--dec-oscuro-nada) 18%, var(--dec-fin-oscuro-medio) 64%, var(--dec-fin-oscuro) 100%); }
+/* elegido: el destino se abre en la luz (el hueco crece y la luz de su lado se enciende del todo) */
+.dec-peso[data-final][data-elegido] .peso-luz { opacity: 1; background: radial-gradient(34% 48% at var(--peso-x) var(--peso-y), color-mix(in srgb, var(--luz) 38%, transparent), transparent 74%); }
+.dec-peso[data-final] .peso-carta { grid-template-columns: auto minmax(0, 1fr); row-gap: 12px; opacity: 1; }
+/* lo que no se movio al elegir se apaga por la barra, no por la opacidad (el texto sigue midiendo >= 4,5:1) */
+.dec-peso[data-final] .peso-eje.quieto { opacity: 1; }
+.dec-peso[data-final] .peso-eje.quieto .pe-hoy { color: var(--ink-dim); }
+.dec-peso[data-final] .peso-eje.quieto :is(.pe-barra, .tri, .ico) { opacity: 0.45; }
+/* la linea "antes" queda sobre tu ciudad cuando el panel crece: un velo suave detras, para leerla con las ventanas
+   encendidas */
+.parada-decision[data-op='final'] .antes { margin-left: -12px; padding: 6px 12px 6px 16px; border-radius: var(--r-chip); background: linear-gradient(90deg, var(--velo-medio), var(--velo-medio) 62%, var(--velo-nada)); }
+.dec-peso[data-final] .peso-ejes { grid-column: 2; }
+.peso-destino { grid-column: 2; display: flex; align-items: center; gap: 11px; padding-bottom: 11px; box-shadow: inset 0 -1px 0 var(--linea); }
+.pd-logos { display: flex; align-items: center; gap: 7px; }
+.logo.pd-logo { width: var(--dec-logo-cab); height: var(--dec-logo-cab); }
+.pd-texto { display: grid; gap: 5px; }
+.pd-texto b { font: 800 16px / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.01em; color: var(--ink); }
+.pd-texto span { font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.peso-carta.on .peso-destino .pd-texto span { color: var(--luz-texto); }
+/* la cerrada: el destino apagado arriba a la derecha, el camino que sube y se corta, el candado en el corte */
+.peso-cerrada { position: absolute; display: flex; align-items: center; gap: 11px; padding: 10px 16px 10px 12px; background: var(--panel); border-radius: var(--r-panel); box-shadow: inset 0 0 0 1px var(--linea); opacity: 0.8; transition: opacity 400ms var(--expo); }
+.peso-cerrada .pd-logo { filter: grayscale(1) brightness(0.6); }
+.peso-cerrada .pd-texto b { color: var(--ink-dim); }
+.peso-cerrado-fin path { fill: none; stroke: var(--ink-mute); stroke-width: 1.4; stroke-linecap: round; transition: opacity 400ms var(--expo); }
+.pcc-tramo { stroke-dasharray: 3 6; opacity: 0.7; }
+.pcc-resto { stroke-dasharray: 1 9; opacity: 0.25; }
+.pcc-candado { position: absolute; transform: translate(-50%, -50%); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--panel-hondo); box-shadow: inset 0 0 0 1px var(--linea-fuerte); color: var(--ink-dim); transition: color 400ms var(--expo), box-shadow 400ms var(--expo); }
+.dec-peso[data-final][data-lado='cerrada'] .peso-cerrada { opacity: 1; }
+.dec-peso[data-final][data-lado='cerrada'] .pcc-tramo { opacity: 1; }
+.dec-peso[data-final][data-lado='cerrada'] .pcc-candado { color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink-dim), 0 0 22px -4px var(--luz-fuerte); }
+.dec-peso[data-final][data-elegido] :is(.peso-cerrada, .pcc-candado, .peso-cerrado-fin) { opacity: 0; transition: opacity 500ms var(--expo); }
+/* elegir: el camino elegido se abre (mas ancho, mas luz) y los otros se apagan */
+.dec-peso[data-final][data-elegido] .peso-camino.on .pc-halo { opacity: 0.42; stroke-width: 14; }
+.dec-peso[data-final][data-elegido] .peso-camino.on .pc-halo.ancho { opacity: 0.18; stroke-width: 46; }
+.dec-peso[data-final][data-elegido] .peso-camino:not(.on) { opacity: 0.08; }
+.dec-peso[data-final] .peso-svg { transition: opacity 120ms linear; }
+.dec-peso[data-final].retrazando .peso-svg { opacity: 0; }
+
+/* ---------- movimiento reducido y celular ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .dec-final .fin-ventana > .dec-escena { transition: none; }
+}
+html[data-reducido] .dec-final .fin-ventana > .dec-escena { transition: none; }
+@media (max-width: 640px) {
+  /* en el celular el panel tapa la banda de los destinos: queda la ciudad abajo, sin caminos ni cartas */
+  .peso-cerrada, .pcc-candado, .dec-peso[data-final] .peso-svg { display: none; }
+  .inv-datos { flex-direction: column; }
+  .inv-dato + .inv-dato { box-shadow: inset 0 1px 0 var(--hex-oro-hondo); }
+  .inv-portal .inv-titulo { font-size: 26px; }
+}
+/* el portal: el logo de quien llama adelante, arriba del hueco; la ciudad nitida detras. El logo grande del mundo no se
+   ve por el portal (el de adelante es el mismo) */
+.inv-portal .logo.inv-logo { position: absolute; left: 50%; top: 19%; width: var(--dec-logo-portal); height: var(--dec-logo-portal); transform: translateX(-50%); filter: drop-shadow(0 4px 18px var(--velo-lectura)); }
+.dec-final[data-fase='invitacion'] .fin-ventana .esc-destino { opacity: 0; }

@@ -6,10 +6,14 @@
 //              ("partida encontrada"); aceptarla abre el panel. Hextech solo en la bisagra.
 //   bisagra  · el peso: el mundo se oscurece, entra el capitulo, los caminos se abren en la luz a izquierda y derecha con
 //              lo que arriesgas (antes -> despues) y apuntar uno tira la luz a su lado.
+//   final    · (PLANUI §4.8, la ultima demostracion) cliente + bisagra: la invitacion es un PORTAL (el anillo es el borde
+//              de una ventana a la ciudad que te llama, con el mundo de `escena` atenuado y desenfocado detras); Aceptar
+//              lo abre, la camara se aleja y cae el capitulo, con cada camino terminando en SU destino dibujado (tu
+//              ciudad y tu club, la ciudad que te llama, la cerrada apagada con su candado).
 // Todo sale de CAMPOS del evento (nunca de su prosa): categoria, esBisagra, anio, la liga y el club de la ficha, los
 // efectos estructurados de cada opcion (`liga`, `camino` abierto/cerrado), previa[] (campo, signo, magnitud), riesgo y
 // rareza. Lo decorativo usa el PRNG de la vitrina. Nada toca el ambiente por dentro: solo su API (pulso).
-import { el, svg, animar, esperar, reducido, inst, celular, num, EXPO, SALE } from './util.js';
+import { el, svg, animar, esperar, reducido, inst, celular, num, EXPO, SALE, DUR } from './util.js';
 import { icono, glifoDeCampo, triangulos, ABREVIATURA } from './iconos.js';
 import { crearAzar } from '../../comun/azar.js';
 
@@ -36,6 +40,10 @@ export const LIGAS = {
   VCS: { region: 'Vietnam', ciudad: 'Ciudad Ho Chi Minh', hitos: [] },
 };
 
+// el cupo que ofrece la invitacion, por el TIPO del efecto (nunca por la prosa)
+const CUPO = { ofertaDeImport: 'Cupo de import' };
+// lo que es cada camino, en dos palabras (por sus efectos: leerEvento)
+const CAMINO = { viaje: 'ida y vuelta', ir: 'mudanza', casa: 'te quedás' };
 const CATEGORIA = { mercado: 'Mercado', caminos: 'Caminos', vida: 'Vida', equipo: 'Equipo', competencia: 'Competencia', amateur: 'Amateur' };
 // el valor de hoy de cada eje que mueve una opcion, leido de la ficha (para el antes -> despues)
 const CAMPO_FICHA = {
@@ -71,6 +79,36 @@ const GEO = {
   celular: { casa: [0.16, 0.8], destino: [0.8, 0.8], apice: 0.7, salida: [0, 0], llegada: [0, 0], vuelta: 0.05, ciudad: [0, 1], base: 0.97, alto: 0.13 },
 };
 
+// La demostracion final (op=final): el mismo mundo de la escena, con tu ciudad dibujada a la izquierda (debajo de tus
+// logos) para que "seguir en tu liga" tenga adonde llegar.
+const GEO_FINAL = {
+  escritorio: { ...GEO.escritorio, casaCiudad: [0, 0.36], casaBase: 0.405, casaAlto: 0.115, hogar: [0.17, 0.32], portal: [0.79, 0.15] },
+  celular: { ...GEO.celular, casaCiudad: null, hogar: null, portal: [0.5, 0.3] },
+};
+// El capitulo con destinos (fracciones de la pantalla; el ancla es el pie de cada carta): lo tuyo a la izquierda, lo
+// que te llama a la derecha (como en la escena), la cerrada arriba a la derecha, cortada en `corte` de su recorrido.
+// Varios caminos del mismo lado se abren de a `paso`. Sin destino, los caminos se reparten entre los dos lados.
+// `alto`: lo minimo que tiene que subir un camino para dibujarse (al elegir, el panel crece y puede no quedar lugar).
+const GEO_CAP = { casa: 0.2, destino: 0.62, cerrada: [0.875, 0.165], pie: 0.27, corte: 0.6, paso: 0.16, aire: 16, alto: 90 };
+// El portal: el hueco del anillo (r 92 en una caja de 240, el mismo SVG del cliente). La camara mira la ciudad que llama
+// (`portal` de GEO_FINAL: el centro y la media anchura, en fracciones del ancho) con el suelo de la ciudad al `suelo` del
+// radio, por debajo del centro: la ciudad llena la mitad de abajo y arriba queda el cielo, con el logo adelante.
+const PORTAL = { caja: 240, hueco: 92, suelo: 0.8 };
+// Tiempos de la demostracion final (ms, desde Aceptar)
+const T_FIN = {
+  destello: 200, // el anillo se enciende
+  logo: 140, // el logo de adelante se disuelve (antes de que el borde crezca)
+  abre: 140, // el portal empieza a abrirse
+  abreDur: 1050, // el borde del portal sale de la pantalla
+  camaraDur: 1250, // la camara se aleja de la ciudad al mundo entero
+  borrosa: 160, // el mundo desenfocado se va (ya no hace falta)
+  fase: 820, // los logos grandes y el arco dejan el lugar a los destinos
+  capitulo: 700, // cae la oscuridad del capitulo
+  caminos: 1400, // los caminos se dibujan hacia sus destinos
+  rotulo: 1050, // el rotulo del capitulo se queda quieto
+  panel: 460, // el panel entra (el corrimiento de su orden de siempre)
+};
+
 // ------------------------------------------------------------------------------------------------ la lectura del evento
 export function leerEvento(m, dec) {
   const ev = dec.datos?.evento ?? null;
@@ -79,7 +117,15 @@ export function leerEvento(m, dec) {
   const opsEv = ev?.options ?? [];
   const efectosDe = (id) => (opsEv.find((o) => o.id === id)?.outcomes ?? []).map((oc) => oc.effects ?? []);
   let ligaDestino = null;
-  for (const o of opsEv) for (const oc of o.outcomes ?? []) for (const e of oc.effects ?? []) if (e.liga && e.liga !== ligaCasa) ligaDestino ??= e.liga;
+  let cupo = null;
+  for (const o of opsEv) {
+    for (const oc of o.outcomes ?? []) {
+      for (const e of oc.effects ?? []) {
+        if (e.liga && e.liga !== ligaCasa) ligaDestino ??= e.liga;
+        if (CUPO[e.type]) cupo ??= CUPO[e.type];
+      }
+    }
+  }
   // el camino de cada opcion, por sus efectos: te mudas (la liga de destino en todos sus resultados), vas y volves
   // (abre el camino sin mudarte), o te quedas (lo cierra). Sin destino, no hay geografia: 'neutro'.
   const caminoDe = (id) => {
@@ -102,7 +148,8 @@ export function leerEvento(m, dec) {
     bisagra: !!m.esBisagra,
     anio: m.anio ?? j.anio ?? null,
     casa: { liga: ligaCasa, org: m.org ?? j.org ?? null, servidor: j.ranked?.servidor ?? null, rango: j.rankedTexto ?? null, ciudad: LIGAS[ligaCasa]?.ciudad ?? null },
-    destino: ligaDestino ? { liga: ligaDestino, ciudad: LIGAS[ligaDestino]?.ciudad ?? null, hitos: LIGAS[ligaDestino]?.hitos ?? [] } : null,
+    destino: ligaDestino ? { liga: ligaDestino, ciudad: LIGAS[ligaDestino]?.ciudad ?? null, region: LIGAS[ligaDestino]?.region ?? null, hitos: LIGAS[ligaDestino]?.hitos ?? [] } : null,
+    cupo,
     caminos,
     jugador: j,
   };
@@ -141,14 +188,16 @@ export function cargados(nodo, tope = 5000) {
 }
 
 const quieto = () => inst() || reducido();
-const geo = () => (celular() ? GEO.celular : GEO.escritorio);
 const punto = (p, w, h) => [p[0] * w, p[1] * h];
 // el punto medio de una curva cuadratica (el apice del arco)
 const medio = (a, c, b) => [(a[0] + 2 * c[0] + b[0]) / 4, (a[1] + 2 * c[1] + b[1]) / 4];
 
 // ------------------------------------------------------------------------------------------------ 1 · LA ESCENA
-export function crearEscena(lec, { placa } = {}) {
+export function crearEscena(lec, { placa, final = false } = {}) {
   const conDestino = !!lec.destino;
+  // (op=final) la misma escena, con tu ciudad dibujada debajo de tus logos
+  const G = final ? GEO_FINAL : GEO;
+  const geoDe = () => (celular() ? G.celular : G.escritorio);
   const capa = el('div', { class: 'dec-escena', 'aria-hidden': 'true', 'data-estado': 'reposo', 'data-modo': conDestino ? 'mapa' : 'haces' });
   const resplandor = el('div', { class: 'esc-resplandor' });
   const hogar = el('div', { class: 'esc-hogar' });
@@ -173,21 +222,23 @@ export function crearEscena(lec, { placa } = {}) {
   function dibujar() {
     const w = innerWidth;
     const h = innerHeight;
-    const g = geo();
+    const g = geoDe();
     lienzo.setAttribute('viewBox', `0 0 ${w} ${h}`);
     lienzo.setAttribute('width', w);
     lienzo.setAttribute('height', h);
     lienzo.textContent = '';
     const C = punto(g.casa, w, h);
     Object.assign(casaLogos.style, { left: `${C[0]}px`, top: `${C[1]}px` });
-    hogar.style.setProperty('--esc-x', `${C[0]}px`);
-    hogar.style.setProperty('--esc-y', `${C[1]}px`);
+    hogar.style.setProperty('--esc-x', `${(g.hogar?.[0] ?? g.casa[0]) * w}px`);
+    hogar.style.setProperty('--esc-y', `${(g.hogar?.[1] ?? g.casa[1]) * h}px`);
+    // (op=final) tu ciudad, a la izquierda: el destino de quedarte
+    if (final && g.casaCiudad && lec.casa.ciudad) ciudad(lienzo, g.casaCiudad[0] * w, g.casaCiudad[1] * w, g.casaBase * h, g.casaAlto * h, { ciudad: lec.casa.ciudad, liga: lec.casa.liga, hitos: [] }, 'casa');
     if (conDestino) {
       const D = punto(g.destino, w, h);
       Object.assign(destino.style, { left: `${D[0]}px`, top: `${D[1]}px` });
       resplandor.style.setProperty('--esc-x', `${D[0]}px`);
       resplandor.style.setProperty('--esc-y', `${g.base * h}px`);
-      ciudad(lienzo, g.ciudad[0] * w, g.ciudad[1] * w, g.base * h, g.alto * h, lec.destino);
+      ciudad(lienzo, g.ciudad[0] * w, g.ciudad[1] * w, g.base * h, g.alto * h, lec.destino, final ? 'destino' : null);
       // el arco sale de arriba de tus logos y llega al costado del de ellos; la vuelta (el viaje corto) va por abajo
       const A0 = [C[0] + g.salida[0] * w, C[1] + g.salida[1] * h];
       const A1 = [D[0] + g.llegada[0] * w, D[1] + g.llegada[1] * h];
@@ -326,6 +377,15 @@ export function crearEscena(lec, { placa } = {}) {
     apuntar,
     soltar,
     elegir,
+    // (op=final) lo que mira el portal, en coordenadas de la pantalla: [x, y, radio] sobre la ciudad que llama
+    foco() {
+      const g = geoDe();
+      const w = innerWidth;
+      const h = innerHeight;
+      if (!conDestino || !g.portal) return [w / 2, h / 2, Math.min(w, h) / 4];
+      const radio = g.portal[1] * w;
+      return [g.portal[0] * w, g.base * h - PORTAL.suelo * radio, radio];
+    },
     destruir() {
       removeEventListener('resize', alRedimensionar);
       cometaAnim?.cancel();
@@ -334,7 +394,8 @@ export function crearEscena(lec, { placa } = {}) {
 }
 
 // la ciudad de noche (determinista por su nombre): dos capas de edificios, ventanas encendidas y sus hitos
-function ciudad(lienzo, x0, x1, base, alto, destino) {
+// `lugar` (op=final): la ciudad va en su propio grupo (`casa` o `destino`) para que cada una se encienda por su lado.
+function ciudad(lienzo, x0, x1, base, alto, destino, lugar = null) {
   const az = crearAzar(`ciudad:${destino.ciudad ?? destino.liga}`);
   const lejos = svg('g', { class: 'esc-lejos' });
   const cerca = svg('g', { class: 'esc-cerca' });
@@ -383,7 +444,8 @@ function ciudad(lienzo, x0, x1, base, alto, destino) {
     hitos.append(svg('path', { d: `M${x - 17} ${base + 4} L${x - 4} ${top} L${x - 1.5} ${top - 16} L${x + 1.5} ${top - 16} L${x + 4} ${top} L${x + 17} ${base + 4} Z` }));
     luces.append(svg('path', { class: 'hito-filo', d: `M${x} ${top - 12} L${x} ${base - alto * 0.2}` }));
   }
-  lienzo.append(lejos, hitos, cerca, luces);
+  if (lugar) lienzo.append(svg('g', { class: 'esc-ciudad', 'data-lugar': lugar }, [lejos, hitos, cerca, luces]));
+  else lienzo.append(lejos, hitos, cerca, luces);
 }
 
 // ------------------------------------------------------------------------------------------------ 2 · EL CLIENTE
@@ -461,12 +523,44 @@ export function crearInvitacion(lec, dec, { alAceptar }) {
 }
 
 // ------------------------------------------------------------------------------------------------ 3 · EL PESO
+// (op=final) el destino de un camino, arriba de su carta: los logos, el lugar y que es el camino. Sin destino (neutro),
+// nada: la carta queda en la luz de la era.
+function destinoDe(lec, c) {
+  const casa = c.camino === 'casa';
+  if (!casa && c.camino !== 'viaje' && c.camino !== 'ir') return null;
+  const logos = casa ? [lec.casa.liga, lec.casa.org].filter(Boolean) : [lec.destino.liga];
+  const lugar = casa ? lec.casa.ciudad ?? lec.casa.org ?? lec.casa.liga : lec.destino.ciudad ?? lec.destino.liga;
+  const liga = casa ? lec.casa.liga : lec.destino.liga;
+  return el('div', { class: 'peso-destino', 'data-lugar': casa ? 'casa' : 'destino' }, [
+    el('span', { class: 'pd-logos' }, logos.map((k) => logo(k, { clase: 'pd-logo' }))),
+    el('span', { class: 'pd-texto' }, [el('b', { text: lugar ?? '' }), el('span', { text: [liga, CAMINO[c.camino]].filter(Boolean).join(' · ') })]),
+  ]);
+}
+// una cubica partida en t (de Casteljau): [ida, resto]
+const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+function partir(P0, P1, P2, P3, t) {
+  const a = lerp(P0, P1, t);
+  const b = lerp(P1, P2, t);
+  const c = lerp(P2, P3, t);
+  const d = lerp(a, b, t);
+  const e = lerp(b, c, t);
+  const f = lerp(d, e, t);
+  return [[P0, a, d, f], [f, e, c, P3]];
+}
+const curva = ([A, B, C, D]) => `M${A.map((v) => v.toFixed(1)).join(' ')} C${[B, C, D].map((p) => p.map((v) => v.toFixed(1)).join(' ')).join(' ')}`;
+
+
+const franjaAlto = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--franja-alto')) || 0;
+
 // El mundo se oscurece y entra el capitulo; desde vos se abren los caminos (uno por opcion, a izquierda y derecha) y al
 // final de cada uno, lo que arriesgas: cada eje que mueve, su valor de hoy y su barra con lo que se corre (antes ->
 // despues). Apuntar un camino tira la luz a su lado. Las decisiones comunes lo llevan atenuado (sin capitulo ni cartas).
-export function crearPeso(lec, { col, antesFila }) {
+// (op=final) `final`: con geografia, cada camino termina en SU destino (la carta lleva su lugar arriba: logos, ciudad y
+// que es el camino) y la cerrada sube hacia lo que te llama y se corta, con su candado y el destino apagado.
+export function crearPeso(lec, { col, antesFila, final = false }) {
   const pesado = lec.bisagra;
-  const capa = el('div', { class: 'dec-peso', 'aria-hidden': 'true', 'data-pesado': pesado ? 'si' : 'no', 'data-lado': 'centro' });
+  const conDestinos = final && !!lec.destino;
+  const capa = el('div', { class: 'dec-peso', 'aria-hidden': 'true', 'data-pesado': pesado ? 'si' : 'no', 'data-lado': 'centro', 'data-final': conDestinos ? '' : null });
   const oscuro = el('div', { class: 'peso-oscuro' });
   const luzLado = el('div', { class: 'peso-luz' });
   const lienzo = svg('svg', { class: 'peso-svg' });
@@ -476,8 +570,9 @@ export function crearPeso(lec, { col, antesFila }) {
   const j = lec.jugador;
   const libres = lec.caminos.filter((c) => !c.bloqueada);
   const cartas = pesado
-    ? libres.map((c, i) => el('div', { class: 'peso-carta', 'data-i': String(i) }, [
+    ? libres.map((c, i) => el('div', { class: 'peso-carta', 'data-i': String(i), 'data-camino': c.camino }, [
         el('span', { class: 'peso-tecla', text: String(i + 1) }),
+        conDestinos ? destinoDe(lec, c) : null,
         el('ul', { class: 'peso-ejes' }, c.previa.map((p) => {
           const hoy = valorDeHoy(p.campo, j);
           const L = LARGO_MAGNITUD[p.magnitud] ?? LARGO_MAGNITUD.baja;
@@ -498,10 +593,18 @@ export function crearPeso(lec, { col, antesFila }) {
         })),
       ]))
     : [];
-  capa.append(oscuro, luzLado, lienzo, ...cartas, capitulo ?? '');
+  // (op=final) las cerradas: su destino apagado y el candado donde se corta el camino
+  const cerradas = conDestinos ? lec.caminos.filter((c) => c.bloqueada) : [];
+  const tagsCerradas = cerradas.map(() => el('div', { class: 'peso-cerrada' }, [
+    logo(lec.destino.liga, { clase: 'pd-logo' }),
+    el('span', { class: 'pd-texto' }, [el('b', { text: lec.destino.region ?? lec.destino.liga }), el('span', { text: 'cerrada' })]),
+  ]));
+  const candados = cerradas.map(() => el('span', { class: 'pcc-candado' }, icono('candado')));
+  capa.append(oscuro, luzLado, lienzo, ...cartas, ...tagsCerradas, ...candados, capitulo ?? '');
   let caminos = [];
   let O = [0, 0];
   let fines = [];
+  let cortes = [];
 
   function dibujar() {
     const w = innerWidth;
@@ -521,11 +624,16 @@ export function crearPeso(lec, { col, antesFila }) {
     const medio = Math.max(0, ...cartas.map((c) => c.offsetWidth / 2));
     const abre = cel ? w * 0.34 : w * 0.27;
     const alto = (pesado ? (cel ? 0.08 : 0.16) : 0.12) * h;
-    fines = libres.map((_, i) => {
-      const k = n > 1 ? i / (n - 1) : 0.5;
-      const x = Math.min(w - margen - medio, Math.max(margen + medio, centro - abre + 2 * abre * k));
-      return [x, arriba - alto - (n > 2 ? (i % 2) * 0.05 * h : 0)];
-    });
+    const destinos = conDestinos && !cel;
+    // (op=final) los finales de los caminos no se meten debajo de la franja (el plan deja poco aire arriba)
+    const techo = final ? franjaAlto() + 2 * GEO_CAP.aire : -Infinity;
+    fines = destinos
+      ? finesConDestino(w, h, margen, medio)
+      : libres.map((_, i) => {
+          const k = n > 1 ? i / (n - 1) : 0.5;
+          const x = Math.min(w - margen - medio, Math.max(margen + medio, centro - abre + 2 * abre * k));
+          return [x, Math.max(techo, arriba - alto - (n > 2 ? (i % 2) * 0.05 * h : 0))];
+        });
     caminos = fines.map((E, i) => {
       const dy = (O[1] - E[1]) * 0.62;
       const d = `M${O[0].toFixed(1)} ${O[1].toFixed(1)} C${O[0].toFixed(1)} ${(O[1] - dy).toFixed(1)} ${E[0].toFixed(1)} ${(E[1] + dy).toFixed(1)} ${E[0].toFixed(1)} ${E[1].toFixed(1)}`;
@@ -540,8 +648,21 @@ export function crearPeso(lec, { col, antesFila }) {
       lienzo.append(g);
       return g;
     });
+    // (op=final) las cerradas suben hacia lo que te llama y se cortan: el candado en el corte, el resto apenas se ve
+    cortes = [];
+    if (destinos) {
+      tagsCerradas.forEach((tag, k) => {
+        const T = [Math.min(w - margen - tag.offsetWidth / 2, (GEO_CAP.cerrada[0] - k * GEO_CAP.paso) * w), Math.max(GEO_CAP.cerrada[1] * h, franjaAlto() + tag.offsetHeight + GEO_CAP.aire)];
+        Object.assign(tag.style, { left: `${T[0] - tag.offsetWidth / 2}px`, top: `${T[1] - tag.offsetHeight - GEO_CAP.aire / 2}px` });
+        const [ida, resto] = partir(O, [O[0] + (T[0] - O[0]) * 0.45, O[1]], [T[0], T[1] + (O[1] - T[1]) * 0.75], T, GEO_CAP.corte);
+        const P = ida[3];
+        cortes.push(P);
+        Object.assign(candados[k].style, { left: `${P[0]}px`, top: `${P[1]}px` });
+        lienzo.append(svg('g', { class: 'peso-cerrado-fin' }, [svg('path', { class: 'pcc-tramo', d: curva(ida) }), svg('path', { class: 'pcc-resto', d: curva(resto) })]));
+      });
+    }
     // las cerradas: un tramo que sube y se corta en la oscuridad, con su candado
-    lec.caminos.filter((c) => c.bloqueada).forEach((_, k) => {
+    (destinos ? [] : lec.caminos.filter((c) => c.bloqueada)).forEach((_, k) => {
       const x = O[0] + (k - 0.0) * 26;
       const y = O[1] - alto * 0.9;
       lienzo.append(svg('g', { class: 'peso-cerrado' }, [svg('path', { d: `M${O[0].toFixed(1)} ${O[1].toFixed(1)} L${x.toFixed(1)} ${y.toFixed(1)}` }), svg('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: '3' })]));
@@ -550,17 +671,34 @@ export function crearPeso(lec, { col, antesFila }) {
     // cada carta se apoya en el final de su camino
     cartas.forEach((c, i) => {
       const E = fines[i];
-      Object.assign(c.style, { left: `${E[0] - c.offsetWidth / 2}px`, top: `${E[1] - c.offsetHeight - 16}px` });
+      Object.assign(c.style, { left: `${E[0] - c.offsetWidth / 2}px`, top: `${E[1] - c.offsetHeight - GEO_CAP.aire}px` });
     });
     capa.style.setProperty('--peso-ox', `${((O[0] / w) * 100).toFixed(2)}%`);
     capa.style.setProperty('--peso-oy', `${((O[1] / h) * 100).toFixed(2)}%`);
     if (capa.dataset.lado === 'centro') luz(null);
   }
+  // (op=final) cada carta, del lado de su destino: lo tuyo a la izquierda, lo que te llama a la derecha; sin destino
+  // (neutro), repartidas entre los dos. El pie de la carta queda debajo de la franja aunque la pantalla sea baja.
+  function finesConDestino(w, h, margen, medio) {
+    const lados = libres.map((c) => (c.camino === 'casa' ? 'casa' : c.camino === 'viaje' || c.camino === 'ir' ? 'destino' : 'neutro'));
+    return libres.map((_, i) => {
+      const lado = lados[i];
+      const mismos = lados.filter((l) => l === lado).length;
+      const k = lados.slice(0, i).filter((l) => l === lado).length;
+      const n = libres.length;
+      let fx = lado === 'neutro' ? GEO_CAP.casa + (GEO_CAP.destino - GEO_CAP.casa) * (n > 1 ? i / (n - 1) : 0.5) : GEO_CAP[lado];
+      if (lado !== 'neutro' && mismos > 1) fx += (k - (mismos - 1) / 2) * GEO_CAP.paso;
+      const x = Math.min(w - margen - medio, Math.max(margen + medio, fx * w));
+      const y = Math.max(GEO_CAP.pie * h, franjaAlto() + (cartas[i]?.offsetHeight ?? 0) + 2 * GEO_CAP.aire);
+      return [x, y];
+    });
+  }
   // la luz: el hueco del oscuro va hacia el lado apuntado
   function luz(i) {
     const w = innerWidth;
     const h = innerHeight;
-    const P = i == null ? [O[0], O[1] - 0.12 * h] : fines[i];
+    const enCarta = (k) => (conDestinos && cartas[k] && !celular() ? [fines[k][0], fines[k][1] - cartas[k].offsetHeight / 2 - GEO_CAP.aire] : fines[k]);
+    const P = i === 'cerrada' ? cortes[0] ?? [O[0], O[1] - 0.12 * h] : i == null ? [O[0], O[1] - 0.12 * h] : enCarta(i);
     if (!P) return;
     capa.style.setProperty('--peso-x', `${((P[0] / w) * 100).toFixed(2)}%`);
     capa.style.setProperty('--peso-y', `${((P[1] / h) * 100).toFixed(2)}%`);
@@ -584,7 +722,7 @@ export function crearPeso(lec, { col, antesFila }) {
     cartas.forEach((g) => g.classList.remove('on'));
     flujo?.cancel();
     flujo = null;
-    luz(null);
+    luz(cerrada && conDestinos ? 'cerrada' : null);
   }
   function elegir(i, res) {
     const c = lec.caminos[i];
@@ -615,6 +753,29 @@ export function crearPeso(lec, { col, antesFila }) {
         animar(v, [{ width: de }, { width: a }], { delay: 360, dur: 900 });
       }
     });
+    // (op=final) el panel crecio con el resultado y la linea "antes" subio: el camino elegido se vuelve a trazar desde
+    // su nuevo origen y se abre (mas ancho, con la luz corriendo)
+    if (conDestinos && !celular()) {
+      // mientras el panel crece, los caminos viejos se apagan (no le pasan por detras a la linea "antes" que sube)
+      capa.classList.add('retrazando');
+      const retrazar = () => {
+        if (!capa.isConnected) return;
+        dibujar();
+        // si el panel subio hasta las cartas, no queda camino que dibujar: el destino elegido queda abierto en la luz
+        if (O[1] - fines[k][1] < GEO_CAP.alto) {
+          luz(k);
+          return;
+        }
+        capa.classList.remove('retrazando');
+        caminos.forEach((g, x) => g.classList.toggle('on', x === k));
+        luz(k);
+        flujo?.cancel();
+        flujo = quieto() ? null : caminos[k]?.querySelector('.pc-flujo').animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 1400, iterations: Infinity, easing: 'linear' });
+        caminos[k]?.querySelectorAll('.pc-halo, .pc-nucleo').forEach((p) => animar(p, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { dur: 700, easing: EXPO }));
+      };
+      if (quieto()) retrazar();
+      else esperar(capa, DUR.larga).then(retrazar);
+    }
   }
 
   let redibujo = 0;
@@ -626,24 +787,27 @@ export function crearPeso(lec, { col, antesFila }) {
 
   return {
     nodo: capa,
-    entrar() {
+    // `retardo` corre todo el orden; `caminos` y `rotulo` (op=final) cambian cuando se dibujan los caminos y cuanto se
+    // queda el rotulo del capitulo
+    entrar({ retardo = 0, caminos: tCaminos = T.caminos, rotulo = T.capitulo } = {}) {
       dibujar();
-      const base = pesado && !quieto() ? T.caminos : 0;
+      const base = (pesado && !quieto() ? tCaminos : 0) + retardo;
       if (quieto()) {
         capitulo?.remove();
         return;
       }
-      animar(oscuro, [{ opacity: 0 }, { opacity: 1 }], { dur: pesado ? 900 : 600 });
+      animar(oscuro, [{ opacity: 0 }, { opacity: 1 }], { delay: retardo, dur: pesado ? 900 : 600 });
       if (capitulo) {
         const [a, b] = capitulo.children;
-        animar(a, [{ opacity: 0, letterSpacing: '0.2em', filter: 'blur(8px)' }, { opacity: 1, letterSpacing: '0', filter: 'blur(0)' }], { delay: 160, dur: T.capituloEntra });
-        if (b) animar(b, [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }], { delay: 300, dur: T.capituloEntra });
-        const fuera = animar(capitulo, [{ opacity: 1, transform: 'translate(-50%, -50%)' }, { opacity: 0, transform: 'translate(-50%, -50%) translateY(-24px) scale(.96)' }], { delay: 160 + T.capitulo, dur: 420, easing: SALE, fill: 'forwards' });
+        animar(a, [{ opacity: 0, letterSpacing: '0.2em', filter: 'blur(8px)' }, { opacity: 1, letterSpacing: '0', filter: 'blur(0)' }], { delay: retardo + 160, dur: T.capituloEntra });
+        if (b) animar(b, [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }], { delay: retardo + 300, dur: T.capituloEntra });
+        const fuera = animar(capitulo, [{ opacity: 1, transform: 'translate(-50%, -50%)' }, { opacity: 0, transform: 'translate(-50%, -50%) translateY(-24px) scale(.96)' }], { delay: retardo + 160 + rotulo, dur: 420, easing: SALE, fill: 'forwards' });
         fuera?.finished.then(() => capitulo.remove(), () => {});
       }
       caminos.forEach((g, i) => g.querySelectorAll('.pc-halo, .pc-nucleo').forEach((p) => animar(p, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { delay: base + i * 120, dur: 900, easing: EXPO })));
-      lienzo.querySelectorAll('.peso-cerrado, .peso-origen, .pc-fin, .pc-n').forEach((x) => animar(x, [{ opacity: 0 }, { opacity: 1 }], { delay: base, dur: 500 }));
+      lienzo.querySelectorAll('.peso-cerrado, .peso-cerrado-fin, .peso-origen, .pc-fin, .pc-n').forEach((x) => animar(x, [{ opacity: 0 }, { opacity: 1 }], { delay: base, dur: 500 }));
       cartas.forEach((c, i) => animar(c, [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }], { delay: base + 380 + i * 120, dur: 420 }));
+      [...tagsCerradas, ...candados].forEach((x) => animar(x, [{ opacity: 0 }, { opacity: 1 }], { delay: base + 380 + cartas.length * 120, dur: 420 }));
     },
     // el panel llega despues del capitulo
     retardoPanel: pesado && !quieto() ? T.caminos - 500 : 0,
@@ -653,6 +817,219 @@ export function crearPeso(lec, { col, antesFila }) {
     destruir() {
       removeEventListener('resize', alRedimensionar);
       flujo?.cancel();
+    },
+  };
+}
+
+// ------------------------------------------------------------------------------------------------ 4 · LA DEMOSTRACION FINAL
+// (PLANUI §4.8, op=final) La invitacion del cliente, pero llena: el anillo es el borde de un PORTAL. Adentro se ve nitida
+// la ciudad que te llama (la escena, con la camara cerca de su logo y su ciudad); afuera, el mismo mundo atenuado y
+// desenfocado, con tu lugar a la izquierda y el arco por el que te llaman. El modal suma lo que muestra el cliente: quien
+// invita y desde donde, el cupo (por el tipo del efecto) y tu ruta. Aceptar abre el portal: el borde sale de la pantalla,
+// la camara se aleja al mundo entero y cae el capitulo con los caminos hacia sus destinos.
+export function crearPortal(lec, dec, { alAceptar }) {
+  const R = 108;
+  const circ = 2 * Math.PI * R;
+  const reloj = svg('circle', { class: 'inv-reloj', cx: 120, cy: 120, r: R, 'stroke-dasharray': circ.toFixed(2), 'stroke-dashoffset': '0', transform: 'rotate(-90 120 120)' });
+  const aro = svg('svg', { class: 'inv-aro', viewBox: `0 0 ${PORTAL.caja} ${PORTAL.caja}`, 'aria-hidden': 'true' }, [
+    svg('circle', { class: 'inv-giro', cx: 120, cy: 120, r: R + 10 }),
+    svg('circle', { class: 'inv-pista', cx: 120, cy: 120, r: R }),
+    reloj,
+    svg('circle', { class: 'inv-borde', cx: 120, cy: 120, r: PORTAL.hueco }),
+    svg('path', { class: 'inv-rombo', d: 'M120 4 l8 8 -8 8 -8 -8z' }),
+  ]);
+  const d = lec.destino;
+  const anillo = el('div', { class: 'inv-anillo' }, [el('i', { class: 'inv-vineta' }), aro, logo(d.liga, { clase: 'inv-logo' })]);
+  const idTitulo = 'inv-titulo';
+  const boton = el('button', { type: 'button', class: 'inv-aceptar' }, ['Aceptar', el('kbd', { text: 'Enter' })]);
+  const donde = [d.ciudad, d.region].filter(Boolean).join(', ');
+  const datos = el('dl', { class: 'inv-datos' }, [
+    el('div', { class: 'inv-dato' }, [el('dt', { text: 'Te invita' }), el('dd', {}, [logo(d.liga, { clase: 'inv-mini' }), el('b', { text: d.liga }), donde ? el('span', { text: donde }) : null])]),
+    lec.casa.liga
+      ? el('div', { class: 'inv-dato' }, [el('dt', { text: 'Tu ruta' }), el('dd', { 'aria-label': `de ${lec.casa.liga} a ${d.liga}` }, [logo(lec.casa.liga, { clase: 'inv-mini' }), icono('flecha'), logo(d.liga, { clase: 'inv-mini' })])])
+      : null,
+  ]);
+  const caja = el('div', { class: 'inv-caja' }, [
+    el('p', { class: 'inv-kicker' }, [el('span', { class: 'inv-rombito' }), el('span', { text: 'Invitación' }), lec.cupo ? el('span', { class: 'inv-quien', text: lec.cupo }) : null]),
+    anillo,
+    el('h2', { class: 'inv-titulo', id: idTitulo, text: dec.titulo }),
+    datos,
+    boton,
+  ]);
+  const nodo = el('div', { class: 'invitacion inv-portal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': idTitulo }, caja);
+  let abierta = true;
+  let relojAnim = null;
+  function aceptar({ instantaneo = false } = {}) {
+    if (!abierta) return;
+    abierta = false;
+    relojAnim?.pause();
+    nodo.classList.add('aceptada');
+    alAceptar({ instantaneo: instantaneo || quieto() });
+  }
+  boton.addEventListener('click', () => aceptar());
+  return {
+    nodo,
+    anillo,
+    caja,
+    get abierta() {
+      return abierta;
+    },
+    // el hueco del anillo en la pantalla: [cx, cy, radio], sin la escala de su entrada
+    hueco() {
+      const r = anillo.getBoundingClientRect();
+      return [r.left + r.width / 2, r.top + r.height / 2, (anillo.offsetWidth * PORTAL.hueco) / PORTAL.caja];
+    },
+    entrar(base = T.invitacion) {
+      if (quieto()) {
+        boton.focus({ preventScroll: true });
+        return;
+      }
+      animar(nodo, [{ opacity: 0 }, { opacity: 1 }], { delay: base, dur: 260 });
+      animar(anillo, [{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1.04)', opacity: 1, offset: 0.7 }, { transform: 'none', opacity: 1 }], { delay: base + 60, dur: 520 });
+      caja.querySelectorAll('.inv-kicker, .inv-titulo, .inv-datos, .inv-aceptar').forEach((x, k) => animar(x, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: base + 220 + k * 70 }));
+      relojAnim = reloj.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: circ }], { duration: T.reloj, delay: base + 400, easing: 'linear', fill: 'both' });
+      relojAnim.finished.then(() => aceptar(), () => {});
+      esperar(nodo, base + 300).then(() => {
+        if (abierta) boton.focus({ preventScroll: true });
+      });
+    },
+    aceptar,
+  };
+}
+
+// La demostracion final entera: el mundo (la escena con tu ciudad), el portal (si es bisagra) y el capitulo con destinos
+// (crearPeso `final`). Sin geografia (el plan, una decision de vida) cae a la version simple: el capitulo atenuado de la
+// bisagra sobre la luz de la era, y la invitacion del cliente si es bisagra.
+// Contrato con decision.js, el mismo de las otras capas (nodo, entrar, apuntar, soltar, elegir, destruir, retardoPanel)
+// mas `invitacion` (el portal, o null) y `retardoAceptar` (el corrimiento del panel al aceptar; null = el del cliente).
+export function crearFinal(lec, dec, { col, antesFila, placa, alAceptar }) {
+  if (!lec.destino) {
+    const peso = crearPeso(lec, { col, antesFila });
+    const invitacion = lec.bisagra
+      ? crearInvitacion(lec, dec, {
+          alAceptar: () => {
+            peso.entrar();
+            alAceptar({ instantaneo: false });
+          },
+        })
+      : null;
+    return { ...peso, entrar: () => (invitacion ? null : peso.entrar()), invitacion, retardoAceptar: null };
+  }
+  const mundo = crearEscena(lec, { placa, final: true });
+  const ventana = el('div', { class: 'fin-ventana' }, mundo.nodo);
+  const peso = crearPeso(lec, { col, antesFila, final: true });
+  const nodo = el('div', { class: 'dec-final', 'aria-hidden': 'true', 'data-fase': lec.bisagra ? 'invitacion' : 'capitulo', 'data-lado': '' }, [ventana, peso.nodo]);
+  // detras del portal, el mismo mundo desenfocado (se va al abrirlo)
+  let borrosa = null;
+  let portal = null;
+  if (lec.bisagra) {
+    borrosa = crearEscena(lec, { final: true });
+    borrosa.nodo.classList.add('esc-borrosa');
+    nodo.prepend(borrosa.nodo);
+    portal = crearPortal(lec, dec, { alAceptar: abrir });
+    // el capitulo no existe hasta que se acepta
+    peso.nodo.hidden = true;
+  }
+  // la camara del portal: el foco del mundo (la ciudad que llama) cae en el hueco del anillo
+  let enfoque = null;
+  function encuadrar() {
+    if (!portal?.abierta) return;
+    const [cx, cy, r] = portal.hueco();
+    const [fx, fy, fr] = mundo.foco();
+    const s = r / fr;
+    enfoque = { cx, cy, r, transform: `translate(${(cx - fx).toFixed(1)}px, ${(cy - fy).toFixed(1)}px) scale(${s.toFixed(4)})`, origen: `${fx.toFixed(1)}px ${fy.toFixed(1)}px` };
+    ventana.style.clipPath = `circle(${r.toFixed(1)}px at ${cx.toFixed(1)}px ${cy.toFixed(1)}px)`;
+    Object.assign(mundo.nodo.style, { transform: enfoque.transform, transformOrigin: enfoque.origen });
+    portal.nodo.style.setProperty('--portal-x', `${cx.toFixed(1)}px`);
+    portal.nodo.style.setProperty('--portal-y', `${cy.toFixed(1)}px`);
+    portal.nodo.style.setProperty('--portal-r', `${r.toFixed(1)}px`);
+  }
+  const alRedimensionar = () => requestAnimationFrame(encuadrar);
+  addEventListener('resize', alRedimensionar);
+
+  // Aceptar: el portal se abre (su borde sale de la pantalla), la camara se aleja y cae el capitulo
+  function abrir({ instantaneo = false } = {}) {
+    const e = enfoque;
+    peso.nodo.hidden = false;
+    ventana.style.clipPath = '';
+    Object.assign(mundo.nodo.style, { transform: '', transformOrigin: '' });
+    const listo = () => {
+      borrosa?.destruir();
+      borrosa?.nodo.remove();
+      borrosa = null;
+      portal.nodo.remove();
+    };
+    if (instantaneo || !e) {
+      nodo.dataset.fase = 'capitulo';
+      listo();
+      peso.entrar();
+      alAceptar({ instantaneo: true });
+      return;
+    }
+    const lejos = Math.hypot(Math.max(e.cx, innerWidth - e.cx), Math.max(e.cy, innerHeight - e.cy));
+    const at = `at ${e.cx.toFixed(1)}px ${e.cy.toFixed(1)}px`;
+    animar(ventana, [{ clipPath: `circle(${e.r.toFixed(1)}px ${at})` }, { clipPath: `circle(${lejos.toFixed(1)}px ${at})` }], { delay: T_FIN.abre, dur: T_FIN.abreDur, easing: EXPO });
+    animar(mundo.nodo, [{ transform: e.transform, transformOrigin: e.origen }, { transform: 'none', transformOrigin: e.origen }], { delay: T_FIN.abre, dur: T_FIN.camaraDur, easing: EXPO });
+    // el borde dorado del portal es el del anillo: se enciende, crece con el hueco y se apaga
+    const aro = portal.anillo;
+    // el logo de adelante se disuelve enseguida: lo que crece con el borde es la ventana, no el escudo
+    animar(aro.querySelector('.inv-logo'), [{ opacity: 1, transform: 'translateX(-50%)' }, { opacity: 0, transform: 'translateX(-50%) scale(1.12)' }], { dur: T_FIN.logo, easing: 'linear', fill: 'forwards' });
+    animar(aro.querySelector('.inv-aro'), [{ filter: 'brightness(1)' }, { filter: 'brightness(1.9)', offset: 0.4 }, { filter: 'brightness(1)' }], { dur: T_FIN.destello });
+    animar(aro, [{ transform: 'scale(1)' }, { transform: `scale(${(lejos / e.r).toFixed(3)})` }], { delay: T_FIN.abre, dur: T_FIN.abreDur, easing: EXPO, fill: 'forwards' });
+    animar(aro, [{ opacity: 1 }, { opacity: 0 }], { delay: T_FIN.abre + 120, dur: 420, easing: SALE, fill: 'forwards' });
+    portal.caja.querySelectorAll('.inv-kicker, .inv-titulo, .inv-datos, .inv-aceptar').forEach((x) => animar(x, [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-6px)' }], { dur: T_FIN.destello, easing: SALE, fill: 'forwards' }));
+    portal.nodo.classList.add('abriendo');
+    if (borrosa) animar(borrosa.nodo, [{ opacity: 1 }, { opacity: 0 }], { delay: T_FIN.borrosa, dur: T_FIN.abreDur - T_FIN.borrosa, easing: 'linear', fill: 'forwards' });
+    esperar(nodo, T_FIN.fase).then(() => {
+      if (nodo.isConnected) nodo.dataset.fase = 'capitulo';
+    });
+    esperar(nodo, T_FIN.abre + T_FIN.camaraDur).then(listo);
+    peso.entrar({ retardo: T_FIN.capitulo, caminos: T_FIN.caminos - T_FIN.capitulo, rotulo: T_FIN.rotulo });
+    alAceptar({ instantaneo: false });
+  }
+
+  const ladoDe = (c) => (!c ? '' : c.bloqueada ? 'cerrada' : c.camino === 'casa' ? 'casa' : c.camino === 'viaje' || c.camino === 'ir' ? 'destino' : '');
+  return {
+    nodo,
+    invitacion: portal,
+    retardoAceptar: T_FIN.panel,
+    retardoPanel: 0,
+    entrar() {
+      mundo.entrar();
+      if (!portal) {
+        peso.entrar();
+        return;
+      }
+      borrosa.entrar();
+      encuadrar();
+      // el hueco del portal se abre con la entrada del anillo
+      if (enfoque && !quieto()) {
+        const at = `at ${enfoque.cx.toFixed(1)}px ${enfoque.cy.toFixed(1)}px`;
+        animar(ventana, [{ clipPath: `circle(0px ${at})` }, { clipPath: `circle(${(enfoque.r * 1.04).toFixed(1)}px ${at})`, offset: 0.7 }, { clipPath: `circle(${enfoque.r.toFixed(1)}px ${at})` }], { delay: T.invitacion + 60, dur: 520 });
+      }
+    },
+    // apuntar un camino tira la luz (el hueco del capitulo) y la escena (la camara se inclina) hacia su lado
+    apuntar(i) {
+      peso.apuntar(i);
+      mundo.apuntar(i);
+      nodo.dataset.lado = ladoDe(lec.caminos[i]);
+    },
+    soltar() {
+      peso.soltar();
+      mundo.soltar();
+      nodo.dataset.lado = '';
+    },
+    elegir(i, res) {
+      peso.elegir(i, res);
+      mundo.elegir(i);
+      nodo.dataset.lado = ladoDe(lec.caminos[i]);
+      nodo.dataset.elegido = 'si';
+    },
+    destruir() {
+      removeEventListener('resize', alRedimensionar);
+      mundo.destruir();
+      borrosa?.destruir();
+      peso.destruir();
     },
   };
 }

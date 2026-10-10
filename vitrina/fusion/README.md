@@ -460,7 +460,80 @@ costado. La pantalla completa no se probó en el navegador headless.
 <!-- separador: no tocar -->
 
 ### Decisión: la invitación y el capítulo con destinos
-(lo escribe el worker de decisión)
+
+El usuario: *"en la decisión, el b y el c están bien pero el b está medio vacío, se podría hacer algo ahí más original o
+mejorar el c"*. Abrir: `index.html#pantalla=decision&muestra=evento&op=final` (y `muestra=planAmateur`). Código:
+`crearFinal` y `crearPortal` en `js/escena.js` (más el modo `final` de `crearEscena` y `crearPeso`), el bloque §4.8 al
+final de `estilos/decision.css` y sus tokens en el bloque de la decisión de `tokens.css`. **El panel de las opciones no
+cambia**: lo nuevo es el mundo alrededor.
+
+**1 · La invitación es un portal.** La bisagra llega como "partida encontrada" (B), pero llena:
+- **atrás**, el mundo de `escena` atenuado y desenfocado: tu lugar a la izquierda (CBLOL, FURIA, São Paulo), la LCK y
+  Seúl a la derecha, el arco con el pulso que te llama;
+- **el anillo es el borde de una ventana**: adentro se ve nítida la ciudad que llama (la N Seoul Tower, la Lotte, las
+  ventanas), con el logo de la LCK adelante y el reloj dorado alrededor;
+- el modal suma lo del cliente: el cupo ("Cupo de import", por el **tipo** del efecto `ofertaDeImport`), quién te invita
+  y desde dónde (logo + LCK + "Seúl, Corea"), tu ruta (CBLOL → LCK) y Aceptar.
+
+**2 · Aceptar abre el capítulo (C), con destinos.** El logo se disuelve, el borde del portal crece hasta salir de la
+pantalla y la cámara se aleja de Seúl al mundo entero (0,14-1,4 s); cae la oscuridad del capítulo, entra "DECISIÓN
+BISAGRA · 2032", los caminos se dibujan y el panel entra. Cada camino termina en **su destino**, arriba de su carta (lo que
+arriesgás, antes → después, como en §4.7):
+- el bootcamp: **Seúl** (logo de la LCK, "LCK · ida y vuelta"), sobre la ciudad de noche;
+- seguir: **São Paulo** (logos de CBLOL y FURIA, "CBLOL · te quedás"), sobre tu ciudad, con ventanas tibias;
+- la cerrada: **Corea** apagada (el logo en gris, "cerrada"), arriba a la derecha; su camino sube punteado y se corta en
+  un candado.
+
+Lo tuyo va a la izquierda y lo que te llama a la derecha, como en la escena: por eso el 2 queda a la izquierda del 1.
+**Apuntar** un camino lleva el hueco de luz a su carta, enciende su ciudad (la otra se apaga) e inclina la cámara hacia
+ese lado; apuntar la cerrada pone Seúl en gris y enciende el candado. **Elegir**: el otro destino y la cerrada se van, el
+hueco de luz se abre sobre el elegido, su ciudad queda encendida, las barras van a los valores reales y el panel muestra
+el resultado con los números rodando, como hoy. Si el panel crece hasta las cartas, el camino no se vuelve a dibujar: el
+destino queda abierto en la luz.
+
+**3 · Las demás.** Una decisión común con geografía lleva el capítulo atenuado (sin invitación, oscuridad a la mitad,
+caminos tenues, sin rótulo). Sin geografía (el plan amateur, una decisión de vida) cae a la versión simple de §4.7: los
+haces tenues sobre la luz de la era, con el campeón; los finales de los caminos ya no se meten debajo de la franja.
+
+**Campo del evento → elemento** (se suma a la tabla de §4.7; nada sale de la prosa):
+
+| Campo | `op=final` |
+|---|---|
+| `esBisagra` | el portal y el capítulo pleno (sin bisagra: el capítulo atenuado, sin invitación) |
+| efecto con `liga` ≠ la tuya | la ciudad del portal, la del destino a la derecha y el "Te invita" (`LIGAS`: ciudad, región, hitos) |
+| tipo de efecto en `CUPO` (`ofertaDeImport`) | "Cupo de import" en la invitación |
+| `ficha.jugador.liga` / `org` + `LIGAS[liga].ciudad` | tu ciudad dibujada a la izquierda y el destino de "seguir" (logos de liga y club) |
+| camino de cada opción (`leerEvento`: ir / viaje / casa / neutro) | el lado de su carta, su destino y su nombre corto (`CAMINO`: mudanza, ida y vuelta, te quedás); neutro: sin destino, en la luz de la era |
+| `opcionesBloqueadas` | el destino apagado con la región (`LIGAS[liga].region`), el camino cortado y el candado |
+| sin liga de destino | la versión simple (§4.7 `bisagra`) y, si es bisagra, la invitación del cliente |
+
+**Trasladable:** `crearFinal` (el contrato de siempre más `invitacion` y `retardoAceptar`), el portal (`clip-path` que crece
+desde el hueco del anillo + la cámara como `transform` desde el foco), `GEO_FINAL`, `GEO_CAP` y `T_FIN` (tiempos),
+`destinoDe`, la cerrada partida con De Casteljau, y las tablas `CUPO` y `CAMINO`. **Solo de prototipo:** los logos del CDN y
+los hitos dibujados solo para Seúl (São Paulo es una silueta genérica).
+
+**Arreglo de paso.** `mercado.css` (que carga después) redefine `.logo` a 32 px y achicaba todos los logos de la
+decisión, también los de `escena` y `cliente` de §4.7; los tamaños de la decisión ahora van con dos clases
+(`.logo.esc-liga`…). Medido con INST y sin WebGL contra el código anterior: `bisagra` y "sin `op`" dan 0 píxeles
+distintos; `escena` y `cliente` cambian solo en la caja de los logos.
+
+**Verificación (2026-10-10, puerto 8132).**
+- **Sin `op`, como hoy:** evento en reposo, apuntando la 1, el resultado, el plan y el celular contra el código anterior
+  (INST, sin WebGL): **0 píxeles distintos** en los cinco.
+- **Contraste** (la copia de `contraste.mjs` de la fusión, con "aceptar" y "apuntar"): 17 casos (la invitación, el capítulo,
+  apuntar 1/2/la cerrada, elegir 1/2, el plan y su resultado, el celular antes y después de aceptar, cuatro eras más) →
+  **1066 textos, 0 debajo de 4,5:1**, el peor 5,94 ("Cupo de import"). Las cartas del capítulo son `aria-hidden` y el
+  medidor las saltea: con una copia que las mide, **1296 textos, 0 debajo**, el peor 5,83.
+- 0 errores de consola y 0 `requestfailed` en todas las capturas (WebGL por SwiftShader, INST, sin WebGL, celular).
+  `verificar.mjs` en verde.
+- Hoja de contactos (no se versiona): la invitación, el capítulo en reposo, apuntando 1 y 2, el resultado y el plan, ×
+  hoy y `final`; y la tira de "aceptar → capítulo" a 0/150/400/800/1500/2400 ms (a 1/50 de velocidad por CDP).
+
+**Límites.**
+- En el celular el panel tapa la banda de los destinos: hay portal, pero después del capítulo queda la ciudad abajo, sin
+  caminos ni cartas.
+- La invitación pinta el mundo dos veces (nítido en el portal y desenfocado atrás); el desenfocado se borra al abrir.
+- Las cartas están fijas al lado de su destino: si el panel crece mucho, quedan arriba sin camino.
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->

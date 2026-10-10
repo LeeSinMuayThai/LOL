@@ -7,7 +7,7 @@
 import { el, entrar, salir, animar, esperar, lineasConMascara, primeraOracion, num, conSigno, odometro, reducido, inst, celular, EXPO, DUR } from './util.js';
 import { icono, glifoDeCampo, triangulos, ABREVIATURA } from './iconos.js';
 import { franja, trayectoria, contexto, rodarContexto, cuartos, entrarPanel } from './marco.js';
-import { leerEvento, crearEscena, crearInvitacion, crearPeso, cargados } from './escena.js';
+import { leerEvento, crearEscena, crearInvitacion, crearPeso, crearFinal, cargados } from './escena.js';
 
 const ETIQUETAS = {
   mecanica: 'Mecánica', macro: 'Macro', laneo: 'Laneo', teamfight: 'Teamfight', shotcalling: 'Shotcalling',
@@ -24,7 +24,8 @@ const campoCorto = (campo) => campo.split('.').pop();
 const etiquetaDe = (campo, mapa) => mapa[campo] ?? ETIQUETAS[campoCorto(campo)] ?? campoCorto(campo);
 const textoDeBeat = (log) => (log.titulo ? log.titulo : log.message);
 // Las opciones de diseño de esta pantalla (PLANUI §4.7, `op=` en el hash; js/escena.js). Sin `op`, la de hoy.
-const OPCIONES = ['escena', 'cliente', 'bisagra'];
+// `final` (PLANUI §4.8) es la ultima demostracion: la invitacion como portal (cliente) que abre el capitulo con destinos.
+const OPCIONES = ['escena', 'cliente', 'bisagra', 'final'];
 
 export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
   const opDec = OPCIONES.includes(op) ? op : null;
@@ -284,6 +285,14 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
   const lec = opDec ? leerEvento(m, dec) : null;
   if (opDec === 'escena') capa = crearEscena(lec, { placa });
   if (opDec === 'bisagra') capa = crearPeso(lec, { col, antesFila });
+  if (opDec === 'final') {
+    capa = crearFinal(lec, dec, { col, antesFila, placa, alAceptar: (o) => abrirPanel(o) });
+    invitacion = capa.invitacion;
+    if (invitacion) {
+      raiz.classList.add('en-espera');
+      raiz.append(invitacion.nodo);
+    }
+  }
   if (opDec === 'cliente' && lec.bisagra) {
     invitacion = crearInvitacion(lec, dec, { alAceptar: () => abrirPanel() });
     raiz.classList.add('en-espera');
@@ -338,11 +347,12 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
     entrarPanel(placa, 1060 + d);
     if (conCuartos) animar(raiz.querySelector('.cuartos'), [{ transform: 'translateY(100%)' }, { transform: 'none' }], { delay: 1100 + d });
   }
-  // (op cliente) aceptar la invitacion abre el panel de siempre, con su orden de entrada
-  function abrirPanel() {
+  // (op cliente, final) aceptar la invitacion abre el panel de siempre, con su orden de entrada (en final, despues de
+  // que se abre el portal)
+  function abrirPanel({ instantaneo = false } = {}) {
     raiz.classList.remove('en-espera');
-    if (quieto()) return;
-    const d = -620;
+    if (quieto() || instantaneo) return;
+    const d = capa?.retardoAceptar ?? -620;
     lineasConMascara(titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: 780 + d + i * 70, dur: 420 }));
     entradaPanel(d, false);
   }
@@ -499,8 +509,8 @@ export function crearDecision({ datos, muestra, amb, sonido, peor, op }) {
     entrar: entrada,
     elegir,
     tecla,
-    // (op escena) con geografia, el fondo es la escena: sin campeon
-    arte: opDec === 'escena' && lec.destino ? null : j.campeonDelSplit ?? datos.inicio?.jugador?.mains?.[0]?.ddragon ?? null,
+    // (op escena, final) con geografia, el fondo es la escena: sin campeon
+    arte: (opDec === 'escena' || opDec === 'final') && lec.destino ? null : j.campeonDelSplit ?? datos.inicio?.jugador?.mains?.[0]?.ddragon ?? null,
     animo: 'normal',
     encuadre: 'derecha',
     listo: opDec ? () => cargados(raiz) : undefined,
