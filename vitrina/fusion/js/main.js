@@ -56,6 +56,10 @@ const PERILLAS = {
 };
 const delHash = (k) => PERILLAS[k].normalizar(new URLSearchParams(location.hash.slice(1)).get(k));
 const valor = { fondo: delHash('fondo'), color: delHash('color') };
+// La tercera perilla, `op=<id>` (PLANUI §4.7): la opcion de diseño de la pantalla montada. Cada pantalla interpreta sus
+// propios ids (ctx.op) y sin `op` es la de hoy. No tiene selector: la eligen opciones.html o el hash.
+const opDelHash = () => (new URLSearchParams(location.hash.slice(1)).get('op') ?? '').replace(/[^a-z0-9-]/g, '');
+let op = opDelHash();
 const conPerillas = (url) => {
   if (url == null) return url;
   const u = new URL(String(url), location.href);
@@ -64,6 +68,8 @@ const conPerillas = (url) => {
     if (valor[k] === def) p.delete(k);
     else p.set(k, valor[k]);
   }
+  if (op) p.set('op', op);
+  else p.delete('op');
   u.hash = p.toString();
   return u.href;
 };
@@ -74,6 +80,8 @@ function marcarPerillas() {
   const html = document.documentElement;
   html.dataset.fondo = valor.fondo;
   html.dataset.color = valor.color;
+  if (op) html.dataset.op = op;
+  else delete html.dataset.op;
   for (const [k, sel] of Object.entries(selectores)) sel.value = valor[k];
 }
 // La politica de la pantalla montada (fondo + color) y su lugar fijo (si la variante lo usa). `dur`: el cruce del mundo.
@@ -118,7 +126,7 @@ async function montar(estado) {
   // las piezas de campeon que pinte la pantalla nueva ya salen con el color de la politica
   fijarColor(valor.color, estado.pantalla, estado.muestra);
   const fabrica = FABRICAS[estado.pantalla] ?? crearInicio;
-  const nuevo = fabrica({ datos, muestra: estado.muestra, estado, amb: ambiente, sonido, aura, peor: estado.peor });
+  const nuevo = fabrica({ datos, muestra: estado.muestra, estado, amb: ambiente, sonido, aura, peor: estado.peor, op });
   const viejo = actual;
   actual = nuevo;
   marcaAccion = amb.reloj();
@@ -147,6 +155,12 @@ async function montar(estado) {
 // Cambiar el hash a mano (o desde variantes.html) cambia las perillas; si ademas cambia la pantalla, el montaje las
 // aplica. Va antes del panel para leer el hash antes de que el panel lo reescriba.
 addEventListener('hashchange', () => {
+  const nuevoOp = opDelHash();
+  if (nuevoOp !== op) {
+    op = nuevoOp;
+    marcarPerillas();
+    if (estadoActual) montar(estadoActual);
+  }
   let cambio = false;
   for (const k of Object.keys(PERILLAS)) {
     const v = delHash(k);

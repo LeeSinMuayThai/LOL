@@ -23,7 +23,8 @@
 | **Compuerta 1 (final)** | El usuario elige A, C o una mezcla | ✅ 2026-10-09: una mezcla: serie y Swiss de C, mercado de A, y "que sigan una misma línea" (§4.4) |
 | **U0 · fusión** | Una sola dirección: la interfaz de C dentro del mundo de A, con 7 reglas de una misma línea (§4.5) | ✅ 2026-10-09 (1 × Opus xhigh, `f35fcb4`; merge `d7622e9`; referencias en `vitrina/referencia/fusion/`) |
 | **Compuerta 1b** | El usuario mira la fusión | 🔶 2026-10-09: "está bien", pero el duotono "blanco y negro + violeta" de los campeones se vuelve repetitivo después del inicio; pidió tres variantes (§4.6) |
-| **U0 · intensidad** | Una página con tres variantes de color del campeón (a color, mitad, fondo en duotono y retratos a color) y el espacio "un poco" menos (§4.6) | ✅ 2026-10-09 (`899ed27`, merge `81993d4`); esperando la elección del usuario |
+| **U0 · intensidad** | Una página con tres variantes de color del campeón (a color, mitad, fondo en duotono y retratos a color) y el espacio "un poco" menos (§4.6) | ✅ 2026-10-09 (`899ed27`, merge `81993d4`); el usuario respondió con capturas (§4.7) |
+| **U0 · opciones** | La serie con la receta de color y el fondo nítido; tres opciones por pantalla para el partido (la competición), la decisión y el mercado (logos reales) (§4.7) | 🔶 en curso |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
@@ -572,6 +573,76 @@ lugar, como `fondo.js`.
 - **Lo que falta:**
   - la carta de la final sigue en el duotono de su rareza;
   - sin WebGL, `lugar` muestra solo luz.
+
+### 4.7 Compuerta 1b, tercera vuelta: color fino, la competición, y que la pantalla cuente lo que pasa (2026-10-09, textual)
+
+Mandó cuatro capturas de `variantes.html`, en el orden de las pestañas: la serie, el Swiss, la decisión y el mercado.
+La cuarta se adjuntó repetida: llegó otra vez la de la decisión. Por el orden y por "los logos de los equipos", el
+comentario 4 es del mercado.
+
+> los campeones ahi estan bien que sean medio bitono y el fondo tambien, pero yo intentaria que el fondo tenga mas
+> calidad y que los campeones tengan un 15% mas de color mientras que el fondo un 10% mas, eso en la primera foto […] la
+> imagen 2 esta bien pero deberia ser un 20% menos amarilla y mas estetica de la competicion (LEC WORLDS MSI LO QUE SE
+> ESTE JUGANDO) […] despues la imagen 3 me gusta como esta diseñada pero siento que es muy aburrida, interactua poco con
+> el fondo, y principalmente, representa poco lo que esta pasando, o no se si eso pero es un poco "simple" "poco
+> original" "aburrida" "sin escencia del lol" […] y la imagen 4 siento que le falta un poco representar lo que esta
+> pasando, falta ese aspecto de peso de decision importante o formal, y tambien se deberian añadir los logos actuales de
+> los equipos etc, pensalo bien y empeza a buildear directo las preview con opciones
+
+**Lo que se lee, pantalla por pantalla:**
+- **Serie: la receta de color, con números.**
+  - La base es `mitad`. Los campeones (retratos, libres, picks) suben un 15% de color, a ~65% color / 35% duotono.
+  - El campeón de fondo sube un 10%, a ~60/40.
+  - **El fondo tiene que tener "más calidad".** Hoy el splash sale blando y con bordes pixelados (el rosa en la cara de
+    Sylas), porque el shader pinta a escala ≤ 0,5 y el "vivo" desplaza la imagen. Tiene que verse nítido, como el splash
+    del champ select.
+- **Swiss: un 20% menos amarillo, y con la estética de la competición.**
+  - Hoy el Mundial es "oro" genérico de la era. Cada pantalla de partido tiene que verse como **lo que se está jugando**:
+    Worlds, MSI, LEC, LCK, CBLOL, con su identidad, su logo y su paleta.
+  - Es un eje nuevo: **la identidad de la competición** se monta sobre la luz de la era en las pantallas de partido.
+- **Decisión: el diseño gusta; el problema es que es aburrida.** Interactúa poco con el fondo, no cuenta lo que está
+  pasando, y le falta originalidad y "esencia del LoL".
+  - El ejemplo es "Un equipo coreano te quiere en su cupo de import". El fondo es tu campeón y nada más: Corea, el
+    equipo y la LCK no aparecen.
+- **Mercado: no cuenta lo que pasa y no tiene peso formal.** Firmar con un equipo tiene que sentirse una decisión
+  importante. Faltan **los logos actuales de los equipos**.
+- **"Empezá a buildear directo las preview con opciones"**: varias opciones por pantalla, para elegir mirando.
+
+**Decisiones del supervisor:**
+- **Los logos reales de los equipos y de las ligas entran.** Esto revierte el recorte "colores reales de org" de §14, por
+  pedido del usuario.
+  - En la vitrina se enlazan desde el CDN oficial (`<img>`, nunca en un canvas ni versionados). Si no cargan, queda el
+    chip de hoy.
+  - Las orgs inventadas de la simulación llevan un escudo-monograma del sistema.
+  - Antes de publicar (§15) se revisa la política de uso.
+- **Rige la regla 3 de §4.5, con una excepción.** El color de una org entra solo con su logo, en el mercado y en el
+  marcador.
+
+**Las opciones.** Hay una perilla nueva, `op=<id>`, en el hash de la fusión. Cada pantalla interpreta sus ids y sin
+`op` es la de hoy. La serie lleva la receta de color en todas sus opciones.
+
+| Pantalla | Opción | Qué es |
+|---|---|---|
+| Serie y Swiss | `luz` · **La luz del evento** | la luz del mundo toma la paleta oficial de la competición (sin el oro genérico); el logo del torneo y los de los equipos en el marcador |
+| | `transmision` · **La transmisión oficial** | la Tribuna y el draft vestidos como la transmisión de esa competición: el marcador con logos, las placas inferiores, una cortina de entrada "WORLDS 2033 · SWISS · RONDA 5" |
+| | `escenario` · **El escenario** | el fondo es la arena del evento (luces de escenario en la paleta del torneo, la pantalla gigante con el campeón, siluetas de público); la interfaz flota adelante |
+| Decisión | `escena` · **La escena** | el fondo cuenta la situación: la org que te llama con su logo, la región (Seúl, la LCK) y el arco de tu liga a la de ellos. Al apuntar una opción, la escena cruza a ese camino (el "aura" de las decisiones) |
+| | `cliente` · **El momento del cliente** | la decisión bisagra llega como una invitación del cliente del LoL (el logo del equipo, "te invita", el anillo de Aceptar con su reloj) y se abre en el panel; vocabulario hextech solo en la bisagra |
+| | `bisagra` · **El peso** | la decisión grande como capítulo: el mundo se oscurece, rótulo de capítulo, lo que arriesgás antes/después y los dos caminos abiertos en la luz, a izquierda y derecha; apuntar uno tira la luz a su lado |
+| Mercado | `mesa` · **La mesa de firma** | cada oferta es un contrato: el logo grande de la org, la liga, los términos y la línea de firma con tipografía formal. Enter firma y la firma se dibuja |
+| | `anuncio` · **El anuncio** | cada oferta se previsualiza como la placa oficial de fichaje que publicaría la org ("WELCOME Elurah89", con su logo, sus colores y tu main). Elegir la publica |
+| | `orgs` · **Te llaman** | los logos de las orgs flotan en la luz alrededor tuyo, con tamaño por sueldo o interés. Apuntar una lleva el mundo a sus colores (el aura de las orgs) y la tabla queda abajo |
+
+**Cómo se construye:**
+- **Tres Opus xhigh en paralelo**, en ramas separadas sobre `vitrina/fusion/`:
+  - **partido**: el color, la calidad del fondo, la competición y sus 3 opciones;
+  - **decisión**: sus 3 opciones;
+  - **mercado**: sus 3 opciones y `js/logos.js`, el mapa de logos de equipos.
+- **Cada worker toca solo sus archivos.**
+  - Los tokens van en su bloque marcado de `tokens.css`.
+  - La plomería de `op` ya está en `main.js` (la hizo el supervisor).
+- **Después del merge**, el supervisor arma `opciones.html`, una página con pestañas por pantalla y las opciones lado a
+  lado, con "como hoy" para comparar. También conecta los logos de equipo al marcador de la serie y del Swiss.
 
 ---
 

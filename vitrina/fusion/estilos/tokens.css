@@ -191,3 +191,20 @@ html[data-era='leyenda'] { --luz: var(--luz-leyenda); --contra: var(--contra-ley
   --filete: color-mix(in srgb, var(--luz) 34%, var(--linea));
   --filete-fuerte: color-mix(in srgb, var(--luz) 70%, transparent);
 }
+
+/* ===== PLANUI §4.7 · partido: la serie, el Swiss y la identidad de cada competicion. Sus tokens van entre esta linea y su cierre ===== */
+/* ===== fin §4.7 partido ===== */
+
+/* (separador entre bloques de §4.7: no tocar) */
+/* (separador entre bloques de §4.7: no tocar) */
+/* (separador entre bloques de §4.7: no tocar) */
+
+/* ===== PLANUI §4.7 · decision. Sus tokens van entre esta linea y su cierre ===== */
+/* ===== fin §4.7 decision ===== */
+
+/* (separador entre bloques de §4.7: no tocar) */
+/* (separador entre bloques de §4.7: no tocar) */
+/* (separador entre bloques de §4.7: no tocar) */
+
+/* ===== PLANUI §4.7 · mercado y logos. Sus tokens van entre esta linea y su cierre ===== */
+/* ===== fin §4.7 mercado ===== */

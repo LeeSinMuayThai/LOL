@@ -163,6 +163,25 @@ El espacio baja solo "un poco", y las variantes de espacio quedan como selector 
 **Lección:** cuando el usuario describe una sensación ("oscuro de la luz los champions"), conviene confirmar el eje
 (color, tamaño o frecuencia) con una pregunta corta antes de construir.
 
+**Las variantes de color** se construyeron (`899ed27`, merge `81993d4`). El usuario las miró y mandó capturas.
+
+**Tercera vuelta, textual:**
+
+> los campeones ahi estan bien que sean medio bitono y el fondo tambien, pero yo intentaria que el fondo tenga mas
+> calidad y que los campeones tengan un 15% mas de color mientras que el fondo un 10% mas, eso en la primera foto […] la
+> imagen 2 esta bien pero deberia ser un 20% menos amarilla y mas estetica de la competicion (LEC WORLDS MSI LO QUE SE
+> ESTE JUGANDO) […] despues la imagen 3 me gusta como esta diseñada pero siento que es muy aburrida, interactua poco con
+> el fondo, y principalmente, representa poco lo que esta pasando, o no se si eso pero es un poco "simple" "poco
+> original" "aburrida" "sin escencia del lol" […] y la imagen 4 siento que le falta un poco representar lo que esta
+> pasando, falta ese aspecto de peso de decision importante o formal, y tambien se deberian añadir los logos actuales de
+> los equipos etc, pensalo bien y empeza a buildear directo las preview con opciones
+
+**Lo que se decidió** (`PLANUI.md` §4.7):
+- **la serie** lleva la receta de color: retratos +15% de color, fondo +10%, y el fondo nítido;
+- **las pantallas de partido** llevan la identidad de la competición que se juega;
+- **la decisión y el mercado** tienen que contar lo que pasa y pesar; entran los logos reales;
+- **tres opciones por pantalla**, que construyen tres workers en paralelo.
+
 ### 2026-10-08 — FASE V, V8a: los LP que bajaban al subir y la historia con "2029–2029" (PLAN.md §V.7)
 
 Merge `944eb63` (worker Sonnet high, ~95K tokens y 22 tool calls; sin revisor aparte, porque el diff son 17 líneas de
