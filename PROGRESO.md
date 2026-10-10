@@ -182,6 +182,24 @@ El espacio baja solo "un poco", y las variantes de espacio quedan como selector 
 - **la decisión y el mercado** tienen que contar lo que pasa y pesar; entran los logos reales;
 - **tres opciones por pantalla**, que construyen tres workers en paralelo.
 
+**La elección por pantalla (2026-10-10), textual:**
+
+> bueno en la serie el 1 tiene mucho de las luces de escenario, el 3 esta bueno si se hiciese mas como las pantallas del
+> stage, aunque tambien se podria hacer tipo el draft mostrando el champ de los otros jugadores, queda a tu criterio, en
+> el swiss, que se sienta mas como pantalla de stream si tenes el chat no?, tipo que este como el broadcast viendolo
+> desde un stream, porque esta el chat pero el champ detras, en la decision, el b y el c estan bien pero el b esta medio
+> vacio, se podria hacer algo ahi mas original o mejorar el c, el mercado el A y el C estan muy buenos eso de que se
+> firme con animacion y cosas asi, se podria hacer una combinacion, y tambien una mini animacion de como que van
+> entrando las ofertas en pantalla, me gusto lo del C algo asi, lo que no me copa tanto es el campeon atras, se podria
+> hacer algo mas que represente el mercado de pases en vez del campeon random ahi, un equipo, algo no se, se creativo,
+> pero que represente mas lo del fichaje, bueno buildea la ultima demostracion y listo
+
+**Lo que se decidió** (`op=final`, `PLANUI.md` §4.8):
+- **la serie**, con las pantallas del stage;
+- **el Swiss**, como un stream;
+- **la decisión**, invitación + capítulo con destinos;
+- **el mercado**, las ofertas entrando, el contrato animado y el telón de prensa en lugar del campeón.
+
 ### 2026-10-08 — FASE V, V8a: los LP que bajaban al subir y la historia con "2029–2029" (PLAN.md §V.7)
 
 Merge `944eb63` (worker Sonnet high, ~95K tokens y 22 tool calls; sin revisor aparte, porque el diff son 17 líneas de

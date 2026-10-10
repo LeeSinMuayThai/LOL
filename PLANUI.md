@@ -24,7 +24,8 @@
 | **U0 · fusión** | Una sola dirección: la interfaz de C dentro del mundo de A, con 7 reglas de una misma línea (§4.5) | ✅ 2026-10-09 (1 × Opus xhigh, `f35fcb4`; merge `d7622e9`; referencias en `vitrina/referencia/fusion/`) |
 | **Compuerta 1b** | El usuario mira la fusión | 🔶 2026-10-09: "está bien", pero el duotono "blanco y negro + violeta" de los campeones se vuelve repetitivo después del inicio; pidió tres variantes (§4.6) |
 | **U0 · intensidad** | Una página con tres variantes de color del campeón (a color, mitad, fondo en duotono y retratos a color) y el espacio "un poco" menos (§4.6) | ✅ 2026-10-09 (`899ed27`, merge `81993d4`); el usuario respondió con capturas (§4.7) |
-| **U0 · opciones** | La serie con la receta de color y el fondo nítido; tres opciones por pantalla para el partido (la competición), la decisión y el mercado (logos reales) (§4.7) | ✅ 2026-10-09 (merges `66c6cc4`, `4c2de5f`, `67764bd`, `94dc50a`); esperando la elección del usuario en `opciones.html` |
+| **U0 · opciones** | La serie con la receta de color y el fondo nítido; tres opciones por pantalla para el partido (la competición), la decisión y el mercado (logos reales) (§4.7) | ✅ 2026-10-09 (merges `66c6cc4`, `4c2de5f`, `67764bd`, `94dc50a`); el usuario eligió y combinó (§4.8) |
+| **U0 · demostración final** | Una versión por pantalla (`op=final`): serie con las pantallas del stage, Swiss como stream, decisión B+C, mercado A+C sin campeón de fondo; `final.html` (§4.8) | 🔶 en curso |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
@@ -681,6 +682,55 @@ para `opciones.html`. Cero choques de código: solo el README, que se resolvió 
   `logos.js`;
 - los estilos `.logo`/`.escudo` viven en `mercado.css`;
 - sin WebGL no hay paleta ni arena.
+
+### 4.8 La elección por pantalla y la última demostración (2026-10-10, textual)
+
+> bueno en la serie el 1 tiene mucho de las luces de escenario, el 3 esta bueno si se hiciese mas como las pantallas del
+> stage, aunque tambien se podria hacer tipo el draft mostrando el champ de los otros jugadores, queda a tu criterio, en
+> el swiss, que se sienta mas como pantalla de stream si tenes el chat no?, tipo que este como el broadcast viendolo
+> desde un stream, porque esta el chat pero el champ detras, en la decision, el b y el c estan bien pero el b esta medio
+> vacio, se podria hacer algo ahi mas original o mejorar el c, el mercado el A y el C estan muy buenos eso de que se
+> firme con animacion y cosas asi, se podria hacer una combinacion, y tambien una mini animacion de como que van
+> entrando las ofertas en pantalla, me gusto lo del C algo asi, lo que no me copa tanto es el campeon atras, se podria
+> hacer algo mas que represente el mercado de pases en vez del campeon random ahi, un equipo, algo no se, se creativo,
+> pero que represente mas lo del fichaje, bueno buildea la ultima demostracion y listo
+
+**La última demostración es una versión por pantalla, `op=final`, sin más opciones.**
+
+- **Serie: el escenario (`escenario`), pero con las pantallas del stage en vez de las luces de recital.**
+  - Las luces móviles bajan mucho: la opción 1 "tiene mucho de las luces de escenario".
+  - Las pantallas LED del escenario muestran la serie como en el estadio: tu pick contra el del rival en grande, los
+    quemados de Fearless, el marcador y los logos.
+  - **El draft de los 10 no se dibuja.** El usuario lo dejó a criterio, y el motor solo simula tu campeón y el del rival
+    por mapa (regla 15: lo dibujado es el motor). Los compañeros aparecen con su nombre si los datos lo traen, sin
+    campeón inventado.
+- **Swiss: verlo como un stream.**
+  - El chat ya está, así que el "video" deja de ser un campeón de fondo. Pasa a ser **la transmisión oficial dentro de
+    un reproductor de stream**: el feed es el escenario del torneo con los gráficos de `transmision` (marcador, placas,
+    identidad de la competición) y el reproductor lleva EN VIVO, espectadores y controles.
+  - El chat queda al costado. La decisión y AFUERA siguen como están.
+- **Decisión: B (`cliente`) + C (`bisagra`), y C mejorado.**
+  - La bisagra llega como "partida encontrada", con el anillo y Aceptar. Esa invitación deja de estar vacía: atrás se ve
+    la escena del que llama (la liga, la región), atenuada.
+  - Aceptar abre el capítulo de C. Cada camino muestra **su destino** (el bootcamp: Seúl y la LCK; seguir: tu liga y tu
+    club; la cerrada, apagada), con lo que arriesgás.
+  - Las decisiones comunes llevan C atenuado.
+- **Mercado: A (`mesa`) + C (`orgs`), y sin campeón de fondo.**
+  - **La entrada:** las ofertas entran a la pantalla una por una, como los logos de C (una mini animación de llegada).
+  - **El contrato:** el de A, con la firma animada y el sello.
+  - **El fondo** representa el fichaje, no un campeón:
+    - en reposo, el tablero de la ventana de pases con los movimientos reales del mercado ("Mientras tanto");
+    - al apuntar una org, el telón de prensa de esa org, con su logo en patrón y sus colores;
+    - al firmar, la conferencia (los flashes).
+    El worker tiene libertad creativa dentro de "que represente el fichaje".
+- **La firma (LOUD)** sigue la misma línea: el telón de LOUD en lugar del campeón.
+
+**Cómo se construye:**
+- **Tres Opus xhigh nuevos en paralelo** (partido, decisión, mercado), con el mismo reparto de archivos que en §4.7.
+- **Un Sonnet** arma `final.html`: una pantalla grande por pestaña (serie, Swiss, decisión, mercado, firma), con 0 para
+  "como hoy".
+- Después: revisión de las capturas, merge, servir, y el usuario mira **la última demostración**. Con su visto bueno,
+  la fusión + `op=final` es la especificación. Se cierran §5, §8 y §11, y queda la compuerta 2.
 
 ---
 

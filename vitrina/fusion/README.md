@@ -376,3 +376,22 @@ y los comentarios (PRNG decorativo), los estilos de anuncio por org (`ESTILO_ANU
 contrato aparece arriba a la izquierda, encima del panel de abajo apagado. Los likes de la placa escalan por tier, pero
 siguen siendo decorativos. En el celular, `orgs` no muestra el cielo (queda la tabla con el inspector) y el anuncio no
 muestra el chat.
+
+## La demostración final, `op=final` (PLANUI §4.8)
+
+### Partido: la serie con las pantallas del stage, el Swiss como stream
+(lo escribe el worker de partido)
+
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+
+### Decisión: la invitación y el capítulo con destinos
+(lo escribe el worker de decisión)
+
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+
+### Mercado: las ofertas que entran, el contrato animado y el telón del fichaje
+(lo escribe el worker de mercado)
