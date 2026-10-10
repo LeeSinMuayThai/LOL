@@ -40,7 +40,9 @@ export const POLITICAS_COLOR = {
   receta: { etiqueta: 'La receta', linea: 'Medio duotono, con un poco más de color: los campeones 65 %, el fondo 60 %.', fondo: 0.6, lavado: 0, pieza: 0.65, presencia: 1, contraste: 1 },
 };
 // PLANUI §4.9: la receta, y los momentos (firma, titulo, AFUERA) con el 70 % del color real en el fondo y en las piezas
-POLITICAS_COLOR.linea = { ...POLITICAS_COLOR.receta, etiqueta: 'Una línea', linea: 'La receta, y los momentos con el 70 % de su color real.', momento: { fondo: 0.7, pieza: 0.7 } };
+// `animoConColor` (PLANUI §4.9, U): ningun animo del mundo saca el color (la caida y el peligro se cuentan con la luz, mas
+// oscura y fria): sin eso, AFUERA y el cierre de una serie perdida quedaban casi en blanco y negro.
+POLITICAS_COLOR.linea = { ...POLITICAS_COLOR.receta, etiqueta: 'Una línea', linea: 'La receta, y los momentos con el 70 % de su color real.', momento: { fondo: 0.7, pieza: 0.7 }, animoConColor: true };
 const DUOTONO = POLITICAS_COLOR.duotono;
 
 // Las pantallas que siempre van en duotono: el inicio y las eras (la demostracion de las cinco luces).

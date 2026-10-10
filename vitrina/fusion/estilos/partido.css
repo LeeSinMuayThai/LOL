@@ -377,7 +377,11 @@ html[data-textos='breves'] .insp-mono { display: none; }
 .logo-org, .logo-comp { display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .logo-org img { width: 100%; height: 100%; min-width: 0; min-height: 0; display: block; object-fit: contain; }
 .logo-comp img { height: 100%; width: auto; min-height: 0; display: block; object-fit: contain; }
-.escudo {
+/* (PLANUI §4.9, U) el monograma de js/competicion.js (adentro de su <i class="logo-org|logo-comp">). Antes era `.escudo`
+   a secas y pisaba el escudo-monograma de js/logos.js en todas las pantallas; ahora vale solo en su contenedor y en el
+   mercado de §4.7/§4.8 (.mk-op), donde esa caja ya era parte de como se ve op=final. Misma especificidad que antes
+   (:where), asi en esos lugares el resultado es el mismo. */
+.escudo:where(:is(.logo-org, .logo-comp):not(.logo) > *, .mk-op *) {
   display: grid; place-items: center; width: 100%; height: 100%; min-width: 22px; padding: 0 3px; border-radius: var(--r-control); background: var(--panel-hondo);
   box-shadow: inset 0 0 0 1px var(--filete-fuerte); font: 800 9px / 1 var(--f-mono); letter-spacing: 0.04em; color: var(--luz-texto);
 }

@@ -570,7 +570,6 @@ html:is([data-reducido], [data-inst]) :is(.mk-telon, .mk-tablero) { transition: 
 .ms-aura-escudo .logo { position: relative; width: var(--ms-aura-escudo); height: var(--ms-aura-escudo); }
 .ms-aura-escudo .logo img, .ms-fm-logo .logo img, .ms-fm-intro-liga .logo img { width: 100%; height: 100%; object-fit: contain; }
 .ms-aura-escudo .logo img { filter: drop-shadow(0 14px 40px var(--sombra)); }
-:is(.ms-mercado, .ms-firma) .escudo { padding: 0; min-width: 0; border-radius: 0; background: none; box-shadow: none; }
 .ms-aura-escudo .escudo-forma, .ms-op .escudo-forma, .ms-contrato .escudo-forma, .ms-ranura .escudo-forma { fill: color-mix(in srgb, var(--tono-noche) 80%, var(--escudo-fondo)); stroke: var(--tono-acento); }
 .ms-op .escudo-forma { stroke: var(--ms-acento); }
 .ms-aura-vacio .escudo { width: 64%; height: 74%; }

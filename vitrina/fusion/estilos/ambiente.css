@@ -80,6 +80,10 @@
 .luz-css[data-animo='peligro'] { filter: saturate(0.45) brightness(0.8); }
 .luz-css[data-animo='peligro']::after { content: ''; position: absolute; inset: 0; background: var(--velo-medio); animation: lc-latido 1250ms ease-in-out infinite alternate; }
 .luz-css[data-animo='gloria'] .luz-css-era { filter: brightness(1.3) saturate(1.1); }
+/* (PLANUI §4.9, U) con la politica de color `linea` (data-animo-color, js/color.js) ningun animo saca el color: la caida
+   y el peligro se cuentan con la luz, que baja, y el arte del momento conserva su color (regla 3: nada de gris neutro) */
+.luz-css[data-animo-color][data-animo='caida'] { filter: brightness(0.62); }
+.luz-css[data-animo-color][data-animo='peligro'] { filter: brightness(0.8); }
 .luz-css[data-congelado]::after, .luz-css[data-congelado] * { animation-play-state: paused !important; }
 @keyframes lc-latido { from { opacity: 0; } to { opacity: 0.5; } }
 @media (prefers-reduced-motion: reduce) { .luz-css *, .luz-css::after { animation: none !important; transition: none !important; } }
@@ -100,11 +104,11 @@ html[data-reducido] .luz-css *, html[data-reducido] .luz-css::after, html[data-i
     linear-gradient(180deg, var(--lc-cos-noche) 0%, var(--lc-cos-vacio) 80%);
 }
 .lc-cos-arte {
-  position: absolute; left: var(--lc-cos-x); top: var(--lc-cos-y); width: 62vw; height: auto; transform: translate(-50%, -38%); opacity: 0; mix-blend-mode: screen;
+  position: absolute; left: var(--lc-cos-x); top: var(--lc-cos-y); width: calc(62vw * var(--lc-cos-escala, 1)); height: auto; transform: translate(-50%, -38%); opacity: 0; mix-blend-mode: screen;
   mask-image: radial-gradient(closest-side, var(--mascara) 52%, transparent 100%);
 }
 .lc-cos-arte[data-visible] { opacity: 0.92; }
-.luz-css[data-encuadre='celular'] .lc-cos-arte { width: 120vw; }
+.luz-css[data-encuadre='celular'] .lc-cos-arte { width: calc(120vw * var(--lc-cos-escala, 1)); }
 .lc-cos-linea {
   position: absolute; transform-origin: 50% 50%;
   background: var(--luz-blanca);

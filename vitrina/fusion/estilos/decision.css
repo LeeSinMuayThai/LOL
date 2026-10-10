@@ -525,10 +525,8 @@ html[data-reducido] .dec-final .fin-ventana > .dec-escena { transition: none; }
 
 /* ---------- el aviso: lo de atras es la pantalla atenuada (se ve, no se usa); el panel entra al aceptar ---------- */
 .parada-decision.dc-espera > .parada-col { visibility: hidden; }
-/* detras del aviso se tiene que reconocer tu contexto (tu main en la luz de la era): el velo del kit, un poco mas liviano */
-.parada-decision[data-op='linea'] .ln-aviso-velo {
-  background: radial-gradient(70% 70% at 50% 48%, color-mix(in srgb, color-mix(in srgb, var(--tono-noche) 55%, var(--ln-velo)) var(--dc-aviso-velo), transparent) 0%, color-mix(in srgb, var(--ln-velo) var(--dc-aviso-velo), transparent) 70%);
-}
+/* detras del aviso se tiene que reconocer tu contexto (tu main en la luz de la era): el velo del kit, un poco mas liviano
+   (la opcion `velo` de anilloAceptar con --dc-aviso-velo, js/escena.js) */
 
 /* ---------- el portal: un velo con el hueco del anillo que crece; su borde es el aro dorado de la ceremonia ---------- */
 .dc-portal {
@@ -546,9 +544,11 @@ html[data-reducido] .dec-final .fin-ventana > .dec-escena { transition: none; }
 .dc-costura { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
 .dc-banda { display: none; }
 .dc-lado {
-  position: absolute; left: 0; top: calc(var(--franja-alto) + var(--dc-aire)); display: grid; justify-items: center; gap: 12px;
+  position: absolute; left: 0; top: calc(var(--franja-alto) + var(--dc-aire)); display: grid; justify-items: start; gap: 12px;
   width: max-content; max-width: min(var(--dc-lado-ancho), 42vw); transition: opacity 520ms var(--expo);
 }
+/* (U) cada destino contra su borde y su cara al lado, del lado de la linea (js/escena.js): A a la izquierda, B a la derecha */
+.dc-lado[data-lado='b'] { justify-items: end; }
 /* el velo de lectura: el vacio de SU tono detras del destino (los textos se leen sobre la luz de la costura) */
 .dc-lado::before {
   content: ''; position: absolute; inset: -54px -84px -40px; z-index: -1; border-radius: 50%;
@@ -558,12 +558,14 @@ html[data-reducido] .dec-final .fin-ventana > .dec-escena { transition: none; }
 .dc-logos { display: flex; align-items: center; gap: 22px; }
 .logo.dc-logo-liga { width: var(--dc-logo); height: var(--dc-logo); filter: drop-shadow(0 8px 26px var(--sombra)) drop-shadow(0 0 34px color-mix(in srgb, var(--tono-luz) 42%, transparent)); }
 .logo.dc-logo-org { width: var(--dc-logo-org); height: var(--dc-logo-org); filter: drop-shadow(0 8px 22px var(--sombra)); }
-.dc-lugar { display: grid; justify-items: center; gap: 7px; margin: 0; text-align: center; }
+.dc-lugar { display: grid; justify-items: inherit; gap: 7px; margin: 0; text-align: left; }
+.dc-lado[data-lado='b'] .dc-lugar { text-align: right; }
 .dc-lugar b { font: 800 30px / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.025em; color: var(--ink); text-shadow: 0 2px 18px var(--tono-vacio); }
 .dc-lugar span { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: color-mix(in oklab, var(--tono-luz) 45%, var(--ink)); }
 /* lo que arriesgas: una fila por camino de ese lado, con su tecla, su nombre corto y la previa del motor en chips */
-.dc-filas { display: grid; gap: 8px; justify-items: center; margin: 4px 0 0; padding: 0; }
-.dc-fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; transition: opacity 420ms var(--expo); }
+.dc-filas { display: grid; gap: 8px; justify-items: inherit; margin: 4px 0 0; padding: 0; }
+.dc-fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 8px 10px; transition: opacity 420ms var(--expo); }
+.dc-lado[data-lado='b'] .dc-fila { justify-content: flex-end; }
 /* la cabeza de cada camino: su tecla y su nombre corto, en una pastilla (se lee sobre la cara del campeon) */
 .dc-cabeza {
   display: inline-flex; align-items: center; gap: 9px; height: 26px; padding: 0 12px 0 0; border-radius: var(--r-control);
@@ -576,7 +578,8 @@ html[data-reducido] .dec-final .fin-ventana > .dec-escena { transition: none; }
 }
 .dc-tecla .ico { width: 14px; height: 14px; }
 .dc-camino { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink); }
-.dc-chips { flex-basis: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0; padding: 0; }
+.dc-chips { flex-basis: 100%; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 6px; margin: 0; padding: 0; }
+.dc-lado[data-lado='b'] .dc-chips { justify-content: flex-end; }
 .dc-chip {
   display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: var(--r-chip);
   background: color-mix(in srgb, var(--tono-vacio) var(--dc-chip-fondo), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tono-luz) 24%, transparent);

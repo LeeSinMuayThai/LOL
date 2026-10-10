@@ -18,6 +18,10 @@
   position: absolute; inset: 0;
   background: radial-gradient(70% 70% at 50% 48%, color-mix(in srgb, var(--tono-noche) 55%, var(--ln-velo)) 0%, var(--ln-velo) 70%);
 }
+/* anilloAceptar({ velo }): cuanto tapa el velo (la opacidad, --ln-aviso-velo-k en el nodo; sin la opcion, el de arriba) */
+.ln-aviso[data-velo] > .ln-aviso-velo {
+  background: radial-gradient(70% 70% at 50% 48%, color-mix(in srgb, color-mix(in srgb, var(--tono-noche) 55%, var(--ln-velo)) var(--ln-aviso-velo-k, 100%), transparent) 0%, color-mix(in srgb, var(--ln-velo) var(--ln-aviso-velo-k, 100%), transparent) 70%);
+}
 .ln-aviso-fogonazo {
   position: absolute; left: 50%; top: 50%; width: 1000px; height: 1000px; margin: -500px 0 0 -500px; border-radius: 50%;
   background: radial-gradient(closest-side, var(--ln-destello), color-mix(in srgb, var(--ln-oro-claro) 45%, transparent) 26%, color-mix(in srgb, var(--tono-luz) 18%, transparent) 50%, transparent 72%);
