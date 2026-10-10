@@ -6,6 +6,7 @@
 //        [--politica buena|mala] [--max-paradas N] [--modo recorrido|capturas]
 //        [--rol N] [--perfil N] [--region N]      (indices en la pantalla de inicio; por defecto 0)
 //        [--sin-teclado]                          (sin las pruebas de teclado de V2-B: linea de base sobre una UI vieja)
+//        [--sin-webgl]                            (Chromium con WebGL deshabilitado, `--disable-3d-apis`: prueba el fallback CSS)
 //
 // Necesita `node server.js` corriendo (usa el puerto que ese comando imprime). playwright-core y Chromium salen de las
 // variables PLAYWRIGHT_CORE y CHROMIUM_EXE (con las rutas de esta maquina por defecto); no descarga nada.
@@ -21,10 +22,12 @@
 //   guardada; (g) en la primera parada de cada tipo, los 6 cuartos abren con clic y con su letra, Esc los cierra, el foco
 //   vuelve a la parada y la parada es la misma; (h) las letras no abren nada en el inicio ni en el minijuego; (i) con un
 //   cuarto abierto el relato se pausa (no entra ningun beat) y al cerrarlo sigue.
-//   (f2) en CADA parada, DONDE esta: desde 1180 px y con acompañante, el aside queda a la derecha del escenario (su `left` >= el
-//   `right` del escenario) y arranca a su altura (±40 px); sin acompañante el escenario queda centrado (±40 px); en todos los
-//   tamaños el escenario mide <= `--escenario-columna` (720) + el padding de `.shell-cuerpo`. Lo puso la ronda en que un `}` de mas
-//   en shell.css dejo el escenario en x=0 y el acompañante debajo, con todo "presente" y nada rojo.
+//   (f2) en CADA parada, DONDE esta (reescrita en U1a, PLANUI §5.4/§5.9: ya NO exige la columna centrada de <= 720 px; exige
+//   lo contrario, que el contenido no flote como una columna centrada en un vacio): desde 1180 px, el contenido (escenario +
+//   acompañante si se ve) ocupa >= 80% del ancho de la ventana y arranca en el tercio izquierdo; con acompañante, el aside queda
+//   a la derecha del escenario (su `left` >= el `right` del escenario) y arranca a su altura (±40 px); en el celular (<= 700 px)
+//   el escenario ocupa el ancho (>= 90%); en el medio, el escenario ocupa >= 55% o arranca en el tercio izquierdo. Sigue
+//   cazando la ronda en que un `}` de mas en shell.css dejo el escenario en x=0 y el acompañante debajo.
 //   §V.8 lo corre con las seeds 25, 39 y 152 a 1440x900, 1024x768 (desde V2-C) y 390x844.
 // --modo capturas: velocidad INST + reduced-motion + fuentes cargadas, y capturas fijas (inicio con el draft completo, la
 //   primera decision generica, el primer mercado, la primera serie, el primer minijuego antes de "¡Vamos!" y con el
@@ -59,6 +62,8 @@ const REGION = Number(args.region ?? 0);
 // --sin-teclado: sin las pruebas de teclado de V2-B (para medir la linea de base sobre una UI vieja, donde Enter en
 // Continuar arranca otra carrera y Enter en Copiar vuelve al inicio: la carrera se desviaria).
 const SIN_TECLADO = Boolean(args['sin-teclado']);
+// --sin-webgl (U1a): lanza Chromium sin WebGL para probar el fallback CSS del ambiente (PLANUI §9.2).
+const SIN_WEBGL = Boolean(args['sin-webgl']);
 const SALIDA = path.resolve(String(args.salida ?? `recorrido-${MODO}-s${SEED}-${ANCHO}x${ALTO}`));
 if (!['recorrido', 'capturas'].includes(MODO)) { console.error(`--modo ${MODO}: tiene que ser recorrido o capturas`); process.exit(2); }
 if (!['buena', 'mala'].includes(POL)) { console.error(`--politica ${POL}: tiene que ser buena o mala`); process.exit(2); }
@@ -120,7 +125,7 @@ const esperarPieza = (page, timeout = 30000) =>
 const errs = [];
 const advertencias = [];
 const t0 = Date.now();
-const browser = await chromium.launch({ executablePath: CHROMIUM_EXE, args: ['--no-sandbox'] });
+const browser = await chromium.launch({ executablePath: CHROMIUM_EXE, args: ['--no-sandbox', ...(SIN_WEBGL ? ['--disable-3d-apis'] : [])] });
 const ctx = await browser.newContext({
   viewport: { width: ANCHO, height: ALTO },
   ...(MODO === 'capturas' ? { reducedMotion: 'reduce' } : {})
@@ -159,9 +164,12 @@ async function completarElDraft() {
   for (let i = 0; i < 3; i++) await page.locator('#campeonGrid .campeon-tile:not(.campeon-tile--elegido)').first().click();
   await page.waitForSelector('#run:not([disabled])');
 }
+let webglDisponible = null;
 async function armarElInicio() {
   await page.goto(URL_JUEGO);
   await page.waitForSelector('#rolGrid > *');
+  webglDisponible = await page.evaluate(() => { const c = document.createElement('canvas'); return Boolean(c.getContext('webgl2') || c.getContext('webgl')); });
+  L(`webgl disponible: ${webglDisponible} (--sin-webgl: ${SIN_WEBGL})`);
   await velocidadInstantanea();
   await completarElDraft();
   if (MODO === 'capturas') await page.evaluate(() => document.fonts.ready);
@@ -666,25 +674,34 @@ async function probarAcompanante() {
       && chipVisible === chipEsperado
       && (!chipVisible || chip.dataset.cuarto === esperado.cuarto);
     // (f2) DONDE esta cada cosa (una hoja de estilos rota deja todo "presente" pero en cualquier lado: V2-C, la ronda del
-    // `}` de mas en shell.css puso el escenario en x=0 y el acompañante debajo, y nada de lo de arriba lo noto). Desde 1180 px,
-    // con acompañante: va a la derecha del escenario y arranca a su altura (±40). Sin el: el escenario queda centrado (±40).
-    // Siempre: el escenario no pasa de la columna (720) mas el padding del cuerpo.
+    // `}` de mas en shell.css puso el escenario en x=0 y el acompañante debajo, y nada de lo de arriba lo noto).
+    // U1a (PLANUI §5.4, §5.9): la regla vieja EXIGIA la columna centrada (<= 720 + padding, centrada sin acompañante); la
+    // nueva exige lo contrario. §5.4: contenido a la izquierda (7 columnas) y acompañante a la derecha (4), margenes de 96 a
+    // 1440, sin columna centrada en un vacio. Reglas simples, por ancho de ventana:
+    //   - escritorio (>= 1180): el "bloque" (escenario + acompañante si se ve) ocupa >= 80% del ancho y el escenario arranca
+    //     en el tercio izquierdo. Una columna de 720 con su acompañante, centrada, ocupa ~75% a 1440 y falla; 96 px de
+    //     margen por lado dan ~87% y pasan. Con acompañante: a la derecha del escenario y arrancando a su altura (±40).
+    //   - celular (<= 700): el escenario ocupa el ancho (>= 90%).
+    //   - medio: el escenario ocupa >= 55% o arranca en el tercio izquierdo (§5.4 no fija la tableta: solo se caza lo roto).
     const rect = (e) => { const r = e.getBoundingClientRect(); return { left: Math.round(r.left), right: Math.round(r.right), top: Math.round(r.top), width: Math.round(r.width) }; };
     const esc = rect(document.querySelector('#escenario'));
-    const cuerpo = document.querySelector('.shell-cuerpo');
-    const estiloCuerpo = getComputedStyle(cuerpo);
-    const relleno = parseFloat(estiloCuerpo.paddingLeft) + parseFloat(estiloCuerpo.paddingRight);
-    const columna = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--escenario-columna')) || 720;
     const vw = document.documentElement.clientWidth;
     const asideRect = rect(aside);
     const conAcompanante = asideVisible && Boolean(tipo);
+    const bloque = conAcompanante ? { left: Math.min(esc.left, asideRect.left), right: Math.max(esc.right, asideRect.right) } : esc;
+    const ocupa = (bloque.right - bloque.left) / vw;
     const fallasPos = [];
-    if (esc.width > columna + relleno + 1) fallasPos.push(`el escenario mide ${esc.width} (> ${columna} + ${relleno})`);
-    if (conAcompanante) {
-      if (asideRect.left < esc.right) fallasPos.push(`el acompañante (left ${asideRect.left}) no esta a la derecha del escenario (right ${esc.right})`);
-      if (Math.abs(asideRect.top - esc.top) > 40) fallasPos.push(`el acompañante empieza en y=${asideRect.top} y el escenario en y=${esc.top}`);
-    } else if (Math.abs((esc.left + esc.right) / 2 - vw / 2) > 40) {
-      fallasPos.push(`el escenario no esta centrado (centro ${(esc.left + esc.right) / 2}, ventana ${vw / 2})`);
+    if (vw >= 1180) {
+      if (ocupa < 0.8) fallasPos.push(`el contenido ocupa ${Math.round(ocupa * 100)}% del ancho (< 80%): flota como una columna centrada en un vacio`);
+      if (esc.left > vw / 3) fallasPos.push(`el escenario arranca en x=${esc.left}, fuera del tercio izquierdo (${Math.round(vw / 3)})`);
+      if (conAcompanante) {
+        if (asideRect.left < esc.right) fallasPos.push(`el acompañante (left ${asideRect.left}) no esta a la derecha del escenario (right ${esc.right})`);
+        if (Math.abs(asideRect.top - esc.top) > 40) fallasPos.push(`el acompañante empieza en y=${asideRect.top} y el escenario en y=${esc.top}`);
+      }
+    } else if (vw <= 700) {
+      if (esc.width < vw * 0.9) fallasPos.push(`el escenario mide ${esc.width} de ${vw} (< 90%): en el celular ocupa el ancho`);
+    } else if (esc.width < vw * 0.55 && esc.left > vw / 3) {
+      fallasPos.push(`el escenario mide ${esc.width} de ${vw} y arranca en x=${esc.left}`);
     }
     return { ok, pieza, tipo, esperado, asideVisible, chipVisible, posicion: { ok: fallasPos.length === 0, fallas: fallasPos, esc, aside: asideRect, conAcompanante } };
   });
@@ -1045,7 +1062,7 @@ for (const f of filas) {
 }
 const erroresReales = errs.filter((e) => !/Failed to load resource/.test(e));
 const informe = {
-  meta: { modo: MODO, politica: POL, seed: SEED, ancho: ANCHO, alto: ALTO, rol: ROL, perfil: PERFIL, region: REGION, url: URL_JUEGO, paradas, maxParadas: MAX_PARADAS, minutos: +((Date.now() - t0) / 60000).toFixed(2) },
+  meta: { modo: MODO, politica: POL, seed: SEED, ancho: ANCHO, alto: ALTO, rol: ROL, perfil: PERFIL, region: REGION, url: URL_JUEGO, sinWebgl: SIN_WEBGL, webglDisponible, paradas, maxParadas: MAX_PARADAS, minutos: +((Date.now() - t0) / 60000).toFixed(2) },
   filas,
   resumenPorTipo,
   totales: {
@@ -1081,7 +1098,7 @@ if (MODO === 'recorrido') {
   console.log(`  piezas=${JSON.stringify(t.piezasVistas)} piezaNoCoincide=${JSON.stringify(t.piezaNoCoincide)} retomarFallidos=${JSON.stringify(t.retomarFallidos)}`);
   console.log(`  regla4: ${t.regla4.paradas} paradas, ${t.regla4.muestras} muestras durante el relato, ${t.regla4.distintas} con la franja/acompañante distinta`);
   console.log(`  acompanante: ${t.acompanante.paradas} paradas, ${t.acompanante.fallas} fallas ${JSON.stringify(t.acompanante.porTipo)} | cuartos: ${t.cuartos.paradas} paradas, ${t.cuartos.fallas} fallas | pausa=${pausa ? pausa.ok : 'sin probar'}`);
-  console.log(`  posicion (escenario centrado o acompañante a la derecha, ancho <= columna): ${t.posicion.paradas} paradas, ${t.posicion.fallas} fallas`);
+  console.log(`  posicion (f2: el contenido llena el ancho y no flota centrado; acompañante a la derecha): ${t.posicion.paradas} paradas, ${t.posicion.fallas} fallas`);
   console.log(`  teclado: ${Object.entries(teclado).map(([k, v]) => `${k}=${v ? v.ok : 'sin probar'}`).join(' ')}`);
   console.log(`  vamos: ${filas.filter((f) => f.vamos).map((f) => `${f.tipo}=${f.vamos.entra ? 'entra' : 'NO entra'}(${f.vamos.bottom}/${f.vamos.piso})`).join(' ') || 'sin medir'}`);
   console.log(`  numerosVisibles: ${filas.map((f) => `${f.tipo}=${f.numerosVisibles}`).join(' ')}`);
