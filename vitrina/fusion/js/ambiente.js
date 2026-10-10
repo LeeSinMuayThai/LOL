@@ -54,6 +54,26 @@ const COS_CARA = 0.52;
 const COS_Y = 0.6;
 const COS_ALTO = 1;
 const COS_ALTO_CEL = 0.62;
+// (PLANUI §4.9, A) `costura.marco`: la costura adentro de un rectangulo de la pantalla ({ x, y, w, h } en fracciones,
+// desde arriba a la izquierda, como el CSS): el video del Swiss. Las caras, el alto del arte y el punto por donde pasa
+// la linea se calculan adentro del marco; sin marco (o con el de toda la pantalla) la cuenta es exactamente la de antes.
+const MARCO_TODO = Object.freeze({ x: 0, y: 0, w: 1, h: 1 });
+const leerMarco = (m) => (m && [m.x, m.y, m.w, m.h].every(Number.isFinite) && m.w > 0 && m.h > 0 ? { x: m.x, y: m.y, w: m.w, h: m.h } : MARCO_TODO);
+const mezclarMarco = (a = MARCO_TODO, b = MARCO_TODO, k) => (a === b ? a : { x: mezclar(a.x, b.x, k), y: mezclar(a.y, b.y, k), w: mezclar(a.w, b.w, k), h: mezclar(a.h, b.h, k) });
+// los encuadres de la costura (uv, y hacia arriba) llevados de toda la pantalla al marco
+function enMarco(mc, m) {
+  if (m === MARCO_TODO) return mc;
+  const lleva = (x) => ({ x: m.x + m.w * x.x, y: 1 - m.y - m.h + m.h * x.y, alto: x.alto * m.h, op: x.op });
+  return { a: lleva(mc.a), b: lleva(mc.b) };
+}
+// el `posicion` que entiende el shader (la linea pasa por (pos, 0,5) en escritorio y por (0,5, 1 - pos) en el celular)
+// para que, con marco, pase por el punto de la costura adentro del marco. asp: ancho / alto del lienzo.
+function posLinea(pos, grados, vertical, m, asp) {
+  if (m === MARCO_TODO) return pos;
+  const tg = Math.tan((grados * Math.PI) / 180);
+  if (vertical) return m.y + m.h * pos + (m.x + m.w * 0.5 - 0.5) * asp * tg;
+  return m.x + m.w * pos - (0.5 - m.y - m.h * 0.5) * (tg / asp);
+}
 
 // La escena de cada era (sin colores: salen de --luz-<era> y --contra-<era>).
 const ESCENAS = {
@@ -1019,7 +1039,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
   // `cruce` de la llamada); los colores de cada lado, tambien. El arte de A son las ranuras de siempre (el aura lo cambia);
   // el de B, su ranura propia: al cambiar se apaga y se vuelve a encender en ese lado (un cruce sin cuarta textura).
   const COLORES_COS = ['luz', 'contra', 'noche', 'vacio'];
-  const cosVacia = () => ({ k: 0, pos: 0.5, ang: ANGULO_COSTURA, aK: 0, a: null, b: null });
+  const cosVacia = () => ({ k: 0, pos: 0.5, ang: ANGULO_COSTURA, aK: 0, a: null, b: null, m: MARCO_TODO });
   let cosDesde = cosVacia();
   let cosHacia = cosVacia();
   let tCos = -1e9;
@@ -1033,14 +1053,14 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     const d = cosDesde;
     const h = cosHacia;
     const lado = (x, y) => (x && y ? mezclarColores(x, y, e) : y ?? x);
-    return { k: mezclar(d.k, h.k, e), pos: mezclar(d.pos, h.pos, e), ang: mezclar(d.ang, h.ang, e), aK: mezclar(d.aK, h.aK, e), a: lado(d.a, h.a), b: lado(d.b, h.b) };
+    return { k: mezclar(d.k, h.k, e), pos: mezclar(d.pos, h.pos, e), ang: mezclar(d.ang, h.ang, e), aK: mezclar(d.aK, h.aK, e), a: lado(d.a, h.a), b: lado(d.b, h.b), m: mezclarMarco(d.m, h.m, e) };
   }
   // donde cae la cara de cada lado (uv, y hacia arriba): en escritorio, a izquierda y derecha de la linea; en el celular,
-  // arriba y abajo
-  const marcosCostura = (pos, vertical) =>
-    vertical
+  // arriba y abajo. (PLANUI §4.9, A) Con `marco`, todo eso adentro de ese rectangulo de la pantalla (el video del Swiss)
+  const marcosCostura = (pos, vertical, m = MARCO_TODO) =>
+    enMarco(vertical
       ? { a: { x: 0.5, y: 1 - pos * 0.5, alto: COS_ALTO_CEL, op: 1 }, b: { x: 0.5, y: (1 - pos) * 0.5, alto: COS_ALTO_CEL, op: 1 } }
-      : { a: { x: pos * COS_CARA, y: COS_Y, alto: COS_ALTO, op: 1 }, b: { x: pos + (1 - pos) * (1 - COS_CARA), y: COS_Y, alto: COS_ALTO, op: 1 } };
+      : { a: { x: pos * COS_CARA, y: COS_Y, alto: COS_ALTO, op: 1 }, b: { x: pos + (1 - pos) * (1 - COS_CARA), y: COS_Y, alto: COS_ALTO, op: 1 } }, m);
   const arteB = { key: undefined, desde: 0, hacia: 0, t: -1e9, dur: 1, token: 0, carga: Promise.resolve() };
   const presB = (t) => mezclar(arteB.desde, arteB.hacia, suave((t - arteB.t) / arteB.dur));
   // los lightsticks del publico (0-1), con el reloj
@@ -1116,14 +1136,14 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     // el lugar (sin costura, kc = 0 y la presencia queda exacta)
     const cz = costuraEn(t);
     const kc = cz.k * it.costura;
-    const mc = marcosCostura(cz.pos, cosVertical);
+    const mc = marcosCostura(cz.pos, cosVertical, cz.m);
     return {
       t: tr / 1000,
       tl: (reducido() ? REPOSO_REDUCIDO : tiempoLento(t)) / 1000,
       semilla,
       col,
       p: paramsEn(t, cz),
-      cos: [kc, cz.pos, (cz.ang * Math.PI) / 180, cosVertical ? 1 : 0],
+      cos: [kc, posLinea(cz.pos, cz.ang, cosVertical, cz.m, canvas.width / Math.max(1, canvas.height)), (cz.ang * Math.PI) / 180, cosVertical ? 1 : 0],
       cosF: [mc.a.x, mc.a.y, mc.b.x, mc.b.y],
       cosB: kc > 0 ? cz.b : null,
       marcoA: [mc.a.x, mc.a.y, mc.a.alto, mc.a.op],
@@ -1279,12 +1299,15 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
         aK: cosPedida.a.tono ? k : 0,
         a: coloresDe(cosPedida.a.tono, ahora.a ?? colBase),
         b: coloresDe(cosPedida.b.tono, ahora.b ?? colBase),
+        // el marco NO se hereda entre llamadas (a diferencia del resto): vale en la llamada que lo trae, y una costura
+        // pedida sin `marco` es la de toda la pantalla. Asi el del Swiss nunca se le pega a la pantalla siguiente.
+        m: leerMarco(c.marco),
       };
       if (typeof cosPedida.vertical === 'boolean') cosVertical = cosPedida.vertical;
     }
     // desde apagada: la geometria y los colores ya son los nuevos (solo sube la presencia); hacia apagada: se quedan
     const desde = ahora.k > 0 ? ahora : { ...hacia, k: 0, aK: 0 };
-    if (hacia.k <= 0) Object.assign(hacia, { a: ahora.a, b: ahora.b, pos: ahora.pos, ang: ahora.ang });
+    if (hacia.k <= 0) Object.assign(hacia, { a: ahora.a, b: ahora.b, pos: ahora.pos, ang: ahora.ang, m: ahora.m });
     cosDesde = instantaneo ? hacia : desde;
     cosHacia = hacia;
     tCos = instantaneo ? -1e9 : t;
@@ -1374,7 +1397,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     // fracciones de la pantalla, y desde ARRIBA, como el CSS)
     costura() {
       const cz = costuraEn(reloj());
-      const mc = marcosCostura(cz.pos, cosVertical);
+      const mc = marcosCostura(cz.pos, cosVertical, cz.m);
       return { k: cz.k, posicion: cz.pos, angulo: cz.ang, vertical: cosVertical, a: { x: mc.a.x, y: 1 - mc.a.y }, b: { x: mc.b.x, y: 1 - mc.b.y } };
     },
     // (PLANUI §4.9) cuantos cuadros dibujo el bucle (para medir los cuadros por segundo)
@@ -1483,7 +1506,8 @@ function crearAmbienteCss(contenedor, opciones) {
   // PLANUI §4.9: la costura sin WebGL, dos capas recortadas con clip-path (cada una su tono y su arte) y la linea
   const lados = ['a', 'b'].map((l) => el('div', { class: 'lc-cos-lado', 'data-lado': l }, [el('canvas', { class: 'lc-cos-arte' })]));
   const linea = el('div', { class: 'lc-cos-linea' });
-  raiz.append(...lienzos, el('div', { class: 'lc-costura' }, [...lados, linea]), el('div', { class: 'lc-vineta' }), el('div', { class: 'lc-velo' }));
+  const cajaCos = el('div', { class: 'lc-costura' }, [...lados, linea]);
+  raiz.append(...lienzos, cajaCos, el('div', { class: 'lc-vineta' }), el('div', { class: 'lc-velo' }));
   const capaPulso = el('div', { class: 'lc-pulso' });
   raiz.append(capaPulso);
   contenedor.prepend(raiz);
@@ -1562,8 +1586,14 @@ function crearAmbienteCss(contenedor, opciones) {
     const pos = clamp01(cosCss.posicion ?? 0.5);
     const grados = Number.isFinite(cosCss.angulo) ? cosCss.angulo : ANGULO_COSTURA;
     const ang = (grados * Math.PI) / 180;
-    const W = contenedor.clientWidth || innerWidth;
-    const H = contenedor.clientHeight || innerHeight;
+    // (PLANUI §4.9, A) con `marco`, la caja de la costura es ese rectangulo: las capas y las caras se miden adentro
+    const m = cosCss.marco ?? MARCO_TODO;
+    for (const [k, v] of [['left', m.x], ['top', m.y], ['width', m.w], ['height', m.h]]) {
+      if (m === MARCO_TODO) cajaCos.style.removeProperty(k);
+      else cajaCos.style.setProperty(k, `${(v * 100).toFixed(3)}%`);
+    }
+    const W = (contenedor.clientWidth || innerWidth) * m.w;
+    const H = (contenedor.clientHeight || innerHeight) * m.h;
     const vertical = cosCss.vertical ?? celularAhora();
     raiz.style.setProperty('--lc-cos-k', String(clamp01(cosCss.k ?? 1)));
     const pc = (v) => `${(v * 100).toFixed(2)}%`;
@@ -1635,7 +1665,8 @@ function crearAmbienteCss(contenedor, opciones) {
       }
       const cargas = [];
       if (costura !== undefined) {
-        cosCss = costura === null ? null : { ...(cosCss ?? {}), ...costura, a: { ...(cosCss?.a ?? {}), ...(costura.a ?? {}) }, b: { ...(cosCss?.b ?? {}), ...(costura.b ?? {}) } };
+        // (el marco no se hereda entre llamadas, como en WebGL)
+        cosCss = costura === null ? null : { ...(cosCss ?? {}), ...costura, a: { ...(cosCss?.a ?? {}), ...(costura.a ?? {}) }, b: { ...(cosCss?.b ?? {}), ...(costura.b ?? {}) }, marco: leerMarco(costura.marco) };
         if (cosCss) cargas.push(cargarLado('a', 'arte' in cosCss.a ? cosCss.a.arte : key !== undefined ? key : actual.arte), cargarLado('b', cosCss.b.arte ?? null));
         pintarCosturaCss();
       } else if (cosCss && key) cargas.push(cargarLado('a', key)); // el aura cambia el lado A

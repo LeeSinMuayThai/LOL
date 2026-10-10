@@ -589,7 +589,61 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 /* (separador entre bloques de §4.9: no tocar) */
 
 /* ===== PLANUI §4.9 · linea · A, la transmision (la serie y el Swiss). Sus tokens van entre esta linea y su cierre ===== */
+/* La serie (el cara a cara) y el Swiss (el stream) con op=linea: estilos/partido.css, prefijo tx-. Cada mitad de la
+   costura tiene el tono de su org; partido.js pone --tx-a/--tx-b (y su luz y su noche) en la pantalla con los nombres de
+   token de js/tono.js. Aca, su valor por defecto y lo propio del stream: los nombres del chat, las insignias, los emotes. */
 :root {
+  /* cada lado del cara a cara (por defecto, el tono de la pantalla) */
+  --tx-a: var(--tono-acento);
+  --tx-a-luz: var(--tono-luz);
+  --tx-a-noche: var(--tono-noche);
+  --tx-b: var(--tono-contra);
+  --tx-b-luz: var(--tono-contra);
+  --tx-b-noche: var(--tono-noche);
+  /* la sombra de los nombres gigantes sobre la costura y el alto de un mensaje del chat */
+  --tx-sombra-nombre: #000000a8;
+  --tx-msg-alto: 28px;
+  /* los nombres del chat: ocho colores (decorativos), todos >= 4,5:1 sobre el panel del chat teñido de Worlds */
+  --tx-chat-c1: #ff8f80;
+  --tx-chat-c2: #7fd4ff;
+  --tx-chat-c3: #b9f27c;
+  --tx-chat-c4: #ffcf6b;
+  --tx-chat-c5: #c9a8ff;
+  --tx-chat-c6: #6ff0d0;
+  --tx-chat-c7: #ff9fd4;
+  --tx-chat-c8: #a3b8ff;
+  /* las insignias propias: sub por niveles de meses (1 / 3 / 6 / 12 / 24+), moderador y VIP */
+  --tx-ins-sub1: #a9c2ee;
+  --tx-ins-sub2: #7fa8ff;
+  --tx-ins-sub3: #ffd27a;
+  --tx-ins-sub4: #ff9a5a;
+  --tx-ins-sub5: #f4f6fb;
+  --tx-ins-sub5-b: #8fd8ff;
+  --tx-ins-mod: #3df2a0;
+  --tx-ins-vip: #ff6fcf;
+  --tx-ins-tinta: #05060b;
+  /* los emotes propios: fondo, tinta y luz de cada uno */
+  --tx-em-garra-f: #1d2a44;
+  --tx-em-garra-t: #f4f6fb;
+  --tx-em-vamo-f: #1f8a55;
+  --tx-em-vamo-t: #eafff3;
+  --tx-em-fe-f: #ff6a2a;
+  --tx-em-fe-l: #ffd28c;
+  --tx-em-gg-f: #2b4fa0;
+  --tx-em-gg-t: #f4f6fb;
+  --tx-em-f-f: #2a1220;
+  --tx-em-f-l: #f4f6fb;
+  --tx-em-f-t: #7fd4ff;
+  --tx-em-nervio-f: #ffcf6b;
+  --tx-em-nervio-l: #3a2a08;
+  --tx-em-nervio-t: #3a2a08;
+  --tx-em-nervio-gota: #7fd4ff;
+  --tx-em-ojos-l: #f4f6fb;
+  --tx-em-ojos-f: #0a0d16;
+  --tx-em-copa-f: #d6e2f5;
+  --tx-em-copa-t: #9fbcef;
+  /* el clip que destella en el resultado */
+  --tx-sw-clip-brillo: #ffcc6680;
 }
 /* ===== fin §4.9 transmision ===== */
 
