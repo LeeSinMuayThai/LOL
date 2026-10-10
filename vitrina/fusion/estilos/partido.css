@@ -480,3 +480,390 @@ html[data-sin-webgl] .lugar-pantalla { display: none; }
   .lugar-pantalla { left: 8%; right: 8%; top: 8%; bottom: 40%; }
   .player > .lugar-pantalla { left: 8%; right: 8%; top: 22%; bottom: 52%; }
 }
+
+/* ======================================================================================================================
+   PLANUI §4.8 — op=final, la ultima demostracion (js/partido.js: crearEstadio, estadioSerie, mapaEnEstadio).
+   La serie: el estadio arriba (las pantallas LED del escenario, la sala del ambiente detras y el publico adelante) y el
+   draft abajo, compacto. El Swiss: la transmision oficial adentro de un reproductor de stream (mas abajo).
+   ==================================================================================================================== */
+.parada.partido[data-op='final'][data-forma='draft'] { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; padding-top: var(--franja-alto); }
+.partido[data-op='final'] .draft { z-index: 2; height: auto; margin-top: -24px; grid-template-columns: 232px minmax(0, 1fr) 232px; }
+
+/* ---------- el estadio: las pantallas y el publico (todo en unidades del contenedor: escala con su caja) ---------- */
+.estadio { position: relative; z-index: 1; min-height: 0; container-type: size; pointer-events: none; }
+.parada.partido > .estadio { margin: 0 calc(-1 * var(--margen)); }
+.estadio-escena { position: absolute; inset: 0; perspective: 1500px; perspective-origin: 50% 30%; }
+.led {
+  position: absolute; container-type: size; overflow: hidden; border-radius: 3px; color: var(--ink);
+  background: radial-gradient(140% 100% at 50% 0%, var(--led-fondo-alto) 0%, var(--led-fondo) 62%);
+  /* el bisel negro y la luz que la pantalla tira sobre el humo de la sala */
+  box-shadow: 0 0 0 3px var(--led-marco), 0 0 0 4px var(--luz-tenue), 0 0 46px 2px var(--luz-suave), 0 0 150px 34px var(--luz-tenue);
+}
+/* (ojo: el padding y el gap de una pantalla se resuelven contra el estadio, no contra ella: el aire va en sus hijos) */
+/* la geometria del escenario (la de arriba del draft; el feed del Swiss pisa estas variables) */
+.estadio { --c-top: 3cqh; --c-ancho: 37.5cqw; --l-top: 6cqh; --l-alto: 72cqh; --l-ancho: 14.5cqw; --l-sep: 21.2cqw; --f-alto: 12cqh; --p-alto: 26cqh; }
+.led-centro { left: 50%; top: var(--c-top); width: var(--c-ancho); aspect-ratio: 2.05; translate: -50% 0; }
+.led-lado { top: var(--l-top); width: var(--l-ancho); height: var(--l-alto); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+.led-nos { right: calc(50% + var(--l-sep)); transform: rotateY(32deg); transform-origin: right center; }
+.led-ellos { left: calc(50% + var(--l-sep)); transform: rotateY(-32deg); transform-origin: left center; justify-content: center; }
+.led-faja { left: 50%; top: calc(var(--c-top) + var(--c-ancho) / 2.05 + 2cqh); width: var(--c-ancho); height: var(--f-alto); translate: -50% 0; display: flex; align-items: center; }
+
+/* el publico: dos filas de siluetas recortadas contra la luz de las pantallas; algun celular en alto */
+.publico { position: absolute; left: 0; bottom: 0; width: 100%; height: var(--p-alto); display: block; }
+.publico .fila-lejos { fill: var(--publico-lejos); }
+.publico .fila-cerca { fill: var(--publico); }
+.publico .brazo { fill: none; stroke-linecap: round; }
+.publico .brazo.fila-lejos { stroke: var(--publico-lejos); }
+.publico .brazo.fila-cerca { stroke: var(--publico); }
+.publico .cel { fill: var(--ink); opacity: 0.7; animation: cel-titila 3.4s ease-in-out infinite alternate; }
+@keyframes cel-titila { 0%, 60% { opacity: 0.75; } 100% { opacity: 0.2; } }
+
+/* ---------- la central: la cabecera (el torneo, el marcador) y el duelo de mid ---------- */
+.led-cab { position: absolute; z-index: 3; left: 0; right: 0; top: 0; height: 16cqh; display: flex; align-items: center; justify-content: center; padding: 0 3cqw; background: var(--led-hondo); box-shadow: inset 0 -1px 0 var(--luz-fuerte); }
+.led-cab-comp { position: absolute; left: 2.4cqw; top: 50%; max-width: 30cqw; translate: 0 -50%; display: flex; align-items: center; gap: 1.4cqw; font: 600 4cqh / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; color: var(--ink); }
+.led-cab-comp span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.led-cab-logo { height: 8.4cqh; }
+.led-cab-fl { position: absolute; right: 2.4cqw; top: 50%; max-width: 26cqw; translate: 0 -50%; font: 700 4cqh / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; color: var(--luz-texto); }
+.led-cab .marcador-serie { position: static; gap: 2cqw; padding: 0; background: none; box-shadow: none; }
+.led-cab .ms-num { font-size: 11cqh; gap: 1.2cqw; }
+.led-cab .ms-logo { width: 9cqh; height: 9cqh; }
+.led-cab .ms-sigla { font-size: 4.8cqh; }
+
+.led-duelo, .led-mapa, .led-final, .led-centro > .juego { position: absolute; left: 0; right: 0; top: 16cqh; bottom: 0; }
+.led-mapa, .led-final { top: 0; }
+.led-centro > .juego { z-index: 2; }
+.led-pj { position: absolute; top: 0; bottom: 0; width: 57%; overflow: hidden; background: var(--led-fondo); }
+.led-pj.nos { left: 0; clip-path: polygon(0 0, 100% 0, 84% 100%, 0 100%); }
+.led-pj.ellos { right: 0; clip-path: polygon(16% 0, 100% 0, 100% 100%, 0 100%); }
+.led-arte { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
+.led-pj::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, var(--led-hondo) 0%, var(--led-nada) 46%); }
+.led-pj-vacio { position: absolute; inset: 0; display: none; place-items: center; padding-right: 12%; font: 900 44cqh / 1 var(--f-display); font-stretch: var(--ancho-momento); color: var(--luz-tenue); }
+.led-pj.ellos .led-pj-vacio { padding: 0 0 0 12%; }
+.led-pj[data-vacio] .led-pj-vacio { display: grid; color: var(--ink-mute); }
+.led-pj-n { position: absolute; z-index: 1; bottom: 5cqh; left: 3.4cqw; display: flex; flex-direction: column; gap: 1.6cqh; }
+.led-pj.ellos .led-pj-n { left: auto; right: 3.4cqw; align-items: flex-end; text-align: right; }
+.led-pj-n b { font: 900 15cqh / 0.84 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.01em; text-transform: uppercase; color: var(--ink); text-shadow: 0 0 3cqh var(--luz-fuerte); }
+.led-pj-n small { font: 600 4.2cqh / 1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--luz-texto); }
+.led-vs { position: absolute; z-index: 2; left: 50%; top: 48%; translate: -50% -50%; padding: 1.6cqh 1.4cqw 1.2cqh; border-radius: var(--r-control); background: var(--led-hondo); box-shadow: 0 0 0 1px var(--luz-fuerte), 0 0 5cqh var(--luz-suave); font: 900 13cqh / 1 var(--f-display); font-stretch: var(--ancho-momento); text-transform: uppercase; color: var(--ink); }
+.led-rol { position: absolute; z-index: 2; left: 50%; top: 4cqh; translate: -50% 0; display: flex; align-items: center; gap: 1cqw; padding: 1.4cqh 1.6cqw; border-radius: var(--r-control); background: var(--led-velo); font: 700 4cqh / 1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); }
+.led-rol .glifo-rol { width: 5.6cqh; height: 5.6cqh; }
+
+/* un mapa en la central: la pantalla de carga (las dos mitades) y el resultado a todo el LED */
+.led-mapa { visibility: hidden; background: var(--led-fondo); }
+.led-mapa-n { position: absolute; z-index: 2; left: 50%; top: 4cqh; translate: -50% 0; padding: 1.4cqh 1.8cqw; border-radius: var(--r-control); background: var(--luz-texto); font: 800 4.4cqh / 1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; color: var(--bg-void); }
+.led-res { position: absolute; z-index: 3; inset: 0; visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4cqh; background: var(--led-hondo); }
+.led-res-t { font: 900 40cqh / 0.8 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.02em; text-transform: uppercase; color: var(--up); text-shadow: 0 0 5cqh var(--led-velo); }
+.led-mapa[data-res='L'] .led-res-t { color: var(--down); }
+.led-res-sub { display: flex; align-items: center; gap: 1.8cqw; font: 500 5.6cqh / 1 var(--f-mono); color: var(--ink-dim); }
+.led-res-sub b { font-size: 11cqh; color: var(--ink); }
+.led-res-logo { width: 11cqh; height: 11cqh; }
+
+/* el final de la serie en la central */
+.led-centro > .juego > .led-final { visibility: visible; }
+.led-final { z-index: 4; visibility: hidden; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 3cqw; background: radial-gradient(80% 90% at 50% 50%, var(--led-fondo-alto), var(--led-fondo)); }
+.led-final-eq { display: flex; align-items: center; justify-content: flex-start; gap: 2cqw; opacity: 0.55; }
+.led-final-eq:last-child { justify-content: flex-end; }
+.led-final-eq[data-gana] { opacity: 1; }
+.led-final-eq b { font-size: 34cqh; line-height: 0.8; color: var(--ink); }
+.led-final-eq[data-gana] b { color: var(--luz-texto); text-shadow: 0 0 5cqh var(--luz-fuerte); }
+.led-final-logo { width: 22cqh; height: 22cqh; }
+.led-final-c { display: flex; flex-direction: column; align-items: center; gap: 2.4cqh; text-align: center; }
+.led-final-k { font: 600 4.2cqh / 1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); }
+.led-final-t { max-width: 11ch; font: 900 17cqh / 0.84 var(--f-display); font-stretch: var(--ancho-momento); text-transform: uppercase; color: var(--ink); }
+.led-final[data-gano='true'] .led-final-t { color: var(--gold); }
+
+/* el replan: el sello sobre la central */
+.led-centro > .sello-leido { top: 16cqh; z-index: 5; background: var(--led-velo); }
+.led-centro .sello-t { font-size: 34cqh; }
+.led-centro .sello-sub { font-size: 4.6cqh; }
+
+/* ---------- las laterales: los equipos ---------- */
+.led-lado > * { margin-top: 3.2cqh; }
+.led-lado > :first-child { margin-top: 8cqh; }
+.led-ellos > :first-child { margin-top: 0; }
+.led-lado-logo { width: 30cqw; height: 30cqw; flex: none; }
+.led-ellos .led-lado-logo { width: 50cqw; height: 50cqw; order: -1; margin: 0 0 1cqh; }
+.led-lado-k { font: 600 4.6cqh / 1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--luz-texto); }
+.led-lado-n { max-width: 90cqw; font: 800 6.6cqh / 1.02 var(--f-display); letter-spacing: -0.02em; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+.led-ellos .led-lado-n { font-size: 8cqh; }
+.led-pips { display: flex; gap: 3cqw; }
+.led-pip { position: relative; width: 15cqw; height: 1.8cqh; border-radius: var(--r-chip); background: var(--linea-fuerte); overflow: hidden; }
+.led-pip > i { position: absolute; inset: 0; display: none; border-radius: inherit; background: var(--luz-texto); box-shadow: 0 0 2cqh var(--luz-fuerte); transform-origin: left; }
+.led-pip[data-on] > i { display: block; }
+.led-plantel { width: 84cqw; display: flex; flex-direction: column; gap: 2cqh; padding-top: 3.6cqh; box-shadow: inset 0 1px 0 var(--linea-fuerte); }
+.led-plantel li { display: grid; grid-template-columns: 7cqh minmax(0, 1fr) auto; align-items: center; gap: 4cqw; font: 600 5.6cqh / 1 var(--f-cuerpo); color: var(--ink); }
+.led-plantel small { font: 500 3.8cqh / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); }
+.led-plantel li[data-vos] b { color: var(--luz-texto); }
+.led-plantel .glifo-rol { width: 7cqh; height: 7cqh; }
+
+/* ---------- la faja: Fearless ---------- */
+.led-faja > * { margin-left: 2cqw; }
+.led-faja > :last-child { margin-right: 2.4cqw; }
+.led-faja-logo { height: 52cqh; }
+.led-faja-t { display: flex; flex-direction: column; gap: 6cqh; }
+.led-faja-t b { font: 900 34cqh / 0.9 var(--f-display); font-stretch: var(--ancho-momento); text-transform: uppercase; color: var(--ink); }
+.led-faja-t span { font: 600 17cqh / 1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--luz-texto); }
+.led-faja-q { margin-left: auto; display: flex; gap: 0.8cqw; }
+.led-q { position: relative; width: 62cqh; height: 62cqh; border-radius: 2px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+.led-q-in { position: absolute; inset: 0; display: block; }
+.led-q img { width: 100%; height: 100%; display: block; filter: grayscale(calc(1 - var(--pieza-color) * 0.6)) brightness(0.6); }
+.led-q-tacha { position: absolute; inset: 0; display: none; background: linear-gradient(to top right, var(--led-nada) calc(50% - 1px), var(--ink-dim) calc(50% - 1px), var(--ink-dim) calc(50% + 1px), var(--led-nada) calc(50% + 1px)); }
+.led-q[data-on] { box-shadow: inset 0 0 0 1px var(--luz-fuerte); }
+.led-q[data-on] .led-q-tacha { display: block; }
+.led-q[data-leido] { box-shadow: inset 0 0 0 2px var(--danger); }
+.led-faja-n { min-width: 2.8em; font-size: 30cqh; line-height: 1; text-align: right; white-space: nowrap; color: var(--ink); }
+
+/* ---------- el draft, compacto: los equipos (5 ranuras), el centro (parada + libres + planes) ---------- */
+.partido[data-op='final'] .eq-cab { padding: 12px 16px 11px; }
+.partido[data-op='final'] .eq-nombre { margin-top: 5px; font-size: 16px; padding-right: 36px; }
+.partido[data-op='final'] .equipo-ellos .eq-nombre { padding: 0 0 0 36px; }
+.partido[data-op='final'] .eq-fuerza { margin-top: 5px; }
+.partido[data-op='final'] .eq-fuerza b { font-size: var(--t-num-s); }
+.partido[data-op='final'] .eq-logo { bottom: 10px; width: 32px; height: 32px; }
+.partido[data-op='final'] .ranura { height: 38px; grid-template-rows: none; grid-template-columns: 52px minmax(0, 1fr); align-items: center; column-gap: 8px; padding: 0 12px 0 16px; }
+.partido[data-op='final'] .equipo-ellos .ranura { grid-template-columns: minmax(0, 1fr) 52px; padding: 0 16px 0 12px; }
+.partido[data-op='final'] .equipo-ellos .ranura-n { order: 2; }
+.partido[data-op='final'] .ranura-n { flex-direction: column; align-items: flex-start; gap: 3px; letter-spacing: 0.06em; }
+.partido[data-op='final'] .equipo-ellos .ranura-n { align-items: flex-end; }
+.partido[data-op='final'] .ranura-n small { font-size: 9.5px; }
+.partido[data-op='final'] .ranura-cuerpo { height: 30px; }
+.partido[data-op='final'] .porque, .partido[data-op='final'] .tablero { padding: 10px 16px 12px; }
+.partido[data-op='final'] .porque-p { margin-top: 6px; }
+.partido[data-op='final'] .porque-p b { font-size: var(--t-num); }
+/* la previa en una linea que se parte: cada aporte con su numero (las barras quedan para el draft de hoy) */
+.partido[data-op='final'] .porque-filas { margin-top: 7px; flex-direction: row; flex-wrap: wrap; gap: 4px 12px; }
+.partido[data-op='final'] .porque-filas li { display: inline-flex; gap: 5px; font-size: 11.5px; }
+.partido[data-op='final'] .porque-filas li > span:first-child { overflow: visible; }
+.partido[data-op='final'] .porque-barra { display: none; }
+.partido[data-op='final'] .quemados { margin-top: 8px; gap: 5px; }
+.partido[data-op='final'] .draft-centro > .panel-cab { padding: 14px 24px 12px; }
+.partido[data-op='final'] .draft .titulo-parada { margin-top: 8px; font-size: 30px; max-width: 32ch; }
+.partido[data-op='final'] .draft .planteo { margin-top: 8px; font-size: 14.5px; }
+.partido[data-op='final'] .decide { position: relative; grid-template-columns: minmax(0, 1fr) 260px; grid-template-rows: auto auto; flex: 1; }
+.partido[data-op='final'] .libres-bloque { display: flex; align-items: center; gap: 16px; padding: 10px 20px 8px 24px; box-shadow: inset 0 -1px 0 var(--linea); }
+.partido[data-op='final'] .libres-bloque .eq-kicker { flex-direction: column; align-items: flex-start; gap: 6px; color: var(--ink); }
+.partido[data-op='final'] .libres { gap: 7px; }
+.partido[data-op='final'] .libre { width: 50px; aspect-ratio: 50 / 64; }
+.partido[data-op='final'] .libre-arte { object-fit: cover; object-position: 50% 18%; }
+.partido[data-op='final'] .libre-n { padding: 12px 2px 4px; font-size: 9.5px; }
+.partido[data-op='final'] .planes { grid-column: 1; padding: 0; }
+.partido[data-op='final'] .plan { padding: 8px 18px 8px 24px; }
+.partido[data-op='final'] .plan .op-label { font-size: 15px; }
+.partido[data-op='final'] .barritas { height: 36px; }
+.partido[data-op='final'] .barrita { height: 23px; }
+.partido[data-op='final'] .plan-serie b { font-size: 24px; }
+.partido[data-op='final'] .decide > .inspector { grid-column: 2; grid-row: 1 / span 2; }
+.partido[data-op='final'] .en-juego { grid-column: 1 / -1; align-self: start; }
+.partido[data-op='final'] .draft[data-jugando] .libres-bloque { grid-column: 1 / -1; }
+.partido[data-op='final'] .decide > .serie-final { z-index: 5; visibility: visible; padding: 16px 28px; gap: 24px; background: var(--panel-opaco); }
+.partido[data-op='final'] .serie-final .emblema { width: 76px; height: 76px; }
+.partido[data-op='final'] .sf-cuerpo { grid-template-columns: auto minmax(0, 1fr); column-gap: 24px; align-items: center; }
+.partido[data-op='final'] .sf-cuerpo > .eq-kicker { grid-column: 1 / -1; }
+.partido[data-op='final'] .sf-marcador { grid-row: 2 / span 2; margin-top: 8px; font-size: var(--t-num-l); }
+.partido[data-op='final'] .sf-mapas { margin-top: 10px; }
+.partido[data-op='final'] .sf-texto { margin-top: 8px; font-size: 15px; }
+.partido[data-op='final'] .serie-final .boton { grid-column: 1 / -1; margin-top: 10px; }
+.partido[data-op='final'] .decide > .cartel-charla { z-index: 4; bottom: 12px; }
+
+/* ---------- el Swiss (op=final): la pagina del stream ----------
+   La tribuna ocupa todo el ancho entre la franja y la barra: a la izquierda el reproductor (16:9) y debajo el titulo,
+   el canal y la ronda; a la derecha la parada fijada arriba del chat. La pagina es opaca: el mundo (la sala del Mundial)
+   se ve SOLO adentro del reproductor, que es la ventana; la sombra del reproductor pinta la pagina alrededor. */
+.parada.partido.swiss[data-op='final'] { padding: var(--franja-alto) 0 var(--barra-alto); }
+.partido.swiss[data-op='final'] .tribuna { grid-template-columns: minmax(0, 1fr) 372px; border-radius: 0; box-shadow: none; }
+.partido.swiss[data-op='final'] .tribuna::after { display: none; }
+.stream { position: relative; display: flex; flex-direction: column; gap: 14px; min-width: 0; min-height: 0; padding: 18px 24px 14px 28px; overflow: hidden; }
+.stream > * { position: relative; }
+.partido.swiss[data-op='final'] .player { flex: none; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--r-control); overflow: hidden; box-shadow: 0 0 0 200vmax var(--stream-pagina), inset 0 0 0 1px var(--linea); }
+.partido.swiss[data-op='final'] .player::before { display: none; }
+.feed { position: absolute; inset: 0; container-type: size; }
+.feed > .estadio { position: absolute; inset: 0; }
+.lateral { display: flex; flex-direction: column; min-height: 0; background: var(--stream-lateral); box-shadow: inset 1px 0 0 var(--linea); }
+
+/* los graficos de la transmision sobre el feed: el score bug, la marca de agua, la placa y el camino del Swiss */
+.feed .tv-bug-swiss { top: 3.4cqh; left: 2.2cqw; z-index: 4; }
+.feed-marca { position: absolute; z-index: 4; top: 3.4cqh; right: 2.2cqw; height: 6.4cqh; opacity: 0.55; }
+.feed-marca-logo { height: 100%; }
+.feed .tv-placa { position: absolute; z-index: 4; left: 2.2cqw; bottom: 12cqh; display: flex; align-items: center; gap: 12px; padding: 9px 18px 9px 14px; border-radius: var(--r-control); background: var(--tv-placa); box-shadow: inset 4px 0 0 var(--luz), inset 0 0 0 1px var(--linea); }
+.feed .tv-placa .tv-placa-logo { width: 30px; height: 30px; }
+.feed .swiss-camino { z-index: 4; top: auto; right: 2.2cqw; bottom: 12cqh; }
+.feed .swiss-camino li { width: 58px; }
+.feed > .juego { z-index: 5; }
+.feed .zocalo { left: 2.2cqw; bottom: 12cqh; }
+.feed .sw-post { top: 46%; padding: 18px 34px 20px; border-radius: var(--r-panel); background: var(--tv-placa); box-shadow: inset 0 -3px 0 var(--down), inset 0 0 0 1px var(--linea); }
+.feed .sw-post[data-res='W'] { box-shadow: inset 0 -3px 0 var(--up), inset 0 0 0 1px var(--linea); }
+.feed .sw-post .pg-titulo { font-size: var(--t-momento-s); }
+.feed .sw-post .emblema { width: 64px; height: 64px; }
+
+/* el estadio del feed: la central mas abajo (arriba van el bug y la marca), el publico tapa la base */
+.estadio[data-en='feed'] { --c-top: 15cqh; --c-ancho: 50cqw; --l-top: 21cqh; --l-alto: 46cqh; --l-ancho: 12.5cqw; --l-sep: 27.5cqw; --f-alto: 8.5cqh; --p-alto: 20cqh; }
+.estadio[data-en='feed'] .led-plantel li { font-size: 6.4cqh; grid-template-columns: 8cqh minmax(0, 1fr); }
+.estadio[data-en='feed'] .led-plantel small { display: none; }
+.estadio[data-en='feed'] .led-ellos .led-lado-n { white-space: normal; }
+
+/* la central del Swiss: tu campeon del split a la izquierda, el escudo del rival a la derecha, VIDA O MUERTE al medio */
+.led-recs { gap: 1.6cqw; }
+.led-recs > i { font: 500 4cqh / 1 var(--f-mono); font-style: normal; color: var(--ink-dim); }
+.led-rec { display: inline-grid; font-size: 9cqh; line-height: 1; color: var(--ink); }
+.led-rec > span { grid-area: 1 / 1; }
+.led-pj-logo { display: grid; place-items: center; background: radial-gradient(70% 80% at 60% 45%, var(--led-fondo-alto), var(--led-fondo)); }
+.led-pj-escudo { width: 34cqh; height: 34cqh; margin: 0 0 12cqh 14%; }
+.led-vom { position: absolute; z-index: 2; left: 50%; top: 46%; translate: -50% -50%; display: flex; flex-direction: column; align-items: center; padding: 2.4cqh 2.4cqw 2.8cqh; border-radius: var(--r-control); background: var(--luz-texto); color: var(--bg-void); box-shadow: 0 0 6cqh var(--luz-fuerte); text-align: center; }
+.led-vom span { font: 900 12cqh / 0.86 var(--f-display); font-stretch: var(--ancho-momento); text-transform: uppercase; }
+.led-vom small { font: 700 4cqh / 1.2 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.led-res-swiss { padding: 0 6cqw; }
+.led-res-swiss .led-final-eq:last-child b { font-size: 26cqh; color: var(--ink); }
+
+/* la faja del Swiss: la ronda entera */
+.led-faja-cruces { margin-left: auto; display: flex; align-items: center; gap: 2.4cqw; }
+.led-cruce { display: flex; align-items: center; gap: 0.8cqw; padding: 0 1.2cqw; height: 66cqh; border-radius: 2px; font: 700 26cqh / 1 var(--f-mono); letter-spacing: 0.04em; color: var(--ink-dim); box-shadow: inset 0 0 0 1px var(--linea); }
+.led-cruce i { font-style: normal; font-weight: 500; color: var(--ink-mute); }
+.led-cruce[data-vos] { color: var(--ink); box-shadow: inset 0 0 0 1px var(--luz-fuerte); background: var(--luz-tenue); }
+.led-cruce-logo { width: 40cqh; height: 40cqh; }
+
+/* el reproductor: el boton grande (en pausa), la barra de controles y el menu de calidad */
+.pl-grande {
+  all: unset; box-sizing: border-box; position: absolute; z-index: 7; left: 50%; top: 50%; translate: -50% -50%; display: none; place-items: center; width: 84px; height: 84px; border-radius: 50%; cursor: pointer;
+  background: var(--stream-barra); box-shadow: inset 0 0 0 1px var(--linea-fuerte); color: var(--ink);
+}
+.pl-grande .pl-ico { width: 40px; height: 40px; }
+.player[data-pausa] .pl-grande { display: grid; }
+.player[data-pausa] .feed { filter: brightness(0.6); }
+.player[data-pausa] .feed * { animation-play-state: paused; }
+.pl-grande:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.pl-barra {
+  position: absolute; z-index: 8; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 6px; padding: 26px 14px 10px;
+  background: linear-gradient(0deg, var(--stream-barra) 0%, var(--stream-nada) 100%); transition: opacity 260ms ease;
+}
+.player[data-ui='off']:not(:focus-within) .pl-barra { opacity: 0; }
+.pl-btn {
+  all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; min-width: 36px; padding: 0 8px; border-radius: var(--r-control);
+  cursor: pointer; color: var(--ink); font: 600 12.5px / 1 var(--f-mono); transition: background-color 120ms ease;
+}
+.pl-btn:hover { background: var(--stream-control); }
+.pl-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.pl-btn:active { transform: scale(0.94); }
+.pl-ico { width: 21px; height: 21px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pl-ico.lleno { fill: currentColor; stroke: none; }
+.pl-vol-grupo { display: inline-flex; align-items: center; }
+.pl-vol-barra {
+  -webkit-appearance: none; appearance: none; width: 0; height: 4px; margin: 0; border-radius: var(--r-chip); opacity: 0; cursor: pointer; transition: width 180ms ease, opacity 180ms ease, margin 180ms ease;
+  background: linear-gradient(90deg, var(--ink) calc(var(--v) * 100%), var(--linea-fuerte) calc(var(--v) * 100%));
+}
+.pl-vol-grupo:hover .pl-vol-barra, .pl-vol-grupo:focus-within .pl-vol-barra { width: 84px; margin: 0 10px 0 4px; opacity: 1; }
+.pl-vol-barra::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); }
+.pl-vol-barra:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+.pl-vivo { display: inline-flex; align-items: center; gap: 7px; margin-left: 6px; font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); }
+.pl-vivo i, .stream-vivo .en-vivo i { width: 7px; height: 7px; border-radius: 50%; background: var(--down); box-shadow: 0 0 8px var(--down); animation: latido-vivo 1.6s ease-in-out infinite; }
+@keyframes latido-vivo { 50% { opacity: 0.35; } }
+.pl-espacio { flex: 1; }
+.pl-calidad-grupo { position: relative; }
+.pl-menu { position: absolute; right: 0; bottom: calc(100% + 8px); min-width: 170px; padding: 6px; border-radius: var(--r-control); background: var(--tv-placa); box-shadow: inset 0 0 0 1px var(--linea-fuerte), 0 18px 40px -16px var(--sombra); }
+.pl-menu[hidden] { display: none; }
+.pl-menu button { all: unset; box-sizing: border-box; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; width: 100%; padding: 8px 10px; border-radius: var(--r-control); cursor: pointer; font: 600 13px / 1 var(--f-cuerpo); color: var(--ink-dim); }
+.pl-menu button:hover, .pl-menu button:focus-visible { background: var(--stream-control); color: var(--ink); outline: none; }
+.pl-menu button[aria-checked='true'] { color: var(--ink); box-shadow: inset 3px 0 0 var(--luz); }
+.pl-menu small { font: 500 var(--t-rotulo) / 1 var(--f-mono); color: var(--ink-dim); }
+/* pantalla completa: el reproductor tapa todo (la franja y la barra tambien) */
+.tribuna[data-completa] .player { position: fixed; inset: 0; z-index: 30; width: auto; aspect-ratio: auto; border-radius: 0; box-shadow: 0 0 0 200vmax var(--stream-video); }
+
+/* debajo del reproductor: el titulo, el canal, los espectadores */
+.stream-info { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: start; column-gap: 16px; }
+.stream-avatar { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--bg-raised); box-shadow: 0 0 0 2px var(--down), inset 0 0 0 1px var(--linea); overflow: hidden; }
+.stream-avatar-logo { height: 30px; }
+.stream-txt { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.stream-titulo { font: 650 17px / 1.3 var(--f-cuerpo); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stream-canal { display: flex; align-items: baseline; gap: 10px; font-size: 13.5px; color: var(--ink-dim); }
+.stream-canal b { font: 700 14px / 1 var(--f-cuerpo); color: var(--luz-texto); }
+.stream-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.stream-tags span { padding: 4px 9px; border-radius: var(--r-chip); background: var(--bg-raised); font: 600 11.5px / 1 var(--f-cuerpo); color: var(--ink-dim); }
+.stream-vivo { display: flex; align-items: center; gap: 8px; padding-top: 2px; font-size: 13px; color: var(--ink-dim); }
+.stream-vivo b { font-size: 15px; color: var(--down); }
+.stream-vivo .en-vivo { height: 22px; padding: 0 8px; background: var(--down); box-shadow: none; color: var(--bg-void); }
+.stream-vivo .en-vivo i { background: var(--bg-void); box-shadow: none; }
+
+/* la parada, fijada arriba del chat (como lo fijado de un stream); al elegir queda resuelta */
+.lateral > .sw-parada { position: relative; left: auto; bottom: auto; width: auto; flex: none; margin: 12px; box-shadow: inset 0 0 0 1px var(--filete), 0 18px 40px -24px var(--sombra); }
+.lateral .sw-parada .panel-cab { padding: 14px 18px 12px; }
+.lateral .sw-parada .titulo-parada { font-size: 22px; line-height: 1.06; }
+.lateral .sw-parada .planteo { margin-top: 8px; font-size: 13.5px; }
+.lateral .sw-cuerpo { grid-template-columns: minmax(0, 1fr); }
+.lateral .sw-opcion { padding: 11px 18px 11px 18px; }
+.lateral .sw-insp { padding: 9px 18px 11px; font-size: 13px; }
+.lateral .sw-previa { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 14px; padding: 12px 18px 14px; box-shadow: inset 0 1px 0 var(--linea); border-radius: 0 0 var(--r-panel) var(--r-panel); }
+.lateral .sw-previa > .eq-kicker { grid-column: 1 / -1; }
+.lateral .sw-p b { font-size: var(--t-num); }
+.lateral .sw-vs, .lateral .sw-nota { grid-column: 1 / -1; }
+.lateral .sw-parada[data-elegida] .sw-opcion.bloqueada { opacity: 0.55; }
+.lateral > .chat { flex: 1; background: none; box-shadow: inset 0 1px 0 var(--linea); }
+
+/* AFUERA tapa la columna del stream (el reproductor y la pagina); el chat sigue al costado */
+/* la pagina queda opaca salvo a la derecha del reproductor: ahi se ve el estadio apagado */
+.stream > .sw-afuera { position: absolute; inset: 0; z-index: 9; visibility: visible; background: linear-gradient(180deg, var(--stream-nada) 0%, var(--stream-nada) 66%, var(--stream-pagina) 73%), linear-gradient(90deg, var(--stream-pagina) 0%, var(--stream-pagina) 48%, var(--velo-medio) 100%); }
+
+/* los cruces de la ronda, como los paneles de la pagina del stream */
+.stream-ronda { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; box-shadow: inset 0 1px 0 var(--linea); }
+.stream-ronda ul { display: flex; flex-wrap: wrap; gap: 8px; }
+.stream-ronda li { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 14px; border-radius: var(--r-control); background: var(--bg-raised); font: 600 13px / 1 var(--f-mono); color: var(--ink-dim); }
+.stream-ronda li b { color: var(--ink); }
+.stream-ronda li i { font-style: normal; color: var(--ink-mute); }
+.stream-ronda li[data-vos] { box-shadow: inset 0 0 0 1px var(--luz-fuerte); }
+.stream-ronda li small { margin-left: 6px; padding: 4px 7px; border-radius: var(--r-chip); background: var(--down); font: 700 10px / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--bg-void); }
+.stream-cruce-logo { width: 22px; height: 22px; }
+
+/* ---------- op=final en el celular: el estadio arriba (solo la central y la faja), el draft debajo; el Swiss en una
+   columna (el reproductor, el titulo, la parada fijada y el chat) ---------- */
+@media (max-width: 640px) {
+  .parada.partido[data-op='final'][data-forma='draft'] { display: block; }
+  .parada.partido > .estadio { height: 236px; margin: 0 -8px; }
+  .estadio { --c-top: 5cqh; --c-ancho: 90cqw; --f-alto: 13cqh; --p-alto: 18cqh; }
+  .estadio[data-en='escenario'] .led-lado { display: none; }
+  .led-cab-comp, .led-cab-fl, .led-faja-t, .led-faja-logo { display: none; }
+  .led-cab .ms-num { font-size: 13cqh; }
+  .led-faja-q { margin-left: 0; }
+  .partido[data-op='final'] .draft { margin-top: -10px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .partido[data-op='final'] .draft .titulo-parada { font-size: var(--t-titulo-s); line-height: 1.02; }
+  .partido[data-op='final'] .decide { grid-template-columns: minmax(0, 1fr); }
+  .partido[data-op='final'] .decide > .inspector { grid-column: 1; grid-row: auto; }
+  .partido[data-op='final'] .libres-bloque { padding: 10px 14px 8px; gap: 10px; }
+  .partido[data-op='final'] .libres-bloque .eq-kicker { display: none; }
+  .partido[data-op='final'] .libre { width: 44px; }
+  .partido[data-op='final'] .eq-nombre { padding-right: 30px; }
+  .partido[data-op='final'] .equipo-ellos .eq-nombre { padding: 0 0 0 30px; }
+  .partido[data-op='final'] .eq-logo { width: 24px; height: 24px; bottom: 8px; }
+  .partido[data-op='final'] .ranura { grid-template-columns: 38px minmax(0, 1fr); padding: 0 8px; }
+  .partido[data-op='final'] .equipo-ellos .ranura { grid-template-columns: minmax(0, 1fr) 38px; padding: 0 8px; }
+  .partido[data-op='final'] .ranura-n small { display: none; }
+  .partido[data-op='final'] .porque-filas { display: none; }
+  .partido[data-op='final'] .decide > .serie-final { position: relative; inset: auto; flex-direction: column; align-items: flex-start; }
+  .partido[data-op='final'] .sf-cuerpo { grid-template-columns: minmax(0, 1fr); }
+  .partido[data-op='final'] .sf-marcador { grid-row: auto; }
+
+  .parada.partido.swiss[data-op='final'] { height: auto; min-height: 100vh; }
+  .partido.swiss[data-op='final'] .tribuna { height: auto; min-height: 0; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .stream { padding: 10px 10px 12px; gap: 10px; }
+  .estadio[data-en='feed'] { --c-top: 16cqh; --c-ancho: 70cqw; --l-ancho: 13cqw; --l-sep: 37cqw; --l-top: 24cqh; --l-alto: 44cqh; }
+  .estadio[data-en='feed'] .led-lado { display: none; }
+  .feed .tv-placa, .feed .swiss-camino, .feed-marca, .feed .tv-bug-swiss .tv-bug-fase { display: none; }
+  .feed .tv-bug-swiss { top: 6px; left: 6px; height: 32px; gap: 6px; padding: 0 8px; }
+  .feed .tv-bug-swiss .ms-logo { width: 18px; height: 18px; }
+  .feed .tv-bug-rec { font-size: 15px; }
+  .feed .zocalo { left: 6px; right: 6px; bottom: 44px; width: auto; }
+  .feed .sw-post { padding: 10px 16px 12px; }
+  .feed .sw-post .pg-titulo { font-size: 48px; }
+  .feed .sw-post .emblema { width: 36px; height: 36px; }
+  .pl-barra { padding: 18px 6px 4px; gap: 2px; }
+  .pl-btn { height: 30px; min-width: 30px; padding: 0 5px; }
+  .pl-ico { width: 18px; height: 18px; }
+  .pl-calidad span { display: none; }
+  .stream-info { grid-template-columns: 40px minmax(0, 1fr); column-gap: 10px; row-gap: 8px; }
+  .stream-avatar { width: 40px; height: 40px; }
+  .stream-avatar-logo { height: 22px; }
+  .stream-titulo { font-size: 14.5px; white-space: normal; }
+  .stream-tags { display: none; }
+  .stream-vivo { grid-column: 1 / -1; }
+  .stream-ronda li { height: 36px; padding: 0 10px; font-size: 12px; }
+  .lateral > .sw-parada { margin: 8px; }
+  .lateral > .chat { flex: none; height: 240px; }
+  .stream > .sw-afuera { position: fixed; z-index: 9; padding: calc(var(--franja-alto) + 12px) 18px calc(var(--barra-alto) + 12px); overflow-y: auto; background: var(--stream-pagina); }
+}

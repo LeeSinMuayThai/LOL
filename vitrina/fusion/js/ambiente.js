@@ -214,7 +214,8 @@ uniform vec4 uF; // x: vivo (el splash como plano vivo), y: caida (la luz que ca
 uniform vec4 uI; // x: presencia del campeon a pantalla completa, y: profundidad (2,5D), z: bruma extra, w: vineta extra
 uniform vec4 uJ; // x: contraste del duotono, y: desenfoque, z: presencia adentro del lugar, w: cuanto pesa el lugar (0-1)
 uniform vec4 uK; // x: haces (1 = los de hoy), y: polvo (1 = el de hoy), z: la luz de contra (1 = la de hoy)
-uniform vec4 uS; // la arena (PLANUI §4.7, op=escenario): x: cuanto (0-1), y: el alto del publico (uv)
+uniform vec4 uS; // la arena (PLANUI §4.7, op=escenario): x: cuanto (0-1), y: el alto del publico (uv), z: los cabezales
+                 // (1 = los de §4.7; §4.8 los baja y los aquieta), w: el publico del shader (0 en §4.8: lo dibuja el DOM)
 uniform float uEsc; // la escala con la que se guarda la luz (1 con texturas de medio flotante, 2 con 8 bits)
 
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
@@ -310,19 +311,21 @@ float brasas(vec2 p, float t) {
   return s;
 }
 // La arena (op=escenario): los cabezales moviles colgados del techo, en la paleta del torneo. Cada uno un cono que
-// barre despacio; la niebla los vuelve volumen.
-vec3 cabezales(vec2 uv, float asp, float t, float niebla) {
+// barre despacio; la niebla los vuelve volumen. "haces" (PLANUI §4.8): 1 = los de §4.7; menos = mas bajos y casi
+// quietos (el barrido cae con el cuadrado: a 0,3 queda en un 18 %), luz de ambiente y no de recital.
+vec3 cabezales(vec2 uv, float asp, float t, float niebla, float haces) {
   vec3 s = vec3(0.0);
+  float barrido = 0.1 + 0.9 * haces * haces;
   for (int i = 0; i < 6; i++) {
     float fi = float(i);
     vec2 src = vec2((0.08 + fi * 0.168) * asp, 1.04);
-    float ang = (fi - 2.5) * 0.11 + sin(t * (0.23 + 0.04 * fi) + fi * 1.7 + uSemilla) * 0.32;
+    float ang = (fi - 2.5) * 0.11 + sin(t * (0.23 + 0.04 * fi) * barrido + fi * 1.7 + uSemilla) * 0.32 * barrido;
     vec2 d = vec2(uv.x * asp, uv.y) - src;
     float a = atan(d.x, -d.y) - ang;
     float cono = exp(-pow(a / (0.045 + 0.012 * mod(fi, 2.0)), 2.0)) * smoothstep(1.35, 0.1, length(d));
     s += mix(uLuz, uContra, mod(fi, 2.0)) * cono * (0.35 + niebla * 0.9);
   }
-  return s;
+  return s * haces;
 }
 // El publico: dos filas de siluetas (cabezas y hombros) recortadas contra la luz del escenario. Devuelve cuanto tapa.
 float publico(vec2 uv, float asp, float suelo) {
@@ -363,8 +366,8 @@ void main() {
   }
   // sin el campeon, mas haz (la politica del mundo)
   if (uK.x != 1.0) hz *= uK.x;
-  // en la arena, la fuente de la era deja lugar a los cabezales
-  if (arena > 0.0) hz *= 1.0 - arena * 0.6;
+  // en la arena, la fuente de la era deja lugar a los cabezales (y con los cabezales bajos, §4.8, casi se apaga)
+  if (arena > 0.0) hz *= 1.0 - arena * (1.0 - 0.4 * uS.z);
   float kp = uB.x;
   if (uK.y != 1.0) kp *= uK.y;
   float d0 = length(p - src);
@@ -391,16 +394,16 @@ void main() {
   if (arena > 0.0) {
     // la sala a oscuras, los cabezales del techo, el humo del piso y la pared de pantallas del fondo
     col *= 1.0 - arena * 0.2;
-    vec3 cab = cabezales(uv, asp, t, niebla) * brillo;
+    vec3 cab = cabezales(uv, asp, t, niebla, uS.z) * brillo;
     col += cab * 0.9 * arena;
     float humo = fbm(p * vec2(2.2, 4.0) + vec2(t * 0.03, 0.0)) * smoothstep(0.62, 0.05, uv.y);
     col += mix(uLuz, uContra, 0.5) * humo * 0.16 * arena * brillo;
     col += mix(uLuz, uContra, uv.x) * exp(-pow((uv.y - uS.y - 0.05) * 7.0, 2.0)) * 0.26 * arena * brillo;
     // el publico tapa (por delante del campeon de la pantalla gigante) y sus celulares titilan
-    float tapa = publico(uv, asp, uS.y) * arena;
+    float tapa = publico(uv, asp, uS.y) * arena * uS.w;
     vec2 q = p * 46.0 + vec2(0.0, t * 0.05);
     float cel = step(0.93, h21(floor(q) + uSemilla)) * smoothstep(0.12, 0.0, length(fract(q) - 0.5)) * smoothstep(uS.y + 0.02, uS.y - 0.06, uv.y) * (0.5 + 0.5 * sin(t * 2.0 + h21(floor(q)) * 30.0));
-    frente += mix(uBlanco, uLuz, 0.4) * cel * 0.8 * arena;
+    frente += mix(uBlanco, uLuz, 0.4) * cel * 0.8 * arena * uS.w;
     frente -= col * tapa * 0.94;
     frente += cab * tapa * 0.08;
   }
@@ -788,8 +791,9 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
   let palDesde = SIN_PALETA;
   let palHacia = SIN_PALETA;
   let tPal = -1e9;
-  let arenaDesde = { k: 0, suelo: 0 };
-  let arenaHacia = { k: 0, suelo: 0 };
+  // haces/publico (PLANUI §4.8): los cabezales y el publico del shader, 1 = los de §4.7
+  let arenaDesde = { k: 0, suelo: 0, haces: 1, publico: 1 };
+  let arenaHacia = { k: 0, suelo: 0, haces: 1, publico: 1 };
   let tArena = -1e9;
   const paletaEn = (t) => {
     const k = suave((t - tPal) / T_ERA);
@@ -799,7 +803,8 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
   };
   const arenaEn = (t) => {
     const k = suave((t - tArena) / T_ERA);
-    return { k: mezclar(arenaDesde.k, arenaHacia.k, k), suelo: arenaHacia.k > 0 ? arenaHacia.suelo : arenaDesde.suelo };
+    const fin = arenaHacia.k > 0 ? arenaHacia : arenaDesde;
+    return { k: mezclar(arenaDesde.k, arenaHacia.k, k), suelo: fin.suelo, haces: fin.haces, publico: fin.publico };
   };
   const par = [0, 0];
   const parObjetivo = [0, 0];
@@ -866,7 +871,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
       k: [it.luz, it.polvo, it.contra, 0],
       s: (() => {
         const a = arenaEn(t);
-        return [a.k, a.suelo, 0, 0];
+        return [a.k, a.suelo, a.haces, a.publico];
       })(),
       c: [it.colorFondo, it.lavado, it.colorLugar, 0],
       rec: lg ? lg.rec : REC_NADA,
@@ -1006,10 +1011,13 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
           tPal = instantaneo ? -1e9 : t;
         }
       }
-      // la arena: un numero (0-1) o { k, suelo } (el alto del publico, en uv)
+      // la arena: un numero (0-1) o { k, suelo, haces, publico } (el alto del publico en uv; los cabezales y el publico
+      // del shader, 1 por defecto: §4.8 los baja)
       if (arena !== undefined) {
-        const nueva = typeof arena === 'number' ? { k: arena, suelo: arenaHacia.suelo || 0.2 } : { k: arena?.k ?? 0, suelo: arena?.suelo ?? 0.2 };
-        if (nueva.k !== arenaHacia.k || nueva.suelo !== arenaHacia.suelo) {
+        const nueva = typeof arena === 'number'
+          ? { k: arena, suelo: arenaHacia.suelo || 0.2, haces: 1, publico: 1 }
+          : { k: arena?.k ?? 0, suelo: arena?.suelo ?? 0.2, haces: arena?.haces ?? 1, publico: arena?.publico ?? 1 };
+        if (['k', 'suelo', 'haces', 'publico'].some((c) => nueva[c] !== arenaHacia[c])) {
           arenaDesde = instantaneo ? nueva : arenaEn(t);
           arenaHacia = nueva;
           tArena = instantaneo ? -1e9 : t;

@@ -380,7 +380,80 @@ muestra el chat.
 ## La demostración final, `op=final` (PLANUI §4.8)
 
 ### Partido: la serie con las pantallas del stage, el Swiss como stream
-(lo escribe el worker de partido)
+El usuario, de la serie: *"el 3 está bueno si se hiciese más como las pantallas del stage"* (y el 1 *"tiene mucho de
+las luces de escenario"*); del Swiss: *"que se sienta más como pantalla de stream si tenés el chat… porque está el chat
+pero el champ detrás"*. Abrir: `index.html#pantalla=partido&muestra=serie&op=final` (o `serieReplan`, `swiss`).
+
+**La serie y el replan: el estadio arriba, el draft abajo.**
+- **El estadio** (`crearEstadio` en `js/partido.js`, DOM, `aria-hidden`: es el mundo; todo lo que dice también está en
+  el panel):
+  - **la pantalla LED central** es el duelo de mid: tu pick contra el del rival a pantalla partida, en diagonal, con
+    "VS"; arriba, el logo del torneo, la ronda, el marcador con los logos y las siglas, y "Bo5 · Fearless". Por defecto
+    es tu campeón planeado contra la intención del rival (Sylas vs Ahri); en el replan, "Tu pick ?" contra el que te
+    leyeron (Sylas).
+  - **el aura sigue:** apuntar un campeón (libre, ranura, quemado) lo pone en la central, del lado de quien lo juega,
+    con un destello de corte del LED.
+  - **las dos laterales**, en ángulo: cada equipo con su logo, su nombre y los mapas que lleva (los pips del Bo5). La
+    tuya suma **la placa de jugadores** de la transmisión: handle + rol de tus cuatro compañeros y vos (de
+    `ficha.jugador.companeros`), sin campeón: el motor no simula sus picks. Del rival no hay plantel en los datos: logo,
+    nombre y ronda.
+  - **la faja de LED** al pie: Fearless, los diez huecos que se queman mapa a mapa (el leído, en rojo) y el contador.
+  - **el público** en siluetas (SVG con el PRNG decorativo, dos filas, algún celular en alto que titila), por delante
+    de las pantallas.
+- **Jugar la serie:** cada mapa es la pantalla de carga en la central (tu pick contra el del rival, "MAPA n"), después
+  VICTORIA/DERROTA a todo el LED con el marcador del mapa y la p que tenías; la lateral del que ganó destella y suma su
+  pip, la faja quema los dos picks, el marcador de arriba rueda. Cada mapa queda en el LED hasta que el siguiente lo
+  tapa (no vuelve al duelo entre mapas). Al final la central da el marcador grande con los dos logos y quién se la
+  lleva ("Campeones", en oro, o "FX gana la final"); el resultado con el texto del motor y "Volver a decidir" va en el
+  panel. En el replan, QUEMADO cae sobre la central.
+- **El draft se queda delante**, compacto: los equipos con sus 5 ranuras (38 px), la previa en una línea que se parte,
+  los quemados; al centro la parada, **tus libres** (bajaron de la ventana al panel) y los planes con el inspector.
+- **La sala** (el ambiente, `escena: 'estadio'` de `js/fondo.js`): sin campeón en el mundo, la paleta del CBLOL, los
+  cabezales al 30 % y casi quietos (`arena.haces`, el barrido cae con el cuadrado) y el público del shader apagado
+  (`arena.publico: 0`), porque lo dibuja el DOM por delante de las pantallas.
+
+**El Swiss: la transmisión oficial, vista en un stream.**
+- **La página del stream** ocupa todo el ancho entre la franja y la barra: oscura y opaca. El mundo se ve **solo
+  adentro del reproductor** (la sombra del reproductor pinta la página alrededor). Debajo: el avatar (el logo del
+  torneo), el título del stream, el canal ("Worlds · transmisión oficial"), las etiquetas, EN VIVO y los espectadores
+  (decorativos, del PRNG) y **los cruces de la ronda 5** del motor (KC–GZ, OMG–GX y el tuyo, "en pantalla").
+- **El feed** es el escenario del Mundial 2033 (el mismo estadio, en la paleta de Worlds): en la central tu campeón del
+  split (Anivia, el que el motor usa en la previa; del Bo1 no hay pick) contra el escudo de Movistar KOI, con VIDA O
+  MUERTE en el medio y los records arriba; las laterales, FURIA con su plantel y MKOI con su liga; la faja, los otros
+  cruces. Encima, los gráficos de `transmision`: el score bug con logos (FUR 2–2 vs 2–2 MKOI · SWISS · RONDA 5 · BO1),
+  la marca de agua del torneo, la placa de Elurah89 · Anivia y el camino R1-R5.
+- **El reproductor** (patrón de stream, sin marcas de ninguna plataforma): pausar/reproducir (congela el feed y aparece
+  el botón grande), volumen con deslizador (el botón silencia y recuerda el nivel), EN VIVO, calidad (un menú, Esc o un
+  clic afuera lo cierran) y pantalla completa (el reproductor tapa todo; el navegador entra en pantalla completa si lo
+  deja). La barra se esconde a los 3,2 s sin mover el mouse y vuelve al moverlo, con el foco o en pausa.
+- **La parada** queda fijada arriba del chat (como lo fijado de un stream): las dos opciones, el inspector y la previa
+  del 19 %, sin tapar nada del feed. Al elegir queda resuelta (la elegida encendida, la otra apagada).
+- **DERROTA** es el gráfico de la transmisión sobre el feed, el record rueda en el bug y en el LED y la central se
+  apaga. **AFUERA** sigue siendo el takeover: tapa la columna del stream (la página queda opaca, a la derecha se ve el
+  estadio apagado) y el chat sigue al costado hasta "Fin de la transmisión".
+
+**Archivos.** `js/partido.js` (el estadio, el reproductor, la serie y el Swiss con `op=final`), `estilos/partido.css`
+(el bloque §4.8 al final), `js/ambiente.js` (`arena: { haces, publico }`, `uS.zw`), `js/fondo.js` (la escena
+`estadio`), `js/competicion.js` (los logos salen ahora de `js/logos.js`: se cerró el pendiente de §4.7; quedan los
+tricodes) y el bloque §4.7 · partido de `tokens.css` (`--led-*`, `--publico*`, `--stream-*`, `--panel-opaco`).
+
+**Trasladable tal cual:** `crearEstadio` + `publicoSvg` (las pantallas en unidades de contenedor: el mismo estadio
+escala del escenario al feed cambiando cinco variables), la escena `estadio` y `arena.haces/publico`, el reproductor
+(`controlesPlayer`) y la página del stream. **Solo de prototipo:** los espectadores, el chat y el público son
+decorativos (PRNG); la pantalla completa es la del navegador.
+
+**Verificación (2026-10-10).**
+- `verificar.mjs`: todo en verde.
+- 0 errores de consola en todas las capturas (serie, replan, Swiss, sus resultados, sin WebGL, movimiento reducido,
+  celular; y las opciones de §4.7 y sin `op`, sin cambios).
+- Contraste por píxeles (`contraste-fusion.mjs`): 864 textos en 11 casos, 0 debajo de 4,5:1, el peor 5,34. Como el
+  medidor salta lo `aria-hidden`, se midió aparte una copia que incluye las pantallas: 399 textos, 0 debajo (el "VS"
+  daba 2,32 sobre el arte y el "?" 1,70: ahora van sobre placa y en `--ink-mute`).
+- 390×844: la opción 1 entera arriba del pliegue en la serie y en el Swiss.
+
+**Límites.** Sin WebGL el estadio está entero (es DOM), pero la sala queda en la luz de la era (el respaldo CSS no toma
+la paleta del torneo). Las laterales en ángulo (`rotateY`) deforman un poco su letra, como una pantalla vista de
+costado. La pantalla completa no se probó en el navegador headless.
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->

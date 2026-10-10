@@ -80,8 +80,13 @@ const LUGARES = {
 // sala (los cabezales, el humo y el publico, en ambiente.js). Una pantalla la pide con `escena: 'arena'` y gana sobre
 // la perilla `fondo`: es la composicion de esa opcion, no un nivel de intensidad.
 const ARENA = { ...PLENO, presencia: 0.12, profundidad: 0.6, ventana: 1, enLugar: 1, contra: 0.5, polvo: 1.3 };
+// PLANUI §4.8 (op=final): EL ESTADIO. El campeon sale del mundo: vive en las pantallas LED del escenario, que son DOM
+// (js/partido.js, crearEstadio), y el aura cambia lo que muestran. El mundo es la sala: la luz de ambiente, el humo, el
+// polvo y la contra baja; sin campeon y sin lugar fijo, en reposo, con el aura, en un momento y en el takeover.
+const ESTADIO = { ...PLENO, presencia: 0, profundidad: 0, ventana: 0, enLugar: 0, contra: 0.35, luz: 0.85, polvo: 1.1 };
 const ESCENAS = {
   arena: { reposo: ARENA, aura: ARENA, momento: ARENA, takeover: ARENA, lugar: true },
+  estadio: { reposo: ESTADIO, aura: ESTADIO, momento: ESTADIO, takeover: ESTADIO, lugar: false },
 };
 // La pantalla gigante: `crear: 'pantalla'` (estilos/partido.css la ubica adentro del escenario del draft o del player).
 const LUGARES_ESCENA = {
@@ -99,8 +104,9 @@ const plena = (pantalla, muestra) => SIEMPRE_PLENO.includes(pantalla) || SIEMPRE
 // lugar (si hay).
 // `escena` (opcional): la composicion que pide la pantalla montada (PLANUI §4.7: 'arena'); gana sobre la perilla.
 export function politica(nombre, pantalla, muestra, color = COLOR_DEF, escena = null) {
-  const lugarEscena = escena ? LUGARES_ESCENA[escena]?.[clave(pantalla, muestra)] : null;
-  if (lugarEscena) {
+  const lugarEscena = escena ? LUGARES_ESCENA[escena]?.[clave(pantalla, muestra)] ?? null : null;
+  // una escena sin lugar fijo (el estadio) vale para la pantalla que la pida
+  if (lugarEscena || (escena && ESCENAS[escena]?.lugar === false)) {
     const e = ESCENAS[escena];
     const c = colorDe(color, pantalla, muestra);
     const estado = (k) => conColor(e[k], c, { takeover: k === 'takeover' });
