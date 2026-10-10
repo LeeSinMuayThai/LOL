@@ -1,148 +1,218 @@
-/* Primitivos: botones, línea de estado, píldora de meta. Familia compartida, sin dueño de V3 (PLAN.md §V.7).
-   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
-
 /* ==========================================================================
-   1. PRIMITIVOS
+   PRIMITIVOS — el sistema compartido de la fusion (PLANUI U1)
+
+   La superficie (UN panel), los controles de cliente (la tecla, el boton, el
+   chip, "mas"), el rotulo, el titulo de pantalla, la opcion, el inspector,
+   los numeros y los glifos: lo de `vitrina/fusion/estilos/base.css` que usan
+   todas las pantallas, con sus mismos nombres de clase. Las familias de la
+   ola 2 lo usan (el contrato de `ui/escena.js`): ninguna hoja define otra
+   superficie. Lo que es de la franja, el acompañante y los cuartos (.fr-*,
+   .ctx-*, la barra) lo trae su dueño a su hoja. Salieron el chaflán y las
+   escuadras (PLANUI §5.9).
    ========================================================================== */
 
-/* El contenedor de la página. En T1 se convierte en el shell de tres zonas;
-   por ahora sigue siendo la columna centrada de siempre. */
-.panel {
+/* ==========================================================================
+   1. EL PANEL — la unica superficie. Oscuro translucido de token, SIN
+   desenfoque, filete de 1 px teñido por la luz de la era. Adentro solo hay
+   secciones separadas por lineas (nivel 2): nunca una caja dentro de otra
+   caja dentro de otra.
+   ========================================================================== */
+.panel, .parada-col, .contexto {
   position: relative;
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: var(--s-7) var(--s-6);
-  background: var(--bg-surface);
-  border: 1px solid var(--line-strong);
-  border-radius: 0;
-  box-shadow: var(--sombra-3), inset 0 1px 0 var(--ice-dim);
-  /* El chaflán: la firma visual del ESCENARIO (T1 lo renombra `.escenario`).
-     Va acá, en el contenedor, y no en la ficha: `.ficha-barra-hito`
-     sobresale de su pista a propósito (`top: -4px`) y un `clip-path` más
-     adentro le comería las marcas. */
-  clip-path: polygon(
-    0 0,
-    calc(100% - var(--chamfer)) 0,
-    100% var(--chamfer),
-    100% 100%,
-    var(--chamfer) 100%,
-    0 calc(100% - var(--chamfer))
-  );
+  background: var(--panel);
+  border-radius: var(--r-panel);
+  box-shadow: inset 0 0 0 1px var(--filete), 0 28px 70px -30px var(--sombra);
 }
-
-/* Esquinas de encuadre: dos ángulos en L, hielo en reposo. Cyan solo
-   cuando el estudio está en vivo (serie o bisagra). */
-.panel::before,
-.panel::after {
-  content: "";
+/* el canto de arriba: donde la luz de la era pega en el panel */
+.panel::after, .parada-col::after, .contexto::after {
+  content: '';
   position: absolute;
-  width: 40px;
-  height: 40px;
+  left: 14px;
+  right: 40%;
+  top: 0;
+  height: 1px;
   pointer-events: none;
-  border-color: var(--ice);
-  opacity: 1;
+  background: linear-gradient(90deg, var(--velo-nada), var(--filete-fuerte) 30%, var(--velo-nada));
 }
-.panel::before { top: 0; left: 0; border-top: 3px solid; border-left: 3px solid; }
-.panel::after  { bottom: 0; right: 0; border-bottom: 3px solid; border-right: 3px solid; }
-body[data-serie="on"] .escenario .panel::before,
-body[data-serie="on"] .escenario .panel::after,
-.escenario .panel:has(.decision[data-peso="bisagra"])::before,
-.escenario .panel:has(.decision[data-peso="bisagra"])::after {
-  border-color: var(--live);
-  opacity: 1;
-}
+/* Los dos contenedores del escenario (`#setup`, `#carrera`) son paneles. */
+.panel { padding: 26px 28px; }
+.seccion { position: relative; }
+.seccion + .seccion { box-shadow: inset 0 1px 0 var(--linea); }
+.hondo { background: var(--panel-hondo); }
 
-/* El título es un cartel de transmisión, no un h1 de blog. */
+/* ==========================================================================
+   2. EL ROTULO Y EL TITULO
+   ========================================================================== */
+/* el rotulo (kicker): mono, la primera parte en luz */
+.rotulo-cat, .rotulo {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0;
+  font: 500 var(--t-rotulo) / 1.2 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim);
+}
+.rotulo-cat > span:first-of-type { color: var(--luz-texto); }
+.punto-luz { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--luz); box-shadow: 0 0 12px var(--luz), 0 0 2px var(--ink); }
+.bisagra { color: var(--ink-dim); padding-left: 12px; box-shadow: inset 1px 0 0 var(--linea-fuerte); }
+.bisagra.alerta { color: var(--down); }
+
+/* el titulo de pantalla: Mona Sans ANCHA, en minusculas (<= 56 px, regla 2: primero lo que se decide) */
+.titulo-parada {
+  margin: 12px 0 0; max-width: 21ch; font: 800 var(--t-titulo) / 0.98 var(--f-display); font-stretch: var(--ancho-titulo);
+  letter-spacing: -0.035em; color: var(--ink); text-wrap: balance;
+}
+.titulo-parada:focus { outline: none; }
+.titulo-parada .linea { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.titulo-parada .linea-int { display: block; }
+.planteo { display: flex; align-items: baseline; gap: 12px; margin: 12px 0 0; max-width: 70ch; font-size: var(--t-cuerpo); line-height: 1.45; color: var(--ink-dim); }
+.planteo-1 { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.planteo-resto { display: none; }
+.planteo.abierto { display: block; }
+.planteo.abierto .planteo-1 { white-space: normal; }
+.planteo.abierto .planteo-resto { display: inline; }
+.planteo.abierto .btn-mas { margin-left: 10px; }
+
+/* El h1 de produccion (el nombre del juego en el inicio, solo para lectores) y la bajada del inicio. */
 h1 {
-  font-family: var(--font-display);
-  font-size: var(--fs-6);
-  font-weight: 700;
-  line-height: var(--lh-tight);
-  letter-spacing: var(--track-cartel);
-  text-transform: uppercase;
+  font: 800 var(--t-titulo-s) / 1 var(--f-display);
+  font-stretch: var(--ancho-titulo);
+  letter-spacing: -0.03em;
   margin-bottom: var(--s-1);
 }
-
-/* La banda LIVE: el ancla de toda la metáfora. Tres pixeles. */
-h1::before {
-  content: "";
-  display: block;
-  width: 56px;
-  height: 2px;
-  margin-bottom: var(--s-3);
-  background: var(--ice);
-}
-
 .subtitle {
   color: var(--ink-dim);
-  font-size: var(--fs-2);
+  font-size: var(--t-cuerpo-g);
   margin-bottom: var(--s-5);
 }
 
-/* --- Botones --------------------------------------------------------------
-   El primario es sólido y cuadrado, no una píldora con degradé: en broadcast
-   el llamado a la acción es un bloque.
+/* ==========================================================================
+   3. LOS CONTROLES DE CLIENTE: la tecla, el boton, el chip, "mas"
+   ========================================================================== */
+.op-tecla, kbd {
+  display: inline-grid; place-items: center; flex: none; min-width: 26px; height: 26px; padding: 0 6px; border-radius: var(--r-control);
+  box-shadow: inset 0 0 0 1px var(--linea-fuerte); font: 600 12px / 1 var(--f-mono); color: var(--ink-dim);
+  transition: transform 60ms ease, background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+kbd { min-width: 0; height: 20px; padding: 0 6px; font-size: 10.5px; }
+.btn-mas, .op-mas, .btn-split, .chip-boton {
+  all: unset; box-sizing: border-box; cursor: pointer; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px;
+  border-radius: var(--r-chip); box-shadow: inset 0 0 0 1px var(--linea-fuerte); font: 600 11px / 1 var(--f-mono); color: var(--ink);
+  transition: transform 110ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+.boton {
+  all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; height: 38px; padding: 0 16px;
+  border-radius: var(--r-control); box-shadow: inset 0 0 0 1px var(--linea-fuerte); background: var(--panel-claro);
+  font: 600 12px / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink);
+  transition: transform 110ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+.boton-pri { background: var(--luz-texto); box-shadow: none; color: var(--bg-void); }
+.boton-pri kbd { color: var(--bg-void); box-shadow: inset 0 0 0 1px var(--bg-void); }
+:is(.btn-mas, .op-mas, .btn-split, .chip-boton):hover { background: var(--luz-tenue); box-shadow: inset 0 0 0 1px var(--luz-fuerte); }
+.boton:not(.boton-pri):hover { box-shadow: inset 0 0 0 1px var(--luz-fuerte); background: var(--luz-tenue); }
+.boton-pri:hover { filter: brightness(1.08); }
+:is(.btn-mas, .op-mas, .btn-split, .chip-boton, .boton):active { transform: translateY(1px) scale(0.97); transition-duration: 50ms; }
+:is(.btn-mas, .op-mas, .btn-split, .chip-boton, .boton):focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
-   "Se arma, no se prende" (T0b): reposo en relleno tenue de --live con
-   borde y texto en --live; hover rellena a --live sólido. Antes el reposo
-   YA era sólido y el hover saltaba a --ink (casi blanco): dos golpes de luz
-   en vez de uno, y el segundo cegaba. Ahora el único bloque brillante de la
-   pantalla es el botón bajo el cursor.
-
-   `:where(...)`, no `button` a secas — a propósito, y es otro bug que
-   destapó esta misma corrida: `.option-btn`/`.rol-card`/`.campeon-card`/
-   `.mercado-card`/`.minijuego-card`/`.mercado-representante-btn` son todos
-   `<button>` (ver `decision.js`, `inicio.js`, `mercado.js`), y
-   `button:hover:not(:disabled)` — un elemento + dos pseudo-clases — le
-   ganaba en especificidad a `.option-btn:hover` — una clase + una
-   pseudo-clase. El fondo cyan sólido de acá tapaba el hover propio de CADA
-   tarjeta del juego, con el texto gris quedando ilegible encima. Ya pasaba
-   en T0 (con --ink en vez de --live) pero quedaba disimulado. `:where()`
-   pone la especificidad de esta regla en cero: cualquier clase, incluida
-   una escrita antes en el archivo, le gana. Los botones sin clase propia
-   (`#run`, `#nuevaCarrera`) siguen cayendo acá igual. */
+/* Los botones de produccion sin clase propia (y la base de los que la tienen): el boton de la fusion. `:where()` pone
+   la especificidad en cero, asi cualquier clase de una familia le gana (T0b: `button:hover` le pisaba el hover a cada
+   tarjeta). "Se arma, no se prende": el reposo es el panel claro; el hover, la luz tenue. */
 :where(button) {
-  font-family: var(--font-display);
-  font-size: var(--fs-3);
-  font-weight: 700;
-  letter-spacing: var(--track-label);
+  font: 600 12px / 1 var(--f-mono);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: var(--s-3) var(--s-5);
-  border-radius: 0;
-  clip-path: var(--clip-corte);
-  background: var(--bg-raised);
-  border: 1px solid var(--line-strong);
+  border-radius: var(--r-control);
+  background: var(--panel-claro);
+  box-shadow: inset 0 0 0 1px var(--linea-fuerte);
   color: var(--ink);
-  transition: background var(--dur-fast) var(--ease),
-              border-color var(--dur-fast) var(--ease),
-              color var(--dur-fast) var(--ease),
-              transform var(--dur-fast) var(--ease),
-              box-shadow var(--dur-fast) var(--ease);
+  transition: background-color var(--dur-micro) var(--expo),
+              box-shadow var(--dur-micro) var(--expo),
+              color var(--dur-micro) var(--expo),
+              transform var(--dur-micro) var(--expo);
 }
 :where(button:hover:not(:disabled)) {
-  background: var(--live-fill);
-  border-color: var(--live);
-  color: var(--live);
-  box-shadow: none;
+  background: var(--luz-tenue);
+  box-shadow: inset 0 0 0 1px var(--luz-fuerte);
 }
-:where(button:active:not(:disabled)) { transform: translateY(1px); }
+:where(button:active:not(:disabled)) { transform: translateY(1px) scale(0.97); }
 :where(button:disabled) { opacity: 0.35; cursor: not-allowed; }
 
+/* Empezar y Nueva carrera: el boton principal (la luz de la era, en su version para texto). */
 #run,
 #nuevaCarrera {
-  background: var(--live);
-  border-color: var(--live);
+  background: var(--luz-texto);
+  box-shadow: none;
   color: var(--bg-void);
-  font-size: var(--fs-6);
+  font-size: var(--t-chico);
   letter-spacing: 0.14em;
-  min-height: 56px;
+  min-height: 52px;
   padding: var(--s-4) var(--s-7);
-  box-shadow: 0 0 48px -8px var(--live-glow);
 }
 #run:hover:not(:disabled),
 #nuevaCarrera:hover:not(:disabled) {
-  background: var(--live);
-  border-color: var(--live);
+  background: var(--luz-texto);
+  box-shadow: 0 0 44px -6px var(--luz-fuerte);
   color: var(--bg-void);
-  box-shadow: 0 0 64px -4px var(--live-glow);
+  filter: brightness(1.08);
+}
+
+/* ==========================================================================
+   4. LA OPCION — el feedback de cliente (la barra de luz al costado, la
+   tecla que se hunde) — y el inspector: UNA prosa a la vez
+   ========================================================================== */
+.opcion { all: unset; box-sizing: border-box; position: relative; cursor: pointer; transition: background-color 140ms ease; }
+.opcion::before {
+  content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--luz);
+  box-shadow: 0 0 12px var(--luz); transform: scaleY(0); transition: transform 180ms var(--expo);
+}
+.opcion.apuntada, .opcion[data-apuntado] { background: var(--luz-tenue); }
+.opcion:not(.bloqueada):is(.apuntada, [data-apuntado], :hover, :focus-visible)::before { transform: none; }
+.opcion.apuntada .op-tecla, .opcion[data-apuntado] .op-tecla { background: var(--luz-texto); box-shadow: none; color: var(--bg-void); }
+.opcion:not(.bloqueada):active { background: var(--luz-suave); transition-duration: 50ms; }
+.opcion:not(.bloqueada):active .op-tecla { transform: translateY(1px) scale(0.94); box-shadow: inset 0 2px 0 var(--sombra); }
+.opcion:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; box-shadow: none; }
+.opcion.bloqueada { cursor: not-allowed; }
+.opcion.bloqueada .op-label { color: var(--ink-mute); }
+.opcion.bloqueada .op-tecla { box-shadow: inset 0 0 0 1px var(--linea); color: var(--ink-mute); }
+.op-label { font: 600 var(--t-opcion) / 1.25 var(--f-cuerpo); color: var(--ink); }
+
+.inspector { position: relative; padding: 18px 22px 20px; }
+.insp-kicker { display: flex; align-items: baseline; gap: 8px; font: 600 14px / 1.3 var(--f-cuerpo); color: var(--ink); }
+.insp-n { font: 600 11px / 1 var(--f-mono); color: var(--ink-mute); }
+.insp-texto { margin-top: 10px; font-size: 15px; line-height: 1.5; color: var(--ink-dim); }
+.insp-previa { display: grid; gap: 6px; margin-top: 12px; font: 500 12px / 1.25 var(--f-mono); color: var(--ink-dim); }
+.insp-previa li { display: flex; align-items: center; gap: 7px; }
+.insp-previa li.sube { color: var(--up); }
+.insp-previa li.baja { color: var(--down); }
+.insp-riesgo { color: var(--warn); }
+.insp-perfil { color: var(--luz-texto); }
+html[data-textos='breves'] .insp-previa { display: none; }
+
+/* ==========================================================================
+   5. LOS NUMEROS (Mona Sans EXPANDIDA 900, tabulares), el odometro y los glifos
+   ========================================================================== */
+.ctx-numero, .ctx-valor, .rn-valor, .fr-num {
+  font-family: var(--f-display); font-weight: 900; font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+}
+.odometro { display: inline-flex; line-height: 1; vertical-align: baseline; }
+/* la ventana de cada digito se funde en sus bordes: al rodar no se ven los vecinos cortados (PLANUI §4.9) */
+.odo-col {
+  display: inline-block; height: 1em; overflow: hidden;
+  mask-image: linear-gradient(180deg, transparent 0, var(--mascara) var(--ln-odo-borde), var(--mascara) calc(1em - var(--ln-odo-borde) * 0.62), transparent 1em);
+}
+.odo-tira { display: flex; flex-direction: column; }
+.odo-tira span { display: block; height: 1em; line-height: 1; }
+
+.ico { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.ico .lleno { fill: currentColor; stroke: none; }
+.tri { flex: none; }
+.tri.sube { fill: var(--up); }
+.tri.baja { fill: var(--down); }
+.glifo-rol { width: 20px; height: 20px; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.glifo-rol .mapa { stroke: var(--ink-mute); stroke-width: 1; opacity: 0.55; }
+.glifo-rol .carril { stroke: var(--luz-texto); stroke-width: 2.6; }
+.medidor { grid-column: 1 / -1; position: relative; height: 3px; border-radius: var(--r-chip); background: var(--linea); overflow: hidden; }
+.medidor i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: inherit; }
+.medidor .banda { background: var(--luz-suave); }
+.medidor .valor { background: var(--ink-dim); transition: width 900ms var(--expo); }
+
+@media (max-width: 640px) {
+  .panel { padding: 22px 16px; }
 }

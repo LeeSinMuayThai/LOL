@@ -21,10 +21,10 @@
     <meta name="twitter:image" content="https://lolero.lol/assets/og-image.png" />
 
     <link rel="canonical" href="https://lolero.lol/" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='2' fill='%23030407'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='14' font-weight='700' fill='%232ee8ff' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='2' fill='%2303060e'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='14' font-weight='700' fill='%238cb3ff' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E" />
 
-    <link rel="preload" href="./src/ui/estilos/fuentes/inter-var-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="./src/ui/estilos/fuentes/barlow-condensed-700-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./src/ui/estilos/fuentes/mona-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./src/ui/estilos/fuentes/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="./src/ui/estilos/tokens.css" />
     <link rel="stylesheet" href="./src/ui/estilos/base.css" />
     <link rel="stylesheet" href="./src/ui/estilos/primitivos.css" />
@@ -37,8 +37,8 @@
     <link rel="stylesheet" href="./src/ui/estilos/tarjeta.css" />
     <link rel="stylesheet" href="./src/ui/estilos/paneles.css" />
     <link rel="stylesheet" href="./src/ui/estilos/serie.css" />
-    <!-- El shell (fase T1; V2-C): la franja, el escenario de una columna y el acompañante. -->
     <link rel="stylesheet" href="./src/ui/estilos/shell.css" />
+    <link rel="stylesheet" href="./src/ui/estilos/fx.css" />
     <link rel="stylesheet" href="./src/ui/estilos/iconos.css" />
     <link rel="stylesheet" href="./src/ui/estilos/hud.css" />
     <link rel="stylesheet" href="./src/ui/estilos/overlay.css" />
@@ -47,6 +47,8 @@
   </head>
   <body>
     <a class="saltar-al-contenido" href="#escenario">Saltar al contenido</a>
+    <!-- El ambiente (PLANUI §6.1): detrás de todo; lo monta src/ui/shell.js con src/ui/fx/ después de idle. -->
+    <div id="fx-ambiente" class="fx-ambiente" aria-hidden="true"></div>
 
     <div class="shell" data-pieza="inicio">
       <!-- La franja (FASE V, V2-C; PLAN.md §V.4): `#franjaEstado` lo llena src/ui/franja.js desde la `vista` (lo que la
@@ -70,7 +72,7 @@
         </div>
       </header>
 
-      <!-- El cuerpo (V2-C): el escenario, una columna con UNA pieza a la vista, y el acompañante al costado. -->
+      <!-- El cuerpo (V2-C; PLANUI U1): el escenario a la izquierda con UNA pieza a la vista, y el acompañante a la derecha. -->
       <div class="shell-cuerpo">
         <div class="escenario" id="escenario">
           <div id="setup" class="panel" data-piezas="inicio">
@@ -185,11 +187,7 @@
     </div>
 
     <script type="module" src="./src/ui/shell.js"></script>
-    <!-- El controlador (fase V, PLAN.md "V0 — El kernel"): hasta esta fase
-         vivía acá adentro como ~520 líneas de `<script type="module">`.
-         Se movió a `src/ui/app.js` (exporta `iniciar()`) para que `estado`
-         deje de estar atrapado en un closure que ninguna pantalla nueva
-         puede leer — ver `src/ui/core/store.js`. -->
+    <!-- El controlador (fase V, PLAN.md "V0 — El kernel"): vive en `src/ui/app.js` (exporta `iniciar()`), no acá. -->
     <script type="module">
       import { iniciar } from './src/ui/app.js';
       iniciar();

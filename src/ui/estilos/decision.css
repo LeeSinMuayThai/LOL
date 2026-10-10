@@ -180,8 +180,7 @@
   text-align: left;
   background: var(--bg-raised);
   border: 1px solid var(--line);
-  border-radius: 0;
-  clip-path: var(--clip-corte);
+  border-radius: var(--r-control);
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: var(--fs-2);
@@ -278,7 +277,7 @@
 }
 .option-previa-kicker {
   padding: 1px 6px;
-  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+  border: 1px solid var(--linea-fuerte);
   font-family: var(--font-display);
   font-size: var(--fs-0);
   font-weight: 700;
