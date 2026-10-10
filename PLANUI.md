@@ -25,7 +25,8 @@
 | **Compuerta 1b** | El usuario mira la fusión | 🔶 2026-10-09: "está bien", pero el duotono "blanco y negro + violeta" de los campeones se vuelve repetitivo después del inicio; pidió tres variantes (§4.6) |
 | **U0 · intensidad** | Una página con tres variantes de color del campeón (a color, mitad, fondo en duotono y retratos a color) y el espacio "un poco" menos (§4.6) | ✅ 2026-10-09 (`899ed27`, merge `81993d4`); el usuario respondió con capturas (§4.7) |
 | **U0 · opciones** | La serie con la receta de color y el fondo nítido; tres opciones por pantalla para el partido (la competición), la decisión y el mercado (logos reales) (§4.7) | ✅ 2026-10-09 (merges `66c6cc4`, `4c2de5f`, `67764bd`, `94dc50a`); el usuario eligió y combinó (§4.8) |
-| **U0 · demostración final** | Una versión por pantalla (`op=final`): serie con las pantallas del stage, Swiss como stream, decisión B+C, mercado A+C sin campeón de fondo; `final.html` (§4.8) | ✅ 2026-10-10 (merges `b45543c`, `fcd297b`, `5a8c891`, `c0297b7`); esperando que el usuario la mire |
+| **U0 · demostración final** | Una versión por pantalla (`op=final`): serie con las pantallas del stage, Swiss como stream, decisión B+C, mercado A+C sin campeón de fondo; `final.html` (§4.8) | ✅ 2026-10-10 (merges `b45543c`, `fcd297b`, `5a8c891`, `c0297b7`); el usuario la miró y pidió correcciones (§4.9) |
+| **U0 · una línea** | La mini auditoría y la corrección (`op=linea`): el bitono del inicio como gradación de todo, el segundo tono por contexto, la costura, la ceremonia del LoL, los momentos con beats y la copa en 3D (§4.9) | 🔶 2026-10-10: plan aprobado; ola 1 (kit + momentos) |
 | **U0 · ronda 2** | La ganadora completa la estrella del norte: serie, Swiss, mercado, celular, trayectoria y PNG | ⬜ |
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ⬜ |
 | **U1 + U1a** | Cimientos (tokens, fuentes, shell, `fx/`, era) + andamio de medición | ⬜ |
@@ -779,6 +780,143 @@ para `opciones.html`. Cero choques de código: solo el README, que se resolvió 
 - el público es una fila pareja;
 - sin WebGL, el estadio queda en la luz de la era;
 - los colores de las orgs inventadas difieren entre `final` y las opciones de §4.7.
+
+### 4.9 La mini auditoría y "una línea" (2026-10-10, textual)
+
+> quiero que siga un poco la linea bitono del inicio, pero no tanto, osea al inicio seria 100% y despues que la siga un
+> poco, pero siento que son como varios estilos distintos en el mismo juego, quiero correcciones, en "la decision" el
+> circulito podria ser el famoso coso de aceptar partida algo asi, "la serie" quedo peor que antes en mi opinion, el
+> stage se ve muy falso, parece poco avanzado y poco original, ademas de que sea todo negro y dorado lo hace muy aburrido
+> y minimalista para ser un simulador de lol, con el swiss pasa algo parecido, un poco muy sobrio y el stream no se logra
+> tan bien, "el mercado" esta aceptable, pero creo que se podria hacer un concepto mejor y mas original, "la firma" es muy
+> basica y simple no como el disseño avanzado que yo habia pedido, "el titulo" esta bien pero se podria poner la copa,
+> hacer que sea mas animacion aunque sea un poco y no tanto transicion simple, pensalo bien, hacelo avanzado y creativo y
+> hace un buen plan acorde a lo que yo quiero
+
+**Dos preguntas del supervisor, con las respuestas textuales:**
+- *La serie: el motor solo simula tu campeón y el del rival en cada mapa. ¿Cara a cara o draft de 10 (8 decorativos)?*
+  → **"Cara a cara"**.
+- *Los momentos (firma, título, AFUERA): ¿bitono al 100% como el inicio, o "un poco" como el resto?* → **"los campeones
+  con 70% de su color real"**.
+
+**La auditoría** (capturas de las 7 pestañas de `final.html`, seed 61).
+
+La causa de "varios estilos distintos": en §4.7 y §4.8 tres Opus en paralelo inventaron cada uno su escenario, y eso
+rompió la regla con la que nació la fusión (§4.5: *"uno solo, porque el requisito central es la coherencia"*). Quedaron
+cinco formas de dibujar el mundo:
+- **el inicio y el título**: arte fotográfico en bitono con luz volumétrica, que es "la línea";
+- **la serie y el Swiss**: un estadio de CSS (rectángulos inclinados y una fila de cabezas iguales);
+- **la decisión**: un skyline en silueta SVG con un anillo-medalla dorado;
+- **el mercado**: una planilla con un tablero de aeropuerto;
+- **la firma**: una placa tipográfica sobre un patrón de logos.
+
+Cada pantalla tiene su paleta, todas son "negro + un acento", y el arte desapareció de cinco de las siete.
+
+Pantalla por pantalla:
+- **Decisión.** El anillo se lee como medalla y no como el aviso de partida: no se ve el reloj y no hay un ¡ACEPTAR!
+  grande. El capítulo es un tablero denso, con el título repetido.
+- **Serie.** El estadio se ve armado con cajas y el público son siluetas idénticas, en marrón y negro. Hay tres
+  columnas de números. La versión anterior (el draft con el Sylas grande) era mejor.
+- **Swiss.** El video es el mismo estadio, la página es gris y el chat es texto plano.
+- **Mercado.** Es una planilla, y el contrato repite los datos de la fila elegida.
+- **Firma.** A los 0,9 s queda quieta.
+- **Título.** No tiene copa, y después de la entrada no pasa nada.
+- **Además:** el odómetro deja ver los dígitos vecinos mientras rueda.
+
+**Las 8 reglas de "una línea"** (amplían las 7 de §4.5; después son guards de producción):
+
+1. **Una imagen héroe por pantalla, siempre "fotográfica"**: arte de Data Dragon, logos reales o la copa en 3D.
+   - Prohibido el decorado dibujado como héroe: estadios de CSS, skylines o público en silueta, tableros split-flap.
+   - Una silueta solo puede quedar como atmósfera lejana (desenfocada, ≤ 15% de contraste).
+2. **El bitono es la gradación de todo el arte**, con la curva del usuario (perilla de color `linea`):
+
+   | Dónde | Color real del campeón | Bitono |
+   |---|---|---|
+   | Inicio (y la tira de eras) | 0% | 100% |
+   | Pantallas de juego: piezas (retratos, libres, cartas, la costura) | 65% | 35% |
+   | Pantallas de juego: fondo | 60% | 40% |
+   | Momentos (firma, título, AFUERA) | 70% | 30% |
+
+3. **El segundo tono dice dónde estás.** El bitono es noche + un tono, y el tono sale del contexto: la era (inicio,
+   decisiones comunes), el destino (la bisagra), la competición (serie, Swiss), la org (mercado, firma) o el oro
+   (título).
+   - El oro queda solo para la ceremonia.
+   - Los negros se tiñen del tono: ningún fondo gris o negro neutro.
+4. **La misma luz.** El único decorado es el ambiente WebGL. El público son lightsticks en bokeh, nunca cabezas.
+5. **Un hover, el aura, en todos lados**: el campeón, el camino de una decisión o la org.
+6. **La costura.** Dos mundos enfrentados (el cara a cara de la serie, el video del Swiss, los dos destinos de la
+   bisagra) son una diagonal de luz, con cada mitad en su tono. La dibuja el shader del ambiente, no el DOM: con un
+   `duotono()` por CPU quedaría plana, sin la luz del inicio, y sería otra vez "otro estilo".
+7. **La ceremonia del LoL, un solo estilo.** El aro de ¡ACEPTAR!, BLOQUEAR/FIRMAR, VICTORIA/DERROTA y el quemado de
+   Fearless comparten un estilo de inspiración hextech: filete de oro, un turquesa propio y azul petróleo. Es un patrón
+   propio, no assets de Riot.
+8. **Los momentos son secuencias de beats, no fundidos.** El orden es apagón → golpe de luz → revelación → asentarse →
+   loop vivo.
+   - Un solo helper (`beats.js`): un reloj, ≤ 3 destellos/s y Espacio salta al asentarse.
+   - Con movimiento reducido o INST se ve el cuadro final.
+
+**Enmiendas que trae** (las decide el supervisor; el usuario las puede revertir):
+- **§6.5:** el tope de 2,4 s por takeover sube a ≤ 5 s para la firma y el título, salteables.
+- **§4.6:** el contrato "el inicio y los takeovers siempre en duotono" pasa a valer solo para el inicio y las eras. Con
+  `linea`, los momentos van al 70% de color.
+
+**Pantalla por pantalla** (perilla nueva `op=linea`; `final`, §4.7 y "sin op" quedan para comparar):
+
+- **Decisión: ¡OFERTA ENCONTRADA!**
+  - La bisagra llega como el aviso del cliente sobre la pantalla atenuada: el escudo del que llama en un círculo, el
+    aro que se vacía en 12 s como reloj, un ¡ACEPTAR! grande y un "ding".
+  - El reloj nunca decide por vos: si llega a cero, entra solo. En INST o con movimiento reducido queda lleno y quieto.
+  - Aceptar abre la costura: tu main en dos tonos (CBLOL | LCK), con sus logos y lo que arriesgás. Apuntar una opción
+    corre la costura hacia su lado.
+- **Serie: el cara a cara.**
+  - El marcador de transmisión arriba.
+  - La costura en el medio: tu campeón contra el del rival, cada mitad en el tono de su equipo.
+  - Abajo, el plan como barras de transmisión, los libres como cartas de carga (el aura) y la tira de quemados.
+  - Cada mapa es una secuencia de beats: las cartas de carga, VICTORIA/DERROTA, el pip y el quemado.
+  - Se van el estadio, las pantallas laterales y las siluetas.
+- **Swiss: el stream de verdad.**
+  - El video es la misma transmisión: la costura (tu campeón contra el logo del rival) con la gráfica de Worlds y un
+    movimiento de cámara.
+  - La página va teñida de Worlds, con la previa como predicción del stream (el número del motor), la racha de hype y
+    el clip.
+  - El chat está vivo: insignias y emotes propios en SVG, y ráfagas sincronizadas.
+  - AFUERA va con beats.
+- **Mercado: "tu segunda selección".** A los 15 elegiste campeones; ahora elegís equipo, con el gesto del inicio:
+  - las ofertas llegan a una grilla de escudos tipo champ select;
+  - apuntar una org vuelve la pantalla su "splash": tu main en su bitono, el logo y los términos grandes;
+  - FIRMAR es el BLOQUEAR del inicio: el contrato con la firma y el sello;
+  - "Mientras tanto" pasa a ser una cinta de noticias.
+- **Firma: el anuncio (walkout).** Unos 4,5 s:
+  - el haz, la liga y el rol;
+  - el logo de LOUD con su onda de choque, y la pantalla se inunda de su tono;
+  - tu main en el bitono de LOUD al 70%;
+  - el handle gigante, sobre el que se traza la firma;
+  - "LOUD DA LA BIENVENIDA A ELURAH89".
+- **Título: levantar la copa.** Unos 5 s:
+  - la luz sube a oro y salta el confeti;
+  - la copa sube: WebGL2 por raymarching, metal con los reflejos del tono;
+  - "CAMPEONES" letra por letra con impacto, y los créditos;
+  - se asienta con la copa girando.
+  - La Copa del Invocador es de plata; la de cada liga sale de una tabla investigada. Sin WebGL, una copa en SVG.
+
+**Cómo se construye.**
+- **Ola 0:** el supervisor deja el andamio (archivos, enlaces, bloques de tokens, subsecciones del README, prefijos de
+  clase) y el archivo de hechos con las interfaces fijadas.
+- **Ola 1:** dos Opus xhigh en paralelo.
+  - **K, el kit:** el color, el tono, la costura en el shader, la ceremonia, la transmisión y `final.html`. Es dueño de
+    los archivos compartidos, que quedan congelados para la ola 2.
+  - **M, los momentos:** `beats.js`, la copa, el confeti y el título.
+- **Ola 2:** tres Opus xhigh en paralelo.
+  - **A:** la serie y el Swiss.
+  - **B:** la decisión.
+  - **C:** el mercado y la firma.
+- **Ola 3:** el supervisor arma la hoja de contactos de las 7 (la prueba de "una línea"). Un Opus high nuevo aplica las
+  observaciones cruzadas, en ≤ 2 rondas.
+
+**La lección de proceso** (va a `workflows.md`): workers en paralelo por pantalla con libertad creativa producen estilos
+divergentes. El remedio es el kit primero, los conceptos fijados por el supervisor y una pasada de unificación.
+
+**Resultado:** *(pendiente)*
 
 ---
 

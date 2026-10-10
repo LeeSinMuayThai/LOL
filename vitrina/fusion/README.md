@@ -577,3 +577,52 @@ destinos y programa todo de una vez), el sello con golpe, los flashes con su top
 **Límites.** En el celular no hay pared (ni tablero, ni telón, ni llegada): la tabla y el contrato, como en `mesa`. Si la
 pantalla es más baja que 900 px, el tablero se recorta abajo. El tablero muestra 8 filas: si el motor trae más
 movimientos, el resto queda solo en la lista del lector (que los tiene todos).
+
+## Una línea, `op=linea` (PLANUI §4.9)
+
+El contrato de esta ronda (las 8 reglas, las interfaces fijadas, los dueños de cada archivo, lo que rechaza el
+verificador) está en [`LINEA.md`](LINEA.md). Cada worker escribe solo su subsección.
+
+### El kit de la línea (K): el color, el tono, la costura, la ceremonia y la transmisión
+
+*(lo escribe K)*
+
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+
+### Los momentos (M): `beats.js`, la copa, el confeti y el título
+
+*(lo escribe M)*
+
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+
+### La transmisión (A): la serie y el Swiss
+
+*(lo escribe A)*
+
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+
+### La decisión (B): ¡OFERTA ENCONTRADA! y la costura
+
+*(lo escribe B)*
+
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+
+### El mercado y la firma (C): tu segunda selección y el anuncio
+
+*(lo escribe C)*
+
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+
+### La unificación (ola 3)
+
+*(lo escribe U)*
