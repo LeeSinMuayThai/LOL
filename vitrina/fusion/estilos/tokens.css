@@ -306,5 +306,15 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
   --escudo-fondo: #0b111e;
   /* la mesa de firma: el silencio antes de firmar (el mundo se aquieta) */
   --mk-silencio: #020307c4;
+  /* §4.8 · op=final: el silencio antes del sello (mas hondo: tapa el telon hasta el golpe) */
+  --mk-silencio-hondo: #020307ee;
+  /* §4.8 · op=final: el tablero de la ventana de pases (el cuerpo y cada paleta, con su raya al medio) */
+  --tb-cuerpo: #04060bf0;
+  --tb-cuerpo-alto: #0a0e17f0;
+  --tb-celda: #11151f;
+  --tb-celda-alta: #1a1f2c;
+  --tb-raya: #000000c7;
+  /* §4.8 · op=final: la luz calida de la sala de conferencias sobre el telon de prensa */
+  --telon-luz: #fff2dc;
 }
 /* ===== fin §4.7 mercado ===== */
