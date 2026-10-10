@@ -1111,7 +1111,7 @@ y la hoja de contactos se lee como una línea.
     campo que falta es `opcion.plantel: [{ rol, handle }]` (deuda para cuando se escriba el plan de producción).
   - **El celular.** La llegada del mercado pasa casi toda fuera de pantalla.
   - **1280×720.** Las copas y la liga de la bisagra quedan chicas (~110 px), y la pared de escudos se cae.
-  - **El tono del título.** El sub de VICTORIA baja a 2,3:1 en el 1% de los píxeles sobre arte claro.
+  - **El sub de VICTORIA.** Baja a 2,3:1 en el 1% de los píxeles sobre arte claro.
 
 ---
 
