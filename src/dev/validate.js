@@ -10,7 +10,9 @@ import {
   verificarSinMathRandom, verificarDocumentSoloEnUi,
   verificarSinFondoDeTinta, verificarSinColorLiteral, verificarTokensDefinidos,
   verificarSinLogicaEnIndexHtml,
-  verificarSinColorLiteralEnJs, luminanciaRelativa, contrasteRatio, hexDeToken
+  verificarSinColorLiteralEnJs, luminanciaRelativa, contrasteRatio, hexDeToken,
+  verificarProhibidos, verificarSinColorModerno, verificarSinTripletesGlsl, verificarRngUiAcotado,
+  verificarTokensDeLaVitrina, declaracionesDeTokens
 } from './guards.js';
 import { reconciliar, reemplazarEnElLugar } from '../ui/core/reconciliar.js';
 import { crearDelta, moverNumero } from '../ui/core/delta.js';
@@ -243,18 +245,29 @@ check('CSS: todo var(--token) usado está definido en tokens.css', () => {
 check('CSS: contraste WCAG ≥ 4.5:1 en los pares tinta/superficie que se leen', () => {
   const tokensTexto = fs.readFileSync(path.join(estilosDir, 'tokens.css'), 'utf8');
   // Los pares que el CSS realmente usa para texto que hay que leer, más el
-  // botón principal (texto bg-void sobre --live sólido, el estado hover).
+  // botón principal (texto bg-void sobre el acento sólido, el estado hover).
   const pares = [
     ['ink', 'bg-surface'], ['ink-dim', 'bg-surface'],
     ['ink', 'bg-raised'], ['ink-dim', 'bg-raised'],
-    ['ink', 'bg-void'], ['live', 'bg-surface'], ['gold', 'bg-surface'],
-    ['bg-void', 'live']
+    ['ink', 'bg-void'], ['gold', 'bg-surface']
   ];
   const fallas = pares
     .map(([a, b]) => [a, b, contrasteRatio(hexDeToken(a, tokensTexto), hexDeToken(b, tokensTexto))])
     .filter(([, , r]) => r < 4.5);
+  // PLANUI U1: el acento ya no es un cyan fijo (`--live`, que ahora apunta a `--luz-texto`): es la luz de la era o de la
+  // competición, en su versión para texto. Los mismos dos pares de antes (`live/bg-surface`, `bg-void/live`), con el
+  // mismo umbral, para cada `--luz-texto` precalculado de tokens.css (5 eras + las competiciones).
+  const lucesTexto = declaracionesDeTokens(tokensTexto).filter((d) => d.nombre === '--luz-texto');
+  if (lucesTexto.length < 5) throw new Error(`solo ${lucesTexto.length} --luz-texto en tokens.css: esperaba las 5 eras y las competiciones`);
+  for (const { selectores, valor } of lucesTexto) {
+    const donde = selectores.at(-1);
+    for (const [a, b, nombre] of [[valor, hexDeToken('bg-surface', tokensTexto), 'luz-texto/bg-surface'], [hexDeToken('bg-void', tokensTexto), valor, 'bg-void/luz-texto']]) {
+      const r = contrasteRatio(a, b);
+      if (r < 4.5) fallas.push([`${nombre} (${donde})`, '', r]);
+    }
+  }
   if (fallas.length > 0) {
-    throw new Error(fallas.map(([a, b, r]) => `${a}/${b} = ${r.toFixed(2)}:1`).join(', '));
+    throw new Error(fallas.map(([a, b, r]) => `${a}${b ? `/${b}` : ''} = ${r.toFixed(2)}:1`).join(', '));
   }
 });
 
@@ -264,6 +277,82 @@ check('JS: ningún color literal en src/ui/**/*.js fuera de excepciones de runti
   const hallazgos = verificarSinColorLiteralEnJs(uiDir);
   if (hallazgos.length > 0) {
     throw new Error(`encontrado en: ${hallazgos.join(', ')}`);
+  }
+});
+
+// PLANUI U1 (cimientos): los guards de la UI nueva (src/dev/guards.js). La lista de prohibidos de §5.9 mira las hojas,
+// index.html (el favicon) y, para la fuente, el JS de la UI (los `ctx.font` del PNG). "Más de 2 niveles de contenedor" y
+// "la columna centrada en un vacío" los mide el recorrido (U1a), no este archivo.
+check('PLANUI §5.9: nada de la lista de prohibidos (chaflán, ticks/escuadras, scanlines, grilla de fondo, Barlow, el cyan 2ee8ff)', () => {
+  const hallazgos = verificarProhibidos({ estilosDir, indexHtml: path.join(srcDir, '..', 'index.html'), uiDir });
+  if (hallazgos.length > 0) {
+    throw new Error(`${hallazgos.length}: ${hallazgos.slice(0, 8).join(' | ')}`);
+  }
+});
+
+check('PLANUI §9.5: ningún oklch/oklab/lab/lch/color()/color-mix() en las hojas (los parsers de contraste leen #rrggbb; exenta la decorativa del kit, fx.css)', () => {
+  const hallazgos = verificarSinColorModerno(estilosDir);
+  if (hallazgos.length > 0) {
+    throw new Error(`encontrado en: ${hallazgos.join(', ')}`);
+  }
+});
+
+check('PLANUI §9.5: ningún triplete de color escrito a mano en los shaders de src/ui/fx/ (los colores salen de los tokens)', () => {
+  const hallazgos = verificarSinTripletesGlsl(path.join(uiDir, 'fx'));
+  if (hallazgos.length > 0) {
+    throw new Error(`encontrado en: ${hallazgos.join(', ')} (una constante que no es un color va con el comentario glsl-no-color en su línea)`);
+  }
+});
+
+check('PLANUI §9.5: rngUi aparece solo en los minijuegos, app.js y el guardado (nunca un uso decorativo)', () => {
+  const hallazgos = verificarRngUiAcotado(uiDir);
+  if (hallazgos.length > 0) {
+    throw new Error(`rngUi en: ${hallazgos.join(', ')}`);
+  }
+});
+
+// §9.3: vive hasta U4 (la vitrina es la especificación de producción hasta el cierre). Si la vitrina cambia un token,
+// cambia en src/ui/estilos/tokens.css; los derivados con color-mix se comparan por su valor, precalculado por era y
+// por competición.
+check('PLANUI §9.3 (temporal, hasta U4): tokens.css contiene los tokens de la vitrina de la fusión con el mismo valor', () => {
+  const vitrinaTokens = path.join(srcDir, '..', 'vitrina', 'fusion', 'estilos', 'tokens.css');
+  const problemas = verificarTokensDeLaVitrina(
+    fs.readFileSync(path.join(estilosDir, 'tokens.css'), 'utf8'),
+    fs.readFileSync(vitrinaTokens, 'utf8')
+  );
+  if (problemas.length > 0) {
+    throw new Error(`${problemas.length} distintos: ${problemas.slice(0, 6).join(' | ')}`);
+  }
+});
+
+// PLANUI U1 (§9.2): `ui/core/` (lo puro: el director de la mitad Node, la era, el delta, la trayectoria...) y TODO
+// `ui/fx/` (el kit: se importa sin DOM; un efecto toca el documento recién al montarse) se importan en Node. La lista es
+// un glob, no una cuenta a mano: U1k suma módulos a `fx/` sin tocar este check. Los imports corren solo si el check corre.
+const NOMBRE_UI_EN_NODE = 'PLANUI U1: los módulos de ui/core/ y de todo ui/fx/ (por glob) se importan en Node sin tocar el DOM';
+const modulosUiEnNode = [];
+const fallasUiEnNode = [];
+if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_UI_EN_NODE.toLowerCase().includes(texto))) {
+  const jsDe = (dir, recursivo) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) return recursivo ? jsDe(p, true) : [];
+    return e.name.endsWith('.js') ? [p] : [];
+  });
+  modulosUiEnNode.push(...jsDe(path.join(uiDir, 'core'), false), ...jsDe(path.join(uiDir, 'fx'), true));
+  for (const archivo of modulosUiEnNode) {
+    try {
+      await import(pathToFileURL(archivo).href);
+    } catch (error) {
+      fallasUiEnNode.push(`${path.relative(uiDir, archivo).split(path.sep).join('/')}: ${error.message}`);
+    }
+  }
+}
+check(NOMBRE_UI_EN_NODE, () => {
+  const deFx = modulosUiEnNode.filter((archivo) => archivo.includes(`${path.sep}fx${path.sep}`));
+  if (!modulosUiEnNode.some((archivo) => archivo.endsWith(`${path.sep}era.js`)) || !deFx.some((a) => a.endsWith('index.js')) || !deFx.some((a) => a.endsWith('transicion.js'))) {
+    throw new Error(`el glob no encontró ui/core/era.js, ui/fx/index.js y ui/fx/transicion.js (${modulosUiEnNode.length} módulos)`);
+  }
+  if (fallasUiEnNode.length > 0) {
+    throw new Error(`${fallasUiEnNode.length} de ${modulosUiEnNode.length} no se importan en Node: ${fallasUiEnNode.slice(0, 4).join(' | ')}`);
   }
 });
 

@@ -56,8 +56,7 @@
   text-align: left;
   background: var(--bg-raised);
   border: 1px solid var(--line);
-  border-radius: 0;
-  clip-path: var(--clip-corte);
+  border-radius: var(--r-control);
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: var(--fs-2);
@@ -153,8 +152,7 @@
   padding: var(--s-2) var(--s-3);
   background: transparent;
   border: 1px solid var(--line-strong);
-  border-radius: 0;
-  clip-path: var(--clip-corte-sm);
+  border-radius: var(--r-control);
   color: var(--ink-dim);
   font-family: var(--font-ui);
   font-size: var(--fs-2);
@@ -346,8 +344,7 @@ div.mercado-mundo-titulo { margin-bottom: var(--s-2); }
   padding: var(--s-2) var(--s-3);
   background: transparent;
   border: 1px dashed var(--line-strong);
-  border-radius: 0;
-  clip-path: var(--clip-corte);
+  border-radius: var(--r-control);
   color: var(--ink-dim);
   font-family: var(--font-ui);
   font-size: var(--fs-1);

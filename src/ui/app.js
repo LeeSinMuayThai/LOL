@@ -17,7 +17,7 @@ import { mostrarParada } from './paradas/index.js';
 import { crearEscena } from './escena.js';
 import { fotoDeSplit, cierreDeSplit, cartelDePagina } from './core/escena.js';
 import { iconoSonido } from './components/iconos.js';
-import { aplicarEstudio, limpiarEstudio } from './shell.js';
+import { ambiente } from './shell.js';
 import { crearFranja } from './franja.js';
 import { crearCuartos } from './cuartos.js';
 import { crearAcompanante } from './acompanante.js';
@@ -31,7 +31,6 @@ import { VERSION_JUEGO } from '../data/version.js';
 import { iniciarDesafio } from '../core/desafio.js';
 import { interpretarSeed } from '../core/numeros.js';
 import { previaDeDecision } from '../core/previaDePartido.js';
-import { fichaCompleta } from '../core/ficha.js';
 
 export function iniciar() {
   const shellEl = document.querySelector('.shell');
@@ -125,7 +124,9 @@ export function iniciar() {
   // pantalla sigue en el estado de antes (regla 4 de §V.3, D89: antes se pintaban con el estado final ANTES de los beats y
   // adelantaban el resultado).
   const vista = crearStore(null);
-  const escena = crearEscena({ shell: shellEl, vista });
+  // PLANUI U1: el director también es el único escritor de la luz (`ambiente`, el puente de `shell.js`) y decide las
+  // transiciones; sin reproductor todavía, o en INST / movimiento reducido, todo es síncrono.
+  const escena = crearEscena({ shell: shellEl, vista, ambiente, sinTransicion: () => !reproductor || reproductor.sinEspera() });
   vista.suscribir(pintarDesdeVista);
   // La página del relato (§V.5 "Una página por split"): `desde` es `inicioDePagina` (el `logs.length` de cuando se
   // llamó a `avanzarSplit`; NUNCA se mueve al resolver una decisión: al responder vuelve la misma página con los beats
@@ -234,8 +235,10 @@ export function iniciar() {
 
   // Una parada: el director pone la pieza de su familia (`familiaDeParada`) y la familia la pinta (`paradas/`). Reemplaza
   // a los `hidden` que `mostrarDecision` prendía y apagaba en cada panel: qué nodo se ve lo decide `data-pieza`.
-  function mostrarLaParada(estado) {
+  // PLANUI §6.3: entrar al partido es uno de los tres lugares con transición (al retomar, no).
+  function mostrarLaParada(estado, { retomar = false } = {}) {
     escena.revelar(estado, {
+      transicion: retomar ? false : ['partido'],
       pintar: () => {
         // Antes de la parada: el último beat que el relato ya contó en esta página (todos los de `estado.logs` ya se
         // contaron: la parada entra recién cuando el reproductor termina) y la página, a un toque.
@@ -292,6 +295,7 @@ export function iniciar() {
   // La final: la pieza `final` muestra la tarjeta y "Nueva carrera" (y nada del relato ni de las paradas).
   function mostrarFinal(state) {
     escena.revelar(state, {
+      transicion: true,
       pintar: () => {
         if (state.terminado && state.tarjeta) {
           ui.renderTarjeta(tarjetaPanel, state, modulos, { lineaHistorial: registrarEnHistorial(state) });
@@ -311,19 +315,17 @@ export function iniciar() {
     ui.renderHistorial(historialEl, historial, { etiquetaRol: modulos.etiquetaRol, version: VERSION_JUEGO });
   }
 
-  // Lo que se pinta desde `vista` (FASE V, V2-B; V2-C): la franja, el acompañante, la luz de estudio y el marcador de la
-  // serie. Antes era `pintarChrome`, llamado con el estado del motor ANTES de los beats (D89). Con la `vista` en `null`
-  // (el inicio) se limpia. La ficha ya no está siempre a la vista: vive en el cuarto Vos y, en el escritorio, en el
-  // acompañante cuando le toca.
+  // Lo que se pinta desde `vista` (FASE V, V2-B; V2-C): la franja, el acompañante y el marcador de la serie. Antes era
+  // `pintarChrome`, llamado con el estado del motor ANTES de los beats (D89). Con la `vista` en `null` (el inicio) se
+  // limpia. La luz (antes `aplicarEstudio`, acá) la escribe el director desde la misma `vista` (PLANUI U1,
+  // `ui/core/era.js`). La ficha vive en el cuarto Vos y, en el escritorio, en el acompañante cuando le toca.
   function pintarDesdeVista(estado) {
     franja?.pintar(estado);
     // La pieza ya es la nueva: el director la escribe antes que la `vista`.
     acompanante?.pintar(estado, escena.pieza());
     if (!estado) {
-      limpiarEstudio();
       return;
     }
-    aplicarEstudio(estado, fichaCompleta(estado));
     ui.renderSerieContexto(serieContextoEl, estado);
   }
 
@@ -431,7 +433,9 @@ export function iniciar() {
   // el relato y la `vista` no cambia (la ficha y el chrome muestran lo que ya se contó); recién al terminar los beats el
   // director revela la parada (o el relato quieto) y escribe la `vista`. Si la llamada volvió sin pausa, el split cerró:
   // su tarjeta de cierre entra con el último beat de la página (usa su espera).
-  async function reproducirLlamada(logsAntes, registroAntes) {
+  // `trasElegir`: la llamada es la respuesta a una parada (elegir -> resultado, uno de los tres lugares con transición de
+  // PLANUI §6.3).
+  async function reproducirLlamada(logsAntes, registroAntes, { trasElegir = false } = {}) {
     const estadoActual = store.leer();
     // V4: la parada del motor en el cierre de año es el momento del año (T9: la tarjeta de la página no suma otro).
     if (estadoActual.pendiente?.sistemaId === 'edadCierre') {
@@ -439,7 +443,7 @@ export function iniciar() {
     }
     // K6a-U: mientras el feed reproduce, la parada no está y el aviso "Se está jugando el split…" sí (es de la pieza
     // `relato`).
-    escena.revelar(estadoActual, { reproduciendo: true });
+    escena.revelar(estadoActual, { reproduciendo: true, transicion: trasElegir });
     const bisagra = estadoActual.pendiente?.decision?.datos?.evento?.bisagra ?? false;
     let cierre = null;
     if (!estadoActual.pendiente && !estadoActual.terminado) {
@@ -539,7 +543,7 @@ export function iniciar() {
 
       // La parada se va sola: `reproducirLlamada` pone el relato (antes, cuatro `hidden = true` acá). La página es la
       // misma: los beats de la respuesta entran abajo.
-      if (await reproducirLlamada(logsAntes, registroAntes)) {
+      if (await reproducirLlamada(logsAntes, registroAntes, { trasElegir: true })) {
         return;
       }
       const despues = store.leer();
@@ -722,6 +726,8 @@ export function iniciar() {
     toggleSonido.replaceChildren(iconoSonido(on));
     toggleSonido.setAttribute('aria-pressed', on ? 'true' : 'false');
     toggleSonido.title = on ? 'Sonido activado (click para apagar)' : 'Sonido apagado (click para activar)';
+    // PLANUI U1: el kit de efectos va a su cuadro final con INST (o movimiento reducido), como el reproductor.
+    ambiente.inst(reproductor.sinEspera());
   }
 
   // Fase T8 (P.2): retoma exactamente donde quedó — mismo `rng`/`rngUi`
@@ -773,7 +779,7 @@ export function iniciar() {
 
       if (estadoRetomado.pendiente) {
         ui.renderPagina(logList, estadoRetomado, paginaAlAbrir);
-        mostrarLaParada(estadoRetomado);
+        mostrarLaParada(estadoRetomado, { retomar: true });
         animarEntradaDelEscenario();
       } else {
         escena.revelar(estadoRetomado);

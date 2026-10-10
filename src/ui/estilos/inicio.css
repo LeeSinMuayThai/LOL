@@ -46,7 +46,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg-surface) 30%, transparent), color-mix(in srgb, var(--bg-surface) 88%, transparent));
+  background: linear-gradient(to bottom, var(--velo-suave), var(--velo-lectura));
 }
 @media (prefers-reduced-motion: reduce) {
   .setup-splash-capa { transition: none; }
@@ -171,8 +171,7 @@
   text-align: left;
   background: var(--bg-raised);
   border: 1px solid var(--line-strong);
-  border-radius: 0;
-  clip-path: var(--clip-corte);
+  border-radius: var(--r-control);
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: var(--fs-2);
@@ -227,8 +226,7 @@
   place-items: center;
   background-color: var(--bg-sunken);
   border: 2px dashed var(--ice-dim);
-  border-radius: 0;
-  clip-path: var(--clip-corte);
+  border-radius: var(--r-control);
   color: var(--ink-mute);
   font-family: var(--font-display);
   font-size: var(--fs-7);
@@ -275,8 +273,7 @@
   text-align: left;
   background: var(--bg-raised);
   border: 1px solid var(--line-faint);
-  border-radius: 0;
-  clip-path: var(--clip-corte-sm);
+  border-radius: var(--r-control);
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: var(--fs-2);

@@ -7,7 +7,6 @@
   padding: var(--s-2) var(--s-3);
   background: var(--bg-raised);
   border: 1px solid var(--line);
-  clip-path: var(--clip-corte-sm);
 }
 /* V3b: la previa del acompañante (la completa, abierta) conserva el aire de siempre. */
 .previa--completa { margin-top: 0; padding: var(--s-3); }

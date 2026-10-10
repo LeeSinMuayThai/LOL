@@ -97,13 +97,13 @@ export async function dibujarTarjeta(state, modulos) {
   // el desafío del día, que es lo que hace comparable el número) ---
   const desafio = state.desafio?.fecha ?? null;
   ctx.fillStyle = leerToken('--live');
-  ctx.font = '700 22px "Barlow Condensed", sans-serif';
+  ctx.font = '700 22px "Mona Sans", sans-serif';
   ctx.textBaseline = 'alphabetic';
   ctx.fillText(desafio ? `● DESAFÍO DEL ${desafio} · LOLERO` : '● LIVE · LOLERO', 60, 76);
 
   // --- Identidad ---
   ctx.fillStyle = leerToken('--ink');
-  ctx.font = '700 30px "Barlow Condensed", sans-serif';
+  ctx.font = '700 30px "Mona Sans", sans-serif';
   ctx.fillText(
     `${state.player.name} · ${modulos.etiquetaRol(state.player.role)} · se retiró a los ${t.edadRetiro}`,
     60, 122
@@ -115,20 +115,20 @@ export async function dibujarTarjeta(state, modulos) {
   if (puntaje) {
     ctx.textAlign = 'right';
     ctx.fillStyle = leerToken('--ink');
-    ctx.font = '700 92px "Barlow Condensed", sans-serif';
+    ctx.font = '700 92px "Mona Sans", sans-serif';
     ctx.fillText(miles(puntaje.total), ANCHO - 60, 140);
     ctx.fillStyle = acento;
-    ctx.font = '700 26px "Barlow Condensed", sans-serif';
+    ctx.font = '700 26px "Mona Sans", sans-serif';
     ctx.fillText(`PTS · ${puntaje.nivel.nombre.toUpperCase()}`, ANCHO - 60, 176);
     ctx.fillStyle = leerToken('--ink-dim');
-    ctx.font = '400 17px Inter, sans-serif';
+    ctx.font = '400 17px Geist, sans-serif';
     ctx.fillText(`mejor que el ${puntaje.percentil}% de las carreras`, ANCHO - 60, 204);
     ctx.textAlign = 'left';
   }
 
   // --- El veredicto, la pieza central ---
   ctx.fillStyle = acento;
-  ctx.font = '700 46px "Barlow Condensed", sans-serif';
+  ctx.font = '700 46px "Mona Sans", sans-serif';
   envolver(ctx, t.veredicto, 60, puntaje ? 270 : 200, ANCHO - 120, 56, 3);
 
   // --- Totales como celdas ---
@@ -145,10 +145,10 @@ export async function dibujarTarjeta(state, modulos) {
   celdas.forEach((c, i) => {
     const x = 60 + i * celdaAncho;
     ctx.fillStyle = leerToken('--ink-mute');
-    ctx.font = '600 12px "Barlow Condensed", sans-serif';
+    ctx.font = '600 12px "Mona Sans", sans-serif';
     ctx.fillText(c.k, x, 470);
     ctx.fillStyle = leerToken('--ink');
-    ctx.font = '700 28px "Barlow Condensed", sans-serif';
+    ctx.font = '700 28px "Mona Sans", sans-serif';
     ctx.fillText(c.v, x, 504);
   });
 
@@ -167,7 +167,7 @@ export async function dibujarTarjeta(state, modulos) {
   // --- Pie: la seed (o la fecha del desafío) y la versión, para que el link
   // y la imagen cuenten la misma historia ---
   ctx.fillStyle = leerToken('--ink-mute');
-  ctx.font = '400 16px Inter, sans-serif';
+  ctx.font = '400 16px Geist, sans-serif';
   ctx.fillText(`${desafio ? `desafío ${desafio}` : `seed ${state.seed}`} · v ${VERSION_JUEGO}`, 60, ALTO - 40);
 
   return canvas;
@@ -177,7 +177,7 @@ export async function dibujarTarjeta(state, modulos) {
 function dibujarMedalla(ctx, texto, xDerecha, yBase) {
   const relleno = 16;
   const alto = 44;
-  ctx.font = '700 28px "Barlow Condensed", sans-serif';
+  ctx.font = '700 28px "Mona Sans", sans-serif';
   const ancho = ctx.measureText(texto).width + relleno * 2;
   const x = xDerecha - ancho;
   const y = yBase - alto;
@@ -214,7 +214,7 @@ function dibujarOrgChip(ctx, nombre, x, y, size) {
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = `hsl(${hue} 72% 78%)`;
-  ctx.font = '700 11px "Barlow Condensed", sans-serif';
+  ctx.font = '700 11px "Mona Sans", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(inicialesDeOrg(nombre), x + size / 2, y + size / 2 + 0.5);

@@ -31,8 +31,7 @@
   text-align: center;
   background-color: var(--bg-sunken);
   border: 1px solid var(--line);
-  border-radius: 0;
-  clip-path: var(--clip-corte-sm);
+  border-radius: var(--r-control);
 }
 .ficha-nivel-numero {
   font-family: var(--font-display);

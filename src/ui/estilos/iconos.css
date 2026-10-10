@@ -122,7 +122,7 @@
 .campeon-tile--con-cara .campeon-tile-mae,
 .campeon-tile--con-cara .campeon-tile-oxido {
   padding: 1px 2px;
-  background: color-mix(in srgb, var(--bg-sunken) 82%, transparent);
+  background: var(--panel-hondo);
 }
 .campeon-tile--con-cara .campeon-tile-tier { z-index: 1; }
 

@@ -112,7 +112,15 @@ const SPLITS_DE_VERIFICACION = 30;
 // cuartos con la ficha única (V3e), el cuarto Carrera con `ui/core/trayectoria.js` y la medalla del Golden Road (V5), y
 // el movimiento (V4: los deltas animados, los carteles de página, la pausa del cierre de año). Subido a 2700: ~79 KB
 // (3%) de margen sobre el peso medido ese día, no una expectativa. V7 re-mide con el CSS muerto borrado.
-const PESO_MAXIMO_KB = 2700;
+//
+// Re-medido en PLANUI U1, cimientos (2026-10-10, `u1-cimientos`): 2738 KB contra 2700 (antes de U1: 2620). Lo que
+// creció es la base de la UI nueva que aprobó el usuario (la vitrina como especificación, PLANUI §2): las fuentes de la
+// fusión (Mona Sans variable 96 KB + Geist 29 + Geist Mono 23, contra Inter 47 + Barlow 2 × 22 que salieron: +56 KB,
+// §9.7) y el tokens.css de la vitrina entero con los del kit (+48 KB). Con el kit de U1k (`u1k-kit`, que en su rama
+// mide 2934 y sube a 3000) la ola 1 junta mide 3060 KB: medido el mismo día sobre un árbol armado con este commit más
+// los archivos de `u1k-kit` (`src/ui/fx/`, `estilos/fx.css`, `sonido.js`; no se pisan). Subido a 3150: ~90 KB (3%) de
+// margen sobre ese peso, no una expectativa. Esta rama sola mide 2738.
+const PESO_MAXIMO_KB = 3150;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   OVERLAY DE SERIE — scoreboard + Fearless. Visible con body[data-serie=on].
+   OVERLAY DE SERIE — scoreboard + Fearless.
    ========================================================================== */
 
 .serie-contexto {
@@ -54,8 +54,7 @@
   padding: var(--s-2);
   text-align: center;
   border: 1px solid var(--line);
-  border-radius: 0;
-  clip-path: var(--clip-corte-sm);
+  border-radius: var(--r-control);
   font-size: var(--fs-1);
   color: var(--ink-mute);
   font-variant-numeric: tabular-nums;
@@ -79,11 +78,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--s-1);
-}
-
-body[data-serie="on"] .log-list {
-  max-height: 10em;
-  overflow: auto;
 }
 
 @media (max-width: 639px) {
