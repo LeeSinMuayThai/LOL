@@ -504,7 +504,7 @@ void main() {
   // mas bruma de la era por encima del campeon (tenue): lo funde en la luz
   if (uI.z > 0.0) frente += mix(gLuz, gContra, 0.3) * (0.18 + niebla * 0.9) * uI.z * 0.16 * brillo;
   // el publico: lightsticks en bokeh, por delante (es la primera fila)
-  if (uL.x > 0.0) frente += lightsticks(p, uv, t) * uL.x * 0.5 * brillo;
+  if (uL.x > 0.0) frente += lightsticks(p, uv, t) * uL.x * 0.7 * brillo;
   float pv = polvo(p, t);
   frente += mix(gLuz, uBlanco, 0.45) * pv * (hz * 1.5 + 0.1) * kp * brillo;
   frente += mix(gContra, uOro, 0.5) * brasas(p, t) * uE.w * (0.35 + 0.65 * vivo) * 0.55 * brillo * (1.0 - caida * 0.8);

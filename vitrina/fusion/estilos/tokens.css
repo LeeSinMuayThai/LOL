@@ -543,7 +543,7 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
   --ln-aceptar-alto: 64px;
   /* LA TRANSMISION (js/transmision.js, estilos/transmision.css): la grafica de LoL Esports. Placas finas y oscuras, el
      acento del tono en un filo de 2 px */
-  --ln-tv-placa: #050910eb;
+  --ln-tv-placa: #050910f2;
   --ln-tv-placa-alta: #0c1220f2;
   --ln-tv-placa-sola: #050910;
   --ln-tv-raya: #f4f6fb21;

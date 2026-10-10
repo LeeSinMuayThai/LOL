@@ -114,6 +114,7 @@
     const hash = new URLSearchParams(location.hash.slice(1));
     if (hash.get('reducido') === '1') html.setAttribute('data-reducido', '');
     if (hash.get('inst') === '1') html.setAttribute('data-inst', '');
+    if (hash.get('webgl') === '0') html.setAttribute('data-sin-webgl', '');
     const datos = await cargarMuestras();
     const meta = datos.meta;
     const sonido = crearSonido();
@@ -287,6 +288,7 @@
       listo: () => Promise.all([cargaCostura, fotos, document.fonts.ready, ...[...document.images].map((i) => (i.complete ? null : new Promise((r) => { i.addEventListener('load', r, { once: true }); i.addEventListener('error', r, { once: true }); })))]).then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))),
       costura: (n) => ponerCostura(n),
       ceremonia: (n) => FABRICAS[n](),
+      presionar: () => vivas.bloquear?.bloquear(),
       congelar(ms) {
         for (const a of document.getAnimations().filter(enCeremonias)) {
           a.pause();

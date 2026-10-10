@@ -585,7 +585,136 @@ verificador) está en [`LINEA.md`](LINEA.md). Cada worker escribe solo su subsec
 
 ### El kit de la línea (K): el color, el tono, la costura, la ceremonia y la transmisión
 
-*(lo escribe K)*
+La hoja del kit es [`linea.html`](linea.html): la costura en vivo atrás (cara a cara Sylas | Ahri, la bisagra CBLOL |
+LCK, un lado solo tono, apagada; posición, ángulo y el aura del lado A), el mismo campeón en cinco tonos, las cuatro
+ceremonias con «Repetir», el marcador, la placa, la cinta y el odómetro. `#reducido=1`, `#inst=1` y `#webgl=0` muestran
+el camino quieto y el respaldo CSS. Para las capturas: `window.linea = { listo(), costura(n), ceremonia(n), presionar(),
+congelar(ms), cuadros() }`.
+
+**El color (`js/color.js`).** La política nueva `linea` es la receta (piezas 65 %, fondo 60 % de color real) más
+`momento: { fondo: 0.7, pieza: 0.7 }`. Con `op=linea` y sin `color=` es la de defecto (`colorDeOp(op)`). Siempre en
+duotono quedan solo el inicio y las eras; el título, la firma y el camino `takeover` de `conColor` usan `c.momento ??
+duotono`. Las otras cinco políticas no cambian (medido abajo).
+
+**El segundo tono (`js/tono.js` + el bloque K de `tokens.css`).** Un tono son nombres de token, nunca hex:
+
+```js
+import { tonoDe, tonoEra, tonoCompeticion, tonoDestino, tonoOrg, TONO_ORO, TONO_PLATA, parecidos, separar, aplicarTono, paletaDe } from './tono.js';
+tonoCompeticion('lck')            // { id: 'lck', luz: '--tono-lck-luz', contra, acento, noche, vacio }
+tonoDestino('CBLOL')              // el de su competición; si su luz es blanca, la contra pasa a ser la luz (rojo CBLOL / azul LCK)
+tonoOrg('Movistar KOI')           // real: medido de su logo; inventada ('Vórtice Squad'): la paleta del sistema por hash
+tonoDe({ pantalla: 'cumbre', muestra: 'titulo' })  // sin contexto: oro en el título, la era de <html> en el resto
+tonoDe({ contexto: { tipo: 'org', clave: 'LOUD' } })
+parecidos(tonoOrg('RED Canids Kalunga'), tonoOrg('Fluxo W7M'))  // true: matiz a < 38° (o los dos blancos)
+separar(tA, tB, tonoCompeticion('cblol'))  // si se parecen, B toma la contra de la competición (o su propia contra)
+aplicarTono(nodo, tono)           // --tono-luz/-contra/-acento/-noche/-vacio = var(--tono-<id>-x); null las saca
+paletaDe(tono)                    // { luz, contra, noche, vacio, k: 1 } para ambiente({ paleta })
+```
+
+Tokens: `--tono-era-<era>-*` (5), `--tono-<comp>-*` (9), `--tono-org-<slug>-*` (las 43 orgs reales de `js/logos.js`),
+`--tono-org-p1…p4-*` (inventadas), `--tono-oro-*`, `--tono-plata-*`. La noche es un oscuro del matiz del tono (L 7,5 %),
+el vacío uno más hondo (L 3,4 %); el matiz sale de la luz o, si la luz es blanca (croma < 0,25), de la contra. Las
+orgs: el color dominante de cada logo medido por píxeles con un script offline de Playwright (nunca un canvas de la
+página); con < 8 % de píxeles con color el logo es blanco: la luz es ese blanco y la contra su acento medido o una
+decisión anotada. Cada línea de `tokens.css` dice de dónde sale (p. ej. LOUD #13ff00 100 %, Movistar KOI #4b9bec,
+Karmine Corp #00e7ff, RED #b52433 14 % + blanco, Fluxo #ea2267 + #b520e0, FURIA blanco + acero frío, decisión). Todo
+acento de org se lee ≥ 6,5:1 sobre el panel. Variables de ejecución con defecto en tokens.css: `--tono-luz: var(--luz)`,
+`--tono-contra`, `--tono-acento`, `--tono-noche: var(--bg-surface)`, `--tono-vacio: var(--bg-void)`.
+
+**El ambiente (`js/ambiente.js`, `js/fondo.js`, `js/main.js`).**
+
+```js
+amb.ambiente({ paleta: paletaDe(tonoCompeticion('lpl')), cruce: 750 })   // tiñe la luz Y la noche/vacío; cruza en 750 ms
+amb.ambiente({ costura: { a: { arte: 'Sylas', tono: tA }, b: { arte: 'Ahri', tono: tB }, posicion: 0.5, angulo: 12, k: 1 }, cruce: 750 })
+amb.ambiente({ costura: { b: { arte: null } } })   // parcial: B queda solo luz en su tono (el logo va como <img> encima)
+amb.ambiente({ costura: { posicion: 0.62 } })      // la decisión: apuntar un camino corre la costura hacia su lado
+amb.ambiente({ arte: 'Yone' })                     // con la costura prendida cambia el lado A (el aura sigue andando)
+amb.ambiente({ costura: null })                    // apagada
+amb.ambiente({ lightsticks: 1 })                   // el público en bokeh del tono, abajo, con vaivén (nunca cabezas)
+amb.costura()   // { k, posicion, angulo, vertical, a: { x, y }, b: { x, y } } en fracciones de pantalla, y desde arriba
+```
+
+- La costura la dibuja el shader con la misma cuenta del bitono del inicio (sombras = noche, luces = luz, el filo de
+  contra que mira a la costura, las luces altas, el barrido, el grano, el campo de luz alrededor de cada cara) y el color
+  de pieza de la política (65 %). La línea: un núcleo casi blanco de ~1,4 px, un halo en los dos tonos que respira, una
+  deriva lenta y chispas que corren a lo largo; se traza de abajo hacia arriba al prenderse. Cada mitad tiene su
+  abanico de haces desde arriba de la línea; la fuente y la contra de la era ceden (si no, un lado quedaba lavado).
+- Texturas: 3 (las dos del cruce del campeón = lado A; la tercera = lado B, unidad 4). Al cambiar el arte de B, B se
+  apaga y se vuelve a encender en ese lado (medio `cruce` cada mitad): un cruce sin cuarta textura.
+- En el celular (`encuadre: 'celular'`) se parte en vertical: A arriba, B abajo (`posicion` desde arriba).
+- `escena: 'costura'` (fondo.js): el campeón de siempre a 0 en reposo, aura y momento (sin campeón doble), luz 1 y
+  polvo 1,4 (el estadio: 0,85 y 1,1); en el takeover vuelve al 100 % y la costura se va (el campo nuevo `costura` de
+  los estados: 1 en todas las políticas, 0 solo en ese takeover).
+- Sin WebGL: la paleta pisa `--luz-<era>`/`--contra-<era>` y la noche de la capa CSS; la costura son dos capas con
+  `clip-path` (fondo y arte en su tono) y una línea con brillo. Sin lightsticks.
+- Las fábricas de pantalla pueden devolver `costura`, `cruce`, `lightsticks` y `tono`; main.js los reenvía como la
+  `paleta`. Con `op=linea`: si la pantalla no declara `tono`, va el de su contexto (la era; el oro en el título) a
+  `<html>` (aplicarTono) y, si no trae paleta, al mundo; la arena queda apagada; el partido trae los lightsticks
+  prendidos; los velos (`--velo-*`) se tiñen del vacío del tono (`estilos/linea.css`). `pausar/reanudar` (el mensaje
+  de variantes.html y de final.html) llegan también a la pantalla (`actual.pausar?.()`).
+
+**La ceremonia (`js/ceremonia.js`, `estilos/ceremonia.css`).** Hextech propio: filete de oro en degradé
+(`--ln-oro-claro` #f4e4b4 → `--ln-oro` #c9a45a → `--ln-oro-hondo` #6b4f22), relleno petróleo (`--ln-petroleo*`), el
+turquesa `--ln-turquesa` #5fd9d1 (10,2:1 sobre el petróleo hondo; solo brillo). Sin esquineros. ≤ 1 destello por gesto.
+
+```js
+const a = anilloAceptar({ escudo: imgLogoLCK, encabezado: '¡Oferta encontrada!', cola: 'Cupo de import · LCK', tono: tonoDestino('LCK'), segundos: 12, alAceptar, sonido });
+contenedor.append(a.nodo);  // fixed sobre la pantalla; adentro de un [data-ln-caja], absoluto en su caja. a.aceptar(), a.destruir(), a.animaciones
+const b = bloquear({ texto: 'Firmar', alBloquear, sonido });   // el look del BLOQUEAR del inicio (con --tono-luz); Enter
+b.habilitar(false); b.bloquear();                              // al bloquear: el anillo de destello y el estado bloqueado
+const v = victoriaDerrota({ gano: true, sub: 'Mapa 2 · 1-1 · Corki', retardo: 0 });   // { nodo, animaciones }
+const anims = quemar(nodoCarta, { retardo: 200, sonido });     // nodoCarta: un contenedor (la carta con su retrato)
+```
+
+El aro es un trazo SVG que se vacía con WAAPI (con una cabeza brillante en la punta); al llegar a cero llama
+`alAceptar` solo si el reloj real corrió todo el tiempo (si alguien lo busca con congelar, no dispara). Con movimiento
+reducido o INST: aro lleno y quieto, sin entrada sola, todo en su estado final.
+
+**La transmisión (`js/transmision.js`, `estilos/transmision.css`).** Usa el acento del tono (`--tono-acento` de un
+ancestro, o `tono` en la placa):
+
+```js
+const mc = marcador({ comp: competicionDe(datos, 'serieReplan'), rotulo: 'Cuartos de final', local: { nombre, sigla, logo: logoOrg(nombre) }, visita, formato: 5, mapas: [] });
+mc.actualizar({ mapas: [{ resultado: 'L' }, { resultado: 'W' }] });   // los pips y el golpe del número (resultado desde el local)
+placaInferior({ rotulo: 'Mapa 2 · cuartos de final', titulo: m.cierre, sub: 'RED 1–1 LOS · al mejor de 5', tono })
+cinta({ rotulo: 'Mientras tanto', items: traspasos.map((t) => ({ texto: t.motivo, logo: logoOrg(t.org) })) })   // quieta con reducido/INST
+```
+
+**Los sonidos (`js/sonido.js`).** `ding`, `golpe`, `quemado`, `confeti`, `victoria`, `derrota`, `flash`: WebAudio
+sintetizado (el ruido del PRNG común), mudos con el sonido apagado. Se llaman `sonido.golpe?.()`.
+
+**El odómetro (`js/util.js`, `estilos/base.css`).** Rueda con expo-out (el resorte se pasaba de largo y con un salto de
+varios dígitos dejaba ver los vecinos) y cada columna se funde en sus bordes (`--ln-odo-borde`, medido: el dígito de
+Mona Sans 900 ocupa de 0,15 a 0,9 em de su celda). Vale para todas las pantallas.
+
+**`final.html`.** Cada pestaña es `{ op: 'linea', antes: 'final' | null }` (decisión, serie, Swiss, mercado y firma
+contra la final de §4.8; el título contra sin op; el inicio no cambia: es la referencia). `0` alterna, `←` `→` y `R`
+siguen igual. «Las 7 juntas» muestra `../referencia/linea/hoja-de-contactos.jpg` (la pide recién al abrirse; si no
+existe, queda el texto «se arma al final de la ronda»).
+
+**Verificación (2026-10-10, puerto 8111).**
+- `verificar.mjs` en verde.
+- Sin cambios donde no hay `op=linea`: capturas del código de antes (`8bae46c`) contra el nuevo, congeladas a 6000 ms,
+  23 casos (sin op × 8 pantallas, `final` × 5, `luz`/`transmision`/`escenario`/`escena`/`cliente`/`bisagra`/`mesa`/
+  `orgs`/`anuncio`, `color=real`): 20 con máx. ≤ 23 niveles y p99,9 ≤ 4; los otros 3 (la serie sin op, la decisión
+  `final`, `mesa`) varían igual entre dos corridas del MISMO código (5,2 %, 3,2 %, 2,1 % de píxeles): no son del kit.
+- 0 errores de consola y 0 requestfailed: 10 pantallas × (sin op, `final`, `linea`), `webgl=0` y `peor=1` en serie y
+  mercado (con y sin `linea`), `opciones.html`, `variantes.html`, `linea.html` (y `#webgl=0`, `#reducido=1`),
+  `final.html` (salvo un 404 en «Las 7 juntas» mientras no exista la hoja).
+- La política: con `op=linea`, la serie da piezas 0,65, fondo 0,6 y takeover 0,7; la firma y el título 0,7; el
+  inicio 0.
+- La paleta: una zona oscura pasa de (7, 14, 32) a (32, 5, 5) con la paleta del LPL, y el cruce de 750 ms termina a
+  los 750 ms (0 / 250 / 500 / 750 / 1000 ms); solo la noche y el vacío (misma luz): (7, 14, 32) → (13, 13, 28).
+- La costura: 30 cuadros/s (el tope del ambiente) a 1440×900, 1920×1080 y 390×844, cara a cara y un lado solo tono
+  (Chromium con la GPU real, ANGLE D3D11, RTX 2060).
+- Contraste por píxeles (captura con y sin texto; el glifo son los píxeles que cambian; percentil 10): 26 textos de la
+  ceremonia y la transmisión a 1440×900, el peor 4,65:1 (el BLOQUEAR encendido, el mismo look del inicio); 23 a 390×844,
+  el peor 4,84:1.
+
+**Límites.** La costura sin WebGL es más simple (sin halo en dos tonos ni chispas). El lado solo tono pone un foco de su
+luz donde va el logo; el `<img>` lo ubica la pantalla con `amb.costura().b`. `quemar` desatura los hijos de la carta
+(un `<img>` suelto no sirve: va adentro de un contenedor). El aviso escucha Enter en el documento mientras está montado:
+la pantalla no tiene que manejar esa tecla.
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->

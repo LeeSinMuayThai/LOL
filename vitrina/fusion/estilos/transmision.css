@@ -54,7 +54,7 @@
 .ln-placa-cuerpo { display: grid; gap: 4px; padding: 12px 20px 14px 16px; min-width: 0; }
 .ln-placa-rotulo { margin: 0; font: 600 var(--t-rotulo) / 1.3 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ln-tv-acento-txt); }
 .ln-placa-titulo { margin: 0; font: 800 26px / 1.05 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.025em; color: var(--ink); }
-.ln-placa-sub { margin: 2px 0 0; font: 400 var(--t-chico) / 1.4 var(--f-cuerpo); color: var(--ink-dim); }
+.ln-placa-sub { margin: 2px 0 0; font: 400 var(--t-chico) / 1.4 var(--f-cuerpo); color: color-mix(in oklab, var(--ink-dim) 55%, var(--ink)); }
 @keyframes ln-placa-entra { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 
 /* ---------- la cinta (ticker) ---------- */

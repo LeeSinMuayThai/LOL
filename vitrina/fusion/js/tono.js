@@ -43,9 +43,13 @@ export function tonoCompeticion(idComp) {
   const id = String(idComp ?? '').toLowerCase().replace(/[^a-z]/g, '');
   return deId(COMPETICIONES.includes(id) ? id : id === 'mundial' ? 'worlds' : 'cblol');
 }
-// La liga de un destino ('CBLOL', 'LCK', 'Mundial'...) -> el tono de su competicion.
+// La liga de un destino ('CBLOL', 'LCK', 'Mundial'...) -> el tono de su competicion. Si la luz de la competicion es
+// blanca (el CBLOL, la LCK, la LCS) y su contra no, la contra pasa a ser la luz: en la bisagra cada mitad tiene que
+// leerse por su color (el rojo del CBLOL contra el azul de la LCK), no por dos blancos.
 export function tonoDestino(liga) {
-  return tonoCompeticion(liga);
+  const t = tonoCompeticion(liga);
+  if (!esBlanca(t.luz) || esBlanca(t.contra)) return t;
+  return Object.freeze({ ...t, id: `destino-${t.id}`, luz: t.contra, contra: t.luz });
 }
 
 // "Movistar KOI (LEC)" -> "movistar-koi": sin acentos ni la aclaracion entre parentesis.
@@ -101,6 +105,7 @@ function matiz([r, g, b]) {
   else h = (r - g) / d + 4;
   return { h: (h * 60 + 360) % 360, croma: d };
 }
+const esBlanca = (token) => matiz(leerColor(token)).croma < CROMA_BLANCO;
 // El matiz que se ve de un tono: el de su luz o, si la luz es blanca, el de su contra. null si los dos son blancos.
 function matizDe(t) {
   const l = matiz(leerColor(t.luz));
