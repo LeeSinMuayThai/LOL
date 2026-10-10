@@ -719,7 +719,15 @@ html[data-comp='lcp'] { --luz: var(--comp-lcp-acento); --contra: var(--comp-lcp-
 /* (separador entre bloques de §4.10: no tocar) */
 
 /* ===== PLANUI §4.10 · ultimas · T, la serie y el Swiss (VICTORIA verde, el suspenso del mapa decisivo, el stream casi negro). Sus tokens van entre esta linea y su cierre ===== */
+/* VICTORIA en verde (el usuario: "como estaba antes, la victoria me gustaria que sea verde"): el verde de VICTORIA en la
+   fusion de antes (sin op y op=final: .pg-titulo, var(--up)) hecho metal, con el filete y el brillo de la ceremonia
+   (js/ceremonia.js victoriaDerrota). Del claro al hondo, como el degrade del oro; el oro queda para ¡ACEPTAR! y la copa. */
 :root {
+  --ln-verde-claro: #effff7;
+  --ln-verde-luz: #a2ffd3;
+  --ln-verde: var(--up);
+  --ln-verde-medio: #1fbf78;
+  --ln-verde-hondo: #0c6a42;
 }
 /* ===== fin §4.10 T ===== */
 

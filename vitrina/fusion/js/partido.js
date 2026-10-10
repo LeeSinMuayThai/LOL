@@ -1666,6 +1666,168 @@ function carasDe(g, marco = { x: 0, y: 0, w: 1, h: 1 }) {
 }
 
 // ======================================================================================================================
+// PLANUI §4.10 (T): EL SUSPENSO del mapa decisivo
+// ======================================================================================================================
+// El usuario: "cuando te vas al quinto mapa y no se sabe si es victoria o derrota, me gustaria que haya como una animacion
+// de que se buildea, asi como un suspensito ... unos segunditos de animacion antes de saber si ganaste o perdiste".
+//  - Cuando: el mapa que puede cerrar la serie con los dos a un mapa de ganarla (el quinto de un Bo5 a 2-2, leido del
+//    marcador del motor) y el Bo1 de vida o muerte del Swiss (a una victoria de pasar y a una derrota de quedar afuera,
+//    leido del record). Los demas mapas quedan exactamente como estaban.
+//  - Que: ~3 s que se construyen. La placa del decisivo con la chance del motor (la tuya y la que queda), la costura que
+//    tira de un lado al otro cada vez mas rapido (y las cartas con ella), la luz que va de un tono al otro, el publico de
+//    lightsticks que se enciende, un pulso que se acelera (la linea y la luz laten) y un colchon de tension (sonido.js,
+//    apagado por defecto). Antes del golpe, un silencio; recien despues, VICTORIA o DERROTA.
+//  - Reglas: todo va en el reloj de los beats y en el del ambiente (ambiente({ suspenso })), asi congelar(t) fotografia
+//    cualquier instante; Espacio salta al asentarse (el resultado ya revelado); con INST o movimiento reducido no hay
+//    suspenso; cada latido pasa por beats.destello (<= 3 destellos por segundo, contando el golpe).
+const TX_SUS = {
+  dura: 3000, // el suspenso: del ultimo respiro de calma al golpe del resultado (2,5-3,5 s)
+  cola: 1400, // despues del golpe, el publico se apaga de a poco
+  vaiven: 0.055, // cuanto tira la costura en el pico (fraccion de su caja)
+  hz: [0.5, 1.4], // el tira y afloje se acelera (vueltas por segundo): <= 2,8 cambios de lado por segundo
+  entra: 0.22, // fraccion del suspenso en la que el tira y afloje llega a su amplitud
+  suelta: 0.88, // desde aca vuelve al centro: el golpe arranca con la costura quieta
+  publicoTope: 0.85, // fraccion del suspenso en la que el publico queda todo encendido
+  // el pulso: el primer intervalo, cuanto se acorta cada vez, el minimo (>= la separacion de beats.destello), el silencio
+  // antes del golpe y la fuerza del primero al ultimo
+  latido: { primero: 760, acelera: 0.82, minimo: 340, silencio: 340, k: [0.3, 0.6], cae: 220, golpe: 0.035 },
+  muestras: 110, // las curvas que lee el ambiente (parejas en dura + cola)
+  pasosDom: 72, // los cuadros del tira y afloje de las cartas y la placa
+  abrir: 420, // las cartas se abren y entra la placa
+  separar: 80, // px que se corre cada carta para dejarle el centro a la placa (escritorio)
+  // las cartas acompanan el tira y afloje: cuanto del corrimiento de la costura siguen y cuanto crece la del que empuja
+  siguen: 0.35,
+  crece: 0.03,
+  salePlaca: 160, // la placa se va justo antes del golpe
+};
+// el Swiss del Mundial: espejo de BALANCE.mundial.victoriasParaAvanzar / derrotasParaQuedarAfuera (src/data/balance.js;
+// la vitrina no importa el motor)
+const SWISS_FORMATO = { avanzar: 3, afuera: 3 };
+const SUS_SW = { desde: 600 }; // el suspenso del Swiss arranca con EN JUEGO ya en pantalla (ms desde EN JUEGO)
+const TX_SUS_PIP = 14; // px del halo del pip del decisivo en cada latido
+const suaveSus = (x) => {
+  const t = Math.min(1, Math.max(0, x));
+  return t * t * (3 - 2 * t);
+};
+const expoSus = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * Math.max(0, x)));
+// el mapa decisivo: el que puede cerrar la serie con los dos a un mapa de ganarla. Se lee del marcador del motor (el de
+// despues del mapa, sacandole el mapa), nunca de un indice fijo
+function esDecisivo(l, formato) {
+  const [a, b] = String(l?.marcador ?? '').split('-').map(Number);
+  if (!l?.mapa || !Number.isFinite(a) || !Number.isFinite(b)) return false;
+  const falta = Math.floor(Math.max(1, Number(formato) || 1) / 2);
+  const gano = l.resultado === 'W';
+  return (gano ? a - 1 : a) === falta && (gano ? b : b - 1) === falta;
+}
+// el Bo1 de vida o muerte del Swiss: a una victoria de pasar y a una derrota de quedar afuera
+const esVidaOMuerte = (rec) => rec?.v === SWISS_FORMATO.avanzar - 1 && rec?.d === SWISS_FORMATO.afuera - 1;
+// el tira y afloje en u (0-1 del suspenso): -1..1, crece, se acelera y vuelve al centro antes del golpe
+function tiraEn(u, c = TX_SUS) {
+  if (!(u > 0 && u < 1)) return 0;
+  const env = suaveSus(u / c.entra) * (1 - suaveSus((u - c.suelta) / (1 - c.suelta))) * (0.5 + 0.5 * u);
+  return Math.sin(2 * Math.PI * (c.dura / 1000) * (c.hz[0] * u + ((c.hz[1] - c.hz[0]) * u * u) / 2)) * env;
+}
+// Las curvas que lee el ambiente (muestras parejas en dura + cola) y los latidos (ms desde el arranque, con su fuerza)
+function curvasSuspenso(c = TX_SUS) {
+  const total = c.dura + c.cola;
+  const vaiven = [];
+  const tonos = [];
+  const publico = [];
+  for (let i = 0; i <= c.muestras; i++) {
+    const t = (i / c.muestras) * total;
+    const u = t / c.dura;
+    const tira = tiraEn(u, c);
+    // la costura se corre hacia B cuando A empuja: la luz es la de A (-1)
+    vaiven.push(Number((tira * c.vaiven).toFixed(5)));
+    tonos.push(Number((-tira).toFixed(4)));
+    publico.push(Number((u <= 1 ? suaveSus(u / c.publicoTope) : 1 - suaveSus((t - c.dura) / c.cola)).toFixed(4)));
+  }
+  const tiempos = [];
+  const L = c.latido;
+  for (let x = 0, d = L.primero; x <= c.dura - L.silencio; x += d, d = Math.max(L.minimo, d * L.acelera)) tiempos.push(Math.round(x));
+  const latidos = tiempos.map((x, i) => [x, L.k[0] + ((L.k[1] - L.k[0]) * i) / Math.max(1, tiempos.length - 1)]);
+  return { total, vaiven, tonos, publico, latidos };
+}
+// la placa late con el pulso: un golpe de escala (`scale`, que se suma al `transform` de su entrada) y su brillo
+function latirPlaca(b, pl, latidos, tS) {
+  const tL = tS - TX_SUS.latido.cae;
+  const dL = TX_SUS.dura + TX_SUS.latido.cae;
+  b.waapi([
+    anim(pl.brillo, cuadrosLatido(latidos, tL, dL), { delay: tL, duration: dL, fill: 'none' }),
+    anim(pl.nodo, cuadrosLatido(latidos, tL, dL, { valor: (v) => ({ scale: String(1 + v * TX_SUS.latido.golpe) }) }), { delay: tL, duration: dL, fill: 'none' }),
+  ]);
+}
+// Lo que no es DOM: los latidos (cada uno pasa por beats.destello), el ambiente (la costura, la luz, el publico) y el
+// sonido. Espacio y destruir cortan el suspenso del ambiente y el colchon. Devuelve los latidos aceptados (ms de los beats).
+function programarSuspenso({ b, amb, sonido, tS }) {
+  const cv = curvasSuspenso();
+  const aceptados = [];
+  for (const [ms, k] of cv.latidos) {
+    const t = b.destello(tS + ms);
+    if (t != null) aceptados.push([t - tS, k]);
+  }
+  amb.ambiente({ suspenso: { dura: cv.total, vaiven: cv.vaiven, tonos: cv.tonos, publico: cv.publico, latidos: aceptados }, retardo: tS });
+  let tension = null;
+  b.esperar(tS).then((ok) => {
+    if (ok) tension = sonido?.tension?.(TX_SUS.dura / 1000) ?? null;
+  });
+  for (const [ms, k] of aceptados) b.esperar(tS + ms).then((ok) => ok && sonido?.latido?.(k));
+  const cortar = () => {
+    tension?.parar?.();
+    tension = null;
+  };
+  const apagar = () => {
+    cortar();
+    amb.ambiente({ suspenso: null });
+  };
+  b.agregar({ fps: 1, saltar: apagar, pausar: cortar, destruir: apagar });
+  return aceptados.map(([ms]) => tS + ms);
+}
+// los cuadros de un brillo que late con los latidos (opacidad), en una animacion de [t0, t0 + dura]
+// (`valor(v)` arma el cuadro: por defecto, la opacidad)
+function cuadrosLatido(tiempos, t0, dura, { alto = 1, bajo = 0, valor = (v) => ({ opacity: v }) } = {}) {
+  const sube = 40;
+  const cuadros = [{ offset: 0, ...valor(bajo) }];
+  for (const t of tiempos) {
+    const a = (t - t0) / dura;
+    const z = (t + TX_SUS.latido.cae - t0) / dura;
+    if (a <= cuadros[cuadros.length - 1].offset || z >= 1) continue;
+    cuadros.push({ offset: a, ...valor(bajo) }, { offset: (t + sube - t0) / dura, ...valor(alto), easing: 'cubic-bezier(0.2, 0.6, 0.3, 1)' }, { offset: z, ...valor(bajo) });
+  }
+  cuadros.push({ offset: 1, ...valor(bajo) });
+  return cuadros;
+}
+// los cuadros del tira y afloje para el DOM (la propiedad `translate`, que se suma al `transform` de la entrada): px es
+// cuanto mide la caja de la costura en el eje del tira y afloje; base(u), un corrimiento propio (las cartas se abren)
+// (`k`: cuanto del corrimiento siguen; `crece`: lo que crece la carta del lado que empuja, `lado` 1 = A, -1 = B)
+function cuadrosTira(px, { eje = 'x', base = () => 0, k = 1, crece = 0, lado = 1 } = {}) {
+  return Array.from({ length: TX_SUS.pasosDom + 1 }, (_, i) => {
+    const u = i / TX_SUS.pasosDom;
+    const tira = tiraEn(u);
+    const d = (base(u) + tira * TX_SUS.vaiven * px * k).toFixed(2);
+    const c = { offset: u, translate: eje === 'x' ? `${d}px 0px` : `0px ${d}px` };
+    if (crece) c.scale = String((1 + Math.max(0, tira * lado) * crece).toFixed(4));
+    return c;
+  });
+}
+// La placa del decisivo: el rotulo, lo que se juega y la chance del motor partida entre los dos (la tuya y la que queda)
+function placaDecisiva({ rotulo, linea, p, nos, ellos, pie }) {
+  const pA = Math.round((p ?? 0) * 100);
+  const brillo = el('i', { class: 'tx-sus-brillo', 'aria-hidden': 'true' });
+  const nodo = el('div', { class: 'tx-sus', role: 'status', 'aria-label': `${rotulo}. ${linea}. Tu chance en el motor: ${pA}%` }, [
+    brillo,
+    el('p', { class: 'tx-sus-k', 'aria-hidden': 'true' }, [el('i', { class: 'tx-sus-punto' }), el('span', { text: rotulo })]),
+    el('p', { class: 'tx-sus-linea', 'aria-hidden': 'true', text: linea }),
+    el('div', { class: 'tx-sus-p', 'aria-hidden': 'true', style: { '--v': String(pA / 100) } }, [
+      el('p', { class: 'tx-sus-nums' }, [el('b', { class: 'num', 'data-lado': 'a', text: `${pA}%` }), el('b', { class: 'num', 'data-lado': 'b', text: `${100 - pA}%` })]),
+      el('div', { class: 'tx-sus-fila' }, [logoOrg(nos, { clase: 'tx-sus-logo' }), el('i', { class: 'tx-sus-barra' }, el('i', { class: 'tx-sus-si' })), logoOrg(ellos, { clase: 'tx-sus-logo' })]),
+    ]),
+    el('p', { class: 'tx-sus-pie', 'aria-hidden': 'true', text: pie }),
+  ]);
+  return { nodo, brillo };
+}
+
+// ======================================================================================================================
 // La serie: el cara a cara
 // ======================================================================================================================
 function crearSerieLinea({ datos, muestra, amb, aura, sonido, peor }) {
@@ -1929,14 +2091,16 @@ function crearSerieLinea({ datos, muestra, amb, aura, sonido, peor }) {
     amb.aquietar(false);
     sonido?.clic?.();
 
-    // la linea de tiempo: cada mapa (TX.mapa) y la charla del coach entre mapas (TX.charla)
+    // la linea de tiempo: cada mapa (TX.mapa; el decisivo, mas su suspenso: PLANUI §4.10) y la charla del coach entre
+    // mapas (TX.charla)
     const mapasT = [];
     const charlas = [];
     let t = TX.t0;
     logs.forEach((l, i) => {
       if (l.mapa) {
-        mapasT.push({ l, t0: t, k: claveCampeon(l.campeon), rk: claveCampeon(l.rivalJuega) });
-        t += TX.mapa;
+        const s = esDecisivo(l, formato) && !quieto() ? TX_SUS.dura : 0;
+        mapasT.push({ l, t0: t, k: claveCampeon(l.campeon), rk: claveCampeon(l.rivalJuega), s });
+        t += TX.mapa + s;
       } else if (primero >= 0 && i > primero && i < ultimo) {
         charlas.push({ l, t0: t });
         t += TX.charla;
@@ -1958,7 +2122,7 @@ function crearSerieLinea({ datos, muestra, amb, aura, sonido, peor }) {
     mapasT.forEach((mp, j) => {
       const tSig = mapasT[j + 1]?.t0 ?? tFin;
       jugarMapa(mp, tSig, j === mapasT.length - 1);
-      cuentaQ.push({ t: mp.t0 + TX.quema, n: qi });
+      cuentaQ.push({ t: mp.t0 + TX.quema + mp.s, n: qi });
     });
     charlas.forEach((ch) => {
       const caja = el('div', { class: 'tx-charla' }, placaInferior({ rotulo: 'Vestuario · el coach', titulo: ch.l.message, tono: tComp }));
@@ -1970,8 +2134,10 @@ function crearSerieLinea({ datos, muestra, amb, aura, sonido, peor }) {
 
     // un mapa: la costura cambia, las cartas de carga, VICTORIA/DERROTA del lado del ganador, el pip, el quemado
     function jugarMapa(mp, tSig, esUltimo) {
-      const { l, t0, k, rk } = mp;
+      const { l, t0, k, rk, s } = mp;
       const gano = l.resultado === 'W';
+      // el decisivo: el resultado, el pip y el quemado llegan despues del suspenso (s = 0 en los demas: como siempre)
+      const tR = t0 + TX.resultado + s;
       const par = parCaras(k, rk, { subA, subB: rk ? sEllos : '', clase: 'tx-par-mapa' });
       caras.append(par);
       b.waapi(ventanaTx(par, t0, tSig - t0 + (esUltimo ? 200 : 0), 160, 160));
@@ -1984,7 +2150,7 @@ function crearSerieLinea({ datos, muestra, amb, aura, sonido, peor }) {
       };
       const cA = carta(k, tA, 'a', subA, nos);
       const cB = rk ? carta(rk, tB, 'b', sEllos, ellos) : null;
-      const vd = victoriaDerrota({ gano, sub: `Mapa ${l.mapa} · ${String(l.marcador).replace('-', '–')} · tenías ${pct(l.p)}`, retardo: t0 + TX.resultado });
+      const vd = victoriaDerrota({ gano, sub: `Mapa ${l.mapa} · ${String(l.marcador).replace('-', '–')} · tenías ${pct(l.p)}`, retardo: tR });
       const caja = el('div', { class: 'tx-vd', 'data-lado': gano ? 'a' : 'b' }, vd.nodo);
       const rot = el('p', { class: 'tx-mapa-n' }, [el('b', { text: `Mapa ${l.mapa}` }), l.mapa === formato ? el('span', { text: 'el decisivo' }) : null]);
       const capa = el('div', { class: 'tx-mapa', 'data-res': l.resultado }, [rot, cA, cB, caja]);
@@ -1995,18 +2161,19 @@ function crearSerieLinea({ datos, muestra, amb, aura, sonido, peor }) {
       b.waapi(vd.animaciones);
       // el ganador se enciende; el perdedor se apaga
       const [cg, cp] = gano ? [cA, cB] : [cB, cA];
-      if (cg) b.waapi(anim(cg, [{ filter: 'brightness(1.7)' }, { filter: 'none' }], { delay: t0 + TX.resultado, duration: 640, easing: EXPO }));
-      if (cp) b.waapi(anim(cp, [{ filter: 'none' }, { filter: 'grayscale(1) brightness(0.5)' }], { delay: t0 + TX.resultado, duration: 360, fill: 'both' }));
-      const td = b.destello(t0 + TX.resultado + 40);
+      if (cg) b.waapi(anim(cg, [{ filter: 'brightness(1.7)' }, { filter: 'none' }], { delay: tR, duration: 640, easing: EXPO }));
+      if (cp) b.waapi(anim(cp, [{ filter: 'none' }, { filter: 'grayscale(1) brightness(0.5)' }], { delay: tR, duration: 360, fill: 'both' }));
+      const td = b.destello(tR + 40);
       if (td != null && gano) amb.pulso('logro', td);
-      b.esperar(t0 + TX.resultado + 60).then((ok) => ok && (gano ? sonido?.victoria?.() : sonido?.derrota?.()));
+      b.esperar(tR + 60).then((ok) => ok && (gano ? sonido?.victoria?.() : sonido?.derrota?.()));
+      if (s) suspenso({ l, tS: t0 + TX.resultado, cA, cB, capa });
       // el pip del mapa (el color del que gano)
       const pin = pipsMapa[l.mapa - 1]?.firstElementChild;
       if (pin) {
         pin.dataset.res = l.resultado;
-        b.waapi(anim(pin, [{ opacity: 0, transform: 'scaleX(0)' }, { opacity: 1, transform: 'none' }], { delay: t0 + TX.pip, duration: 380, easing: EXPO }));
+        b.waapi(anim(pin, [{ opacity: 0, transform: 'scaleX(0)' }, { opacity: 1, transform: 'none' }], { delay: t0 + TX.pip + s, duration: 380, easing: EXPO }));
       }
-      b.esperar(t0 + TX.pip).then((ok) => ok && sonido?.golpe?.());
+      b.esperar(t0 + TX.pip + s).then((ok) => ok && sonido?.golpe?.());
       // Fearless: los dos picks se queman (en la tira y, si era un libre tuyo, su carta)
       let quemo = false;
       for (const q of [k, rk]) {
@@ -2015,14 +2182,53 @@ function crearSerieLinea({ datos, muestra, amb, aura, sonido, peor }) {
         const slot = slots[qi++];
         if (slot) {
           const ico = ponerIcono(slot, q);
-          b.waapi(anim(ico, [{ opacity: 0, transform: 'scale(1.7)' }, { opacity: 1, transform: 'none' }], { delay: t0 + TX.quema - 180, duration: 240, easing: EXPO }));
-          b.waapi(quemarCarta(slot, { retardo: t0 + TX.quema }));
+          b.waapi(anim(ico, [{ opacity: 0, transform: 'scale(1.7)' }, { opacity: 1, transform: 'none' }], { delay: t0 + TX.quema + s - 180, duration: 240, easing: EXPO }));
+          b.waapi(quemarCarta(slot, { retardo: t0 + TX.quema + s }));
           quemo = true;
         }
         const lib = libresNodos.get(q);
-        if (lib) b.waapi(quemarCarta(lib, { retardo: t0 + TX.quema }));
+        if (lib) b.waapi(quemarCarta(lib, { retardo: t0 + TX.quema + s }));
       }
-      if (quemo) b.esperar(t0 + TX.quema).then((ok) => ok && sonido?.quemado?.());
+      if (quemo) b.esperar(t0 + TX.quema + s).then((ok) => ok && sonido?.quemado?.());
+    }
+
+    // EL SUSPENSO del mapa decisivo (PLANUI §4.10): las cartas se abren y entra la placa del decisivo con la chance del
+    // motor; la costura (y las cartas con ella) tira de un lado al otro cada vez mas rapido y late, la luz va de un tono
+    // al otro, el publico se enciende y el pulso se acelera. La placa se va justo antes del golpe de VICTORIA/DERROTA.
+    function suspenso({ l, tS, cA, cB, capa }) {
+      const D = TX_SUS.dura;
+      const cel = celular();
+      const [a, bb] = String(l.marcador).split('-').map(Number);
+      const empate = l.resultado === 'W' ? `${a - 1}–${bb}` : `${a}–${bb - 1}`;
+      const pl = placaDecisiva({
+        rotulo: `En juego · ${empate}`,
+        linea: `el que gana se lleva ${se.ronda === 'final' ? 'la final' : 'la serie'}`,
+        p: l.p,
+        nos,
+        ellos,
+        pie: 'la chance del motor para este mapa',
+      });
+      capa.append(pl.nodo);
+      b.waapi([
+        ventanaTx(pl.nodo, tS, D, 220, TX_SUS.salePlaca),
+        anim(pl.nodo, [{ transform: 'translate(-50%, -50%) scale(0.86)', filter: 'blur(6px)' }, { transform: 'translate(-50%, -50%)', filter: 'none' }], { delay: tS, duration: TX_SUS.abrir, easing: EXPO }),
+        anim(pl.nodo.querySelector('.tx-sus-si'), [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: tS + 200, duration: 620, easing: EXPO }),
+      ]);
+      // el tira y afloje: las cartas (que ademas se abren, en el escritorio) acompanan a la costura y la del que empuja
+      // crece; la placa queda quieta (lo que se lee no tiembla)
+      const caja = document.documentElement;
+      const px = cel ? caja.clientHeight || innerHeight : caja.clientWidth || innerWidth;
+      const eje = cel ? 'y' : 'x';
+      const abre = (u) => (cel ? 0 : TX_SUS.separar * expoSus(u * (D / TX_SUS.abrir)));
+      [cA, cB].forEach((c, j) => c && b.waapi(anim(c, cuadrosTira(px, { eje, base: (u) => (j ? 1 : -1) * abre(u), k: TX_SUS.siguen, crece: TX_SUS.crece, lado: j ? -1 : 1 }), { delay: tS, duration: D, fill: 'both' })));
+      // el pulso: la linea y la luz laten (el ambiente), y en el DOM el brillo de la placa y el pip del decisivo
+      const latidos = programarSuspenso({ b, amb, sonido, tS });
+      latirPlaca(b, pl, latidos, tS);
+      const tL = tS - TX_SUS.latido.cae;
+      const dL = D + TX_SUS.latido.cae;
+      const pip = pipsMapa[l.mapa - 1];
+      const halo = (v) => ({ boxShadow: `inset 0 0 0 1px var(--linea-fuerte), 0 0 ${(v * TX_SUS_PIP).toFixed(1)}px var(--luz)` });
+      if (pip) b.waapi(anim(pip, cuadrosLatido(latidos, tL, dL, { valor: halo }), { delay: tL, duration: dL, fill: 'none' }));
     }
 
     // los participantes que no son WAAPI: la costura (el ambiente) y el marcador (la grafica del kit)
@@ -2043,7 +2249,7 @@ function crearSerieLinea({ datos, muestra, amb, aura, sonido, peor }) {
       n: -1,
       en(tt) {
         let s = 0;
-        for (const mp of mapasT) if (tt >= mp.t0 + TX.pip) s++;
+        for (const mp of mapasT) if (tt >= mp.t0 + TX.pip + mp.s) s++;
         let q = quemados0.length;
         for (const x of cuentaQ) if (tt >= x.t) q = x.n;
         contador.textContent = q ? `${q} de ${capacidad}` : 'ninguno todavía';
@@ -2201,6 +2407,8 @@ function crearSwissLinea({ datos, muestra, amb, sonido, peor }) {
   const sEllos = siglaDe(rival);
   const pOpc = Object.fromEntries((pg.opciones ?? []).map((o) => [o.id, o]));
   const quietoSw = quieto();
+  // (PLANUI §4.10) el Bo1 de vida o muerte (a una victoria de pasar y a una derrota de quedar afuera) trae el suspenso
+  const vidaOMuerte = esVidaOMuerte(rec);
 
   // ---------- los tonos: la noche de Worlds (la pagina) y cada org (cada mitad del video) ----------
   const tComp = tonoCompeticion(comp.id);
@@ -2512,7 +2720,10 @@ function crearSwissLinea({ datos, muestra, amb, sonido, peor }) {
       t += TXS.charla;
     }
     const tJuego = t;
-    const tPost = tJuego + TXS.juego;
+    // el de vida o muerte: EN JUEGO y, desde SUS_SW.desde, el suspenso hasta el resultado (PLANUI §4.10)
+    const sus = vidaOMuerte && !quietoSw;
+    const tS = tJuego + SUS_SW.desde;
+    const tPost = sus ? tS + TX_SUS.dura : tJuego + TXS.juego;
     const tAfuera = tPost + TXS.post;
     const b = crearBeats({ duracion: tAfuera + TXS.dur, asentarse: tAfuera + TXS.asentarse });
     beats = b;
@@ -2531,7 +2742,7 @@ function crearSwissLinea({ datos, muestra, amb, sonido, peor }) {
       el('p', { class: 'tx-sw-enjuego-p' }, [el('b', { class: 'num', text: pct(partido?.p) }), el('span', { text: 'tu chance en este Bo1' })]),
     ]);
     juego.append(enJuego);
-    b.waapi(ventanaTx(enJuego, tJuego, TXS.juego + 120));
+    b.waapi(ventanaTx(enJuego, tJuego, sus ? SUS_SW.desde + 160 : TXS.juego + 120));
     // el resultado: VICTORIA/DERROTA sobre el lado del ganador, adentro del video
     const vd = victoriaDerrota({ gano, sub: `Swiss · ronda ${partido?.ronda ?? proxima} · ${recFinal.replace('-', '–')}`, retardo: tPost });
     const vdCaja = el('div', { class: 'tx-vd tx-sw-vd', 'data-lado': gano ? 'a' : 'b' }, vd.nodo);
@@ -2541,6 +2752,7 @@ function crearSwissLinea({ datos, muestra, amb, sonido, peor }) {
     const td = b.destello(tPost + 40);
     if (td != null && gano) amb.pulso('logro', td);
     b.esperar(tPost + 60).then((ok) => ok && (gano ? sonido?.victoria?.() : sonido?.derrota?.()));
+    if (sus) suspensoSw({ b, partido, tS });
     // el camino: la ronda en vivo se resuelve
     const res5 = el('b', { class: 'tx-cam-res', 'data-res': partido?.resultado ?? 'L', text: gano ? 'V' : 'D' });
     r5.append(res5);
@@ -2595,6 +2807,29 @@ function crearSwissLinea({ datos, muestra, amb, sonido, peor }) {
       if (raiz.isConnected) afuera.boton.focus({ preventScroll: true });
     });
     b.iniciar();
+  }
+
+  // EL SUSPENSO del Bo1 de vida o muerte (PLANUI §4.10): EN JUEGO le deja el lugar a la placa del decisivo (la chance del
+  // motor partida entre los dos), abajo en el video; adentro, la costura tira de un lado al otro y late (el logo del rival
+  // la sigue), la luz va de un tono al otro y el pulso se acelera; la placa se va justo antes del golpe del resultado.
+  function suspensoSw({ b, partido, tS }) {
+    const D = TX_SUS.dura;
+    const pl = placaDecisiva({
+      rotulo: `En juego · Bo1 · ${rec.v}–${rec.d}`,
+      linea: 'vida o muerte: el que pierde se vuelve a casa',
+      p: partido?.p,
+      nos: orgVista,
+      ellos: rival,
+      pie: 'la chance del motor en este Bo1',
+    });
+    pl.nodo.classList.add('tx-sw-sus');
+    juego.append(pl.nodo);
+    b.waapi([
+      ventanaTx(pl.nodo, tS, D, 220, TX_SUS.salePlaca),
+      anim(pl.nodo, [{ transform: 'translate(-50%, -50%) scale(0.86)', filter: 'blur(6px)' }, { transform: 'translate(-50%, -50%)', filter: 'none' }], { delay: tS, duration: TX_SUS.abrir, easing: EXPO }),
+      anim(pl.nodo.querySelector('.tx-sus-si'), [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: tS + 200, duration: 620, easing: EXPO }),
+    ]);
+    latirPlaca(b, pl, programarSuspenso({ b, amb, sonido, tS }), tS);
   }
 
   // AFUERA: el takeover sobre la columna del stream (el chat sigue al costado)

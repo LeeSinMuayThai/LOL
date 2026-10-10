@@ -8,7 +8,13 @@
 //   victoria  un acorde mayor que sube, con un brillo arriba
 //   derrota   dos notas menores que caen, oscuras
 //   flash     el golpe de luz: un barrido de ruido brillante + un ping agudo
+// PLANUI §4.10 (T) suma los del suspenso del mapa decisivo, mudos igual con el sonido apagado:
+//   tension   un colchon grave que sube de a poco (dos sierras desafinadas, un filtro que se abre y un brillo que trepa)
+//             y se corta seco antes del golpe. Devuelve { parar() } (Espacio o repetir lo cortan ya)
+//   latido    el corazon: dos golpes sordos (lub-dub), el segundo mas suave
 import { crearAzar } from '../../comun/azar.js';
+
+const SIN_SONIDO = Object.freeze({ parar() {} });
 
 export function crearSonido() {
   let prendido = document.documentElement.hasAttribute('data-sonido');
@@ -254,6 +260,78 @@ export function crearSonido() {
       o.connect(go).connect(c.destination);
       o.start(t + 0.03);
       o.stop(t + 0.7);
+    },
+    tension(segundos = 3) {
+      const c = audio();
+      if (!c) return SIN_SONIDO;
+      const t = c.currentTime;
+      const fin = t + Math.max(0.5, segundos);
+      const f = c.createBiquadFilter();
+      f.type = 'lowpass';
+      f.Q.value = 4;
+      f.frequency.setValueAtTime(160, t);
+      f.frequency.exponentialRampToValueAtTime(1500, fin);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.055, fin - 0.08);
+      g.gain.exponentialRampToValueAtTime(0.0001, fin);
+      f.connect(g).connect(c.destination);
+      const fuentes = [];
+      for (const hz of [55, 55.7, 110.4]) {
+        const o = c.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.value = hz;
+        o.connect(f);
+        fuentes.push(o);
+      }
+      // el brillo que trepa (una octava, de La a La)
+      const b = c.createOscillator();
+      const gb = c.createGain();
+      b.type = 'sine';
+      b.frequency.setValueAtTime(440, t);
+      b.frequency.exponentialRampToValueAtTime(880, fin);
+      gb.gain.setValueAtTime(0.0001, t);
+      gb.gain.exponentialRampToValueAtTime(0.018, fin - 0.08);
+      gb.gain.exponentialRampToValueAtTime(0.0001, fin);
+      b.connect(gb).connect(c.destination);
+      fuentes.push(b);
+      for (const o of fuentes) {
+        o.start(t);
+        o.stop(fin + 0.02);
+      }
+      return {
+        parar() {
+          const ahora = c.currentTime;
+          for (const x of [g, gb]) {
+            x.gain.cancelScheduledValues(ahora);
+            x.gain.setTargetAtTime(0.0001, ahora, 0.03);
+          }
+          for (const o of fuentes) {
+            try {
+              o.stop(ahora + 0.15);
+            } catch {
+              /* ya parado */
+            }
+          }
+        },
+      };
+    },
+    latido(k = 1) {
+      const c = audio();
+      if (!c) return;
+      const t = c.currentTime;
+      for (const [i, pico] of [0.3, 0.18].entries()) {
+        const ti = t + i * 0.15;
+        const o = c.createOscillator();
+        const g = c.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(62, ti);
+        o.frequency.exponentialRampToValueAtTime(38, ti + 0.16);
+        envolvente(g, ti, 0.006, 0.02, 0.17, Math.max(0.0002, pico * Math.min(1, k)));
+        o.connect(g).connect(c.destination);
+        o.start(ti);
+        o.stop(ti + 0.24);
+      }
     },
     acorde() {
       const c = audio();

@@ -1207,7 +1207,32 @@ La perilla `var=<id>` elige la variante dentro de `op=linea` (`js/main.js` la le
 
 ### La serie y el Swiss (T): VICTORIA verde, el suspenso del mapa decisivo y el stream casi negro
 
-(pendiente)
+- **VICTORIA en verde** (`estilos/ceremonia.css`, tokens `--ln-verde-*` del bloque T): el verde de VICTORIA en la fusión
+  de antes (`--up`, el de `.pg-titulo`) hecho metal, del claro al hondo como el oro, con el filete (un canto claro de
+  0,7 px) y el brillo de la ceremonia (el ojo turquesa, el interior petróleo). DERROTA no cambia y el oro queda para
+  ¡ACEPTAR! y la copa. Vale para todo `victoriaDerrota`: la serie, el Swiss y `linea.html`. La palabra, medida por
+  píxeles sobre la costura: p5 8,7:1 (mediana 12,3).
+- **El suspenso del mapa decisivo** (`js/partido.js`, `TX_SUS`).
+  - Cuándo: el mapa que puede cerrar la serie con los dos a un mapa de ganarla (`esDecisivo`, del marcador del motor;
+    en las muestras, el 5 de `serie` opciones 2-3 y de `serieReplan` 1-3) y el Bo1 de vida o muerte del Swiss
+    (`esVidaOMuerte`, del record; espejo de `BALANCE.mundial`). Los demás mapas, igual que antes.
+  - Qué: 3 s entre las cartas de carga y el golpe. Las cartas se abren y entra la placa del decisivo ("En juego · 2–2",
+    lo que se juega y la chance del motor partida entre los dos); la costura tira de un lado al otro cada vez más rápido
+    (0,5 → 1,4 vueltas/s) y las cartas la acompañan; la luz va de un tono al otro; el público de lightsticks se levanta
+    y se enciende; un pulso que se acelera (6 latidos, de 760 a 340 ms) late en la línea, la luz, la placa y el pip del
+    decisivo; un colchón de tensión y el latido (`sonido.js`: `tension()`, `latido()`, mudos como el resto); un
+    silencio, y el golpe. En el Swiss, EN JUEGO le deja el lugar a la placa, abajo en el video. El mapa decisivo dura
+    5,4 s (la regla 8 dice ≤ 2,4 s por mapa: el suspenso es el pedido del usuario).
+  - Reglas: todo va en el reloj de los beats y en el del ambiente, así `congelar(ms)` fotografía cualquier instante.
+    Espacio salta al asentarse (el resultado revelado) y apaga el suspenso del ambiente y el sonido; con INST o
+    movimiento reducido no hay suspenso. Cada latido pasa por `beats.destello`. Medido cuadro a cuadro (cada 25 ms): 0
+    destellos WCAG (≥ 10 % de luminancia) y los pulsos del cuadro entero, máx. 3 por segundo (los latidos y el golpe).
+  - El ambiente (aditivo, `js/ambiente.js`): `ambiente({ suspenso: { dura, vaiven, tonos, publico, latidos } | null })`.
+    Son curvas leídas con el reloj del ambiente: el tira y afloje de la costura, la luz entre los dos tonos, el público
+    que se levanta y latidos propios que no ocupan la lista de `pulso()`. Sin el campo nada cambia; sin WebGL se ignora.
+- **El stream casi negro** (`estilos/partido.css`, `.tx-sw`): la página es el vacío del tono (`--tono-vacio` al 72 % con
+  la noche: `#040a13` con Worlds, antes `#162133`) y los paneles, la noche con un pelo de luz. El color queda en el video
+  y los acentos. Contraste por píxeles: chat p5 7,5:1, info 10,1, cruces 8,7, predicción 7,6, decisión 11,0.
 
 <!-- separador: no tocar -->
 <!-- separador: no tocar -->

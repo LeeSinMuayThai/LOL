@@ -124,7 +124,8 @@
 }
 
 /* ======================================================================================================================
-   victoriaDerrota: la palabra metalica, su emblema y el estallido
+   victoriaDerrota: la palabra metalica, su emblema y el estallido. VICTORIA es verde metal (PLANUI §4.10: el verde de la
+   fusion, --ln-verde-*, con el filete y el brillo de la ceremonia: el ojo turquesa, el interior petroleo); DERROTA, carmesi
    ====================================================================================================================== */
 .ln-vd { position: relative; isolation: isolate; display: grid; justify-items: center; gap: 2px; padding: 26px 44px 30px; text-align: center; }
 /* el velo de lectura: la palabra se lee sobre cualquier fondo */
@@ -136,36 +137,38 @@
   position: absolute; left: 50%; top: 44%; width: 820px; height: 820px; margin: -410px 0 0 -410px; z-index: -1; border-radius: 50%;
   pointer-events: none; opacity: 0.32; mix-blend-mode: screen;
   background:
-    radial-gradient(closest-side, color-mix(in srgb, var(--ln-vic-2) 60%, transparent), color-mix(in srgb, var(--ln-oro) 22%, transparent) 40%, transparent 70%),
-    conic-gradient(from 8deg, transparent 0deg, color-mix(in srgb, var(--ln-vic-2) 30%, transparent) 4deg, transparent 9deg 52deg, color-mix(in srgb, var(--ln-vic-2) 24%, transparent) 56deg, transparent 61deg 118deg, color-mix(in srgb, var(--ln-vic-2) 30%, transparent) 122deg, transparent 127deg 178deg, color-mix(in srgb, var(--ln-vic-2) 22%, transparent) 182deg, transparent 187deg 242deg, color-mix(in srgb, var(--ln-vic-2) 28%, transparent) 246deg, transparent 251deg 302deg, color-mix(in srgb, var(--ln-vic-2) 24%, transparent) 306deg, transparent 311deg 360deg);
+    radial-gradient(closest-side, color-mix(in srgb, var(--ln-verde-luz) 56%, transparent), color-mix(in srgb, var(--ln-verde) 22%, transparent) 40%, transparent 70%),
+    conic-gradient(from 8deg, transparent 0deg, color-mix(in srgb, var(--ln-verde-luz) 30%, transparent) 4deg, transparent 9deg 52deg, color-mix(in srgb, var(--ln-verde-luz) 24%, transparent) 56deg, transparent 61deg 118deg, color-mix(in srgb, var(--ln-verde-luz) 30%, transparent) 122deg, transparent 127deg 178deg, color-mix(in srgb, var(--ln-verde-luz) 22%, transparent) 182deg, transparent 187deg 242deg, color-mix(in srgb, var(--ln-verde-luz) 28%, transparent) 246deg, transparent 251deg 302deg, color-mix(in srgb, var(--ln-verde-luz) 24%, transparent) 306deg, transparent 311deg 360deg);
   mask-image: radial-gradient(closest-side, var(--mascara) 30%, transparent 100%);
 }
 .ln-vd[data-gano='no'] .ln-vd-estallido {
   background: radial-gradient(closest-side, color-mix(in srgb, var(--ln-der-brillo) 42%, transparent), color-mix(in srgb, var(--ln-der-4) 30%, transparent) 45%, transparent 70%);
 }
-.ln-vd-emblema { width: min(340px, 72vw); height: auto; overflow: visible; margin-bottom: -10px; filter: drop-shadow(0 0 16px color-mix(in srgb, var(--ln-oro) 42%, transparent)); }
+.ln-vd-emblema { width: min(340px, 72vw); height: auto; overflow: visible; margin-bottom: -10px; filter: drop-shadow(0 0 16px color-mix(in srgb, var(--ln-verde) 42%, transparent)); }
 .ln-vd[data-gano='no'] .ln-vd-emblema { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--ln-der-brillo) 36%, transparent)); }
 .ln-vd-ala-giro { transform-box: fill-box; transform-origin: 100% 25%; }
-.ln-vd-pluma { stroke: color-mix(in srgb, var(--ln-oro-claro) 55%, transparent); stroke-width: 0.6; }
+.ln-vd-pluma { stroke: color-mix(in srgb, var(--ln-verde-claro) 60%, transparent); stroke-width: 0.6; }
 .ln-vd[data-gano='no'] .ln-vd-pluma { stroke: color-mix(in srgb, var(--ln-der-1) 40%, transparent); }
-.ln-vd-cresta { stroke: var(--ln-oro-claro); stroke-width: 1; }
+.ln-vd-cresta { stroke: var(--ln-verde-claro); stroke-width: 1; }
 .ln-vd[data-gano='no'] .ln-vd-cresta { stroke: var(--ln-der-2); }
-.ln-vd-cresta-in { fill: var(--ln-petroleo-hondo); stroke: var(--ln-oro-claro); stroke-width: 1; }
+.ln-vd-cresta-in { fill: var(--ln-petroleo-hondo); stroke: var(--ln-verde-claro); stroke-width: 1; }
 .ln-vd-ojo { fill: var(--ln-turquesa); filter: drop-shadow(0 0 6px var(--ln-turquesa)); }
 .ln-vd-grieta { fill: none; stroke: var(--ln-der-1); stroke-width: 1.6; filter: drop-shadow(0 0 4px var(--ln-der-brillo)); }
-.ln-vic-g0 { stop-color: var(--ln-vic-1); }
-.ln-vic-g1 { stop-color: var(--ln-vic-3); }
-.ln-vic-g2 { stop-color: var(--ln-oro-hondo); }
+.ln-vic-g0 { stop-color: var(--ln-verde-claro); }
+.ln-vic-g1 { stop-color: var(--ln-verde); }
+.ln-vic-g2 { stop-color: var(--ln-verde-hondo); }
 .ln-der-g0 { stop-color: var(--ln-der-2); }
 .ln-der-g1 { stop-color: var(--ln-der-3); }
 .ln-der-g2 { stop-color: var(--ln-der-4); }
 .ln-vd-palabra {
   margin: 0; padding: 0 0.04em;
   font: 900 clamp(88px, 10.5vw, 164px) / 0.9 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.01em; text-transform: uppercase;
-  background: linear-gradient(180deg, var(--ln-vic-1) 10%, var(--ln-vic-2) 42%, var(--ln-vic-3) 70%, var(--ln-vic-4) 94%);
+  background: linear-gradient(180deg, var(--ln-verde-claro) 10%, var(--ln-verde-luz) 40%, var(--ln-verde) 68%, var(--ln-verde-medio) 94%);
   -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--ln-oro-hondo) 85%, transparent)) drop-shadow(0 0 30px color-mix(in srgb, var(--ln-oro) 38%, transparent));
+  filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--ln-verde-hondo) 90%, transparent)) drop-shadow(0 0 30px color-mix(in srgb, var(--ln-verde) 40%, transparent));
 }
+/* el filete de la ceremonia: un canto claro y fino sobre el metal (solo VICTORIA) */
+.ln-vd[data-gano='si'] .ln-vd-palabra { -webkit-text-stroke: 0.7px color-mix(in srgb, var(--ln-verde-claro) 65%, transparent); }
 .ln-vd[data-gano='no'] .ln-vd-palabra {
   background-image: linear-gradient(180deg, var(--ln-der-1) 10%, var(--ln-der-2) 46%, var(--ln-der-3) 92%);
   filter: drop-shadow(0 2px 0 var(--ln-der-4)) drop-shadow(0 0 28px color-mix(in srgb, var(--ln-der-brillo) 34%, transparent));

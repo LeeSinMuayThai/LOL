@@ -174,8 +174,9 @@ export function bloquear({ texto = 'BLOQUEAR', tecla = 'Enter', alBloquear, soni
 // ======================================================================================================================
 // victoriaDerrota: el cartel de fin de partida, con su emblema propio
 // ======================================================================================================================
-// El emblema: una cresta en rombo con un ojo de luz, y dos alas de cuatro plumas (VICTORIA, abiertas en oro) o la
-// misma cresta partida con las alas rotas en esquirlas (DERROTA, en carmesi). Dibujo propio en SVG.
+// El emblema: una cresta en rombo con un ojo de luz, y dos alas de cuatro plumas (VICTORIA, abiertas, en verde metal: PLANUI
+// §4.10 le devolvio el verde de la fusion) o la misma cresta partida con las alas rotas en esquirlas (DERROTA, en carmesi).
+// Dibujo propio en SVG.
 const PLUMAS = [
   'M0 0 C -26 -10 -62 -22 -112 -26 C -90 -14 -54 -2 0 8 Z',
   'M0 6 C -24 0 -58 -4 -104 -2 C -82 8 -50 16 0 16 Z',

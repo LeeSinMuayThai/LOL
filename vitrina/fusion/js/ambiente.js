@@ -174,6 +174,32 @@ const mezclar = (a, b, k) => a + (b - a) * k;
 const mezclarV = (a, b, k) => a.map((v, i) => mezclar(v, b[i], k));
 export const FOCO = { Sylas: [0.48, 0.3], Yone: [0.48, 0.27] };
 const FOCO_DEF = [0.48, 0.29];
+// (PLANUI §4.10, T) EL SUSPENSO, ambiente({ suspenso }): unos segundos que se construyen antes de un resultado (el mapa
+// decisivo). Opcional y aditivo: sin el campo, nada cambia. La pantalla arma las curvas (muestras parejas en `dura`, desde
+// el `retardo` de la llamada) y el ambiente las lee con su reloj, asi congelar(t) dibuja fiel cualquier instante; afuera
+// de su rato no hace nada, null lo apaga y con INST o movimiento reducido no corre. El WebGL lo dibuja; sin WebGL se ignora.
+//   { dura,                   // ms
+//     vaiven: [d, ...],       // cuanto se corre la costura (fraccion de su caja, + hacia B): el tira y afloje
+//     tonos: [w, ...],        // la luz entre los dos tonos (-1 = la de A, 1 = la de B)
+//     publico: [k, ...],      // cuanto mas se encienden los lightsticks (0-1)
+//     latidos: [[ms, k], ...] } // pulsos propios (desde el arranque): laten la linea y la luz, sin ocupar la lista de
+//                               // pulso() (la pantalla los pasa ya separados por beats.destello: <= 3 por segundo)
+// T_LATIDO: lo que tarda en apagarse un latido; LATIDO_LUZ: cuanto de cada latido va a la luz del mundo (el resto, a la
+// linea de la costura).
+const T_LATIDO = 240;
+const LATIDO_LUZ = 0.5;
+const curvaDe = (c) => (Array.isArray(c) && c.length && c.every(Number.isFinite) ? c : null);
+function curvaEn(c, u) {
+  if (!c) return 0;
+  const x = clamp01(u) * (c.length - 1);
+  const i = Math.floor(x);
+  return mezclar(c[i], c[Math.min(c.length - 1, i + 1)], x - i);
+}
+function leerSuspenso(s, t) {
+  if (!s || !(s.dura > 0)) return null;
+  const latidos = (Array.isArray(s.latidos) ? s.latidos : []).filter((x) => Array.isArray(x) && Number.isFinite(x[0]) && Number.isFinite(x[1]));
+  return { t, dura: s.dura, vaiven: curvaDe(s.vaiven), tonos: curvaDe(s.tonos), publico: curvaDe(s.publico), latidos };
+}
 const focoDe = (key) => FOCO[key] ?? FOCO_DEF;
 
 function colores() {
@@ -317,6 +343,8 @@ uniform vec4 uCos;  // x: presencia (0 = apagada), y: posicion (0-1), z: angulo 
 uniform vec4 uCosF; // donde cae la cara de cada lado (uv, y hacia arriba): xy = A, zw = B
 uniform vec3 uLuzB, uContraB, uNocheB, uVacioB;
 uniform vec4 uL;    // x: el publico en lightsticks (bokeh del tono, abajo), 0-1
+                    // (PLANUI §4.10, T) el suspenso, 0 sin el: y el publico que se enciende, z el latido de la linea,
+                    // w la luz entre los dos tonos (-1 = la de A, 1 = la de B)
 // los colores de ESTE pixel: los de siempre, o con la costura los de su lado
 vec3 gLuz, gContra, gNoche, gVacio;
 
@@ -471,11 +499,13 @@ float publico(vec2 uv, float asp, float suelo) {
 // vaiven leve; las de adelante mas grandes y mas blandas. Devuelve la luz (ya teñida con los colores del pixel).
 vec3 lightsticks(vec2 p, vec2 uv, float t) {
   vec3 s = vec3(0.0);
+  // (PLANUI §4.10, T) en el suspenso el publico se levanta: las filas suben (uL.y; 0 sin suspenso)
+  float y = uv.y - 0.36 * uL.y;
   for (int k = 0; k < 3; k++) {
     float fk = float(k);
     float esc = 50.0 - fk * 12.0;
     float techo = 0.13 + fk * 0.03;
-    vec2 q = vec2(p.x * esc + fk * 13.7, uv.y * esc);
+    vec2 q = vec2(p.x * esc + fk * 13.7, y * esc);
     vec2 id = floor(q);
     float r = h21(id + vec2(fk * 7.1, uSemilla));
     float vaiven = sin(t * (1.1 + 0.5 * h21(id + 3.3)) + r * 31.0) * 0.2;
@@ -487,7 +517,7 @@ vec3 lightsticks(vec2 p, vec2 uv, float t) {
     vec3 tinte = mix(gLuz, gContra, step(0.72, r));
     tinte = mix(tinte, uBlanco, 0.18 * step(0.93, r));
     float titila = 0.6 + 0.4 * sin(t * (1.4 + fk * 0.4) + r * 50.0);
-    s += tinte * (disco * 0.5 + nucleo * 0.7) * step(0.36, r) * titila * smoothstep(techo, techo * 0.3, uv.y) * (0.5 + 0.25 * fk);
+    s += tinte * (disco * 0.5 + nucleo * 0.7) * step(0.36, r) * titila * smoothstep(techo, techo * 0.3, y) * (0.5 + 0.25 * fk);
   }
   return s;
 }
@@ -586,7 +616,7 @@ void main() {
   // mas bruma de la era por encima del campeon (tenue): lo funde en la luz
   if (uI.z > 0.0) frente += mix(gLuz, gContra, 0.3) * (0.18 + niebla * 0.9) * uI.z * 0.16 * brillo;
   // el publico: lightsticks en bokeh, por delante (es la primera fila)
-  if (uL.x > 0.0) frente += lightsticks(p, uv, t) * uL.x * 0.7 * brillo;
+  if (uL.x > 0.0) frente += lightsticks(p, uv, t) * uL.x * 0.7 * brillo * (1.0 + 1.2 * uL.y);
   float pv = polvo(p, t);
   frente += mix(gLuz, uBlanco, 0.45) * pv * (hz * 1.5 + 0.1) * kp * brillo;
   frente += mix(gContra, uOro, 0.5) * brasas(p, t) * uE.w * (0.35 + 0.65 * vivo) * 0.55 * brillo * (1.0 - caida * 0.8);
@@ -829,11 +859,17 @@ void main() {
     float px = 1.0 / uRes.y;
     float traza = smoothstep(0.0, 0.12, (-0.75 + 1.7 * uCosE.z) - dC.y * (uCos.w > 0.5 ? -1.0 : 1.0));
     vec3 tinte = mix(uLuz, uLuzB, smoothstep(-0.003, 0.003, dC.x));
-    float resp = 0.86 + 0.14 * sin(t * 0.9);
+    float resp = (0.86 + 0.14 * sin(t * 0.9)) * (1.0 + 2.4 * uL.z);
     col += tinte * (exp(-ad * 46.0) * 0.5 + exp(-ad * 10.0) * 0.16) * resp * uCos.x * traza;
     float nucleo = exp(-pow(ad / (1.4 * px + 0.0009), 2.0));
     col += mix(uBlanco, mix(uLuz, uLuzB, 0.5), 0.22) * nucleo * 1.05 * uCos.x * traza;
     col += mix(uBlanco, tinte, 0.45) * chispas(dC.y, dC.x, t) * 0.9 * uCos.x * traza;
+    // (PLANUI §4.10, T) el suspenso: la luz va de un tono al otro sin destellar (la misma cantidad, cambia el color)
+    if (uL.y > 0.0) {
+      vec3 ta = uLuz / max(max(uLuz.r, uLuz.g), max(uLuz.b, 0.05));
+      vec3 tb = uLuzB / max(max(uLuzB.r, uLuzB.g), max(uLuzB.b, 0.05));
+      col += mix(ta, tb, 0.5 + 0.5 * uL.w) * 0.05 * uL.y * uCos.x;
+    }
   }
 
   // (PLANUI §4.9) con la politica de color linea (uF.w = 1) ningun animo saca el color: los momentos van con el 70 %
@@ -1139,6 +1175,22 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
   let tLs = -1e9;
   let durLs = T_ERA;
   const lsEn = (t) => mezclar(lsDesde, lsHacia, suave((t - tLs) / durLs));
+  // (PLANUI §4.10, T) el suspenso pedido (leerSuspenso) y lo que vale en t: null afuera de su rato
+  let sus = null;
+  function suspensoEn(t) {
+    if (!sus || quieto()) return null;
+    const dt = t - sus.t;
+    if (dt < 0 || dt > sus.dura) return null;
+    const u = dt / sus.dura;
+    let latido = 0;
+    for (const [ms, k] of sus.latidos) if (dt >= ms) latido += k * Math.exp(-(dt - ms) / T_LATIDO);
+    return { pos: curvaEn(sus.vaiven, u), tono: curvaEn(sus.tonos, u), publico: clamp01(curvaEn(sus.publico, u)), latido: clamp01(latido) };
+  }
+  // la costura que se ve: la pedida, mas el tira y afloje del suspenso (fijarCostura sigue cruzando desde la pedida)
+  const costuraVista = (t, su = suspensoEn(t)) => {
+    const cz = costuraEn(t);
+    return su?.pos ? { ...cz, pos: clamp01(cz.pos + su.pos) } : cz;
+  };
   let cuadros = 0;
   const arenaEn = (t) => {
     const k = suave((t - tArena) / T_ERA);
@@ -1195,7 +1247,8 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     const vivoAhora = fijo ? 0 : 1 - (1 - VIVO_EN_CALMA) * calmaEn(t).v;
     // la gloria se asienta (en el camino quieto, ya asentada: el cuadro final)
     gloria *= fijo ? 0.5 : 0.5 + 0.5 * Math.exp(-Math.max(0, t - animo.gloriaT) / 2600);
-    const pk = fijo ? 0 : pulsoEn(pulsos, t);
+    const su = suspensoEn(t);
+    const pk = fijo ? 0 : su ? Math.min(PULSO_TOPE, pulsoEn(pulsos, t) + su.latido * LATIDO_LUZ) : pulsoEn(pulsos, t);
     const km = expoOut((t - tMarco) / T_ERA);
     let m = { x: mezclar(marcoDesde.x, marco.x, km), y: mezclar(marcoDesde.y, marco.y, km), alto: mezclar(marcoDesde.alto, marco.alto, km), op: mezclar(marcoDesde.op, marco.op, km) };
     const it = intensidad.en(t);
@@ -1207,7 +1260,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     const mezclaArte = arte.activa === 1 ? kArte : 1 - kArte;
     // la costura: su presencia baja en el takeover (el estado `costura` de la politica) y el campeon de siempre le deja
     // el lugar (sin costura, kc = 0 y la presencia queda exacta)
-    const cz = costuraEn(t);
+    const cz = costuraVista(t, su);
     const kc = cz.k * it.costura;
     const mc = marcosCostura(cz);
     return {
@@ -1222,7 +1275,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
       marcoA: [mc.a.x, mc.a.y, mc.a.alto, mc.a.op],
       marcoB: [mc.b.x, mc.b.y, mc.b.alto, mc.b.op],
       cosE: [presB(t), it.colorLugar, cz.k, 0],
-      l: [lsEn(t), 0, 0, 0],
+      l: su ? [lsEn(t), su.publico, su.latido, su.tono] : [lsEn(t), 0, 0, 0],
       d: [calmaEn(t).v, peligro, gloria, pk],
       arte: [mezclaArte, arte.on[0], arte.on[1], velo],
       marco: [m.x, m.y, m.alto, m.op],
@@ -1392,9 +1445,11 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
 
   const api = {
     impl: 'webgl',
-    ambiente({ era, animo: an, arte: key, encuadre, velo: v, instantaneo: corte = false, retardo = 0, cruce, apuntado, paleta, arena, costura: cos, lightsticks } = {}) {
+    ambiente({ era, animo: an, arte: key, encuadre, velo: v, instantaneo: corte = false, retardo = 0, cruce, apuntado, paleta, arena, costura: cos, lightsticks, suspenso } = {}) {
       // retardo: el cambio se programa en el reloj del ambiente (asi congelar(t) lo dibuja fiel en las tiras)
       const t = reloj() + Math.max(0, retardo);
+      // (PLANUI §4.10, T) el suspenso: arranca en t; null lo apaga
+      if (suspenso !== undefined) sus = quieto() ? null : leerSuspenso(suspenso, t);
       const instantaneo = inst() || reducido() || corte;
       // el aura: apuntar un campeon lleva el mundo al estado `aura` de la politica; soltarlo, de vuelta a la base
       if (typeof apuntado === 'boolean') intensidad.programar(apuntado ? 'aura' : 'base', t, cruce ?? T_AURA);
@@ -1472,7 +1527,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     // presencia, la posicion, el angulo (grados), si esta partida en vertical y donde cae la cara de cada lado (en
     // fracciones de la pantalla, y desde ARRIBA, como el CSS)
     costura() {
-      const cz = costuraEn(reloj());
+      const cz = costuraVista(reloj());
       const mc = marcosCostura(cz);
       return { k: cz.k, posicion: cz.pos, angulo: cz.ang, vertical: cosVertical, a: { x: mc.a.x, y: 1 - mc.a.y }, b: { x: mc.b.x, y: 1 - mc.b.y } };
     },
