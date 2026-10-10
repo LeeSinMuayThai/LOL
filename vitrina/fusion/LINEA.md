@@ -296,3 +296,41 @@ El detalle está en la subsección "La unificación (ola 3)" del README.
   mismo evento. Sin WebGL, `amb.costura()` devuelve las caras. Con INST, el ambiente queda quieto.
 - **La hoja de contactos de las 7 pantallas** está en `vitrina/referencia/linea/hoja-de-contactos.jpg` y se ve en la
   pestaña "Las 7 juntas" de `final.html`.
+
+## 11. Las últimas correcciones (PLANUI §4.10)
+
+Todo lo de arriba sigue valiendo: las 8 reglas, la curva del bitono, el segundo tono, el kit, los prefijos, el
+verificador y las reglas espejo. Esta ronda solo suma.
+
+- **La perilla `var=<id>`** (`js/main.js`, ya hecha): es la variante dentro de `op=linea`.
+  - La fábrica la recibe como `ctx.variante` (string, `''` si no viene).
+  - Cambiar `var` en el hash vuelve a montar la pantalla, `conPerillas` la conserva y `<html data-var>` la refleja.
+  - **`op` sigue siendo `linea`**: con otro `op`, `colorDeOp` cae en la receta y se rompe la línea.
+  - Sin `var` va la de §4.9 o la que diga la tabla. Un id desconocido cae en el valor por defecto.
+
+  | Pantalla | Ids | Sin `var` |
+  |---|---|---|
+  | decisión (bisagra) | `campeones`, `copas`, `liga` | `campeones` (la de §4.9, intacta) |
+  | mercado (ofertas) | `camiseta`, `plantel`, `ofertas` | `camiseta` |
+
+- **Dueños de esta ronda.** Lo que no está en tu fila es de otro o está congelado. Si necesitás algo de afuera, pedíselo
+  al supervisor en tu informe: no lo toques.
+
+  | Worker | Archivos | Puerto |
+  |---|---|---|
+  | I · inicio y título | `inicio.js`, `inicio.css`, `cumbre.js`, `cumbre.css`, `momento.css`, `final.js`, `final.html`, `final.css` | 8131 |
+  | D · decisión | `decision.js`, `escena.js`, `decision.css`, `trofeo.js`, `trofeo.html`, `logos.js` | 8132 |
+  | T · serie y Swiss | `partido.js`, `partido.css`, `ceremonia.js`, `ceremonia.css`, `transmision.js`, `transmision.css`, `sonido.js`, `ambiente.js`* | 8133 |
+  | E · mercado | `mercado.js`, `mercado.css` | 8134 |
+
+  - Cada worker tiene su bloque `§4.10` en `tokens.css` y su subsección `§4.10` en el README.
+  - El supervisor mira en el 8120.
+  - *`ambiente.js` solo admite cambios **aditivos**: un parámetro nuevo, sin cambiar lo que ya existe. Si D necesita
+    algo de ahí (por ejemplo, el lado A de la costura sin arte), lo pide.
+  - Las APIs públicas del kit (`ceremonia`, `transmision`, `trofeo`, `beats`) no cambian de firma. Se pueden sumar
+    opciones.
+  - **I y E no tocan `trofeo.js`**. Si lo necesitan, lo piden.
+- **Lo que no se rompe:**
+  - las otras pantallas en `op=linea`;
+  - `op=final`, las ops de §4.7, sin op, el celular (390×844), `webgl=0`, `peor=1`, INST y el movimiento reducido;
+  - `beats.js`: Espacio salta al asentarse, ≤ 3 destellos/s, y `congelar(ms)` coincide con el reloj.

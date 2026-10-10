@@ -1180,3 +1180,39 @@ píxeles del glifo: 13,5-13,7:1 en la decisión (`linea` y `final`), la serie (`
   queda solo con sus logos (el `dc-mini` de B, que ya pasaba antes).
 - `caras` vale para una costura que no se mueve con el scroll: en el celular, si se baja la pantalla, la banda sube y
   las caras se quedan (como ya pasaba con la línea).
+
+## Las últimas correcciones, `op=linea&var=` (PLANUI §4.10)
+
+La perilla `var=<id>` elige la variante dentro de `op=linea` (`js/main.js` la lee y la pasa como `ctx.variante`; sin `var`, la de §4.9). El contrato es `LINEA.md` §11.
+
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+
+### El inicio y el título (I): el champ select y el campeón, la liga y el equipo
+
+(pendiente)
+
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+
+### La decisión (D): las costuras `campeones`, `copas` y `liga`
+
+(pendiente)
+
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+
+### La serie y el Swiss (T): VICTORIA verde, el suspenso del mapa decisivo y el stream casi negro
+
+(pendiente)
+
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+<!-- separador: no tocar -->
+
+### El mercado (E): las ofertas que llegan y `camiseta`, `plantel`, `ofertas`
+
+(pendiente)
