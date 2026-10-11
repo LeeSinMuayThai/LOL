@@ -10,11 +10,20 @@
 .log-list { margin-top: var(--s-4); display: grid; gap: var(--s-2); }
 
 .log-item {
+  position: relative;
   padding: var(--s-3) var(--s-4);
   background: var(--bg-raised);
   border-left: 3px solid var(--line-strong);
   line-height: var(--lh);
   animation: entrar-log var(--dur) var(--ease) both;
+}
+.log-item:has(.log-ico) { padding-left: calc(var(--s-4) + 22px); }
+.log-ico {
+  position: absolute;
+  left: 12px;
+  top: 14px;
+  display: inline-flex;
+  color: var(--luz-texto, var(--ink-dim));
 }
 .log-item[data-acento="up"]      { border-left-color: var(--up); }
 .log-item[data-acento="parche"]  { border-left-color: var(--cat-parche); }
@@ -113,14 +122,20 @@
   font-style: italic;
 }
 .resumen-anio-nota {
-  display: inline-block;
+  display: inline-grid;
+  gap: 4px;
   margin-top: var(--s-3);
-  padding: var(--s-1) var(--s-3);
+  padding: var(--s-2) var(--s-3);
   border-radius: var(--r-pill);
   border: 1px solid var(--line);
   font-size: var(--fs-1);
   font-weight: 600;
 }
+.resumen-anio-nota-n {
+  font: 800 48px / 0.9 var(--font-display);
+  letter-spacing: -0.03em;
+}
+.resumen-anio-icono { display: inline-flex; color: var(--luz-texto, var(--ink-dim)); }
 .resumen-anio-nota--rojo   { border-color: var(--danger); color: var(--danger); background: var(--down-fill); }
 .resumen-anio-nota--gris   { color: var(--ink-dim); }
 .resumen-anio-nota--ambar  { border-color: var(--warn); color: var(--warn); background: var(--warn-fill); }

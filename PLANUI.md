@@ -32,7 +32,7 @@
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ✅ 2026-10-10: "Aprobar y migrar", después de ver que lolero.lol salió con la UI vieja. La especificación es la fusión con `op=linea` y las variantes de §4.10 (§2) |
 | **U1 + U1k + U1a** | Cimientos (tokens, fuentes, shell, era, transiciones, guards) + el kit `src/ui/fx/` + andamio liviano | ✅ 2026-10-10 (merges en `u-integracion`; ver §11 "Ola 1 cerrada") |
 | **C1** | El usuario prueba luz, tipografía, ritmo y rendimiento en su máquina | ⬜ movida a después de U2 |
-| **U2 + U2c** | Las pantallas del norte (inicio + decisión; partido + mercado) + franja, cuartos y contenedor de minijuegos | ⬜ **siguiente**. Los briefs están en el apéndice B. Se lanzó y se frenó el 2026-10-10 sin cambios: el usuario lo termina con Grok |
+| **U2 + U2c** | Las pantallas del norte (inicio + decisión; partido + mercado) + franja, cuartos y contenedor de minijuegos | ✅ 2026-10-11, en `u-integracion` (`u2a` `fc67550`, `u2b` `0c9ebef`, `u2c` `569af63`). Falta que el usuario mire (C1) |
 | **U3** | Los momentos + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
@@ -41,10 +41,9 @@
 
 ### 0.1 Traspaso (2026-10-10): dónde quedó y cómo seguir
 
-- **Rama:** `u-integracion`, sin push. Tiene la ola 1 entera. `master` y lolero.lol siguen con la UI vieja.
-- **El juego hoy:** los cimientos nuevos. Son los tokens y las fuentes de la fusión, el shell de 12 columnas, `data-era`
-  desde `ui/core/era.js` y el ambiente WebGL del kit, montado como `window.__fx`. Las familias todavía tienen el layout
-  viejo: eso lo rehace la ola 2.
+- **Rama:** `u-integracion`, sin push. Tiene la ola 1 y la ola 2. `master` y lolero.lol siguen con la UI vieja.
+- **El juego hoy:** la ola 2 está mergeada. Inicio con champ select, decisión con franjas e inspector, partido y mercado
+  con la firma y el número de camiseta, franja de textos, cuartos y minijuegos. El siguiente paso es C1: mirarlo.
 - **Para seguir, leer:**
   - `CLAUDE.md`;
   - la cabecera de `src/ui/escena.js` (el contrato de las familias);
@@ -61,7 +60,7 @@
   - `node src/dev/validate.js --rapido`;
   - `node src/dev/build.js`: techo de 3150 KB, hoy 3061.
 - **Orden:**
-  1. la ola 2 (U2a, U2b y U2c en paralelo, archivos disjuntos);
+  1. la ola 2 (U2a, U2b y U2c) — mergeada el 2026-10-11;
   2. C1, el usuario mira;
   3. la ola 3 (U3a momentos, U3b la carta);
   4. C2;

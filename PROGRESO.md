@@ -34,6 +34,19 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-11 — PLANUI, ola 2 mergeada en `u-integracion`
+
+La ola 2 ya estaba commiteada en tres worktrees. Se integró y se cerraron dos huecos del brief: la decisión nueva no tenía CSS para sus clases, y los glifos del relato estaban definidos y sin usar.
+
+- Merges de `u2a` (`fc67550`), `u2b` (`0c9ebef`) y `u2c` (`569af63`). Los agregados de `formatoUi.js` y `tokens.css` se concatenaron, con el rótulo de cada subfase.
+- `decision.css`: inspector al lado, el resto del planteo detrás de "más" (entero con textos completos), medidor, matriz y los lados de la costura.
+- `feed.js`: un glifo por `log.type` y en las viñetas del año. La nota de la temporada queda en 48 px. Si no hay `document.createElementNS` (los checks de beats en Node) no se dibuja el SVG.
+- El dorsal sigue en `leerNumeroJersey` / `guardarNumeroJersey`, dentro de `lolcs-vista`. Un alias con la palabra "camiseta" lo rechaza el check de vocabulario.
+
+**Medido:** `validate.js --rapido` en verde, salvo tres checks de este cierre, re-corridos en verde (`var(--token)`, `reproducirBeats`, vocabulario). `build.js` 3120 KB contra un techo de 3150. `huella.js` 1844448410. El motor no se tocó.
+
+**Siguiente:** C1, mirar el juego. Después, la ola 3.
+
 ### 2026-10-10 — El juego se llama Lolero (lolero.lol)
 
 Pedido del usuario, para publicarlo. El nombre aparece en:
