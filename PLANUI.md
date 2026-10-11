@@ -41,7 +41,7 @@
 
 ### 0.1 Traspaso (2026-10-10): dónde quedó y cómo seguir
 
-- **Rama:** `u-integracion`, sin push. Tiene la ola 1 y la ola 2. `master` y lolero.lol siguen con la UI vieja.
+- **Rama:** `master` y `u-integracion` en `ae21e94`, pusheadas. lolero.lol y www sirven este build (Wrangler `9580fe8a-fc0a-4592-acff-46199a3761e8`, 2026-10-11). Las olas 3 y 4 no están.
 - **El juego hoy:** la ola 2 está mergeada. Inicio con champ select, decisión con franjas e inspector, partido y mercado
   con la firma y el número de camiseta, franja de textos, cuartos y minijuegos. El siguiente paso es C1: mirarlo.
 - **Para seguir, leer:**

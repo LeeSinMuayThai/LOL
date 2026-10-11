@@ -45,7 +45,9 @@ La ola 2 ya estaba commiteada en tres worktrees. Se integró y se cerraron dos h
 
 **Medido:** `validate.js --rapido` en verde, salvo tres checks de este cierre, re-corridos en verde (`var(--token)`, `reproducirBeats`, vocabulario). `build.js` 3120 KB contra un techo de 3150. `huella.js` 1844448410. El motor no se tocó.
 
-**Siguiente:** C1, mirar el juego. Después, la ola 3.
+**Publicado el 2026-10-11**, a pedido del usuario, antes de las olas 3 y 4. `master` fast-forward a `ae21e94`. `npx wrangler deploy`: Worker `lolero`, versión `9580fe8a-fc0a-4592-acff-46199a3761e8`, en lolero.lol y www.lolero.lol. La home viva trae `mona-sans` y `fx.css`.
+
+**Siguiente:** las olas 3 y 4 (momentos, carta, pulido) no están hechas. El usuario pidió publicar igual.
 
 ### 2026-10-10 — El juego se llama Lolero (lolero.lol)
 
