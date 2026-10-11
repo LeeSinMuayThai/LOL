@@ -34,6 +34,14 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-11 — El inicio se quedaba en el HTML vacío
+
+En lolero.lol el champ select no pintaba región, perfil, línea ni mains. Se veían las etiquetas, "Elegí una línea primero." y "Empezar carrera" apagado, con el haz de luz del CSS. El script sí cargaba.
+
+`asegurarCeremonia` observa el atributo `disabled` del botón original. `sincronizarRun` llamaba a `actualizarBoton`, que vuelve a escribir ese atributo. El observador reentra y el hilo no sale: `render()` no termina y la pantalla no pinta. `sincronizarRun` ahora solo copia el estado al botón de ceremonia con `habilitar`. No escribe `disabled`.
+
+**Medido:** en localhost:8000, a los ~4 s hay 8 regiones, 4 perfiles, 5 líneas, el título "Lolero" y el botón BLOQUEAR. Con línea y 3 mains, BLOQUEAR se habilita; al pulsarlo la pieza pasa a `decision` y la página sigue respondiendo. `validate.js --rapido` en verde. `build.js` 3121 KB contra un techo de 3150. El motor no se tocó.
+
 ### 2026-10-11 — PLANUI, ola 2 mergeada en `u-integracion`
 
 La ola 2 ya estaba commiteada en tres worktrees. Se integró y se cerraron dos huecos del brief: la decisión nueva no tenía CSS para sus clases, y los glifos del relato estaban definidos y sin usar.

@@ -65,7 +65,9 @@ export function crearPantallaInicio(elements, modulos) {
       asegurarCeremonia();
       return;
     }
-    actualizarBoton();
+    // Este callback observa `disabled` de runButton. `actualizarBoton` lo
+    // vuelve a escribir y el observador reentra para siempre: el inicio no pinta.
+    ceremonia.habilitar(!runButton.disabled && !introActiva);
   }
 
   function asegurarCeremonia() {
