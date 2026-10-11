@@ -1,51 +1,28 @@
-import { pesoDeDecision, rotuloDeDecision } from '../formatoUi.js';
+// La decisión (PLANUI U2a): franjas con glifos, un inspector y, en la bisagra, la costura del ambiente.
+// El resultado de la elegida lo transforma el envoltorio de `revelar` (no se llama startViewTransition acá).
+import { pesoDeDecision, rotuloDeDecision, contextoDeBisagra, esMatrizDePlan } from '../formatoUi.js';
+import { icono, triangulos, glifoDeCampo, ABREVIATURA } from '../fx/iconos.js';
+import { escalonar } from '../fx/movimiento.js';
+import { quieto } from '../fx/util.js';
+import { tonoDestino, tonoCompeticion, tonoEra, aplicarTono } from '../fx/tono.js';
+import { pintarLogo, equiposDe } from '../fx/logos.js';
+import { crearTrofeo, copaDe, COPAS } from '../fx/trofeo.js';
+import { keyDdragonDeCampeon } from './campeonTile.js';
 
-// La tarjeta de decisión: título, descripción y una opción por botón.
-// Extraído de index.html (fase 8, §8.5). Fase 12d (PLAN.md §12.3) sumó la
-// consecuencia previa (`opcion.previa`/`opcion.riesgo`) y las opciones
-// bloqueadas (`decision.opcionesBloqueadas`). Fase 12e (PLAN.md §12.4)
-// pinta `opcion.rareza` (`comun` / `rara`) en las decisiones de mejora
-// — el contrato ya venía preparado, este componente no se reescribió.
-//
-// Los minijuegos NO pasan por acá (`decision.presentacion === 'minijuego'`
-// los desvía antes de llegar): index.html los sigue montando directo, la
-// fase 8 no los mueve (PLAN.md §8.5).
-//
-// Fase T4: la pestaña (T0b la dejó fija en "Decisión") pasa a reflejar la
-// categoría real del evento, y el panel entero cambia de peso según
-// `pesoDeDecision` — ver `formatoUi.js` para las dos reglas reales detrás
-// (`evento.bisagra` y `franja === 'cierre'`), sin un tercer peso inventado.
-// K2d: `probabilidades` (opcional) es la p de ganar con cada opción de un
-// draft (`previaDeDecision(...).opciones`): va como una línea más del botón.
-
-// V3a (PLAN.md §V.4, "Anatomía de una parada"): la fila de opción y el encabezado. Lo que de verdad se decide va primero:
-//   - el encabezado: título + UNA línea de "qué está en juego" (la primera oración de la descripción) y, detrás de "más",
-//     el resto del texto;
-//   - cada opción es una FILA: la tecla a la izquierda, el label, la descripción a dos líneas, hasta MAX_CHIPS chips de la
-//     previa (los efectos más grandes: `magnitud` alta, media, baja; con empate, el orden del motor) junto al riesgo y la
-//     rareza, y la línea de % o de plan. Lo que no entra queda detrás del "más" de la fila (descripción entera y chips
-//     restantes): ninguna información se saca, solo se pliega.
-// Las clases que lee `src/dev/recorrido.mjs` (`.option-title/-desc/-plan/-previa-kicker/-prob/-riesgo`) siguen siendo las
-// mismas; los `.option-btn` siguen siendo hijos directos de `#decisionOptions` (V3b los cuenta así).
 const MAX_CHIPS = 3;
-// Si la primera oración es más corta que esto, se le suma la siguiente: una línea de dos palabras no dice qué está en juego.
 const MIN_LINEA_EN_JUEGO = 60;
 const RANGO_MAGNITUD = { alta: 3, media: 2, baja: 1 };
-// Primer corte de oración: un punto/!/?/cierre de comillas seguido de espacio y una mayúscula, signo o comilla de apertura.
-// El cierre (comilla, paréntesis) que sigue al punto se queda en la línea: `m[0]` lo trae, y el corte se hace después de él.
 const FIN_DE_ORACION = /[.!?…]["”»)]*(?=\s+[A-ZÁÉÍÓÚÜÑ¿¡"“«(])/g;
+const RIESGO_ICONO = { seguro: 'seguro', incierto: 'incierto', ruleta: 'ruleta', alto: 'alto' };
+const RIESGO_CORTO = { seguro: 'seguro', incierto: 'incierto', ruleta: 'ruleta', alto: 'alto' };
 
-// Un punto adentro de una cita o de un paréntesis no es el fin de la línea: cortar ahí deja la comilla o el paréntesis sin cerrar.
 function quedaAbierto(corte) {
   const cuenta = (re) => (corte.match(re) ?? []).length;
   return cuenta(/"/g) % 2 === 1 || cuenta(/“/g) > cuenta(/”/g) || cuenta(/«/g) > cuenta(/»/g) || cuenta(/\(/g) > cuenta(/\)/g);
 }
 
-// [linea, resto]: la línea de "qué está en juego" y el resto de la descripción.
 export function partirDescripcion(texto) {
   const limpio = String(texto ?? '').trim();
-  // La línea termina en la primera oración que alcanza MIN_LINEA_EN_JUEGO (si la primera es corta, se le suma la siguiente).
-  // Si ninguna llega, todo el texto es la línea: es corto, y el tope de renglones del CSS lo cuida si no lo es.
   for (const m of limpio.matchAll(FIN_DE_ORACION)) {
     const fin = m.index + m[0].length;
     if (m.index + 1 >= MIN_LINEA_EN_JUEGO && !quedaAbierto(limpio.slice(0, fin))) {
@@ -55,106 +32,401 @@ export function partirDescripcion(texto) {
   return [limpio, ''];
 }
 
-// Los MAX_CHIPS efectos de mayor magnitud, en el orden del motor entre los empatados.
 export function elegirChips(previa) {
   const indice = previa.map((entrada, i) => ({ entrada, i }));
   indice.sort((a, b) => (RANGO_MAGNITUD[b.entrada.magnitud] ?? 0) - (RANGO_MAGNITUD[a.entrada.magnitud] ?? 0) || a.i - b.i);
   return new Set(indice.slice(0, MAX_CHIPS).map((x) => x.entrada));
 }
 
-function crearMas(rotulo) {
-  const mas = document.createElement('button');
-  mas.type = 'button';
-  mas.className = 'decision-mas';
-  mas.textContent = 'más';
-  mas.setAttribute('aria-expanded', 'false');
-  if (rotulo) {
-    mas.setAttribute('aria-label', `Ver más: ${rotulo}`);
-  }
-  return mas;
+function sr(texto) {
+  const n = document.createElement('span');
+  n.className = 'dc-sr';
+  n.textContent = texto ?? '';
+  return n;
 }
 
-// Un "más" se muestra solo si hay algo plegado: texto cortado por el límite de líneas o chips que no entraron. Se mide con
-// el panel a la vista (una parada recién pintada puede no tener tamaño todavía: el ResizeObserver lo reintenta).
-function cortado(el) {
-  return el.clientHeight > 0 && el.scrollHeight > el.clientHeight + 1;
+function kickerDe(entrada) {
+  const signo = entrada.signo === '+' ? 'sube' : 'baja';
+  const kicker = document.createElement('span');
+  kicker.className = `option-previa-kicker option-previa-kicker--${signo} option-previa-kicker--magnitud-${entrada.magnitud}`;
+  const clave = glifoDeCampo(entrada.campo);
+  kicker.append(
+    icono(clave, { clase: 'ln-ico dc-eje' }),
+    triangulos(entrada.magnitud, entrada.signo === '+' ? '+' : '-')
+  );
+  const nom = document.createElement('span');
+  nom.className = 'dc-eje-nom';
+  nom.textContent = ABREVIATURA[clave] ?? entrada.etiqueta ?? '';
+  kicker.append(nom, sr(entrada.texto ?? `${entrada.signo} ${entrada.etiqueta}`));
+  return kicker;
 }
-function revisarMas(panel) {
-  for (const mas of panel.querySelectorAll('.decision-mas[data-que]')) {
-    const fila = mas.dataset.que === 'opcion' ? mas.previousElementSibling : null;
-    const abierto = mas.getAttribute('aria-expanded') === 'true';
-    let hayMas = mas.dataset.plegado === 'si';
-    if (!hayMas && !abierto) {
-      const desc = fila ? fila.querySelector('.option-desc') : panel.querySelector('.decision-desc-linea');
-      hayMas = Boolean(desc && cortado(desc));
+
+function ejesDe(decision) {
+  const vistos = [];
+  const set = new Set();
+  for (const op of decision.opciones ?? []) {
+    for (const p of op.previa ?? []) {
+      const c = p.campo || p.etiqueta;
+      if (!c || set.has(c)) continue;
+      set.add(c);
+      vistos.push(c);
     }
-    mas.hidden = !(hayMas || abierto);
   }
+  return vistos;
 }
-let observador = null;
-function vigilar(panel) {
-  observador?.disconnect();
-  observador = null;
-  if (typeof ResizeObserver === 'function') {
-    observador = new ResizeObserver(() => revisarMas(panel));
-    observador.observe(panel);
+
+function ladoDeOpcion(opcion, decision) {
+  if (opcion?.id === 'retirarse' || opcion?.id === 'dejar') return 'b';
+  const cruda = decision?.datos?.evento?.options?.find((o) => o.id === opcion?.id);
+  for (const out of cruda?.outcomes ?? []) {
+    if ((out?.effects ?? []).some((ef) => ef?.type === 'ofertaDeImport')) return 'b';
   }
-  revisarMas(panel);
+  return 'a';
+}
+
+let capa = null;
+let copasVivas = [];
+let raf = 0;
+let generacion = 0;
+let sesion = null;
+let vigila = false;
+
+function soltarCapa() {
+  if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(raf);
+  raf = 0;
+  for (const c of copasVivas) c.destruir?.();
+  copasVivas = [];
+  capa?.remove();
+  capa = null;
+  sesion = null;
+}
+
+function limpiarCostura() {
+  soltarCapa();
+  const fx = globalThis.__fx;
+  fx?.ambiente?.({ costura: null });
+  const pieza = document.querySelector('.shell')?.dataset.pieza;
+  if (pieza && pieza !== 'inicio') fx?.fondo?.({ contexto: 'juego', escena: null });
+}
+
+function vigilarPieza() {
+  if (vigila || typeof document === 'undefined') return;
+  vigila = true;
+  const shell = document.querySelector('.shell');
+  if (!shell) return;
+  const obs = new MutationObserver(() => {
+    const p = shell.dataset.pieza;
+    if (p !== 'decision' && p !== 'partido') limpiarCostura();
+  });
+  obs.observe(shell, { attributes: true, attributeFilter: ['data-pieza'] });
+}
+
+function seguir(fx) {
+  if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(raf);
+  const paso = () => {
+    const g = fx.costura?.() ?? {};
+    if (capa) {
+      capa.style.setProperty('--dc-x', String(g.posicion ?? 0.5));
+      capa.dataset.vertical = g.vertical ? 'si' : 'no';
+    }
+    if (!quieto()) raf = requestAnimationFrame(paso);
+  };
+  paso();
+}
+
+function ligaInfo(state, id) {
+  return (state?.mundo?.ligas ?? []).find((l) => String(l.id) === String(id)) ?? { id, nombre: String(id ?? ''), region: '' };
+}
+
+function ladoLiga(id, state, marca) {
+  const info = ligaInfo(state, id);
+  const nodo = document.createElement('div');
+  nodo.className = 'dc-lado';
+  nodo.dataset.lado = marca;
+  const tono = tonoDestino(id);
+  aplicarTono(nodo, tono);
+  nodo.appendChild(pintarLogo(info.nombre || id, { tam: 96, liga: true, alt: '' }));
+  const lugar = document.createElement('p');
+  lugar.className = 'dc-lugar';
+  const nom = document.createElement('b');
+  nom.textContent = info.nombre || String(id ?? '');
+  const reg = document.createElement('span');
+  reg.textContent = info.region || '';
+  lugar.append(nom, reg);
+  nodo.appendChild(lugar);
+  const equipos = equiposDe(id);
+  if (equipos.length) {
+    const pared = document.createElement('ul');
+    pared.className = 'dc-pared';
+    const tuyo = state?.career?.currentOrg;
+    for (const eq of equipos) {
+      const li = document.createElement('li');
+      if (tuyo && String(eq.nombre).toLowerCase() === String(tuyo).toLowerCase()) li.className = 'dc-tuyo';
+      li.appendChild(pintarLogo(eq.nombre, { tam: 28, alt: '' }));
+      pared.appendChild(li);
+    }
+    nodo.appendChild(pared);
+  }
+  if (marca === 'a' && state?.career?.currentOrg) {
+    const marcaEl = document.createElement('p');
+    marcaEl.className = 'dc-marca';
+    marcaEl.textContent = state.career.currentOrg;
+    nodo.appendChild(marcaEl);
+  }
+  return { nodo, tono };
+}
+
+function idCopaDeLiga(id) {
+  const k = String(id ?? '').toLowerCase().replace(/[^a-z]/g, '');
+  return COPAS[k] ? k : null;
+}
+
+function ladoCopa(id, marca) {
+  const nodo = document.createElement('div');
+  nodo.className = 'dc-lado dc-lado-copa';
+  nodo.dataset.lado = marca;
+  const t = tonoCompeticion(id);
+  aplicarTono(nodo, t);
+  const canvas = document.createElement('canvas');
+  canvas.className = 'dc-copa-lienzo';
+  canvas.width = 180;
+  canvas.height = 260;
+  const copa = crearTrofeo(canvas, { ...copaDe(id), tonos: { luz: t.luz, contra: t.contra, noche: t.noche } });
+  copasVivas.push(copa);
+  nodo.appendChild(copa.nodo);
+  const placa = document.createElement('p');
+  placa.className = 'dc-lugar';
+  placa.appendChild(pintarLogo(id, { tam: 36, liga: true, alt: '' }));
+  nodo.appendChild(placa);
+  return { nodo, tono: tonoDestino(id) };
+}
+
+function montarCostura(ctx, decision, state, fx) {
+  soltarCapa();
+  const shell = document.querySelector('.shell');
+  if (!shell) return;
+  const era = document.documentElement.dataset.era || 'pieza';
+  let arte = null;
+  let tonoA = tonoEra(era);
+  let tonoB = tonoA;
+  if (ctx.variante === 'liga') {
+    arte = null;
+    capa = document.createElement('div');
+    capa.className = 'dc-costura';
+    capa.setAttribute('aria-hidden', 'true');
+    const a = ladoLiga(ctx.a, state, 'a');
+    const b = ladoLiga(ctx.b, state, 'b');
+    tonoA = a.tono;
+    tonoB = b.tono;
+    capa.append(a.nodo, b.nodo);
+    shell.appendChild(capa);
+  } else if (ctx.variante === 'copas') {
+    arte = null;
+    capa = document.createElement('div');
+    capa.className = 'dc-costura';
+    capa.setAttribute('aria-hidden', 'true');
+    const idA = idCopaDeLiga(state?.career?.liga) ?? ctx.a;
+    const a = ladoCopa(idA, 'a');
+    const b = ladoCopa(ctx.b, 'b');
+    tonoA = a.tono;
+    tonoB = b.tono;
+    capa.append(a.nodo, b.nodo);
+    shell.appendChild(capa);
+  } else {
+    arte = keyDdragonDeCampeon(state?.player?.championPool?.[0]?.name);
+  }
+  sesion = ctx;
+  fx.fondo?.({ contexto: 'juego', escena: 'costura' });
+  fx.ambiente?.({
+    costura: {
+      a: { arte, tono: tonoA },
+      b: { arte, tono: tonoB },
+      posicion: 0.5,
+      k: 1
+    }
+  });
+  if (capa) seguir(fx);
+}
+
+function programarCostura(decision, state) {
+  const gen = ++generacion;
+  const intentar = (n) => {
+    if (gen !== generacion) return;
+    const fx = globalThis.__fx;
+    if (!fx) {
+      if (n < 20) setTimeout(() => intentar(n + 1), 100);
+      return;
+    }
+    const ctx = contextoDeBisagra(decision, state);
+    if (!ctx) {
+      limpiarCostura();
+      return;
+    }
+    montarCostura(ctx, decision, state, fx);
+  };
+  queueMicrotask(() => intentar(0));
+}
+
+function moverCostura(lado) {
+  if (!sesion) return;
+  globalThis.__fx?.ambiente?.({ costura: { posicion: lado === 'b' ? 0.38 : 0.62 } });
 }
 
 export function renderDecision(elements, decision, onElegir, state, probabilidades = []) {
   const { decisionPanel, decisionTitle, decisionDesc, decisionOptions } = elements;
+  vigilarPieza();
 
   const rotulo = rotuloDeDecision(decision, state);
   const peso = pesoDeDecision(decision);
+  const matriz = esMatrizDePlan(decision);
+  const ejes = matriz ? ejesDe(decision) : [];
+  const bisagra = contextoDeBisagra(decision, state);
 
   decisionPanel.dataset.peso = peso;
   decisionPanel.dataset.tabLabel = rotulo.label;
+  decisionPanel.dataset.forma = matriz ? 'matriz' : 'franjas';
   decisionPanel.style.setProperty('--tab-color', `var(--cat-${rotulo.token})`);
+  if (matriz) decisionOptions.style.setProperty('--dc-ejes', String(ejes.length));
+  else decisionOptions.style.removeProperty('--dc-ejes');
+
+  let rotuloEl = decisionPanel.querySelector(':scope > .dc-rotulo');
+  if (!rotuloEl) {
+    rotuloEl = document.createElement('p');
+    rotuloEl.className = 'dc-rotulo';
+    decisionPanel.insertBefore(rotuloEl, decisionTitle);
+  }
+  rotuloEl.textContent = rotulo.label;
 
   decisionTitle.textContent = decision.titulo;
-  // "Qué está en juego" en una línea; el resto de la descripción, detrás de "más" (que cuelga del propio `#decisionDesc`).
+  decisionTitle.classList.add('titulo-parada');
+
   const [linea, resto] = partirDescripcion(decision.descripcion);
   decisionDesc.textContent = '';
+  decisionDesc.classList.add('dc-planteo');
+  decisionDesc.dataset.abierta = 'no';
   const spanLinea = document.createElement('span');
-  spanLinea.className = 'decision-desc-linea';
+  spanLinea.className = 'dc-linea';
   spanLinea.textContent = linea;
   decisionDesc.appendChild(spanLinea);
-  const masDesc = crearMas('el contexto de la decisión');
-  masDesc.dataset.que = 'desc';
-  masDesc.dataset.plegado = resto ? 'si' : 'no';
-  masDesc.hidden = !resto;
-  decisionDesc.appendChild(masDesc);
   if (resto) {
     const spanResto = document.createElement('span');
-    spanResto.className = 'decision-desc-resto';
+    spanResto.className = 'dc-resto';
     spanResto.textContent = resto;
-    spanResto.hidden = true;
     decisionDesc.appendChild(spanResto);
+    const mas = document.createElement('button');
+    mas.type = 'button';
+    mas.className = 'dc-mas';
+    mas.textContent = 'más';
+    mas.setAttribute('aria-expanded', 'false');
+    mas.addEventListener('click', () => {
+      const abrir = decisionDesc.dataset.abierta !== 'si';
+      decisionDesc.dataset.abierta = abrir ? 'si' : 'no';
+      mas.textContent = abrir ? 'menos' : 'más';
+      mas.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+    });
+    decisionDesc.appendChild(mas);
   }
-  decisionDesc.dataset.abierta = 'no';
-  masDesc.addEventListener('click', () => {
-    const abrir = masDesc.getAttribute('aria-expanded') !== 'true';
-    masDesc.setAttribute('aria-expanded', String(abrir));
-    masDesc.textContent = abrir ? 'menos' : 'más';
-    decisionDesc.dataset.abierta = abrir ? 'si' : 'no';
-    const restoEl = decisionDesc.querySelector('.decision-desc-resto');
-    if (restoEl) restoEl.hidden = !abrir;
-    revisarMas(decisionPanel);
+
+  let inspector = decisionPanel.querySelector(':scope > .dc-inspector');
+  if (!inspector) {
+    inspector = document.createElement('div');
+    inspector.className = 'dc-inspector';
+    inspector.id = 'dc-inspector';
+    inspector.setAttribute('aria-live', 'polite');
+    decisionPanel.appendChild(inspector);
+  }
+  const masInsp = document.createElement('button');
+  masInsp.type = 'button';
+  masInsp.className = 'dc-mas dc-mas-insp';
+  masInsp.textContent = 'más';
+  masInsp.setAttribute('aria-expanded', 'false');
+  masInsp.addEventListener('click', () => {
+    const abrir = inspector.dataset.abierta !== 'si';
+    inspector.dataset.abierta = abrir ? 'si' : 'no';
+    masInsp.textContent = abrir ? 'menos' : 'más';
+    masInsp.setAttribute('aria-expanded', abrir ? 'true' : 'false');
   });
 
+  function pintarInspector(opcion, gate) {
+    inspector.dataset.abierta = 'no';
+    masInsp.textContent = 'más';
+    masInsp.setAttribute('aria-expanded', 'false');
+    inspector.textContent = '';
+    if (!opcion && !gate) return;
+    const tit = document.createElement('p');
+    tit.className = 'dc-insp-titulo';
+    tit.textContent = opcion?.label ?? '';
+    const prosa = document.createElement('p');
+    prosa.className = 'dc-insp-prosa';
+    prosa.textContent = opcion?.descripcion || gate || '';
+    inspector.append(tit, prosa);
+    if (opcion?.propuesta) {
+      const p = document.createElement('p');
+      p.className = 'dc-insp-extra';
+      p.textContent = opcion.propuesta;
+      inspector.appendChild(p);
+    }
+    if (opcion?.plan?.texto) {
+      const p = document.createElement('p');
+      p.className = 'dc-insp-extra';
+      p.textContent = opcion.plan.texto;
+      inspector.appendChild(p);
+    }
+    if (opcion?.riesgoTexto) {
+      const p = document.createElement('p');
+      p.className = 'dc-insp-extra';
+      p.textContent = opcion.riesgoTexto;
+      inspector.appendChild(p);
+    }
+    if (gate && opcion) {
+      const p = document.createElement('p');
+      p.className = 'dc-insp-extra';
+      p.textContent = gate;
+      inspector.appendChild(p);
+    }
+    inspector.appendChild(masInsp);
+  }
+
   decisionOptions.innerHTML = '';
-  decision.opciones.forEach((opcion, indice) => {
+  if (matriz && ejes.length) {
+    const cabeza = document.createElement('div');
+    cabeza.className = 'dc-ejes';
+    cabeza.appendChild(document.createElement('span'));
+    for (const campo of ejes) {
+      const th = document.createElement('span');
+      th.className = 'dc-eje-col';
+      const clave = glifoDeCampo(campo);
+      th.append(icono(clave, { clase: 'ln-ico dc-eje' }));
+      const nom = document.createElement('span');
+      nom.textContent = ABREVIATURA[clave] ?? String(campo).split('.').pop();
+      th.appendChild(nom);
+      cabeza.appendChild(th);
+    }
+    decisionOptions.appendChild(cabeza);
+  }
+
+  let apuntada = null;
+  const apuntar = (boton, usuario) => {
+    if (!boton || boton === apuntada) return;
+    apuntada?.classList.remove('dc-apuntada');
+    apuntada = boton;
+    boton.classList.add('dc-apuntada');
+    pintarInspector(boton._opcion ?? null, boton._gate ?? '');
+    if (bisagra && boton.dataset.lado) moverCostura(boton.dataset.lado);
+    if (usuario) globalThis.__fx?.pulso?.('apuntar');
+  };
+
+  const armarBoton = (opcion, indice, { bloqueada = false, gate = '' } = {}) => {
     const opcionBtn = document.createElement('button');
     opcionBtn.type = 'button';
-    opcionBtn.className = 'option-btn';
-    // Cada fila ocupa su renglón de la grilla; el "más" de la fila se superpone en el mismo renglón (ver decision.css).
-    opcionBtn.style.gridRow = String(indice + 1);
-    let plegado = false;
+    opcionBtn.className = 'option-btn' + (bloqueada ? ' option-btn--bloqueada' : '');
+    if (bloqueada) opcionBtn.disabled = true;
+    opcionBtn._opcion = bloqueada ? { label: opcion.label, descripcion: gate } : opcion;
+    opcionBtn._gate = gate;
+    opcionBtn.setAttribute('aria-describedby', 'dc-inspector');
+    if (bisagra && !bloqueada) opcionBtn.dataset.lado = ladoDeOpcion(opcion, decision);
 
-    // El atajo de teclado (T1: shell.js ya escucha 1-4) recién ahora es
-    // DESCUBRIBLE — antes funcionaba pero nada en pantalla lo decía.
-    if (indice < 4) {
+    if (!bloqueada && indice < 4) {
       opcionBtn.dataset.atajo = String(indice + 1);
       const atajo = document.createElement('span');
       atajo.className = 'option-atajo';
@@ -168,17 +440,13 @@ export function renderDecision(elements, decision, onElegir, state, probabilidad
     titulo.textContent = opcion.label;
     opcionBtn.appendChild(titulo);
 
-    // El texto de la opción es la mitad de la decisión: sin él, elegir
-    // "Bootcamp en tu propia pieza" no significa nada. A dos líneas; entera detrás del "más".
-    if (opcion.descripcion) {
+    if (opcion.descripcion || gate) {
       const detalle = document.createElement('div');
-      detalle.className = 'option-desc';
-      detalle.textContent = opcion.descripcion;
+      detalle.className = 'option-desc dc-sr';
+      detalle.textContent = opcion.descripcion || gate;
       opcionBtn.appendChild(detalle);
     }
 
-    // K6c: en el plan del año del amateur, la opción que propone tu perfil va marcada ("Tu perfil (hambriento) iría por esta").
-    // El texto viene del motor (`systems/amateur.js`, `decisionDePlan`); decide el jugador.
     if (opcion.propuesta) {
       opcionBtn.classList.add('option-btn--propuesta');
       const propuesta = document.createElement('div');
@@ -187,59 +455,55 @@ export function renderDecision(elements, decision, onElegir, state, probabilidad
       opcionBtn.appendChild(propuesta);
     }
 
-    // Fase 12d (PLAN.md §12.3): la consecuencia, antes de elegir. `previa` siempre viene (puede ser `[]` si la opción solo
-    // dispara push/momento); `riesgo` siempre viene. V3a: una sola línea de chips (hasta MAX_CHIPS de la previa + el riesgo
-    // + la rareza); los chips que no entran se pliegan detrás del "más" de la fila.
-    const previaFilas = opcion.previa ?? [];
-    if (previaFilas.length > 0 || opcion.riesgo || opcion.rareza) {
+    if (matriz && !bloqueada) {
+      const porCampo = new Map((opcion.previa ?? []).map((p) => [p.campo || p.etiqueta, p]));
+      for (const campo of ejes) {
+        const entrada = porCampo.get(campo);
+        opcionBtn.appendChild(entrada ? kickerDe(entrada) : document.createElement('span'));
+      }
+    } else if ((opcion.previa ?? []).length) {
       const meta = document.createElement('div');
       meta.className = 'option-previa';
-      const principales = elegirChips(previaFilas);
-      const ordenadas = [...principales, ...previaFilas.filter((entrada) => !principales.has(entrada))];
-      ordenadas.forEach((entrada) => {
-        const kicker = document.createElement('span');
-        const signo = entrada.signo === '+' ? 'sube' : 'baja';
-        kicker.className = `option-previa-kicker option-previa-kicker--${signo} option-previa-kicker--magnitud-${entrada.magnitud}`;
-        if (!principales.has(entrada)) {
-          kicker.classList.add('option-previa-kicker--extra');
-          plegado = true;
-        }
-        // K6a-A: la fila trae su número armado del motor ("Mecánica ~+4"); sin él, el signo y la etiqueta.
-        kicker.textContent = entrada.texto ?? `${entrada.signo} ${entrada.etiqueta}`;
-        meta.appendChild(kicker);
-      });
-
-      if (opcion.riesgo) {
-        const riesgo = document.createElement('span');
-        riesgo.className = `option-riesgo option-riesgo--${opcion.riesgo}`;
-        // K6a-A: el texto del riesgo lo arma el motor ("puede salir torcido · lo inclina tu mentalidad"), nunca "ruleta".
-        riesgo.textContent = opcion.riesgoTexto ?? opcion.riesgo;
-        meta.appendChild(riesgo);
-      }
-
-      // Fase 12e (PLAN.md §12.4): rareza de las decisiones de mejora. Misma
-      // píldora que el riesgo — no un componente nuevo. Solo viene en
-      // pretemporada, práctica y `pool_a_cual_le_metes`.
-      if (opcion.rareza) {
-        const rareza = document.createElement('span');
-        rareza.className = `option-rareza option-rareza--${opcion.rareza}`;
-        rareza.textContent = opcion.rareza === 'rara' ? 'rara' : 'común';
-        meta.appendChild(rareza);
-      }
+      for (const entrada of opcion.previa) meta.appendChild(kickerDe(entrada));
       opcionBtn.appendChild(meta);
     }
 
-    // K2d: la p de ganar con cada opción de un draft.
+    if (opcion.riesgo) {
+      const riesgo = document.createElement('span');
+      riesgo.className = `option-riesgo option-riesgo--${opcion.riesgo}`;
+      riesgo.append(icono(RIESGO_ICONO[opcion.riesgo] ?? 'incierto', { clase: 'ln-ico dc-riesgo' }));
+      const corto = document.createElement('span');
+      corto.className = 'dc-riesgo-nom';
+      corto.textContent = RIESGO_CORTO[opcion.riesgo] ?? opcion.riesgo;
+      riesgo.append(corto, sr(opcion.riesgoTexto ?? opcion.riesgo));
+      opcionBtn.appendChild(riesgo);
+    }
+
+    if (opcion.rareza) {
+      const rareza = document.createElement('span');
+      rareza.className = `option-rareza option-rareza--${opcion.rareza}`;
+      rareza.textContent = opcion.rareza === 'rara' ? 'rara' : 'común';
+      opcionBtn.appendChild(rareza);
+    }
+
     const probabilidad = probabilidades?.find((p) => p.id === opcion.id);
     if (probabilidad) {
       const prob = document.createElement('div');
       prob.className = 'option-prob';
-      prob.textContent = probabilidad.texto;
+      if (typeof probabilidad.porcentaje === 'number') {
+        const med = document.createElement('span');
+        med.className = 'dc-medidor';
+        med.style.setProperty('--dc-p', String(probabilidad.porcentaje));
+        med.appendChild(document.createElement('span'));
+        const num = document.createElement('span');
+        num.className = 'dc-pct';
+        num.textContent = `${probabilidad.porcentaje}%`;
+        prob.append(med, num);
+      }
+      prob.appendChild(sr(probabilidad.texto ?? ''));
       opcionBtn.appendChild(prob);
     }
 
-    // K4c (plan anual): en el cierre de año, el plan de práctica que la opción fija para el año que viene. El texto
-    // viene armado del motor (`systems/edadCierre.js` -> `lineaDePlan`): la pantalla no calcula nada.
     if (opcion.plan?.texto) {
       const plan = document.createElement('div');
       plan.className = 'option-plan';
@@ -247,52 +511,33 @@ export function renderDecision(elements, decision, onElegir, state, probabilidad
       opcionBtn.appendChild(plan);
     }
 
-    opcionBtn.addEventListener('click', () => onElegir({ opcionId: opcion.id }));
-    decisionOptions.appendChild(opcionBtn);
-
-    // El "más" de la fila va al lado del botón (un botón adentro de otro no es válido ni se alcanza con el teclado). Se
-    // muestra solo si hay algo plegado: chips que no entraron o texto cortado (`revisarMas`).
-    const mas = crearMas(opcion.label);
-    mas.dataset.que = 'opcion';
-    mas.dataset.plegado = plegado ? 'si' : 'no';
-    mas.hidden = !plegado;
-    mas.style.gridRow = String(indice + 1);
-    mas.addEventListener('click', () => {
-      const abrir = mas.getAttribute('aria-expanded') !== 'true';
-      mas.setAttribute('aria-expanded', String(abrir));
-      mas.textContent = abrir ? 'menos' : 'más';
-      opcionBtn.dataset.abierta = abrir ? 'si' : 'no';
-      revisarMas(decisionPanel);
-    });
-    decisionOptions.appendChild(mas);
-  });
-
-  // Se muestran cerradas con su motivo, no desaparecen (decisión de
-  // estructura de la fase 12): hoy el catálogo no gatea ninguna opción
-  // propia, así que esto queda vacío en la práctica hasta que 12e/13
-  // declare la primera — el cable está tendido.
-  (decision.opcionesBloqueadas ?? []).forEach((bloqueada, k) => {
-    const opcionBtn = document.createElement('button');
-    opcionBtn.type = 'button';
-    opcionBtn.className = 'option-btn option-btn--bloqueada';
-    opcionBtn.disabled = true;
-    opcionBtn.style.gridRow = String(decision.opciones.length + k + 1);
-
-    const titulo = document.createElement('div');
-    titulo.className = 'option-title';
-    titulo.textContent = bloqueada.label;
-    opcionBtn.appendChild(titulo);
-
-    if (bloqueada.gate) {
-      const gate = document.createElement('div');
-      gate.className = 'option-gate';
-      gate.textContent = bloqueada.gate;
-      opcionBtn.appendChild(gate);
+    if (gate && bloqueada) {
+      const g = document.createElement('div');
+      g.className = 'option-gate';
+      g.textContent = gate;
+      opcionBtn.appendChild(g);
     }
 
+    if (!bloqueada) {
+      opcionBtn.addEventListener('click', () => onElegir({ opcionId: opcion.id }));
+      opcionBtn.addEventListener('pointerenter', () => apuntar(opcionBtn, true));
+      opcionBtn.addEventListener('focus', () => apuntar(opcionBtn, true));
+    }
     decisionOptions.appendChild(opcionBtn);
+    return opcionBtn;
+  };
+
+  const botones = decision.opciones.map((opcion, indice) => armarBoton(opcion, indice));
+  (decision.opcionesBloqueadas ?? []).forEach((bloqueada, k) => {
+    armarBoton(bloqueada, decision.opciones.length + k, { bloqueada: true, gate: bloqueada.gate ?? '' });
   });
 
+  const primera = botones.find((b) => !b.disabled);
+  if (primera) apuntar(primera, false);
+
+  escalonar(botones);
   decisionPanel.hidden = false;
-  vigilar(decisionPanel);
+  const main = keyDdragonDeCampeon(state?.player?.championPool?.[0]?.name);
+  if (main) globalThis.__fx?.aura?.pantalla(main);
+  programarCostura(decision, state);
 }

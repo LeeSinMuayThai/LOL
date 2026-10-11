@@ -209,3 +209,89 @@ const ROTULO_DE_MINIJUEGO = {
 export function rotuloDeMinijuego(decision) {
   return ROTULO_DE_MINIJUEGO[decision?.datos?.momento] ?? 'Minijuego';
 }
+
+/* U2a */
+// La bisagra elige su costura con datos de la decisión (ligas, copa, pool). Nunca con la prosa.
+const COPAS_CONOCIDAS = new Set(['mundial', 'worlds', 'msi', 'firststand', 'first_stand']);
+
+function agregarLiga(set, id) {
+  if (id == null || id === '') return;
+  for (const x of (Array.isArray(id) ? id : [id])) if (x) set.add(String(x));
+}
+
+function normalizarCopa(c) {
+  const k = String(c ?? '').toLowerCase();
+  if (!COPAS_CONOCIDAS.has(k)) return null;
+  if (k === 'mundial') return 'worlds';
+  return k.replace('_', '');
+}
+
+function esBisagra(decision) {
+  return pesoDeDecision(decision) === 'bisagra'
+    || decision?.bisagra === true
+    || decision?.datos?.evento?.bisagra === true;
+}
+
+export function ligasEnJuego(decision, state) {
+  const set = new Set();
+  agregarLiga(set, state?.career?.liga);
+  for (const op of decision?.datos?.evento?.options ?? []) {
+    for (const out of op?.outcomes ?? []) {
+      for (const ef of out?.effects ?? []) {
+        if (ef?.type === 'ofertaDeImport') agregarLiga(set, ef.liga);
+      }
+    }
+  }
+  for (const oferta of decision?.datos?.ofertas ?? []) agregarLiga(set, oferta?.liga);
+  return [...set];
+}
+
+export function copasEnJuego(decision, state) {
+  const set = new Set();
+  for (const c of [state?.serie?.torneo, decision?.datos?.torneo, decision?.datos?.competicion]) {
+    const n = normalizarCopa(c);
+    if (n) set.add(n);
+  }
+  return [...set];
+}
+
+// null si no es bisagra. Si no: { variante: 'liga'|'copas'|'campeones', a, b }.
+// Dos ligas ganan a una copa. Sin ninguna de las dos, el pool (campeones).
+export function contextoDeBisagra(decision, state) {
+  if (!esBisagra(decision)) return null;
+  const ligas = ligasEnJuego(decision, state);
+  if (ligas.length >= 2) {
+    const casa = state?.career?.liga ? String(state.career.liga) : ligas[0];
+    const otra = ligas.find((id) => id !== casa) ?? ligas[1];
+    return { variante: 'liga', a: casa, b: otra };
+  }
+  const copas = copasEnJuego(decision, state);
+  if (copas.length === 1) return { variante: 'copas', a: copas[0], b: copas[0] };
+  return { variante: 'campeones', a: null, b: null };
+}
+
+// Plan amateur (motivo del motor) o plan del año (cierre con plan.texto en alguna opción).
+export function esMatrizDePlan(decision) {
+  if (decision?.datos?.motivo === 'plan_amateur') return true;
+  return decision?.franja === 'cierre' && (decision.opciones ?? []).some((o) => o?.plan?.texto);
+}
+
+const ICONO_DE_LOG = {
+  meta: 'meta', mercado: 'mercado', practica: 'practica', campeones: 'campeones',
+  temporada: 'temporada', rendimiento: 'rendimiento', event: 'event', amateur: 'amateur',
+  serie: 'serie', competitivo: 'serie', edad: 'copa', top_mundial: 'mundo', internacional: 'mundo',
+  escena: 'event', split: 'punto', contexto: 'punto', salud: 'alto', servicioMilitar: 'alto'
+};
+
+export function iconoDeLog(type) {
+  return ICONO_DE_LOG[type] ?? 'punto';
+}
+
+// La viñeta del año trae un emoji de campo (no prosa). Acá se vuelve glifo del kit.
+const ICONO_DE_VINETA = {
+  '📊': 'rendimiento', '🏆': 'copa', '🌍': 'mundo', '⚡': 'serie', '🎯': 'meta', '🎀': 'flecha'
+};
+
+export function iconoDeVineta(marca) {
+  return ICONO_DE_VINETA[marca] ?? 'punto';
+}
