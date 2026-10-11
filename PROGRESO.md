@@ -42,6 +42,8 @@ En lolero.lol el champ select no pintaba región, perfil, línea ni mains. Se ve
 
 **Medido:** en localhost:8000, a los ~4 s hay 8 regiones, 4 perfiles, 5 líneas, el título "Lolero" y el botón BLOQUEAR. Con línea y 3 mains, BLOQUEAR se habilita; al pulsarlo la pieza pasa a `decision` y la página sigue respondiendo. `validate.js --rapido` en verde. `build.js` 3121 KB contra un techo de 3150. El motor no se tocó.
 
+**Publicado el 2026-10-11.** `npx wrangler deploy`: Worker `lolero`, versión `55b2fb00-9b69-49aa-b30c-4758b2cb019a`, en lolero.lol y www.lolero.lol.
+
 ### 2026-10-11 — PLANUI, ola 2 mergeada en `u-integracion`
 
 La ola 2 ya estaba commiteada en tres worktrees. Se integró y se cerraron dos huecos del brief: la decisión nueva no tenía CSS para sus clases, y los glifos del relato estaban definidos y sin usar.
