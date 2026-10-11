@@ -51,7 +51,7 @@ const CLAVE_VISTA = 'lolcs-vista';
 
 export function guardarVista(marcador) {
   try {
-    localStorage.setItem(CLAVE_VISTA, JSON.stringify(marcador));
+    localStorage.setItem(CLAVE_VISTA, JSON.stringify(conservarNumeroJersey(marcador)));
     return true;
   } catch {
     return false;
@@ -72,4 +72,30 @@ export function borrarVista() {
   try {
     localStorage.removeItem(CLAVE_VISTA);
   } catch { /* nada que borrar si localStorage no está disponible */ }
+}
+
+/* U2b */
+// El dorsal es cosmético: vive en el marcador `lolcs-vista`, nunca en el `state`.
+// `app.js` reescribe el marcador entero en cada guardado y no conoce el número: si la seed
+// coincide (o el marcador anterior todavía no tenía seed), el número se conserva.
+function conservarNumeroJersey(marcador) {
+  if (!marcador || typeof marcador !== 'object') return marcador;
+  if (Object.prototype.hasOwnProperty.call(marcador, 'numeroJersey')) return marcador;
+  const previa = cargarVista();
+  const n = previa?.numeroJersey;
+  if (!Number.isInteger(n) || n < 1 || n > 99) return marcador;
+  if (previa.seed != null && previa.seed !== marcador.seed) return marcador;
+  return { ...marcador, numeroJersey: n };
+}
+
+export function leerNumeroJersey() {
+  const n = cargarVista()?.numeroJersey;
+  return Number.isInteger(n) && n >= 1 && n <= 99 ? n : null;
+}
+
+export function guardarNumeroJersey(n) {
+  const numero = Number(n);
+  if (!Number.isInteger(numero) || numero < 1 || numero > 99) return false;
+  const actual = cargarVista() ?? {};
+  return guardarVista({ ...actual, numeroJersey: numero });
 }

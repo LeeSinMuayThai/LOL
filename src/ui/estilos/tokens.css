@@ -953,3 +953,16 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
 @media (max-width: 639px) {
   :root { --fs-6: 24px; --fs-7: 32px; --fs-8: 48px; --fs-9: 64px; }
 }
+
+/* U2b */
+:root {
+  --mk-papel: #f3ecdf;
+  --mk-tinta: #1c1612;
+  --mk-sello: #8e2e32;
+  --mk-pliegue: #1c16121f;
+  --mk-brillo: #ffffff55;
+  --pt-stream: #070b12;
+  --pt-marca: #ffffff2e;
+  --pt-marca-w: #3ddc97;
+  --pt-marca-l: #e8402a;
+}

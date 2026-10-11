@@ -3,8 +3,10 @@ import { etiquetaDeRonda } from '../../core/serie.js';
 import { tableroDeSerie } from '../../core/vistaDeCarrera.js';
 import { etiquetaDeFuerza } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
-import { crearCampeonTile } from './campeonTile.js';
-import { countUp } from './countUp.js';
+import { keyDdragonDeCampeon } from './campeonTile.js';
+import { quemar, victoriaDerrota } from '../fx/ceremonia.js';
+import { urlCarga } from '../fx/arte.js';
+import { cinta } from '../fx/transmision.js';
 
 // La transmisión del partido y la serie (fase T6, PLAN.md "T6 — El partido
 // y la serie como transmisión"). Dos piezas: la tarjeta de resultado de
@@ -73,6 +75,7 @@ export function crearTarjetaResultado(entry, state) {
 
   cabecera.append(marcador, rivalEl, fuerzaEl);
   item.appendChild(cabecera);
+  item.appendChild(victoriaDerrota({ gano, sub: fecha.rival ?? '' }).nodo);
 
   const cuerpo = document.createElement('div');
   cuerpo.textContent = entry.message;
@@ -107,6 +110,8 @@ const ETIQUETAS_BRACKET = {
 // arrancaba del valor que había dejado el otro. Por contenedor, el escenario anima desde SU marcador y el acompañante (que
 // se rehace entero en cada pintada, sin memoria) no anima.
 const memoria = new WeakMap();
+// Una sola celebración por mapa nuevo, aunque el tablero se repinte en el escenario y en el acompañante.
+let celebracionVista = '';
 function memoriaDe(container) {
   let m = memoria.get(container);
   if (!m) {
@@ -114,6 +119,65 @@ function memoriaDe(container) {
     memoria.set(container, m);
   }
   return m;
+}
+
+function claveDeMapas(state) {
+  const serie = state?.serie;
+  const mapas = serie?.mapas ?? [];
+  const ultimo = mapas[mapas.length - 1];
+  return `${serie?.rival?.org ?? ''}|${mapas.length}|${ultimo?.mapa ?? ''}|${ultimo?.resultado ?? ''}|${ultimo?.campeon ?? ''}`;
+}
+
+function retratoDeCarga(nombre) {
+  const carta = document.createElement('figure');
+  carta.className = 'pt-retrato';
+  const key = keyDdragonDeCampeon(nombre);
+  if (key) {
+    const img = document.createElement('img');
+    img.className = 'pt-retrato-img';
+    img.alt = '';
+    img.decoding = 'async';
+    img.src = urlCarga(key);
+    img.addEventListener('error', () => { img.remove(); }, { once: true });
+    carta.appendChild(img);
+  }
+  const cap = document.createElement('figcaption');
+  cap.className = 'pt-retrato-nombre';
+  cap.textContent = nombre;
+  carta.appendChild(cap);
+  return carta;
+}
+
+function dejarQuemado(carta, animarQuemado) {
+  const anims = quemar(carta) ?? [];
+  if (!animarQuemado) {
+    for (const a of anims) {
+      try { a.finish(); } catch { /* el estado final ya es la clase */ }
+    }
+  }
+}
+
+function paredFearless(state, { animarNombre = null } = {}) {
+  const quemados = state.serie?.quemados ?? [];
+  const pool = state.player?.championPool ?? [];
+  if (quemados.length === 0 && pool.length === 0) return null;
+  const fearless = document.createElement('div');
+  fearless.className = 'serie-fearless pt-pared';
+  const grid = document.createElement('div');
+  grid.className = 'serie-fearless-grid pt-pared-grid';
+  const vistos = new Set();
+  for (const nombre of quemados) {
+    vistos.add(nombre);
+    const carta = retratoDeCarga(nombre);
+    grid.appendChild(carta);
+    dejarQuemado(carta, nombre === animarNombre);
+  }
+  for (const campeon of pool) {
+    if (vistos.has(campeon.name)) continue;
+    grid.appendChild(retratoDeCarga(campeon.name));
+  }
+  fearless.append(texto('serie-fearless-titulo', 'Fearless', 'div'), grid);
+  return fearless;
 }
 
 // El "Camino" recuerda si lo abriste solo dentro del mismo partido (la serie con ese rival en esa ronda; el cruce del Swiss
@@ -126,52 +190,40 @@ function cerrarSiCambioElPartido(m, clave) {
 }
 
 // K5-A: una serie del Mundial (`ronda: 'internacional'` con su `etapa`) muestra el bracket del Mundial, no el doméstico.
-export function crearBarraBracket(rondaActual, { esPostSerie = false, gano = false, etapa = null } = {}) {
-  const bracket = document.createElement('div');
-  bracket.className = 'serie-bracket';
+function textoDePaso(ronda, { actual, superada }) {
+  const nombre = ETIQUETAS_BRACKET[ronda] ?? etiquetaDeRonda(ronda);
+  if (actual) return `${nombre} · ahora`;
+  if (superada) return `${nombre} · pasaste`;
+  return nombre;
+}
 
+// El bracket es la cinta de la transmisión (op=linea), no una fila de pastillas.
+export function crearBarraBracket(rondaActual, { esPostSerie = false, gano = false, etapa = null } = {}) {
   const delMundial = rondaActual === 'internacional' && Boolean(etapa);
-  if (delMundial) {
-    const rotulo = document.createElement('span');
-    rotulo.className = 'serie-bracket-paso serie-bracket-paso--superada';
-    rotulo.textContent = 'MUNDIAL';
-    bracket.appendChild(rotulo);
-  }
   const esIntl = rondaActual === 'internacional' && !delMundial;
   const indiceActual = RONDAS_BRACKET.indexOf(delMundial ? etapa : rondaActual);
-
+  const items = [];
+  if (delMundial) items.push({ texto: 'MUNDIAL · pasaste' });
   RONDAS_BRACKET.forEach((ronda, indice) => {
-    const paso = document.createElement('span');
-    let mod = '';
+    let superada = false;
+    let actual = false;
     if (esIntl) {
-      mod = ' serie-bracket-paso--superada';
+      superada = true;
     } else if (indiceActual >= 0) {
-      if (indice < indiceActual) {
-        mod = ' serie-bracket-paso--superada';
-      } else if (indice === indiceActual) {
-        if (esPostSerie) {
-          mod = gano ? ' serie-bracket-paso--superada' : '';
-        } else {
-          mod = ' serie-bracket-paso--actual';
-        }
+      if (indice < indiceActual) superada = true;
+      else if (indice === indiceActual) {
+        if (esPostSerie) superada = gano;
+        else actual = true;
       }
     }
-    paso.className = 'serie-bracket-paso' + mod;
-    paso.textContent = ETIQUETAS_BRACKET[ronda] ?? etiquetaDeRonda(ronda);
-    bracket.appendChild(paso);
+    items.push({ texto: textoDePaso(ronda, { actual, superada }) });
   });
-
   if (esIntl) {
-    const pasoIntl = document.createElement('span');
-    const modIntl = esPostSerie
-      ? (gano ? ' serie-bracket-paso--superada' : '')
-      : ' serie-bracket-paso--actual';
-    pasoIntl.className = 'serie-bracket-paso' + modIntl;
-    pasoIntl.textContent = 'INTERNACIONAL';
-    bracket.appendChild(pasoIntl);
+    items.push({ texto: textoDePaso('internacional', { actual: !esPostSerie, superada: esPostSerie && gano }) });
   }
-
-  return bracket;
+  const nodo = cinta({ rotulo: 'Bracket', items });
+  nodo.classList.add('serie-bracket');
+  return nodo;
 }
 
 export function crearTarjetaResultadoSerie(entry, state) {
@@ -225,25 +277,29 @@ export function crearTarjetaResultadoSerie(entry, state) {
   if (mapas.length > 0) {
     const camino = document.createElement('div');
     camino.className = 'resultado-camino';
-    for (const m of mapas) {
+    mapas.forEach((m, i) => {
       const fila = document.createElement('div');
+      const ganoMapa = m.resultado === 'W';
       fila.className = 'resultado-mapa-fila';
-
-      const tag = document.createElement('span');
-      tag.className = 'resultado-mapa-tag ' + (m.resultado === 'W' ? 'resultado-mapa-tag--ganado' : 'resultado-mapa-tag--perdido');
-      tag.textContent = `M${m.mapa} [${m.resultado} ${m.marcador}]`;
-
-      const camp = document.createElement('span');
-      camp.className = 'resultado-mapa-campeon';
-      camp.textContent = m.campeon;
-
-      const cierre = document.createElement('span');
-      cierre.className = 'resultado-mapa-cierre';
-      cierre.textContent = m.cierre ? `— ${m.cierre}` : '';
-
-      fila.append(tag, camp, cierre);
+      if (i === mapas.length - 1) {
+        fila.appendChild(victoriaDerrota({ gano: ganoMapa, sub: m.campeon ?? '' }).nodo);
+      } else {
+        const tag = document.createElement('span');
+        tag.className = 'resultado-mapa-tag ' + (ganoMapa ? 'resultado-mapa-tag--ganado' : 'resultado-mapa-tag--perdido');
+        tag.textContent = ganoMapa ? 'Victoria' : 'Derrota';
+        const camp = document.createElement('span');
+        camp.className = 'resultado-mapa-campeon';
+        camp.textContent = m.campeon ?? '';
+        fila.append(tag, camp);
+      }
+      if (m.cierre) {
+        const cierre = document.createElement('span');
+        cierre.className = 'resultado-mapa-cierre';
+        cierre.textContent = m.cierre;
+        fila.appendChild(cierre);
+      }
       camino.appendChild(fila);
-    }
+    });
     item.appendChild(camino);
   }
 
@@ -273,7 +329,7 @@ function texto(clase, contenido, etiqueta = 'span') {
 }
 
 // Las partes del tablero de una serie. `conMarcador`: el marcador grande (el del tablero completo); en el escenario va en la línea.
-function partesDeLaSerie(state, { conMarcador, esPostSerie, ganoSerie, marcador = null }) {
+function partesDeLaSerie(state, { conMarcador, esPostSerie, ganoSerie, marcador = null, celebrar = -1 }) {
   const { serie } = state;
   const partes = [];
   partes.push(crearBarraBracket(serie.ronda, { esPostSerie, gano: ganoSerie, etapa: serie.etapa ?? null }));
@@ -294,7 +350,8 @@ function partesDeLaSerie(state, { conMarcador, esPostSerie, ganoSerie, marcador 
     nums.className = 'serie-score';
     const a = document.createElement('span');
     const b = document.createElement('span');
-    marcador(a, b);
+    a.textContent = String(serie.marcador?.[0] ?? 0);
+    b.textContent = String(serie.marcador?.[1] ?? 0);
     nums.append(a, texto('serie-score-sep', '–'), b);
 
     const ladoRival = document.createElement('div');
@@ -310,16 +367,17 @@ function partesDeLaSerie(state, { conMarcador, esPostSerie, ganoSerie, marcador 
   for (let i = 0; i < slots; i += 1) {
     const mapa = serie.mapas[i];
     const paso = document.createElement('div');
-    paso.className = 'serie-mapa' + (mapa
-      ? ` serie-mapa--${mapa.resultado === 'W' ? 'ganado' : 'perdido'}`
-      : '');
-    paso.append(
-      texto('serie-mapa-n', `M${i + 1}`),
-      texto('serie-mapa-c', mapa ? (mapa.marcador ? `${mapa.campeon} (${mapa.marcador})` : mapa.campeon) : '—')
-    );
-    if (mapa?.cierre) {
-      paso.title = mapa.cierre;
+    const ganoMapa = mapa?.resultado === 'W';
+    paso.className = 'serie-mapa' + (mapa ? ` serie-mapa--${ganoMapa ? 'ganado' : 'perdido'}` : '');
+    if (mapa && i === celebrar) {
+      paso.appendChild(victoriaDerrota({ gano: ganoMapa, sub: mapa.campeon ?? '' }).nodo);
+    } else {
+      paso.append(
+        texto('serie-mapa-n', `M${i + 1}`),
+        texto('serie-mapa-c', mapa ? `${mapa.campeon} · ${ganoMapa ? 'Victoria' : 'Derrota'}` : '—')
+      );
     }
+    if (mapa?.cierre) paso.title = mapa.cierre;
     camino.appendChild(paso);
   }
   partes.push(camino);
@@ -331,7 +389,7 @@ function partesDeLaSerie(state, { conMarcador, esPostSerie, ganoSerie, marcador 
       const fila = document.createElement('div');
       fila.className = `serie-cierre-item serie-cierre-item--${m.resultado === 'W' ? 'ganado' : 'perdido'}`;
       fila.append(
-        texto('serie-cierre-tag', `M${m.mapa} [${m.resultado} ${m.marcador}] ${m.campeon}`),
+        texto('serie-cierre-tag', `M${m.mapa} · ${m.resultado === 'W' ? 'Victoria' : 'Derrota'} · ${m.campeon}`),
         texto('serie-cierre-texto', m.cierre ? ` — ${m.cierre}` : '')
       );
       cierres.appendChild(fila);
@@ -339,30 +397,13 @@ function partesDeLaSerie(state, { conMarcador, esPostSerie, ganoSerie, marcador 
     partes.push(cierres);
   }
 
-  const quemados = serie.quemados ?? [];
-  const pool = state.player.championPool ?? [];
-  if (quemados.length > 0 || pool.length > 0) {
-    const fearless = document.createElement('div');
-    fearless.className = 'serie-fearless';
-    const grid = document.createElement('div');
-    grid.className = 'serie-fearless-grid';
-    const vistos = new Set();
-    for (const nombre of quemados) {
-      vistos.add(nombre);
-      grid.appendChild(crearCampeonTile({ name: nombre }, { quemado: true, size: 'mini' }));
-    }
-    for (const campeon of pool) {
-      if (vistos.has(campeon.name)) continue;
-      grid.appendChild(crearCampeonTile(campeon, { size: 'mini' }));
-    }
-    fearless.append(texto('serie-fearless-titulo', 'Fearless', 'div'), grid);
-    partes.push(fearless);
-  }
+  const fearless = paredFearless(state);
+  if (fearless) partes.push(fearless);
   return partes;
 }
 
 // La línea del escenario: rival, marcador, mapa n de N, Fearless. Nada que el relato no haya contado (sale de la `vista`).
-function lineaDeLaSerie(state, { esPostSerie, marcador }) {
+function lineaDeLaSerie(state, { esPostSerie }) {
   const { serie } = state;
   const propia = state.career.currentOrg ?? state.player.name;
   const rivalNombre = serie.rival?.org ?? 'Rival';
@@ -371,7 +412,8 @@ function lineaDeLaSerie(state, { esPostSerie, marcador }) {
   const duelo = texto('serie-linea-duelo', '');
   const a = document.createElement('span');
   const b = document.createElement('span');
-  marcador(a, b);
+  a.textContent = String(serie.marcador?.[0] ?? 0);
+  b.textContent = String(serie.marcador?.[1] ?? 0);
   const nums = texto('serie-linea-score', '');
   nums.append(a, texto('serie-score-sep', '–'), b);
   duelo.append(
@@ -414,13 +456,15 @@ function desplegable(container, memoria, linea, cuerpo) {
 function partesDelSwiss(state, { conResumen }) {
   const t = state.internacional;
   const partes = [];
-
-  const bracket = document.createElement('div');
-  bracket.className = 'serie-bracket';
-  [['MUNDIAL · SWISS', ' serie-bracket-paso--actual'], ['CUARTOS', ''], ['SEMI', ''], ['FINAL', '']].forEach(([rotulo, mod]) => {
-    bracket.appendChild(texto(`serie-bracket-paso${mod}`, rotulo));
-  });
-  partes.push(bracket);
+  partes.push(cinta({
+    rotulo: 'Mundial',
+    items: [
+      { texto: 'SWISS · ahora' },
+      { texto: 'CUARTOS' },
+      { texto: 'SEMI' },
+      { texto: 'FINAL' }
+    ]
+  }));
 
   const record = t.swiss.record[t.jugador] ?? { v: 0, d: 0 };
   const propia = state.career.currentOrg ?? state.player.name;
@@ -433,8 +477,20 @@ function partesDelSwiss(state, { conResumen }) {
 
   // Tus rondas hasta acá, con el rival de cada una, y la que se está por jugar.
   const camino = document.createElement('div');
-  camino.className = 'serie-camino';
+  camino.className = 'serie-camino pt-marcas';
   const propias = t.swiss.rondas.map((ronda) => ronda.find((p) => p.propio)).filter(Boolean);
+  const marcas = document.createElement('div');
+  marcas.className = 'pt-marcas-fila';
+  marcas.setAttribute('aria-label', 'Récord del Swiss, cinco partidos como máximo');
+  for (let i = 0; i < 5; i += 1) {
+    const pip = document.createElement('i');
+    const jugado = propias[i];
+    const gano = jugado ? jugado.ganador === t.jugador : null;
+    pip.className = 'pt-marca' + (jugado ? ` pt-marca--${gano ? 'w' : 'l'}` : '');
+    pip.title = jugado ? (gano ? 'Victoria' : 'Derrota') : 'Por jugar';
+    marcas.appendChild(pip);
+  }
+  camino.appendChild(marcas);
   propias.forEach((partido, i) => {
     const gano = partido.ganador === t.jugador;
     const rival = partido.a === t.jugador ? partido.b : partido.a;
@@ -499,25 +555,20 @@ export function renderSerieContexto(container, state, { completo = false } = {})
   container.hidden = false;
   cerrarSiCambioElPartido(m, `serie|${serie.rival?.org ?? ''}|${serie.ronda ?? ''}|${serie.etapa ?? ''}`);
   const ganoSerie = (serie.marcador?.[0] ?? 0) > (serie.marcador?.[1] ?? 0);
-
-  // El marcador anima desde lo que ESTE contenedor ya mostró; el tablero completo (el del acompañante, que se rehace entero en
-  // cada pintada) no anima: pinta el número.
-  const previo = completo ? { a: serie.marcador[0], b: serie.marcador[1] } : m.previo;
-  const marcador = (a, b) => {
-    countUp(a, previo.a, serie.marcador[0], { dur: 220 });
-    countUp(b, previo.b, serie.marcador[1], { dur: 220 });
-  };
-  if (!completo) {
-    m.previo = { a: serie.marcador[0], b: serie.marcador[1] };
-  }
+  m.previo = { a: serie.marcador?.[0] ?? 0, b: serie.marcador?.[1] ?? 0 };
+  const claveMapas = claveDeMapas(state);
+  const celebrar = (serie.mapas?.length ?? 0) > 0 && celebracionVista !== claveMapas
+    ? serie.mapas.length - 1
+    : -1;
+  if (celebrar >= 0) celebracionVista = claveMapas;
 
   if (completo) {
-    container.replaceChildren(...partesDeLaSerie(state, { conMarcador: true, esPostSerie, ganoSerie, marcador }));
+    container.replaceChildren(...partesDeLaSerie(state, { conMarcador: true, esPostSerie, ganoSerie, celebrar }));
     return;
   }
   desplegable(
     container, m,
-    lineaDeLaSerie(state, { esPostSerie, marcador }),
-    partesDeLaSerie(state, { conMarcador: false, esPostSerie, ganoSerie })
+    lineaDeLaSerie(state, { esPostSerie }),
+    partesDeLaSerie(state, { conMarcador: false, esPostSerie, ganoSerie, celebrar })
   );
 }
