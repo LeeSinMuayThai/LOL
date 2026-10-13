@@ -365,25 +365,6 @@
   font-size: var(--fs-1);
   color: var(--ink-dim);
 }
-
-/* U2c: la ficha del cuarto y del acompañante no es otra placa. El radar de los seis atributos va debajo del encabezado. */
-.cuarto-cuerpo > .ficha-card,
-.acompanante > .ficha-card {
-  margin-top: 0;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-}
-.cuarto-cuerpo > .ficha-card--dorada,
-.acompanante > .ficha-card--dorada { box-shadow: inset 0 -2px 0 var(--gold); }
-.ficha-radar {
-  display: grid;
-  justify-items: center;
-  width: min(240px, 100%);
-  margin: var(--s-3) auto;
-}
-.ficha-radar-svg { display: block; width: 100%; height: auto; overflow: visible; }
 @media (min-width: 640px) {
   .ficha-pico {
     grid-template-columns: minmax(0, 1.2fr) 9em minmax(0, 1.4fr);

@@ -1,14 +1,8 @@
 import { plata, faltan as faltanTexto } from '../../core/formato.js';
 import { crearOrgChip } from './orgChip.js';
+import { countUp } from './countUp.js';
 import { reconciliar, reemplazarEnElLugar, olvidarContenedor } from '../core/reconciliar.js';
-import { nombreVisibleDeLiga, numeroDeJerseyPorDefecto } from '../formatoUi.js';
-import { leerNumeroJersey, guardarNumeroJersey } from '../almacenamiento.js';
-import { crearBeats } from '../fx/beats.js';
-import { glifoRol } from '../fx/iconos.js';
-import { escudo, iniciales } from '../fx/logos.js';
-import { aplicarTono, tonoOrg } from '../fx/tono.js';
-import { quieto, svg } from '../fx/util.js';
-import { etiquetaRol } from '../../data/roles.js';
+import { nombreVisibleDeLiga } from '../formatoUi.js';
 
 // La pantalla de ofertas (fase 9c, PLAN.md §9.5-9.6): "la trampa del equipo
 // grande visible" hecha tarjeta. Cada campo que se pinta acá ya viene resuelto
@@ -105,11 +99,16 @@ export function lineaDeMotivoDeOferta(oferta) {
 // V3c: el sueldo de una oferta. La primera vez que aparece se pinta quieto, con el número final (regla 1 de §V.3: en una
 // parada nada más se anima; y retomar compara el mismo texto sin esperar un conteo). Solo cuando el número CAMBIA —se pidió
 // más— sube (o baja) desde el que estaba: la regla 3, "el delta se ve". `desde` es el valor anterior, o `null`.
-function sueldoEl(clase, valor) {
+function sueldoEl(clase, valor, desde) {
   const el = document.createElement('div');
   el.className = clase;
   el.dataset.valor = String(valor);
-  el.textContent = `${plata(valor)}/año`;
+  const formato = (n) => `${plata(n)}/año`;
+  if (Number.isFinite(desde) && desde !== valor) {
+    countUp(el, desde, valor, { format: formato });
+  } else {
+    el.textContent = formato(valor);
+  }
   return el;
 }
 
@@ -150,10 +149,9 @@ function construirMas(filas, negociacion, abierto) {
 function construirTarjeta(oferta, onElegir, onNegociar, previo = {}) {
   const card = document.createElement('div');
   card.className = `mercado-card mercado-card--${oferta.tag}`;
-  card.dataset.oferta = oferta.id;
 
   const header = document.createElement('div');
-  header.className = 'mercado-card-header mk-membrete';
+  header.className = 'mercado-card-header';
   const org = document.createElement('span');
   org.className = 'mercado-card-org';
   org.append(crearOrgChip(oferta.org, { size: 24 }), document.createTextNode(oferta.org));
@@ -162,12 +160,8 @@ function construirTarjeta(oferta, onElegir, onNegociar, previo = {}) {
   tag.textContent = ETIQUETAS_TAG[oferta.tag] ?? oferta.tag;
   header.append(org, tag);
   card.appendChild(header);
-  const sello = document.createElement('div');
-  sello.className = 'mk-sello';
-  sello.textContent = ETIQUETAS_TAG[oferta.tag] ?? oferta.tag;
-  card.appendChild(sello);
 
-  card.appendChild(sueldoEl('mercado-card-salario', oferta.salarioAnualUSD));
+  card.appendChild(sueldoEl('mercado-card-salario', oferta.salarioAnualUSD, previo.salario));
 
   // Los mismos campos, en el mismo orden y en las mismas dos líneas, en todas las ofertas: (1) liga y años y dónde queda el
   // plantel; (2) tu jerarquía allá, lo que falta para el hito (una renovación) y el estado de la negociación.
@@ -246,10 +240,9 @@ function construirTarjeta(oferta, onElegir, onNegociar, previo = {}) {
 function construirTarjetaTraspaso(opcion, onElegir, previo = {}) {
   const card = document.createElement('div');
   card.className = `mercado-card mercado-card--${opcion.tipo === 'aceptar' ? 'bombazo' : 'lateral'}`;
-  card.dataset.oferta = opcion.id;
 
   const header = document.createElement('div');
-  header.className = 'mercado-card-header mk-membrete';
+  header.className = 'mercado-card-header';
   const org = document.createElement('span');
   org.className = 'mercado-card-org';
   if (opcion.org) {
@@ -262,7 +255,7 @@ function construirTarjetaTraspaso(opcion, onElegir, previo = {}) {
 
   const conDatos = opcion.tipo !== 'quedarse';
   if (conDatos) {
-    card.appendChild(sueldoEl('mercado-card-salario', opcion.salarioAnualUSD));
+    card.appendChild(sueldoEl('mercado-card-salario', opcion.salarioAnualUSD, previo.salario));
   }
 
   const datos = document.createElement('div');
@@ -419,48 +412,16 @@ function previoDe(nodo) {
   };
 }
 
-const VENTANA_DIAS = 14;
-const VENTANA_MS = 5600;
-const ROLES_PLANTEL = ['top', 'jungla', 'mid', 'adc', 'support'];
-const POS_LINEA = {
-  top: [18, 16],
-  jungla: [25, 44],
-  mid: [50, 47],
-  adc: [70, 89],
-  support: [87, 67]
-};
-
-function abortar(panel) {
-  panel?._u2b?.abort?.();
-  if (panel) panel._u2b = null;
-}
-
-function diaDeOferta(oferta, opciones) {
-  if (oferta.tag === 'bombazo') return VENTANA_DIAS;
-  const resto = opciones.filter((o) => o.tag !== 'bombazo');
-  const orden = [...resto].sort((a, b) => (Number(b.tier) || 0) - (Number(a.tier) || 0) || (Number(a.salarioAnualUSD) || 0) - (Number(b.salarioAnualUSD) || 0));
-  const i = Math.max(0, orden.findIndex((o) => o.id === oferta.id));
-  if (orden.length <= 1) return 1;
-  return 1 + Math.round(i * 12 / (orden.length - 1));
-}
-
-export function renderMercado(elements, decision, onElegir, onRepresentante, onNegociar, onEsperar, jugador = {}) {
+export function renderMercado(elements, decision, onElegir, onRepresentante, onNegociar, onEsperar) {
   const {
     mercadoPanel, mercadoTitle, mercadoDesc, mercadoVos, mercadoGrid, mercadoMundo,
     mercadoRepresentante, mercadoEsperar
   } = elements;
 
-  abortar(mercadoPanel);
-  mercadoPanel.querySelector(':scope > .mk-rito')?.remove();
-  mercadoGrid.hidden = false;
-
   mercadoTitle.textContent = decision.titulo;
   mercadoDesc.textContent = decision.descripcion;
 
   const esTraspaso = decision.datos.motivo === 'traspaso';
-  const elegir = esTraspaso
-    ? onElegir
-    : (respuesta) => empezarFirma(elements, decision, respuesta, onElegir, jugador);
 
   // Bloque 1: vos en el mercado.
   if (mercadoVos) {
@@ -482,11 +443,10 @@ export function renderMercado(elements, decision, onElegir, onRepresentante, onN
     olvidarContenedor(mercadoGrid);
     mercadoGrid.replaceChildren();
     mercadoGrid.dataset.lista = lista;
-    delete mercadoGrid.dataset.llegaron;
   }
   const construirCard = esTraspaso
-    ? (oferta, previo) => construirTarjetaTraspaso(oferta, elegir, previo)
-    : (oferta, previo) => construirTarjeta(oferta, elegir, onNegociar, previo);
+    ? (oferta, previo) => construirTarjetaTraspaso(oferta, onElegir, previo)
+    : (oferta, previo) => construirTarjeta(oferta, onElegir, onNegociar, previo);
   reconciliar(
     mercadoGrid,
     decision.opciones,
@@ -515,252 +475,4 @@ export function renderMercado(elements, decision, onElegir, onRepresentante, onN
   }
 
   mercadoPanel.hidden = false;
-  mercadoGrid.classList.add('mk-pila');
-  prepararLlegada(elements, decision, esTraspaso);
-}
-
-function prepararLlegada(elements, decision, esTraspaso) {
-  const { mercadoPanel, mercadoGrid, mercadoDesc } = elements;
-  const timers = [];
-  let muerto = false;
-  const opciones = decision.opciones ?? [];
-  const ya = esTraspaso || quieto() || mercadoGrid.dataset.llegaron === '1';
-  [...mercadoGrid.children].forEach((card, i) => {
-    const oferta = opciones[i];
-    if (!oferta) return;
-    const dia = diaDeOferta(oferta, opciones);
-    card.style.setProperty('--mk-i', String(i));
-    card.style.zIndex = String(dia);
-    card.addEventListener('pointerenter', () => card.classList.add('mk-frente'));
-    card.addEventListener('pointerleave', () => card.classList.remove('mk-frente'));
-    card.addEventListener('focusin', () => card.classList.add('mk-frente'));
-    const sello = card.querySelector('.mk-sello');
-    if (ya) {
-      sello?.classList.add('mk-ya');
-      return;
-    }
-    const espera = (dia - 1) * (VENTANA_MS / VENTANA_DIAS);
-    timers.push(setTimeout(() => {
-      sello?.classList.add('mk-ya');
-      if (mercadoDesc) mercadoDesc.dataset.dia = String(dia);
-    }, espera));
-  });
-  if (ya && mercadoDesc) mercadoDesc.dataset.dia = String(VENTANA_DIAS);
-  const alEspacio = (e) => {
-    if (e.code !== 'Space' && e.key !== ' ') return;
-    const activo = document.activeElement;
-    if (activo && (activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA')) return;
-    e.preventDefault();
-    revelarSellos();
-  };
-  function revelarSellos() {
-    for (const t of timers) clearTimeout(t);
-    for (const sello of mercadoGrid.querySelectorAll('.mk-sello')) sello.classList.add('mk-ya');
-    mercadoGrid.dataset.llegaron = '1';
-    if (mercadoDesc) mercadoDesc.dataset.dia = String(VENTANA_DIAS);
-  }
-  if (!ya) {
-    timers.push(setTimeout(revelarSellos, VENTANA_MS));
-  } else {
-    mercadoGrid.dataset.llegaron = '1';
-  }
-  document.addEventListener('keydown', alEspacio);
-  mercadoPanel._u2b = {
-    abort() {
-      if (muerto) return;
-      muerto = true;
-      for (const t of timers) clearTimeout(t);
-      document.removeEventListener('keydown', alEspacio);
-    }
-  };
-}
-
-function empezarFirma(elements, decision, respuesta, onElegir, jugador) {
-  const { mercadoPanel, mercadoGrid, mercadoRepresentante, mercadoEsperar } = elements;
-  const sesion = mercadoPanel._u2b;
-  sesion?.abort?.();
-  const oferta = decision.opciones.find((o) => o.id === respuesta.opcionId);
-  const carta = mercadoGrid.querySelector(`[data-oferta="${CSS.escape(String(respuesta.opcionId))}"]`) ?? mercadoGrid.querySelector('.mercado-card');
-  if (mercadoRepresentante) mercadoRepresentante.hidden = true;
-  if (mercadoEsperar) mercadoEsperar.hidden = true;
-  carta?.classList.add('mk-aprieta', 'mk-frente');
-  const firma = svgFirma(jugador.handle);
-  carta?.appendChild(firma);
-  const trazo = firma.querySelector('.mk-firma-trazo');
-  let largo = 0;
-  try { largo = trazo?.getTotalLength?.() ?? 0; } catch { largo = 0; }
-  if (trazo && largo > 0) {
-    trazo.style.strokeDasharray = String(largo);
-    trazo.style.strokeDashoffset = quieto() ? '0' : String(largo);
-  }
-  const beats = crearBeats({ duracion: 1500, asentarse: 1500 });
-  if (trazo && !quieto() && largo > 0) {
-    beats.waapi(trazo.animate(
-      [{ strokeDashoffset: largo }, { strokeDashoffset: 0 }],
-      { duration: 1100, fill: 'forwards', easing: 'ease-out' }
-    ));
-  }
-  let seguido = false;
-  const soltar = () => document.removeEventListener('keydown', alEspacio);
-  const aJersey = () => {
-    if (seguido) return;
-    seguido = true;
-    soltar();
-    beats.saltar();
-    mostrarJersey(elements, oferta, respuesta, onElegir, jugador);
-  };
-  const aLinea = () => {
-    if (seguido) return;
-    seguido = true;
-    soltar();
-    mostrarLinea(elements, oferta, jugador, () => mostrarJersey(elements, oferta, respuesta, onElegir, jugador));
-  };
-  const alEspacio = (e) => {
-    if (e.code !== 'Space' && e.key !== ' ') return;
-    const activo = document.activeElement;
-    if (activo && (activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA')) return;
-    e.preventDefault();
-    aJersey();
-  };
-  document.addEventListener('keydown', alEspacio);
-  mercadoPanel._u2b = {
-    abort() {
-      soltar();
-      beats.destruir?.();
-    }
-  };
-  beats.iniciar();
-  if (quieto()) {
-    aJersey();
-    return;
-  }
-  beats.esperar(1400).then(() => {
-    if (!seguido) aLinea();
-  });
-}
-
-function mostrarLinea(elements, oferta, jugador, alCaer) {
-  const { mercadoPanel, mercadoGrid } = elements;
-  mercadoGrid.hidden = true;
-  const previo = mercadoPanel.querySelector(':scope > .mk-rito');
-  previo?.remove();
-  const rito = document.createElement('div');
-  rito.className = 'mk-rito';
-  rito.appendChild(mapaDeLineas(jugador.rol));
-  mercadoPanel.appendChild(rito);
-  const slot = rito.querySelector('.mk-slot--tuya');
-  if (quieto() || !slot) {
-    alCaer();
-    return;
-  }
-  const anim = slot.animate(
-    [{ transform: 'translate(-50%, -180%)' }, { transform: 'translate(-50%, -50%)' }],
-    { duration: 700, fill: 'forwards', easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
-  );
-  anim.finished.then(alCaer, alCaer);
-}
-
-function mostrarJersey(elements, oferta, respuesta, onElegir, jugador) {
-  const { mercadoPanel } = elements;
-  const rito = mercadoPanel.querySelector(':scope > .mk-rito') ?? document.createElement('div');
-  if (!rito.isConnected) {
-    rito.className = 'mk-rito';
-    mercadoPanel.appendChild(rito);
-  }
-  const org = oferta?.org ?? respuesta.opcionId;
-  const guardado = leerNumeroJersey();
-  const dorsal = guardado ?? numeroDeJerseyPorDefecto(jugador.handle, jugador.seed);
-  let respondido = false;
-  const cerrar = () => {
-    if (respondido) return;
-    const n = Number(input.value);
-    const numero = Number.isInteger(n) && n >= 1 && n <= 99 ? n : dorsal;
-    respondido = true;
-    document.removeEventListener('keydown', alEspacio);
-    guardarNumeroJersey(numero);
-    onElegir({ opcionId: respuesta.opcionId });
-  };
-  const jersey = jerseyDe(org, jugador.handle, dorsal);
-  const input = jersey.querySelector('input');
-  const listo = jersey.querySelector('button');
-  listo.addEventListener('click', cerrar);
-  const alEspacio = (e) => {
-    if (e.code !== 'Space' && e.key !== ' ') return;
-    if (document.activeElement === input) return;
-    e.preventDefault();
-    cerrar();
-  };
-  document.addEventListener('keydown', alEspacio);
-  mercadoPanel._u2b = { abort() { document.removeEventListener('keydown', alEspacio); } };
-  rito.replaceChildren(jersey);
-  if (quieto()) queueMicrotask(cerrar);
-}
-
-function svgFirma(handle) {
-  const nombre = String(handle ?? '').trim() || 'Firma';
-  return svg('svg', { class: 'mk-firma', viewBox: '0 0 640 160', 'aria-hidden': 'true' }, [
-    svg('text', { class: 'mk-firma-nombre', x: '24', y: '78' }, document.createTextNode(nombre)),
-    svg('path', { class: 'mk-firma-trazo', d: 'M14 128 C 140 112, 300 140, 420 120 S 600 96, 628 112', fill: 'none' })
-  ]);
-}
-
-function mapaDeLineas(rol) {
-  const mapa = document.createElement('div');
-  mapa.className = 'mk-plantel';
-  mapa.appendChild(svg('svg', { class: 'mk-mapa', viewBox: '0 0 100 100', 'aria-hidden': 'true' }, [
-    svg('rect', { class: 'mk-mapa-piso', x: '6', y: '6', width: '88', height: '88' }),
-    svg('path', { class: 'mk-mapa-linea', d: 'M18 18 H82 V82', fill: 'none' }),
-    svg('path', { class: 'mk-mapa-linea', d: 'M18 82 H82 V18', fill: 'none' }),
-    svg('path', { class: 'mk-mapa-linea', d: 'M20 80 L80 20', fill: 'none' }),
-    svg('path', { class: 'mk-mapa-rio', d: 'M10 58 C 32 54, 42 40, 60 36 S 86 22, 92 12', fill: 'none' })
-  ]));
-  for (const id of ROLES_PLANTEL) {
-    const [x, y] = POS_LINEA[id];
-    const slot = document.createElement('div');
-    slot.className = 'mk-slot' + (id === rol ? ' mk-slot--tuya' : '');
-    slot.style.left = `${x}%`;
-    slot.style.top = `${y}%`;
-    if (id === rol) {
-      const glifo = glifoRol(rol, 'mk-glifo');
-      slot.append(glifo, span('mk-slot-rol', etiquetaRol(rol)));
-    } else {
-      slot.append(span('mk-slot-rol', etiquetaRol(id)), span('mk-slot-anuncio', 'por anunciar'));
-    }
-    mapa.appendChild(slot);
-  }
-  return mapa;
-}
-
-function jerseyDe(org, handle, numero) {
-  const raiz = document.createElement('div');
-  raiz.className = 'mk-jersey';
-  aplicarTono(raiz, tonoOrg(org));
-  const dibujo = svg('svg', { class: 'mk-jersey-svg', viewBox: '0 0 200 240', role: 'img', 'aria-label': `Jersey de ${org}` }, [
-    svg('path', { class: 'mk-tela', d: 'M40 36 L70 20 H130 L160 36 L184 78 L156 92 L150 220 H50 L44 92 L16 78 Z' }),
-    svg('path', { class: 'mk-pliegue', d: 'M100 42 C 92 96, 108 150, 100 208', fill: 'none' }),
-    svg('path', { class: 'mk-pliegue', d: 'M72 50 C 80 110, 74 160, 66 208', fill: 'none' }),
-    svg('path', { class: 'mk-pliegue', d: 'M128 50 C 120 110, 126 160, 134 208', fill: 'none' }),
-    svg('path', { class: 'mk-cuello', d: 'M78 28 H122 L114 48 H86 Z' })
-  ]);
-  const esc = document.createElement('div');
-  esc.className = 'mk-escudo';
-  esc.appendChild(escudo(iniciales(org)));
-  const nombre = document.createElement('div');
-  nombre.className = 'mk-handle';
-  nombre.textContent = String(handle ?? '');
-  const input = document.createElement('input');
-  input.className = 'mk-dorsal';
-  input.inputMode = 'numeric';
-  input.maxLength = 2;
-  input.value = String(numero);
-  input.setAttribute('aria-label', 'Número de jersey');
-  input.addEventListener('input', () => {
-    input.value = input.value.replace(/\D/g, '').slice(0, 2);
-  });
-  const listo = document.createElement('button');
-  listo.type = 'button';
-  listo.className = 'mk-listo';
-  listo.textContent = 'Listo';
-  raiz.append(dibujo, esc, nombre, input, listo);
-  return raiz;
 }

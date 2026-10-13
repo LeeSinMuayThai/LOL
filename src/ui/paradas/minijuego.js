@@ -24,28 +24,6 @@ const TECLA_VAMOS = 'V';
 // Hasta cuántas opciones de la charla llevan atajo (las teclas 1-4 del teclado).
 const OPCIONES_CON_ATAJO = 4;
 
-// `#minijuego` se reusa: un solo oyente del ajuste de textos, el anterior se suelta al montar de nuevo.
-let soltarTextos = null;
-
-// Con "completos" la prosa plegada de la apuesta queda a la vista. El atributo `hidden` le gana al CSS, así que se
-// sincroniza acá. "breves" respeta el "más" si el jugador ya lo abrió.
-function sincronizarApuesta(caja) {
-  soltarTextos?.();
-  const aplicar = () => {
-    const plegado = caja.querySelector('.minijuego-apuesta-plegado');
-    if (!plegado) return;
-    if (document.documentElement.dataset.textos === 'completos') {
-      plegado.hidden = false;
-      return;
-    }
-    const mas = caja.querySelector('.minijuego-mas');
-    plegado.hidden = mas?.getAttribute('aria-expanded') !== 'true';
-  };
-  aplicar();
-  document.documentElement.addEventListener('u2c-textos', aplicar);
-  soltarTextos = () => document.documentElement.removeEventListener('u2c-textos', aplicar);
-}
-
 // El acompañante: el minijuego no tiene (§V.4: "inicio, final o minijuego → nada").
 export function acompanante() {
   return null;
@@ -95,7 +73,6 @@ function montarParada(contenedor, decision, { estado, rngUi, responder, renderPr
   minijuegoDesc.textContent = lineaDesc;
   // Fase 9R4d: qué se juega, ANTES de jugarlo.
   minijuegoApuesta.replaceChildren(crearApuesta(decision, estadoActual, { resto: restoDesc }));
-  sincronizarApuesta(minijuegoApuesta);
   minijuegoWidget.innerHTML = '';
   minijuegoWidget.className = 'minijuego-widget';
 
@@ -140,15 +117,11 @@ function montarParada(contenedor, decision, { estado, rngUi, responder, renderPr
     minijuegoWidget.innerHTML = '';
     const espera = nodo('div', 'minijuego-espera');
     const nota = nodo('p', 'minijuego-espera-nota', 'El reloj no arranca hasta que toques el botón.');
-    const anillo = nodo('div', 'minijuego-anillo');
-    anillo.setAttribute('aria-hidden', 'true');
-    const boton = nodo('button', 'minijuego-espera-boton ln-aceptar');
+    const boton = nodo('button', 'minijuego-espera-boton');
     boton.type = 'button';
     boton.dataset.vamos = '';
     boton.setAttribute('aria-keyshortcuts', TECLA_VAMOS);
-    const tecla = crearTecla(TECLA_VAMOS);
-    tecla.classList.add('ln-aceptar-tecla');
-    boton.append(nodo('span', 'minijuego-espera-texto', '¡Vamos!'), tecla);
+    boton.append(nodo('span', 'minijuego-espera-texto', '¡Vamos!'), crearTecla(TECLA_VAMOS));
     boton.addEventListener('click', () => {
       // La fase pasa a `juego` YA: con la tecla V sostenida, el segundo `keydown` ya no es de la previa.
       contenedor.dataset.fase = 'juego';
@@ -156,7 +129,7 @@ function montarParada(contenedor, decision, { estado, rngUi, responder, renderPr
       // listener de teclado que el minijuego instala al montarse y contaría como una jugada.
       setTimeout(() => arrancarMinijuego(charla), 0);
     }, { once: true });
-    espera.append(anillo, boton, nota);
+    espera.append(boton, nota);
     minijuegoWidget.appendChild(espera);
   }
 
@@ -184,13 +157,6 @@ function montarParada(contenedor, decision, { estado, rngUi, responder, renderPr
       const v = veredictoDeMinijuego(decision.datos.minijuego, resultado, estadoActual, laPrueba ? { pasa: laPrueba.pasa } : {});
       if (resultado >= 0.67) marcarHit(minijuegoWidget);
       else if (resultado <= 0.33) marcarMiss(minijuegoWidget);
-      // El jugo visible es CSS (el ambiente está en pausa mientras corre el minijuego). El pulso queda por si el kit lo dibuja.
-      try {
-        const tipo = resultado >= 0.67 ? 'logro' : resultado <= 0.33 ? 'golpe' : 'elegir';
-        window.__fx?.pulso?.(tipo);
-      } catch (error) {
-        console.error('No se pudo pulsar el minijuego:', error);
-      }
       minijuegoWidget.innerHTML =
         '<div class="minijuego-resultado minijuego-resultado--' + v.nivel + '">'
         + '<div class="minijuego-resultado-titulo">' + v.titulo + '</div>'

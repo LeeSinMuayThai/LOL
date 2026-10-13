@@ -35,13 +35,15 @@
 }
 .cuarto-boton:hover:not(:disabled) {
   color: var(--ink);
-  border-color: transparent;
-  background: transparent;
-  box-shadow: inset 0 -2px 0 var(--luz);
+  border-color: var(--line);
+  background: var(--live-fill);
+  box-shadow: none;
 }
 .cuarto-letra {
-  color: var(--luz-texto);
-  text-decoration: none;
+  color: var(--live);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
 }
 
 /* En el inicio no hay carrera que mostrar; en el minijuego, los cuartos no abren (son dueños del teclado y del reloj). */
@@ -64,8 +66,8 @@
     height: var(--cuartos-barra-alto);
     justify-content: space-between;
     padding: 0 var(--s-2);
-    background-color: var(--placa-fuerte);
-    border-top: 1px solid var(--filete);
+    background-color: var(--bg-chrome);
+    border-top: 1px solid var(--line);
     overflow-x: auto;
   }
   .franja-cuartos .cuarto-boton {
@@ -92,9 +94,10 @@
   margin: 0;
   padding: 0;
   border: 0;
+  border-top: 1px solid var(--line-strong);
   color: var(--ink);
-  background: var(--placa-fuerte);
-  box-shadow: inset 0 0 0 1px var(--filete);
+  background: var(--bg-void);
+  box-shadow: var(--sombra-3);
   overflow: hidden;
 }
 .cuarto[open] {
@@ -113,7 +116,7 @@
   max-width: var(--cuarto-ancho);
   margin: 0 auto;
   padding: var(--s-3) var(--s-4);
-  border-bottom: 1px solid var(--linea);
+  border-bottom: 1px solid var(--line);
 }
 .cuarto-pestanas {
   display: flex;
@@ -122,12 +125,10 @@
   min-width: 0;
   overflow-x: auto;
 }
-.cuarto-pestanas .cuarto-boton { border-bottom: 2px solid transparent; box-shadow: none; }
-.cuarto-pestanas .cuarto-boton:hover:not(:disabled),
+.cuarto-pestanas .cuarto-boton { border-bottom: 2px solid transparent; }
 .cuarto-pestanas .cuarto-boton[aria-selected="true"] {
   color: var(--ink);
-  border-bottom-color: transparent;
-  box-shadow: inset 0 -2px 0 var(--luz);
+  border-bottom-color: var(--live);
 }
 .cuarto-cerrar {
   display: inline-flex;
@@ -173,7 +174,7 @@
   margin: 0;
   padding: var(--s-4);
   color: var(--ink-dim);
-  border: 0;
+  border: 1px dashed var(--line);
 }
 .cuarto-ayuda {
   display: grid;
@@ -231,7 +232,7 @@
 
 /* --- Temporada: la tabla cerrada entre splits (V3e) ------------------------ */
 
-.panel-contexto--final { box-shadow: inset 0 1px 0 var(--linea-fuerte); }
+.panel-contexto--final { border-color: var(--line-strong); }
 .panel-contexto--final .panel-contexto-titulo { color: var(--gold); }
 .cuarto-temporada-posicion {
   margin: 0;
@@ -245,11 +246,9 @@
 
 .cronica { display: grid; gap: var(--s-3); }
 .cronica-anio {
-  background: transparent;
-  border: 0;
-  box-shadow: inset 0 1px 0 var(--linea);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--line);
 }
-.cronica-anio:first-child { box-shadow: none; }
 .cronica-anio-titulo {
   display: flex;
   align-items: baseline;
@@ -299,61 +298,3 @@
   color: var(--ice);
 }
 .cronica-lista { margin-top: 0; }
-
-/* U2c: el celular lleva el cuarto a pantalla completa. La hoja del acompañante solo existe si el chip la abre
-   (`html[data-ctx="abierto"]`): cerrada, el aside sigue oculto debajo de 1180 y el recorrido no la ve. */
-@media (max-width: 899px) {
-  /* A pantalla completa la placa tapa la franja: opaca, para que no se lea por debajo de las pestañas. */
-  .cuarto { inset: 0; background: var(--panel-opaco); }
-}
-
-.acompanante.contexto {
-  gap: 0;
-  padding: var(--s-4);
-}
-.acompanante > .ficha-card,
-.acompanante > .panel-contexto,
-.cuarto-cuerpo > .ficha-card,
-.cuarto-cuerpo > .panel-contexto {
-  background: transparent;
-  border: 0;
-}
-.panel-contexto { box-shadow: inset 0 1px 0 var(--linea); }
-.cuarto-cuerpo > .panel-contexto:first-child,
-.acompanante > .panel-contexto:first-child { box-shadow: none; }
-.panel-contexto--final { box-shadow: inset 0 1px 0 var(--linea-fuerte); }
-
-.acompanante-velo {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: var(--velo-medio);
-  cursor: pointer;
-}
-
-@media (max-width: 1179px) {
-  html[data-ctx="abierto"] .acompanante:not([hidden]) {
-    display: flex;
-    position: fixed;
-    z-index: 80;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: auto;
-    grid-column: auto;
-    max-height: var(--u2c-hoja-alto);
-    padding: var(--s-4);
-    background: var(--placa-fuerte);
-    border-radius: var(--r-panel) var(--r-panel) 0 0;
-    box-shadow: inset 0 0 0 1px var(--filete);
-    overflow: auto;
-  }
-}
-@media (max-width: 899px) {
-  html[data-ctx="abierto"] .acompanante:not([hidden]) {
-    bottom: var(--cuartos-barra-alto);
-  }
-}

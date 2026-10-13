@@ -18,8 +18,7 @@ export function mostrar(contenedor, decision, ctx) {
     elementos.mercado, decision, responder,
     () => responder({ representante: true }),
     responder,
-    () => responder({ negociar: 'esperar' }),
-    { handle: estado.player?.name ?? '', rol: estado.player?.role ?? 'mid', seed: estado.seed }
+    () => responder({ negociar: 'esperar' })
   );
   marcarFoco(elementos.mercado.mercadoTitle);
   [...elementos.mercado.mercadoGrid.children].slice(0, OFERTAS_CON_ATAJO).forEach((oferta, i) => {

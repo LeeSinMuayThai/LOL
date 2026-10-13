@@ -33,9 +33,8 @@ export function renderPrevia(container, previa, { completo = false } = {}) {
   }
 
   const partes = partesDeLaPrevia(previa);
-  const cruce = cruceDe(previa);
   if (completo) {
-    container.replaceChildren(cruce, ...partes);
+    container.replaceChildren(...partes);
     container.hidden = false;
     return;
   }
@@ -56,7 +55,7 @@ export function renderPrevia(container, previa, { completo = false } = {}) {
   detalles.addEventListener('toggle', () => { m.abierto = detalles.open; });
   const resumen = document.createElement('summary');
   resumen.className = 'previa-linea';
-  resumen.append(cruce, texto('previa-linea-mas', 'Previa'));
+  resumen.append(...lineaDeLaPrevia(previa));
   const detalle = document.createElement('div');
   detalle.className = 'previa-detalle';
   detalle.append(...partes);
@@ -72,27 +71,18 @@ function texto(clase, contenido) {
   return el;
 }
 
-// El cruce, con la p grande: los dos equipos y el porcentaje. El desglose queda a un toque.
-function cruceDe(previa) {
-  const box = document.createElement('div');
-  box.className = 'previa-duelo pt-cruce';
-  const pct = document.createElement('div');
-  pct.className = 'previa-p';
-  const num = document.createElement('span');
-  num.className = 'previa-pct pt-p';
-  num.textContent = `${previa.porcentaje}%`;
-  const etq = document.createElement('span');
-  etq.className = 'previa-pct-label';
-  etq.textContent = 'de ganar';
-  pct.append(num, etq);
-  box.append(lado(previa.propio, ''), pct, lado(previa.rival, ' previa-lado--rival'));
+// La línea: la p (lo que más pesa al decidir), contra quién y lo que define este partido (el subtítulo: "Se define la
+// clasificación", la ronda, "el de vida o muerte"). El porqué largo y las fuerzas van adentro.
+function lineaDeLaPrevia(previa) {
+  const p = document.createElement('span');
+  p.className = 'previa-linea-p';
+  p.append(texto('previa-linea-pct', `${previa.porcentaje}%`), texto('previa-linea-etq', 'de ganar'));
+  const partes = [p, texto('previa-linea-rival', `vs ${previa.rival.nombre}`)];
   if (previa.subtitulo) {
-    const sub = document.createElement('p');
-    sub.className = 'previa-sub pt-cruce-sub';
-    sub.textContent = previa.subtitulo;
-    box.appendChild(sub);
+    partes.push(texto('previa-linea-sub', previa.subtitulo));
   }
-  return box;
+  partes.push(texto('previa-linea-mas', 'Previa'));
+  return partes;
 }
 
 function partesDeLaPrevia(previa) {
@@ -108,6 +98,14 @@ function partesDeLaPrevia(previa) {
     sub.textContent = previa.subtitulo;
     cabecera.appendChild(sub);
   }
+
+  const duelo = document.createElement('div');
+  duelo.className = 'previa-duelo';
+  const pct = document.createElement('div');
+  pct.className = 'previa-p';
+  pct.innerHTML = '<span class="previa-pct"></span><span class="previa-pct-label">de ganar</span>';
+  pct.firstChild.textContent = `${previa.porcentaje}%`;
+  duelo.append(lado(previa.propio, ''), pct, lado(previa.rival, ' previa-lado--rival'));
 
   const desglose = document.createElement('dl');
   desglose.className = 'previa-desglose';
@@ -126,7 +124,7 @@ function partesDeLaPrevia(previa) {
   const porQue = document.createElement('div');
   porQue.className = 'previa-porque';
   porQue.textContent = previa.porQue ?? '';
-  const partes = [cabecera, ...(previa.porQue ? [porQue] : []), desglose];
+  const partes = [cabecera, ...(previa.porQue ? [porQue] : []), duelo, desglose];
   if (previa.nota) {
     const nota = document.createElement('div');
     nota.className = 'previa-nota';

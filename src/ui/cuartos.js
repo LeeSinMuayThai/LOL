@@ -74,8 +74,6 @@ export function crearCuartos({ dialog, barra, cuerpo, titulo, botonAyuda, escena
     if (!dialog.open) {
       dialog.showModal();
       pausar();
-      // El ambiente lo pausa el shell: MutationObserver de `open` en shell.js (`ambiente.pausa('cuarto')`).
-      // No se llama a window.__fx.pausar acá: el conteo de motivos se duplicaría y reanudaría antes de tiempo.
     }
     enfocarPestana();
     return true;

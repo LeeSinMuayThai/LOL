@@ -10,8 +10,7 @@
 // inline en el `.map()` de `renderFeed` — `reproductor.js` necesita crear el
 // MISMO nodo uno por uno, a su propio ritmo, en vez de todos juntos en un
 // `replaceChildren`.
-import { acentoDeLog, nombreVisibleDeLiga, iconoDeLog, iconoDeVineta } from '../formatoUi.js';
-import { icono } from '../fx/iconos.js';
+import { acentoDeLog, nombreVisibleDeLiga } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
 import { etiquetaRol } from '../../data/roles.js';
 import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
@@ -21,19 +20,6 @@ import { reconciliar, reemplazarEnElLugar, olvidarContenedor } from '../core/rec
 import { formaBeat } from '../../core/log.js';
 import { crearTarjetaCierre, crearLineaSplitAnterior, crearCartelDePagina } from './cierre.js';
 import { moverNumero, leerSoloElFinal } from '../core/delta.js';
-
-function puedeGlifo() {
-  return typeof document !== 'undefined' && typeof document.createElementNS === 'function';
-}
-
-function conIcono(item, type) {
-  if (!puedeGlifo()) return item;
-  const marca = document.createElement('span');
-  marca.className = 'log-ico';
-  marca.appendChild(icono(iconoDeLog(type)));
-  item.prepend(marca);
-  return item;
-}
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
 // que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
@@ -123,10 +109,7 @@ function crearRevealResumenAnio(entry) {
 
   const nota = document.createElement('div');
   nota.className = `resumen-anio-nota resumen-anio-nota--${entry.banda}`;
-  const cifra = document.createElement('span');
-  cifra.className = 'resumen-anio-nota-n';
-  cifra.textContent = entry.nota.toFixed(1);
-  nota.append(cifra, document.createTextNode(`Nota de la temporada — ${LABEL_BANDA[entry.banda] ?? entry.banda}`));
+  nota.textContent = `Nota de la temporada: ${entry.nota.toFixed(1)} — ${LABEL_BANDA[entry.banda] ?? entry.banda}`;
   item.appendChild(nota);
 
   const vinetas = document.createElement('div');
@@ -134,13 +117,12 @@ function crearRevealResumenAnio(entry) {
   for (const vineta of entry.vinetas ?? []) {
     const fila = document.createElement('div');
     fila.className = 'resumen-anio-vineta';
-    const marca = document.createElement('span');
-    marca.className = 'resumen-anio-icono';
-    if (puedeGlifo()) marca.appendChild(icono(iconoDeVineta(vineta.icono)));
-    else marca.textContent = vineta.icono;
+    const icono = document.createElement('span');
+    icono.className = 'resumen-anio-icono';
+    icono.textContent = vineta.icono;
     const texto = document.createElement('span');
     texto.textContent = vineta.texto;
-    fila.append(marca, texto);
+    fila.append(icono, texto);
     vinetas.appendChild(fila);
   }
   item.appendChild(vinetas);
@@ -150,14 +132,14 @@ function crearRevealResumenAnio(entry) {
 
 export function crearLogItem(entry) {
   if (entry.type === 'top_mundial' && Array.isArray(entry.top20)) {
-    return conIcono(crearRevealTop20(entry), entry.type);
+    return crearRevealTop20(entry);
   }
   if (entry.type === 'edad' && typeof entry.nota === 'number') {
-    return conIcono(crearRevealResumenAnio(entry), entry.type);
+    return crearRevealResumenAnio(entry);
   }
   // K5-A: el cierre de tu Mundial es una tarjeta (el Swiss resumido y el bracket con tu camino).
   if (entry.type === 'internacional' && entry.mundial) {
-    return conIcono(crearTarjetaMundial(entry), entry.type);
+    return crearTarjetaMundial(entry);
   }
 
   const item = document.createElement('div');
@@ -167,7 +149,6 @@ export function crearLogItem(entry) {
   if (entry.type === 'meta') item.classList.add('log-item--breaking');
   if (entry.type === 'escena') item.classList.add('log-item--escena');
   if (entry.type === 'top_mundial') item.classList.add('log-item--top-mundial');
-  conIcono(item, entry.type);
 
   if (entry.type === 'meta') {
     const pestana = document.createElement('span');

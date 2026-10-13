@@ -47,45 +47,15 @@ STUBS.swiss = acompanantePartido;
 export function crearAcompanante({ aside, chip, contexto, abrirCuarto }) {
   const ancho = window.matchMedia?.(CONSULTA_ANCHA) ?? null;
   let ultimo = { estado: null, pieza: null };
-  aside.classList.add('contexto');
-
-  // En el celular el chip abre esta hoja (la placa, sobre la barra de cuartos). En el escritorio el aside ya está
-  // a la vista y el chip no se muestra: un clic ahí sigue abriendo el cuarto. El recorrido no abre la hoja.
-  const velo = document.querySelector('.acompanante-velo') ?? document.createElement('button');
-  if (!velo.isConnected) {
-    velo.type = 'button';
-    velo.className = 'acompanante-velo';
-    velo.hidden = true;
-    velo.setAttribute('aria-label', 'Cerrar contexto');
-    velo.addEventListener('click', () => cerrarHoja());
-    document.body.appendChild(velo);
-  }
-
-  function hojaAbierta() {
-    return document.documentElement.dataset.ctx === 'abierto';
-  }
-
-  function cerrarHoja() {
-    delete document.documentElement.dataset.ctx;
-    velo.hidden = true;
-    chip?.setAttribute('aria-expanded', 'false');
-  }
-
-  function abrirHoja() {
-    document.documentElement.dataset.ctx = 'abierto';
-    velo.hidden = false;
-    chip?.setAttribute('aria-expanded', 'true');
-  }
 
   function pintar(estado, pieza) {
     ultimo = { estado, pieza };
     const { tipo, cuarto } = acompananteDe(estado, pieza);
     aside.dataset.acompanante = tipo ?? '';
     aside.hidden = !tipo;
-    if (!tipo) cerrarHoja();
     aside.replaceChildren();
-    // Se pinta también debajo de 1180: la hoja del celular muestra lo mismo que el aside del escritorio.
-    if (tipo) {
+    // Debajo del corte el aside no se ve: no se pinta (vuelve a pintarse si la ventana se agranda).
+    if (tipo && (ancho?.matches ?? true)) {
       try {
         STUBS[tipo](aside, estado, contexto);
       } catch (error) {
@@ -96,31 +66,12 @@ export function crearAcompanante({ aside, chip, contexto, abrirCuarto }) {
       chip.hidden = !cuarto;
       chip.dataset.cuarto = cuarto ?? '';
       chip.textContent = cuarto ? `Ver contexto · ${TITULOS_DE_CUARTOS[cuarto]}` : '';
-      chip.setAttribute('aria-controls', aside.id || 'acompanante');
-      chip.setAttribute('aria-expanded', String(hojaAbierta()));
     }
   }
 
-  ancho?.addEventListener?.('change', () => {
-    if (ancho.matches) cerrarHoja();
-    pintar(ultimo.estado, ultimo.pieza);
-  });
+  ancho?.addEventListener?.('change', () => pintar(ultimo.estado, ultimo.pieza));
   chip?.addEventListener('click', () => {
-    if (!chip.dataset.cuarto) return;
-    if (ancho?.matches ?? true) {
-      abrirCuarto(chip.dataset.cuarto);
-      return;
-    }
-    if (hojaAbierta()) cerrarHoja();
-    else abrirHoja();
-  });
-  document.getElementById('cuartosBarra')?.addEventListener('click', (evento) => {
-    if (evento.target.closest('[data-cuarto]')) cerrarHoja();
-  });
-  document.addEventListener('keydown', (evento) => {
-    if (evento.key !== 'Escape' || !hojaAbierta()) return;
-    if (document.querySelector('dialog[open]')) return;
-    cerrarHoja();
+    if (chip.dataset.cuarto) abrirCuarto(chip.dataset.cuarto);
   });
 
   return { pintar };
