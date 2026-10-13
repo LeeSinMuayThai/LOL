@@ -17,6 +17,7 @@
 import { miles, linkDeResultado } from '../resultado.js';
 import { medallaDeGoldenRoad } from '../core/trayectoria.js';
 import { claveDe } from '../core/mundo.js';
+import { nombreVisibleDeLiga } from '../formatoUi.js';
 import { cargarImagen, urlTile, urlCarga, urlCentrada } from '../fx/arte.js';
 import { pintarCampeon, fijarColor } from '../fx/color.js';
 import { bloquear as bloquearCeremonia } from '../fx/ceremonia.js';
@@ -540,7 +541,7 @@ export function renderDesafio(contenedor, { fecha, hoy, mejor, jugador = null },
   const partes = [nodo('p', 'in-mini-k', esHoy ? `Desafío del día · ${fecha}` : `Desafío del link · ${fecha}`)];
   if (jugador) {
     const quien = nodo('p', 'in-desafio-quien');
-    quien.append(glifoRol(jugador.rol), nodo('b', null, jugador.handle), nodo('span', null, [jugador.rolEtiqueta, jugador.liga, jugador.mains?.join(', ')].filter(Boolean).join(' · ')));
+    quien.append(glifoRol(jugador.rol), nodo('b', null, jugador.handle), nodo('span', null, [jugador.rolEtiqueta, jugador.liga ? nombreVisibleDeLiga(jugador.liga) : null, jugador.mains?.join(', ')].filter(Boolean).join(' · ')));
     partes.push(quien);
   }
   partes.push(nodo('p', 'in-mini-t', esHoy

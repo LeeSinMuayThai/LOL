@@ -8680,6 +8680,7 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_PAUSA_DEL_ANIO.toLowe
   try {
     globalThis.document = {
       createElement: (tag) => new ElementoFalso(tag),
+      createElementNS: (_ns, tag) => new ElementoFalso(tag),
       createTextNode: (texto) => {
         const nodo = new ElementoFalso('#text');
         nodo.textContent = texto;
@@ -9509,7 +9510,7 @@ check('J3 pronóstico (B, D79): el cursor de la ficha es el splitCount que ve la
 // el check de `reproducirBeats`, más arriba).
 function tileDeFicha(campeon, pronostico) {
   const previo = globalThis.document;
-  globalThis.document = { createElement: (tag) => new ElementoFalso(tag) };
+  globalThis.document = { createElement: (tag) => new ElementoFalso(tag), createElementNS: (_ns, tag) => new ElementoFalso(tag) };
   try {
     const tile = crearCampeonTile(campeon, { size: 'ficha', pronostico });
     return {
@@ -9592,7 +9593,7 @@ check('J9: cada campeón de champions.json declara `ddragon` (key string o null 
 
 check('J9 fallback: el tile con `ddragon: null` o con la imagen caída (onerror) es el tile geométrico de siempre', () => {
   const previo = globalThis.document;
-  globalThis.document = { createElement: (tag) => new ElementoFalso(tag) };
+  globalThis.document = { createElement: (tag) => new ElementoFalso(tag), createElementNS: (_ns, tag) => new ElementoFalso(tag) };
   try {
     const hijosImg = (tile) => tile.childNodes.filter((nodo) => nodo.tagName === 'img');
     const conCara = CAMPEONES.find((c) => c.ddragon);

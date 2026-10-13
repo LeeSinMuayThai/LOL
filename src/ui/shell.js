@@ -162,6 +162,15 @@ export const ambiente = {
   tenir(tono) {
     if (api) seguro('tono', () => api.tono?.(tono, { paleta: false }));
   },
+  // El ánimo de un momento (`gloria`, `caida`, `peligro`: el desenlace de una serie, AFUERA), con su retardo en ms. Lo
+  // pide la parada mientras cuenta su resultado; `soltarMomento()` devuelve el mundo al ánimo de la `vista` (el del
+  // director) cuando la parada se va.
+  momento(animo, { retardo = 0, instantaneo = false } = {}) {
+    if (api) seguro('momento', () => api.ambiente({ animo, retardo, instantaneo }));
+  },
+  soltarMomento() {
+    if (api && estado.luz) seguro('momento', () => api.ambiente({ animo: estado.luz.animo }));
+  },
   // El reproductor entró o salió de INST (o del movimiento reducido): el camino quieto de todo el kit.
   inst(si) {
     estado.inst = Boolean(si);

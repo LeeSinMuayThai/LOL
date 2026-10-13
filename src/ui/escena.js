@@ -47,7 +47,7 @@ function esVisible(el) {
   return el.offsetParent !== null;
 }
 
-const AMBIENTE_NULO = Object.freeze({ aplicar() {}, fondo() {}, aquietar() {}, pausa() {}, declarar() {}, costura() {}, geometria: () => ({ k: 0 }), tenir() {} });
+const AMBIENTE_NULO = Object.freeze({ aplicar() {}, fondo() {}, aquietar() {}, pausa() {}, declarar() {}, costura() {}, geometria: () => ({ k: 0 }), tenir() {}, momento() {}, soltarMomento() {} });
 
 // `shell`: el `.shell` de `index.html`. `vista`: el store de lo ya mostrado (`ui/core/store.js`). `ambiente`: el puente
 // al ambiente (`shell.js`: `aplicar({ era, animo })`, `fondo(contexto)`, `declarar(mundo)`, `aquietar(si)`,

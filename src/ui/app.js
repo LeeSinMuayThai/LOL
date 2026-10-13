@@ -950,7 +950,7 @@ export function iniciar() {
           s.calendario?.etiqueta
         ].filter(Boolean).join(' · ');
         continuarBtn.setAttribute('aria-label', `Continuar: ${continuarQuien.textContent} · ${continuarDetalle.textContent}`);
-        pantallaInicio.pintarContinuar(s);
+        pantallaInicio.pintarContinuar(guardada.state);
       }
 
       // P.3: `?seed=N` precarga el input — no arranca la carrera sola

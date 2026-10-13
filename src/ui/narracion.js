@@ -8,9 +8,10 @@
 //   - un cuarto abierto la pausa (el reproductor la pausa y la reanuda, como a un beat): las animaciones y las esperas
 //     se congelan donde estaban.
 // `ctx` es el de `app.js` (`narrarRespuesta`). `nodos`: donde viven las animaciones de la narración (las que Espacio
-// termina y un cuarto pausa).
+// termina y un cuarto pausa). `reloj` (opcional): un reloj propio de la parada (los beats de `fx/beats.js`) con
+// `saltar`, `pausar` y `reanudar`: Espacio y el cuarto le llegan a él en vez de terminar las animaciones a mano.
 
-export function crearNarracion(ctx, nodos = []) {
+export function crearNarracion(ctx, nodos = [], { reloj: propio = null } = {}) {
   const escala = Number.isFinite(ctx?.escala) ? ctx.escala : 1;
   let saltada = Boolean(ctx?.rapido) || escala <= 0;
   let pausada = false;
@@ -42,7 +43,8 @@ export function crearNarracion(ctx, nodos = []) {
   const control = {
     saltar() {
       saltada = true;
-      for (const a of animaciones()) {
+      if (propio) propio.saltar?.();
+      else for (const a of animaciones()) {
         try {
           a.finish();
         } catch {
@@ -54,7 +56,8 @@ export function crearNarracion(ctx, nodos = []) {
     pausar() {
       if (pausada) return;
       pausada = true;
-      for (const a of animaciones()) a.pause();
+      if (propio) propio.pausar?.();
+      else for (const a of animaciones()) a.pause();
       for (const reloj of relojes) {
         if (reloj.t === null) continue;
         clearTimeout(reloj.t);
@@ -65,7 +68,8 @@ export function crearNarracion(ctx, nodos = []) {
     reanudar() {
       if (!pausada) return;
       pausada = false;
-      for (const a of animaciones()) a.play();
+      if (propio) propio.reanudar?.();
+      else for (const a of animaciones()) a.play();
       for (const reloj of relojes) if (reloj.t === null) arrancar(reloj);
     }
   };

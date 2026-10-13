@@ -953,3 +953,16 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
 @media (max-width: 639px) {
   :root { --fs-6: 24px; --fs-7: 32px; --fs-8: 48px; --fs-9: 64px; }
 }
+
+/* PLANUI §0.2 (la ola 2 rehecha): los valores por defecto de las variables que cada pieza pone en su nodo (la planilla
+   del plan: cuántos ejes y columnas; el portal de la bisagra: su centro, su hueco y su aro; lo que le cabe a un logo de
+   un destino). Cada pieza las sobrescribe en su elemento: acá quedan definidas para el check de tokens. */
+:root {
+  --ejes: 5;
+  --cols: 6;
+  --dc-px: 50%;
+  --dc-py: 50%;
+  --dc-pr: 0px;
+  --dc-pa: 1;
+  --dc-logo-cabe: var(--dc-logo);
+}
