@@ -1013,3 +1013,32 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   --h-tinta: var(--h-luz);
   --h-borde: var(--h-contra);
 }
+
+/* PLANUI §0.3 (punto 1), los ejes de lo que ganás (src/ui/core/ejes.js): un color por eje, el mismo en la planilla, en
+   "lo que pasó", en los chips del relato y en la placa "Vos". El color dice QUÉ se movió; hacia dónde lo dicen los
+   triángulos y el número (--up / --down). Ningún eje es verde ni rojo puro: esos son el signo. Valores iniciales: el
+   worker de los ejes los ajusta contra el contraste (src/dev/contraste.mjs) y la separación entre ejes. */
+:root {
+  --eje-soloq: #5cc8ff;
+  --eje-soloq-fill: #5cc8ff2e;
+  --eje-estudios: #ffd166;
+  --eje-estudios-fill: #ffd1662e;
+  --eje-sueno: #a78bfa;
+  --eje-sueno-fill: #a78bfa2e;
+  --eje-casa: #ff9f6b;
+  --eje-casa-fill: #ff9f6b2e;
+  --eje-cabeza: #f472b6;
+  --eje-cabeza-fill: #f472b62e;
+  --eje-juego: #dbe4f3;
+  --eje-juego-fill: #dbe4f324;
+  --eje-fama: #f5c542;
+  --eje-fama-fill: #f5c5422e;
+  --eje-equipo: #9fb4d9;
+  --eje-equipo-fill: #9fb4d92e;
+  /* el eje de un chip (estilos/ejes.css lo pone por [data-eje]); sin eje, neutro */
+  --eje: var(--ink-dim);
+  --eje-f: transparent;
+  /* los acentos del minijuego (estilos/minijuegos.css los pisa por estado); faltaban acá desde 26a82ef */
+  --mj-luz: var(--warn);
+  --mj-res: var(--gold);
+}

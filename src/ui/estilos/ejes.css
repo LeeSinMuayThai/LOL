@@ -1,0 +1,29 @@
+/* Los chips de eje (PLANUI §0.3; components/chipsEje.js): el glifo y el nombre en el color del eje, el fondo en su
+   relleno tenue, el número con el signo en --up / --down. Sin colores literales: todo sale de --eje-* (tokens.css). */
+.eje-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.eje-chip {
+  --eje: var(--ink-dim);
+  --eje-f: transparent;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--eje) 45%, transparent);
+  background: var(--eje-f);
+  color: var(--eje);
+  font: 600 12px/1.2 var(--font-mono, monospace);
+  white-space: nowrap;
+}
+.eje-chip--grande { padding: 5px 12px; font-size: 14px; }
+.eje-chip-ico { width: 14px; height: 14px; }
+.eje-chip-nombre { color: var(--eje); }
+.eje-chip-n { color: var(--ink); font-weight: 700; }
+.eje-chip[data-signo="sube"] .eje-chip-n { color: var(--up); }
+.eje-chip[data-signo="baja"] .eje-chip-n { color: var(--down); }
+.eje-chip-sufijo { color: var(--ink-dim); font-weight: 500; }
+.eje-chip[data-eje="soloq"] { --eje: var(--eje-soloq); --eje-f: var(--eje-soloq-fill); }
+.eje-chip[data-eje="estudios"] { --eje: var(--eje-estudios); --eje-f: var(--eje-estudios-fill); }
+.eje-chip[data-eje="sueno"] { --eje: var(--eje-sueno); --eje-f: var(--eje-sueno-fill); }
+.eje-chip[data-eje="casa"] { --eje: var(--eje-casa); --eje-f: var(--eje-casa-fill); }
+.eje-chip[data-eje="cabeza"] { --eje: var(--eje-cabeza); --eje-f: var(--eje-cabeza-fill); }
+.eje-chip[data-eje="juego"] { --eje: var(--eje-juego); --eje-f: var(--eje-juego-fill); }
+.eje-chip[data-eje="fama"] { --eje: var(--eje-fama); --eje-f: var(--eje-fama-fill); }
+.eje-chip[data-eje="equipo"] { --eje: var(--eje-equipo); --eje-f: var(--eje-equipo-fill); }

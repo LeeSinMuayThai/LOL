@@ -114,6 +114,90 @@ lolero.lol. La auditoría (capturas lado a lado con `estrella.mjs`, las 9 muestr
 **Orden:** (a) el marco, el mundo, narrar, el inicio, la decisión y el relato; (b) el partido y el mercado sobre esos
 contratos, y los cuartos y los minijuegos; (c) los momentos y la final (U3); (d) la verificación (U4) y el deploy.
 
+### 0.3 C1: lo que dijo el usuario jugando lolero.lol (2026-10-13, textual)
+
+La ola 2 rehecha se publicó en lolero.lol (Wrangler `68a0015b`, master `8761e6f`). El usuario jugó y mandó cinco
+capturas. Esto funciona como C1 (§0) adelantada.
+
+> "imagen 1 necesita algo mas para distinguir entre las distintas cosas que ganas, un color no se, casa, soloq, etc etc,
+> lo mismo en imagen 2 para saber que ganaste mas facilmente y no tener que sentarte a leer, esta parte de puro texto de
+> imagen 3 es la peor, cuando llegas a imagen 4 no hay ninguna animacion ni transcicion, te aparece de una full frio de
+> un frame a otro, firme y pase la prueba y no se vio ni la animacion de firma ni nada, y me sale imagen 5 asi de cara
+> dura sin animacion de nuevo, en "la serie", eso de perder o ganar el mapa que estaba en el preview del planui no esta,
+> planea bien y fijate como arreglar esto"
+
+Las capturas: (1) la planilla del plan del año; (2) "lo que pasó" de esa decisión; (3) el relato del split (parche,
+la semana, dos eventos resueltos por el perfil, el cierre); (4) el mercado de agente libre ("Elegí tu equipo"); (5) la
+bienvenida después de la prueba (escudo, el nombre, la camiseta con el número).
+
+**El eje (memoria: confirmar el eje antes de hacer variantes).** En 1 y 2 el usuario nombra el eje: **color por cosa que
+ganás** ("un color no se, casa, soloq"). El objetivo es el que dice él: saber qué ganaste sin leer. En 3 el problema es la
+cantidad de texto, no un color. 4, 5 y la serie son movimiento que falta. No se hacen variantes: una versión por punto, y
+el usuario la juega antes del deploy.
+
+#### Los seis puntos y cómo se arreglan
+
+1. **La planilla (captura 1): un color por eje.** Hoy todas las barras son verdes (sube) o rojas (baja): se ve el signo
+   pero no qué se movió. Contrato nuevo `src/ui/core/ejes.js` (escrito por el Supervisor): `ejeDe(campo)` →
+   `soloq | estudios | sueno | casa | cabeza | juego | fama | equipo`, con su glifo y su nombre corto. Los colores son
+   `--eje-<id>` y `--eje-<id>-fill`, al final de `tokens.css`. **El color dice qué se movió; el signo lo dicen los
+   triángulos y el número** (--up / --down, como siempre). Ningún eje es verde ni rojo puro. En la planilla:
+   - la cabecera de cada columna (glifo y nombre) va en el color de su eje;
+   - las barras de esa columna se pintan en ese color: llenas si sube, en el relleno tenue si baja;
+   - la celda de la ganancia más grande de cada fila se marca en su color (un brillo o un fondo `-fill`). Así "Aparecer
+     en casa" se lee "casa" y "Bootcamp" se lee "SoloQ" sin leer los números.
+   - El inspector de abajo usa los mismos chips de eje.
+2. **"Lo que pasó" (captura 2): ganaste y perdiste, de un vistazo.**
+   - Arriba, una fila de chips de eje en dos grupos: "GANASTE" (▲ SoloQ +90 LP) y "TE COSTÓ" (▼ Sueño −17 · Cabeza −11 ·
+     …), ordenados por magnitud.
+   - Las tarjetas grandes de cada número van en el color de su eje: glifo, rótulo y una barra 0-100 que va del antes al
+     después. Las que suben, primero y plenas; las que bajan, después y atenuadas.
+   - SoloQ, con su escalón (el emblema o el rango) en grande.
+   - El texto repetido se va de la vista. Hoy el plan se cuenta tres veces: "Tu plan para este año…", "Tu plan,
+     'Bootcamp…': 14 bloques…" y "estudios -3, sueño -17, confianza -3". Queda una línea (la de los bloques y el LP); lo
+     demás va a "más" y a textos completos (§7.5: nada se pierde).
+3. **El relato del split (captura 3): menos texto, más forma.** Cada beat se vuelve una tarjeta con forma propia:
+   - **Los efectos en chips.** "estudios -7, sueño -5, confianza -2", "Mecánica +1, Laneo +3", "Sylas +2 maestría" y la
+     tira técnica ("Split 6: mecánica -1…") pasan a chips con el glifo y el color del eje, y el signo en --up/--down. Se
+     leen del texto del motor con `ejeDe` (el motor no cambia). Una palabra que no es eje queda como chip neutro.
+   - **La semana:** los bloques como una tira de cuadraditos (ranked en el color de SoloQ, dormir en el de sueño,
+     robados al sueño rayados) y el LP como "Diamante I · 70 → 83 LP" con la barra del escalón.
+   - **El parche:** cada cambio de campeón en un chip ("LeBlanc A→B ▼", "Viktor B→A ▲") y el ajuste al meta como un
+     medidor de 0 a 100.
+   - **El evento que resolvió tu perfil:** el título; el planteo en una línea (el resto en "más"); la elección como cita
+     con la placa del perfil ("COMO LEAL → Agarrar solo lo que te sirve"), su resultado en una línea, y los chips.
+   - **El beat que corta** (por ejemplo "No da más la cabeza. Te bajás: esto se terminó acá"): una tarjeta de alerta,
+     más grande y con el acento rojo.
+   - Con `html[data-textos="completos"]` vuelve toda la prosa. El reproductor mantiene la entrada beat a beat y los
+     números que ruedan (`animarEfectos`).
+4. **La entrada al mercado (captura 4): no más cortes en frío.** `mostrarLaParada` (`app.js`) pide la View Transition
+   solo para `partido` (§6.3 la limitaba a tres lugares). §6.3 se amplía: también entran con transición el mercado, la
+   decisión (el panel sube sobre el relato) y el minijuego. Además la parada misma tiene su entrada coreografiada (en el
+   mercado: el título, las cifras, los escudos y el mazo de ofertas en cascada, como en la vitrina `ofertas`).
+5. **La firma después de la prueba (captura 5).** Pasar la prueba tiene que llevar a la firma sobre el contrato, la
+   línea que cae sobre el mapa y la bienvenida con su entrada (el nombre, el escudo, la camiseta y el confeti, con
+   tiempo). Es la ruta del commit `26a82ef`. La causa sale del diagnóstico de abajo.
+6. **La serie: ganar o perder cada mapa.** El mapa a mapa existe (`caraACara.js`, `narrar` → `secuenciaSerie`, con
+   VICTORIA/DERROTA por mapa y el suspenso del decisivo), pero el usuario no lo vio. La causa sale del diagnóstico.
+
+**Diagnóstico de 4, 5 y 6:** un scout (Sonnet) juega el build en Chromium con capturas en secuencia, con y sin
+`prefers-reduced-motion` (si Windows tiene apagados los "Efectos de animación", Chrome reporta *reduce* y el juego va al
+cuadro final). Lo que encuentre se escribe acá antes de despachar los arreglos.
+
+#### Las subfases (ola C1, WF-011: dueño por archivo)
+
+| Sub | Qué | Archivos (dueño) | Worker |
+|---|---|---|---|
+| **C1a · ejes** | Puntos 1 y 2: la planilla y "lo que pasó" con los ejes; la placa "Vos" con los mismos colores; ajuste fino de `--eje-*` (contraste y separación) | `components/decision.js`, `estilos/decision.css`, `acompanante.js` (+ su css), el bloque `--eje-*` de `tokens.css` | Opus xhigh |
+| **C1b · relato** | Punto 3: los beats con forma (chips, la semana, el parche, la crónica, la alerta) | `components/feed.js`, `estilos/feed.css`, `components/cierre.js` si hace falta; un helper de chips en `components/chipsEje.js` (nuevo, lo pueden usar los demás) | Opus xhigh |
+| **C1c · movimiento** | Puntos 4, 5 y 6, según el diagnóstico | `app.js`, `escena.js`, `fx/transicion.js`, `estilos/shell.css`, `components/mercado.js`, `components/fichaje.js`, `components/caraACara.js`, `paradas/minijuego.js` | Opus xhigh |
+
+Las tres en paralelo, cada una en su worktree desde `master`. `core/ejes.js` y los tokens base son del Supervisor
+(commit antes del despacho). Un token nuevo va en un bloque propio al final de `tokens.css`, con el nombre de la
+subfase. Después: un revisor con navegador (capturas de los seis puntos, a 1440 y a 390). Luego el usuario juega el
+build local (memoria: playtest antes de cerrar), y recién entonces el deploy. El motor no cambia: `HUELLA_JUEGO`
+79304237 y `huella.js` 1844448410 iguales.
+
 ## 1. Por qué un tercer plan
 
 ### 1.1 Cómo se ve hoy
