@@ -15,12 +15,16 @@
 //   - pone `html[data-transicion]` mientras dura (`="fundido"` con movimiento reducido): los nombres de transición viven
 //     solo ahí (estilos/shell.css: únicos, el ambiente con nombre propio y `animation: none`, el overlay sin clics, el
 //     fundido del movimiento reducido aparte);
-//   - `alTerminar` (enfocar el encabezado) corre en `updateCallbackDone`, cuando la pieza nueva ya está en el DOM.
+//   - `alTerminar` (enfocar el encabezado) corre en `updateCallbackDone`, cuando la pieza nueva ya está en el DOM;
+//   - mientras corre, un `pointerdown` en el documento la saltea (`soltarAlTocar`): `::view-transition { pointer-events:
+//     none }` no alcanza (el clic cae sobre la raíz y no sobre la opción de abajo, y las teclas sí andaban); salteada, la
+//     pantalla real queda a la vista y el clic siguiente cae sobre ella.
 
 import { reducido } from './util.js';
 
 let pendiente = null; // { pasos: [{ actualizar, alTerminar }], transicion } — esperando su cuadro
 let actual = null; // la transición que está corriendo (para no borrar el atributo de otra)
+let escuchando = false;
 
 const esAborto = (error) => error?.name === 'AbortError';
 
@@ -69,6 +73,36 @@ function vaciarPendiente() {
   terminarPasos(pasos);
 }
 
+// Un toque durante la transición la saltea: lo que el jugador toca es la pantalla de verdad, no el cuadro que se mueve.
+// Pero ese mismo toque ya empezó sobre la raíz (el overlay de la transición es lo que se golpea), así que su clic termina
+// en la raíz y no en la opción de abajo: cuando llega, se le da a lo que hay ahora en ese punto (`tocando`).
+let tocando = null; // { x, y, transicion } — el toque que saltó una transición
+function soltarAlTocar() {
+  if (escuchando || !globalThis.document) return;
+  escuchando = true;
+  document.addEventListener('pointerdown', (e) => {
+    tocando = actual ? { x: e.clientX, y: e.clientY, transicion: actual } : null;
+    try {
+      actual?.skipTransition();
+    } catch {
+      // ya terminó: nada que saltear
+    }
+  }, true);
+  document.addEventListener('click', (e) => {
+    const toque = tocando;
+    tocando = null;
+    const raizOCuerpo = e.target === document.documentElement || e.target === document.body;
+    if (!toque || !raizOCuerpo || !e.isTrusted) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const darleAlClic = () => {
+      const destino = document.elementFromPoint(toque.x, toque.y);
+      if (destino && destino !== document.documentElement && destino !== document.body) destino.click();
+    };
+    toque.transicion.finished.then(darleAlClic, darleAlClic);
+  }, true);
+}
+
 // `actualizar`: el cambio del DOM (síncrono). `animar`: si este cambio va con transición (lo decide quien llama).
 // `alTerminar`: lo que va cuando el cambio ya está (el foco). Devuelve la transición, o `null` si fue síncrono.
 export function transicionar(actualizar, { animar = false, alTerminar = null } = {}) {
@@ -84,6 +118,7 @@ export function transicionar(actualizar, { animar = false, alTerminar = null } =
     return pendiente.transicion;
   }
 
+  soltarAlTocar();
   const cola = { pasos: [paso], transicion: null };
   pendiente = cola;
   const raiz = document.documentElement;

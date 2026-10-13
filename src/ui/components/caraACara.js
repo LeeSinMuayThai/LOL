@@ -478,6 +478,11 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       const cB = l.rivalJuega ? carta(rk, l.rivalJuega, tB, 'b', sEllos, ellos) : null;
       const vd = victoriaDerrota({ gano, sub: `Mapa ${l.mapa} · ${String(l.marcador).replace('-', '–')} · tenías ${pct(l.p)}`, retardo: tR });
       const caja = el('div', { class: 'tx-vd', 'data-lado': gano ? 'a' : 'b' }, vd.nodo);
+      // VICTORIA o DERROTA cae sobre el nombre gigante de su lado: cuando entra, ese nombre se atenúa (en la vitrina la
+      // franja del nombre queda más abajo; en el juego el escenario es más bajo y se cruzarían). Opacidad: corre también
+      // con movimiento reducido, en su cuadro (cae en `tR`, igual que la placa).
+      const nombreDelLado = par.querySelectorAll('.tx-cara-n')[gano ? 0 : 1];
+      if (nombreDelLado) bb.waapi(anim(nombreDelLado, [{ opacity: 1 }, { opacity: 0.2 }], { delay: tR, duration: 260, easing: 'ease-out', fill: 'forwards', forzar: true }));
       const rot = el('p', { class: 'tx-mapa-n' }, [el('b', { text: `Mapa ${l.mapa}` }), l.mapa === formato && formato > 1 ? el('span', { text: 'el decisivo' }) : null]);
       const capa = el('div', { class: 'tx-mapa', 'data-res': l.resultado }, [rot, cA, cB, caja]);
       juego.append(capa);

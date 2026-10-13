@@ -748,6 +748,19 @@ export function agruparBeats(entradas, offset = 0) {
   return beats;
 }
 
+// ¿Ya se mostraron los mapas de la serie que cierra este beat? Los mapas son líneas del mismo split que van antes del cierre
+// (adjuntos del relato en una serie sin parada, beats de mapa en una con parada, que ya contó el cara a cara): si hay uno
+// atrás, hasta la serie anterior, la tarjeta de post-serie no repite la fila.
+function mapasYaMostrados(beat, state) {
+  const logs = state?.logs;
+  const i = logs ? logs.lastIndexOf(beat.narrativa) : -1;
+  for (let j = i - 1; j >= 0; j -= 1) {
+    if (logs[j]?.postSerie) return false;
+    if (esMapa(logs[j])) return true;
+  }
+  return false;
+}
+
 export function nodoDeBeat(beat, state) {
   // C1b: lo que una forma ya mostró adentro (el campeón que sale y el ajuste al meta, en la tarjeta del parche) no se repite
   // en los adjuntos ni en la tira técnica.
@@ -757,7 +770,7 @@ export function nodoDeBeat(beat, state) {
     if (beat.narrativa.type === 'temporada' && state) {
       nodo = crearTarjetaResultado(beat.narrativa, state);
     } else if (beat.narrativa.type === 'serie' && beat.narrativa.postSerie) {
-      nodo = crearTarjetaResultadoSerie(beat.narrativa, state);
+      nodo = crearTarjetaResultadoSerie(beat.narrativa, state, { mapasVistos: mapasYaMostrados(beat, state) });
     } else if (esCorte(beat.narrativa, state)) {
       nodo = crearAlertaDeCorte(beat.narrativa, state);
     } else {

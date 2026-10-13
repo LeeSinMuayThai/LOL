@@ -8667,7 +8667,7 @@ check(NOMBRE_CHECK_REPRODUCIR_BEATS, () => {
 // en el último beat; una página reabierta sin beats (D97: retomar entre splits) espera lo de un beat para que la tarjeta se vea; y en INST o con
 // movimiento reducido no espera nada. Corre a nivel de módulo (`reproducirBeats` es async), con el `setTimeout` reemplazado por uno que registra
 // los milisegundos y sigue en el turno siguiente.
-const NOMBRE_CHECK_PAUSA_DEL_ANIO = 'V4: reproducirBeats sostiene la tarjeta "Cierre de …" ESPERA_CIERRE_ANIO_MS más que un beat y una página reabierta sin beats espera uno (D97), nunca en INST ni con movimiento reducido';
+const NOMBRE_CHECK_PAUSA_DEL_ANIO = 'V4: reproducirBeats sostiene la tarjeta "Cierre de …" ESPERA_CIERRE_ANIO_MS más que un beat y una página reabierta sin beats espera uno (D97), nunca en INST; con movimiento reducido conserva el mismo pulso (PLANUI §0.3)';
 let errorPausaDelAnio = null;
 if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_PAUSA_DEL_ANIO.toLowerCase().includes(texto))) {
   const previos = {
@@ -8719,8 +8719,9 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_PAUSA_DEL_ANIO.toLowe
       ['1× página sin beats ni cierre', await correr('x1', false, [], null), []],
       ['INST con "Cierre de …"', await correr('instantaneo', false, beats, cierre(anio)), []],
       ['INST página reabierta con "Cierre de …"', await correr('instantaneo', false, [], cierre(anio)), []],
-      ['1× con movimiento reducido y "Cierre de …"', await correr('x1', true, beats, cierre(anio)), []],
-      ['1× con movimiento reducido, página reabierta', await correr('x1', true, [], cierre(anio)), []]
+      ['1× con movimiento reducido y "Cierre de …": el mismo pulso que sin él', await correr('x1', true, beats, cierre(anio)), [700, 700, 700 + ESPERA_ANIO]],
+      ['1× con movimiento reducido, página reabierta', await correr('x1', true, [], cierre(anio)), [700 + ESPERA_ANIO]],
+      ['INST con movimiento reducido: INST manda', await correr('instantaneo', true, beats, cierre(anio)), []]
     ];
     const mal = casos.filter(([, vistas, esperadas]) => JSON.stringify(vistas) !== JSON.stringify(esperadas))
       .map(([nombre, vistas, esperadas]) => `${nombre}: esperó ${JSON.stringify(vistas)} y tenía que esperar ${JSON.stringify(esperadas)}`);

@@ -129,15 +129,24 @@ function motionReducido() {
 
 // FASE V (V2-B): sin espera entre beats (INST o movimiento reducido), la tarjeta de cierre de un split no llega a verse:
 // el controlador lo pregunta al abrir la página siguiente, que entonces arranca con la línea "Split anterior: …".
+// PLANUI §0.3 (la regla nueva del movimiento reducido): esto es "sin movimiento ni números que ruedan" (los cuadros finales
+// van puestos); el PULSO entre beats del relato es otra pregunta, `sinPulso`.
 export function sinEspera() {
   return velocidad === 'instantaneo' || motionReducido();
+}
+
+// PLANUI §0.3: el relato no espera entre beats solo en INST (la velocidad que eligió el jugador). Con movimiento reducido
+// (una preferencia del sistema operativo) el relato conserva el pulso de la velocidad elegida: los beats aparecen sin
+// desplazarse (la animación de entrada ya está apagada) pero cada uno tiene su tiempo de lectura.
+export function sinPulso() {
+  return velocidad === 'instantaneo';
 }
 
 // PLANUI §0.3 (la regla nueva del movimiento reducido): cómo cuenta una parada su resultado en el lugar. 'inst' es la
 // velocidad que eligió el jugador: la narración va a su cuadro final (visible y completo). 'reducido' es la preferencia
 // del sistema (o `data-reducido`): cuenta lo mismo sin desplazamientos, cada paso un cuadro fijo con un fundido corto y su
 // tiempo de lectura. 'normal': la secuencia entera. INST manda sobre el movimiento reducido (quien eligió ir rápido va
-// rápido). El relato (`sinEspera`, arriba) no cambia: con movimiento reducido sigue sin espera entre beats.
+// rápido). El relato (`sinPulso`, arriba) tampoco espera solo en INST: con movimiento reducido conserva el pulso entre beats.
 export function modoDeMovimiento() {
   if (velocidad === 'instantaneo') return 'inst';
   return reducido() ? 'reducido' : 'normal';
@@ -190,8 +199,8 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
     if (pagina?.cierre) {
       // D97: una página con tarjeta de cierre y sin beats (al retomar entre splits se reabre la del split anterior) tiene su
       // espera, la del último beat: si no, el primer beat de la página siguiente la reemplaza antes de que se pinte.
-      const quieto = sinEspera();
-      renderPagina(logList, state, { ...pagina, animar: !quieto });
+      const quieto = sinPulso();
+      renderPagina(logList, state, { ...pagina, animar: !sinEspera() });
       seguirAlUltimo(logList);
       const pausa = quieto ? 0 : ESPERA_MS[velocidad] + (pagina.cierre.anio ? ESPERA_CIERRE_ANIO_MS[velocidad] : 0);
       if (pausa > 0) {
@@ -205,7 +214,9 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
     return;
   }
 
-  const instantaneo = sinEspera();
+  const instantaneo = sinPulso();
+  // sin movimiento (INST o movimiento reducido): el beat aparece puesto, sin que ruede su número
+  const animar = !sinEspera();
   const espera = instantaneo ? 0 : ESPERA_MS[velocidad];
   const esperaDelAnio = instantaneo ? 0 : ESPERA_CIERRE_ANIO_MS[velocidad];
 
@@ -213,7 +224,7 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
   for (const [i, beat] of beats.entries()) {
     const ultimo = i === beats.length - 1;
     if (pagina) {
-      renderPagina(logList, state, { ...pagina, hasta: beat.clave + 1, cierre: ultimo ? pagina.cierre : null, animar: !instantaneo });
+      renderPagina(logList, state, { ...pagina, hasta: beat.clave + 1, cierre: ultimo ? pagina.cierre : null, animar });
       if (espera > 0 || ultimo) {
         seguirAlUltimo(logList);
       }

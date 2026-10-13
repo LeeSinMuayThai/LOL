@@ -174,7 +174,9 @@ export function crearBarraBracket(rondaActual, { esPostSerie = false, gano = fal
   return bracket;
 }
 
-export function crearTarjetaResultadoSerie(entry, state) {
+// `mapasVistos`: la misma página ya mostró los mapas de esta serie (las teselas de un relato sin parada o los beats de mapa de
+// una con parada): la tarjeta no los repite, solo su camino de prosa. Lo decide `feed.js` (`mapasYaMostrados`).
+export function crearTarjetaResultadoSerie(entry, state, { mapasVistos = false } = {}) {
   const item = document.createElement('div');
   item.className = 'log-item log-item--resultado log-item--resultado-serie '
     + (entry.gano ? 'log-item--resultado-victoria' : 'log-item--resultado-derrota');
@@ -225,7 +227,7 @@ export function crearTarjetaResultadoSerie(entry, state) {
   // VICTORIA o DERROTA); el cierre de cada mapa es prosa (textos completos, y siempre para un lector de pantalla).
   const mapas = entry.mapas ?? state?.serie?.mapas ?? [];
   if (mapas.length > 0) {
-    item.appendChild(crearFilaDeMapas(mapas, { clase: 'resultado-camino' }));
+    if (!mapasVistos) item.appendChild(crearFilaDeMapas(mapas, { clase: 'resultado-camino' }));
     const cierres = mapas.filter((m) => m.cierre);
     if (cierres.length > 0) {
       const prosa = document.createElement('div');

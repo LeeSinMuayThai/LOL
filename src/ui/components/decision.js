@@ -47,6 +47,8 @@ const SALTO_GRANDE_DE_ELO = 500;
 // El orden de "lo que pasó" (ganaste / te costó): por magnitud (▲▲▲ antes que ▲) y, a igual magnitud, SoloQ primero y
 // después el número más grande.
 const RANGO_DE_MAGNITUD = { alta: 3, media: 2, baja: 1 };
+// La misma cantidad de triángulos (1-3) que la celda o la tarjeta, para el chip de la misma cifra (`chipEje({ magnitud })`).
+const TRIANGULOS_DE = RANGO_DE_MAGNITUD;
 // Los ejes que agrupan varias stats (core/ejes.js): su chip y su tarjeta llevan el nombre de la stat, no el del eje.
 const EJES_DE_VARIAS = new Set(['juego', 'equipo']);
 // Los tiempos de la parada (ms; los de la vitrina): la entrada del panel y la narración del resultado.
@@ -140,7 +142,7 @@ export function crearDecision(contenedor, decision, { estado, previa = null, mun
   };
   // Un efecto de la previa como chip de eje: "Casa +8" (el texto del motor, "Confianza familiar ~+8", en el title).
   const chipDePrevia = (p) => {
-    const chip = chipEje({ eje: ejeDe(p.campo), valor: typeof p.valor === 'number' ? p.valor : null, etiqueta: nombreDeEje(p.campo), sufijo: campoCorto(p.campo) === 'ranked' ? 'LP' : '' });
+    const chip = chipEje({ eje: ejeDe(p.campo), valor: typeof p.valor === 'number' ? p.valor : null, etiqueta: nombreDeEje(p.campo), sufijo: campoCorto(p.campo) === 'ranked' ? 'LP' : '', magnitud: TRIANGULOS_DE[p.magnitud] ?? null });
     if (p.texto) chip.title = p.texto;
     return chip;
   };
@@ -321,16 +323,17 @@ export function crearDecision(contenedor, decision, { estado, previa = null, mun
   const inspector = el('div', { class: 'inspector', 'aria-live': 'polite' });
   let apuntada = 0;
   let elegido = false;
-  function pintarInspector(i) {
+  // `destino`: dónde se pinta (el inspector vivo, o el clon fuera del árbol accesible con el que se mide: ver `fijarAltoDelInspector`).
+  function pintarInspector(i, destino = inspector) {
     const f = filas[i];
     if (!f) return;
-    inspector.textContent = '';
+    destino.textContent = '';
     if (f.classList.contains('bloqueada')) {
-      inspector.append(el('p', { class: 'insp-kicker' }, [icono('candado'), 'Cerrada']), el('p', { class: 'insp-texto', text: f.dataset.gate }));
+      destino.append(el('p', { class: 'insp-kicker' }, [icono('candado'), 'Cerrada']), el('p', { class: 'insp-texto', text: f.dataset.gate }));
       return;
     }
     const o = disponibles[i];
-    inspector.append(
+    destino.append(
       el('p', { class: 'insp-kicker' }, [el('span', { class: 'insp-n', text: String(i + 1) }), o.label]),
       el('p', { class: 'insp-texto', text: o.descripcion ?? '' }),
       // los efectos como chips de eje (la planilla); el texto del motor de cada uno, abajo con "Textos: completos"
@@ -388,15 +391,28 @@ export function crearDecision(contenedor, decision, { estado, previa = null, mun
   apuntar(0);
   // El inspector cambia de alto con la opción apuntada; con el panel apoyado abajo eso corre las filas debajo del
   // puntero (y el puntero pasa a apuntar otra). Se reserva el alto de la opción más alta.
+  //
+  // Se mide en un clon (`aria-hidden`, sin `aria-live`, invisible y fuera del flujo, con el ancho del inspector vivo): el
+  // inspector vivo es una región `aria-live="polite"` y repintarlo N+1 veces (al montar, en `fonts.ready`, en cada resize y
+  // al cambiar Textos) hacía que un lector de pantalla anunciara cada opción. Al vivo solo se le toca el `minHeight`.
   function fijarAltoDelInspector() {
     if (!raiz.isConnected || elegido) return;
     inspector.style.minHeight = '';
+    const ancho = inspector.offsetWidth;
     let alto = 0;
-    filas.forEach((_, i) => {
-      pintarInspector(i);
-      alto = Math.max(alto, inspector.offsetHeight);
-    });
-    pintarInspector(apuntada);
+    if (ancho > 0) {
+      const medida = inspector.cloneNode(false);
+      medida.removeAttribute('aria-live');
+      medida.removeAttribute('id');
+      medida.setAttribute('aria-hidden', 'true');
+      Object.assign(medida.style, { position: 'absolute', visibility: 'hidden', pointerEvents: 'none', left: '0', top: '0', width: `${ancho}px`, minHeight: '' });
+      inspector.parentNode.append(medida);
+      filas.forEach((_, i) => {
+        pintarInspector(i, medida);
+        alto = Math.max(alto, medida.offsetHeight);
+      });
+      medida.remove();
+    }
     inspector.style.minHeight = `${alto}px`;
   }
   fijarAltoDelInspector();
@@ -548,12 +564,12 @@ export function crearDecision(contenedor, decision, { estado, previa = null, mun
       if (c.campo === 'ranked') {
         if (!c.despues) continue;
         const d = Number.isFinite(elo?.delta) ? Math.round(elo.delta) : 0;
-        items.push({ campo: c.campo, delta: d, sube: d >= 0, nodo: tarjetaDeSoloq(c, d, todos), chip: d !== 0 ? { eje: 'soloq', valor: d, etiqueta: EJES.soloq.corto, sufijo: 'LP' } : null });
+        items.push({ campo: c.campo, delta: d, sube: d >= 0, nodo: tarjetaDeSoloq(c, d, todos), chip: d !== 0 ? { eje: 'soloq', valor: d, etiqueta: EJES.soloq.corto, sufijo: 'LP', magnitud: TRIANGULOS_DE[magnitudDe(c.campo, d)] } : null });
         continue;
       }
       const a = Math.round(c.antes);
       const b = Math.round(c.despues);
-      items.push({ campo: c.campo, delta: b - a, sube: b > a, nodo: tarjetaDeNumero(c, a, b), chip: { eje: ejeDe(c.campo), valor: b - a, etiqueta: nombreDeEje(c.campo) } });
+      items.push({ campo: c.campo, delta: b - a, sube: b > a, nodo: tarjetaDeNumero(c, a, b), chip: { eje: ejeDe(c.campo), valor: b - a, etiqueta: nombreDeEje(c.campo), magnitud: TRIANGULOS_DE[magnitudDe(c.campo, b - a)] } });
     }
     const porMagnitud = (x, y) => RANGO_DE_MAGNITUD[magnitudDe(y.campo, y.delta)] - RANGO_DE_MAGNITUD[magnitudDe(x.campo, x.delta)]
       || (y.campo === 'ranked') - (x.campo === 'ranked')
@@ -676,6 +692,8 @@ export function crearDecision(contenedor, decision, { estado, previa = null, mun
       const golpe = cambios.some((c) => Number.isFinite(c.delta) && c.delta < 0 && !/sleep|studies/.test(c.campo));
       narracion.esperar(T.pulso).then(() => fx()?.pulso?.(golpe ? 'golpe' : 'logro'));
       tarjeta.focus({ preventScroll: true });
+      // INST: el cuadro final de "lo que pasó" se sostiene un instante (como el de la serie y el contrato); Enter o un clic lo pasan
+      await narracion.vistazo();
       await narracion.esperar(T.sostener);
     } finally {
       narracion.fin();

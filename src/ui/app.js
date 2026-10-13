@@ -427,7 +427,7 @@ export function iniciar() {
     if (valido) {
       const ultimoCierre = marcador.ultimoCierre ?? null;
       // Un marcador sin la marca (de antes de anotarla) cuenta como la velocidad de ahora, como se decidía antes.
-      const cierreVisto = typeof marcador.cierreVisto === 'boolean' ? marcador.cierreVisto : !reproductor.sinEspera();
+      const cierreVisto = typeof marcador.cierreVisto === 'boolean' ? marcador.cierreVisto : !reproductor.sinPulso();
       return {
         desde: marcador.inicioDePagina,
         fotoInicio: marcador.fotoInicio ?? null,
@@ -500,7 +500,7 @@ export function iniciar() {
       }
     }
     // La tarjeta se ve si el relato espera entre beats: la velocidad se lee ACÁ, la de la llamada que la reproduce.
-    const tarjetaSeVe = Boolean(cierre) && !reproductor.sinEspera();
+    const tarjetaSeVe = Boolean(cierre) && !reproductor.sinPulso();
     relatoEnCurso = estadoActual;
     // Lo que la parada ya contó en el lugar entra a la página sin volver a contarse (PLANUI §0.2).
     if (contados > 0) {

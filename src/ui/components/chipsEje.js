@@ -159,6 +159,9 @@ export function efectosDeTexto(texto) {
   return partirEfectos(resto).map(efectoDeSegmento);
 }
 
+// Los triángulos por cantidad (1, 2, 3) -> el nombre de la magnitud de fx/iconos.js.
+const MAGNITUD_DE_CANTIDAD = { 1: 'baja', 2: 'media', 3: 'alta' };
+
 function magnitudDe(valor, sufijo) {
   const escala = /^LP\b/.test(sufijo ?? '') ? MAGNITUD_LP : MAGNITUD;
   const n = Math.abs(valor);
@@ -174,8 +177,10 @@ export function numeroConSigno(valor) {
 // triángulos de fx/iconos.js: ▲ / ▲▲ / ▲▲▲ según cuánto). `etiqueta`: el texto (por defecto el nombre corto del eje).
 // `sufijo`: "LP", "maestría"… Opcionales (C1b): `glifo` (un glifo de fx/iconos.js en lugar del del eje: la stat dentro
 // de `juego` o `equipo`, ver `glifoDeStat`), `signo` ('sube' | 'baja') para un chip sin número que igual dice hacia dónde,
-// y `titulo` (el texto original, en el `title`).
-export function chipEje({ eje = null, valor = null, cambio = true, etiqueta = null, sufijo = '', grande = false, signo = null, titulo = null, glifo = null } = {}) {
+// y `titulo` (el texto original, en el `title`). `magnitud` (1-3, opcional): los triángulos que dice otra pieza de la misma
+// pantalla para esa cifra (la celda de la planilla, la tarjeta de "lo que pasó"); pisa la que calcula el chip, para que la
+// misma cifra tenga los mismos triángulos en todas partes.
+export function chipEje({ eje = null, valor = null, cambio = true, etiqueta = null, sufijo = '', grande = false, signo = null, titulo = null, glifo = null, magnitud = null } = {}) {
   const chip = document.createElement('span');
   chip.className = 'eje-chip' + (grande ? ' eje-chip--grande' : '') + (typeof valor === 'number' ? '' : ' eje-chip--texto');
   if (eje && EJES[eje]) chip.dataset.eje = eje;
@@ -189,7 +194,7 @@ export function chipEje({ eje = null, valor = null, cambio = true, etiqueta = nu
   nombre.className = 'eje-chip-nombre';
   nombre.textContent = etiqueta ?? (eje && EJES[eje] ? EJES[eje].corto : '');
   chip.appendChild(nombre);
-  if (conSigno && valor !== 0) chip.appendChild(triangulos(magnitudDe(valor, sufijo), valor > 0 ? '+' : '-'));
+  if (conSigno && valor !== 0) chip.appendChild(triangulos(MAGNITUD_DE_CANTIDAD[magnitud] ?? magnitudDe(valor, sufijo), valor > 0 ? '+' : '-'));
   else if (!conSigno && signo) chip.appendChild(triangulos('baja', signo === 'sube' ? '+' : '-'));
   if (typeof valor === 'number') {
     const n = document.createElement('b');
