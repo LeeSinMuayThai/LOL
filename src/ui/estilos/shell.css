@@ -517,6 +517,15 @@ html[data-transicion] .cuartos { view-transition-name: cuartos; }
 .cambio-baja .medidor .valor { background: var(--down); }
 .cambio-sube .ctx-valor { color: var(--up); }
 .cambio-baja .ctx-valor { color: var(--down); }
+/* C1a (PLANUI §0.3): cada fila en el color de su eje (`--eje` inline, acompanante.js): el glifo, el valor y el medidor,
+   como en la planilla y en "lo que pasó". Cuando el número rueda, el signo va en el valor (--up / --down); el medidor
+   sigue diciendo qué se movió. */
+.ctx-fila[data-eje] .ctx-rotulo .ln-ico { color: var(--eje); }
+.ctx-fila[data-eje] .ctx-valor { color: var(--eje); }
+.ctx-fila[data-eje] .medidor .valor,
+.ctx-fila[data-eje]:is(.cambio-sube, .cambio-baja) .medidor .valor { background: var(--eje); }
+.ctx-fila[data-eje].cambio-sube .ctx-valor { color: var(--up); }
+.ctx-fila[data-eje].cambio-baja .ctx-valor { color: var(--down); }
 .ctx-pie { margin-top: 6px; display: grid; gap: 2px; }
 .ctx-duelo {
   display: grid;

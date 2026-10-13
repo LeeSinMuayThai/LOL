@@ -16,6 +16,7 @@ import { acompanante as acompananteCarrera } from './cuartos/carrera.js';
 import { TITULOS_DE_CUARTOS } from './cuartos.js';
 import { icono, triangulos } from './fx/iconos.js';
 import { num, odometro } from './fx/movimiento.js';
+import { ejeDe, tokenDeEje } from './core/ejes.js';
 
 // El corte desde el que el acompañante existe (el mismo de `shell.css`).
 const CONSULTA_ANCHA = '(min-width: 1180px)';
@@ -31,7 +32,8 @@ function nodo(etiqueta, clase, texto = null) {
 }
 
 // Una fila de la placa: el rótulo con su glifo, el valor, el estado (la etiqueta de la banda, el delta, el rango) y el
-// medidor (con la banda de la jerarquía o el arraigo cuando la hay).
+// medidor (con la banda de la jerarquía o el arraigo cuando la hay). El glifo, el valor y el medidor van en el color
+// del eje de la fila (PLANUI §0.3; core/ejes.js): el mismo que en la planilla y en "lo que pasó".
 function fila(campo, rotulo, valor, estado, { delta = 0, piso = null, techo = null, max = 100, ico = null } = {}) {
   const medidor = nodo('span', 'medidor');
   medidor.setAttribute('aria-hidden', 'true');
@@ -58,6 +60,13 @@ function fila(campo, rotulo, valor, estado, { delta = 0, piso = null, techo = nu
   if (piso != null) est.append(nodo('span', 'ctx-rango', `${piso}–${techo}`));
   const caja = nodo('div', 'ctx-fila');
   caja.dataset.campo = campo;
+  const eje = ejeDe(campo);
+  const tinta = tokenDeEje(eje);
+  if (tinta) {
+    caja.dataset.eje = eje;
+    caja.style.setProperty('--eje', tinta.color);
+    caja.style.setProperty('--eje-f', tinta.fill);
+  }
   caja.append(rot, nodo('b', 'ctx-valor', num(valor)), est, medidor);
   return caja;
 }

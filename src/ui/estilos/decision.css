@@ -19,8 +19,15 @@
 .parada-decision[data-forma='matriz'] .panel-cuerpo { grid-template-columns: minmax(0, 1fr); }
 .panel-cuerpo > .inspector { background: var(--panel-hondo); box-shadow: inset 1px 0 0 var(--linea); border-bottom-right-radius: var(--r-panel); }
 .parada-decision[data-forma='matriz'] .panel-cuerpo > .inspector { display: grid; grid-template-columns: minmax(200px, 0.36fr) minmax(0, 1fr); column-gap: 24px; box-shadow: inset 0 1px 0 var(--linea); border-bottom-left-radius: var(--r-panel); padding: 14px 28px 16px; }
-.parada-decision[data-forma='matriz'] .inspector .insp-texto { margin-top: 0; grid-column: 2; grid-row: 1 / span 2; }
+.parada-decision[data-forma='matriz'] .inspector .insp-texto { margin-top: 0; grid-column: 2; grid-row: 1; }
 .parada-decision[data-forma='matriz'] .inspector .insp-previa { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+/* los efectos de la opción apuntada como chips de eje (C1a); su texto del motor ("SoloQ ~+27 LP"), con textos completos */
+.insp-ejes { margin-top: 10px; }
+/* en la planilla, los chips van debajo de la prosa (la columna ancha: entran en una línea) */
+.parada-decision[data-forma='matriz'] .inspector .insp-ejes { grid-column: 2; grid-row: 2 / span 2; align-self: start; }
+.parada-decision[data-forma='lista'] .insp-ejes { display: none; }
+.parada-decision[data-forma='matriz'] .insp-efecto { display: none; }
+html[data-textos='completos'] .parada-decision[data-forma='matriz'] .insp-efecto { display: flex; }
 .parada-decision[data-forma='matriz'] .titulo-parada { font-size: var(--t-titulo-s); }
 .parada-decision[data-forma='matriz'] .panel-cab { padding-bottom: 16px; }
 .panel-cuerpo.con-resultado { grid-template-columns: minmax(0, 1fr); }
@@ -41,6 +48,7 @@ html[data-textos='completos'] .op-desc { display: block; }
 .eje { display: inline-flex; align-items: center; gap: 6px; }
 .eje-nom { color: var(--ink-dim); }
 .opcion.apuntada .eje-nom { color: var(--ink); }
+.eje[data-eje] > .ln-ico, .eje[data-eje] > .eje-nom { color: var(--eje); }
 .riesgo { display: inline-flex; align-items: center; gap: 6px; color: var(--warn); }
 .riesgo[data-riesgo='seguro'] { color: var(--ink-dim); }
 .riesgo[data-riesgo='alto'] { color: var(--danger); }
@@ -67,6 +75,11 @@ html[data-textos='completos'] .op-plan span { text-transform: none; letter-spaci
 .mx-cab .mx-op { padding-left: 28px; }
 .mx-eje { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 7px; }
 .mx-eje .ln-ico { color: var(--ink-dim); }
+/* C1a (PLANUI §0.3, punto 1): cada columna en el color de su eje (`--eje` inline, core/ejes.js). La cabecera (glifo y
+   nombre) y las barras dicen QUÉ se mueve; el número y los triángulos, hacia dónde (--up / --down). */
+.mx-eje[data-eje] { color: var(--eje); }
+.mx-eje[data-eje] .ln-ico { color: var(--eje); }
+.mx-eje[data-eje] .mx-eje-nom { font-weight: 600; }
 .mx-ref { grid-column: 1 / -1; font: 900 15px / 1 var(--f-display); font-stretch: var(--ancho-numero); letter-spacing: -0.01em; text-transform: none; color: var(--ink); }
 .mx-fila { padding: 11px 0; }
 .matriz > .op-caja + .op-caja > .mx-fila { box-shadow: inset 0 1px 0 var(--linea); }
@@ -80,13 +93,25 @@ html[data-textos='completos'] .op-plan span { text-transform: none; letter-spaci
 .tag-rara { color: var(--gold); }
 .mx-celda { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 7px; padding-right: 14px; }
 .mx-celda > b { font: 900 16px / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; }
-.mx-celda.baja > b { color: var(--ink-dim); }
+.mx-celda.sube > b { color: var(--up); }
+.mx-celda.baja > b { color: var(--down); }
+.mx-celda.sube > b .mx-u { color: var(--up); }
 .mx-u { font: 500 10px / 1 var(--f-mono); letter-spacing: 0.06em; color: var(--ink-dim); }
 .mx-celda .ln-tri { justify-self: start; }
-.mx-barra { grid-column: 1 / -1; position: relative; display: block; height: 4px; border-radius: var(--r-chip); background: var(--linea); }
+.mx-barra { grid-column: 1 / -1; position: relative; display: block; height: 6px; border-radius: var(--r-chip); background: var(--linea); }
 .mx-barra i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: inherit; transform-origin: left; }
 .mx-barra i.sube { background: var(--up); }
 .mx-barra i.baja { background: var(--down); }
+/* la barra en el color de su eje: llena si sube; si baja, el relleno tenue con el borde del eje (lo que se pierde) */
+.mx-celda[data-eje] .mx-barra i.sube { background: var(--eje); }
+.mx-celda[data-eje] .mx-barra i.baja { background: var(--eje-f); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--eje) 62%, transparent); }
+/* la ganancia más grande de la fila: la celda se enciende en su eje (el fondo tenue, el filo y el brillo de la barra) */
+.mx-celda.mx-mejor { position: relative; isolation: isolate; }
+.mx-celda.mx-mejor::before {
+  content: ''; position: absolute; inset: -8px 5px -8px -9px; z-index: -1; border-radius: var(--r-control);
+  background: var(--eje-f); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--eje) 50%, transparent), 0 0 22px -8px var(--eje);
+}
+.mx-celda.mx-mejor .mx-barra i.sube { box-shadow: 0 0 10px color-mix(in srgb, var(--eje) 70%, transparent); }
 .mx-barra.mixta::after { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--linea-fuerte); }
 .mx-barra.mixta i.sube { left: 50%; }
 .mx-barra.mixta i.baja { left: auto; right: 50%; transform-origin: right; }
@@ -108,21 +133,52 @@ html[data-textos='completos'] .op-plan span { text-transform: none; letter-spaci
 }
 .res-cab .op-tecla { background: var(--luz-texto); box-shadow: none; color: var(--bg-void); }
 .res-tag { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
-.res-plan { margin: 14px 28px 0 74px; max-width: 62ch; font-size: 15px; color: var(--ink-dim); }
-.res-texto { margin: 14px 28px 0 74px; max-width: 58ch; font-size: var(--t-cuerpo-g); line-height: 1.45; color: var(--ink); text-wrap: pretty; }
-.res-efectos { margin: 10px 28px 0 74px; max-width: 62ch; font: 500 12px / 1.4 var(--f-mono); letter-spacing: 0.04em; color: var(--ink-dim); }
-.res-numeros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px 40px; margin: 22px 28px 0 74px; }
-.res-num { display: grid; gap: 10px; }
+/* C1a (PLANUI §0.3, punto 2): arriba los chips de ganaste / te costó; una línea de prosa (el resto en "más" y con
+   textos completos); las tarjetas de cada número en el color de su eje, las que suben plenas y las que bajan atenuadas */
+.res-balance { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 26px; margin: 16px 28px 0 74px; }
+.res-bal { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.res-bal-rot { display: inline-flex; align-items: center; gap: 6px; margin-right: 4px; font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; }
+.res-bal[data-signo='sube'] .res-bal-rot { color: var(--up); }
+.res-bal[data-signo='baja'] .res-bal-rot { color: var(--down); }
+.res-plan { margin: 0; max-width: 62ch; font-size: 15px; color: var(--ink-dim); }
+.res-texto { margin: 14px 28px 0 74px; max-width: 62ch; font-size: var(--t-cuerpo-g); line-height: 1.45; color: var(--ink); text-wrap: pretty; }
+.res-mas { margin-left: 10px; vertical-align: 2px; }
+.res-efectos { margin: 0; max-width: 62ch; font: 500 12px / 1.4 var(--f-mono); letter-spacing: 0.04em; color: var(--ink-dim); }
+.res-extra { display: none; gap: 8px; margin: 10px 28px 0 74px; }
+.resultado.abierto .res-extra, html[data-textos='completos'] .res-extra { display: grid; }
+html[data-textos='completos'] .res-mas { display: none; }
+.res-numeros { display: grid; gap: 22px; margin: 22px 28px 0 74px; }
+.res-grupo { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px 40px; }
+.res-num { --eje: var(--ink-dim); --eje-f: var(--linea); display: grid; gap: 10px; min-width: 150px; }
 .rn-fila { display: flex; align-items: baseline; gap: 12px; }
 .rn-fila > .ln-ico { align-self: center; width: 18px; height: 18px; color: var(--ink-dim); }
-.rn-rotulo { display: inline-flex; align-items: center; gap: 7px; font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.rn-rotulo { display: inline-flex; align-items: center; gap: 7px; font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--eje); }
+.rn-rotulo .ln-ico { color: var(--eje); }
 .rn-valor { font-size: var(--t-num-l); line-height: 0.86; letter-spacing: -0.03em; color: var(--ink); }
 .rn-delta { display: inline-flex; align-items: center; gap: 5px; padding-bottom: 6px; font: 600 14px / 1 var(--f-mono); }
 .rn-delta.sube { color: var(--up); }
 .rn-delta.baja { color: var(--down); }
 .rn-antes { font: 900 var(--t-num) / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--ink-dim); }
+/* la barra 0-100 del antes al después: la base (lo que había) y el tramo (lo que se movió: lleno o hueco) */
+.rn-barra { position: relative; display: block; height: 6px; border-radius: var(--r-chip); background: var(--linea); }
+.rn-barra i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: inherit; transform-origin: left; }
+.rn-base { background: color-mix(in srgb, var(--eje) 46%, transparent); }
+.res-num[data-signo='sube'] .rn-tramo { background: var(--eje); box-shadow: 0 0 12px color-mix(in srgb, var(--eje) 60%, transparent); }
+.res-num[data-signo='baja'] .rn-tramo { background: var(--eje-f); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--eje) 62%, transparent); }
+/* las que bajan: después y atenuadas (más chicas, el número en la tinta tenue; el color del eje sigue diciendo qué) */
+.res-grupo[data-signo='baja'] { gap: 16px 32px; }
+.res-num[data-signo='baja'] .rn-valor { font-size: var(--t-num-m); color: var(--ink-dim); }
+.res-num[data-signo='baja'] .rn-antes { font-size: var(--t-num-s); }
+.res-num[data-signo='baja'] .rn-base { background: color-mix(in srgb, var(--eje) 30%, transparent); }
+/* SoloQ: el escalón en grande */
+.res-rango { min-width: 0; }
 .res-rango .rn-antes { font-size: var(--t-num-s); font-weight: 800; font-stretch: var(--ancho-titulo); }
-.res-rango .rn-valor { font-size: 34px; font-weight: 800; font-stretch: var(--ancho-titulo); letter-spacing: -0.03em; }
+.res-rango .rn-valor { font-size: var(--t-num-m); font-weight: 800; font-stretch: var(--ancho-titulo); letter-spacing: -0.03em; line-height: 0.95; }
+.res-num.res-rango[data-signo='baja'] .rn-valor { font-size: 34px; }
+.rn-lp { font-size: 0.55em; font-weight: 700; color: var(--ink-dim); letter-spacing: -0.01em; }
+.rn-escalon-nuevo[data-signo='sube'] .rn-escalon { color: var(--eje); }
+.rn-paso { margin-left: 6px; padding: 2px 6px; border-radius: var(--r-chip); background: var(--eje-f); color: var(--eje); }
+.rn-paso.baja { background: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--eje) 50%, transparent); }
 .rn-texto { display: grid; overflow: hidden; padding-bottom: 4px; }
 .rn-texto > span { grid-area: 1 / 1; }
 .resultado:focus-visible { outline: none; box-shadow: none; }
@@ -161,13 +217,26 @@ html[data-textos='completos'] .op-plan span { text-transform: none; letter-spaci
   .mx-fila .op-label { padding-right: 48px; }
   .res-cab { grid-template-columns: 26px minmax(0, 1fr); column-gap: 12px; padding: 12px 12px 12px 16px; }
   .res-tag { display: none; }
-  .res-plan, .res-texto, .res-efectos, .res-numeros { margin-left: 16px; margin-right: 16px; }
-  .res-texto { font-size: 15.5px; }
-  .res-numeros { gap: 16px 28px; }
-  .rn-valor { font-size: var(--t-num-m); }
-  .rn-antes { font-size: 22px; }
+  .res-balance, .res-texto, .res-extra, .res-numeros { margin-left: 16px; margin-right: 16px; }
+  .res-balance { gap: 8px 16px; margin-top: 12px; }
+  .res-texto { font-size: 15.5px; margin-top: 10px; }
+  .res-numeros { gap: 14px; margin-top: 16px; }
+  /* las tarjetas chicas, de a dos; SoloQ, a lo ancho */
+  .res-grupo, .res-grupo[data-signo='baja'] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+  .res-num { min-width: 0; gap: 8px; }
+  .rn-fila { flex-wrap: wrap; gap: 4px 8px; }
+  .rn-fila > .ln-ico { width: 14px; height: 14px; }
+  .rn-valor { font-size: 34px; }
+  .rn-antes { font-size: 18px; }
+  .rn-delta { font-size: 12px; padding-bottom: 3px; }
+  .res-num[data-signo='baja'] .rn-valor { font-size: 26px; }
+  .res-num[data-signo='baja'] .rn-antes { font-size: 15px; }
+  .res-rango { grid-column: 1 / -1; }
+  .res-rango .rn-fila { flex-wrap: wrap; row-gap: 4px; }
   .res-rango .rn-antes { font-size: 14px; }
-  .res-rango .rn-valor { font-size: 22px; }
+  .res-rango .rn-valor, .res-num.res-rango[data-signo='baja'] .rn-valor { font-size: 28px; }
+  .inspector .insp-ejes { display: none; }
+  .parada-decision[data-forma='matriz'] .inspector.expandido .insp-ejes { display: flex; }
 }
 
 /* ======================================================================================================================
