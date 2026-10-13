@@ -4,7 +4,7 @@
 // pantalla ya contó), nunca el estado del motor: abrir uno no adelanta nada. Con un cuarto abierto el relato se pausa
 // (`reproductor.pausar`) y al cerrarlo sigue; el foco vuelve a la parada (`escena.enfocar`), que sigue siendo la misma.
 //
-// Las pestañas del diálogo son copias de los botones de la barra de la franja (`#cuartosBarra`, declarada en
+// Las pestañas del diálogo son copias de los botones de la barra de abajo (`#cuartosBarra`, declarada en
 // `index.html`): una sola fuente para el nombre y la letra marcada. Las letras las maneja `teclado.js`, que hace clic en
 // esos mismos botones. Los contenidos son stubs que llaman a los renderers de hoy (`src/ui/cuartos/*.js`); su forma
 // final es de V3e (y Carrera, de V5).
@@ -17,6 +17,7 @@ import * as carrera from './cuartos/carrera.js';
 import * as cronica from './cuartos/cronica.js';
 import * as ayuda from './cuartos/ayuda.js';
 import { PIEZAS_SIN_CUARTOS } from './core/escena.js';
+import { icono } from './fx/iconos.js';
 
 const PINTORES = { vos, temporada, equipo, mundo, carrera, cronica, ayuda };
 export const TITULOS_DE_CUARTOS = {
@@ -24,13 +25,18 @@ export const TITULOS_DE_CUARTOS = {
   ayuda: 'Teclas'
 };
 
-// `dialog`: `#cuarto`. `barra`: `#cuartosBarra` (en la franja). `cuerpo`: `#cuartoCuerpo`. `titulo`: `#cuartoTitulo`.
+// `dialog`: `#cuarto`. `barra`: `#cuartosBarra` (la barra de abajo). `cuerpo`: `#cuartoCuerpo`. `titulo`: `#cuartoTitulo`.
 // `botonAyuda`: el `?` de la franja. `escena`: el director (`ui/escena.js`). `vista`: el store de lo ya mostrado.
 // `contexto`: `{ ui, modulos }`, lo que necesitan los renderers de hoy.
 export function crearCuartos({ dialog, barra, cuerpo, titulo, botonAyuda, escena, vista, contexto }) {
   const pestanas = dialog.querySelector('.cuarto-pestanas');
+  // La barra de la vitrina: cada cuarto con su glifo (fx/iconos.js) delante del nombre.
+  for (const boton of barra.querySelectorAll('[data-cuarto]')) {
+    if (!boton.querySelector('.ln-ico')) boton.prepend(icono(boton.dataset.cuarto));
+  }
   for (const boton of barra.querySelectorAll('[data-cuarto]')) {
     const pestana = boton.cloneNode(true);
+    pestana.removeAttribute('aria-current');
     pestana.setAttribute('role', 'tab');
     pestana.setAttribute('aria-selected', 'false');
     pestana.setAttribute('aria-controls', cuerpo.id);

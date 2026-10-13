@@ -38,6 +38,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 import { piezaDe, PIEZAS_DE_PARADA } from './core/escena.js';
 import { luzDe } from './core/era.js';
+import { mundoBase } from './core/mundo.js';
 import { transicionar } from './fx/transicion.js';
 
 function esVisible(el) {
@@ -46,10 +47,11 @@ function esVisible(el) {
   return el.offsetParent !== null;
 }
 
-const AMBIENTE_NULO = Object.freeze({ aplicar() {}, fondo() {}, aquietar() {}, pausa() {} });
+const AMBIENTE_NULO = Object.freeze({ aplicar() {}, fondo() {}, aquietar() {}, pausa() {}, declarar() {} });
 
 // `shell`: el `.shell` de `index.html`. `vista`: el store de lo ya mostrado (`ui/core/store.js`). `ambiente`: el puente
-// al ambiente (`shell.js`: `aplicar({ era, animo })`, `fondo(contexto)`, `aquietar(si)`, `pausa(motivo, activa)`).
+// al ambiente (`shell.js`: `aplicar({ era, animo })`, `fondo(contexto)`, `declarar(mundo)`, `aquietar(si)`,
+// `pausa(motivo, activa)`).
 // `sinTransicion()`: `true` si el reproductor va sin espera (INST o movimiento reducido): ahí todo es síncrono.
 export function crearEscena({ shell, vista, ambiente = AMBIENTE_NULO, sinTransicion = () => true }) {
   // La última pieza pedida (no la del DOM): con una transición esperando su cuadro, el DOM todavía muestra la anterior.
@@ -58,6 +60,7 @@ export function crearEscena({ shell, vista, ambiente = AMBIENTE_NULO, sinTransic
   // Lo que el director le dice al mundo según la pieza: el inicio tiene su política de fondo (el bitono entero).
   const contextoDe = (p) => (p === 'inicio' ? 'inicio' : 'juego');
   ambiente.fondo(contextoDe(ultimaPedida ?? 'inicio'));
+  ambiente.declarar(mundoBase(ultimaPedida ?? 'inicio', vista.leer()), { reemplazar: true });
 
   function pieza() {
     return shell.dataset.pieza ?? null;
@@ -119,6 +122,11 @@ export function crearEscena({ shell, vista, ambiente = AMBIENTE_NULO, sinTransic
       }
       if (esParada || (nueva !== anterior && nueva !== 'relato')) {
         window.scrollTo?.({ top: 0, behavior: 'instant' });
+      }
+      // El mundo de la pieza (PLANUI §0.2): el de por defecto (tu campeón en la luz de la era) cada vez que cambia la
+      // pieza o entra una parada; la familia declara lo suyo encima al pintarse.
+      if (nueva !== anterior || esParada) {
+        ambiente.declarar(mundoBase(nueva, vista.leer()), { reemplazar: true });
       }
       if (typeof pintar === 'function') {
         pintar();

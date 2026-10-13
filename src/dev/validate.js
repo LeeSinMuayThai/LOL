@@ -290,7 +290,7 @@ check('PLANUI §5.9: nada de la lista de prohibidos (chaflán, ticks/escuadras, 
   }
 });
 
-check('PLANUI §9.5: ningún oklch/oklab/lab/lch/color()/color-mix() en las hojas (los parsers de contraste leen #rrggbb; exenta la decorativa del kit, fx.css)', () => {
+check('PLANUI §9.5: ningún oklch/oklab/lab/lch/color() ni color-mix() fuera de srgb en las hojas (los parsers de contraste leen #rrggbb y color(srgb); exenta la decorativa del kit, fx.css)', () => {
   const hallazgos = verificarSinColorModerno(estilosDir);
   if (hallazgos.length > 0) {
     throw new Error(`encontrado en: ${hallazgos.join(', ')}`);

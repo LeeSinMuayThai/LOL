@@ -32,7 +32,8 @@
 | **Compuerta 2** | El usuario aprueba este documento (incluida la enmienda de la regla 1, §2) | ✅ 2026-10-10: "Aprobar y migrar", después de ver que lolero.lol salió con la UI vieja. La especificación es la fusión con `op=linea` y las variantes de §4.10 (§2) |
 | **U1 + U1k + U1a** | Cimientos (tokens, fuentes, shell, era, transiciones, guards) + el kit `src/ui/fx/` + andamio liviano | ✅ 2026-10-10 (merges en `u-integracion`; ver §11 "Ola 1 cerrada") |
 | **C1** | El usuario prueba luz, tipografía, ritmo y rendimiento en su máquina | ⬜ movida a después de U2 |
-| **U2 + U2c** | Las pantallas del norte (inicio + decisión; partido + mercado) + franja, cuartos y contenedor de minijuegos | ✅ 2026-10-11, en `u-integracion` (`u2a` `fc67550`, `u2b` `0c9ebef`, `u2c` `569af63`). Falta que el usuario mire (C1) |
+| **U2 + U2c** | Las pantallas del norte (inicio + decisión; partido + mercado) + franja, cuartos y contenedor de minijuegos | ❌ 2026-10-11, hecha por fuera del plan y descartada el 2026-10-13 (§0.2): el inicio quedaba pintado encima de todas las piezas y las pantallas no seguían la vitrina. `src/ui` volvió al cierre de la ola 1 (`1a63b63`) |
+| **U2 rehecha** | La ola 2 portada de la vitrina con `op=linea` sobre tres contratos nuevos: el marco, el mundo de cada parada y narrar la respuesta en el lugar (§0.2) | 🔶 2026-10-13 |
 | **U3** | Los momentos + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
@@ -73,6 +74,45 @@
   - colores literales solo en `tokens.css`;
   - `index.html` ≤ 200 líneas;
   - en `tokens.css`, `formatoUi.js` y `almacenamiento.js`, solo se agrega al final.
+
+### 0.2 La ola 2, rehecha (2026-10-13)
+
+**Qué pasó.** El 2026-10-10 y 10-11 la ola 2 se hizo con otros modelos, por fuera de este plan, y se publicó en
+lolero.lol. La auditoría (capturas lado a lado con `estrella.mjs`, las 9 muestras a 1440 y 390):
+- **Rota.** `#setup { display: grid }` (`inicio.css`) le gana por especificidad (un id) a la regla de piezas de
+  `shell.css`: el inicio queda pintado encima de todas las piezas, y la decisión, el partido, el mercado y la final
+  caen debajo, fuera de la vista. `validate.js` no lo ve (no mira la pantalla).
+- **No sigue la vitrina.** El inicio sin la grilla de retratos, sin las cartas de carga ni el campeón apuntado; la
+  decisión sin la costura ni el aviso; el partido sin el cara a cara, sin el stream del Swiss ni el suspenso; el mercado
+  sin el flujo de la compuerta 2. Lo que se ve son chips y cajas de la UI vieja con las fuentes nuevas.
+- **Lo rescatable** son ideas sueltas (el número de camiseta en `lolcs-vista`, la preferencia de textos), que se
+  vuelven a escribir.
+- **Decisión:** `src/ui` vuelve al cierre de la ola 1 (`2aba2c1`, en el commit `1a63b63`) y la ola 2 se rehace.
+
+**Cómo** (reemplaza al apéndice B):
+1. **Se porta la vitrina, no se reinterpreta.** Las fábricas de `vitrina/fusion/js/` con `op=linea` (inicio,
+   decisión con la costura, la serie y el Swiss `linea`, las ofertas y la firma `linea`, la cumbre) pasan a las
+   familias con sus hojas. Cambia de dónde salen los datos: de la `vista` y la `decision` vivas, con los mismos helpers
+   puros que usó `vitrina/datos/` (franja, ficha, previas, página, "antes"), no de `muestras.json`.
+2. **El marco de la vitrina.** La franja arriba (quién, club, cuándo, el número, y los controles al final), la barra de
+   cuartos **abajo** con sus íconos y la trayectoria mínima, y el acompañante como la placa "Vos" (los otros tipos, en la
+   misma placa). El partido y el mercado van a pantalla completa, sin acompañante (como en la vitrina).
+3. **El mundo de cada parada.** La familia declara lo suyo (`arte`, `tono`, `costura`, `escena`, `lightsticks`,
+   `encuadre`, `velo`) y el puente de `shell.js` lo aplica (lo guarda si el ambiente todavía no montó). La era la sigue
+   escribiendo solo el director.
+4. **Narrar la respuesta en el lugar** (el "elegir → resultado" de la vitrina). La vista de una parada puede exponer
+   `narrar(logs, ctx)`: `app.js` se la llama con los logs de la respuesta, antes del relato. La decisión transforma la
+   elegida en su resultado con los números rodando (el resultado inmediato se calcula como en la vitrina:
+   `sistema.resolver` sobre una copia con el rng restaurado, sin tocar el motor ni el rng de la carrera); el partido
+   juega los mapas en el cara a cara, con el suspenso del decisivo; el mercado firma. Lo narrado entra a la página del
+   relato sin volver a contarse. Espacio salta, un cuarto abierto pausa, INST y movimiento reducido van al cuadro final.
+5. **El relato** en el mismo sistema: el cartel de la página, los beats con su ícono, la tarjeta de cierre, y la placa
+   "Vos" al costado.
+6. **Guards.** `color-mix()` se permite en las hojas solo `in srgb` (el navegador lo computa a `color(srgb …)`, que
+   `contraste.mjs` lee); `oklab`/`oklch`/`lab`/`lch` siguen solo en `fx.css`.
+
+**Orden:** (a) el marco, el mundo, narrar, el inicio, la decisión y el relato; (b) el partido y el mercado sobre esos
+contratos, y los cuartos y los minijuegos; (c) los momentos y la final (U3); (d) la verificación (U4) y el deploy.
 
 ## 1. Por qué un tercer plan
 

@@ -18,6 +18,7 @@ import { crearEscena } from './escena.js';
 import { fotoDeSplit, cierreDeSplit, cartelDePagina } from './core/escena.js';
 import { iconoSonido } from './components/iconos.js';
 import { ambiente } from './shell.js';
+import { resultadoInmediato, cambiosHasta } from './core/inmediato.js';
 import { crearFranja } from './franja.js';
 import { crearCuartos } from './cuartos.js';
 import { crearAcompanante } from './acompanante.js';
@@ -54,19 +55,9 @@ export function iniciar() {
   // V2-C: "lo último que pasó" de una parada. El relato (`#logList`) solo se ve en la pieza `relato`; la parada abre con esto.
   const paradaAntesEl = document.getElementById('paradaAntes');
   const decisionPanel = document.getElementById('decision');
-  const decisionTitle = document.getElementById('decisionTitle');
-  const decisionDesc = document.getElementById('decisionDesc');
-  const decisionOptions = document.getElementById('decisionOptions');
   const minijuegoPanel = document.getElementById('minijuego');
   const previaEl = document.getElementById('previa');
   const mercadoPanel = document.getElementById('mercado');
-  const mercadoTitle = document.getElementById('mercadoTitle');
-  const mercadoDesc = document.getElementById('mercadoDesc');
-  const mercadoGrid = document.getElementById('mercadoGrid');
-  const mercadoVos = document.getElementById('mercadoVos');
-  const mercadoMundo = document.getElementById('mercadoMundo');
-  const mercadoRepresentante = document.getElementById('mercadoRepresentante');
-  const mercadoEsperar = document.getElementById('mercadoEsperar');
   const tarjetaPanel = document.getElementById('tarjeta');
   const seedInput = document.getElementById('seedInput');
   const seedAviso = document.getElementById('seedAviso');
@@ -79,15 +70,20 @@ export function iniciar() {
   esperaEl.dataset.piezas = 'relato';
   decisionPanel.after(esperaEl);
   const continuarBtn = document.getElementById('continuarBtn');
+  const continuarQuien = document.getElementById('continuarQuien');
+  const continuarArte = document.getElementById('continuarArte');
   const desafioDia = document.getElementById('desafioDia');
   const historialEl = document.getElementById('historial');
-  const serieContextoEl = document.getElementById('serieContexto');
   const toggleVelocidad = document.getElementById('toggleVelocidad');
   const toggleSonido = document.getElementById('toggleSonido');
+  // PLANUI §7.5: "Textos: breves | completos" (`html[data-textos]`), una preferencia de la vista.
+  const toggleTextos = document.getElementById('toggleTextos');
   // La franja (V2-C): reemplaza a la topbar. Se crea cuando cargan los módulos (necesita `etiquetaRol`); publica su alto
   // real como `--franja-alto-real` (antes, `--topbar-alto-real` desde acá: en el celular son dos o tres líneas).
   const franjaEl = document.getElementById('franja');
   const franjaEstadoEl = document.getElementById('franjaEstado');
+  const trayectoriaEl = document.getElementById('trayectoria');
+  const barraDeCuartos = document.getElementById('cuartosBarra');
   let franja = null;
   // Los cuartos (V2-C): el `<dialog id="cuarto">` y su barra en la franja. Se crean cuando cargan los módulos (pintan con
   // los renderers de hoy) y leen la `vista`.
@@ -96,10 +92,17 @@ export function iniciar() {
   // El acompañante (V2-C): reemplaza al riel derecho (T5), cuyos paneles se mudaron a los cuartos.
   let acompanante = null;
 
-  // El contrato de elementos que `src/ui/render.js` necesita para pintar
-  // la pantalla de decisión (fase 8, §8.5; fase 9c suma la pantalla de ofertas).
-  const decisionElements = { decisionPanel, decisionTitle, decisionDesc, decisionOptions };
-  const mercadoElements = { mercadoPanel, mercadoTitle, mercadoDesc, mercadoVos, mercadoGrid, mercadoMundo, mercadoRepresentante, mercadoEsperar };
+  // La parada a la vista (lo que devuelve su familia al pintarla): si sabe contar su resultado en el lugar (`narrar`,
+  // PLANUI §0.2), `responder` se lo pide antes del relato. Al irse, `destruir` suelta sus relojes y oyentes.
+  let paradaVisible = null;
+  function soltarParada() {
+    try {
+      paradaVisible?.destruir?.();
+    } catch (error) {
+      console.error('No se pudo soltar la parada:', error);
+    }
+    paradaVisible = null;
+  }
 
   let modulos = null;
   let ui = null;
@@ -190,6 +193,7 @@ export function iniciar() {
       franja = crearFranja({
         franja: franjaEl,
         estadoEl: franjaEstadoEl,
+        trayectoriaEl,
         etiquetaRol: modulos.etiquetaRol,
         // El delta del número es el del split en curso: contra la foto de la página (la misma que usa la tarjeta de cierre).
         fotoDeLaPagina: () => pagina.fotoInicio,
@@ -210,6 +214,7 @@ export function iniciar() {
       acompanante = crearAcompanante({
         aside: document.getElementById('acompanante'),
         chip: document.getElementById('verContexto'),
+        barra: barraDeCuartos,
         contexto: { ui, modulos },
         abrirCuarto: (id) => cuartos.abrir(id)
       });
@@ -256,13 +261,20 @@ export function iniciar() {
           console.error('No se pudo armar "lo último que pasó":', error);
           paradaAntesEl.hidden = true;
         }
-        mostrarParada(estado.pendiente, {
+        soltarParada();
+        paradaVisible = mostrarParada(estado.pendiente, {
           estado,
           ui,
+          modulos,
           rngUi,
           responder,
           pintarPrevia,
-          elementos: { decision: decisionElements, mercado: mercadoElements },
+          // El mundo de la parada (PLANUI §0.2): `mundo.declarar({ arte, tono, costura, ... })` y `mundo.fx()`.
+          mundo: ambiente,
+          sonido: sonido.sonidoFx,
+          // Sin espera entre beats (INST o movimiento reducido): la parada entra y cuenta en su cuadro final.
+          rapido: () => reproductor.sinEspera(),
+          retomar,
           contenedores: { decision: decisionPanel, partido: decisionPanel, mercado: mercadoPanel, minijuego: minijuegoPanel }
         });
       }
@@ -304,6 +316,25 @@ export function iniciar() {
     });
   }
 
+  // Quién te toca en el desafío de `fecha` (la vitrina lo muestra en el inicio): el arranque de esa seed, con un rng
+  // aparte (no toca nada de la carrera). `null` si algo falla.
+  function jugadorDelDesafio(fecha) {
+    try {
+      const { seed, eleccion, desafio } = iniciarDesafio(fecha);
+      const s = modulos.createInitialState(seed, modulos.mulberry32(seed), eleccion, desafio);
+      return {
+        handle: s.player.name,
+        rol: s.player.role,
+        rolEtiqueta: modulos.etiquetaRol(s.player.role),
+        liga: s.mundo?.ligaOrigen ?? null,
+        mains: s.player.championPool.map((c) => c.name)
+      };
+    } catch (error) {
+      console.error('No se pudo armar el jugador del desafío:', error);
+      return null;
+    }
+  }
+
   // K1-B: el desafío del día y tus últimos resultados. La fecha la lee la UI
   // (el motor no toca el reloj); `?desafio=YYYY-MM-DD` válida precarga ese
   // desafío y no arranca solo, igual que `?seed=`.
@@ -311,7 +342,7 @@ export function iniciar() {
     const hoy = fechaUTC(new Date());
     const fecha = desafioDeBusqueda(location.search) ?? hoy;
     const historial = leerHistorial(almacenamientoLocal());
-    ui.renderDesafio(desafioDia, { fecha, hoy, mejor: mejorDelDesafio(historial, fecha) }, comenzarCarrera);
+    ui.renderDesafio(desafioDia, { fecha, hoy, mejor: mejorDelDesafio(historial, fecha), jugador: jugadorDelDesafio(fecha) }, comenzarCarrera);
     ui.renderHistorial(historialEl, historial, { etiquetaRol: modulos.etiquetaRol, version: VERSION_JUEGO });
   }
 
@@ -323,10 +354,6 @@ export function iniciar() {
     franja?.pintar(estado);
     // La pieza ya es la nueva: el director la escribe antes que la `vista`.
     acompanante?.pintar(estado, escena.pieza());
-    if (!estado) {
-      return;
-    }
-    ui.renderSerieContexto(serieContextoEl, estado);
   }
 
   // Una página nueva: la abre `avanzarSplit`, nunca `resolverDecision`.
@@ -368,7 +395,9 @@ export function iniciar() {
       cierreFrenado: pagina.cierreFrenado,
       ultimoCierre: pagina.ultimoCierre,
       cierreVisto: pagina.cierreVisto,
-      logs: estado.logs.length
+      logs: estado.logs.length,
+      // El número de tu jersey (cosmético, de esta carrera): sobrevive a cada guardado del marcador.
+      numeroJersey: almacenamiento.leerNumeroJersey(estado.seed)
     };
   }
 
@@ -435,7 +464,10 @@ export function iniciar() {
   // su tarjeta de cierre entra con el último beat de la página (usa su espera).
   // `trasElegir`: la llamada es la respuesta a una parada (elegir -> resultado, uno de los tres lugares con transición de
   // PLANUI §6.3).
-  async function reproducirLlamada(logsAntes, registroAntes, { trasElegir = false } = {}) {
+  // `contados` (PLANUI §0.2): cuántos logs de la llamada ya contó la parada en el lugar (su resultado, los mapas, la
+  // firma). Entran a la página sin volver a contarse: el relato arranca después de ellos.
+  async function reproducirLlamada(logsAntes, registroAntes, { trasElegir = false, contados = 0 } = {}) {
+    soltarParada();
     const estadoActual = store.leer();
     // V4: la parada del motor en el cierre de año es el momento del año (T9: la tarjeta de la página no suma otro).
     if (estadoActual.pendiente?.sistemaId === 'edadCierre') {
@@ -457,12 +489,12 @@ export function iniciar() {
     const tarjetaSeVe = Boolean(cierre) && !reproductor.sinEspera();
     relatoEnCurso = estadoActual;
     try {
-      await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes), {
+      await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes + contados), {
         registroAntes,
         registroDespues: estadoActual.career.registro,
         bisagra,
         state: estadoActual,
-        offset: logsAntes,
+        offset: logsAntes + contados,
         pagina: { desde: pagina.desde, anterior: pagina.anterior, cierre, cartel: pagina.cartel }
       });
     } finally {
@@ -531,6 +563,44 @@ export function iniciar() {
     }
   }
 
+  // PLANUI §0.2 (punto 4): la parada cuenta su resultado en el lugar, antes del relato (la opción que se vuelve su
+  // resultado, los mapas de la serie en el cara a cara, la firma). `narrar(ctx)` devuelve cuántos de los logs nuevos
+  // contó (desde el primero). Lo inmediato (el primer paso de `resolverDecision`: el `resolver` del sistema) se calcula
+  // recién si la parada lo pide, sobre una copia y con el rng restaurado: el de la carrera no se toca.
+  async function narrarRespuesta(vistaParada, { antes, despues, respuesta, rngAntes, logsAntes }) {
+    if (typeof vistaParada?.narrar !== 'function') return 0;
+    const logs = despues.logs.slice(logsAntes);
+    let inmediato;
+    const ctx = {
+      antes,
+      despues,
+      respuesta,
+      logs,
+      rapido: reproductor.sinEspera(),
+      inmediato: () => {
+        if (inmediato === undefined) {
+          try {
+            inmediato = resultadoInmediato({ estado: antes, respuesta, rngEstado: rngAntes, logsReales: logs });
+          } catch (error) {
+            console.error('No se pudo calcular el resultado inmediato:', error);
+            inmediato = null;
+          }
+        }
+        return inmediato;
+      },
+      hasta: () => cambiosHasta(antes, despues),
+      // Espacio la saltea y un cuarto abierto la pausa (`reproductor.narrar`): la parada pasa `{ saltar, pausar, reanudar }`.
+      controlar: (control) => reproductor.narrar(control)
+    };
+    try {
+      const n = await vistaParada.narrar(ctx);
+      return Math.max(0, Math.min(logs.length, Number(n) || 0));
+    } catch (error) {
+      console.error('La parada no pudo contar su resultado:', error);
+      return 0;
+    }
+  }
+
   async function responder(respuesta) {
     if (reproduciendo) return;
     reproduciendo = true;
@@ -539,11 +609,14 @@ export function iniciar() {
       const antes = store.leer();
       const logsAntes = antes.logs.length;
       const registroAntes = antes.career.registro;
+      const rngAntes = rng.estado();
+      const vistaParada = paradaVisible;
       store.escribir(pipeline.resolverDecision(antes, respuesta, rng).state);
+      const contados = await narrarRespuesta(vistaParada, { antes, despues: store.leer(), respuesta, rngAntes, logsAntes });
 
-      // La parada se va sola: `reproducirLlamada` pone el relato (antes, cuatro `hidden = true` acá). La página es la
-      // misma: los beats de la respuesta entran abajo.
-      if (await reproducirLlamada(logsAntes, registroAntes, { trasElegir: true })) {
+      // La parada se va sola: `reproducirLlamada` pone el relato. La página es la misma: los beats de la respuesta entran
+      // abajo (los que la parada ya contó, sin espera).
+      if (await reproducirLlamada(logsAntes, registroAntes, { trasElegir: true, contados })) {
         return;
       }
       const despues = store.leer();
@@ -694,7 +767,7 @@ export function iniciar() {
       mostrarAviso(esArchivoLocal
         ? 'Este juego usa módulos ES y no puede correr abriendo el HTML directo con doble clic: corré "npm start" en la terminal y abrí la URL que te muestra (http://localhost:8000).'
         : `No se pudo cargar el juego (${error.message}). Revisá la consola del navegador.`);
-      runButton.disabled = false;
+      pantallaInicio?.destrabar();
       for (const boton of desafioDia.querySelectorAll('button')) {
         boton.disabled = false;
       }
@@ -702,6 +775,7 @@ export function iniciar() {
   }
 
   function volverAlInicio() {
+    soltarParada();
     // La pieza `inicio` esconde el escenario de la carrera (antes, `hidden` en cada panel del riel derecho, en el marcador
     // y en el escenario); la `vista` en `null` limpia la franja, el acompañante y la luz de estudio.
     escena.revelar(null);
@@ -713,13 +787,17 @@ export function iniciar() {
     almacenamiento.borrarVista();
     continuarBtn.hidden = true;
     quitarAvisoDeGuardado();
-    pantallaInicio.reset();
+    pantallaInicio.reset(leerHistorial(almacenamientoLocal()));
     renderInicioK1();
   }
 
   // Fase T3: refleja el estado de `reproductor`/`sonido` en los dos
   // toggles de la franja. Se llama al cargar los módulos y en cada click.
   function actualizarToggles() {
+    const textos = almacenamiento.textosDeLaVista();
+    document.documentElement.dataset.textos = textos;
+    toggleTextos.setAttribute('aria-pressed', textos === 'completos' ? 'true' : 'false');
+    toggleTextos.title = textos === 'completos' ? 'Textos completos (click para breves)' : 'Textos breves (click para completos)';
     toggleVelocidad.textContent = reproductor.labelVelocidad();
     toggleVelocidad.title = `Velocidad del reproductor: ${reproductor.labelVelocidad()} (click para cambiar)`;
     const on = sonido.estaHabilitado();
@@ -811,14 +889,26 @@ export function iniciar() {
   async function iniciarSetup() {
     try {
       await cargarModulos();
+      // El inicio es el champ select de la vitrina (PLANUI §0.2): BLOQUEAR traba los mains y arranca la carrera.
       pantallaInicio = ui.crearPantallaInicio(
-        { rolGrid, campeonGrid, poolContador, runButton, draftSlots, perfilGrid, perfilTexto, regionGrid, regionTexto },
-        modulos
+        {
+          rolGrid, campeonGrid, poolContador, runButton, draftSlots, perfilGrid, perfilTexto, regionGrid, regionTexto,
+          rolTexto: document.getElementById('rolTexto'),
+          foco: document.getElementById('inicioFoco'),
+          titulo: setupPanel.querySelector('.in-titulo'),
+          verIntro: document.getElementById('verIntro'),
+          continuarArte,
+          setup: setupPanel
+        },
+        modulos,
+        { alBloquear: () => comenzarCarrera(), mundo: ambiente, sonido: sonido.sonidoFx, rapido: () => reproductor.sinEspera() }
       );
-      pantallaInicio.render();
+      pantallaInicio.render(leerHistorial(almacenamientoLocal()));
+      pantallaInicio.entrar();
 
       toggleVelocidad.disabled = false;
       toggleSonido.disabled = false;
+      toggleTextos.disabled = false;
       ayudaTeclas.disabled = false;
       actualizarToggles();
 
@@ -834,15 +924,17 @@ export function iniciar() {
       }
       continuarBtn.hidden = !guardada?.state;
       if (guardada?.state && continuarDetalle) {
+        // La placa de "Continuar" (la vitrina): handle · rol en grande, edad · club · año abajo, y el arte de tu main.
         const s = guardada.state;
+        continuarQuien.textContent = [s.player?.name, s.player?.role ? modulos.etiquetaRol(s.player.role) : null].filter(Boolean).join(' · ');
         continuarDetalle.textContent = [
           s.desafio?.fecha ? `Desafío ${s.desafio.fecha}` : null,
-          s.player?.name,
-          s.player?.role ? modulos.etiquetaRol(s.player.role) : null,
           s.age != null ? `${s.age} años` : null,
           s.career?.currentOrg,
           s.calendario?.etiqueta
         ].filter(Boolean).join(' · ');
+        continuarBtn.setAttribute('aria-label', `Continuar: ${continuarQuien.textContent} · ${continuarDetalle.textContent}`);
+        pantallaInicio.pintarContinuar(s);
       }
 
       // P.3: `?seed=N` precarga el input — no arranca la carrera sola
@@ -867,8 +959,11 @@ export function iniciar() {
     }
   }
 
-  runButton.addEventListener('click', () => comenzarCarrera());
   seedInput.addEventListener('input', pintarAvisoDeSeed);
+  toggleTextos.addEventListener('click', () => {
+    almacenamiento.guardarTextosDeLaVista(almacenamiento.textosDeLaVista() === 'completos' ? 'breves' : 'completos');
+    actualizarToggles();
+  });
   continuarBtn.addEventListener('click', continuarCarrera);
   nuevaCarreraBtn.addEventListener('click', volverAlInicio);
   toggleVelocidad.addEventListener('click', () => {

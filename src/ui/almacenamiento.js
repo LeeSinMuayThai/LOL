@@ -73,3 +73,46 @@ export function borrarVista() {
     localStorage.removeItem(CLAVE_VISTA);
   } catch { /* nada que borrar si localStorage no está disponible */ }
 }
+
+/* PLANUI §0.2 */
+// "Textos: breves | completos" (PLANUI §7.5): una preferencia de la vista, en su propia clave (no es de una carrera).
+// `breves` por defecto. Con `completos`, `html[data-textos="completos"]` muestra la prosa entera de cada parada.
+const CLAVE_TEXTOS = 'lolcs-textos';
+const TEXTOS = ['breves', 'completos'];
+
+export function textosDeLaVista() {
+  try {
+    const guardado = localStorage.getItem(CLAVE_TEXTOS);
+    return TEXTOS.includes(guardado) ? guardado : 'breves';
+  } catch {
+    return 'breves';
+  }
+}
+
+export function guardarTextosDeLaVista(valor) {
+  const elegido = TEXTOS.includes(valor) ? valor : 'breves';
+  try {
+    localStorage.setItem(CLAVE_TEXTOS, elegido);
+  } catch { /* sin almacenamiento la preferencia dura lo que dura la página */ }
+  return elegido;
+}
+
+// El número de tu jersey (la compuerta 2 del mercado, PLANUI §2): cosmético, vive en el marcador `lolcs-vista` junto a la
+// página, nunca en el `state` (la huella y la versión del guardado no cambian). Es de una carrera: se lee solo si el
+// marcador es de esa seed. 1-99.
+const NUMERO_MIN = 1;
+const NUMERO_MAX = 99;
+const numeroValido = (n) => Number.isInteger(n) && n >= NUMERO_MIN && n <= NUMERO_MAX;
+
+export function leerNumeroJersey(seed) {
+  const marcador = cargarVista();
+  if (!marcador || (seed != null && marcador.seed !== seed)) return null;
+  return numeroValido(marcador.numeroJersey) ? marcador.numeroJersey : null;
+}
+
+export function guardarNumeroJersey(seed, numero) {
+  if (!numeroValido(numero)) return false;
+  const marcador = cargarVista();
+  if (!marcador || marcador.seed !== seed) return false;
+  return guardarVista({ ...marcador, numeroJersey: numero });
+}

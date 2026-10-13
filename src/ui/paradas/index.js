@@ -9,9 +9,11 @@ import * as minijuego from './minijuego.js';
 export const FAMILIAS = { decision, partido, mercado, minijuego };
 
 // `pendiente`: el `state.pendiente` del motor. `ctx.contenedores[familia]` es el contenedor de cada familia. Devuelve la
-// familia que pintó.
+// vista de la parada: `{ familia }` y, si la familia los trae (PLANUI §0.2), `narrar(ctx)` (contar su resultado en el
+// lugar) y `destruir()` (soltar sus relojes y oyentes cuando la parada se va).
 export function mostrarParada(pendiente, ctx) {
   const familia = familiaDeParada(pendiente);
-  FAMILIAS[familia].mostrar(ctx.contenedores[familia], pendiente.decision, ctx);
-  return familia;
+  const vista = FAMILIAS[familia].mostrar(ctx.contenedores[familia], pendiente.decision, ctx);
+  const esObjeto = vista && typeof vista === 'object' && !(typeof Node !== 'undefined' && vista instanceof Node);
+  return { familia, ...(esObjeto ? vista : {}) };
 }

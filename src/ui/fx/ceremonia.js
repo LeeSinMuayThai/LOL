@@ -30,9 +30,12 @@ const vivas = (lista) => lista.filter(Boolean);
 // registro primero) y, si el gesto ocurrio (`fn` devuelve true), no sigue. Asi el mismo Enter que firma (o acepta) no
 // llega a la pantalla como "saltear la animacion"; el Enter siguiente si llega. Si no ocurrio (el boton deshabilitado),
 // la tecla sigue su camino como siempre.
+// (produccion) Un nodo que esta en la pagina pero no se ve (la pieza del escenario esta en otra) no toma la tecla: el
+// BLOQUEAR del inicio sigue en el DOM durante toda la carrera.
 function escucharTecla(nodo, tecla, fn) {
   const h = (e) => {
     if (!nodo.isConnected) return document.removeEventListener('keydown', h, true);
+    if (typeof nodo.checkVisibility === 'function' && !nodo.checkVisibility()) return;
     if (e.key !== tecla || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
     if (!fn()) return;
@@ -143,10 +146,18 @@ export function anilloAceptar({ escudo, encabezado = '¡PARTIDA ENCONTRADA!', co
 // ======================================================================================================================
 // bloquear: el BLOQUEAR del inicio, con el destello de ceremonia
 // ======================================================================================================================
-export function bloquear({ texto = 'BLOQUEAR', tecla = 'Enter', alBloquear, sonido } = {}) {
+// `nodo` (opcional, produccion): un <button> que ya existe (el #run del inicio, declarado en index.html) toma el gesto en
+// vez de crear uno nuevo. `rearmar()` lo deja como al principio (volver al inicio despues de una carrera).
+export function bloquear({ texto = 'BLOQUEAR', tecla = 'Enter', alBloquear, sonido, nodo: existente = null } = {}) {
   const onda = el('i', { class: 'ln-bq-onda', 'aria-hidden': 'true' });
   const txt = el('span', { class: 'ln-bq-txt', text: texto });
-  const nodo = el('button', { type: 'button', class: 'ln-bloquear encendido', 'aria-keyshortcuts': tecla }, [txt, onda]);
+  const nodo = existente ?? el('button', { type: 'button', class: 'ln-bloquear encendido', 'aria-keyshortcuts': tecla });
+  if (existente) {
+    nodo.classList.add('ln-bloquear');
+    nodo.setAttribute('aria-keyshortcuts', tecla);
+    nodo.replaceChildren();
+  }
+  nodo.append(txt, onda);
   let bloqueado = false;
   let soltar = () => {};
   function hacer() {
@@ -173,9 +184,20 @@ export function bloquear({ texto = 'BLOQUEAR', tecla = 'Enter', alBloquear, soni
       nodo.disabled = !si;
       nodo.classList.toggle('encendido', Boolean(si));
     },
+    rearmar() {
+      soltar();
+      bloqueado = false;
+      delete nodo.dataset.estado;
+      nodo.removeAttribute('aria-pressed');
+      soltar = escucharTecla(nodo, tecla, hacer);
+    },
+    get bloqueado() {
+      return bloqueado;
+    },
     destruir() {
       soltar();
-      nodo.remove();
+      nodo.removeEventListener('click', hacer);
+      if (!existente) nodo.remove();
     },
   };
 }

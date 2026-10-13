@@ -51,131 +51,112 @@
     <div id="fx-ambiente" class="fx-ambiente" aria-hidden="true"></div>
 
     <div class="shell" data-pieza="inicio">
-      <!-- La franja (FASE V, V2-C; PLAN.md §V.4): `#franjaEstado` lo llena src/ui/franja.js desde la `vista` (lo que la
-           pantalla ya contó). Velocidad y sonido se encienden cuando cargan los módulos (app.js, iniciarSetup). -->
+      <!-- La franja (PLANUI §0.2, el marco de la vitrina): `#franjaEstado` lo llena src/ui/franja.js desde la `vista`. Los
+           controles se encienden cuando cargan los módulos (app.js, iniciarSetup). -->
       <header class="franja" id="franja">
         <div class="franja-lockup"><span class="franja-monograma">L</span><span class="franja-nombre">Lolero</span></div>
         <div class="franja-estado" id="franjaEstado"></div>
-        <!-- Los cuartos (V2-C): la letra de aria-keyshortcuts abre cada uno (teclado.js); en el celular, abajo y fija. -->
-        <nav class="franja-cuartos" id="cuartosBarra" aria-label="Cuartos">
-          <button type="button" class="cuarto-boton" data-cuarto="vos" aria-keyshortcuts="V"><span class="cuarto-letra">V</span>os</button>
-          <button type="button" class="cuarto-boton" data-cuarto="temporada" aria-keyshortcuts="T"><span class="cuarto-letra">T</span>emporada</button>
-          <button type="button" class="cuarto-boton" data-cuarto="equipo" aria-keyshortcuts="E"><span class="cuarto-letra">E</span>quipo</button>
-          <button type="button" class="cuarto-boton" data-cuarto="mundo" aria-keyshortcuts="M"><span class="cuarto-letra">M</span>undo</button>
-          <button type="button" class="cuarto-boton" data-cuarto="carrera" aria-keyshortcuts="C"><span class="cuarto-letra">C</span>arrera</button>
-          <button type="button" class="cuarto-boton" data-cuarto="cronica" aria-keyshortcuts="R">C<span class="cuarto-letra">r</span>ónica</button>
-        </nav>
         <div class="franja-controles">
+          <button type="button" id="toggleTextos" class="franja-toggle" title="Textos: breves o completos" aria-pressed="false" disabled>Aa</button>
           <button type="button" id="ayudaTeclas" class="franja-toggle" aria-keyshortcuts="?" title="Teclas (?)" disabled>?</button>
           <button type="button" id="toggleVelocidad" class="franja-toggle" disabled title="Velocidad del reproductor">1×</button>
           <button type="button" id="toggleSonido" class="franja-toggle" disabled title="Sonido" aria-pressed="false"></button>
         </div>
       </header>
 
-      <!-- El cuerpo (V2-C; PLANUI U1): el escenario a la izquierda con UNA pieza a la vista, y el acompañante a la derecha. -->
+      <!-- El cuerpo: el escenario (una pieza a la vista) y el acompañante a la derecha (la placa "Vos"). -->
       <div class="shell-cuerpo">
         <div class="escenario" id="escenario">
-          <div id="setup" class="panel" data-piezas="inicio">
-            <h1 class="solo-lectores">Lolero</h1>
-            <p class="subtitle">Elegís tu línea y tus mains. El resto de la carrera sale de ahí.</p>
-            <section id="desafioDia" class="desafio-dia" aria-label="Desafío del día" hidden></section>
-
-            <div class="paso">
-              <div class="paso-label">Tu handle (opcional)</div>
-              <input id="handleInput" class="handle-input" type="text" maxlength="16" placeholder="vacío = uno al azar" />
+          <!-- El inicio: el champ select de la vitrina (op=linea). Lo llena src/ui/screens/inicio.js. -->
+          <div id="setup" class="inicio" data-piezas="inicio">
+            <header class="in-cabeza">
+              <p class="in-kicker"><i class="punto-luz"></i><span>Nueva carrera</span><button type="button" class="in-ver-intro" id="verIntro">Ver intro</button></p>
+              <h1 class="in-titulo" data-foco tabindex="-1">Lolero</h1>
+              <p class="in-bajada subtitle">De los 15 años al retiro. Tu carrera de LoL, un split a la vez.</p>
+            </header>
+            <div class="in-cs-foco" id="inicioFoco" aria-hidden="true"></div>
+            <div class="in-form">
+              <div class="in-campo"><label class="in-rotulo" for="handleInput">Invocador</label><input id="handleInput" class="in-handle" type="text" maxlength="16" spellcheck="false" autocomplete="off" placeholder="vacío = uno al azar" /></div>
+              <div class="in-campo"><p class="in-rotulo">Servidor</p><div><div id="regionGrid" class="in-servidores" role="radiogroup" aria-label="Tu región"></div><p id="regionTexto" class="in-linea"></p></div></div>
+              <div class="in-campo"><p class="in-rotulo">Perfil</p><div class="in-perfil-linea"><div id="perfilGrid" class="in-perfiles" role="radiogroup" aria-label="Tu perfil"></div><span id="perfilTexto" class="in-perfil-texto"></span></div></div>
+              <section class="in-cs" id="champSelect" aria-label="Selección de campeones">
+                <div id="rolGrid" class="in-cs-roles" role="radiogroup" aria-label="Tu línea"></div>
+                <p class="in-cs-k"><span>Tus mains</span><b id="poolContador" class="in-cs-cuenta"></b></p>
+                <div id="campeonGrid" class="in-cs-grilla" role="group"></div>
+                <ol id="draftSlots" class="in-cs-cartas" aria-label="Tus 3 mains"></ol>
+                <p id="rolTexto" class="in-linea in-cs-rol-txt"></p>
+                <div class="in-cs-accion"><button id="run" type="button" class="ln-bloquear in-cs-bloquear" disabled>Bloquear</button></div>
+              </section>
             </div>
-
-            <div class="paso"><div class="paso-label">Tu región</div><div id="regionGrid" class="region-grid" role="radiogroup" aria-label="Tu región"></div><div id="regionTexto" class="perfil-texto"></div></div><div class="paso"><div class="paso-label">Tu perfil</div><div id="perfilGrid" class="perfil-grid" role="radiogroup" aria-label="Tu perfil"></div><div id="perfilTexto" class="perfil-texto"></div></div>
-            <div class="paso">
-              <div class="paso-label">Tu línea</div>
-              <div id="rolGrid" class="rol-grid"></div>
-            </div>
-
-            <div class="paso">
-              <div class="paso-label">Tus 3 mains</div>
-              <div id="draftSlots" class="draft-slots" aria-label="Mains elegidos"></div>
-              <div id="campeonGrid" class="campeon-grid"></div>
-              <div id="poolContador" class="pool-contador">Elegí una línea primero.</div>
-            </div>
-
-            <div class="setup-footer">
-              <!-- Fase T8 (P.2): oculto hasta que iniciarSetup() confirme
-                   que hay una carrera guardada de verdad. -->
-              <button id="continuarBtn" type="button" class="continuar-btn" hidden>
-                <span class="continuar-kicker">Continuar</span>
-                <span id="continuarDetalle" class="continuar-detalle"></span>
+            <aside class="in-lado">
+              <!-- Oculto hasta que iniciarSetup() confirme que hay una carrera guardada de verdad. -->
+              <button id="continuarBtn" type="button" class="in-continuar" hidden>
+                <canvas id="continuarArte" class="in-cont-arte" width="520" height="220" aria-hidden="true"></canvas>
+                <span class="in-cont-txt"><span class="in-cont-k">Continuar</span><b id="continuarQuien"></b><span id="continuarDetalle"></span></span>
               </button>
-              <button id="run" disabled>Empezar carrera</button>
-            </div>
-            <section id="historial" class="historial" aria-label="Tus últimos resultados" hidden></section>
-
-            <details class="avanzado">
-              <summary>Avanzado: fijar una seed</summary>
-              <div class="seed-row" style="margin-top: 10px;">
-                <label class="seed-label" for="seedInput">Seed</label>
-                <input id="seedInput" class="seed-input" type="text" placeholder="un número o un texto; vacío = al azar" />
-              </div>
-              <p id="seedAviso" class="seed-aviso" role="status" aria-live="polite"></p>
-            </details>
+              <section id="desafioDia" class="in-desafio" aria-label="Desafío del día" hidden></section>
+              <section id="historial" class="in-historial" aria-label="Tus últimas carreras" hidden></section>
+              <details class="avanzado in-avanzado">
+                <summary>Avanzado: fijar una seed</summary>
+                <div class="seed-row">
+                  <label class="seed-label" for="seedInput">Seed</label>
+                  <input id="seedInput" class="seed-input" type="text" placeholder="un número o un texto; vacío = al azar" />
+                </div>
+                <p id="seedAviso" class="seed-aviso" role="status" aria-live="polite"></p>
+              </details>
+            </aside>
           </div>
 
-          <!-- FASE V (V2-B): qué nodo se ve lo decide `.shell[data-pieza]` (lo escribe solo src/ui/escena.js) contra el
-               `data-piezas` de cada nodo (estilos/shell.css). Una pieza puede ser varios nodos. -->
-          <div id="carrera" class="panel" data-piezas="relato decision partido mercado minijuego final">
-            <!-- V2-C (§V.4 `.parada-antes`; §V.5 "una parada a mitad de split reemplaza al relato"): lo llena src/ui/app.js al mostrar
-                 una parada (`renderParadaAntes`, components/feed.js): el último beat que el relato ya contó y un desplegable con la
-                 página. Oculto si la página no tiene beats todavía. El relato de abajo (`#logList`) solo se ve en la pieza `relato`. -->
-            <div id="paradaAntes" class="parada-antes" data-piezas="decision partido mercado" hidden></div>
+          <!-- La carrera: qué nodo se ve lo decide `.shell[data-pieza]` (lo escribe solo src/ui/escena.js) contra el
+               `data-piezas` de cada nodo (estilos/shell.css). Cada familia de parada pinta su contenedor entero. -->
+          <div id="carrera" class="carrera" data-piezas="relato decision partido mercado minijuego final">
+            <!-- La línea "antes" de la parada (lo último que el relato contó, y la página a un toque). -->
+            <div id="paradaAntes" class="antes-fila" data-piezas="decision" hidden></div>
+            <!-- La decisión y el partido: la familia pinta su panel (o su transmisión) entero. -->
+            <div id="decision" class="decision" data-piezas="decision partido" hidden></div>
+            <!-- La previa del partido: la ve el minijuego (antes del widget). -->
+            <div id="previa" class="previa" data-piezas="minijuego" hidden></div>
 
-            <div id="decision" class="decision" data-piezas="decision partido" hidden>
-              <div id="decisionTitle" class="decision-title"></div>
-              <div id="decisionDesc" class="decision-desc"></div>
-              <div id="decisionOptions" class="decision-options"></div>
-            </div>
-
-            <!-- FASE V (V3b, regla 2 de §V.3): lo que se decide va ARRIBA (`#decision`), y el contexto del partido viene después, cada uno en
-                 UNA línea con el resto a un toque: el marcador de la serie (fase T6; solo en la pieza `partido` y mientras `state.serie.activa`
-                 o el Swiss; el `hidden` es de su renderer) y la previa (K2d; la ve también el minijuego, donde queda ANTES del widget). -->
-            <div id="serieContexto" class="serie-contexto" data-piezas="partido" hidden></div>
-            <div id="previa" class="previa" data-piezas="partido minijuego" hidden></div>
-
-            <div id="minijuego" class="minijuego" data-piezas="minijuego" hidden>
-              <div id="minijuegoTitle" class="decision-title"></div>
-              <div id="minijuegoDesc" class="decision-desc"></div>
+            <div id="minijuego" class="minijuego panel" data-piezas="minijuego" hidden>
+              <div id="minijuegoTitle" class="titulo-parada"></div>
+              <div id="minijuegoDesc" class="planteo"></div>
               <div id="minijuegoApuesta"></div>
               <div id="minijuegoWidget" class="minijuego-widget"></div>
             </div>
 
-            <div id="mercado" class="mercado" data-piezas="mercado" hidden>
-              <div id="mercadoTitle" class="decision-title"></div>
-              <div id="mercadoDesc" class="decision-desc"></div>
-              <div id="mercadoVos" hidden></div>
-              <div id="mercadoGrid" class="mercado-grid"></div>
-              <div id="mercadoMundo" class="mercado-mundo" hidden></div>
-              <button id="mercadoRepresentante" type="button" class="mercado-representante-btn" hidden>Llamar a tu representante y ver quién te sigue · 1 vez por carrera</button>
-              <button id="mercadoEsperar" type="button" class="mercado-representante-btn" hidden>Esperar · no firmás nada esta ventana</button>
-            </div>
+            <!-- El mercado: la familia pinta las ofertas, la firma, tu línea y la camiseta. -->
+            <div id="mercado" class="mercado" data-piezas="mercado" hidden></div>
 
-            <!-- V2-C (regla 2 de §V.3, "primero lo que se decide"): el chip va DETRÁS de las paradas, no antes del título. Debajo
-                 de 1180 px (sin acompañante) abre el cuarto con el contexto de la parada (src/ui/acompanante.js). -->
-            <button id="verContexto" type="button" class="ver-contexto" data-piezas="decision partido mercado" hidden></button>
+            <!-- Debajo de 1180 px (sin acompañante) abre el cuarto con el contexto de la parada (src/ui/acompanante.js). -->
+            <button id="verContexto" type="button" class="chip-contexto" data-piezas="decision" hidden></button>
 
-            <div id="logList" class="log-list" aria-live="polite" data-piezas="relato"></div>
+            <!-- El relato: la página del split (cartel, beats con su ícono, la tarjeta de cierre). -->
+            <div id="logList" class="log-list relato-pagina" aria-live="polite" data-piezas="relato"></div>
 
-            <!-- Fase 9R5b: la tarjeta de legado. Se muestra cuando la carrera termina. -->
+            <!-- La final: la carta y el veredicto. -->
             <div id="tarjeta" class="tarjeta" data-piezas="final" hidden></div>
-
-            <button id="nuevaCarrera" type="button" data-piezas="final">Nueva carrera</button>
+            <button id="nuevaCarrera" type="button" class="boton boton-pri" data-piezas="final">Nueva carrera</button>
           </div>
         </div>
 
-        <!-- El acompañante (V2-C; PLAN.md §V.4): UN panel con el contexto de la pieza, desde 1180 px. Lo pinta
-             src/ui/acompanante.js desde la `vista`; `data-acompanante` dice qué muestra (vacío: nada, y no ocupa lugar). -->
-        <aside id="acompanante" class="acompanante" aria-label="Contexto de la parada" data-acompanante="" hidden></aside>
+        <!-- El acompañante: la placa "Vos" (u otro contexto de la pieza), desde 1180 px. Lo pinta src/ui/acompanante.js
+             desde la `vista`; `data-acompanante` dice qué muestra (vacío: nada, y no ocupa lugar). -->
+        <aside id="acompanante" class="acompanante contexto" aria-label="Contexto de la parada" data-acompanante="" hidden></aside>
       </div>
 
-      <!-- Los cuartos (V2-C; PLAN.md §V.4): un solo diálogo modal (showModal: foco atrapado, fondo inerte, Esc nativo).
-           Las pestañas son copias de #cuartosBarra; el cuerpo se pinta solo al abrirse, desde la `vista` (src/ui/cuartos.js). -->
+      <!-- La barra de abajo: los 6 cuartos (la letra de aria-keyshortcuts abre cada uno, teclado.js) y la trayectoria. -->
+      <nav class="cuartos" id="cuartosBarra" aria-label="Cuartos">
+        <button type="button" class="cuarto-boton" data-cuarto="vos" aria-keyshortcuts="V"><span class="cuarto-letra">V</span>os</button>
+        <button type="button" class="cuarto-boton" data-cuarto="temporada" aria-keyshortcuts="T"><span class="cuarto-letra">T</span>emporada</button>
+        <button type="button" class="cuarto-boton" data-cuarto="equipo" aria-keyshortcuts="E"><span class="cuarto-letra">E</span>quipo</button>
+        <button type="button" class="cuarto-boton" data-cuarto="mundo" aria-keyshortcuts="M"><span class="cuarto-letra">M</span>undo</button>
+        <button type="button" class="cuarto-boton" data-cuarto="carrera" aria-keyshortcuts="C"><span class="cuarto-letra">C</span>arrera</button>
+        <button type="button" class="cuarto-boton" data-cuarto="cronica" aria-keyshortcuts="R">C<span class="cuarto-letra">r</span>ónica</button>
+        <div id="trayectoria" class="trayectoria" hidden></div>
+      </nav>
+
+      <!-- Los cuartos: un solo diálogo modal (showModal: foco atrapado, fondo inerte, Esc nativo). Las pestañas son copias
+           de #cuartosBarra; el cuerpo se pinta solo al abrirse, desde la `vista` (src/ui/cuartos.js). -->
       <dialog id="cuarto" class="cuarto" aria-labelledby="cuartoTitulo">
         <div class="cuarto-cabecera">
           <h2 id="cuartoTitulo" class="solo-lectores">Cuarto</h2>

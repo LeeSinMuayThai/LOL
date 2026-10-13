@@ -296,12 +296,13 @@ export function verificarProhibidos({ estilosDir, indexHtml = null, uiDir = null
   return hallazgos;
 }
 
-// §9.5: los parsers de contraste (`hexDeToken`, `contraste.mjs`) leen `#rrggbb`; un `oklch()` o un `color-mix()` en una
-// hoja pasa sin medir. Las variantes translúcidas van como `#rrggbbaa` en tokens.css. Exenta: `fx.css`, la hoja del kit
-// (U1k), que es decorativa (luz, bruma, velos teñidos del tono, la ceremonia: nada que pinte una placa o una tinta de
-// texto que lean los parsers) y copia textual la vitrina, también sus `html[data-tono]` (decisión del supervisor,
-// 2026-10-10). Lo que se lee sigue en tokens.css y en las hojas de las familias, que no la tienen.
-const PATRON_COLOR_MODERNO = /(?<![\w-])(?:oklch|oklab|lab|lch|color|color-mix)\(/i;
+// §9.5: los parsers de contraste (`hexDeToken`, `contraste.mjs`) leen `#rrggbb` y lo que el navegador computa como
+// `rgb()`/`color(srgb …)`; un `oklch()`, un `lab()` o un `color-mix(in oklab …)` en una hoja pasan sin medir. Las variantes
+// translúcidas fijas van como `#rrggbbaa` en tokens.css. PLANUI §0.2 (la ola 2 rehecha): `color-mix(in srgb, …)` SÍ se
+// permite en las hojas de las familias —el navegador lo computa a `color(srgb …)`, que `contraste.mjs` lee—, porque los
+// tintes del segundo tono (`--tono-*`) cambian en tiempo de ejecución y no se pueden precalcular. Exenta de todo:
+// `fx.css`, la hoja del kit (U1k), que es decorativa y copia textual la vitrina (decisión del supervisor, 2026-10-10).
+const PATRON_COLOR_MODERNO = /(?<![\w-])(?:oklch|oklab|lab|lch|color)\(|(?<![\w-])color-mix\(\s*in\s+(?!srgb\b)/i;
 export const HOJAS_DECORATIVAS = Object.freeze(['fx.css']);
 
 export function verificarSinColorModerno(estilosDir, { exentas = HOJAS_DECORATIVAS } = {}) {

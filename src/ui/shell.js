@@ -10,6 +10,8 @@
 // oculta). Reemplaza a `aplicarEstudio`/`limpiarEstudio` (la luz de estudio de V2-B).
 
 import * as sonido from './sonido.js';
+// La curva del color de las piezas de campeón (`fx/color.js`, pura): la sigue la pantalla aunque el ambiente no monte.
+import { fijarColor } from './fx/color.js';
 // El teclado (FASE V, V2-B) vive en su propio módulo y sigue colgado de esta raíz aparte: si el controlador explota, las
 // teclas siguen andando sobre lo que haya en pantalla.
 import './teclado.js';
@@ -32,21 +34,48 @@ const TECHO_IDLE_MS = 2000;
 let api = null;
 // `tonoEra` de `fx/tono.js` (el kit): se carga solo si el ambiente montado sabe de tonos (`api.tono`).
 let tonoEra = null;
-// Lo último que pidió el director: si el ambiente monta después, arranca con esto (y sin cruce).
-const estado = { luz: null, contexto: null, inst: null, quieto: false };
+// Lo último que pidió el director (y la familia de la parada): si el ambiente monta después, arranca con esto.
+// `mundo` es la declaración de la pieza (PLANUI §0.2, `ui/core/mundo.js`): arte, tono, costura, escena...
+const estado = { luz: null, contexto: null, inst: null, quieto: false, mundo: null };
 const motivosDePausa = new Set();
+const CONSULTA_CELULAR = '(max-width: 640px)';
 
 function seguro(nombre, fn) {
   try {
-    fn();
+    return fn();
   } catch (error) {
     console.error(`El ambiente falló en ${nombre}:`, error);
+    return null;
   }
 }
 
-// El segundo tono de la era (LINEA.md §3, contexto `era`) en <html> y en la luz del mundo.
-function aplicarTonoDeEra(era) {
-  if (api && tonoEra && era) seguro('tono', () => api.tono?.(tonoEra(era)));
+const esCelular = () => window.matchMedia?.(CONSULTA_CELULAR).matches ?? false;
+
+// El tono de la pantalla: el que declaró la pieza o, si no declaró ninguno, el de la era (LINEA.md §3, contexto `era`).
+function tonoActual() {
+  return estado.mundo?.tono ?? (tonoEra && estado.luz?.era ? tonoEra(estado.luz.era) : null);
+}
+
+// La declaración del mundo al ambiente: lo que hacía `aplicarAmbiente` + `aplicarFondo` de la vitrina (main.js). El
+// tono va al CSS (`--tono-*` en <html>) y, si la pieza no trajo su propia paleta, tiñe la luz y la noche del mundo.
+function aplicarMundo({ instantaneo = false } = {}) {
+  const m = estado.mundo;
+  if (!api || !m) return;
+  const tono = tonoActual();
+  seguro('tono', () => api.tono?.(tono, { paleta: !m.paleta }));
+  seguro('aura', () => api.aura?.pantalla?.(m.arte, { pegajosa: m.pegajosa }));
+  seguro('ambiente', () => api.ambiente({
+    arte: m.arte,
+    encuadre: esCelular() ? 'celular' : m.encuadre,
+    velo: m.velo,
+    costura: m.costura ?? null,
+    lightsticks: m.lightsticks ?? 0,
+    ...(m.paleta ? { paleta: m.paleta } : {}),
+    ...(m.cruce != null ? { cruce: m.cruce } : {}),
+    ...(m.animo ? { animo: m.animo } : {}),
+    instantaneo
+  }));
+  seguro('fondo', () => api.fondo?.({ contexto: estado.contexto ?? 'juego', escena: m.escena ?? null, instantaneo }));
 }
 
 async function montarAmbiente() {
@@ -65,14 +94,15 @@ async function montarAmbiente() {
   // `src/dev/estrella.mjs` (U1a) lo busca para `congelar(ms)` en las capturas.
   window.__fx = api;
   if (estado.inst !== null) seguro('inst', () => api.inst?.(estado.inst));
-  if (estado.contexto) seguro('fondo', () => api.fondo?.({ contexto: estado.contexto, instantaneo: true }));
-  if (estado.luz) {
-    aplicarTonoDeEra(estado.luz.era);
-    seguro('ambiente', () => api.ambiente({ ...estado.luz, instantaneo: true }));
-  }
+  if (estado.contexto) seguro('fondo', () => api.fondo?.({ contexto: estado.contexto, escena: estado.mundo?.escena ?? null, instantaneo: true }));
+  if (estado.luz) seguro('ambiente', () => api.ambiente({ ...estado.luz, instantaneo: true }));
+  if (estado.mundo) aplicarMundo({ instantaneo: true });
+  else if (estado.luz) seguro('tono', () => api.tono?.(tonoActual()));
   if (estado.quieto) seguro('aquietar', () => api.aquietar(true));
   if (motivosDePausa.size > 0) seguro('pausar', () => api.pausar());
+  for (const f of alMontar.splice(0)) seguro('alMontar', () => f(api));
 }
+const alMontar = [];
 
 if (typeof window.requestIdleCallback === 'function') {
   window.requestIdleCallback(() => { montarAmbiente(); }, { timeout: TECHO_IDLE_MS });
@@ -80,22 +110,39 @@ if (typeof window.requestIdleCallback === 'function') {
   window.setTimeout(() => { montarAmbiente(); }, ESPERA_SIN_IDLE_MS);
 }
 
-// El puente que usan el director (`crearEscena({ ambiente })`) y el controlador (`inst`). Las llamadas que el stub de
-// `fx/index.js` no tiene van con `?.` (la API del kit, `src/ui/fx/README.md`).
+// El puente que usan el director (`crearEscena({ ambiente })`), el controlador (`inst`) y las familias de parada
+// (`ctx.mundo`: `declarar`, `fx`). Las llamadas que el kit no tiene van con `?.` (la API del kit, `src/ui/fx/README.md`).
 export const ambiente = {
-  // `{ era, animo }` desde la `vista` (ui/core/era.js): la luz del mundo y, si cambió la era, su tono.
+  // `{ era, animo }` desde la `vista` (ui/core/era.js): la luz del mundo y, si cambió la era y la pieza no declaró su
+  // propio tono, el tono de la era.
   aplicar(luz) {
     const eraAntes = estado.luz?.era ?? null;
     estado.luz = { ...estado.luz, ...luz };
     if (!api) return;
-    if (estado.luz.era !== eraAntes) aplicarTonoDeEra(estado.luz.era);
+    if (estado.luz.era !== eraAntes && !estado.mundo?.tono) seguro('tono', () => api.tono?.(tonoActual(), { paleta: !estado.mundo?.paleta }));
     seguro('ambiente', () => api.ambiente(luz));
   },
-  // La política del mundo de la pantalla (`api.fondo`): 'inicio' (el bitono entero) o 'juego'. Los momentos piden el suyo.
+  // La política del mundo de la pantalla (`api.fondo`): 'inicio' (el bitono entero), 'juego' o 'momento'.
   fondo(contexto) {
     if (contexto === estado.contexto) return;
     estado.contexto = contexto;
-    if (api) seguro('fondo', () => api.fondo?.({ contexto }));
+    fijarColor(contexto);
+    if (api) seguro('fondo', () => api.fondo?.({ contexto, escena: estado.mundo?.escena ?? null }));
+  },
+  // La declaración del mundo de la pieza (`ui/core/mundo.js`: `mundoBase` del director, y encima lo que declare la
+  // familia). Parcial: lo que no viene se mantiene; `reemplazar` la pone entera.
+  declarar(decl, { reemplazar = false } = {}) {
+    estado.mundo = reemplazar ? { ...decl } : { ...estado.mundo, ...decl };
+    aplicarMundo();
+  },
+  // La api del kit, para lo que es de un instante (pulso, momento, takeover, quiebre, costura(), el suspenso, el aura):
+  // `null` si el ambiente todavía no montó. `cuandoMonte(f)` corre `f(api)` apenas monte (o ya, si montó).
+  fx() {
+    return api;
+  },
+  cuandoMonte(f) {
+    if (api) seguro('alMontar', () => f(api));
+    else alMontar.push(f);
   },
   // El reproductor entró o salió de INST (o del movimiento reducido): el camino quieto de todo el kit.
   inst(si) {
@@ -117,6 +164,9 @@ export const ambiente = {
     if (api && antes !== ahora) seguro(ahora ? 'pausar' : 'reanudar', () => (ahora ? api.pausar() : api.reanudar()));
   }
 };
+
+// El celular gira o la ventana cruza el corte: el encuadre del mundo cambia (el de la costura, vertical u horizontal).
+window.matchMedia?.(CONSULTA_CELULAR).addEventListener?.('change', () => aplicarMundo());
 
 // La pestaña oculta y el cuarto abierto (el `<dialog id="cuarto">` de `cuartos.js`: se mira su atributo `open`, sin tocar
 // el módulo de los cuartos).

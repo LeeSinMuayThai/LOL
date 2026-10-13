@@ -134,25 +134,6 @@ kbd { min-width: 0; height: 20px; padding: 0 6px; font-size: 10.5px; }
 :where(button:active:not(:disabled)) { transform: translateY(1px) scale(0.97); }
 :where(button:disabled) { opacity: 0.35; cursor: not-allowed; }
 
-/* Empezar y Nueva carrera: el boton principal (la luz de la era, en su version para texto). */
-#run,
-#nuevaCarrera {
-  background: var(--luz-texto);
-  box-shadow: none;
-  color: var(--bg-void);
-  font-size: var(--t-chico);
-  letter-spacing: 0.14em;
-  min-height: 52px;
-  padding: var(--s-4) var(--s-7);
-}
-#run:hover:not(:disabled),
-#nuevaCarrera:hover:not(:disabled) {
-  background: var(--luz-texto);
-  box-shadow: 0 0 44px -6px var(--luz-fuerte);
-  color: var(--bg-void);
-  filter: brightness(1.08);
-}
-
 /* ==========================================================================
    4. LA OPCION — el feedback de cliente (la barra de luz al costado, la
    tecla que se hunde) — y el inspector: UNA prosa a la vez

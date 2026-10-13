@@ -19,7 +19,7 @@
 //     hacen clic en el botón de la barra de la franja (o en la pestaña del diálogo) que lleva esa letra en
 //     `aria-keyshortcuts`. Se apagan en el inicio y en el minijuego (`PIEZAS_SIN_CUARTOS`: los minijuegos son dueños de
 //     Q/W/E/R, A/D, A/S y 1-5) y con el foco en un campo de texto; `?` abre la ayuda de teclas (salvo en el minijuego).
-import { saltarBeat, velocidadActual } from './reproductor.js';
+import { saltarBeat, velocidadActual, narrando } from './reproductor.js';
 import { PIEZAS_SIN_CUARTOS } from './core/escena.js';
 
 const shell = document.querySelector('.shell');
@@ -112,7 +112,8 @@ document.addEventListener('keydown', (evento) => {
 
   if (evento.key === ' ' || evento.key === 'Enter') {
     if (focoEnAlgoInteractivo(activo)) return; // su acción nativa
-    if (evento.key === ' ' && pieza === 'relato' && velocidadActual() !== 'instantaneo') {
+    // Espacio saltea un beat del relato, o la narración de una parada (su resultado contado en el lugar, PLANUI §0.2).
+    if (evento.key === ' ' && (pieza === 'relato' || narrando()) && velocidadActual() !== 'instantaneo') {
       evento.preventDefault();
       saltarBeat();
     }

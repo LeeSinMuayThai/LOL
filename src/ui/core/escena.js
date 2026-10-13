@@ -62,7 +62,9 @@ export const PIEZAS_SIN_CUARTOS = ['inicio', 'minijuego'];
 // Lo que puede mostrar el acompañante (≥ 1180 px). `null` = nada.
 export const TIPOS_DE_ACOMPANANTE = ['vos', 'mercado', 'carrera', 'serie', 'swiss', 'previa', 'tabla'];
 const SIN_ACOMPANANTE = Object.freeze({ tipo: null, cuarto: null });
-const PIEZAS_SIN_ACOMPANANTE = ['inicio', 'final', 'minijuego'];
+// PLANUI §0.2: el partido (el cara a cara, el stream) y el mercado (las ofertas y la camiseta) son de pantalla completa,
+// como en la vitrina: su contexto va adentro de su pieza, no en una placa al costado.
+const PIEZAS_SIN_ACOMPANANTE = ['inicio', 'final', 'minijuego', 'partido', 'mercado'];
 // Las paradas que se leen contra la carrera entera: el cierre de año, el retiro y la vuelta.
 const SISTEMAS_DE_CARRERA = ['edadCierre', 'retiro'];
 
@@ -74,10 +76,6 @@ export function acompananteDe(estado, pieza) {
   }
   if (estado.phase === 'amateur') {
     return { tipo: 'vos', cuarto: 'vos' };
-  }
-  if (pieza === 'mercado') {
-    // Tu contrato y tu valor ya están en la parada (`#mercadoVos`); lo que suma el panel es el mercado del mundo.
-    return { tipo: 'mercado', cuarto: 'mundo' };
   }
   const sistema = estado.pendiente?.sistemaId ?? null;
   if (SISTEMAS_DE_CARRERA.includes(sistema)) {

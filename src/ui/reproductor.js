@@ -56,9 +56,26 @@ export function ciclarVelocidad() {
 }
 
 let skipActual = null;
+// PLANUI §0.2 (narrar la respuesta en el lugar): mientras una parada cuenta su resultado (la opción que se vuelve su
+// resultado, los mapas de la serie, la firma), Espacio la saltea y un cuarto abierto la pausa, igual que a un beat.
+let narracion = null;
 
 export function saltarBeat() {
   if (typeof skipActual === 'function') skipActual();
+  else narracion?.saltar?.();
+}
+
+// `control`: `{ saltar, pausar, reanudar }` de la narración en curso. Devuelve cómo soltarla.
+export function narrar(control) {
+  narracion = control;
+  if (pausado) control?.pausar?.();
+  return () => {
+    if (narracion === control) narracion = null;
+  };
+}
+
+export function narrando() {
+  return narracion !== null;
 }
 
 function dormir(ms) {
@@ -85,10 +102,12 @@ let alReanudar = [];
 
 export function pausar() {
   pausado = true;
+  narracion?.pausar?.();
 }
 
 export function reanudar() {
   pausado = false;
+  narracion?.reanudar?.();
   const pendientes = alReanudar;
   alReanudar = [];
   for (const seguir of pendientes) seguir();
