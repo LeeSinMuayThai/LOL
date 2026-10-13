@@ -34,6 +34,7 @@
 | **C1** | El usuario prueba luz, tipografía, ritmo y rendimiento en su máquina | ⬜ movida a después de U2 |
 | **U2 + U2c** | Las pantallas del norte (inicio + decisión; partido + mercado) + franja, cuartos y contenedor de minijuegos | ❌ 2026-10-11, hecha por fuera del plan y descartada el 2026-10-13 (§0.2): el inicio quedaba pintado encima de todas las piezas y las pantallas no seguían la vitrina. `src/ui` volvió al cierre de la ola 1 (`1a63b63`) |
 | **U2 rehecha** | La ola 2 portada de la vitrina con `op=linea` sobre tres contratos nuevos: el marco, el mundo de cada parada y narrar la respuesta en el lugar (§0.2) | 🔶 2026-10-13 |
+| **C1 (adelantada)** | Lo que dijo el usuario jugando lolero.lol: colores por eje, el relato con forma, sin cortes en frío, la firma tras la prueba, el mapa decisivo narrado y la regla del movimiento reducido (§0.3) | 🔶 2026-10-13: C1a/C1b/C1c + revisión + arreglos en `c1-integracion` (`06efb4f`); falta que el usuario lo juegue |
 | **U3** | Los momentos + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |

@@ -34,6 +34,52 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-13 — PLANUI C1: lo que dijo el usuario jugando lolero.lol (colores por eje, el relato con forma, sin cortes en frío)
+
+El usuario jugó la ola 2 rehecha en lolero.lol y mandó cinco capturas; su mensaje textual y el plan están en
+`PLANUI.md` §0.3. Lo que se hizo:
+
+- **Los ejes con color** (base del Supervisor, `4482ec6`: `core/ejes.js`, `components/chipsEje.js`, `estilos/ejes.css`,
+  `--eje-*`; C1a `d93f0f5`, Opus): cada cosa que ganás tiene su color (SoloQ, Estudios, Sueño, Casa, Cabeza) en la
+  planilla, en "lo que pasó" y en la placa "Vos". El color dice qué se movió y el signo sigue en los triángulos. La
+  ganancia más grande de cada fila se marca; "lo que pasó" abre con chips GANASTE / TE COSTÓ. La separación entre
+  ejes es ≥ 0,116 en OKLab, y cada eje mide ≥ 7:1 sobre el panel.
+- **El relato con forma** (C1b `c5b11cd`, Opus):
+  - los efectos, en chips;
+  - la semana, como tira de bloques con el LP;
+  - el parche, con chips de campeón y el medidor del meta;
+  - el evento, como cita del perfil;
+  - el corte, como alerta;
+  - las series sin parada, como teselas por mapa.
+
+  El parser leyó los 17.838 segmentos de efectos de 80 carreras sin un error.
+- **Sin cortes en frío** (scout Sonnet para el diagnóstico; C1c `e4195a0`, Opus):
+  - toda entrada a una parada lleva transición, y con movimiento reducido un fundido de 120 ms;
+  - después de pasar la prueba, el contrato sellado "Firmado" y luego la bienvenida;
+  - el mapa decisivo que se juega como minijuego se narra en el cara a cara, con el cierre de la serie;
+  - regla nueva: con movimiento reducido cada paso es un cuadro fijo con su tiempo de lectura (antes se salteaba
+    todo); INST va al cuadro final y lo sostiene.
+- **Revisión** (Opus, con navegador): cinco de los seis puntos quedaron resueltos. Faltaba el relato con movimiento
+  reducido, que duraba ~120 ms. Siete arreglos en `06efb4f` (Sonnet):
+  - el relato conserva el pulso;
+  - la post-serie ya no repite los mapas;
+  - VICTORIA ya no pisa el nombre;
+  - los mismos triángulos en celda, chip y tarjeta;
+  - el clic durante la transición se reenvía;
+  - "lo que pasó" se ve en INST;
+  - el inspector ya no se anuncia de más.
+
+  El check V4 de `validate.js` se actualizó a la regla nueva: con movimiento reducido, el relato espera lo mismo
+  que a 1×.
+
+Medido en `c1-integracion`:
+- `validate.js --rapido`: 0 FAIL;
+- `huella.js`: 1844448410, el motor no cambió;
+- `simulate.js 1000`: exit 0;
+- build: 3605 KB. El techo sube de 3550 a 3700 KB.
+
+**Pendiente:** el usuario juega el build local antes del deploy.
+
 ### 2026-10-11 — El inicio se quedaba en el HTML vacío
 
 En lolero.lol el champ select no pintaba región, perfil, línea ni mains. Se veían las etiquetas, "Elegí una línea primero." y "Empezar carrera" apagado, con el haz de luz del CSS. El script sí cargaba.
