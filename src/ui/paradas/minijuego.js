@@ -18,6 +18,7 @@ import { probabilidadDeFirmarTrasPrueba, veredictoDeLaPrueba } from '../../core/
 import { porcentaje } from '../../core/formato.js';
 import { marcarFoco, marcarAtajo } from '../escena.js';
 import { rotuloDeMinijuego } from '../formatoUi.js';
+import { fichajeDe, narrarFichaje } from '../components/fichaje.js';
 
 // La tecla de "¡Vamos!". Ningún minijuego la usa (Enter y Espacio sí, y un Enter sostenido se contaría como jugada).
 const TECLA_VAMOS = 'V';
@@ -49,12 +50,23 @@ function crearTecla(texto) {
 //   rngUi         el RNG de la interfaz (el que ponen los minijuegos; el motor no lo ve).
 //   responder     manda la respuesta de la pausa al motor ({ resultado } o { resultado, charla }).
 //   pintarPrevia  pinta la previa del partido (K2d) y devuelve la previa (o null).
+//   mundo, sonido el puente del ambiente y el sonido del kit (para el fichaje).
+// Devuelve la vista con `narrar` (PLANUI §0.2): si la respuesta firmó con un club nuevo (la prueba de ingreso del mercado
+// que alcanzó, o el respaldo si no alcanzó), cuenta el fichaje (`components/fichaje.js`): tu línea sobre el mapa y la
+// firma con tu jersey y tu número, como cuando se firma directo en el mercado.
 export function mostrar(contenedor, decision, ctx) {
-  const { estado, rngUi, responder, pintarPrevia } = ctx;
+  const { estado, rngUi, responder, pintarPrevia, mundo = null, sonido = null } = ctx;
   pintarPrevia(decision, estado);
   montarParada(contenedor, decision, { estado, rngUi, responder, renderPrevia: pintarPrevia });
   marcarFoco(contenedor.querySelector('#minijuegoTitle'));
-  return contenedor;
+  return {
+    async narrar(ctxNarracion) {
+      const fichaje = fichajeDe(ctxNarracion.antes, ctxNarracion.despues, ctxNarracion.logs);
+      if (!fichaje || fichaje.renovacion) return 0;
+      await narrarFichaje(ctxNarracion, fichaje, { mundo, sonido });
+      return fichaje.hasta;
+    }
+  };
 }
 
 function montarParada(contenedor, decision, { estado, rngUi, responder, renderPrevia }) {

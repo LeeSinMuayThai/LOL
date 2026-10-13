@@ -816,6 +816,7 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     const i = respuesta.i;
     const f = fichajeDe(ctx.antes, ctx.despues, logs);
     const prueba = ctx.despues?.pendiente?.decision?.datos?.momento === 'tryout' ? ctx.despues.pendiente.decision : null;
+    if (respuesta.tipo === 'camino' && !f) return narrarCamino(ctx, logs);
     if (i == null || (!f && !prueba)) return 0;
     await narrarContrato(ctx, i, f, prueba);
     if (f && !f.renovacion && raiz.isConnected) await narrarFichaje(ctx, f, { mundo, sonido, valor, tono: tonos[i] });
@@ -844,6 +845,24 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
       narracion.fin();
     }
     return logs.length;
+  }
+
+  // Un traspaso que no se hace (te quedás, o tu club no te suelta): lo que dijo el motor en el lugar del inspector, y la
+  // carta del club que te quería recibe su sello.
+  async function narrarCamino(ctx, logs) {
+    if (!logs.length) return 0;
+    const narracion = crearNarracion(ctx, [raiz]);
+    try {
+      const nodo = el('div', { class: 'ms-charla', role: 'status', tabindex: '-1' }, [icono('mercado'), el('p', { text: logs[0].message })]);
+      inspector.replaceChildren(nodo);
+      animar(nodo, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { dur: DUR.larga });
+      heroe.firmar(0, { w: (a) => a, t: T_FIRMAR.selloDur, texto: respuesta.camino?.tipo === 'quedarse' ? 'Rechazada' : 'Retenido' });
+      nodo.focus({ preventScroll: true });
+      await narracion.esperar(T_NEGOCIAR.sostener);
+    } finally {
+      narracion.fin();
+    }
+    return 1;
   }
 
   // La firma sobre el contrato: el contrato sube sobre la cabeza y la grilla, la firma se traza, cae el sello.

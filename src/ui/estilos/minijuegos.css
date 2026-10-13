@@ -1,563 +1,256 @@
-/* Los minijuegos: la carta, la charla, la espera, las diez mecánicas. Dueño: V3d (PLAN.md §V.7).
-   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
-
 /* ==========================================================================
-   4. LOS MINIJUEGOS (fase 4)
-   Se migran a `src/ui/components/minijuegos/` y se tematizan en T6; acá solo
-   se les da el vocabulario visual nuevo.
+   LOS MINIJUEGOS (PLANUI U2c punto 4): la prueba, la rueda de prensa y las
+   mecánicas del mapa, con el sistema nuevo. La parada es un panel como el de
+   la decisión: el rótulo con su punto de luz, el título, qué se juega en una
+   línea, la apuesta como una placa, y "¡Vamos!" en su aro de ceremonia (el
+   reloj no arranca hasta tocarlo). El juego va en una cancha honda, sin
+   escuadras; el jugo: un destello al acertar, un sacudón (≤ 4 px) al fallar,
+   y chispas. El veredicto es una tarjeta con su color.
    ========================================================================== */
 
 .minijuego {
-  position: relative;
-  margin-top: var(--s-6);
-  padding: var(--s-4) var(--s-5);
-  padding-left: calc(var(--s-5) - 3px);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--warn);
-  animation: entrar-decision var(--dur-slow) var(--ease) both;
+  --mj-luz: var(--warn);
+  position: relative; display: grid; gap: 10px; width: min(100%, 940px); margin: 0; padding: 22px 26px 24px;
+  border-radius: var(--r-panel); background: var(--tx-panel); box-shadow: inset 0 0 0 1px var(--filete), 0 30px 60px -30px var(--sombra);
+  animation: mj-entra 420ms var(--expo) both;
 }
-/* V3d (D93): la pestaña de categoría dice qué parada es (`data-tab-label`, de `rotuloDeMinijuego`): "La prueba", "Rueda de prensa",
-   "Mapa decisivo". `decision.css` la dejaba fija en "Minijuego". */
-#minijuego::before { content: attr(data-tab-label); }
-/* V3d (regla 2 de §V.3): lo que se juega primero. El título y la línea de "qué se juega" no llevan el aire de una decisión. */
-#minijuego > .decision-title { margin-bottom: var(--s-1); font-size: var(--fs-5); line-height: var(--lh-tight); }
-#minijuego > .decision-desc {
-  display: block;
-  margin-bottom: var(--s-3);
-  font-size: var(--fs-2);
-  line-height: var(--lh-snug);
+@keyframes mj-entra { from { opacity: 0; transform: translateY(14px); } }
+.minijuego[hidden] { display: none; }
+/* el rótulo: qué parada es (`data-tab-label`, de `rotuloDeMinijuego`: "La prueba", "Rueda de prensa", "Mapa decisivo") */
+#minijuego::before {
+  content: attr(data-tab-label);
+  display: flex; align-items: center; gap: 9px;
+  font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--mj-luz);
 }
+#minijuego > .titulo-parada { margin: 0; }
+#minijuego > .planteo { margin: 0; font-size: 15px; color: color-mix(in srgb, var(--ink-dim) 70%, var(--ink)); }
 
-.minijuego-widget {
-  position: relative;
-  margin-top: var(--s-4);
-  padding: var(--s-5);
-  background: var(--bg-void);
-  border: 1px solid var(--line);
-}
-.minijuego-widget::before,
-.minijuego-widget::after {
-  content: "";
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  pointer-events: none;
-}
-.minijuego-widget::before {
-  top: 0;
-  left: 0;
-  border-top: 2px solid var(--warn);
-  border-left: 2px solid var(--warn);
-}
-.minijuego-widget::after {
-  right: 0;
-  bottom: 0;
-  border-right: 2px solid var(--warn);
-  border-bottom: 2px solid var(--warn);
-}
-.minijuego-widget--hit {
-  box-shadow: inset 0 0 0 2px var(--up);
-  animation: minijuego-hit 80ms var(--ease);
-}
-.minijuego-widget--miss {
-  box-shadow: inset 0 0 0 2px var(--down);
-  animation: minijuego-miss 120ms var(--ease);
-}
-/* V3d (regla 1 de §V.3: una sola cosa pide atención): con el reloj corriendo (o el veredicto a la vista) la consigna y la caja de
-   apuesta ya se leyeron y se pliegan: el juego y el veredicto ganan el lugar y entran enteros en el celular. */
-#minijuego[data-fase="juego"] > .decision-desc,
+/* con el reloj corriendo (o el veredicto a la vista) la consigna y la apuesta ya se leyeron y se pliegan */
+#minijuego[data-fase="juego"] > .planteo,
 #minijuego[data-fase="juego"] > #minijuegoApuesta,
-#minijuego[data-fase="resultado"] > .decision-desc,
+#minijuego[data-fase="resultado"] > .planteo,
 #minijuego[data-fase="resultado"] > #minijuegoApuesta { display: none; }
-/* V3d: antes de que corra el reloj, el widget es la charla o el botón: no necesita el aire de un minijuego en marcha. */
-#minijuego[data-fase="previa"] .minijuego-widget { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); }
-@keyframes minijuego-hit {
-  from { background: var(--up-fill); }
-  to   { background: var(--bg-void); }
-}
-@keyframes minijuego-miss {
-  0%, 100% { transform: none; }
-  25%      { transform: translateX(-4px); }
-  75%      { transform: translateX(4px); }
-}
 
-/* El beat de resultado (fase 9R0b): sin esto el jugador nunca sabía si había
-   clavado la jugada. */
-.minijuego-resultado {
-  padding: var(--s-5) var(--s-4);
-  text-align: center;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--bg-raised);
-  animation: entrar-resultado var(--dur) var(--ease);
+/* ---------- la apuesta: una placa ---------- */
+.minijuego-apuesta {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin: 4px 0 0; padding: 12px 16px;
+  border-radius: var(--r-control); background: var(--panel-hondo); box-shadow: inset 3px 0 0 var(--mj-luz), inset 0 0 0 1px var(--linea);
+  color: var(--ink); font-size: 14px; line-height: 1.4;
 }
-@keyframes entrar-resultado {
-  from { opacity: 0; transform: scale(0.97); }
-  to   { opacity: 1; transform: none; }
+.minijuego-apuesta-cabecera { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.minijuego-apuesta-kicker { font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--mj-luz); }
+.minijuego-apuesta-ronda { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--gold); }
+.minijuego-apuesta-texto { flex: 1 0 100%; min-width: 0; }
+.minijuego-apuesta-stat { flex: 1 1 auto; min-width: 0; font: 500 11px / 1.3 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); }
+.minijuego-mas {
+  all: unset; box-sizing: border-box; cursor: pointer; flex: none; display: inline-flex; align-items: center; height: 24px; padding: 0 10px;
+  border-radius: var(--r-chip); box-shadow: inset 0 0 0 1px var(--linea-fuerte); font: 600 11px / 1 var(--f-mono); color: var(--ink);
 }
-.minijuego-resultado--bien   { border-color: var(--up); }
-.minijuego-resultado--parejo { border-color: var(--gold); }
-.minijuego-resultado--mal    { border-color: var(--down); }
+.minijuego-mas:hover { background: var(--luz-tenue); box-shadow: inset 0 0 0 1px var(--luz-fuerte); }
+.minijuego-mas:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.minijuego-apuesta-plegado { flex: 1 0 100%; padding-top: 10px; box-shadow: inset 0 1px 0 var(--linea); }
+.minijuego-apuesta-plegado[hidden] { display: none; }
+.minijuego-apuesta-resto, .minijuego-apuesta-regla { margin: 0; color: var(--ink-dim); }
+.minijuego-apuesta-regla { font-size: 12.5px; font-style: italic; }
+:is(.minijuego-apuesta-resto, .minijuego-apuesta-regla) + :is(.minijuego-apuesta-resto, .minijuego-apuesta-regla) { margin-top: 8px; }
 
-.minijuego-resultado-titulo {
-  margin-bottom: var(--s-2);
-  font-family: var(--font-display);
-  font-size: var(--fs-6);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
+/* ---------- la cancha: donde corre el juego ---------- */
+.minijuego-widget {
+  position: relative; margin-top: 6px; padding: 20px; border-radius: var(--r-control); isolation: isolate;
+  background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--mj-luz) 7%, transparent), transparent 70%), var(--panel-hondo);
+  box-shadow: inset 0 0 0 1px var(--linea);
 }
-.minijuego-resultado--bien   .minijuego-resultado-titulo { color: var(--up); }
-.minijuego-resultado--parejo .minijuego-resultado-titulo { color: var(--gold); }
-.minijuego-resultado--mal    .minijuego-resultado-titulo { color: var(--down); }
+#minijuego[data-fase="previa"] .minijuego-widget { padding: 14px 16px; background: transparent; box-shadow: none; }
+/* el jugo: acertar destella en verde con chispas; fallar sacude (≤ 4 px) en rojo */
+.minijuego-widget--hit { animation: mj-destello 420ms var(--expo); }
+.minijuego-widget--hit::after, .minijuego-widget--miss::after { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; }
+.minijuego-widget--hit::after {
+  background:
+    radial-gradient(3px 3px at 18% 30%, var(--up), transparent), radial-gradient(2px 2px at 32% 70%, var(--luz-blanca), transparent),
+    radial-gradient(3px 3px at 58% 22%, var(--up), transparent), radial-gradient(2px 2px at 76% 64%, var(--luz-blanca), transparent),
+    radial-gradient(3px 3px at 88% 36%, var(--up), transparent), radial-gradient(60% 70% at 50% 50%, color-mix(in srgb, var(--up) 18%, transparent), transparent 70%);
+  animation: mj-chispas 620ms var(--expo) forwards;
+}
+.minijuego-widget--miss { animation: mj-sacudon 260ms ease-out; }
+.minijuego-widget--miss::after { background: radial-gradient(70% 80% at 50% 50%, color-mix(in srgb, var(--down) 20%, transparent), transparent 72%); animation: mj-chispas 520ms ease-out forwards; }
+@keyframes mj-destello {
+  0% { box-shadow: inset 0 0 0 1px var(--linea), 0 0 0 0 color-mix(in srgb, var(--up) 0%, transparent); }
+  25% { box-shadow: inset 0 0 0 2px var(--up), 0 0 34px 2px color-mix(in srgb, var(--up) 45%, transparent); }
+  100% { box-shadow: inset 0 0 0 1px var(--linea), 0 0 0 0 color-mix(in srgb, var(--up) 0%, transparent); }
+}
+@keyframes mj-chispas { 0% { opacity: 0; transform: scale(0.94); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.06); } }
+@keyframes mj-sacudon {
+  0%, 100% { transform: none; box-shadow: inset 0 0 0 1px var(--linea); }
+  20% { transform: translateX(-4px); box-shadow: inset 0 0 0 2px var(--down); }
+  45% { transform: translateX(3px); }
+  70% { transform: translateX(-2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .minijuego, .minijuego-widget--hit, .minijuego-widget--miss, .minijuego-widget--hit::after, .minijuego-widget--miss::after, .minijuego-resultado { animation: none; }
+}
+html:is([data-reducido], [data-inst]) :is(.minijuego, .minijuego-widget--hit, .minijuego-widget--miss, .minijuego-widget--hit::after, .minijuego-widget--miss::after, .minijuego-resultado) { animation: none; }
 
-.minijuego-resultado-detalle { font-size: var(--fs-3); color: var(--ink-dim); }
-/* K2d: la p final del mapa a la vista en el mismo recuadro: la tarjeta de la
-   previa queda arriba del widget y su cambio pasaba fuera de pantalla. */
-/* K4-B: la charla del coach se elige antes del minijuego del mapa decisivo. V3d: dos filas compactas con su tecla (1, 2): la
-   pregunta, y en cada una lo que dice con cuánto llegás. */
-.minijuego-charla { display: flex; flex-direction: column; gap: var(--s-2); }
-.minijuego-charla-pregunta { margin: 0; font-size: var(--fs-2); line-height: var(--lh-snug); color: var(--ink-dim); }
-
-/* La tecla de un botón del minijuego (1, 2 de la charla; V de "¡Vamos!"): la misma chapa que `.option-atajo` de las decisiones. */
+/* ---------- la tecla de un botón (1, 2 de la charla; V de "¡Vamos!") ---------- */
 .minijuego-atajo {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-sharp);
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-style: normal;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--ink-mute);
-  transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  flex: none; display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--linea-fuerte); font: 600 11px / 1 var(--f-mono); font-style: normal; color: var(--ink-dim);
 }
 
+/* ---------- la charla del coach (el mapa decisivo): dos filas con su tecla ---------- */
+.minijuego-charla { display: grid; gap: 8px; }
+.minijuego-charla-pregunta { margin: 0 0 4px; font-size: 14px; line-height: 1.4; color: var(--ink-dim); }
 .minijuego-charla-opcion {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  min-height: 44px;
-  padding: var(--s-2) var(--s-3);
-  text-align: left;
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  color: var(--ink);
-  font-family: var(--font-ui);
-  font-size: var(--fs-3);
-  font-weight: 700;
-  letter-spacing: normal;
-  text-transform: none;
+  all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 14px; min-height: 48px; padding: 8px 16px;
+  border-radius: var(--r-control); background: var(--panel-hondo); box-shadow: inset 0 0 0 1px var(--linea);
+  font: 700 15px / 1.3 var(--f-cuerpo); color: var(--ink); transition: background-color 140ms ease, box-shadow 140ms ease;
 }
-.minijuego-charla-opcion:hover { border-color: var(--live); background: var(--live-fill); box-shadow: none; }
-.minijuego-charla-opcion:hover .minijuego-atajo { border-color: var(--live); color: var(--live); }
+.minijuego-charla-opcion:hover, .minijuego-charla-opcion:focus-visible { background: var(--luz-tenue); box-shadow: inset 0 0 0 1px var(--luz-fuerte), inset 3px 0 0 var(--luz); }
+.minijuego-charla-opcion:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .minijuego-charla-label { flex: 1 1 0; min-width: 0; }
-.minijuego-charla-p {
-  flex: none;
-  font-family: var(--font-display);
-  font-size: var(--fs-3);
-  color: var(--live);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
+.minijuego-charla-p { flex: none; font: 900 18px / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--luz-texto); white-space: nowrap; }
 
-@media (max-width: 479px) {
-  .minijuego-charla-opcion { gap: var(--s-2); font-size: var(--fs-2); }
-  .minijuego-charla-p { font-size: var(--fs-2); }
-}
-
-/* K6a-U: la espera antes de arrancar el reloj del minijuego. V3d: el botón y su nota en una fila (el reloj no arranca solo). */
-.minijuego-espera { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
-.minijuego-espera-nota { margin: 0; flex: 1 1 180px; min-width: 0; font-size: var(--fs-2); line-height: var(--lh-snug); color: var(--ink-dim); }
+/* ---------- "¡Vamos!": el aro de ceremonia (el reloj no corre hasta tocarlo) ---------- */
+.minijuego-espera { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
+.minijuego-espera-nota { margin: 0; flex: 1 1 200px; min-width: 0; font-size: 13.5px; line-height: 1.4; color: var(--ink-dim); }
 .minijuego-espera-boton {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--s-3);
-  min-width: 200px;
-  min-height: 44px;
-  padding: var(--s-2) var(--s-4);
-  background: var(--warn-fill);
-  border: 1px solid var(--warn);
-  color: var(--warn);
-  font-size: var(--fs-4);
+  all: unset; box-sizing: border-box; cursor: pointer; position: relative; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 14px;
+  min-width: 230px; height: 58px; padding: 0 28px; border-radius: 999px;
+  background: radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--gold) 26%, var(--panel-hondo)), var(--panel-hondo) 70%);
+  box-shadow: inset 0 0 0 2px var(--gold), 0 0 0 5px var(--panel-hondo), 0 0 0 6px color-mix(in srgb, var(--gold) 55%, transparent), 0 0 34px -4px color-mix(in srgb, var(--gold) 45%, transparent);
+  font: 900 22px / 1 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink);
+  transition: transform 120ms ease, box-shadow 180ms ease, filter 180ms ease;
 }
-.minijuego-espera-boton .minijuego-atajo { border-color: currentColor; color: inherit; }
-.minijuego-espera-boton:hover:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--bg-void); box-shadow: 0 0 24px var(--gold-glow); }
+.minijuego-espera-boton::after {
+  content: ''; position: absolute; inset: -12px; border-radius: inherit; pointer-events: none;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 35%, transparent); animation: mj-aro 2400ms ease-in-out infinite;
+}
+@keyframes mj-aro { 50% { transform: scale(1.04); opacity: 0.4; } }
+.minijuego-espera-boton:hover { filter: brightness(1.12); box-shadow: inset 0 0 0 2px var(--gold), 0 0 0 5px var(--panel-hondo), 0 0 0 6px var(--gold), 0 0 46px -2px color-mix(in srgb, var(--gold) 60%, transparent); }
+.minijuego-espera-boton:active { transform: scale(0.97); }
+.minijuego-espera-boton:focus-visible { outline: 2px solid var(--ink); outline-offset: 10px; }
+.minijuego-espera-boton .minijuego-atajo { color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 70%, transparent); }
+html:is([data-reducido], [data-inst]) .minijuego-espera-boton::after { animation: none; }
+@media (prefers-reduced-motion: reduce) { .minijuego-espera-boton::after { animation: none; } }
 
-.minijuego-resultado-p {
-  margin-top: var(--s-3);
-  font-family: var(--font-display);
-  font-size: var(--fs-4);
-  color: var(--live);
-  font-variant-numeric: tabular-nums;
+/* ---------- el veredicto: una tarjeta con su color ---------- */
+.minijuego-resultado {
+  --mj-res: var(--gold);
+  display: grid; justify-items: center; gap: 8px; padding: 26px 20px; text-align: center; border-radius: var(--r-control);
+  background: radial-gradient(90% 120% at 50% 0%, color-mix(in srgb, var(--mj-res) 16%, transparent), transparent 70%), var(--panel-hondo);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mj-res) 55%, var(--linea)), inset 0 2px 0 var(--mj-res);
+  animation: mj-resultado 360ms var(--expo) both;
 }
+@keyframes mj-resultado { from { opacity: 0; transform: scale(0.96); } }
+.minijuego-resultado--bien { --mj-res: var(--up); }
+.minijuego-resultado--parejo { --mj-res: var(--gold); }
+.minijuego-resultado--mal { --mj-res: var(--down); }
+.minijuego-resultado-titulo {
+  font: 900 clamp(34px, 4vw, 52px) / 0.95 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.01em; text-transform: uppercase;
+  color: var(--mj-res); text-shadow: 0 0 40px color-mix(in srgb, var(--mj-res) 40%, transparent);
+}
+.minijuego-resultado-detalle { max-width: 62ch; font-size: 15px; line-height: 1.45; color: color-mix(in srgb, var(--ink-dim) 60%, var(--ink)); }
+.minijuego-resultado-p { font: 700 13px / 1.3 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; font-variant-numeric: tabular-nums; color: var(--luz-texto); }
+.minijuego-resultado-vara { color: var(--ink); }
 
-/* K6d-P: `button { padding: 0 }` de base.css le ganaba al padding de `:where(button)` y el `clip-path` de chaflanes se comía
-   las letras ("RESPONDER", "¡Ahora!"): el botón de los minijuegos lleva su padding.
-   Mismo criterio "se arma, no se prende" que el botón base: reposo tenue,
-   hover sólido. Antes el reposo ya era --warn sólido — el minijuego era el
-   único botón del juego que arrancaba encendido. */
-.minijuego-btn { padding: var(--s-3) var(--s-5); background: var(--warn-fill); border-color: var(--warn); color: var(--warn); }
-.minijuego-btn:hover:not(:disabled) { background: var(--gold); border-color: var(--gold); color: var(--bg-void); box-shadow: 0 0 24px var(--gold-glow); }
+/* ---------- los botones y las piezas de las mecánicas ---------- */
+.minijuego-btn {
+  all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 22px;
+  border-radius: var(--r-control); background: color-mix(in srgb, var(--mj-luz) 12%, var(--panel-hondo)); box-shadow: inset 0 0 0 1px var(--mj-luz);
+  font: 700 13px / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink);
+  transition: background-color 120ms ease, box-shadow 120ms ease, transform 80ms ease;
+}
+.minijuego-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--mj-luz) 26%, var(--panel-hondo)); box-shadow: inset 0 0 0 1px var(--mj-luz), 0 0 22px -4px color-mix(in srgb, var(--mj-luz) 55%, transparent); }
+.minijuego-btn:active:not(:disabled) { transform: scale(0.97); }
+.minijuego-btn:disabled { opacity: 0.45; cursor: default; }
+.minijuego-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.minijuego-mover .minijuego-btn, .minijuego-kite .minijuego-btn { min-width: 72px; }
 
-.minijuego-barra {
-  position: relative;
-  height: 26px;
-  margin-bottom: var(--s-4);
-  background: var(--bg-sunken);
-  border: 1px solid var(--line);
-  border-radius: var(--r-pill);
-  overflow: hidden;
-}
-.minijuego-zona { position: absolute; top: 0; bottom: 0; background: var(--up); opacity: 0.35; }
-.minijuego-marcador {
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  left: 0;
-  width: 3px;
-  background: var(--ink);
-  box-shadow: 0 0 10px var(--live-glow);
-  transform: translateX(-50%);
-}
+.minijuego-aviso { padding: 22px 0; text-align: center; font: 900 clamp(30px, 3.4vw, 44px) / 1 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.04em; text-transform: uppercase; color: var(--mj-luz); }
+.minijuego-aim-info { font: 600 var(--t-rotulo) / 1.2 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
 
-.minijuego-aviso {
-  padding: var(--s-5) 0;
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: var(--fs-6);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
-  color: var(--warn);
-}
+/* la barra del timing (robar el barón, el teleport) */
+.minijuego-barra { position: relative; height: 28px; margin-bottom: 16px; border-radius: 999px; background: var(--oscuro-total); box-shadow: inset 0 0 0 1px var(--linea); overflow: hidden; }
+.minijuego-zona { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--up) 38%, transparent); box-shadow: inset 0 0 0 1px var(--up); }
+.minijuego-marcador { position: absolute; top: -3px; bottom: -3px; left: 0; width: 3px; background: var(--ink); box-shadow: 0 0 10px var(--luz-fuerte); transform: translateX(-50%); }
+.minijuego-barra-tiempo { height: 8px; margin-bottom: 16px; border-radius: 999px; background: var(--oscuro-total); overflow: hidden; }
+.minijuego-barra-tiempo-fill { width: 100%; height: 100%; background: linear-gradient(90deg, var(--down), var(--warn)); }
 
-.minijuego-barra-tiempo {
-  height: 8px;
-  margin-bottom: var(--s-4);
-  background: var(--bg-sunken);
-  border-radius: var(--r-pill);
-  overflow: hidden;
-}
-.minijuego-barra-tiempo-fill {
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(90deg, var(--down), var(--warn));
-}
-
-.minijuego-cards { display: flex; gap: var(--s-3); flex-wrap: wrap; }
+/* las cartas (la llamada) */
+.minijuego-cards { display: flex; flex-wrap: wrap; gap: 12px; }
 .minijuego-card {
-  flex: 1 1 140px;
-  padding: var(--s-4);
-  text-align: center;
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  color: var(--ink);
-  font-family: var(--font-ui);
-  font-size: var(--fs-2);
-  text-transform: none;
-  letter-spacing: normal;
+  all: unset; box-sizing: border-box; cursor: pointer; flex: 1 1 140px; padding: 16px; text-align: center; border-radius: var(--r-control);
+  background: var(--panel); box-shadow: inset 0 0 0 1px var(--linea); font: 500 14px / 1.35 var(--f-cuerpo); color: var(--ink);
 }
-.minijuego-card:hover { border-color: var(--warn); background: var(--bg-raised); box-shadow: none; }
+.minijuego-card:hover { box-shadow: inset 0 0 0 1px var(--mj-luz), 0 0 22px -6px color-mix(in srgb, var(--mj-luz) 55%, transparent); }
 
-.minijuego-slider { width: 100%; margin: var(--s-3) 0; accent-color: var(--live); }
-.minijuego-slider-labels {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--s-3);
-  font-size: var(--fs-1);
-  color: var(--ink-mute);
-}
+/* el slider (la rueda de prensa) y sus pistas */
+.minijuego-slider { width: 100%; margin: 12px 0; accent-color: var(--luz); }
+.minijuego-slider-labels { display: flex; justify-content: space-between; margin-bottom: 12px; font: 500 11px / 1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-mute); }
+.minijuego-pistas { margin: 0 0 14px; padding: 12px 14px; border-radius: var(--r-control); background: var(--panel); box-shadow: inset 3px 0 0 var(--luz); color: var(--ink); font-size: 14px; }
+.minijuego-pistas-kicker { margin-bottom: 8px; font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.minijuego-pistas-lista { margin: 0; padding: 0; list-style: none; overflow-wrap: anywhere; }
+.minijuego-pistas-lista li + li { margin-top: 4px; }
 
-.minijuego-campo {
-  position: relative;
-  height: 170px;
-  margin-bottom: var(--s-3);
-  background: var(--bg-sunken);
-  border: 1px solid var(--line-faint);
-  border-radius: var(--r);
-  overflow: hidden;
-}
-.minijuego-aim-info {
-  font-family: var(--font-display);
-  font-size: var(--fs-1);
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
-  color: var(--ink-dim);
-}
+/* la prueba: el campo de blancos */
+.minijuego-campo { position: relative; height: 190px; margin-bottom: 12px; border-radius: var(--r-control); background: radial-gradient(80% 90% at 50% 50%, color-mix(in srgb, var(--mj-luz) 6%, transparent), transparent), var(--oscuro-total); box-shadow: inset 0 0 0 1px var(--linea); overflow: hidden; }
 .minijuego-blanco {
-  position: absolute;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  clip-path: none;
-  background: radial-gradient(circle, var(--gold), var(--down));
-  box-shadow: 0 0 18px -4px var(--gold-glow);
+  all: unset; box-sizing: border-box; cursor: crosshair; position: absolute; width: 36px; height: 36px; border-radius: 50%;
+  background: radial-gradient(circle, var(--luz-blanca) 0 18%, var(--gold) 19% 46%, var(--down) 47% 100%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 60%, transparent), 0 0 20px -2px color-mix(in srgb, var(--gold) 60%, transparent);
 }
-.minijuego-blanco:hover { background: radial-gradient(circle, var(--gold), var(--down)); box-shadow: 0 0 24px -2px var(--gold-glow); }
+.minijuego-blanco:hover { box-shadow: 0 0 0 3px var(--gold), 0 0 26px 0 color-mix(in srgb, var(--gold) 70%, transparent); }
 
-/* --- El banco de mecánicas (fase 9R4c) -------------------------------------
-   Seis mecánicas nuevas sobre los mismos tokens y las mismas clases base que
-   las cinco de la fase 4. Nada de color literal acá (guards.js): todo sale de
-   tokens.css. Ninguna depende de una animación para poder jugarse — con
-   `prefers-reduced-motion` el JS cambia el timing y estos estilos siguen
-   diciendo lo mismo. */
-
-/* last_hit — la ola de minions */
-.minijuego-ola {
-  display: flex;
-  gap: var(--s-3);
-  align-items: flex-end;
-  margin: var(--s-4) 0 var(--s-3);
-}
-
+/* last_hit: la ola de minions */
+.minijuego-ola { display: flex; align-items: flex-end; gap: 12px; margin: 16px 0 12px; }
 .minijuego-minion {
-  position: relative;
-  width: 56px;
-  height: 88px;
-  padding: 0 0 var(--s-2);
-  background: var(--bg-sunken);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sharp);
-  color: var(--ink-dim);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  overflow: hidden;
+  all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: flex; align-items: flex-end; justify-content: center; width: 58px; height: 90px; padding-bottom: 8px;
+  overflow: hidden; border-radius: var(--r-control); background: var(--oscuro-total); box-shadow: inset 0 0 0 1px var(--linea); color: var(--ink-dim);
 }
+.minijuego-minion:disabled { opacity: 0.4; cursor: default; }
+.minijuego-minion[data-resultado="bien"] { box-shadow: inset 0 0 0 2px var(--up); }
+.minijuego-minion[data-resultado="mal"] { box-shadow: inset 0 0 0 2px var(--down); }
+.minijuego-minion-hp { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; display: flex; align-items: flex-start; justify-content: center; background: color-mix(in srgb, var(--luz) 24%, var(--panel-hondo)); box-shadow: inset 0 2px 0 var(--luz); font-size: 11px; color: var(--ink-dim); }
+.minijuego-minion[data-zona="ejecucion"] .minijuego-minion-hp { background: color-mix(in srgb, var(--warn) 70%, var(--panel-hondo)); box-shadow: inset 0 2px 0 var(--gold); color: var(--org-tinta); }
+.minijuego-minion-num { position: relative; font: 900 18px / 1 var(--f-display); font-stretch: var(--ancho-numero); color: var(--ink); }
 
-.minijuego-minion:disabled { opacity: 0.4; }
-.minijuego-minion[data-resultado="bien"] { border-color: var(--up); }
-.minijuego-minion[data-resultado="mal"] { border-color: var(--down); }
-
-.minijuego-minion-hp {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 100%;
-  background: var(--live-deep);
-  border-top: 2px solid var(--live);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  font-size: var(--fs-1);
-  color: var(--ink-dim);
-}
-
-.minijuego-minion[data-zona="ejecucion"] .minijuego-minion-hp {
-  background: var(--warn);
-  border-top-color: var(--gold);
-  color: var(--bg-void);
-}
-
-.minijuego-minion-num {
-  position: relative;
-  font-family: var(--font-display);
-  font-size: var(--fs-3);
-  color: var(--ink);
-}
-
-/* el_combo — la secuencia de teclas */
-.minijuego-teclas {
-  display: flex;
-  gap: var(--s-2);
-  margin: var(--s-4) 0 var(--s-3);
-}
-
-.minijuego-tecla {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: var(--fs-4);
-  color: var(--ink);
-  background: var(--bg-raised);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-sharp);
-}
-
-.minijuego-tecla[data-resultado="bien"] { border-color: var(--up); color: var(--up); }
-.minijuego-tecla[data-resultado="mal"] { border-color: var(--down); color: var(--down); }
+/* el_combo: la secuencia de teclas */
+.minijuego-teclas { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 12px; }
+.minijuego-tecla { display: grid; place-items: center; width: 46px; height: 46px; border-radius: var(--r-control); background: var(--panel); box-shadow: inset 0 0 0 1px var(--linea-fuerte); font: 900 20px / 1 var(--f-display); color: var(--ink); }
+.minijuego-tecla[data-resultado="bien"] { box-shadow: inset 0 0 0 2px var(--up); color: var(--up); }
+.minijuego-tecla[data-resultado="mal"] { box-shadow: inset 0 0 0 2px var(--down); color: var(--down); }
 .minijuego-tecla-btn { min-width: 52px; }
 
-/* dodge — los carriles */
-.minijuego-carriles {
-  display: flex;
-  gap: var(--s-2);
-  height: 96px;
-  margin: var(--s-4) 0 var(--s-3);
-}
+/* dodge: los carriles */
+.minijuego-carriles { display: flex; gap: 8px; height: 100px; margin: 16px 0 12px; }
+.minijuego-carril { position: relative; flex: 1; border-radius: var(--r-control); background: var(--oscuro-total); box-shadow: inset 0 0 0 1px var(--linea); }
+.minijuego-carril[data-peligro="si"] { background: color-mix(in srgb, var(--down) 18%, var(--oscuro-total)); box-shadow: inset 0 0 0 1px var(--down); }
+.minijuego-carril[data-yo="si"]::after { content: ""; position: absolute; left: 50%; bottom: 10px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--luz); box-shadow: 0 0 14px var(--luz); }
+.minijuego-carril[data-impacto="acierto"] { background: color-mix(in srgb, var(--down) 55%, var(--oscuro-total)); }
+.minijuego-carril[data-impacto="fallo"] { background: color-mix(in srgb, var(--up) 18%, var(--oscuro-total)); box-shadow: inset 0 0 0 1px var(--up); }
 
-.minijuego-carril {
-  flex: 1;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sharp);
-  background: var(--bg-sunken);
-  position: relative;
-}
-
-.minijuego-carril[data-peligro="si"] {
-  background: var(--down-fill);
-  border-color: var(--down);
-}
-
-.minijuego-carril[data-yo="si"]::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: var(--s-2);
-  width: 14px;
-  height: 14px;
-  margin-left: -7px;
-  border-radius: var(--r-pill);
-  background: var(--live);
-}
-
-.minijuego-carril[data-impacto="acierto"] { background: var(--down); }
-.minijuego-carril[data-impacto="fallo"] { background: var(--up-fill); border-color: var(--up); }
-
-/* la_vision — las zonas del mapa */
-.minijuego-zonas {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--s-2);
-  margin: var(--s-4) 0 var(--s-3);
-}
-
+/* la_vision: las zonas del mapa */
+.minijuego-zonas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px 0 12px; }
 .minijuego-zona-btn {
-  padding: var(--s-3) var(--s-2);
-  font-size: var(--fs-1);
-  color: var(--ink-dim);
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sharp);
+  all: unset; box-sizing: border-box; cursor: pointer; padding: 14px 8px; text-align: center; border-radius: var(--r-control);
+  background: var(--panel); box-shadow: inset 0 0 0 1px var(--linea); font: 600 11px / 1.2 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-dim);
 }
+.minijuego-zona-btn[data-estado="oscura"] { background: var(--oscuro-total); color: var(--ink-mute); }
+.minijuego-zona-btn[data-estado="tapada"] { background: var(--panel-claro); color: var(--ink); }
+.minijuego-zona-btn[data-resultado="bien"] { box-shadow: inset 0 0 0 2px var(--up); color: var(--up); }
+.minijuego-zona-btn[data-resultado="mal"] { box-shadow: inset 0 0 0 2px var(--down); color: var(--down); }
+.minijuego-zona-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-.minijuego-zona-btn[data-estado="oscura"] { background: var(--bg-void); color: var(--ink-mute); }
-.minijuego-zona-btn[data-estado="tapada"] { background: var(--bg-surface); color: var(--ink); }
-.minijuego-zona-btn[data-resultado="bien"] { border-color: var(--up); color: var(--up); }
-.minijuego-zona-btn[data-resultado="mal"] { border-color: var(--down); color: var(--down); }
+/* el_kite: el metrónomo */
+.minijuego-metronomo { display: flex; gap: 8px; margin: 16px 0 12px; }
+.minijuego-paso { flex: 1; height: 12px; border-radius: 999px; background: var(--oscuro-total); box-shadow: inset 0 0 0 1px var(--linea); }
+.minijuego-paso[data-activo="si"] { background: var(--luz-suave); box-shadow: inset 0 0 0 1px var(--luz); }
+.minijuego-paso[data-resultado="bien"] { background: var(--up); box-shadow: none; }
+.minijuego-paso[data-resultado="mal"] { background: color-mix(in srgb, var(--down) 30%, var(--oscuro-total)); box-shadow: inset 0 0 0 1px var(--down); }
 
-/* el_kite — el metrónomo */
-.minijuego-metronomo {
-  display: flex;
-  gap: var(--s-2);
-  margin: var(--s-4) 0 var(--s-3);
+@media (max-width: 640px) {
+  .minijuego { padding: 18px 16px 18px; }
+  .minijuego-widget { padding: 14px; }
+  .minijuego-espera-boton { width: 100%; }
+  .minijuego-charla-opcion { gap: 10px; font-size: 14px; }
+  .minijuego-charla-p { font-size: 16px; }
 }
-
-.minijuego-paso {
-  flex: 1;
-  height: 12px;
-  background: var(--bg-sunken);
-  border: 1px solid var(--line);
-  border-radius: var(--r-pill);
-}
-
-.minijuego-paso[data-activo="si"] { border-color: var(--live); background: var(--live-fill); }
-.minijuego-paso[data-resultado="bien"] { background: var(--up); border-color: var(--up); }
-.minijuego-paso[data-resultado="mal"] { background: var(--down-fill); border-color: var(--down); }
-
-/* La apuesta: qué se juega ANTES de jugarlo (9R4d). V3d: compacta. A la vista, el kicker (con la ronda), la primera oración y tu
-   hoja; el resto (la regla, la vara, lo que sobra de la descripción) detrás de un solo "más". */
-.minijuego-apuesta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--s-1) var(--s-3);
-  margin: 0;
-  padding: var(--s-2) var(--s-3);
-  border-left: 2px solid var(--warn);
-  background: var(--warn-fill);
-  color: var(--ink);
-  font-size: var(--fs-2);
-  line-height: var(--lh-snug);
-}
-.minijuego-apuesta-cabecera { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-3); }
-.minijuego-apuesta-texto { flex: 1 0 100%; min-width: 0; }
-
-.minijuego-apuesta-kicker {
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-weight: 700;
-  letter-spacing: var(--track-cartel);
-  text-transform: uppercase;
-  color: var(--warn);
-}
-.minijuego-apuesta-ronda {
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-weight: 700;
-  letter-spacing: var(--track-label);
-  color: var(--gold);
-}
-
-/* El "más" de la apuesta: un botón chico, pegado a la línea de tu hoja. */
-.minijuego-mas {
-  flex: none;
-  min-height: 24px;
-  padding: 2px var(--s-2);
-  background: transparent;
-  border: 1px solid var(--line-strong);
-  clip-path: none;
-  color: var(--live);
-  font-size: var(--fs-0);
-  letter-spacing: var(--track-label);
-}
-.minijuego-apuesta-plegado { flex: 1 0 100%; padding-top: var(--s-2); border-top: 1px dashed var(--line); }
-.minijuego-apuesta-plegado[hidden] { display: none; }
-.minijuego-apuesta-resto,
-.minijuego-apuesta-regla { margin: 0; color: var(--ink-dim); }
-.minijuego-apuesta-regla { font-size: var(--fs-1); font-style: italic; }
-.minijuego-apuesta-resto + .minijuego-apuesta-resto,
-.minijuego-apuesta-resto + .minijuego-apuesta-regla,
-.minijuego-apuesta-regla + .minijuego-apuesta-regla { margin-top: var(--s-2); }
-
-/* K6d-P: las pistas de la rueda de prensa, arriba del slider (una frase por factor que pesó) */
-.minijuego-pistas {
-  margin: 0 0 var(--s-3);
-  padding: var(--s-3);
-  border-left: 2px solid var(--live);
-  background: var(--bg-sunken);
-  color: var(--ink);
-  font-size: var(--fs-2);
-}
-.minijuego-pistas-kicker {
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-weight: 700;
-  letter-spacing: var(--track-cartel);
-  color: var(--live);
-  margin-bottom: var(--s-2);
-}
-.minijuego-pistas-lista {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  overflow-wrap: anywhere;
-}
-.minijuego-pistas-lista li + li { margin-top: var(--s-1); }
-
-.minijuego-apuesta-stat {
-  flex: 1 1 auto;
-  min-width: 0;
-  color: var(--ink-dim);
-  font-size: var(--fs-1);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-}
-
-.minijuego-mover .minijuego-btn,
-.minijuego-kite .minijuego-btn { min-width: 72px; }
