@@ -1047,3 +1047,21 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   --mj-luz: var(--warn);
   --mj-res: var(--gold);
 }
+
+/* C1b (PLANUI §0.3, punto 3): el relato con forma (estilos/feed.css, serie.css). El índice de cascada de la entrada
+   (`--rl-i`, lo pone cada nodo), el tamaño de un bloque de la semana y los tintes de la alerta que corta la carrera, la
+   placa del perfil, el campeón propio y el que sale en un parche. Derivados de tokens: ningún color nuevo. */
+:root {
+  --rl-i: 0;
+  --rl-bloque: 13px;
+  --rl-res: var(--up);
+  --rl-alerta-fondo: color-mix(in srgb, var(--down) 9%, var(--panel));
+  --rl-alerta-borde: color-mix(in srgb, var(--down) 40%, transparent);
+  --rl-perfil-borde: color-mix(in srgb, var(--luz-texto) 45%, transparent);
+  --rl-perfil-fondo: color-mix(in srgb, var(--luz-texto) 10%, transparent);
+  --rl-propio-borde: color-mix(in srgb, var(--luz-texto) 70%, transparent);
+  --rl-nuevo-borde: color-mix(in srgb, var(--gold) 55%, transparent);
+}
+@media (max-width: 640px) {
+  :root { --rl-bloque: 11px; }
+}

@@ -13,14 +13,17 @@
 import { acentoDeLog, nombreVisibleDeLiga } from '../formatoUi.js';
 import { crearOrgChip } from './orgChip.js';
 import { etiquetaRol } from '../../data/roles.js';
-import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
+import { crearTarjetaResultado, crearTarjetaResultadoSerie, crearFilaDeMapas } from './serie.js';
 import { crearTarjetaMundial } from './mundial.js';
 import { textoDeProbabilidadJugada } from '../../core/previaDePartido.js';
 import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
 import { formaBeat } from '../../core/log.js';
 import { crearTarjetaCierre, crearLineaSplitAnterior, crearCartelDePagina } from './cierre.js';
 import { moverNumero, leerSoloElFinal } from '../core/delta.js';
-import { icono } from '../fx/iconos.js';
+import { icono, triangulos } from '../fx/iconos.js';
+import { chipsDeTexto, leerRango, rangoAntes, numeroConSigno, LP_POR_DIVISION } from './chipsEje.js';
+import { crearCampeonTile } from './campeonTile.js';
+import METAS from '../../data/metas.json' with { type: 'json' };
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
 // que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
@@ -142,7 +145,454 @@ function crearRevealResumenAnio(entry) {
   return item;
 }
 
-export function crearLogItem(entry) {
+// --- C1b (PLANUI §0.3, punto 3): cada beat con su forma ---------------------------------------------------------------
+//
+// El relato era "puro texto": cada beat se lee ahora de un vistazo. Los efectos son chips de eje (components/chipsEje.js:
+// el color dice qué se movió, el triángulo y el número hacia dónde); la semana es una tira de bloques y el LP sobre la
+// barra del escalón; el parche, chips de campeón con su salto de tier y el ajuste al meta como medidor; el evento que
+// resolvió tu perfil, una cita con la placa del perfil; los mapas de una serie, teselas con VICTORIA o DERROTA; el beat que
+// corta la carrera, una alerta. El motor no cambia: todo se lee de los campos y del texto que ya escribe (los formatos,
+// medidos en 40 carreras, están en el encabezado de chipsEje.js). Si un texto no se deja leer, el beat cae a la línea de
+// siempre: nada se rompe y nada se pierde.
+//
+// Textos (PLANUI §7.5): la prosa original va en `.rl-prosa` (con `html[data-textos="completos"]` se ve; en breves queda
+// solo para lectores de pantalla) y lo que la resume en `.rl-breve` (se esconde con textos completos). Las filas de chips
+// son una imagen con el texto original del motor para un lector (`role="img"`).
+
+function nodo(tag, clase, texto) {
+  const el = document.createElement(tag);
+  if (clase) el.className = clase;
+  if (texto !== undefined && texto !== null) el.textContent = texto;
+  return el;
+}
+
+function prosa(texto, tag = 'div') {
+  return nodo(tag, 'rl-prosa', texto);
+}
+
+// Lo visual que ya cuenta la prosa (o una etiqueta) no se lee dos veces.
+function soloVisual(el) {
+  el.setAttribute('aria-hidden', 'true');
+  return el;
+}
+
+// El índice de cascada de los hijos de una fila (la entrada escalonada de `.rl-entra`, feed.css).
+function escalonar(fila, desde = 0) {
+  [...fila.children].forEach((hijo, i) => hijo.style.setProperty('--rl-i', String(desde + i)));
+  return fila;
+}
+
+function filaDeEfectos(texto, { tenue = false } = {}) {
+  return escalonar(chipsDeTexto(texto, { clase: 'eje-chips log-efectos', tenue }));
+}
+
+function caraDeCampeon(nombre) {
+  const cara = nodo('span', 'rl-camp');
+  cara.append(crearCampeonTile({ name: nombre }, { size: 'mini' }));
+  return cara;
+}
+
+// Los caracteres que entran en una línea del relato en un celular (390 px): de ahí para arriba, el planteo o el resultado
+// pueden quedar recortados y la crónica ofrece "más".
+const LARGO_DE_UNA_LINEA = 48;
+
+// --- La semana del plan amateur ("14 bloques al ranked, 1 a dormir, 3 robados al sueño. +13 LP → Diamante I · 83 LP.") ---
+// `systems/amateur.js` no deja los bloques en campos: se leen del cuerpo. El LP de antes sale del de después y el delta
+// (la escalera en puntos absolutos de core/ranked.js).
+const BLOQUES_DE_LA_SEMANA = [
+  { id: 'ranked', patron: /(\d+) bloques? al ranked/, eje: 'soloq', nombre: 'ranked' },
+  { id: 'colegio', patron: /(\d+) al colegio/, eje: 'estudios', nombre: 'colegio' },
+  { id: 'familia', patron: /(\d+) a la familia/, eje: 'casa', nombre: 'familia' },
+  { id: 'dormir', patron: /(\d+) a dormir/, eje: 'sueno', nombre: 'dormir' }
+];
+const ROBADOS_AL_SUENO = /(\d+) robados? al sueño/;
+const LP_DE_LA_SEMANA = /([+\-−]\d+) LP → (.+?)\.?\s*$/;
+
+export function leerSemana(entry) {
+  if (!entry || entry.titulo !== 'La semana' || typeof entry.cuerpo !== 'string') return null;
+  const grupos = BLOQUES_DE_LA_SEMANA
+    .map((b) => ({ ...b, n: Number(entry.cuerpo.match(b.patron)?.[1] ?? 0) }))
+    .filter((b) => b.n > 0);
+  if (grupos.length === 0) return null;
+  const robados = Number(entry.cuerpo.match(ROBADOS_AL_SUENO)?.[1] ?? 0);
+  const lp = entry.cuerpo.match(LP_DE_LA_SEMANA);
+  const delta = lp ? Number(lp[1].replace('−', '-')) : null;
+  const despues = lp ? leerRango(lp[2]) : null;
+  return {
+    grupos,
+    robados,
+    delta,
+    despues,
+    rangoTexto: lp ? lp[2] : null,
+    antes: despues ? rangoAntes(despues, delta) : null,
+    plan: entry.plan ?? entry.espera ?? null,
+    espera: entry.espera ? true : false
+  };
+}
+
+function crearTiraDeBloques(semana) {
+  const tira = nodo('div', 'rl-bloques');
+  // Los robados al sueño son horas de más (`extra`, systems/amateur.js) que entran al reparto: se rayan los últimos del
+  // ranked (para eso se roban) y, si fueran más que esos, los que siguen sin tocar los de dormir.
+  let porRayar = semana.robados;
+  const rayados = new Map(semana.grupos.map((g) => {
+    const n = g.id === 'dormir' ? 0 : Math.min(porRayar, g.n);
+    porRayar -= n;
+    return [g.id, n];
+  }));
+  let i = 0;
+  for (const grupo of semana.grupos) {
+    const bloque = nodo('span', 'rl-bloques-grupo');
+    for (let k = 0; k < grupo.n; k += 1) {
+      const cuadro = nodo('i', 'rl-bloque');
+      cuadro.dataset.eje = grupo.eje;
+      if (k >= grupo.n - rayados.get(grupo.id)) cuadro.classList.add('rl-bloque--robado');
+      cuadro.style.setProperty('--rl-i', String(i));
+      bloque.appendChild(cuadro);
+      i += 1;
+    }
+    tira.appendChild(bloque);
+  }
+  return tira;
+}
+
+function crearLeyendaDeBloques(semana) {
+  const leyenda = nodo('div', 'rl-bloques-leyenda');
+  for (const grupo of semana.grupos) {
+    const item = nodo('span', 'rl-leyenda');
+    item.dataset.eje = grupo.eje;
+    item.append(nodo('b', null, String(grupo.n)), document.createTextNode(` ${grupo.nombre}`));
+    leyenda.appendChild(item);
+  }
+  if (semana.robados > 0) {
+    const item = nodo('span', 'rl-leyenda rl-leyenda--robado');
+    item.append(nodo('i', 'rl-bloque rl-bloque--robado'), nodo('b', null, String(semana.robados)), document.createTextNode(semana.robados === 1 ? ' robado al sueño' : ' robados al sueño'));
+    item.firstChild.dataset.eje = 'soloq';
+    leyenda.appendChild(item);
+  }
+  return leyenda;
+}
+
+// "Diamante I · 70 → 83 LP" con la barra del escalón (0-100 LP de la división: lo que tenías, lo que ganaste o perdiste).
+// En el ápice no hay escalón de 100: el LP solo, sin barra.
+function crearLpDeLaSemana(semana) {
+  const { despues, antes, delta } = semana;
+  const fila = nodo('div', 'rl-lp');
+  const rango = nodo('div', 'rl-lp-rango');
+  rango.appendChild(icono('ranked', { clase: 'ln-ico rl-lp-ico' }));
+  const mismoEscalon = antes && antes.nombre === despues.nombre;
+  if (mismoEscalon) {
+    rango.append(nodo('b', 'rl-lp-nombre', despues.nombre), nodo('span', 'rl-lp-desde', `${antes.lp} →`), nodo('b', 'rl-lp-n', String(despues.lp)), nodo('span', 'rl-lp-u', 'LP'));
+  } else {
+    if (antes) rango.append(nodo('span', 'rl-lp-desde', `${antes.nombre} →`));
+    rango.append(nodo('b', 'rl-lp-nombre', despues.nombre), nodo('b', 'rl-lp-n', String(despues.lp)), nodo('span', 'rl-lp-u', 'LP'));
+  }
+  if (despues.puesto) rango.append(nodo('span', 'rl-lp-puesto', `#${despues.puesto}`));
+  fila.appendChild(rango);
+
+  if (Number.isFinite(delta)) {
+    const d = nodo('span', `rl-lp-delta${delta > 0 ? ' rl-lp-delta--sube' : delta < 0 ? ' rl-lp-delta--baja' : ''}`);
+    if (delta !== 0) d.appendChild(triangulos(Math.abs(delta) >= LP_POR_DIVISION ? 'alta' : 'media', delta > 0 ? '+' : '-'));
+    const n = nodo('b', null, numeroConSigno(delta));
+    n.dataset.rueda = String(Math.abs(delta));
+    n.dataset.prefijo = numeroConSigno(delta).charAt(0);
+    d.append(n, document.createTextNode(' LP'));
+    fila.appendChild(d);
+  }
+
+  if (!despues.apice) {
+    // la barra: lo que quedó del escalón y, en el color del eje, lo que se movió esta semana (si fue en el mismo escalón;
+    // si subiste de división, todo lo de este escalón es nuevo; si bajaste, lo perdido se ve en --down)
+    const barra = nodo('div', 'rl-lp-barra');
+    const pct = (lp) => `${Math.max(0, Math.min(100, (lp / LP_POR_DIVISION) * 100))}%`;
+    const base = delta >= 0 ? (mismoEscalon ? antes.lp : 0) : despues.lp;
+    const tope = delta >= 0 ? despues.lp : (mismoEscalon ? antes.lp : LP_POR_DIVISION);
+    const quieto = nodo('i', 'rl-lp-base');
+    quieto.style.setProperty('width', pct(delta >= 0 ? base : despues.lp));
+    const movido = nodo('i', delta >= 0 ? 'rl-lp-gana' : 'rl-lp-pierde');
+    movido.style.setProperty('left', pct(base));
+    movido.style.setProperty('width', `calc(${pct(tope)} - ${pct(base)})`);
+    barra.append(quieto, movido);
+    fila.appendChild(barra);
+  }
+  return fila;
+}
+
+function crearSemana(entry, semana) {
+  const item = nodo('div', 'log-item log-item--semana' + (entry.cronica ? ' log-item--cronica' : ''));
+  item.dataset.type = entry.type ?? '';
+  item.dataset.acento = acentoDeLog(entry.type);
+  item.appendChild(icono(entry.type, { clase: 'ln-ico log-ico' }));
+
+  const rotulo = nodo('div', 'log-titulo rl-rotulo', 'La semana');
+  if (semana.plan) {
+    rotulo.append(nodo('span', 'rl-rotulo-sep', '·'), nodo('span', 'rl-rotulo-plan', semana.espera ? `mientras te esperan: ${semana.plan}` : `tu plan: ${semana.plan}`));
+  }
+  item.appendChild(rotulo);
+  if (entry.cronica && entry.perfil) item.appendChild(crearEleccion(entry));
+
+  const forma = soloVisual(nodo('div', 'rl-semana'));
+  forma.append(crearTiraDeBloques(semana), crearLeyendaDeBloques(semana));
+  if (semana.despues) forma.appendChild(crearLpDeLaSemana(semana));
+  item.appendChild(forma);
+  item.appendChild(prosa(entry.cuerpo));
+  if (entry.efectos) item.appendChild(filaDeEfectos(entry.efectos));
+  return item;
+}
+
+// --- El parche (`type: 'meta'`, systems/meta.js) -----------------------------------------------------------------------
+// "Parche 7: sigue la meta de tanques. <descripción del régimen>. LeBlanc: A → B. Viktor: B → A." | "Pretemporada. Se dio
+// vuelta el juego: se viene la meta de X. <desc>. <saltos>" | "Parche 18 a mitad de split: nerfean lo que venía arriba. El
+// meta vira a la meta de X. <saltos>" | "Sale Smolder. Todavía nadie sabe jugarlo…". El régimen sale de data/metas.json.
+const ORDEN_DE_TIER = { S: 0, A: 1, B: 2, C: 3 };
+const SALTO_DE_TIER = /:\s([SABC])\s→\s([SABC])(?=\.|$)/g;
+const CAMPEON_NUEVO = /^Sale (.+?)\. Todavía nadie sabe jugarlo/;
+
+export function leerParche(message) {
+  const texto = String(message ?? '').trim();
+  const nuevo = texto.match(CAMPEON_NUEVO);
+  if (nuevo) return { nuevo: nuevo[1], saltos: [], rotulo: 'Campeón nuevo', titular: `Sale ${nuevo[1]}`, descripcion: '' };
+  const saltos = [];
+  let cabeza = texto;
+  let previo = 0;
+  for (const m of texto.matchAll(SALTO_DE_TIER)) {
+    // el nombre: lo que va desde el salto anterior (o el último punto) hasta los dos puntos
+    const antes = texto.slice(previo, m.index);
+    const corte = antes.lastIndexOf('. ');
+    const nombre = (corte >= 0 ? antes.slice(corte + 2) : antes).trim();
+    if (saltos.length === 0) cabeza = texto.slice(0, previo + (corte >= 0 ? corte + 1 : 0)).trim();
+    saltos.push({ nombre, antes: m[1], despues: m[2], sube: ORDEN_DE_TIER[m[2]] < ORDEN_DE_TIER[m[1]] });
+    previo = m.index + m[0].length;
+  }
+  const regimen = METAS.find((r) => cabeza.includes(r.descripcion)) ?? [...METAS].sort((a, b) => b.nombre.length - a.nombre.length).find((r) => cabeza.includes(r.nombre));
+  const rotulo = cabeza.match(/^(Pretemporada|Parche \d+(?: a mitad de split)?)/)?.[1] ?? null;
+  if (!rotulo || !regimen) return null;
+  const verbo = /se viene la/i.test(cabeza) ? 'Se viene la' : /vira a la/i.test(cabeza) ? 'Vira a la' : 'Sigue la';
+  const descripcion = cabeza.includes(regimen.descripcion) ? regimen.descripcion : (cabeza.match(/nerfean lo que venía arriba/i) ? 'Nerfean lo que venía arriba.' : '');
+  return { nuevo: null, saltos, rotulo: rotulo.replace(' a mitad de split', ' · a mitad de split'), titular: `${verbo} ${regimen.nombre}`, descripcion, regimen: regimen.id };
+}
+
+// "Jugaste con Sylas (maestría 73). Ajuste al meta: 29/100." (systems/campeones.js, técnico) — también la variante del draft.
+const CAMPEON_DEL_SPLIT = /^(Jugaste con|En el draft no te dieron tu pick: te tocó) (.+?) \(maestría (\d+)\)\. Ajuste al meta: (\d+)\/(\d+)\.?$/;
+
+export function leerCampeonDelSplit(message) {
+  const m = String(message ?? '').match(CAMPEON_DEL_SPLIT);
+  if (!m) return null;
+  return { campeon: m[2], maestria: Number(m[3]), ajuste: Number(m[4]), maximo: Number(m[5]), sinPick: m[1] !== 'Jugaste con' };
+}
+
+function crearChipDeSalto(salto, propios) {
+  const chip = nodo('span', 'rl-salto' + (propios.has(salto.nombre) ? ' rl-salto--propio' : ''));
+  chip.dataset.signo = salto.sube ? 'sube' : 'baja';
+  chip.title = `${salto.nombre}: ${salto.antes} → ${salto.despues}`;
+  chip.append(caraDeCampeon(salto.nombre), nodo('span', 'rl-salto-nombre', salto.nombre));
+  const tiers = nodo('span', 'rl-salto-tiers');
+  tiers.append(nodo('span', `meta-tier meta-tier--${salto.antes}`, salto.antes), document.createTextNode('→'), nodo('span', `meta-tier meta-tier--${salto.despues}`, salto.despues));
+  chip.append(tiers, triangulos('baja', salto.sube ? '+' : '-'));
+  return chip;
+}
+
+function crearChipDeCampeonNuevo(nombre) {
+  const chip = nodo('span', 'rl-salto rl-salto--nuevo');
+  chip.title = `Sale ${nombre}`;
+  chip.append(nodo('span', 'rl-salto-marca', 'Nuevo'), caraDeCampeon(nombre), nodo('span', 'rl-salto-nombre', nombre));
+  return chip;
+}
+
+function propiosDe(state) {
+  return new Set((state?.player?.championPool ?? []).map((c) => c.name));
+}
+
+function crearFilaDeSaltos(parche, nuevos, state) {
+  const fila = nodo('div', 'rl-saltos');
+  fila.setAttribute('role', 'img');
+  fila.setAttribute('aria-label', [...parche.saltos.map((s) => `${s.nombre}: ${s.antes} → ${s.despues}`), ...nuevos.map((n) => `Sale ${n}`)].join('. '));
+  const propios = propiosDe(state);
+  for (const salto of parche.saltos) fila.appendChild(crearChipDeSalto(salto, propios));
+  for (const nombre of nuevos) fila.appendChild(crearChipDeCampeonNuevo(nombre));
+  return escalonar(fila);
+}
+
+// El campeón que jugaste y el ajuste al meta como medidor de 0 a 100.
+function crearMedidorDeMeta(campeon, mensaje, { tenue = false } = {}) {
+  const medidor = nodo('div', 'rl-medidor' + (tenue ? ' rl-medidor--tenue' : ''));
+  medidor.setAttribute('role', 'img');
+  medidor.setAttribute('aria-label', mensaje);
+  medidor.title = mensaje;
+  const quien = nodo('span', 'rl-medidor-camp');
+  quien.append(caraDeCampeon(campeon.campeon), nodo('b', null, campeon.campeon), nodo('span', 'rl-medidor-mae', `maestría ${campeon.maestria}`));
+  if (campeon.sinPick) quien.appendChild(nodo('span', 'rl-medidor-pick', 'sin tu pick'));
+  const ajuste = nodo('span', 'rl-medidor-ajuste');
+  const barra = nodo('span', 'rl-medidor-barra');
+  const lleno = nodo('i');
+  lleno.style.setProperty('width', `${Math.max(0, Math.min(100, (campeon.ajuste / campeon.maximo) * 100))}%`);
+  barra.appendChild(lleno);
+  const n = nodo('b', 'rl-medidor-n', String(campeon.ajuste));
+  n.dataset.rueda = String(campeon.ajuste);
+  ajuste.append(nodo('span', 'rl-medidor-rotulo', 'Ajuste al meta'), barra, n, nodo('span', 'rl-medidor-max', `/${campeon.maximo}`));
+  medidor.append(quien, ajuste);
+  return medidor;
+}
+
+function crearParche(entry, parche, { beat, state, usados }) {
+  const item = nodo('div', 'log-item log-item--breaking log-item--parche');
+  item.dataset.type = 'meta';
+  item.dataset.acento = acentoDeLog('meta');
+  item.appendChild(icono('meta', { clase: 'ln-ico log-ico' }));
+  item.appendChild(soloVisual(nodo('span', 'log-rotulo', parche.rotulo)));
+  item.appendChild(soloVisual(nodo('div', 'rl-titular rl-breve', parche.titular)));
+  item.appendChild(prosa(entry.message));
+  // el campeón que sale (adjunto del mismo parche) y el ajuste (técnico del mismo split) viajan adentro de esta tarjeta
+  const nuevos = [];
+  for (const adjunto of beat?.adjuntos ?? []) {
+    const otro = adjunto.type === 'meta' ? leerParche(adjunto.message) : null;
+    if (otro?.nuevo) {
+      nuevos.push(otro.nuevo);
+      usados.add(adjunto);
+      item.appendChild(prosa(adjunto.message));
+    }
+  }
+  if (parche.nuevo) nuevos.unshift(parche.nuevo);
+  if (parche.saltos.length > 0 || nuevos.length > 0) item.appendChild(crearFilaDeSaltos(parche, nuevos, state));
+  const tecnico = (beat?.tecnicos ?? []).find((t) => t.type === 'campeones' && leerCampeonDelSplit(t.message));
+  if (tecnico) {
+    usados.add(tecnico);
+    item.appendChild(crearMedidorDeMeta(leerCampeonDelSplit(tecnico.message), tecnico.message));
+  }
+  return item;
+}
+
+// Un parche que viaja adentro de otro beat (no te movió el main): una línea con el titular y los saltos.
+function crearParcheAdjunto(adjunto, parche, state) {
+  const linea = nodo('div', 'log-adjunto rl-parche-adjunto');
+  linea.dataset.type = 'meta';
+  const cabeza = soloVisual(nodo('div', 'rl-parche-cabeza rl-breve'));
+  cabeza.append(icono('meta', { clase: 'ln-ico rl-parche-ico' }), nodo('span', 'rl-parche-rotulo', parche.rotulo), nodo('span', 'rl-parche-titular', parche.titular));
+  linea.appendChild(cabeza);
+  linea.appendChild(prosa(adjunto.message));
+  if (parche.saltos.length > 0 || parche.nuevo) linea.appendChild(crearFilaDeSaltos(parche, parche.nuevo ? [parche.nuevo] : [], state));
+  return linea;
+}
+
+// --- El evento que resolvió tu perfil (la crónica, systems/events.js) -------------------------------------------------
+// El título; el planteo en una línea (el resto, en "más"); la elección como cita con la placa del perfil ("COMO LEAL →
+// Agarrar solo lo que te sirve"); el resultado en una línea; los chips. El texto entero está en el nodo: CSS lo recorta en
+// breves y lo muestra en completos (un lector de pantalla lo lee entero).
+function crearEleccion(entry) {
+  const eleccion = nodo('div', 'rl-eleccion');
+  const placa = nodo('span', 'rl-perfil');
+  placa.append(nodo('span', 'rl-perfil-como', 'Como '), nodo('b', null, String(entry.perfil ?? '').toLowerCase()));
+  eleccion.append(placa, soloVisual(icono('flecha', { clase: 'ln-ico rl-eleccion-flecha' })), nodo('q', 'rl-opcion', entry.opcion));
+  return eleccion;
+}
+
+function crearCronica(entry) {
+  const item = nodo('div', 'log-item log-item--cronica');
+  item.dataset.type = entry.type ?? '';
+  item.dataset.acento = acentoDeLog(entry.type);
+  item.appendChild(icono(entry.type, { clase: 'ln-ico log-ico' }));
+  item.appendChild(nodo('div', 'log-titulo', entry.titulo ?? ''));
+  // "más" cuando hay algo que el recorte de una línea puede esconder (el ancho lo decide el navegador; de más, no molesta)
+  const largo = [entry.descripcion, entry.cuerpo].some((t) => String(t ?? '').length > LARGO_DE_UNA_LINEA);
+  if (entry.descripcion) item.appendChild(nodo('p', 'log-cronica-planteo rl-recorte', entry.descripcion));
+  item.appendChild(crearEleccion(entry));
+  if (entry.cuerpo) item.appendChild(nodo('p', 'log-cronica-resultado rl-recorte', entry.cuerpo));
+  if (largo) {
+    const mas = nodo('button', 'rl-mas', 'más');
+    mas.type = 'button';
+    mas.setAttribute('aria-expanded', 'false');
+    mas.addEventListener('click', () => {
+      const abierto = item.classList.toggle('rl-abierto');
+      mas.setAttribute('aria-expanded', String(abierto));
+      mas.textContent = abierto ? 'menos' : 'más';
+    });
+    item.appendChild(mas);
+  }
+  if (entry.efectos) item.appendChild(filaDeEfectos(entry.efectos));
+  return item;
+}
+
+// --- Las series que no frenan (PLANUI §0.3, 6.2) -----------------------------------------------------------------------
+// Sus mapas llegan como líneas `adjunto` con campos (`mapa`, `resultado`, `campeon`, `rivalJuega`, `marcador`): una fila de
+// teselas (components/serie.js). La línea que la anuncia ("Sos el favorito claro (94%…)", "Serie sin nada en juego (65
+// contra 51 de X)…") queda en una píldora.
+const SERIE_SIN_NADA = /^Serie sin nada en juego \((\d+) contra (\d+) de (.+?)\)/;
+
+function esMapa(entrada) {
+  return entrada?.type === 'serie' && Number.isFinite(entrada.mapa) && (entrada.resultado === 'W' || entrada.resultado === 'L');
+}
+
+function crearAnuncioDeSerie(entrada) {
+  const sinNada = String(entrada.message ?? '').match(SERIE_SIN_NADA);
+  if (!entrada.cantada && !sinNada) return null;
+  const linea = nodo('div', 'log-adjunto rl-anuncio');
+  linea.dataset.type = 'serie';
+  const pildora = soloVisual(nodo('span', 'rl-pildora rl-breve'));
+  if (entrada.cantada) {
+    pildora.dataset.lado = entrada.cantada;
+    pildora.append(nodo('span', null, entrada.cantada === 'favorito' ? 'Favorito claro' : 'No sos el favorito'), nodo('b', null, Number.isFinite(entrada.pSerie) ? `${Math.round(entrada.pSerie * 100)}%` : ''));
+  } else {
+    pildora.append(nodo('span', null, 'Sin nada en juego'), nodo('b', null, `${sinNada[1]} vs ${sinNada[2]}`));
+  }
+  linea.append(pildora, soloVisual(nodo('span', 'rl-anuncio-coach rl-breve', 'juega el plan del coach')), prosa(entrada.message, 'span'));
+  return linea;
+}
+
+function crearMapaDeBeat(entry) {
+  const item = nodo('div', 'log-item log-item--mapa');
+  item.dataset.type = 'serie';
+  item.dataset.acento = entry.resultado === 'W' ? 'up' : 'danger';
+  item.appendChild(icono('serie', { clase: 'ln-ico log-ico' }));
+  item.appendChild(crearFilaDeMapas([entry], { grande: true }));
+  if (entry.cierre) item.appendChild(nodo('div', 'rl-mapa-cierre', entry.cierre));
+  // la línea del motor ya es la de la tesela para un lector: acá es solo para la vista con textos completos
+  item.appendChild(soloVisual(prosa(entry.message)));
+  return item;
+}
+
+// --- La práctica del plan del año (adjunto): "Entrenaste según el plan del año: La cabeza primero (tramo 3 de 3: …)." ---
+const PRACTICA_DEL_PLAN = /^Entrenaste según el plan del año: (.+?) \(tramo (\d+) de (\d+): (.+)\)\.?$/;
+
+function crearPractica(entrada) {
+  const m = String(entrada.message ?? '').match(PRACTICA_DEL_PLAN);
+  if (!m) return null;
+  const linea = nodo('div', 'log-adjunto rl-practica');
+  linea.dataset.type = 'practica';
+  const cabeza = soloVisual(nodo('span', 'rl-practica-cabeza rl-breve'));
+  cabeza.append(icono('practica', { clase: 'ln-ico rl-practica-ico' }), nodo('span', null, m[1]), nodo('span', 'rl-practica-tramo', `tramo ${m[2]}/${m[3]}`));
+  linea.append(cabeza, prosa(entrada.message), filaDeEfectos(m[4]));
+  return linea;
+}
+
+// --- El beat que corta la carrera ----------------------------------------------------------------------------------------
+// No hay un campo que lo marque: es la última línea narrativa de una carrera que terminó (burnout, la casa, la edad, una
+// lesión, la ventana de vuelta que se cerró) o la del retiro que abre la ventana de vuelta (`systems/retiro.js` la empieza
+// con `state.motivoRetiro`).
+function ultimaNarrativa(logs) {
+  for (let i = (logs?.length ?? 0) - 1; i >= 0; i -= 1) {
+    if (formaBeat(logs[i])) return logs[i];
+  }
+  return null;
+}
+
+export function esCorte(entry, state) {
+  if (!entry || !state || !(state.terminado || state.phase === 'retirado')) return false;
+  if (ultimaNarrativa(state.logs) !== entry) return false;
+  if (state.terminado) return true;
+  return entry.type === 'retiro' && Boolean(state.motivoRetiro) && String(entry.message ?? '').startsWith(state.motivoRetiro);
+}
+
+function crearAlertaDeCorte(entry, state) {
+  const item = nodo('div', 'log-item log-item--alerta');
+  item.dataset.type = entry.type ?? '';
+  item.dataset.acento = 'danger';
+  item.appendChild(icono('alto', { clase: 'ln-ico log-ico' }));
+  item.appendChild(nodo('div', 'rl-alerta-kicker', state.terminado ? 'Fin de la carrera' : 'Te retirás'));
+  item.appendChild(nodo('div', 'rl-alerta-texto', entry.message));
+  return item;
+}
+
+export function crearLogItem(entry, { beat = null, state = null, usados = new Set() } = {}) {
   if (entry.type === 'top_mundial' && Array.isArray(entry.top20)) {
     return crearRevealTop20(entry);
   }
@@ -153,6 +603,17 @@ export function crearLogItem(entry) {
   if (entry.type === 'internacional' && entry.mundial) {
     return crearTarjetaMundial(entry);
   }
+  if (entry.type === 'meta' && !entry.tecnico) {
+    const parche = leerParche(entry.message);
+    if (parche) return crearParche(entry, parche, { beat, state, usados });
+  }
+  const semana = leerSemana(entry);
+  if (semana) return crearSemana(entry, semana);
+  if (esMapa(entry)) return crearMapaDeBeat(entry);
+
+  // K4-C: el evento que resolvió tu perfil, en una línea de crónica — el título, lo que planteaba, qué tomaste
+  // (como quién) y qué pasó. Un solo ítem del feed: el texto del evento no se pierde, pasa a ser la historia.
+  if (entry.cronica) return crearCronica(entry);
 
   const item = document.createElement('div');
   item.className = 'log-item' + (entry.tecnico ? ' log-item--tecnico' : '');
@@ -171,40 +632,11 @@ export function crearLogItem(entry) {
     item.appendChild(rotulo);
   }
 
-  // K4-C: el evento que resolvió tu perfil, en una línea de crónica — el título, lo que planteaba, qué tomaste
-  // (como quién) y qué pasó. Un solo ítem del feed: el texto del evento no se pierde, pasa a ser la historia.
-  if (entry.cronica) {
-    item.classList.add('log-item--cronica');
-    const titulo = document.createElement('div');
-    titulo.className = 'log-titulo';
-    titulo.textContent = entry.titulo ?? '';
-    item.appendChild(titulo);
-    if (entry.descripcion) {
-      const planteo = document.createElement('div');
-      planteo.className = 'log-cronica-planteo';
-      planteo.textContent = entry.descripcion;
-      item.appendChild(planteo);
-    }
-    const decision = document.createElement('div');
-    decision.className = 'log-cronica-decision';
-    const como = document.createElement('span');
-    como.className = 'log-cronica-perfil';
-    como.textContent = `Como ${String(entry.perfil ?? '').toLowerCase()}: `;
-    decision.append(como, `${entry.opcion}. ${entry.cuerpo}`);
-    item.appendChild(decision);
-    if (entry.efectos) {
-      const efectos = document.createElement('div');
-      efectos.className = 'log-efectos';
-      efectos.textContent = entry.efectos;
-      item.appendChild(efectos);
-    }
-    return item;
-  }
-
   if (!entry.cuerpo) {
     const msg = document.createElement('div');
     msg.textContent = entry.message;
     item.appendChild(msg);
+    if (entry.efectos) item.appendChild(filaDeEfectos(entry.efectos));
     return item;
   }
 
@@ -217,38 +649,75 @@ export function crearLogItem(entry) {
   cuerpo.textContent = entry.cuerpo;
   item.appendChild(cuerpo);
 
-  if (entry.efectos) {
-    const efectos = document.createElement('div');
-    efectos.className = 'log-efectos';
-    efectos.textContent = entry.efectos;
-    item.appendChild(efectos);
-  }
+  if (entry.efectos) item.appendChild(filaDeEfectos(entry.efectos));
 
   return item;
 }
 
 // K4c-F: las líneas `adjunto` (core/log.js) van adentro del beat anterior, legibles, una por renglón — no compiten
-// por un beat del reproductor pero siguen a la vista en el feed.
-export function crearAdjuntos(entradas) {
+// por un beat del reproductor pero siguen a la vista en el feed. C1b: los mapas seguidos de una serie que no frenó son
+// una fila de teselas; el parche que no te movió el main, una línea con sus saltos; la práctica del plan, sus chips.
+export function crearAdjuntos(entradas, state = null) {
   const bloque = document.createElement('div');
   bloque.className = 'log-adjuntos';
+  let mapas = [];
+  const soltarMapas = () => {
+    if (mapas.length === 0) return;
+    bloque.appendChild(crearFilaDeMapas(mapas));
+    // cada tesela ya se lee con su línea del motor; la prosa es para la vista con textos completos
+    const lineas = soloVisual(prosa(undefined));
+    for (const mapa of mapas) lineas.appendChild(nodo('p', null, mapa.message ?? ''));
+    bloque.appendChild(lineas);
+    mapas = [];
+  };
   for (const entrada of entradas) {
+    if (esMapa(entrada)) {
+      mapas.push(entrada);
+      continue;
+    }
+    soltarMapas();
+    const parche = entrada.type === 'meta' ? leerParche(entrada.message) : null;
+    const forma = parche ? crearParcheAdjunto(entrada, parche, state)
+      : entrada.type === 'serie' ? crearAnuncioDeSerie(entrada)
+        : entrada.type === 'practica' ? crearPractica(entrada)
+          : null;
+    if (forma) {
+      bloque.appendChild(forma);
+      continue;
+    }
     const linea = document.createElement('div');
     linea.className = 'log-adjunto';
     linea.dataset.type = entrada.type ?? '';
     linea.textContent = entrada.message ?? entrada.cuerpo ?? entrada.titulo ?? '';
     bloque.appendChild(linea);
   }
+  soltarMapas();
   return bloque;
 }
+
+// La tira técnica (los logs `tecnico`), atenuada: "Split 6: mecánica -1, macro 53, consistencia 3." en chips (el delta con
+// su signo, los valores sin), el campeón del split con su medidor; lo demás ("Temporada regular: 9-1…", "El mercado se
+// movió…") en texto, como siempre.
+const LINEA_DE_SPLIT = /^(Split \d+):\s*(.+)$/;
 
 export function crearTiraTecnica(entradas) {
   const tira = document.createElement('div');
   tira.className = 'log-tira-tecnica';
-  tira.textContent = entradas
-    .map((e) => e.message ?? e.cuerpo ?? e.titulo ?? '')
-    .filter(Boolean)
-    .join(' · ');
+  for (const e of entradas) {
+    const texto = e.message ?? e.cuerpo ?? e.titulo ?? '';
+    if (!texto) continue;
+    const split = texto.match(LINEA_DE_SPLIT);
+    const campeon = e.type === 'campeones' ? leerCampeonDelSplit(texto) : null;
+    if (split) {
+      const item = nodo('div', 'rl-tec rl-tec--split');
+      item.append(soloVisual(nodo('span', 'rl-tec-rotulo', split[1])), filaDeEfectos(texto, { tenue: true }));
+      tira.appendChild(item);
+    } else if (campeon) {
+      tira.appendChild(crearMedidorDeMeta(campeon, texto, { tenue: true }));
+    } else {
+      tira.appendChild(nodo('div', 'rl-tec rl-tec--texto', texto));
+    }
+  }
   return tira;
 }
 
@@ -280,14 +749,19 @@ export function agruparBeats(entradas, offset = 0) {
 }
 
 export function nodoDeBeat(beat, state) {
+  // C1b: lo que una forma ya mostró adentro (el campeón que sale y el ajuste al meta, en la tarjeta del parche) no se repite
+  // en los adjuntos ni en la tira técnica.
+  const usados = new Set();
   let nodo;
   if (beat.narrativa) {
     if (beat.narrativa.type === 'temporada' && state) {
       nodo = crearTarjetaResultado(beat.narrativa, state);
     } else if (beat.narrativa.type === 'serie' && beat.narrativa.postSerie) {
       nodo = crearTarjetaResultadoSerie(beat.narrativa, state);
+    } else if (esCorte(beat.narrativa, state)) {
+      nodo = crearAlertaDeCorte(beat.narrativa, state);
     } else {
-      nodo = crearLogItem(beat.narrativa);
+      nodo = crearLogItem(beat.narrativa, { beat, state, usados });
     }
   } else {
     nodo = document.createElement('div');
@@ -302,11 +776,13 @@ export function nodoDeBeat(beat, state) {
     prob.textContent = jugada;
     nodo.appendChild(prob);
   }
-  if (beat.adjuntos.length > 0) {
-    nodo.appendChild(crearAdjuntos(beat.adjuntos));
+  const adjuntos = beat.adjuntos.filter((entrada) => !usados.has(entrada));
+  if (adjuntos.length > 0) {
+    nodo.appendChild(crearAdjuntos(adjuntos, state));
   }
-  if (beat.tecnicos.length > 0) {
-    nodo.appendChild(crearTiraTecnica(beat.tecnicos));
+  const tecnicos = beat.tecnicos.filter((entrada) => !usados.has(entrada));
+  if (tecnicos.length > 0) {
+    nodo.appendChild(crearTiraTecnica(tecnicos));
   }
   return nodo;
 }
@@ -368,7 +844,23 @@ export function numerosDeEfectos(texto) {
 
 export function animarEfectos(nodo, { animar = true } = {}) {
   if (!animar) return nodo;
+  // C1b: el beat recién llegado entra (`.rl-entra`, feed.css: el beat sube, los chips y los bloques en cascada, las barras se
+  // llenan). La clase vive solo en el nodo nuevo: en el paso siguiente `reemplazarEnElLugar` le pone la del nodo fresco y
+  // nada se vuelve a animar.
+  nodo.classList?.add('rl-entra');
+  // Los números de los chips (y el LP de la semana, el ajuste al meta) ruedan desde 0: `data-rueda` es el valor final y
+  // `data-prefijo` su signo. Adentro de una imagen para lectores (`role="img"` con el texto del motor), así que el conteo no
+  // se anuncia; igual se le saca al lector cada cuadro intermedio.
+  for (const el of nodo.querySelectorAll('[data-rueda]')) {
+    const valor = Number(el.dataset.rueda);
+    if (!Number.isFinite(valor)) continue;
+    const prefijo = el.dataset.prefijo ?? '';
+    el.setAttribute('aria-hidden', 'true');
+    moverNumero(el, 0, valor, { formato: (n) => `${prefijo}${n}`, duracion: DURACION_DE_LOS_EFECTOS_MS, animar });
+  }
+  // una línea de efectos que quedó en texto (sin chips): el camino de siempre
   for (const linea of nodo.querySelectorAll('.log-efectos')) {
+    if (linea.querySelector?.('.eje-chip')) continue;
     const texto = linea.textContent;
     const numeros = numerosDeEfectos(texto);
     if (numeros.length === 0) continue;
