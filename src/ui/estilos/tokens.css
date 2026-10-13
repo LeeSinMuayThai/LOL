@@ -1016,23 +1016,28 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
 
 /* PLANUI §0.3 (punto 1), los ejes de lo que ganás (src/ui/core/ejes.js): un color por eje, el mismo en la planilla, en
    "lo que pasó", en los chips del relato y en la placa "Vos". El color dice QUÉ se movió; hacia dónde lo dicen los
-   triángulos y el número (--up / --down). Ningún eje es verde ni rojo puro: esos son el signo. Valores iniciales: el
-   worker de los ejes los ajusta contra el contraste (src/dev/contraste.mjs) y la separación entre ejes. */
+   triángulos y el número (--up / --down). Ningún eje es verde ni rojo puro: esos son el signo. C1a los ajustó por
+   separación (distancia OKLab entre los ejes que se ven juntos: la planilla, la placa "Vos" amateur y la pro): SoloQ
+   pasó a cian (lejos de la luz azul de la era), Estudios a limón (el amarillo de antes era el --gold de "rara" y casi
+   el Hype), Hype queda oro, Cabeza se corrió a rosa orquídea (lejos del --down). Mínimo entre ejes que conviven: 0,116
+   (estudios-hype; en la planilla, 0,160); contra --up/--down, >= 0,13; todos >= 7:1 sobre el panel. Hype queda casi
+   en el --warn (0,027): no conviven en la planilla, la placa ni "lo que pasó". Los rellenos (-fill) bajan de alfa en los
+   ejes más claros (SoloQ, Estudios, Juego, Hype) para que el número en --down sobre el chip siga en >= 4,5:1. */
 :root {
-  --eje-soloq: #5cc8ff;
-  --eje-soloq-fill: #5cc8ff2e;
-  --eje-estudios: #ffd166;
-  --eje-estudios-fill: #ffd1662e;
-  --eje-sueno: #a78bfa;
-  --eje-sueno-fill: #a78bfa2e;
-  --eje-casa: #ff9f6b;
-  --eje-casa-fill: #ff9f6b2e;
-  --eje-cabeza: #f472b6;
-  --eje-cabeza-fill: #f472b62e;
+  --eje-soloq: #3fd3f0;
+  --eje-soloq-fill: #3fd3f026;
+  --eje-estudios: #eef06e;
+  --eje-estudios-fill: #eef06e20;
+  --eje-sueno: #9a90ff;
+  --eje-sueno-fill: #9a90ff2e;
+  --eje-casa: #ff9466;
+  --eje-casa-fill: #ff94662e;
+  --eje-cabeza: #f57ccf;
+  --eje-cabeza-fill: #f57ccf2e;
   --eje-juego: #dbe4f3;
-  --eje-juego-fill: #dbe4f324;
-  --eje-fama: #f5c542;
-  --eje-fama-fill: #f5c5422e;
+  --eje-juego-fill: #dbe4f320;
+  --eje-fama: #ffbf3f;
+  --eje-fama-fill: #ffbf3f24;
   --eje-equipo: #9fb4d9;
   --eje-equipo-fill: #9fb4d92e;
   /* el eje de un chip (estilos/ejes.css lo pone por [data-eje]); sin eje, neutro */
