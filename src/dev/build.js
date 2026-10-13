@@ -126,7 +126,12 @@ const SPLITS_DE_VERIFICACION = 30;
 // mide 2934 y sube a 3000) la ola 1 junta mide 3060 KB: medido el mismo día sobre un árbol armado con este commit más
 // los archivos de `u1k-kit` (`src/ui/fx/`, `estilos/fx.css`, `sonido.js`; no se pisan). Subido a 3150: ~90 KB (3%) de
 // margen sobre ese peso, no una expectativa. Esta rama sola mide 2738.
-const PESO_MAXIMO_KB = 3150;
+// Re-medido en la ola 2 rehecha de PLANUI (2026-10-13, `claude/vigilant-carson-rxv72t` f594abe): 3432 KB contra 3150.
+// Lo que creció es la UI nueva de la ola 2 (las pantallas de la vitrina con op=linea): la transmisión del partido
+// (caraACara, stream, transmisionComun y transmision.css), el mercado de la compuerta 2 (mercado, fichaje, jersey y
+// mercado.css), la costura de la bisagra y la decisión nueva. Subido a 3550: ~118 KB (3,4%) de margen sobre el peso
+// medido ese día, no una expectativa.
+const PESO_MAXIMO_KB = 3550;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
