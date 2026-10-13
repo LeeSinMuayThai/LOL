@@ -211,3 +211,36 @@
 .serie-contexto--completo .serie-lado { flex-direction: column; gap: var(--s-1); text-align: center; justify-content: flex-start; }
 .serie-contexto--completo .serie-lado--rival { flex-direction: column-reverse; justify-content: flex-end; }
 .serie-contexto--completo .serie-lado-nombre { font-size: var(--fs-2); white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; max-width: 100%; }
+
+/* C1b (PLANUI §0.3, 6.2): la fila de mapas (components/serie.js, crearFilaDeMapas). Una tesela por mapa: el número y el
+   marcador arriba, VICTORIA o DERROTA en --up / --down, tu campeón con su cara y con qué salió el rival. La usan el relato
+   (los mapas de una serie que no frenó, y el mapa ya contado en el cara a cara) y la tarjeta de post-serie. */
+/* flex y no una grilla auto-fill: con un tope de ancho, la grilla aportaba seis columnas a su ancho mínimo y empujaba la
+   página entera a 645 px en un celular */
+.rl-mapas { display: flex; flex-wrap: wrap; gap: 6px; }
+.rl-mapa {
+  --rl-res: var(--up);
+  position: relative; display: grid; gap: 4px; align-content: start; flex: 0 0 auto; width: 128px; min-width: 0; padding: 8px 10px 9px 12px;
+  border-radius: 8px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--linea);
+  overflow: hidden; text-shadow: none;
+}
+.rl-mapa[data-resultado='L'] { --rl-res: var(--down); }
+.rl-mapa::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--rl-res); box-shadow: 0 0 10px var(--rl-res); }
+.rl-mapa-cabeza { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font: 600 10.5px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.rl-mapa-marcador { letter-spacing: 0.04em; color: var(--ink-dim); }
+.rl-mapa-res { font: 800 15px / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: 0.01em; text-transform: uppercase; white-space: nowrap; color: var(--rl-res); }
+.rl-mapa-camp { display: flex; align-items: center; gap: 6px; min-width: 0; font: 600 13px / 1.15 var(--f-cuerpo); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rl-mapa-camp .campeon-tile { flex: none; width: 18px; height: 18px; border-radius: 50%; }
+.rl-mapa-camp .campeon-tile-ini { font-size: 7px; }
+.rl-mapa-rival { font: 500 11px / 1.2 var(--f-mono); color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rl-mapa--grande { width: 240px; padding: 10px 14px 12px 16px; }
+.rl-mapa--grande .rl-mapa-res { font-size: 22px; }
+.rl-mapa--grande .rl-mapa-camp { font-size: 15px; }
+.rl-mapa--grande .rl-mapa-camp .campeon-tile { width: 24px; height: 24px; }
+@media (max-width: 640px) {
+  .rl-mapas { gap: 5px; }
+  .rl-mapa { width: calc((100% - 10px) / 3); padding: 7px 8px 8px 10px; }
+  .rl-mapa--grande { width: min(240px, 100%); }
+  .rl-mapa-res { font-size: 13px; letter-spacing: 0; }
+  .rl-mapa--grande .rl-mapa-res { font-size: 19px; }
+}

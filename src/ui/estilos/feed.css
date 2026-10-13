@@ -46,15 +46,12 @@
 .log-titulo { margin-bottom: 4px; font: 600 var(--t-rotulo) / 1.3 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
 .log-rotulo { justify-self: start; margin-bottom: 4px; font: 600 10px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--gold); }
 .log-item--escena .log-titulo, .log-item--top-mundial .log-titulo { color: var(--gold); }
-.log-efectos { margin-top: 6px; font: 500 12px / 1.4 var(--f-mono); letter-spacing: 0.04em; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+.log-efectos { margin-top: 8px; font: 500 12px / 1.4 var(--f-mono); letter-spacing: 0.04em; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
 .efecto-numero { font-variant-numeric: tabular-nums; }
 /* las lineas adjuntas viajan con su beat, mas chicas; la tira tecnica, tenue */
 .log-adjuntos { display: grid; gap: 3px; margin-top: 6px; font-size: 14px; line-height: 1.4; color: var(--ink-dim); overflow-wrap: anywhere; }
-.log-tira-tecnica { margin-top: 6px; font: 500 11px / 1.4 var(--f-mono); color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.log-tira-tecnica { display: grid; gap: 5px; justify-items: start; margin-top: 8px; font: 500 11px / 1.4 var(--f-mono); color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 .log-item--tecnico { display: block; padding: 6px 0 6px 32px; font: 500 12px / 1.4 var(--f-mono); color: var(--ink-mute); text-shadow: none; }
-/* la cronica de un evento: lo que planteaba, que tomaste y que paso */
-.log-cronica-planteo { margin-bottom: 4px; font-size: 15px; color: var(--ink-dim); }
-.log-cronica-perfil { color: var(--luz-texto); }
 .resultado-prob { margin-top: 6px; font: 500 12px / 1.4 var(--f-mono); color: var(--ink-dim); }
 
 /* --- las tarjetas: graficos del sistema (UN panel cada una) ----------------- */
@@ -81,13 +78,10 @@
 .resultado-fuerza { margin-left: auto; font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
 .resultado-cuerpo { margin: 4px 0 8px; font-size: 16px; line-height: 1.45; color: var(--ink); }
 .resultado-pie { margin-top: 8px; font: 500 12px / 1.4 var(--f-mono); color: var(--ink-dim); font-variant-numeric: tabular-nums; }
-.resultado-camino { display: grid; gap: 6px; margin-top: 10px; }
-.resultado-mapa-fila { display: flex; align-items: baseline; gap: 10px; font-size: 14px; color: var(--ink-dim); }
-.resultado-mapa-tag { min-width: 26px; padding: 3px 6px; border-radius: var(--r-chip); font: 700 11px / 1 var(--f-mono); text-align: center; font-variant-numeric: tabular-nums; }
-.resultado-mapa-tag--ganado { background: var(--up-fill); color: var(--up); }
-.resultado-mapa-tag--perdido { background: var(--down-fill); color: var(--down); }
-.resultado-mapa-campeon { font-weight: 600; color: var(--ink); }
-.resultado-mapa-cierre { font: 500 11px / 1.3 var(--f-mono); color: var(--ink-mute); }
+.resultado-camino { margin-top: 10px; }
+.resultado-cierres { margin-top: 8px; font: 500 12px / 1.45 var(--f-mono); color: var(--ink-mute); }
+.resultado-cierres p { margin: 2px 0; }
+html[data-textos='completos'] .resultado-cierres { font: 500 12px / 1.45 var(--f-mono); color: var(--ink-mute); }
 
 /* el ranking del mundo al cierre de temporada */
 .reveal-top20-sub { margin-bottom: 10px; font-size: 15px; color: var(--ink-dim); }
@@ -145,6 +139,198 @@
   .reproduciendo-aviso { display: none; }
   /* la barra de cuartos va fija abajo: el ultimo beat no queda detras */
   .log-list > * { scroll-margin-bottom: calc(var(--barra-alto) + 16px); }
+}
+
+/* ==========================================================================
+   C1b (PLANUI §0.3, punto 3): CADA BEAT CON SU FORMA. Los efectos en chips de
+   eje (ejes.css); la semana como tira de bloques y el LP sobre la barra del
+   escalon; el parche como chips de campeon con su salto de tier y el ajuste
+   al meta como medidor; la cronica como cita con la placa del perfil; los
+   mapas como teselas (serie.css); el beat que corta, una alerta. La prosa
+   original en .rl-prosa: se ve con textos completos, en breves queda para
+   lectores de pantalla. .rl-breve es lo que la resume (se va en completos).
+   ========================================================================== */
+html:not([data-textos='completos']) .rl-prosa {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+html[data-textos='completos'] .rl-prosa { margin-top: 6px; font-size: 15px; line-height: 1.45; color: var(--ink-dim); }
+html[data-textos='completos'] .rl-prosa p { margin: 2px 0; }
+html[data-textos='completos'] .rl-breve { display: none; }
+
+/* --- la cronica: el planteo en una linea, la eleccion como cita, el resultado en una linea --- */
+.log-cronica-planteo { margin: 0 0 6px; font-size: 14px; line-height: 1.4; color: var(--ink-dim); }
+.log-cronica-resultado { margin: 6px 0 0; font-size: 15px; line-height: 1.4; color: var(--ink-dim); }
+.rl-recorte { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; }
+.rl-abierto .rl-recorte, html[data-textos='completos'] .rl-recorte { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.rl-eleccion { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.rl-perfil {
+  display: inline-flex; align-items: baseline; gap: 4px; padding: 3px 9px; border-radius: var(--r-chip);
+  border: 1px solid var(--rl-perfil-borde); background: var(--rl-perfil-fondo);
+  font: 600 10.5px / 1.2 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); white-space: nowrap;
+}
+.rl-perfil b { font-weight: 700; color: var(--luz-texto); }
+.rl-eleccion-flecha { color: var(--ink-mute); }
+.rl-opcion { flex: 1 1 18ch; min-width: 0; font: 600 var(--t-opcion) / 1.3 var(--f-cuerpo); color: var(--ink); quotes: '\00AB' '\00BB'; }
+.rl-opcion::before, .rl-opcion::after { color: var(--luz-texto); }
+.rl-mas {
+  justify-self: start; margin-top: 4px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 600 10.5px / 1.4 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute);
+}
+.rl-mas:hover, .rl-mas:focus-visible { color: var(--luz-texto); }
+html[data-textos='completos'] .rl-mas { display: none; }
+
+/* --- el rotulo con su complemento (la semana con su plan) --- */
+.rl-rotulo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.rl-rotulo-sep { color: var(--ink-mute); }
+.rl-rotulo-plan { text-transform: none; letter-spacing: 0.02em; color: var(--ink-dim); }
+.log-item--semana .rl-eleccion { margin-bottom: 8px; }
+
+/* --- la semana: los bloques (un cuadrado por bloque, en el color de su eje; los robados al sueno, rayados) y el LP --- */
+.rl-semana { display: grid; gap: 8px; margin-top: 4px; }
+.rl-bloques { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.rl-bloques-grupo { display: inline-flex; flex-wrap: wrap; gap: 3px; }
+.rl-bloque {
+  --eje: var(--ink-mute);
+  display: inline-block; width: var(--rl-bloque); height: var(--rl-bloque); border-radius: 3px;
+  background: var(--eje); box-shadow: 0 0 10px -2px var(--eje);
+}
+.rl-bloque[data-eje='soloq'] { --eje: var(--eje-soloq); }
+.rl-bloque[data-eje='estudios'] { --eje: var(--eje-estudios); }
+.rl-bloque[data-eje='casa'] { --eje: var(--eje-casa); }
+.rl-bloque[data-eje='sueno'] { --eje: var(--eje-sueno); }
+.rl-bloque--robado {
+  background: linear-gradient(135deg, var(--eje-sueno) 25%, var(--eje) 25% 50%, var(--eje-sueno) 50% 75%, var(--eje) 75%) 0 0 / 6px 6px;
+  box-shadow: inset 0 0 0 1px var(--eje-sueno);
+}
+.rl-bloques-leyenda { display: flex; flex-wrap: wrap; gap: 4px 14px; font: 500 11px / 1.3 var(--f-mono); letter-spacing: 0.04em; color: var(--ink-dim); }
+.rl-leyenda { display: inline-flex; align-items: center; gap: 4px; }
+.rl-leyenda b { font-weight: 700; }
+.rl-leyenda[data-eje='soloq'] b { color: var(--eje-soloq); }
+.rl-leyenda[data-eje='estudios'] b { color: var(--eje-estudios); }
+.rl-leyenda[data-eje='casa'] b { color: var(--eje-casa); }
+.rl-leyenda[data-eje='sueno'] b { color: var(--eje-sueno); }
+.rl-leyenda--robado b { color: var(--eje-sueno); }
+.rl-leyenda--robado .rl-bloque { width: 10px; height: 10px; margin-right: 2px; }
+.rl-lp { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.rl-lp-rango { display: inline-flex; align-items: baseline; gap: 6px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.rl-lp-ico { align-self: center; width: 16px; height: 16px; color: var(--eje-soloq); }
+.rl-lp-nombre { font: 700 16px / 1.1 var(--f-cuerpo); color: var(--ink); }
+.rl-lp-desde { font: 500 13px / 1.1 var(--f-mono); color: var(--ink-dim); }
+.rl-lp-n { font: 800 var(--t-num-s) / 1 var(--f-display); font-stretch: var(--ancho-numero); color: var(--eje-soloq); }
+.rl-lp-u, .rl-lp-puesto { font: 500 12px / 1 var(--f-mono); color: var(--ink-dim); }
+.rl-lp-delta { display: inline-flex; align-items: center; gap: 5px; font: 700 13px / 1 var(--f-mono); color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.rl-lp-delta--sube { color: var(--up); }
+.rl-lp-delta--baja { color: var(--down); }
+.rl-lp-barra { position: relative; flex: 1 1 100%; max-width: 360px; height: 6px; border-radius: 3px; background: var(--linea); overflow: hidden; }
+.rl-lp-barra > i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 3px; }
+.rl-lp-base { background: var(--eje-soloq-fill); box-shadow: inset 0 0 0 1px var(--eje-soloq-fill); }
+.rl-lp-gana { background: var(--eje-soloq); box-shadow: 0 0 12px var(--eje-soloq); }
+.rl-lp-pierde { background: var(--down-fill); box-shadow: inset 0 0 0 1px var(--down); }
+
+/* --- el parche: el titular, los saltos de tier como chips de campeon, el ajuste al meta como medidor --- */
+.rl-titular { margin-bottom: 8px; font: 800 21px / 1.1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.01em; color: var(--ink); text-wrap: balance; }
+.rl-camp { display: inline-flex; flex: none; }
+.rl-camp .campeon-tile { width: 20px; height: 20px; border-radius: 50%; }
+.rl-camp .campeon-tile-ini { font-size: 8px; }
+.rl-saltos { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+.rl-salto {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 3px; border-radius: var(--r-chip);
+  border: 1px solid var(--linea); background: var(--panel); font: 600 13px / 1.1 var(--f-cuerpo); color: var(--ink); white-space: nowrap; text-shadow: none;
+}
+.rl-salto--propio { border-color: var(--rl-propio-borde); box-shadow: 0 0 12px -4px var(--luz-texto); }
+.rl-salto-tiers { display: inline-flex; align-items: center; gap: 3px; font: 500 11px / 1 var(--f-mono); color: var(--ink-mute); }
+.rl-salto-tiers .meta-tier { width: 15px; height: 15px; font-size: 9.5px; }
+.rl-salto--nuevo { border-color: var(--rl-nuevo-borde); }
+.rl-salto-marca { padding-left: 6px; font: 700 10px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--gold); }
+.rl-medidor { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin-top: 2px; }
+.rl-medidor-camp { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; color: var(--ink); }
+.rl-medidor-mae, .rl-medidor-pick { font: 500 11px / 1 var(--f-mono); color: var(--ink-dim); }
+.rl-medidor-pick { color: var(--warn); }
+.rl-medidor-ajuste { display: inline-flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+.rl-medidor-rotulo { font: 600 10px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--gold); }
+.rl-medidor-barra { position: relative; display: inline-block; width: 120px; height: 6px; border-radius: 3px; background: var(--linea); overflow: hidden; }
+.rl-medidor-barra > i { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+.rl-medidor-n { font: 800 var(--t-num-s) / 1 var(--f-display); font-stretch: var(--ancho-numero); color: var(--ink); }
+.rl-medidor-max { margin-left: -6px; font: 500 11px / 1 var(--f-mono); color: var(--ink-mute); }
+.rl-medidor--tenue { gap: 4px 12px; margin: 0; }
+.rl-medidor--tenue .rl-medidor-camp { font-size: 12px; color: var(--ink-dim); }
+.rl-medidor--tenue .rl-camp .campeon-tile { width: 16px; height: 16px; }
+.rl-medidor--tenue .rl-medidor-barra { width: 72px; height: 4px; }
+.rl-medidor--tenue .rl-medidor-barra > i { box-shadow: none; opacity: 0.8; }
+.rl-medidor--tenue .rl-medidor-n { font: 700 12px / 1 var(--f-mono); color: var(--ink-dim); }
+.rl-medidor--tenue .rl-medidor-rotulo { color: var(--ink-mute); }
+/* el parche que viaja adentro de otro beat */
+.rl-parche-adjunto { display: grid; gap: 4px; }
+.rl-parche-cabeza { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.rl-parche-ico { color: var(--gold); }
+.rl-parche-rotulo { font: 600 10.5px / 1.2 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--gold); }
+.rl-parche-titular { font-weight: 600; color: var(--ink-dim); }
+.rl-parche-adjunto .rl-saltos { margin: 0; }
+
+/* --- los adjuntos con forma: el anuncio de una serie que no frena, la practica del plan --- */
+.rl-anuncio { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.rl-pildora {
+  display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 10px; border-radius: var(--r-chip); border: 1px solid var(--linea);
+  font: 600 10.5px / 1.3 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim);
+}
+.rl-pildora b { font-size: 12px; color: var(--ink); }
+.rl-pildora[data-lado='favorito'] { border-color: var(--up); color: var(--up); }
+.rl-pildora[data-lado='underdog'] { border-color: var(--warn); color: var(--warn); }
+.rl-anuncio-coach { font: 500 12px / 1.3 var(--f-mono); color: var(--ink-mute); }
+.rl-practica { display: grid; gap: 5px; }
+.rl-practica-cabeza { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 14px; color: var(--ink-dim); }
+.rl-practica-ico { color: var(--luz-texto); }
+.rl-practica-tramo { font: 500 11px / 1 var(--f-mono); color: var(--ink-mute); }
+.rl-practica .log-efectos { margin-top: 0; }
+.log-adjuntos { gap: 8px; }
+
+/* --- el mapa de una serie con parada (ya contado en el cara a cara): su tesela grande y el cierre --- */
+.log-item--mapa .rl-mapas { margin: 0; }
+.rl-mapa-cierre { margin-top: 6px; font-size: 14px; color: var(--ink-dim); }
+
+/* --- la tira tecnica --- */
+.rl-tec { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.rl-tec-rotulo { font: 600 10.5px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
+.rl-tec .log-efectos { margin-top: 0; }
+
+/* --- el beat que corta la carrera: una alerta, mas grande, con el acento rojo --- */
+.log-list > .log-item--alerta, .log-item--alerta {
+  position: relative; display: block; margin: 12px 0 8px; padding: 18px 22px 20px 24px;
+  background: var(--rl-alerta-fondo); border-radius: var(--r-panel); box-shadow: inset 0 0 0 1px var(--rl-alerta-borde), 0 18px 46px -26px var(--sombra);
+  text-shadow: none;
+}
+.log-item--alerta::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 4px 4px 0; background: var(--down); box-shadow: 0 0 16px var(--down); }
+.log-item--alerta > .log-ico { position: absolute; top: 20px; right: 20px; width: 22px; height: 22px; margin: 0; color: var(--down); }
+.rl-alerta-kicker { margin-bottom: 8px; font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--down); }
+.rl-alerta-texto { max-width: 28ch; font: 800 29px / 1.1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: 0; word-spacing: 0.08em; color: var(--ink); text-wrap: balance; }
+
+/* --- la entrada de un beat recien llegado (animarEfectos le pone .rl-entra una sola vez): el beat sube, los chips y los
+   bloques en cascada, las barras se llenan. Con movimiento reducido o en INST no hay clase (y base.css apaga todo). --- */
+.log-item.rl-entra { animation: rl-sube var(--dur-entrada) var(--expo) both; }
+.rl-entra :is(.eje-chip, .rl-salto, .rl-mapa) { animation: rl-aparece 260ms var(--expo) both; animation-delay: calc(140ms + var(--rl-i) * 45ms); }
+.rl-entra .rl-bloque { animation: rl-bloque 220ms var(--expo) both; animation-delay: calc(80ms + var(--rl-i) * 24ms); }
+.rl-entra :is(.rl-lp-gana, .rl-lp-pierde, .rl-medidor-barra > i) { transform-origin: left center; animation: rl-llena 520ms var(--expo) both 240ms; }
+.log-item--alerta.rl-entra { animation: rl-alerta 480ms var(--expo) both; }
+.log-item--alerta.rl-entra::before { animation: rl-barra-alerta 520ms var(--expo) both 120ms; }
+@keyframes rl-sube { from { opacity: 0; transform: translateY(10px); } }
+@keyframes rl-aparece { from { opacity: 0; transform: translateY(4px) scale(0.96); } }
+@keyframes rl-bloque { from { opacity: 0; transform: scale(0.3); } }
+@keyframes rl-llena { from { transform: scaleX(0); } }
+@keyframes rl-alerta { from { opacity: 0; transform: scale(0.97); } }
+@keyframes rl-barra-alerta { from { transform: scaleY(0); } }
+/* base.css acorta las animaciones a 1 ms pero no sus demoras: la cascada quedaria invisible un instante */
+@media (prefers-reduced-motion: reduce) {
+  .rl-entra, .rl-entra *, .rl-entra::before { animation: none !important; }
+}
+
+@media (max-width: 640px) {
+  .rl-opcion { font-size: 16px; }
+  .rl-eleccion-flecha { display: none; }
+  .rl-titular { font-size: 19px; }
+  .rl-alerta-texto { font-size: 24px; }
+  .log-list > .log-item--alerta, .log-item--alerta { padding: 16px 16px 18px 20px; }
+  .rl-lp-barra { max-width: none; }
+  .rl-medidor-barra { width: 96px; }
 }
 
 /* ==========================================================================

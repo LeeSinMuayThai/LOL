@@ -221,33 +221,87 @@ export function crearTarjetaResultadoSerie(entry, state) {
   cuerpo.textContent = entry.message;
   item.appendChild(cuerpo);
 
+  // C1b (PLANUI §0.3, 6.2): el camino de la serie es la misma fila de mapas que el relato (una tesela por mapa con su
+  // VICTORIA o DERROTA); el cierre de cada mapa es prosa (textos completos, y siempre para un lector de pantalla).
   const mapas = entry.mapas ?? state?.serie?.mapas ?? [];
   if (mapas.length > 0) {
-    const camino = document.createElement('div');
-    camino.className = 'resultado-camino';
-    for (const m of mapas) {
-      const fila = document.createElement('div');
-      fila.className = 'resultado-mapa-fila';
-
-      const tag = document.createElement('span');
-      tag.className = 'resultado-mapa-tag ' + (m.resultado === 'W' ? 'resultado-mapa-tag--ganado' : 'resultado-mapa-tag--perdido');
-      tag.textContent = `M${m.mapa} [${m.resultado} ${m.marcador}]`;
-
-      const camp = document.createElement('span');
-      camp.className = 'resultado-mapa-campeon';
-      camp.textContent = m.campeon;
-
-      const cierre = document.createElement('span');
-      cierre.className = 'resultado-mapa-cierre';
-      cierre.textContent = m.cierre ? `— ${m.cierre}` : '';
-
-      fila.append(tag, camp, cierre);
-      camino.appendChild(fila);
+    item.appendChild(crearFilaDeMapas(mapas, { clase: 'resultado-camino' }));
+    const cierres = mapas.filter((m) => m.cierre);
+    if (cierres.length > 0) {
+      const prosa = document.createElement('div');
+      prosa.className = 'rl-prosa resultado-cierres';
+      for (const m of cierres) {
+        const linea = document.createElement('p');
+        linea.textContent = `Mapa ${m.mapa}: ${m.cierre}`;
+        prosa.appendChild(linea);
+      }
+      item.appendChild(prosa);
     }
-    item.appendChild(camino);
   }
 
   return item;
+}
+
+// --- La fila de mapas (C1b; PLANUI §0.3, 6.2) -------------------------------------------------------------------------
+//
+// Una tesela por mapa: el número, el marcador de la serie después de ese mapa, VICTORIA o DERROTA (--up / --down), tu
+// campeón (con su cara) y con qué salió el rival, si el log lo trae. La usan el relato (los mapas de una serie que no frenó
+// llegan como líneas `adjunto`, `systems/serie.js`; y los de una serie con parada, ya contados en el cara a cara, como
+// beats) y la tarjeta de post-serie. `mapas`: [{ mapa, resultado: 'W'|'L', campeon, marcador, rivalJuega?, message? }].
+// Para un lector de pantalla cada tesela dice su línea (`aria-label`): el texto del motor si lo hay.
+const RESULTADO_DE_MAPA = { W: 'Victoria', L: 'Derrota' };
+
+export function crearTeselaDeMapa(m, { grande = false } = {}) {
+  const gano = m.resultado === 'W';
+  const tesela = document.createElement('div');
+  tesela.className = 'rl-mapa' + (grande ? ' rl-mapa--grande' : '');
+  tesela.dataset.resultado = gano ? 'W' : 'L';
+  tesela.setAttribute('role', 'img');
+  tesela.setAttribute('aria-label', m.message ?? `Mapa ${m.mapa}: ${RESULTADO_DE_MAPA[gano ? 'W' : 'L']} con ${m.campeon}${m.marcador ? `. Marcador ${m.marcador}` : ''}.`);
+  if (m.message) tesela.title = m.message;
+
+  const cabeza = document.createElement('span');
+  cabeza.className = 'rl-mapa-cabeza';
+  const numero = document.createElement('span');
+  numero.className = 'rl-mapa-n';
+  numero.textContent = `M${m.mapa}`;
+  cabeza.appendChild(numero);
+  if (m.marcador) {
+    const marcador = document.createElement('span');
+    marcador.className = 'rl-mapa-marcador';
+    marcador.textContent = m.marcador;
+    cabeza.appendChild(marcador);
+  }
+
+  const res = document.createElement('b');
+  res.className = 'rl-mapa-res';
+  res.textContent = RESULTADO_DE_MAPA[gano ? 'W' : 'L'];
+
+  const camp = document.createElement('span');
+  camp.className = 'rl-mapa-camp';
+  if (m.campeon) {
+    camp.append(crearCampeonTile({ name: m.campeon }, { size: 'mini' }), document.createTextNode(m.campeon));
+  }
+  tesela.append(cabeza, res, camp);
+
+  if (m.rivalJuega) {
+    const rival = document.createElement('span');
+    rival.className = 'rl-mapa-rival';
+    rival.textContent = `vs ${m.rivalJuega}`;
+    tesela.appendChild(rival);
+  }
+  return tesela;
+}
+
+export function crearFilaDeMapas(mapas, { clase = '', grande = false } = {}) {
+  const fila = document.createElement('div');
+  fila.className = ['rl-mapas', clase].filter(Boolean).join(' ');
+  mapas.forEach((m, i) => {
+    const tesela = crearTeselaDeMapa(m, { grande });
+    tesela.style.setProperty('--rl-i', String(i));
+    fila.appendChild(tesela);
+  });
+  return fila;
 }
 
 // --- El tablero de la serie (FASE V, V3b) ------------------------------------------------------------------------------
