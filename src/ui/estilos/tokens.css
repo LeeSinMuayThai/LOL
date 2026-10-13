@@ -1013,3 +1013,10 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   --h-tinta: var(--h-luz);
   --h-borde: var(--h-contra);
 }
+
+/* PLANUI §0.2, los minijuegos (estilos/minijuegos.css): la luz de la parada (la de la apuesta y los botones del juego) y
+   el color del veredicto. Cada nodo pone la suya; acá quedan las de por defecto. */
+:root {
+  --mj-luz: var(--warn);
+  --mj-res: var(--gold);
+}
