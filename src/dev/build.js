@@ -131,7 +131,12 @@ const SPLITS_DE_VERIFICACION = 30;
 // (caraACara, stream, transmisionComun y transmision.css), el mercado de la compuerta 2 (mercado, fichaje, jersey y
 // mercado.css), la costura de la bisagra y la decisión nueva. Subido a 3550: ~118 KB (3,4%) de margen sobre el peso
 // medido ese día, no una expectativa.
-const PESO_MAXIMO_KB = 3550;
+// Re-medido en C1 de PLANUI §0.3 (2026-10-13, `c1-integracion`): 3600 KB contra 3550. Lo que creció es lo que pidió el
+// usuario jugando lolero.lol: los ejes con color (core/ejes.js, chipsEje.js, ejes.css, la planilla y "lo que pasó"), el
+// relato con forma (feed.js y feed.css: la semana, el parche, la crónica, la alerta, los mapas) y las narraciones nuevas
+// (la firma después de la prueba, el mapa decisivo en el cara a cara, el fundido del movimiento reducido). Subido a 3700:
+// ~100 KB (2,8%) de margen sobre el peso medido ese día, no una expectativa.
+const PESO_MAXIMO_KB = 3700;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
