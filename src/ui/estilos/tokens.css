@@ -1042,3 +1042,9 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   --mj-luz: var(--warn);
   --mj-res: var(--gold);
 }
+
+/* C1c (PLANUI §0.3, la regla nueva del movimiento reducido): con movimiento reducido, cambiar de pantalla o de cuadro es
+   un fundido de opacidad corto (<= 150 ms), nunca un corte seco. El mismo valor que `FUNDIDO_MS` de src/ui/narracion.js. */
+:root {
+  --dur-fundido: 120ms;
+}

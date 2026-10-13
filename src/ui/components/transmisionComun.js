@@ -2,7 +2,8 @@
 // cabecera de una parada de partido, las ventanas de tiempo de los beats, la geometría de la costura y EL SUSPENSO del
 // mapa decisivo (el Bo5 a 2-2 y el Bo1 de vida o muerte del Swiss). Lo usan el cara a cara (`components/caraACara.js`)
 // y el stream del Swiss (`components/stream.js`). Importarlo no toca el DOM.
-import { el, animar, quieto, EXPO, DUR } from '../fx/util.js';
+import { el, animar, quieto, reducido, inst, EXPO, DUR } from '../fx/util.js';
+import { FUNDIDO_MS, fundirCuadro } from '../narracion.js';
 import { pintarCampeon } from '../fx/color.js';
 import { leerColor } from '../fx/util.js';
 import { logoOrg } from '../fx/competicion.js';
@@ -16,22 +17,49 @@ import { porcentaje } from '../../core/previaDePartido.js';
 // La p en porcentaje entero (la del motor: nunca 0 % ni 100 % si no lo es).
 export const pct = (p) => (Number.isFinite(p) ? `${porcentaje(p)}%` : '—');
 // Animar con la forma de la vitrina (`duration`) sobre el `animar` del kit (fill backwards: congelable, quieto en INST).
-export const anim = (n, c, o = {}) => animar(n, c, { dur: o.duration ?? DUR.entra, delay: o.delay ?? 0, easing: o.easing ?? 'linear', fill: o.fill ?? 'backwards' });
+// `forzar`: corre también con movimiento reducido (solo para opacidad y visibilidad: aparecer, nunca moverse).
+export const anim = (n, c, o = {}) => animar(n, c, { dur: o.duration ?? DUR.entra, delay: o.delay ?? 0, easing: o.easing ?? 'linear', fill: o.fill ?? 'backwards', forzar: o.forzar ?? false });
 
-// Una capa que existe solo en una ventana de tiempo (su estado natural es oculta: CSS).
+// PLANUI §0.3 (la regla nueva del movimiento reducido): con movimiento reducido (y no INST) la narración se cuenta en
+// cuadros fijos: el reloj de los beats queda quieto y la pantalla lo lleva cuadro a cuadro con `congelar(t)`. Para eso
+// las ventanas de tiempo (lo que existe un rato: un mapa, una placa) y lo que aparece en un momento (VICTORIA, el pip)
+// existen también con movimiento reducido, como opacidad y visibilidad, sin desplazamientos.
+export const cuadrosQuietos = () => reducido() && !inst();
+
+// Una capa que existe solo en una ventana de tiempo (su estado natural es oculta: CSS). Corre también con movimiento
+// reducido (es aparecer, no moverse), con los fundidos cortos.
 export function ventanaTx(nodo, desde, dura, entra = 160, sale = 200) {
   const d = Math.max(1, dura);
+  const [e, s] = cuadrosQuietos() ? [Math.min(entra, FUNDIDO_MS), Math.min(sale, FUNDIDO_MS)] : [entra, sale];
   return anim(nodo, [
     { opacity: 0, visibility: 'visible' },
-    { opacity: 1, visibility: 'visible', offset: Math.min(0.45, entra / d) },
-    { opacity: 1, visibility: 'visible', offset: Math.max(0.55, 1 - sale / d) },
+    { opacity: 1, visibility: 'visible', offset: Math.min(0.45, e / d) },
+    { opacity: 1, visibility: 'visible', offset: Math.max(0.55, 1 - s / d) },
     { opacity: 0, visibility: 'visible' }
-  ], { delay: desde, duration: d });
+  ], { delay: desde, duration: d, forzar: true });
 }
 // Algo que ya está y se va en `t` (su estado final, oculto, queda puesto ya).
 export function irseEn(nodo, t, dura = 200) {
   nodo.style.visibility = 'hidden';
-  return anim(nodo, [{ visibility: 'visible', opacity: 1 }, { visibility: 'visible', opacity: 1, offset: 0.98 }, { visibility: 'visible', opacity: 0 }], { delay: 0, duration: Math.max(1, t + dura) });
+  return anim(nodo, [{ visibility: 'visible', opacity: 1 }, { visibility: 'visible', opacity: 1, offset: 0.98 }, { visibility: 'visible', opacity: 0 }], { delay: 0, duration: Math.max(1, t + dura), forzar: true });
+}
+// Lo que aparece en `t` de la secuencia, en los cuadros del movimiento reducido: hasta `t` no se ve (el cuadro de antes
+// no adelanta el resultado). Fuera de esos cuadros, `null`: lo hace la animación de siempre.
+export function apareceEn(nodo, t) {
+  if (!nodo || !cuadrosQuietos()) return null;
+  return animar(nodo, [{ opacity: 0 }, { opacity: 1 }], { delay: Math.max(0, t), dur: FUNDIDO_MS, easing: 'linear', forzar: true });
+}
+// Lleva una secuencia de beats (`b`, ya iniciada: quieta) cuadro a cuadro: `cuadros` = [{ t, lectura, al? }]. Cada cuadro
+// es `congelar(t)` (las ventanas y lo que apareció hasta `t`), su fundido corto sobre `escenario` y su tiempo de lectura
+// en el reloj de la narración (Espacio, Enter o un clic adelantan). `al()`: lo que va con el cuadro (el ánimo del mundo).
+export async function contarEnCuadros(b, cuadros, narracion, { escenario = null, vivo = () => true } = {}) {
+  for (const c of cuadros) {
+    if (!vivo()) return;
+    b.congelar(c.t);
+    c.al?.();
+    fundirCuadro(escenario);
+    await narracion.esperar(c.lectura);
+  }
 }
 
 // El arte de una pieza en el bitono de un tono (las sombras en su noche, las luces en su luz).

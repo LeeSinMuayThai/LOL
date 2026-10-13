@@ -8,8 +8,9 @@
 //      número es cosmético: vive en el marcador de la vista (`almacenamiento.js`), nunca en el state; la próxima firma
 //      lo propone de nuevo.
 // Una capa a pantalla completa sobre el shell (los cuartos la tapan y la pausan). Un solo reloj de beats para c y d:
-// Espacio (o Enter, o un clic) va al cuadro final, con el número esperando; INST y movimiento reducido arrancan ahí.
-// Enter o "Seguir" cierran: recién ahí sigue el relato.
+// Espacio (o Enter, o un clic) va al cuadro final, con el número esperando; INST arranca ahí. Con movimiento reducido
+// (PLANUI §0.3) son dos cuadros fijos, cada uno con su fundido corto: el mapa con tu línea, con su tiempo de lectura
+// (Espacio, Enter o un clic adelantan), y la bienvenida. Enter o "Seguir" cierran: recién ahí sigue el relato.
 //
 // Lo que se cuenta sale del estado de antes y de después de la respuesta (`fichajeDe`), nunca de la prosa del motor; el
 // renglón del motor ("Firmás con…") va tal cual, abajo.
@@ -23,7 +24,7 @@ import { crearBeats } from '../fx/beats.js';
 import { crearConfeti } from '../fx/confeti.js';
 import { crearAzar } from '../fx/azar.js';
 import { crearJersey } from './jersey.js';
-import { crearNarracion } from '../narracion.js';
+import { crearNarracion, modoDe, fundirCuadro } from '../narracion.js';
 import { lugarDeLiga } from '../core/bisagra.js';
 import { nombreVisibleDeLiga } from '../formatoUi.js';
 import { leerNumeroJersey, guardarNumeroJersey } from '../almacenamiento.js';
@@ -76,6 +77,8 @@ const T_FL = {
 // el logo entra en el centro del haz (fracción del alto de la pantalla) y crece ahí
 const LOGO_CENTRO = 0.46;
 const LOGO_ESCALA = 2.2;
+// movimiento reducido: el tiempo de lectura del cuadro del mapa (ms a velocidad x1), antes del de la bienvenida
+const LECTURA_MAPA = 2200;
 // el confeti de la bienvenida: "un poco" (en el celular, menos)
 const CONFETI = { cantidad: 130, celular: 0.6, calma: 600, alfa: 0.16 };
 // la firma trazada: el ancho del trazo, desde cuántas letras el handle se aprieta, y el largo de los trazos
@@ -260,6 +263,9 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
   if (!f || typeof document === 'undefined') return;
   const tono = tonoDado ?? tonoOrg(f.org);
   let numero = numeroPropuesto(f.seed, f.handle);
+  // movimiento reducido: los dos cuadros fijos (`cuadro`: 'mapa' mientras se lee el mapa, después 'firma')
+  const enCuadros = modoDe(ctx) === 'reducido';
+  let cuadro = null;
   const capa = document.querySelector('.shell') ?? document.body;
   // `data-fase`: 'mapa' (lo de abajo se ve apagado detrás) y 'firma' (el walkout tapa todo: queda el mundo)
   const raiz = el('section', { class: 'fj', 'aria-labelledby': 'fichajeTitulo', 'data-fase': 'mapa' });
@@ -329,7 +335,7 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
   // ---- d. la firma: el apagón, el haz que baja, la liga y tu rol, el golpe del logo, tu handle y el jersey
   const t = (ms) => W0 + ms;
   // con el apagón entero, lo de abajo (el mercado, la franja, los cuartos) se va: el walkout queda solo sobre el mundo
-  bt.esperar(t(0)).then(() => raiz.isConnected && (raiz.dataset.fase = 'firma'));
+  bt.esperar(t(0)).then(() => raiz.isConnected && !enCuadros && (raiz.dataset.fase = 'firma'));
   w(animar(d.negro, [
     { opacity: 0, clipPath: 'polygon(-40% 0, 140% 0, 140% 100%, -60% 100%)', easing: 'linear' },
     { opacity: 1, clipPath: 'polygon(-40% 0, 140% 0, 140% 100%, -60% 100%)', offset: -T_FL.apaga / (T_FL.barre + T_FL.barreDur - T_FL.apaga), easing: 'linear' },
@@ -379,7 +385,8 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
     w(animar(d.inunda, [{ opacity: 0 }, { opacity: 0.92, offset: 0.06 }, { opacity: 0.34, offset: 0.4 }, { opacity: 0 }], { delay: golpe, dur: T_FL.inundaDur, easing: 'ease-out' }));
   }
   // en el golpe el mundo se enciende entero en el tono de la org, con el público
-  bt.esperar(t(T_FL.golpe)).then(() => raiz.isConnected && (mundo?.cruzar?.(tono, paletaDe(tono), T_FL.inundaDur / 4), mundo?.declarar?.({ lightsticks: 1 })));
+  const enciende = (cruce) => (mundo?.cruzar?.(tono, paletaDe(tono), cruce), mundo?.declarar?.({ lightsticks: 1 }));
+  bt.esperar(t(T_FL.golpe)).then(() => raiz.isConnected && !enCuadros && enciende(T_FL.inundaDur / 4));
   // el jersey aparece con el barrido del apagón y la luz de la org lo cruza
   w(animar(d.lado.querySelector('.jy'), [{ opacity: 0, transform: 'translateY(24px) scale(.97)' }, { opacity: 1, transform: 'none' }], { delay: t(T_FL.barre), dur: T_FL.barreDur + 200, easing: EXPO }));
   d.jersey.barrido(w, t(T_FL.barrido));
@@ -451,6 +458,8 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
   }
   function saltar() {
     if (asentado) return;
+    // movimiento reducido: del cuadro del mapa al de la bienvenida
+    if (cuadro === 'mapa') return narracion.adelantar();
     // si el golpe no llegó, el mundo va ya al tono de la org, con el público
     if (bt.ahora() < t(T_FL.golpe)) {
       mundo?.cruzar?.(tono, paletaDe(tono), 0);
@@ -478,11 +487,33 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
     }
   };
   document.addEventListener('keydown', tecla);
-  bt.esperar(W0 + T_FL.asentarse).then(() => raiz.isConnected && asentar());
+  bt.esperar(W0 + T_FL.asentarse).then(() => raiz.isConnected && !enCuadros && asentar());
+
+  // ---- movimiento reducido (PLANUI §0.3): dos cuadros fijos con su fundido corto, sin desplazamientos
+  async function contarEnCuadros() {
+    const deLaFirma = [d.velo, d.haz, confeti.nodo, d.bloque, d.lado];
+    cuadro = 'mapa';
+    for (const n of deLaFirma) n.style.visibility = 'hidden';
+    fondo.style.opacity = '1';
+    m.nodo.style.opacity = '1';
+    fundirCuadro(raiz);
+    await narracion.esperar(LECTURA_MAPA);
+    if (!raiz.isConnected) return;
+    cuadro = 'firma';
+    fondo.style.opacity = '';
+    m.nodo.style.opacity = '';
+    for (const n of deLaFirma) n.style.visibility = '';
+    raiz.dataset.fase = 'firma';
+    enciende(0);
+    for (const n of deLaFirma) fundirCuadro(n);
+    asentar();
+  }
 
   d.nombre.focus({ preventScroll: true });
-  // (INST o movimiento reducido: el reloj arranca en el cuadro final y las esperas de arriba resuelven ya)
+  // (INST o movimiento reducido: el reloj arranca en el cuadro final y las esperas de arriba resuelven ya; con movimiento
+  // reducido, los cuadros de abajo lo cuentan en dos pasos)
   bt.iniciar();
+  if (enCuadros) contarEnCuadros();
 
   try {
     await listo;

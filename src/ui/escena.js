@@ -28,7 +28,8 @@
 //     ninguna hoja define otra superficie;
 //   - los efectos son de `fx/` (el ambiente, el arte, los momentos, el jugo): nunca efectos propios, nunca `rngUi` para
 //     decorar (guard), nunca escribe `data-era`/`data-animo` (la luz es de este director: `ui/core/era.js`) ni llama a
-//     `startViewTransition` (las transiciones son de `revelar`, opción `transicion`, solo en los 3 lugares de §6.3);
+//     `startViewTransition` (las transiciones son de `revelar`, opción `transicion`: los lugares de §6.3, ampliados en
+//     §0.3 a toda entrada a una parada);
 //   - respeta ≤ 2 niveles de contenedor visible, títulos de parada ≤ 56 px (Mona Sans ancha) y "leer menos" (§7);
 //   - nada de lo prohibido (§5.9: el chaflán, ticks/escuadras, scanlines, la grilla de fondo, Barlow, el cyan de la fase T);
 //   - entrega sus capturas contra la estrella del norte (la vitrina, `src/dev/estrella.mjs`).
@@ -52,7 +53,8 @@ const AMBIENTE_NULO = Object.freeze({ aplicar() {}, fondo() {}, aquietar() {}, p
 // `shell`: el `.shell` de `index.html`. `vista`: el store de lo ya mostrado (`ui/core/store.js`). `ambiente`: el puente
 // al ambiente (`shell.js`: `aplicar({ era, animo })`, `fondo(contexto)`, `declarar(mundo)`, `aquietar(si)`,
 // `pausa(motivo, activa)`).
-// `sinTransicion()`: `true` si el reproductor va sin espera (INST o movimiento reducido): ahí todo es síncrono.
+// `sinTransicion()`: `true` en INST: ahí todo es síncrono. Con movimiento reducido la transición es un fundido corto
+// (PLANUI §0.3, `fx/transicion.js`), nunca un corte seco.
 export function crearEscena({ shell, vista, ambiente = AMBIENTE_NULO, sinTransicion = () => true }) {
   // La última pieza pedida (no la del DOM): con una transición esperando su cuadro, el DOM todavía muestra la anterior.
   let ultimaPedida = shell.dataset.pieza ?? null;
@@ -104,9 +106,9 @@ export function crearEscena({ shell, vista, ambiente = AMBIENTE_NULO, sinTransic
   // la pieza es `relato` y la `vista` NO cambia (la ficha y la luz siguen mostrando lo que ya se contó). Sin
   // `reproduciendo`, la pantalla ya contó `estado`: la `vista` pasa a ser `estado`. `pintar` (opcional) llena la pieza
   // nueva con la pieza ya visible y antes de mover el foco (una parada marca su `[data-foco]` al pintarse).
-  // `transicion` (PLANUI §6.3): `true`, o la lista de piezas que entran con View Transition; solo la piden los tres
-  // lugares (elegir -> resultado, -> partido, -> final). Es síncrona igual en INST, sin soporte, con movimiento reducido,
-  // en la misma pieza o al retomar (quien retoma no la pide).
+  // `transicion` (PLANUI §6.3 y §0.3): `true`, o la lista de piezas que entran con View Transition; la piden elegir ->
+  // resultado, toda entrada a una parada tras el relato y la final. Es síncrona igual en INST, sin soporte, en la misma
+  // pieza o al retomar (quien retoma no la pide); con movimiento reducido es un fundido corto (`fx/transicion.js`).
   function revelar(estado, { reproduciendo = false, pintar = null, transicion = false } = {}) {
     const nueva = piezaDe(estado, { reproduciendo });
     const anterior = ultimaPedida;

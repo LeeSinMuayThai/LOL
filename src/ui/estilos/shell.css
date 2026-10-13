@@ -413,6 +413,26 @@ html[data-transicion] .cuartos { view-transition-name: cuartos; }
 ::view-transition-new(escenario) { animation: vt-entrar var(--dur-entrada) var(--expo) both; }
 @keyframes vt-salir { to { opacity: 0; } }
 @keyframes vt-entrar { from { opacity: 0; transform: translateY(12px); } }
+/* Con movimiento reducido (PLANUI §0.3: nunca un corte seco) la misma transicion es un fundido de opacidad corto: los
+   grupos no se mueven ni cambian de tamaño (base.css ya les saca la animacion) y lo viejo y lo nuevo se cruzan en
+   --dur-fundido. El ambiente sigue con su nombre propio y sin animacion (arriba). Lleva !important y el atributo para
+   ganarle a la regla de base.css, que apaga toda animacion de las View Transitions con movimiento reducido. */
+html[data-transicion='fundido']::view-transition-old(root),
+html[data-transicion='fundido']::view-transition-old(escenario),
+html[data-transicion='fundido']::view-transition-old(franja),
+html[data-transicion='fundido']::view-transition-old(cuartos) { animation: vt-fundido-sale var(--dur-fundido) linear both !important; }
+html[data-transicion='fundido']::view-transition-new(root),
+html[data-transicion='fundido']::view-transition-new(escenario),
+html[data-transicion='fundido']::view-transition-new(franja),
+html[data-transicion='fundido']::view-transition-new(cuartos) { animation: vt-fundido-entra var(--dur-fundido) linear both !important; }
+@keyframes vt-fundido-sale { to { opacity: 0; } }
+@keyframes vt-fundido-entra { from { opacity: 0; } }
+
+/* El mapa decisivo que se jugo como minijuego se cuenta en el cara a cara (paradas/minijuego.js): mientras tanto la
+   pieza del minijuego lleva la mascara de la transmision. */
+.shell[data-pieza="minijuego"]:has(#minijuego[data-fase="transmision"])::before {
+  mask-image: linear-gradient(180deg, var(--mascara-suave) 0%, var(--mascara-nada) 30%, var(--mascara-nada) 60%, var(--mascara-medio) 100%);
+}
 
 /* ==========================================================================
    El celular (la vitrina: 10 px de costado, una columna). La franja en dos

@@ -21,7 +21,7 @@ import { claveDe } from '../core/mundo.js';
 import { nombreVisibleDeLiga } from '../formatoUi.js';
 import { BALANCE } from '../../data/balance.js';
 import { crearNarracion } from '../narracion.js';
-import { anim, pct, ventanaTx, irseEn, tonosDeLados, carasDe, cabeceraTx, competicionDeEstado, TX_SUS, programarSuspenso, placaDecisiva, latirPlaca, entrarPlaca } from './transmisionComun.js';
+import { anim, pct, ventanaTx, irseEn, tonosDeLados, carasDe, cabeceraTx, competicionDeEstado, TX_SUS, programarSuspenso, placaDecisiva, latirPlaca, entrarPlaca, cuadrosQuietos, apareceEn, contarEnCuadros } from './transmisionComun.js';
 
 const TXS = {
   t0: 380, // después de elegir: la charla (si la usaste) o el Bo1
@@ -37,6 +37,10 @@ const TXS = {
   asentarse: 2300,
   dur: 2700,
   sostener: 1800, // después de asentarse, AFUERA se queda antes del relato
+  // movimiento reducido (PLANUI §0.3): cada cuadro fijo (el vestuario, EN JUEGO, VICTORIA o DERROTA, AFUERA) con su tiempo
+  // de lectura, y dónde cae dentro de su tramo
+  lectura: { charla: 1500, juego: 1500, resultado: 1900, afuera: 2600 },
+  cuadro: { juego: 500, resultado: 500 },
   camara: 6000, // cada cuánto se mueve la cámara del video
   espectadores: [184000, 412000], // decorativo: lo que mira una ronda decisiva del Swiss
   subenCada: 1700,
@@ -412,12 +416,19 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     const b = crearBeats({ duracion: total, asentarse });
     beats = b;
     chat.guion('despues', { tPost, tFin: cierra ? tAfuera : tPost + TXS.post, gano, fuera });
+    // los cuadros del movimiento reducido (PLANUI §0.3): el vestuario, EN JUEGO, el resultado y, si cierra tu Swiss, AFUERA
+    const cuadros = [];
+    const enCuadros = cuadrosQuietos();
 
     b.waapi(irseEn(vom, TXS.t0, TXS.golpe));
     placas.forEach((x) => {
       juego.append(x.nodo);
       b.waapi(ventanaTx(x.nodo, x.t0, TXS.charla));
+      cuadros.push({ t: x.t0 + TXS.charla / 2, lectura: TXS.lectura.charla });
     });
+    if (enCuadros) {
+      cuadros.push({ t: tJuego + TXS.cuadro.juego, lectura: TXS.lectura.juego }, { t: tPost + TXS.cuadro.resultado, lectura: TXS.lectura.resultado });
+    }
     const enJuego = el('div', { class: 'tx-sw-enjuego' }, [
       el('p', { class: 'tx-sw-enjuego-k' }, [el('i', { class: 'tx-sw-punto' }), 'En juego · Bo1']),
       el('p', { class: 'tx-sw-enjuego-vs' }, [logoOrg(org, { clase: 'tx-cara-logo' }), el('b', { text: `${sNos} vs ${sEllos}` }), logoOrg(rival, { clase: 'tx-cara-logo' })]),
@@ -443,11 +454,13 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     const res5 = el('b', { class: 'tx-cam-res', 'data-res': partido?.resultado ?? 'L', text: gano ? 'V' : 'D' });
     r5.append(res5);
     b.waapi(anim(res5, [{ opacity: 0, transform: 'scale(1.8)' }, { opacity: 1, transform: 'none' }], { delay: tPost + 200, duration: 320, easing: EXPO }));
+    b.waapi(apareceEn(res5, tPost + 200));
     clip.dataset.hecho = '';
+    // lo que espera al resultado (el clip "ya") son ventanas de visibilidad: corren también con movimiento reducido
     b.waapi([
       anim(clip, [{ boxShadow: '0 0 0 0 transparent' }, { boxShadow: '0 0 0 6px var(--tx-sw-clip-brillo)', offset: 0.3 }, { boxShadow: '0 0 0 0 transparent' }], { delay: tPost + 300, duration: 900 }),
-      anim(clip.querySelector('.tx-clip-ya'), [{ opacity: 0, visibility: 'hidden' }, { opacity: 0, visibility: 'hidden' }], { delay: 0, duration: tPost + 300 }),
-      anim(clip.querySelector('.tx-clip-t'), [{ opacity: 1, visibility: 'visible' }, { opacity: 1, visibility: 'visible' }], { delay: 0, duration: tPost + 300 })
+      anim(clip.querySelector('.tx-clip-ya'), [{ opacity: 0, visibility: 'hidden' }, { opacity: 0, visibility: 'hidden' }], { delay: 0, duration: tPost + 300, forzar: true }),
+      anim(clip.querySelector('.tx-clip-t'), [{ opacity: 1, visibility: 'visible' }, { opacity: 1, visibility: 'visible' }], { delay: 0, duration: tPost + 300, forzar: true })
     ]);
     b.esperar(tPost).then((ok) => ok && empujarHype(0, 1));
     b.agregar({
@@ -463,8 +476,16 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
 
     if (cierra) {
       // AFUERA (o ADENTRO): la luz cae, el video se corta a negro, el golpe de luz, la palabra cae letra por letra
-      mundo?.momento?.(fuera ? 'caida' : 'gloria', { retardo: quieto() ? 0 : tPost + 260 });
-      fx()?.takeover?.(quieto() ? 0 : tAfuera - TXS.apagon);
+      // con movimiento reducido, el ánimo y el takeover llegan con el cuadro de AFUERA (antes adelantarían el resultado)
+      const desenlace = () => {
+        mundo?.momento?.(fuera ? 'caida' : 'gloria', { retardo: 0 });
+        fx()?.takeover?.(0);
+      };
+      if (enCuadros) cuadros.push({ t: total, lectura: TXS.lectura.afuera, al: desenlace });
+      else {
+        mundo?.momento?.(fuera ? 'caida' : 'gloria', { retardo: quieto() ? 0 : tPost + 260 });
+        fx()?.takeover?.(quieto() ? 0 : tAfuera - TXS.apagon);
+      }
       b.esperar(tAfuera - TXS.apagon).then(() => {
         takeoverYa = true;
       });
@@ -478,10 +499,16 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
       b.esperar(tAfuera + TXS.golpe).then((ok) => ok && sonido?.golpe?.());
     }
 
+    // Espacio: los beats van a `asentarse`; con movimiento reducido, Espacio, Enter o un clic adelantan un cuadro; en INST,
+    // el cuadro final (el resultado o AFUERA) un instante a la vista
     const narracion = crearNarracion(ctx, [raiz], { reloj: b });
     try {
       b.iniciar();
-      if (!narracion.saltada) {
+      if (narracion.modo === 'reducido' && enCuadros) {
+        await contarEnCuadros(b, cuadros.sort((x, y) => x.t - y.t), narracion, { escenario: juego, vivo: () => raiz.isConnected });
+      } else if (narracion.modo === 'inst') {
+        await narracion.vistazo();
+      } else if (!narracion.saltada) {
         await b.esperar(asentarse);
         await narracion.esperar(TXS.sostener);
       }
@@ -519,7 +546,8 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
       const A = t0 - TXS.apagon;
       const G = t0 + TXS.golpe;
       return [
-        anim(nodo, [{ visibility: 'hidden' }, { visibility: 'hidden' }], { delay: 0, duration: Math.max(1, A) }),
+        // hasta el apagón, AFUERA no está (también con movimiento reducido: el cuadro de antes no adelanta el resultado)
+        anim(nodo, [{ visibility: 'hidden' }, { visibility: 'hidden' }], { delay: 0, duration: Math.max(1, A), forzar: true }),
         anim(apagon, [{ opacity: 0, visibility: 'visible' }, { opacity: 1, visibility: 'visible', offset: (G - A - 60) / (G - A + 420) }, { opacity: 1, visibility: 'visible', offset: (G - A) / (G - A + 420) }, { opacity: 0, visibility: 'visible' }], { delay: A, duration: G - A + 420, easing: 'linear' }),
         anim(kicker, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { delay: G + 60, duration: 320, easing: EXPO }),
         ...letras.map((l, i) => anim(l, [{ opacity: 0, transform: 'translateY(-46%) scale(1.5)', filter: 'blur(10px)' }, { opacity: 1, transform: 'none', filter: 'none' }], { delay: t0 + TXS.letras + i * TXS.letra, duration: 380, easing: 'cubic-bezier(0.2, 1.3, 0.4, 1)' })),
