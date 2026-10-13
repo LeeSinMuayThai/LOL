@@ -13,7 +13,11 @@
 //     negociación (pedir más, pedir cláusula); abajo, el representante y no firmar. FIRMAR es el BLOQUEAR del inicio.
 //   - LA FIRMA SOBRE EL CONTRATO (`narrar`, con la respuesta del motor): el contrato sube, la firma se traza y cae el
 //     sello (Firmado, Renovado o, si la org pide una prueba, A prueba). Si firmaste con un club nuevo, sigue el fichaje
-//     (`components/fichaje.js`): tu línea cae sobre el mapa y la firma con tu jersey y tu número.
+//     (`components/fichaje.js`): tu línea cae sobre el mapa y la firma con tu jersey y tu número. Con movimiento
+//     reducido, el contrato sellado es un cuadro fijo con su tiempo de lectura; en INST, su cuadro final un instante.
+//   - Después de una prueba que salió (`paradas/minijuego.js`, PLANUI §0.3 punto 5), la misma hoja se firma suelta en el
+//     panel de la prueba (`narrarContratoFirmado`), con el tono y el valor con que el mercado mostró esa oferta
+//     (`firmaDeLaPrueba`); después, el fichaje.
 //   - "Mientras tanto" (los fichajes del resto del mundo y los asientos que no llegaron a oferta) es la cinta, abajo.
 // El traspaso a mitad de contrato (`motivo: 'traspaso'`) es la misma pantalla con una sola carta: la del club que te
 // quiere, y sus caminos (aceptar, pedir salir, quedarte) en lugar de la grilla.
@@ -28,11 +32,12 @@ import { bloquear } from '../fx/ceremonia.js';
 import { cinta } from '../fx/transmision.js';
 import { crearBeats } from '../fx/beats.js';
 import { crearAzar } from '../fx/azar.js';
-import { crearNarracion } from '../narracion.js';
+import { crearNarracion, fundirCuadro } from '../narracion.js';
 import { fichajeDe, narrarFichaje, firmaTrazada, trazarFirma, rubricar } from './fichaje.js';
 import { nombreVisibleDeLiga } from '../formatoUi.js';
 import { faltan as faltanTexto } from '../../core/formato.js';
 import { ventanaVisibleDe } from '../../core/vistaDeCarrera.js';
+import { valorDeMercado } from '../../core/valorMercado.js';
 import { LABEL_DE_VENTANA } from '../core/escena.js';
 import { ROLES } from '../../data/roles.js';
 
@@ -88,7 +93,9 @@ const T_FIRMAR = {
   duracion: 3000, asentarse: 2400,
   apaga: 300, sube: 120, subeDur: 480, trazo: 520, trazoDur: 1050, rubrica: 1420, rubricaDur: 420,
   sello: 1650, selloDur: 380, golpe: 1916, onda: 620, sacude: 220, resultado: 2150,
-  sostener: 900 // lo que se queda el contrato firmado cuando no sigue el fichaje (una renovación, una prueba)
+  sostener: 900, // lo que se queda el contrato firmado cuando no sigue el fichaje (una renovación, una prueba)
+  sueltaSostener: 700, // la firma suelta (después de la prueba): lo que se queda sellado antes del fichaje
+  lectura: 1800 // movimiento reducido: el tiempo de lectura del contrato sellado (un cuadro fijo, a velocidad x1)
 };
 // Lo que se queda a la vista lo que dijo el club cuando negociás (ms).
 const T_NEGOCIAR = { sostener: 1700, odometro: 900 };
@@ -126,6 +133,128 @@ const varsDeTono = (t) => ({ '--h-luz': `var(${t.luz})`, '--h-contra': `var(${t.
 // La ventana que ya se vio (volvés de negociar o del representante: la misma parada, re-presentada): la llegada no se
 // repite, la oferta elegida sigue elegida y los sueldos que cambiaron ruedan desde el de antes.
 let ventanaVista = null;
+// La oferta que pidió prueba (firmaste y el club te prueba): su tono en la grilla y tu valor de mercado, para la firma
+// después de la prueba (`firmaDeLaPrueba`).
+let pruebaPendiente = null;
+
+// El tono y tu valor de mercado con que el mercado mostró la oferta de `org` que pidió prueba (los que usa la firma después
+// de la prueba). Sin la pantalla del mercado en esta sesión (se retomó en la prueba, o la prueba del amateur), los de
+// siempre: el tono de la org y tu valor de hoy.
+export function firmaDeLaPrueba(estado, org) {
+  if (pruebaPendiente && pruebaPendiente.seed === estado?.seed && pruebaPendiente.org === org) {
+    return { tono: pruebaPendiente.tono, valor: pruebaPendiente.valor };
+  }
+  let valor = 0;
+  try {
+    valor = valorDeMercado(estado) ?? 0;
+  } catch {
+    valor = 0;
+  }
+  return { tono: tonoOrg(org), valor };
+}
+
+// ================================================================================================= la hoja del contrato
+// La hoja que se firma: la usan la firma del mercado y la firma suelta después de la prueba. `sello`: Firmado, Renovado
+// o A prueba; `sigue` y `texto`: la línea del resultado (adónde vas) y la del motor.
+function hojaDeContrato({ org, liga, tono, handle, ventana, anio, anios, sueldo, tipo, clausula, traspaso = false, sello, sigue, texto }) {
+  const firma = firmaTrazada(handle, 'ms-ct-firma');
+  const onda = el('i', { class: 'ms-onda', 'aria-hidden': 'true' });
+  const selloNodo = el('span', { class: 'ms-sello', 'aria-hidden': 'true' }, [el('b', { text: sello }), el('span', { text: `${ventana} ${anio ?? ''}`.trim() }), onda]);
+  const res = el('div', { class: 'ms-res', tabindex: '-1', 'aria-label': `${sello}: ${org}` }, [
+    el('p', { class: 'ms-res-sigue' }, [icono('flecha'), el('span', { text: sigue })]),
+    texto ? el('p', { class: 'ms-res-texto', text: texto }) : null
+  ]);
+  const nodo = el('article', { class: 'ms-contrato', 'data-tono': tono.id, 'aria-label': `Contrato con ${org}`, style: { '--ms-acento': `var(${tono.acento})`, '--ms-luz': `var(${tono.luz})` } }, [
+    el('header', { class: 'ms-ct-cab' }, [
+      el('span', { class: 'ms-ct-logo' }, pintarLogo(org, { tam: 54, alt: '' })),
+      el('div', { class: 'ms-ct-quien' }, [
+        el('p', { class: 'ms-ct-k', text: traspaso ? 'Contrato de traspaso' : 'Contrato de jugador profesional' }),
+        el('h2', { class: 'ms-ct-t' }, [el('span', { text: org }), el('i', { text: '×' }), el('span', { text: handle })]),
+        el('p', { class: 'ms-ct-sub', text: [nombreVisibleDeLiga(liga), periodo(anio, anios), `USD ${num(sueldo)} / año`, tipo ? `${TIPO_DE_CONTRATO[tipo] ?? tipo}${clausula ? ', con cláusula' : ''}` : null].filter(Boolean).join(' · ') })
+      ])
+    ]),
+    el('div', { class: 'ms-ct-firmas' }, [
+      el('div', { class: 'ms-ct-parte' }, [el('span', { class: 'ms-ct-sello-org', 'aria-hidden': 'true' }, pintarLogo(org, { tam: 34, alt: '' })), el('i', { class: 'ms-ct-linea' }), el('span', { class: 'ms-ct-firmante', text: `Por ${org}` })]),
+      el('div', { class: 'ms-ct-parte ms-ct-vos' }, [firma.nodo, selloNodo, el('i', { class: 'ms-ct-linea' }), el('span', { class: 'ms-ct-firmante', text: `${handle} · el jugador` })])
+    ]),
+    res
+  ]);
+  return { nodo, firma, selloNodo, onda, res };
+}
+
+// La firma sobre la hoja `h`, en el reloj de beats `bt`: la hoja sube, la firma se traza, cae el sello (el golpe, con su
+// pulso y su sonido) y entra el resultado. Con INST o movimiento reducido no hay animaciones: la hoja queda sellada.
+function firmarHoja(bt, h, { fx = () => null, sonido = null } = {}) {
+  const w = (a) => bt.waapi(a);
+  w(animar(h.nodo, [{ opacity: 0, transform: 'translateY(46px) scale(.98)' }, { opacity: 1, transform: 'none' }], { delay: T_FIRMAR.sube, dur: T_FIRMAR.subeDur }));
+  [...h.nodo.querySelectorAll('.ms-ct-cab, .ms-ct-parte')].forEach((n, k) => w(entrar(n, T_FIRMAR.sube + 120 + k * 70, 8)));
+  w(trazarFirma(h.firma, T_FIRMAR.trazo, T_FIRMAR.trazoDur));
+  w(rubricar(h.firma, T_FIRMAR.rubrica, T_FIRMAR.rubricaDur));
+  w(animar(h.selloNodo, [
+    { opacity: 0, transform: 'rotate(-15deg) scale(2.6)', easing: 'cubic-bezier(.55,0,1,.45)' },
+    { opacity: 1, transform: 'rotate(-7deg) scale(.9)', offset: (T_FIRMAR.golpe - T_FIRMAR.sello) / T_FIRMAR.selloDur, easing: EXPO },
+    { opacity: 1, transform: 'rotate(-7deg)' }
+  ], { delay: T_FIRMAR.sello, dur: T_FIRMAR.selloDur, easing: 'linear' }));
+  w(animar(h.onda, [{ opacity: 0, transform: 'scale(1)' }, { opacity: 0.9, transform: 'scale(1)', offset: 0.02 }, { opacity: 0, transform: 'scale(2.8)' }], { delay: T_FIRMAR.golpe, dur: T_FIRMAR.onda }));
+  w(animar(h.nodo, [{ translate: '0 0' }, { translate: '0 4px', offset: 0.18 }, { translate: '-3px -1px', offset: 0.42 }, { translate: '2px 1px', offset: 0.7 }, { translate: '0 0' }], { delay: T_FIRMAR.golpe, dur: T_FIRMAR.sacude, easing: 'linear' }));
+  const td = bt.destello(T_FIRMAR.golpe);
+  if (td != null) fx()?.pulso?.('logro', td);
+  bt.esperar(T_FIRMAR.golpe).then((llego) => llego && sonido?.golpe?.());
+  w(animar(h.res, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: T_FIRMAR.resultado, dur: DUR.larga }));
+  [...h.res.children].forEach((c, k) => w(entrar(c, T_FIRMAR.resultado + 80 + k * 70, 8)));
+}
+
+// Lo que se queda a la vista la hoja sellada, según el modo de la narración (PLANUI §0.3): la secuencia hasta asentarse
+// y `sostener` ms más; con movimiento reducido, un cuadro fijo con su fundido corto y su tiempo de lectura; en INST, el
+// cuadro final un instante.
+async function sostenerHoja(bt, narracion, h, sostener) {
+  if (narracion.modo === 'reducido') {
+    fundirCuadro(h.nodo);
+    h.res.focus({ preventScroll: true });
+    await narracion.esperar(T_FIRMAR.lectura);
+    return;
+  }
+  if (narracion.modo === 'inst') {
+    h.res.focus({ preventScroll: true });
+    await narracion.vistazo();
+    return;
+  }
+  await bt.esperar(T_FIRMAR.asentarse);
+  h.res.focus({ preventScroll: true });
+  if (sostener > 0) await narracion.esperar(sostener);
+}
+
+// La firma suelta (PLANUI §0.3, punto 5): después de una prueba que salió, el contrato con el club que te probó se firma
+// en `contenedor` (el panel de la prueba: queda ahí, sellado, debajo del fichaje y en la transición al relato), con su
+// sello "Firmado" (o "Renovado"), antes del fichaje. `ctx`: el de la narración (`app.js`, `narrarRespuesta`); `f`:
+// `fichajeDe(...)`; `tono`: el de la oferta en el mercado (`firmaDeLaPrueba`). Resuelve con la hoja sellada a la vista.
+export async function narrarContratoFirmado(ctx, f, { contenedor, tono: tonoDado = null, mundo = null, sonido = null } = {}) {
+  if (!f || !contenedor || typeof document === 'undefined') return;
+  const tono = tonoDado ?? tonoOrg(f.org);
+  const estado = ctx?.despues ?? ctx?.antes ?? null;
+  const ventana = LABEL_DE_VENTANA[estado ? ventanaVisibleDe(estado) : null] ?? 'Pretemporada';
+  const raiz = el('section', { class: 'ms-suelta', 'aria-label': `Contrato con ${f.org}` });
+  aplicarTono(raiz, tono);
+  const h = hojaDeContrato({
+    org: f.org, liga: f.liga, tono, handle: f.handle, ventana, anio: f.anio, anios: f.anios, sueldo: f.salario, tipo: f.tipo,
+    clausula: f.clausula, sello: f.renovacion ? 'Renovado' : 'Firmado',
+    sigue: f.renovacion ? `Seguís en ${f.org}` : `Tu nuevo club: ${f.org}`, texto: f.log?.message ?? ''
+  });
+  raiz.append(el('div', { class: 'ms-suelta-hoja' }, h.nodo));
+  contenedor.replaceChildren(raiz);
+  mundo?.cruzar?.(tono, paletaDe(tono, 0.6), T_FIRMAR.apaga);
+  const bt = crearBeats({ duracion: T_FIRMAR.duracion, asentarse: T_FIRMAR.asentarse });
+  const narracion = crearNarracion(ctx, [raiz], { reloj: bt });
+  try {
+    firmarHoja(bt, h, { fx: () => mundo?.fx?.() ?? null, sonido });
+    bt.iniciar();
+    await sostenerHoja(bt, narracion, h, T_FIRMAR.sueltaSostener);
+  } finally {
+    narracion.fin();
+    // la hoja queda sellada en su estado de CSS (las animaciones eran todas de entrada): el reloj se suelta
+    bt.destruir();
+  }
+}
 const claveDeVentana = (estado, decision) => [estado.seed, estado.calendario?.anio, estado.player?.splitCount, decision.datos?.motivo].join('|');
 
 // Una oferta del motor, en los campos que usa la pantalla.
@@ -818,6 +947,8 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     const prueba = ctx.despues?.pendiente?.decision?.datos?.momento === 'tryout' ? ctx.despues.pendiente.decision : null;
     if (respuesta.tipo === 'camino' && !f) return narrarCamino(ctx, logs);
     if (i == null || (!f && !prueba)) return 0;
+    // la oferta pide prueba: su tono y tu valor quedan para la firma después de la prueba
+    if (prueba && !f) pruebaPendiente = { seed: estado.seed, org: ofertas[i].org, tono: tonos[i], valor };
     await narrarContrato(ctx, i, f, prueba);
     if (f && !f.renovacion && raiz.isConnected) await narrarFichaje(ctx, f, { mundo, sonido, valor, tono: tonos[i] });
     return f ? f.hasta : 0;
@@ -877,60 +1008,24 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
       n.setAttribute('inert', '');
       n.setAttribute('aria-hidden', 'true');
     }
-    const firma = firmaTrazada(yo.handle, 'ms-ct-firma');
-    const onda = el('i', { class: 'ms-onda', 'aria-hidden': 'true' });
-    const selloNodo = el('span', { class: 'ms-sello', 'aria-hidden': 'true' }, [el('b', { text: sello }), el('span', { text: `${yo.ventana} ${yo.anio ?? ''}`.trim() }), onda]);
-    const sigueTexto = f
-      ? (f.renovacion ? `Seguís en ${o.org}` : `Tu nuevo club: ${o.org}`)
-      : `La prueba de ingreso en ${o.org}`;
-    const res = el('div', { class: 'ms-res', tabindex: '-1', 'aria-label': `${sello}: ${o.org}` }, [
-      el('p', { class: 'ms-res-sigue' }, [icono('flecha'), el('span', { text: sigueTexto })]),
-      prueba ? el('p', { class: 'ms-res-texto', text: prueba.datos?.apuesta ?? prueba.descripcion ?? '' }) : f?.log ? el('p', { class: 'ms-res-texto', text: f.log.message }) : null
-    ]);
-    const contrato = el('article', { class: 'ms-contrato', 'data-tono': tono.id, 'aria-label': `Contrato con ${o.org}`, style: { '--ms-acento': `var(${tono.acento})`, '--ms-luz': `var(${tono.luz})` } }, [
-      el('header', { class: 'ms-ct-cab' }, [
-        el('span', { class: 'ms-ct-logo' }, pintarLogo(o.org, { tam: 54, alt: '' })),
-        el('div', { class: 'ms-ct-quien' }, [
-          el('p', { class: 'ms-ct-k', text: traspaso ? 'Contrato de traspaso' : 'Contrato de jugador profesional' }),
-          el('h2', { class: 'ms-ct-t' }, [el('span', { text: o.org }), el('i', { text: '×' }), el('span', { text: yo.handle })]),
-          el('p', { class: 'ms-ct-sub', text: [nombreVisibleDeLiga(o.liga), periodo(yo.anio, f?.anios ?? x.anios), `USD ${num(f?.salario ?? x.sueldo)} / año`, x.tipo ? `${TIPO_DE_CONTRATO[x.tipo] ?? x.tipo}${(f?.clausula ?? x.clausula) ? ', con cláusula' : ''}` : null].filter(Boolean).join(' · ') })
-        ])
-      ]),
-      el('div', { class: 'ms-ct-firmas' }, [
-        el('div', { class: 'ms-ct-parte' }, [el('span', { class: 'ms-ct-sello-org', 'aria-hidden': 'true' }, pintarLogo(o.org, { tam: 34, alt: '' })), el('i', { class: 'ms-ct-linea' }), el('span', { class: 'ms-ct-firmante', text: `Por ${o.org}` })]),
-        el('div', { class: 'ms-ct-parte ms-ct-vos' }, [firma.nodo, selloNodo, el('i', { class: 'ms-ct-linea' }), el('span', { class: 'ms-ct-firmante', text: `${yo.handle} · el jugador` })])
-      ]),
-      res
-    ]);
-    panel.append(contrato);
+    const h = hojaDeContrato({
+      org: o.org, liga: o.liga, tono, handle: yo.handle, ventana: yo.ventana, anio: yo.anio, anios: f?.anios ?? x.anios,
+      sueldo: f?.salario ?? x.sueldo, tipo: x.tipo, clausula: f?.clausula ?? x.clausula, traspaso, sello,
+      sigue: f ? (f.renovacion ? `Seguís en ${o.org}` : `Tu nuevo club: ${o.org}`) : `La prueba de ingreso en ${o.org}`,
+      texto: prueba ? prueba.datos?.apuesta ?? prueba.descripcion ?? '' : f?.log?.message ?? ''
+    });
+    panel.append(h.nodo);
     const bt = crearBeats({ duracion: T_FIRMAR.duracion, asentarse: T_FIRMAR.asentarse });
-    const narracion = crearNarracion(ctx, [], { reloj: bt });
+    const narracion = crearNarracion(ctx, [raiz], { reloj: bt });
     const w = (a) => bt.waapi(a);
     try {
       for (const n of [cab, grilla]) w(animar(n, [{ opacity: 1 }, { opacity: 0 }], { dur: T_FIRMAR.apaga, easing: 'linear' }));
       w(animar(inspector, [{ opacity: 1, visibility: 'visible' }, { opacity: 0, visibility: 'visible' }], { dur: T_FIRMAR.apaga, easing: 'linear' }));
-      w(animar(contrato, [{ opacity: 0, transform: 'translateY(46px) scale(.98)' }, { opacity: 1, transform: 'none' }], { delay: T_FIRMAR.sube, dur: T_FIRMAR.subeDur }));
-      [...contrato.querySelectorAll('.ms-ct-cab, .ms-ct-parte')].forEach((n, k) => w(entrar(n, T_FIRMAR.sube + 120 + k * 70, 8)));
-      w(trazarFirma(firma, T_FIRMAR.trazo, T_FIRMAR.trazoDur));
-      w(rubricar(firma, T_FIRMAR.rubrica, T_FIRMAR.rubricaDur));
-      w(animar(selloNodo, [
-        { opacity: 0, transform: 'rotate(-15deg) scale(2.6)', easing: 'cubic-bezier(.55,0,1,.45)' },
-        { opacity: 1, transform: 'rotate(-7deg) scale(.9)', offset: (T_FIRMAR.golpe - T_FIRMAR.sello) / T_FIRMAR.selloDur, easing: EXPO },
-        { opacity: 1, transform: 'rotate(-7deg)' }
-      ], { delay: T_FIRMAR.sello, dur: T_FIRMAR.selloDur, easing: 'linear' }));
-      w(animar(onda, [{ opacity: 0, transform: 'scale(1)' }, { opacity: 0.9, transform: 'scale(1)', offset: 0.02 }, { opacity: 0, transform: 'scale(2.8)' }], { delay: T_FIRMAR.golpe, dur: T_FIRMAR.onda }));
-      w(animar(contrato, [{ translate: '0 0' }, { translate: '0 4px', offset: 0.18 }, { translate: '-3px -1px', offset: 0.42 }, { translate: '2px 1px', offset: 0.7 }, { translate: '0 0' }], { delay: T_FIRMAR.golpe, dur: T_FIRMAR.sacude, easing: 'linear' }));
-      const td = bt.destello(T_FIRMAR.golpe);
-      if (td != null) fx()?.pulso?.('logro', td);
-      bt.esperar(T_FIRMAR.golpe).then((llego) => llego && sonido?.golpe?.());
+      firmarHoja(bt, h, { fx, sonido });
       heroe.firmar(i, { w, t: T_FIRMAR.golpe, texto: sello });
-      w(animar(res, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: T_FIRMAR.resultado, dur: DUR.larga }));
-      [...res.children].forEach((c, k) => w(entrar(c, T_FIRMAR.resultado + 80 + k * 70, 8)));
       bt.iniciar();
-      await bt.esperar(T_FIRMAR.asentarse);
-      res.focus({ preventScroll: true });
-      // lo que se queda el contrato firmado si no sigue el fichaje
-      if (!f || f.renovacion) await narracion.esperar(T_FIRMAR.sostener);
+      // lo que se queda el contrato firmado si no sigue el fichaje (con el fichaje, la secuencia hasta asentarse)
+      await sostenerHoja(bt, narracion, h, !f || f.renovacion ? T_FIRMAR.sostener : 0);
     } finally {
       narracion.fin();
     }

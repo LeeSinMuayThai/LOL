@@ -6,6 +6,7 @@
 // cambia qué calcula el motor — solo cuándo y cómo entra cada línea al DOM.
 import { agruparBeats, renderFeed, renderPagina } from './components/feed.js';
 import * as sonido from './sonido.js';
+import { reducido } from './fx/util.js';
 
 const CLAVE_VELOCIDAD = 'lolcs-velocidad-reproductor';
 const VELOCIDADES = ['x1', 'x2', 'instantaneo'];
@@ -132,10 +133,21 @@ export function sinEspera() {
   return velocidad === 'instantaneo' || motionReducido();
 }
 
+// PLANUI §0.3 (la regla nueva del movimiento reducido): cómo cuenta una parada su resultado en el lugar. 'inst' es la
+// velocidad que eligió el jugador: la narración va a su cuadro final (visible y completo). 'reducido' es la preferencia
+// del sistema (o `data-reducido`): cuenta lo mismo sin desplazamientos, cada paso un cuadro fijo con un fundido corto y su
+// tiempo de lectura. 'normal': la secuencia entera. INST manda sobre el movimiento reducido (quien eligió ir rápido va
+// rápido). El relato (`sinEspera`, arriba) no cambia: con movimiento reducido sigue sin espera entre beats.
+export function modoDeMovimiento() {
+  if (velocidad === 'instantaneo') return 'inst';
+  return reducido() ? 'reducido' : 'normal';
+}
+
 // PLANUI §0.2: la escala de las esperas de una narración (la parada que cuenta su resultado en el lugar): 1 en x1, la
-// mitad en x2 (la misma proporción que el pulso del reproductor) y 0 sin espera.
+// mitad en x2 (la misma proporción que el pulso del reproductor) y 0 en INST. Con movimiento reducido las esperas valen
+// (son el tiempo de lectura de cada cuadro, §0.3), a la escala de la velocidad.
 export function escalaDeEspera() {
-  return sinEspera() ? 0 : ESPERA_MS[velocidad] / ESPERA_MS.x1;
+  return velocidad === 'instantaneo' ? 0 : ESPERA_MS[velocidad] / ESPERA_MS.x1;
 }
 
 // En la página (cronológica, el beat nuevo abajo), el último renglón se trae a la vista: sin esto, un split largo se

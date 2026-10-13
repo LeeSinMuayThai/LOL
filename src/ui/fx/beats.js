@@ -107,7 +107,9 @@ export function crearBeats({ duracion, asentarse = duracion } = {}) {
       for (const a of [].concat(lista ?? [])) {
         if (!a || animaciones.has(a)) continue;
         animaciones.add(a);
-        if (estado === 'quieto') {
+        // quieto, o todavía nuevo con INST o movimiento reducido (iniciar() la va a dejar quieta igual): al cuadro final ya,
+        // sin correr mientras la pantalla termina de armarse (una animación corriendo encarece cada recálculo de estilos)
+        if (estado === 'quieto' || (estado === 'nuevo' && (inst() || reducido()))) {
           try {
             a.pause();
             a.currentTime = duracion;

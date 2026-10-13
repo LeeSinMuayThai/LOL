@@ -9,6 +9,14 @@
 //
 // `modo: 'fecha'` (la fecha marcada, `temporada`): la misma transmisión al Bo1. El cruce con la p grande; elegir cuenta
 // lo que eligió el momento, el partido y su resultado.
+//
+// `crearCaraACaraDeNarracion` (PLANUI §0.3, punto 6.1): el mapa decisivo de semis, final e internacional se juega como
+// minijuego (`systems/serie.js` `pausaDecisiva`); después del veredicto la misma transmisión se monta solo para narrar
+// (sin el plan: en su lugar, la chance del mapa) y cuenta ese mapa con su suspenso y el cierre de la serie.
+//
+// Los modos de la narración (PLANUI §0.3, `narracion.js`): la secuencia entera; con movimiento reducido, cuadros fijos
+// (cada vestuario, cada mapa con su VICTORIA o DERROTA, el decisivo antes y después, la placa de cierre) con un fundido
+// corto y su tiempo de lectura; en INST, el cuadro final (la placa de cierre, los pips) un instante a la vista.
 import { el, celular, quieto, EXPO } from '../fx/util.js';
 import { entrar, lineasConMascara } from '../fx/movimiento.js';
 import { animar } from '../fx/util.js';
@@ -22,11 +30,13 @@ import { claveDe } from '../core/mundo.js';
 import { crearNarracion } from '../narracion.js';
 import {
   anim, pct, ventanaTx, irseEn, pintarEnTono, tonosDeLados, carasDe, cabeceraTx, competicionDeEstado,
-  TX_SUS, TX_SUS_PIP, esDecisivo, expoSus, cuadrosLatido, cuadrosTira, latirPlaca, programarSuspenso, placaDecisiva, entrarPlaca
+  TX_SUS, TX_SUS_PIP, esDecisivo, expoSus, cuadrosLatido, cuadrosTira, latirPlaca, programarSuspenso, placaDecisiva, entrarPlaca,
+  cuadrosQuietos, apareceEn, contarEnCuadros
 } from './transmisionComun.js';
 
 const TX = {
   t0: 360, // el primer mapa, después de fijar el plan
+  presentar: 1100, // solo para narrar (el decisivo jugado como minijuego): la transmisión entra antes de que arranque el mapa
   mapa: 2400, // lo que dura un mapa (LINEA regla 8: <= 2,4 s)
   charla: 1150, // una placa del vestuario entre mapas
   cruce: 520, // el cruce de la costura a los campeones del mapa
@@ -44,6 +54,10 @@ const TX = {
   juego: 1000, // la fecha: EN JUEGO
   entrada: -260 // la parada entra después del relato: el panel, un poco antes que en la vitrina
 };
+// Movimiento reducido (PLANUI §0.3): el tiempo de lectura de cada cuadro fijo, en ms a velocidad x1.
+const LECTURA = { charla: 1500, previa: 1500, mapa: 1900, cierre: 2400 };
+// Movimiento reducido: dónde cae cada cuadro dentro de su tramo de la secuencia (ms desde que empieza el tramo).
+const CUADRO = { previa: 600, mapa: 1900, juego: 500, resultado: 500 };
 const TX_CARTA = { libre: [154, 280], mapa: [308, 560] };
 const TX_FOCO_CARGA = [0.5, 0.18];
 // la fuerza de un equipo va de 0 a 100: el referente de la barrita de la fuerza
@@ -71,12 +85,13 @@ export function logsDeLaFecha(logs) {
 }
 
 // `contenedor`: `#decision`. `opciones`: { estado, previa, mundo, sonido, responder, modo: 'serie' | 'fecha',
-// internacional }. Devuelve { titulo, mundo, narrar(ctx), destruir() }.
-export function crearCaraACara(contenedor, decision, { estado, previa = null, mundo, sonido = null, responder, modo = 'serie', internacional = false }) {
+// internacional, soloNarrar, pMapa }. Devuelve { titulo, mundo, narrar(ctx), destruir() }. `soloNarrar` (el decisivo
+// jugado como minijuego): sin el plan, ya elegido; en el lugar del plan, la chance del mapa (`pMapa`).
+export function crearCaraACara(contenedor, decision, { estado, previa = null, mundo, sonido = null, responder, modo = 'serie', internacional = false, soloNarrar = false, pMapa = null }) {
   const fecha = modo === 'fecha';
   const comp = competicionDeEstado(estado, { internacional });
   const fx = () => mundo?.fx?.() ?? null;
-  const ops = decision.opciones ?? [];
+  const ops = soloNarrar ? [] : decision.opciones ?? [];
   const pg = previa ?? {};
   const pOpc = Object.fromEntries((pg.opciones ?? []).map((o) => [o.id, o]));
   const se = estado.serie ?? {};
@@ -253,20 +268,20 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     el('ul', { class: 'tx-qs' }, slots)
   ]);
 
-  // la fecha: el cruce con la p grande y por qué importa
-  const pFecha = Number.isFinite(pg.p) ? pg.p : decision.datos?.pAntesDeDecidir ?? null;
-  const secP = fecha ? el('section', { class: 'tx-chance', 'aria-label': `Tu chance en esta fecha: ${pct(pFecha)}` }, [
-    el('p', { class: 'eq-kicker' }, [el('span', { text: 'Tu chance' })]),
-    el('p', { class: 'tx-chance-p' }, [el('b', { class: 'num', text: pct(pFecha) }), el('small', { text: 'así como llegan' })]),
+  // la fecha: el cruce con la p grande y por qué importa (el decisivo jugado como minijuego: la chance del mapa)
+  const pFecha = soloNarrar ? (Number.isFinite(pMapa) ? pMapa : pg.p ?? null) : Number.isFinite(pg.p) ? pg.p : decision.datos?.pAntesDeDecidir ?? null;
+  const secP = fecha || soloNarrar ? el('section', { class: 'tx-chance', 'aria-label': `${soloNarrar ? 'Tu chance en el mapa decisivo' : 'Tu chance en esta fecha'}: ${pct(pFecha)}` }, [
+    el('p', { class: 'eq-kicker' }, [el('span', { text: soloNarrar ? 'Tu chance en el mapa' : 'Tu chance' })]),
+    el('p', { class: 'tx-chance-p' }, [el('b', { class: 'num', text: pct(pFecha) }), el('small', { text: soloNarrar ? 'con lo del minijuego' : 'así como llegan' })]),
     el('i', { class: 'tx-chance-barra', style: { '--v': String(pFecha ?? 0) } })
   ]) : null;
   const secPorque = fecha && pg.porQue ? el('section', { class: 'tx-porque' }, [el('p', { class: 'eq-kicker' }, [el('span', { text: 'Lo que se juega' })]), el('p', { class: 'tx-porque-t', text: pg.porQue })]) : null;
 
-  const cuerpo = el('div', { class: 'tx-cuerpo' }, fecha ? [secP, secPlan, secPorque] : [secLibres, secPlan, secFearless]);
+  const cuerpo = el('div', { class: 'tx-cuerpo' }, fecha ? [secP, secPlan, secPorque] : soloNarrar ? [secLibres, secP, secFearless] : [secLibres, secPlan, secFearless]);
   const franjaTx = el('div', { class: 'tx-franja panel' }, [cab.nodo, cuerpo, ocultas, vs]);
   raiz.append(arriba, escenario, franjaTx);
   contenedor.replaceChildren(raiz);
-  apuntar(0);
+  if (ops.length) apuntar(0);
 
   // el aura: apuntar un libre cruza tu lado de la costura (el nombre lo sigue)
   const nombreA = parReposo.querySelector('[data-lado="a"] .tx-cara-n');
@@ -330,8 +345,13 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
   }
   entrada();
 
-  // ---------- elegir: el plan queda fijado y se responde al motor ----------
-  let elegida = null;
+  // ---------- elegir: el plan queda fijado y se responde al motor (solo para narrar: ya está elegido) ----------
+  let elegida = soloNarrar ? { i: -1, op: null } : null;
+  if (soloNarrar) {
+    raiz.dataset.jugando = '';
+    // montada en otro panel (el del minijuego): sin el id del encabezado de la decisión, que sigue en `#decision`
+    cab.titulo.removeAttribute('id');
+  }
   function elegir(i) {
     const op = ops[i];
     if (!op || elegida) return;
@@ -359,21 +379,29 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
 
   // ---------- narrar: la serie mapa a mapa (o la fecha), como una secuencia de beats ----------
   let beats = null;
+  // la placa de cierre: al terminar la narración queda puesta (la foto de la transición al relato la lleva)
+  let cierreNodo = null;
   async function narrar(ctx) {
     if (!elegida || !raiz.isConnected) return 0;
     const logs = fecha ? logsDeLaFecha(ctx.logs ?? []) : logsDeLaSerie(ctx.logs ?? []);
     if (logs.length === 0) return 0;
     const b = fecha ? secuenciaFecha(logs) : secuenciaSerie(logs);
     beats = b.beats;
-    // Espacio: los beats van a `asentarse`; un cuarto: se pausan (el reloj de la narración es el de los beats)
+    // Espacio: los beats van a `asentarse`; un cuarto: se pausan (el reloj de la narración es el de los beats). Con
+    // movimiento reducido, Espacio, Enter o un clic adelantan un cuadro.
     const narracion = crearNarracion(ctx, [raiz], { reloj: b.beats });
     try {
       b.beats.iniciar();
-      if (!narracion.saltada) {
+      if (narracion.modo === 'reducido' && cuadrosQuietos()) {
+        await contarEnCuadros(b.beats, b.cuadros, narracion, { escenario, vivo: () => raiz.isConnected });
+      } else if (narracion.modo === 'inst') {
+        await narracion.vistazo();
+      } else if (!narracion.saltada) {
         await b.beats.esperar(b.asentarse);
         await narracion.esperar(TX.sostener);
       }
     } finally {
+      if (cierreNodo?.isConnected) cierreNodo.style.visibility = 'visible';
       narracion.fin();
     }
     return logs.length;
@@ -385,7 +413,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     const primero = iMapas[0] ?? -1;
     const mapasT = [];
     const charlas = [];
-    let tt = TX.t0;
+    let tt = TX.t0 + (soloNarrar ? TX.presentar : 0);
     logs.forEach((l, i) => {
       if (l.mapa) {
         const s = esDecisivo(l, formato) && !quieto() ? TX_SUS.dura : 0;
@@ -399,6 +427,18 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     const tFin = tt;
     const fin = logs[logs.length - 1];
     const b = crearBeats({ duracion: tFin + TX.cierreDur, asentarse: tFin + TX.asentarse });
+    // los cuadros del movimiento reducido (PLANUI §0.3): cada vestuario, cada mapa (el decisivo, antes y después) y el
+    // cierre, cada uno con su tiempo de lectura. El quemado de Fearless llega con el cuadro de su mapa (su estado final es
+    // una clase: puesta al armar, se vería quemado desde el primer cuadro).
+    const cuadros = [];
+    const quemasEnCuadros = [];
+    const quemarHasta = (t) => {
+      for (const x of quemasEnCuadros) {
+        if (x.hecha || x.t > t) continue;
+        x.hecha = true;
+        quemarCarta(x.nodo);
+      }
+    };
 
     // los nombres de la selección se van cuando entra el primer mapa
     b.waapi(irseEn(parReposo, mapasT[0]?.t0 ?? TX.t0));
@@ -416,6 +456,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       const caja = el('div', { class: 'tx-charla' }, placaInferior({ rotulo: 'Vestuario · el coach', titulo: ch.l.message, tono: tComp }));
       juego.append(caja);
       b.waapi(ventanaTx(caja, ch.t0, TX.charla));
+      cuadros.push({ t: ch.t0 + TX.charla / 2, lectura: LECTURA.charla });
     });
     const ganoSerie = fin?.postSerie ? Boolean(fin.gano) : mapasT[mapasT.length - 1]?.l.resultado === 'W';
     cierreSerie(b, fin?.postSerie ? fin : null, mapasT, tFin, ganoSerie);
@@ -441,6 +482,20 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       const capa = el('div', { class: 'tx-mapa', 'data-res': l.resultado }, [rot, cA, cB, caja]);
       juego.append(capa);
       bb.waapi(ventanaTx(capa, t0, tSig - t0 + (esUltimo ? 200 : 0), 120, 220));
+      // movimiento reducido: VICTORIA o DERROTA aparece en su momento (el cuadro de antes no adelanta el resultado)
+      bb.waapi(apareceEn(caja, tR));
+      if (cuadrosQuietos()) {
+        // el decisivo: un cuadro antes del resultado, con lo que se juega y la chance del motor (el suspenso, quieto)
+        if (esDecisivo(l, formato)) {
+          const [a, b2] = String(l.marcador).split('-').map(Number);
+          const empate = gano ? `${a - 1}–${b2}` : `${a}–${b2 - 1}`;
+          const pl = placaDecisiva({ rotulo: `En juego · ${empate}`, linea: `el que gana se lleva ${se.ronda === 'final' ? 'la final' : 'la serie'}`, p: l.p, nos, ellos, pie: 'la chance del motor para este mapa' });
+          capa.append(pl.nodo);
+          bb.waapi(ventanaTx(pl.nodo, t0, TX.resultado));
+          cuadros.push({ t: t0 + CUADRO.previa, lectura: LECTURA.previa });
+        }
+        cuadros.push({ t: t0 + CUADRO.mapa + s, lectura: LECTURA.mapa, al: () => quemarHasta(t0 + CUADRO.mapa + s) });
+      }
       bb.waapi(anim(rot, [{ opacity: 0, transform: 'translateY(-10px)', letterSpacing: '0.4em' }, { opacity: 1, transform: 'none' }], { delay: t0 + TX.rotulo, duration: 360, easing: EXPO }));
       [cA, cB].forEach((c, j) => c && bb.waapi(anim(c, [{ opacity: 0, transform: `translateX(${j ? 52 : -52}vw) rotate(${j ? 5 : -5}deg)` }, { opacity: 1, transform: 'none' }], { delay: t0 + TX.carta + j * 60, duration: TX.cartaDur, easing: EXPO })));
       bb.waapi(vd.animaciones);
@@ -455,6 +510,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       if (pin) {
         pin.dataset.res = l.resultado;
         bb.waapi(anim(pin, [{ opacity: 0, transform: 'scaleX(0)' }, { opacity: 1, transform: 'none' }], { delay: t0 + TX.pip + s, duration: 380, easing: EXPO }));
+        bb.waapi(apareceEn(pin, t0 + TX.pip + s));
       }
       bb.esperar(t0 + TX.pip + s).then((ok) => ok && sonido?.golpe?.());
       // Fearless: los dos picks se queman (en la tira y, si era un libre tuyo, su carta)
@@ -466,11 +522,14 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
         if (slot) {
           const ico = ponerIcono(slot, q);
           bb.waapi(anim(ico, [{ opacity: 0, transform: 'scale(1.7)' }, { opacity: 1, transform: 'none' }], { delay: t0 + TX.quema + s - 180, duration: 240, easing: EXPO }));
-          bb.waapi(quemarCarta(slot, { retardo: t0 + TX.quema + s }));
+          bb.waapi(apareceEn(ico, t0 + TX.quema + s - 180));
+          if (cuadrosQuietos()) quemasEnCuadros.push({ t: t0 + TX.quema + s, nodo: slot });
+          else bb.waapi(quemarCarta(slot, { retardo: t0 + TX.quema + s }));
           quemo = true;
         }
         const lib = libresNodos.get(q);
-        if (lib) bb.waapi(quemarCarta(lib, { retardo: t0 + TX.quema + s }));
+        if (lib && cuadrosQuietos()) quemasEnCuadros.push({ t: t0 + TX.quema + s, nodo: lib });
+        else if (lib) bb.waapi(quemarCarta(lib, { retardo: t0 + TX.quema + s }));
       }
       if (quemo) bb.esperar(t0 + TX.quema + s).then((ok) => ok && sonido?.quemado?.());
     }
@@ -525,14 +584,17 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
         mc.actualizar({ mapas: [...jugados, ...mapasT.slice(0, s).map((x) => x.l)].map((x) => ({ resultado: x.resultado })) });
       }
     });
-    // el desenlace en el mundo: la luz cae (perdiste), sube (gloria) o queda en tensión (la serie sigue)
+    // el desenlace en el mundo: la luz cae (perdiste), sube (gloria) o queda en tensión (la serie sigue). Con
+    // movimiento reducido llega con el cuadro de la placa de cierre (antes adelantaría el resultado).
     const animoFin = fin?.postSerie ? (ganoSerie ? 'gloria' : 'caida') : 'peligro';
-    mundo?.momento?.(animoFin, { retardo: quieto() ? 0 : tFin });
+    const desenlace = () => mundo?.momento?.(animoFin, { retardo: 0 });
+    if (cuadrosQuietos()) cuadros.push({ t: tFin + TX.cierreDur, lectura: LECTURA.cierre, al: () => (quemarHasta(Infinity), desenlace()) });
+    else mundo?.momento?.(animoFin, { retardo: quieto() ? 0 : tFin });
     if (animoFin === 'gloria') {
       const td = b.destello(tFin);
       if (td != null) fx()?.pulso?.('gloria', td);
     }
-    return { beats: b, asentarse: tFin + TX.asentarse };
+    return { beats: b, asentarse: tFin + TX.asentarse, cuadros: cuadros.sort((x, y) => x.t - y.t) };
   }
 
   // La placa de cierre de la serie: el resultado grande (los dos logos y el marcador), quién se la lleva y el texto.
@@ -554,8 +616,13 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     const placa = placaInferior({ rotulo: rot, titulo: texto, sub: subT, tono: tComp });
     const nodo = el('div', { class: 'tx-cierre', role: 'status', 'aria-label': `${titular}: ${nos} ${a}, ${ellos} ${bb}` }, [res, titulo, el('div', { class: 'tx-cierre-pie' }, placa)]);
     juego.append(nodo);
+    cierreNodo = nodo;
+    // la placa entra y QUEDA (fill forwards: antes se iba con su animación de entrada y el cierre duraba 360 ms). En INST
+    // no hay animación: el cuadro final la trae puesta.
+    const ver = anim(nodo, [{ opacity: 0, visibility: 'visible' }, { opacity: 1, visibility: 'visible' }], { delay: t0, duration: 360, fill: 'forwards', forzar: true });
+    if (!ver) nodo.style.visibility = 'visible';
     b.waapi([
-      anim(nodo, [{ opacity: 0, visibility: 'visible' }, { opacity: 1, visibility: 'visible' }], { delay: t0, duration: 360 }),
+      ver,
       anim(res, [{ transform: 'scale(1.35)', filter: 'blur(10px) brightness(2)' }, { transform: 'none', filter: 'none' }], { delay: t0, duration: 520, easing: EXPO }),
       anim(titulo, [{ opacity: 0, letterSpacing: '0.32em', transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: t0 + 220, duration: 560, easing: EXPO }),
       anim(placa, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { delay: t0 + 480, duration: 420, easing: EXPO })
@@ -578,12 +645,18 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     const tR = tJuego + TX.juego;
     const tFin = tR + TX.mapa - TX.resultado;
     const b = crearBeats({ duracion: tFin + TX.cierreDur, asentarse: tFin + TX.asentarse });
+    // los cuadros del movimiento reducido: lo que dejó el momento, EN JUEGO, el resultado y el cierre
+    const cuadros = [];
     b.waapi(irseEn(parReposo, tJuego));
     if (logoB) b.waapi(irseEn(logoB, tFin));
     placas.forEach((x) => {
       juego.append(x.caja);
       b.waapi(ventanaTx(x.caja, x.t0, TX.charla + 400));
+      cuadros.push({ t: x.t0 + (TX.charla + 400) / 2, lectura: LECTURA.charla });
     });
+    if (cuadrosQuietos()) {
+      cuadros.push({ t: tJuego + CUADRO.juego, lectura: LECTURA.previa }, { t: tR + CUADRO.resultado, lectura: LECTURA.mapa }, { t: tFin + TX.cierreDur, lectura: LECTURA.cierre });
+    }
     const gano = Boolean(partido.gano);
     const movio = Number.isFinite(partido.pSinMomento) && pct(partido.pSinMomento) !== pct(partido.p);
     const enJuego = el('div', { class: 'tx-sw-enjuego tx-enjuego' }, [
@@ -605,6 +678,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     if (pin) {
       pin.dataset.res = gano ? 'W' : 'L';
       b.waapi(anim(pin, [{ opacity: 0, transform: 'scaleX(0)' }, { opacity: 1, transform: 'none' }], { delay: tR + 200, duration: 380, easing: EXPO }));
+      b.waapi(apareceEn(pin, tR + 200));
     }
     b.agregar({
       fps: 30,
@@ -617,7 +691,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       }
     });
     placaCierre(b, { a: gano ? 1 : 0, b: gano ? 0 : 1, t0: tFin, titular: gano ? `${sNos} gana` : `${sEllos} gana`, texto: partido.message, gana: gano, sub: Number.isFinite(partido.posicion) ? `Quedan ${partido.posicion}.º de ${partido.equipos}` : '', rotulo: `${comp.rotulo} · ${decision.datos?.etiqueta ?? 'Fecha marcada'}` });
-    return { beats: b, asentarse: tFin + TX.asentarse };
+    return { beats: b, asentarse: tFin + TX.asentarse, cuadros: cuadros.sort((x, y) => x.t - y.t) };
   }
 
   return {
@@ -632,6 +706,22 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       mundo?.soltarMomento?.();
     }
   };
+}
+
+// El mapa decisivo que se jugó como minijuego (PLANUI §0.3, punto 6.1): la misma transmisión, montada solo para narrar
+// (`soloNarrar`: sin el plan, con la chance del mapa en su lugar), en `contenedor` (lo vacía). `decision`: la del
+// minijuego (`datos.momento === 'mapa_decisivo'`, con `campeonElegido` y `fuerzaPropia`); `estado`: el de la parada (antes
+// de la respuesta: los mapas ya jugados, el marcador, los quemados); `pMapa`: la chance con la que se tiró el mapa.
+// Devuelve la vista: { titulo, mundo, narrar(ctx), destruir() }; `narrar` cuenta el mapa y el cierre con `ctx.logs`.
+export function crearCaraACaraDeNarracion(contenedor, decision, { estado, previa = null, mundo = null, sonido = null, internacional = false, pMapa = null }) {
+  const datos = decision?.datos ?? {};
+  const narrable = {
+    titulo: decision?.titulo ?? 'El mapa decisivo',
+    descripcion: '',
+    opciones: [],
+    datos: { motivo: 'decisivo', campeonElegido: datos.campeonElegido ?? null, fuerzaPropia: datos.fuerzaPropia ?? null }
+  };
+  return crearCaraACara(contenedor, narrable, { estado, previa, mundo, sonido, responder: () => {}, modo: 'serie', internacional, soloNarrar: true, pMapa });
 }
 
 // Precarga del arte de carga de los campeones que puede jugar (lo que la serie va a mostrar mapa a mapa).

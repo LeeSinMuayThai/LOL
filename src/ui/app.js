@@ -134,8 +134,9 @@ export function iniciar() {
   // adelantaban el resultado).
   const vista = crearStore(null);
   // PLANUI U1: el director también es el único escritor de la luz (`ambiente`, el puente de `shell.js`) y decide las
-  // transiciones; sin reproductor todavía, o en INST / movimiento reducido, todo es síncrono.
-  const escena = crearEscena({ shell: shellEl, vista, ambiente, sinTransicion: () => !reproductor || reproductor.sinEspera() });
+  // transiciones; sin reproductor todavía, o en INST, todo es síncrono. Con movimiento reducido la transición es un
+  // fundido corto (PLANUI §0.3: nunca un corte seco), lo resuelve `fx/transicion.js`.
+  const escena = crearEscena({ shell: shellEl, vista, ambiente, sinTransicion: () => !reproductor || reproductor.velocidadActual() === 'instantaneo' });
   vista.suscribir(pintarDesdeVista);
   // La página del relato (§V.5 "Una página por split"): `desde` es `inicioDePagina` (el `logs.length` de cuando se
   // llamó a `avanzarSplit`; NUNCA se mueve al resolver una decisión: al responder vuelve la misma página con los beats
@@ -246,10 +247,11 @@ export function iniciar() {
 
   // Una parada: el director pone la pieza de su familia (`familiaDeParada`) y la familia la pinta (`paradas/`). Reemplaza
   // a los `hidden` que `mostrarDecision` prendía y apagaba en cada panel: qué nodo se ve lo decide `data-pieza`.
-  // PLANUI §6.3: entrar al partido es uno de los tres lugares con transición (al retomar, no).
+  // PLANUI §6.3, ampliado en §0.3 (punto 4: no más cortes en frío): toda entrada a una parada tras el relato lleva
+  // transición (la decisión, el partido, el mercado y el minijuego); al retomar, no.
   function mostrarLaParada(estado, { retomar = false } = {}) {
     escena.revelar(estado, {
-      transicion: retomar ? false : ['partido'],
+      transicion: !retomar,
       pintar: () => {
         // Antes de la parada: el último beat que el relato ya contó en esta página (todos los de `estado.logs` ya se
         // contaron: la parada entra recién cuando el reproductor termina) y la página, a un toque.
@@ -587,12 +589,15 @@ export function iniciar() {
     if (typeof vistaParada?.narrar !== 'function') return 0;
     const logs = despues.logs.slice(logsAntes);
     let inmediato;
+    // PLANUI §0.3: 'normal', 'reducido' (cuadros fijos con su tiempo de lectura) o 'inst' (el cuadro final, visible).
+    const modo = reproductor.modoDeMovimiento();
     const ctx = {
       antes,
       despues,
       respuesta,
       logs,
-      rapido: reproductor.sinEspera(),
+      modo,
+      rapido: modo === 'inst',
       escala: reproductor.escalaDeEspera(),
       // Los números del resultado ruedan también en la placa "Vos" (devuelve los nodos que animó).
       rodarPlaca: (cambios, retardo) => acompanante?.rodar(cambios, retardo) ?? [],
@@ -823,8 +828,9 @@ export function iniciar() {
     toggleSonido.replaceChildren(iconoSonido(on));
     toggleSonido.setAttribute('aria-pressed', on ? 'true' : 'false');
     toggleSonido.title = on ? 'Sonido activado (click para apagar)' : 'Sonido apagado (click para activar)';
-    // PLANUI U1: el kit de efectos va a su cuadro final con INST (o movimiento reducido), como el reproductor.
-    ambiente.inst(reproductor.sinEspera());
+    // PLANUI U1: el kit de efectos va a su cuadro final con INST, como el reproductor. El movimiento reducido el kit lo lee
+    // solo (`fx/util.js reducido`): `data-inst` dice solo INST, así una narración distingue los dos (PLANUI §0.3).
+    ambiente.inst(reproductor.velocidadActual() === 'instantaneo');
   }
 
   // Fase T8 (P.2): retoma exactamente donde quedó — mismo `rng`/`rngUi`

@@ -4,15 +4,20 @@
 // Por qué un envoltorio: `revelar` es síncrono y `app.js` depende de eso; `startViewTransition` difiere el cambio un
 // cuadro, su overlay se traga los clics, una segunda llamada rechaza `ready` con AbortError (ensucia la consola) y un
 // nombre de transición duplicado la aborta. Entonces:
-//   - sin `animar` (INST, la misma pieza, al retomar: lo decide `revelar`), sin soporte o con movimiento reducido, el
-//     cambio corre YA, síncrono, como siempre;
+//   - sin `animar` (INST, la misma pieza, al retomar: lo decide `revelar`) o sin soporte, el cambio corre YA, síncrono,
+//     como siempre;
+//   - con movimiento reducido (PLANUI §0.3: nunca un corte seco) la transición es un fundido de opacidad corto
+//     (`html[data-transicion="fundido"]`, estilos/shell.css: nada se mueve ni cambia de tamaño, <= 150 ms);
 //   - las llamadas seguidas mientras una transición espera su cuadro se juntan en esa misma transición, en orden; una
 //     llamada síncrona en ese medio corre antes lo que esperaba (el orden no se invierte) y saltea la transición;
 //   - atrapa las tres promesas (`ready`, `updateCallbackDone`, `finished`): un aborto no ensucia la consola, un error de
 //     verdad en el cambio sí se reporta;
-//   - pone `html[data-transicion]` mientras dura: los nombres de transición viven solo ahí (estilos/shell.css: únicos,
-//     el ambiente con nombre propio y `animation: none`, el overlay sin clics, el movimiento reducido aparte);
+//   - pone `html[data-transicion]` mientras dura (`="fundido"` con movimiento reducido): los nombres de transición viven
+//     solo ahí (estilos/shell.css: únicos, el ambiente con nombre propio y `animation: none`, el overlay sin clics, el
+//     fundido del movimiento reducido aparte);
 //   - `alTerminar` (enfocar el encabezado) corre en `updateCallbackDone`, cuando la pieza nueva ya está en el DOM.
+
+import { reducido } from './util.js';
 
 let pendiente = null; // { pasos: [{ actualizar, alTerminar }], transicion } — esperando su cuadro
 let actual = null; // la transición que está corriendo (para no borrar el atributo de otra)
@@ -21,9 +26,10 @@ const esAborto = (error) => error?.name === 'AbortError';
 
 function puedeAnimar() {
   const doc = globalThis.document;
-  if (!doc || typeof doc.startViewTransition !== 'function') return false;
-  return !(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+  return Boolean(doc) && typeof doc.startViewTransition === 'function';
 }
+// Cómo se ve la transición: la de siempre, o el fundido corto del movimiento reducido.
+const modoDeTransicion = () => (reducido() ? 'fundido' : '');
 
 // Corre los cambios en orden aunque uno falle (el primero que falla se relanza al final: nadie queda a medio pintar).
 function correrPasos(pasos) {
@@ -81,7 +87,7 @@ export function transicionar(actualizar, { animar = false, alTerminar = null } =
   const cola = { pasos: [paso], transicion: null };
   pendiente = cola;
   const raiz = document.documentElement;
-  raiz.dataset.transicion = '';
+  raiz.dataset.transicion = modoDeTransicion();
   let hechos = [];
   let transicion;
   try {

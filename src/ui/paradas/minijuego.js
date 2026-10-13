@@ -5,9 +5,12 @@
 // mapa"); y hay atajos donde no le roban teclas al juego (D94): mientras el contenedor lleva `data-fase="previa"`, 1-n eligen la
 // charla y V es "¡Vamos!" (`ui/teclado.js`); en cuanto arranca el minijuego la fase pasa a `juego` y todas las teclas vuelven a
 // ser de él (1-5, Q/W/E/R, A/D, A/S). Las fases de `#minijuego[data-fase]`:
-//   previa     la charla del coach o "¡Vamos!" (el reloj todavía no corre);
-//   juego      el minijuego en marcha;
-//   resultado  el veredicto, hasta que la parada se va.
+//   previa        la charla del coach o "¡Vamos!" (el reloj todavía no corre);
+//   juego         el minijuego en marcha;
+//   resultado     el veredicto, hasta que la parada se va;
+//   transmision   el mapa decisivo (semis, final, internacional) después del veredicto: el panel le deja el lugar al cara a
+//                 cara, que cuenta ese mapa y el cierre de la serie (PLANUI §0.3, punto 6.1; estilos/transmision.css);
+//   firma         la prueba que salió: el panel muestra el contrato que se firma (§0.3, punto 5; estilos/mercado.css).
 //
 // Los minijuegos (fase 4) se migraron a `src/ui/components/minijuegos/` en la fase T6 — PLAN.md §8.5 los dejó sin mover a
 // propósito "porque la fase 12 les cambia la presentación". Import estático: son livianos y no necesitan el manejo de
@@ -19,6 +22,9 @@ import { porcentaje } from '../../core/formato.js';
 import { marcarFoco, marcarAtajo } from '../escena.js';
 import { rotuloDeMinijuego } from '../formatoUi.js';
 import { fichajeDe, narrarFichaje } from '../components/fichaje.js';
+import { narrarContratoFirmado, firmaDeLaPrueba } from '../components/mercado.js';
+import { crearCaraACaraDeNarracion } from '../components/caraACara.js';
+import { fundirCuadro } from '../narracion.js';
 
 // La tecla de "¡Vamos!". Ningún minijuego la usa (Enter y Espacio sí, y un Enter sostenido se contaría como jugada).
 const TECLA_VAMOS = 'V';
@@ -51,22 +57,82 @@ function crearTecla(texto) {
 //   responder     manda la respuesta de la pausa al motor ({ resultado } o { resultado, charla }).
 //   pintarPrevia  pinta la previa del partido (K2d) y devuelve la previa (o null).
 //   mundo, sonido el puente del ambiente y el sonido del kit (para el fichaje).
-// Devuelve la vista con `narrar` (PLANUI §0.2): si la respuesta firmó con un club nuevo (la prueba de ingreso del mercado
-// que alcanzó, o el respaldo si no alcanzó), cuenta el fichaje (`components/fichaje.js`): tu línea sobre el mapa y la
-// firma con tu jersey y tu número, como cuando se firma directo en el mercado.
+// Devuelve la vista con `narrar` (PLANUI §0.2) y `destruir`:
+//   - el mapa decisivo (`datos.momento === 'mapa_decisivo'`): después del veredicto, ese mapa y el cierre de la serie en
+//     el cara a cara (`crearCaraACaraDeNarracion`), montado en este panel (PLANUI §0.3, punto 6.1);
+//   - la prueba que salió: el contrato sellado "Firmado" con el club que te probó, en este panel (`narrarContratoFirmado`,
+//     con el tono y tu valor de mercado con que el mercado mostró esa oferta) y después el fichaje
+//     (`components/fichaje.js`): tu línea sobre el mapa y la firma con tu jersey y tu número, como cuando se firma
+//     directo en el mercado (§0.3, punto 5);
+//   - la prueba que no salió y firmó el respaldo: el fichaje, como siempre.
 export function mostrar(contenedor, decision, ctx) {
   const { estado, rngUi, responder, pintarPrevia, mundo = null, sonido = null } = ctx;
-  pintarPrevia(decision, estado);
+  // lo que quedó de una narración de la parada anterior (la transmisión o el contrato se quedan hasta que el relato los
+  // reemplaza: la foto de la transición los lleva)
+  for (const n of contenedor.querySelectorAll(':scope > .mj-transmision, :scope > .mj-firma')) n.remove();
+  const previa = pintarPrevia(decision, estado);
   montarParada(contenedor, decision, { estado, rngUi, responder, renderPrevia: pintarPrevia });
   marcarFoco(contenedor.querySelector('#minijuegoTitle'));
+  let transmision = null;
   return {
     async narrar(ctxNarracion) {
+      if (decision.datos?.momento === 'mapa_decisivo') {
+        const r = await narrarElDecisivo(contenedor, decision, { estado, previa, mundo, sonido, pintarPrevia }, ctxNarracion);
+        transmision = r.vista;
+        return r.contados;
+      }
       const fichaje = fichajeDe(ctxNarracion.antes, ctxNarracion.despues, ctxNarracion.logs);
       if (!fichaje || fichaje.renovacion) return 0;
-      await narrarFichaje(ctxNarracion, fichaje, { mundo, sonido });
+      const pasaste = decision.datos?.momento === 'tryout' && decision.datos?.oferta?.org === fichaje.org;
+      if (!pasaste) {
+        await narrarFichaje(ctxNarracion, fichaje, { mundo, sonido });
+        return fichaje.hasta;
+      }
+      const { tono, valor } = firmaDeLaPrueba(ctxNarracion.antes ?? estado, fichaje.org);
+      // el panel le deja el lugar al contrato y el mundo vuelve a moverse (la luz de la org, el golpe de la bienvenida)
+      const capa = nodo('div', 'mj-firma');
+      contenedor.append(capa);
+      contenedor.dataset.fase = 'firma';
+      pintarPrevia(null, estado);
+      mundo?.pausa?.('minijuego', false);
+      await narrarContratoFirmado(ctxNarracion, fichaje, { contenedor: capa, tono, mundo, sonido });
+      await narrarFichaje(ctxNarracion, fichaje, { mundo, sonido, valor, tono });
       return fichaje.hasta;
+    },
+    destruir() {
+      transmision?.destruir?.();
     }
   };
+}
+
+// El mapa decisivo que se jugó acá: la transmisión se monta en el panel (el resto del panel queda sin verse:
+// `data-fase="transmision"`), el mundo vuelve a moverse con la costura del cara a cara y la transmisión cuenta el mapa
+// (las cartas, el suspenso, VICTORIA o DERROTA, los pips) y la placa de cierre con los logs de la respuesta. La capa se
+// queda a la vista hasta que el relato la reemplaza (la foto de la transición la lleva). Devuelve la vista y cuántos
+// logs contó.
+async function narrarElDecisivo(contenedor, decision, { estado, previa, mundo, sonido, pintarPrevia }, ctx) {
+  const mapa = (ctx.logs ?? []).find((l) => l?.mapa);
+  if (!mapa || !contenedor.isConnected) return { vista: null, contados: 0 };
+  const antes = ctx.antes ?? estado;
+  const capa = nodo('div', 'mj-transmision');
+  contenedor.append(capa);
+  const vista = crearCaraACaraDeNarracion(capa, decision, {
+    estado: antes,
+    previa,
+    mundo,
+    sonido,
+    internacional: antes?.pendiente?.sistemaId === 'internacional',
+    pMapa: mapa.p
+  });
+  // la previa del minijuego se va (la chance del mapa está en la transmisión) y el panel le deja el lugar
+  pintarPrevia(null, estado);
+  contenedor.dataset.fase = 'transmision';
+  fundirCuadro(capa);
+  mundo?.pausa?.('minijuego', false);
+  mundo?.declarar?.(vista.mundo);
+  marcarFoco(vista.titulo);
+  vista.titulo?.focus?.({ preventScroll: true });
+  return { vista, contados: await vista.narrar(ctx) };
 }
 
 function montarParada(contenedor, decision, { estado, rngUi, responder, renderPrevia }) {
