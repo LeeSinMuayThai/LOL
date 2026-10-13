@@ -180,17 +180,52 @@ el usuario la juega antes del deploy.
 6. **La serie: ganar o perder cada mapa.** El mapa a mapa existe (`caraACara.js`, `narrar` → `secuenciaSerie`, con
    VICTORIA/DERROTA por mapa y el suspenso del decisivo), pero el usuario no lo vio. La causa sale del diagnóstico.
 
-**Diagnóstico de 4, 5 y 6:** un scout (Sonnet) juega el build en Chromium con capturas en secuencia, con y sin
-`prefers-reduced-motion` (si Windows tiene apagados los "Efectos de animación", Chrome reporta *reduce* y el juego va al
-cuadro final). Lo que encuentre se escribe acá antes de despachar los arreglos.
+**Diagnóstico de 4, 5 y 6** (scout Sonnet, 2026-10-13). Jugó el build en Chromium con capturas en secuencia, con y sin
+`prefers-reduced-motion` (si Windows tiene apagados los "Efectos de animación", Chrome reporta *reduce*). Con *reduce*
+(o con la velocidad INST) los tres reportes se reproducen tal cual. Sin *reduce*, el 4 se reproduce igual, y el 5 y el 6
+tienen huecos propios:
+
+- **4 · los cortes en frío** (pasa a velocidad normal). Solo tres cambios llevan View Transition:
+  - parada → relato tras elegir (`app.js:490`);
+  - relato → `partido` (`app.js:252`, `transicion: ['partido']`);
+  - la final (`app.js:322`).
+
+  Son cortes secos: relato → decisión, relato → mercado, relato → minijuego, entrar al juego y volver al inicio. Con
+  *reduce*, `fx/transicion.js` (`puedeAnimar`) corta todo.
+- **5 · la firma después de la prueba.** A velocidad normal la bienvenida corre entera: el mapa con "tu línea cae", la
+  camiseta, Seguir. Pero falta un paso: después de pasar la prueba nunca se ve el contrato sellado como firmado.
+  `paradas/minijuego.js:63-69` salta directo a `narrarFichaje`. `narrarContrato` solo corre antes del minijuego
+  (`mercado.js:821`), con el sello "A prueba", y dura ~150 ms en pantalla. Además esa ruta llama a `narrarFichaje` sin
+  `valor` ni `tono`. Con *reduce*, `fx/beats.js` (estado "quieto") dibuja la bienvenida al instante y
+  `narracion.saltada = ctx.rapido` la deja de golpe: es la captura 5 exacta.
+- **6 · la serie mapa a mapa.** A velocidad normal, en una serie con parada de plan, se ve bien: cartas, VICTORIA,
+  pips, la quema de Fearless. Los huecos son tres:
+  1. El mapa decisivo de semis, final e internacional no usa el cara a cara: es un minijuego
+     (`balance.js:1894` `rondasConMinijuegoDecisivo`, `systems/serie.js:326-340`). Después del veredicto no se narra
+     ni ese mapa ni el cierre de la serie: va directo al relato ("¡CAMPEONES!" en una línea). Pasa también a velocidad
+     normal, y es el momento más importante.
+  2. Las series cantadas y las que no tienen nada en juego no frenan (`systems/serie.js:267-289`, `:388-389`): sus
+     mapas son líneas `adjunto` del relato, solo texto.
+  3. Con *reduce* o INST el cara a cara no se ve. `.tx-mapa`, `.tx-charla` y `.tx-cierre` nacen `visibility:hidden`
+     (`transmision.css:85`) y solo los muestran las WAAPI, que con movimiento reducido no corren (`fx/util.js:37`).
+     Además `narracion.saltada = ctx.rapido`: dura 150 ms y no muestra nada.
+
+**La regla nueva del movimiento reducido.** Hoy *reduce* e INST hacen lo mismo: saltear. Eso borra información, no
+movimiento. Desde ahora:
+- **INST** (la velocidad que el jugador eligió) va al cuadro final, pero ese cuadro tiene que ser visible y completo:
+  los mapas con su resultado y la placa de cierre.
+- **Movimiento reducido** (una preferencia del sistema operativo) cuenta lo mismo sin desplazamientos: cada paso
+  aparece como cuadro fijo, con un fundido corto (≤150 ms) y su tiempo de lectura. Un mapa con su VICTORIA o DERROTA,
+  el contrato sellado, la bienvenida. Enter o Espacio adelantan, como siempre.
+- Los cambios de pantalla con *reduce* también usan ese fundido corto, nunca un corte seco.
 
 #### Las subfases (ola C1, WF-011: dueño por archivo)
 
 | Sub | Qué | Archivos (dueño) | Worker |
 |---|---|---|---|
 | **C1a · ejes** | Puntos 1 y 2: la planilla y "lo que pasó" con los ejes; la placa "Vos" con los mismos colores; ajuste fino de `--eje-*` (contraste y separación) | `components/decision.js`, `estilos/decision.css`, `acompanante.js` (+ su css), el bloque `--eje-*` de `tokens.css` | Opus xhigh |
-| **C1b · relato** | Punto 3: los beats con forma (chips, la semana, el parche, la crónica, la alerta) | `components/feed.js`, `estilos/feed.css`, `components/cierre.js` si hace falta; un helper de chips en `components/chipsEje.js` (nuevo, lo pueden usar los demás) | Opus xhigh |
-| **C1c · movimiento** | Puntos 4, 5 y 6, según el diagnóstico | `app.js`, `escena.js`, `fx/transicion.js`, `estilos/shell.css`, `components/mercado.js`, `components/fichaje.js`, `components/caraACara.js`, `paradas/minijuego.js` | Opus xhigh |
+| **C1b · relato** | Punto 3: los beats con forma (chips, la semana, el parche, la crónica, la alerta). También el 6.2: los mapas de una serie sin parada como una fila de mapas con su VICTORIA o DERROTA (y el campeón), no como líneas de texto | `components/feed.js`, `estilos/feed.css`, `components/cierre.js` si hace falta; un helper de chips en `components/chipsEje.js` (nuevo, lo pueden usar los demás) | Opus xhigh |
+| **C1c · movimiento** | Puntos 4, 5 y 6.1/6.3 según el diagnóstico. Todas las entradas a una parada con transición (no al retomar). Después de la prueba, el contrato sellado "Firmado" y luego la bienvenida (con `valor` y `tono`). Después del minijuego del mapa decisivo, ese mapa y el cierre de la serie en el cara a cara. La regla nueva del movimiento reducido | `app.js`, `escena.js`, `fx/transicion.js`, `narracion.js`, `estilos/shell.css`, `components/mercado.js`, `components/fichaje.js`, `components/caraACara.js`, `components/transmisionComun.js`, `estilos/transmision.css`, `paradas/minijuego.js` (y `fx/beats.js` por dentro, sin cambiar su API) | Opus xhigh |
 
 Las tres en paralelo, cada una en su worktree desde `master`. `core/ejes.js` y los tokens base son del Supervisor
 (commit antes del despacho). Un token nuevo va en un bloque propio al final de `tokens.css`, con el nombre de la
