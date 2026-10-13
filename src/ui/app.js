@@ -59,6 +59,9 @@ export function iniciar() {
   const previaEl = document.getElementById('previa');
   const mercadoPanel = document.getElementById('mercado');
   const tarjetaPanel = document.getElementById('tarjeta');
+  // El marco de la parada (PLANUI §0.2): la placa del acompañante y el cuerpo de la pantalla (su margen).
+  const acompananteEl = document.getElementById('acompanante');
+  const cuerpoEl = document.querySelector('.shell-cuerpo');
   const seedInput = document.getElementById('seedInput');
   const seedAviso = document.getElementById('seedAviso');
   // K6a-U: el aviso de "se está jugando el split" que ocupa el lugar de la decisión mientras el feed reproduce. V2-B: es
@@ -66,7 +69,10 @@ export function iniciar() {
   const esperaEl = document.createElement('div');
   esperaEl.className = 'reproduciendo-aviso';
   esperaEl.setAttribute('role', 'status');
-  esperaEl.textContent = 'Se está jugando el split… (Espacio para pasar las líneas más rápido)';
+  // PLANUI §8: una pista chica arriba de la página, no un cartel ("Espacio pasa las líneas").
+  const teclaEspacio = document.createElement('kbd');
+  teclaEspacio.textContent = 'Espacio';
+  esperaEl.append('Se está jugando el split ·', teclaEspacio, 'pasa las líneas');
   esperaEl.dataset.piezas = 'relato';
   decisionPanel.after(esperaEl);
   const continuarBtn = document.getElementById('continuarBtn');
@@ -212,7 +218,7 @@ export function iniciar() {
         contexto: { ui, modulos, contadoDelRelato }
       });
       acompanante = crearAcompanante({
-        aside: document.getElementById('acompanante'),
+        aside: acompananteEl,
         chip: document.getElementById('verContexto'),
         barra: barraDeCuartos,
         contexto: { ui, modulos },
@@ -275,6 +281,9 @@ export function iniciar() {
           // Sin espera entre beats (INST o movimiento reducido): la parada entra y cuenta en su cuadro final.
           rapido: () => reproductor.sinEspera(),
           retomar,
+          // El marco de la parada: la línea "antes" (lo que encabeza el panel), la placa "Vos" y el margen de la pantalla
+          // (la costura de la bisagra ubica sus destinos contra ellos).
+          marco: { antes: paradaAntesEl, placa: acompananteEl, margen: () => parseFloat(getComputedStyle(cuerpoEl).paddingLeft) || 0 },
           contenedores: { decision: decisionPanel, partido: decisionPanel, mercado: mercadoPanel, minijuego: minijuegoPanel }
         });
       }
@@ -488,6 +497,10 @@ export function iniciar() {
     // La tarjeta se ve si el relato espera entre beats: la velocidad se lee ACÁ, la de la llamada que la reproduce.
     const tarjetaSeVe = Boolean(cierre) && !reproductor.sinEspera();
     relatoEnCurso = estadoActual;
+    // Lo que la parada ya contó en el lugar entra a la página sin volver a contarse (PLANUI §0.2).
+    if (contados > 0) {
+      ui.renderPagina(logList, estadoActual, { desde: pagina.desde, anterior: pagina.anterior, cartel: pagina.cartel, hasta: logsAntes + contados });
+    }
     try {
       await reproductor.reproducirBeats(logList, estadoActual.logs.slice(logsAntes + contados), {
         registroAntes,
@@ -577,6 +590,9 @@ export function iniciar() {
       respuesta,
       logs,
       rapido: reproductor.sinEspera(),
+      escala: reproductor.escalaDeEspera(),
+      // Los números del resultado ruedan también en la placa "Vos" (devuelve los nodos que animó).
+      rodarPlaca: (cambios, retardo) => acompanante?.rodar(cambios, retardo) ?? [],
       inmediato: () => {
         if (inmediato === undefined) {
           try {

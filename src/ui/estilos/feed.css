@@ -1,468 +1,168 @@
-/* El feed: la crónica, el reveal del Top 20, el resumen anual, la tarjeta de fecha. Dueño: V3e (PLAN.md §V.7).
-   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
-
 /* ==========================================================================
-   2. EL FEED
-   Tres niveles tipográficos: título en versalitas, cuerpo narrativo, efectos
-   en gris. Los `tecnico: true` se atenúan en vez de esconderse (fase 7).
+   EL RELATO (PLANUI §8 y §0.2 punto 5; el relato de vitrina/fusion con
+   op=linea): la pagina del split pasa por el mundo, a la izquierda y apoyada
+   abajo, sin cajas. El cartel de la pagina en la luz; cada beat con su icono
+   por `log.type`, su titulo como rotulo, su texto y sus efectos (los numeros
+   cuentan); los tecnicos en una tira tenue. Lo que tiene tarjeta propia (la
+   fecha, la serie, el ranking del mundo, el año, el cierre del split) es un
+   grafico del sistema: UN panel. Tambien lo usa la Cronica (cuartos).
+   La linea "antes" de una parada (lo ultimo que se conto) vive al final.
    ========================================================================== */
 
-.log-list { margin-top: var(--s-4); display: grid; gap: var(--s-2); }
+.log-list { display: grid; gap: 0; min-width: 0; }
+.relato-pagina { max-width: 780px; padding-bottom: 6px; }
+/* En la pantalla ancha la pagina vive entre la franja y la barra: crece hacia arriba y lo viejo se funde arriba (el
+   reproductor trae el ultimo beat a la vista); la ventana no se corre debajo de la franja. */
+@media (min-width: 641px) {
+  #logList.relato-pagina {
+    max-height: calc(100vh - var(--franja-alto) - var(--barra-alto) - 96px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
+    mask-image: linear-gradient(180deg, transparent 0, var(--mascara) 64px);
+    padding-top: 40px;
+  }
+  #logList.relato-pagina::-webkit-scrollbar { display: none; }
+}
 
+/* --- el cartel de la pagina: "2031 · Temporada regular" ---------------------- */
+.cartel-pagina {
+  display: flex; align-items: center; gap: 14px; margin: 0 0 8px;
+  font: 600 var(--t-rotulo-g) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto);
+}
+.cartel-pagina::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--filete), var(--velo-nada)); }
+.cartel-pagina--anio { color: var(--gold); }
+
+/* --- un beat: el icono y su texto ------------------------------------------- */
 .log-item {
-  padding: var(--s-3) var(--s-4);
-  background: var(--bg-raised);
-  border-left: 3px solid var(--line-strong);
-  line-height: var(--lh);
-  animation: entrar-log var(--dur) var(--ease) both;
+  display: grid; grid-template-columns: 18px minmax(0, 1fr); column-gap: 14px; align-items: start;
+  padding: 11px 0; font-size: var(--t-cuerpo-g); line-height: 1.42; color: var(--ink);
+  text-shadow: 0 1px 14px var(--tono-vacio);
 }
-.log-item[data-acento="up"]      { border-left-color: var(--up); }
-.log-item[data-acento="parche"]  { border-left-color: var(--cat-parche); }
-.log-item[data-acento="gold"]    { border-left-color: var(--gold); }
-.log-item[data-acento="mercado"] { border-left-color: var(--cat-mercado); }
-.log-item[data-acento="familia"] { border-left-color: var(--cat-familia); }
-.log-item[data-acento="live"]    { border-left-color: var(--live); }
-.log-item[data-acento="danger"]  { border-left-color: var(--danger); }
-.log-item[data-acento="mute"]    { border-left-color: var(--line-strong); }
-.log-item--breaking {
-  border-left-width: 4px;
-  background:
-    linear-gradient(90deg, var(--gold-fill), transparent 40%),
-    var(--bg-raised);
-  animation: entrar-breaking var(--dur-slow) var(--ease) both;
-}
-.log-item--breaking .log-titulo { color: var(--cat-parche); }
-.log-item--escena { border-left-color: var(--gold); }
-.log-item--escena .log-titulo { color: var(--gold); }
+.log-item > * { grid-column: 2; min-width: 0; }
+.log-item > .log-ico { grid-column: 1; grid-row: 1 / span 6; width: 16px; height: 16px; margin-top: 4px; color: var(--luz-texto); }
+.log-list > .log-item + .log-item { box-shadow: inset 0 1px 0 var(--linea); }
+.log-item[data-acento='up'] > .log-ico { color: var(--up); }
+.log-item[data-acento='danger'] > .log-ico { color: var(--down); }
+.log-item:is([data-acento='gold'], [data-acento='parche']) > .log-ico { color: var(--gold); }
+.log-item[data-acento='mute'] > .log-ico { color: var(--ink-mute); }
+.log-titulo { margin-bottom: 4px; font: 600 var(--t-rotulo) / 1.3 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.log-rotulo { justify-self: start; margin-bottom: 4px; font: 600 10px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--gold); }
+.log-item--escena .log-titulo, .log-item--top-mundial .log-titulo { color: var(--gold); }
+.log-efectos { margin-top: 6px; font: 500 12px / 1.4 var(--f-mono); letter-spacing: 0.04em; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+.efecto-numero { font-variant-numeric: tabular-nums; }
+/* las lineas adjuntas viajan con su beat, mas chicas; la tira tecnica, tenue */
+.log-adjuntos { display: grid; gap: 3px; margin-top: 6px; font-size: 14px; line-height: 1.4; color: var(--ink-dim); overflow-wrap: anywhere; }
+.log-tira-tecnica { margin-top: 6px; font: 500 11px / 1.4 var(--f-mono); color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.log-item--tecnico { display: block; padding: 6px 0 6px 32px; font: 500 12px / 1.4 var(--f-mono); color: var(--ink-mute); text-shadow: none; }
+/* la cronica de un evento: lo que planteaba, que tomaste y que paso */
+.log-cronica-planteo { margin-bottom: 4px; font-size: 15px; color: var(--ink-dim); }
+.log-cronica-perfil { color: var(--luz-texto); }
+.resultado-prob { margin-top: 6px; font: 500 12px / 1.4 var(--f-mono); color: var(--ink-dim); }
 
-/* --- El reveal del Top 20 al cierre de temporada (fase 9Wc) ---------------
-   Un log `top_mundial` con la lista entera (`entry.top20`) se abre en tabla;
-   el resto de los `top_mundial` (entrás / te caés / #1) quedan como línea,
-   con el mismo acento oro que la escena. */
-.log-item--top-mundial { border-left-color: var(--gold); }
-.log-item--top-mundial .log-titulo { color: var(--gold); }
-.reveal-top20-sub { margin-bottom: var(--s-3); color: var(--ink-dim); }
-.reveal-top20-lista {
-  display: grid;
-  gap: 1px;
-  font-size: var(--fs-1);
-  font-variant-numeric: tabular-nums;
+/* --- las tarjetas: graficos del sistema (UN panel cada una) ----------------- */
+.log-list > .log-item:is(.log-item--resultado, .log-item--resumen-anio, .log-item--top-mundial), .log-item:is(.log-item--resultado, .log-item--resumen-anio, .log-item--top-mundial), .cierre-split, .mundial {
+  position: relative; display: block; margin: 8px 0; padding: 16px 20px 18px;
+  background: var(--panel); border-radius: var(--r-panel); box-shadow: inset 0 0 0 1px var(--filete), 0 18px 46px -26px var(--sombra);
+  text-shadow: none;
 }
-.reveal-top20-fila {
-  display: grid;
-  grid-template-columns: 32px 1fr auto;
-  gap: var(--s-2);
-  align-items: center;
-  padding: 2px var(--s-1);
-  color: var(--ink-dim);
+.log-item--top-mundial > .log-ico { display: none; }
+/* la barra de luz al costado: el color de lo que paso */
+.log-item--resultado::before, .cierre-split::before {
+  content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--luz); box-shadow: 0 0 12px var(--luz);
 }
-.reveal-top20-fila--propia {
-  background: var(--gold-fill);
-  color: var(--ink);
-  font-weight: 700;
-  border-radius: var(--r-sharp);
-}
-.reveal-top20-fila--rival { color: var(--ink); }
-.reveal-top20-puesto { color: var(--ink-mute); }
-.reveal-top20-handle {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.reveal-top20-detalle {
-  color: var(--ink-mute);
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.log-item--resultado-victoria::before { background: var(--up); box-shadow: 0 0 12px var(--up); }
+.log-item--resultado-derrota::before { background: var(--down); box-shadow: 0 0 12px var(--down); }
 
-/* --- El resumen anual (fase 11, §11.1): nota, titular, viñetas ----------- */
-.log-item--resumen-anio { border-left-color: var(--gold); }
-.resumen-anio-marco {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: var(--s-2);
-}
-.resumen-anio-marca {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  color: var(--gold);
-}
-.resumen-anio-etiqueta {
-  font-size: var(--fs-1);
-  color: var(--ink-mute);
-  font-variant-numeric: tabular-nums;
-}
-.resumen-anio-titular {
-  font-family: var(--font-display);
-  font-size: var(--fs-5);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-}
-.resumen-anio-bajada {
-  margin-top: var(--s-1);
-  color: var(--ink-dim);
-  font-style: italic;
-}
-.resumen-anio-nota {
-  display: inline-block;
-  margin-top: var(--s-3);
-  padding: var(--s-1) var(--s-3);
-  border-radius: var(--r-pill);
-  border: 1px solid var(--line);
-  font-size: var(--fs-1);
-  font-weight: 600;
-}
-.resumen-anio-nota--rojo   { border-color: var(--danger); color: var(--danger); background: var(--down-fill); }
-.resumen-anio-nota--gris   { color: var(--ink-dim); }
-.resumen-anio-nota--ambar  { border-color: var(--warn); color: var(--warn); background: var(--warn-fill); }
-.resumen-anio-nota--verde  { border-color: var(--up); color: var(--up); background: var(--up-fill); }
-.resumen-anio-vinetas {
-  display: grid;
-  gap: var(--s-2);
-  margin-top: var(--s-3);
-  padding-top: var(--s-3);
-  border-top: 1px solid var(--line-faint);
-  font-size: var(--fs-2);
-}
-.resumen-anio-vineta {
-  display: grid;
-  grid-template-columns: 1.4em 1fr;
-  gap: var(--s-2);
-  color: var(--ink-dim);
-}
-.resumen-anio-icono { text-align: center; }
-.log-pestana {
-  display: inline-block;
-  margin-bottom: var(--s-1);
-  padding: 1px var(--s-2);
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-weight: 700;
-  letter-spacing: var(--track-cartel);
-  text-transform: uppercase;
-  color: var(--bg-void);
-  background: var(--cat-parche);
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
-}
-.log-tira-tecnica {
-  margin-top: var(--s-2);
-  padding-top: var(--s-2);
-  border-top: 1px solid var(--line-faint);
-  font-size: var(--fs-0);
-  color: var(--ink-mute);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--lh-snug);
-}
-/* K4c-F: las líneas `adjunto` viajan adentro del beat anterior (no cuestan un beat del reproductor), legibles —
-   un renglón cada una, más chicas que lo narrativo y sin atenuar como la tira técnica. */
-.log-adjuntos {
-  margin-top: var(--s-2);
-  padding-top: var(--s-2);
-  border-top: 1px solid var(--line-faint);
-  display: grid;
-  gap: var(--s-1);
-  font-size: var(--fs-1);
-  color: var(--ink-dim);
-  line-height: var(--lh-snug);
-  overflow-wrap: anywhere;
-}
-/* Una tanda que arranca con líneas adjuntas no tiene narrativa arriba: sin el separador, que ahí sería un hueco. */
-.log-adjuntos:first-child {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: 0;
-}
-@keyframes entrar-breaking {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: none; }
-}
-
-@keyframes entrar-log {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: none; }
-}
-
-.log-item--tecnico {
-  border-left-color: var(--line-strong);
-  background: var(--bg-sunken);
-  color: var(--ink-dim);
-  font-size: var(--fs-2);
-  font-variant-numeric: tabular-nums;
-  padding: var(--s-2) var(--s-4);
-}
-
-.log-titulo {
-  font-family: var(--font-display);
-  font-size: var(--fs-1);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--track-cartel);
-  color: var(--ice);
-  margin-bottom: var(--s-1);
-}
-
-.log-efectos {
-  margin-top: var(--s-2);
-  font-size: var(--fs-1);
-  color: var(--ink-dim);
-  font-variant-numeric: tabular-nums;
-}
-
-/* --- La tarjeta de resultado de fecha (fase T6) ----------------------------
-   Un log `type: 'temporada'` deja de ser una línea más: gana su propia
-   cabecera de scoreboard. Verde/rojo por resultado, como el resto del
-   sistema semántico (--up/--down), no por categoría. */
-.log-item--resultado { padding: var(--s-3) var(--s-4); }
-.log-item--resultado-victoria { border-left-color: var(--up); }
-.log-item--resultado-derrota { border-left-color: var(--down); }
-
-.resultado-cabecera {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s-2);
-  margin-bottom: var(--s-1);
-  font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
-}
-.resultado-marcador { font-size: var(--fs-3); font-weight: 700; }
+/* la fecha (y la serie): el marcador grande, el rival, el camino mapa a mapa */
+.resultado-cabecera { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 8px; }
+.resultado-marcador { font: 800 var(--t-num-s) / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.02em; text-transform: uppercase; color: var(--ink); }
 .log-item--resultado-victoria .resultado-marcador { color: var(--up); }
 .log-item--resultado-derrota .resultado-marcador { color: var(--down); }
-.resultado-rival {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-1);
-  font-size: var(--fs-1);
-  color: var(--ink-dim);
-}
-.resultado-fuerza { font-size: var(--fs-0); color: var(--ink-mute); margin-left: auto; }
+.resultado-score { font: 900 var(--t-num-s) / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--ink); }
+.resultado-rival { display: inline-flex; align-items: center; gap: 8px; font: 600 15px / 1.2 var(--f-cuerpo); color: var(--ink); }
+.resultado-fuerza { margin-left: auto; font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.resultado-cuerpo { margin: 4px 0 8px; font-size: 16px; line-height: 1.45; color: var(--ink); }
+.resultado-pie { margin-top: 8px; font: 500 12px / 1.4 var(--f-mono); color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+.resultado-camino { display: grid; gap: 6px; margin-top: 10px; }
+.resultado-mapa-fila { display: flex; align-items: baseline; gap: 10px; font-size: 14px; color: var(--ink-dim); }
+.resultado-mapa-tag { min-width: 26px; padding: 3px 6px; border-radius: var(--r-chip); font: 700 11px / 1 var(--f-mono); text-align: center; font-variant-numeric: tabular-nums; }
+.resultado-mapa-tag--ganado { background: var(--up-fill); color: var(--up); }
+.resultado-mapa-tag--perdido { background: var(--down-fill); color: var(--down); }
+.resultado-mapa-campeon { font-weight: 600; color: var(--ink); }
+.resultado-mapa-cierre { font: 500 11px / 1.3 var(--f-mono); color: var(--ink-mute); }
 
-.resultado-pie {
-  margin-top: var(--s-2);
-  font-size: var(--fs-0);
-  color: var(--ink-mute);
-  font-variant-numeric: tabular-nums;
-}
+/* el ranking del mundo al cierre de temporada */
+.reveal-top20-sub { margin-bottom: 10px; font-size: 15px; color: var(--ink-dim); }
+.reveal-top20-lista { display: grid; gap: 1px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.reveal-top20-fila { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 3px 8px; border-radius: var(--r-chip); color: var(--ink-dim); }
+.reveal-top20-fila--propia { background: var(--luz-suave); color: var(--ink); font-weight: 700; }
+.reveal-top20-fila--rival { color: var(--ink); }
+.reveal-top20-puesto { font: 600 12px / 1 var(--f-mono); color: var(--ink-mute); }
+.reveal-top20-handle { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reveal-top20-detalle { font: 500 11px / 1 var(--f-mono); letter-spacing: 0.04em; color: var(--ink-mute); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.resultado-cuerpo {
-  margin: var(--s-1) 0 var(--s-2);
-  color: var(--ink);
-  font-size: var(--fs-1);
-}
+/* el año: la marca del medio, el titular, la nota grande y las viñetas con su glifo */
+.resumen-anio-marco { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+.resumen-anio-marca { font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); color: var(--gold); }
+.resumen-anio-etiqueta { font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); color: var(--ink-dim); }
+.resumen-anio-titular { margin: 0; font: 800 var(--t-titulo-s) / 1.02 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.03em; text-transform: none; color: var(--ink); text-wrap: balance; }
+.resumen-anio-bajada { margin-top: 8px; font-size: 16px; color: var(--ink-dim); }
+.resumen-anio-nota { display: grid; grid-template-columns: auto auto; align-items: end; justify-content: start; column-gap: 14px; margin-top: 16px; }
+.resumen-anio-nota-rotulo { grid-column: 1 / -1; margin-bottom: 6px; font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.resumen-anio-nota-valor { font: 900 var(--t-num-l) / 0.86 var(--f-display); font-stretch: var(--ancho-numero); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.resumen-anio-nota-banda { padding-bottom: 6px; font: 600 14px / 1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; }
+.resumen-anio-nota--rojo :is(.resumen-anio-nota-valor, .resumen-anio-nota-banda) { color: var(--down); }
+.resumen-anio-nota--gris .resumen-anio-nota-banda { color: var(--ink-dim); }
+.resumen-anio-nota--ambar :is(.resumen-anio-nota-valor, .resumen-anio-nota-banda) { color: var(--warn); }
+.resumen-anio-nota--verde :is(.resumen-anio-nota-valor, .resumen-anio-nota-banda) { color: var(--up); }
+.resumen-anio-vinetas { display: grid; gap: 8px; margin-top: 16px; padding-top: 14px; box-shadow: inset 0 1px 0 var(--linea); font-size: 15px; line-height: 1.4; }
+.resumen-anio-vineta { display: grid; grid-template-columns: 16px 1fr; gap: 12px; align-items: start; color: var(--ink-dim); }
+.resumen-anio-icono { margin-top: 3px; color: var(--gold); }
 
-.resultado-score {
-  font-size: var(--fs-2);
-  font-weight: 700;
-  color: var(--ink-dim);
-}
-
-.resultado-camino {
-  margin-top: var(--s-2);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-1);
-}
-
-.resultado-mapa-fila {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s-2);
-  font-size: var(--fs-1);
-  color: var(--ink-dim);
-}
-
-.resultado-mapa-tag {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  padding: 1px var(--s-1);
-  border-radius: var(--r-sharp);
-}
-
-.resultado-mapa-tag--ganado {
-  background: var(--up-fill);
-  color: var(--up);
-}
-
-.resultado-mapa-tag--perdido {
-  background: var(--down-fill);
-  color: var(--down);
-}
-
-.resultado-mapa-campeon {
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.resultado-mapa-cierre {
-  color: var(--ink-mute);
-  font-size: var(--fs-0);
-}
-
-/* ==========================================================================
-   La tarjeta de cierre del split y la línea "Split anterior" (FASE V, V2-B).
-   Beats sintéticos de la página del relato (`renderPagina`, components/cierre.js):
-   la tarjeta entra con el último beat del split y usa su espera; la línea abre
-   la página siguiente cuando la tarjeta no llegó a verse (INST o movimiento
-   reducido). La animación de entrada es la de `.log-item`: el camino quieto lo
-   da `base.css` (`prefers-reduced-motion`).
-   ========================================================================== */
-
-.cierre-split {
-  display: grid;
-  gap: var(--s-1);
-  padding: var(--s-3) var(--s-4);
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--live);
-  animation: entrar-log var(--dur) var(--ease) both;
-}
-/* V4: "Cierre de 2031", el cierre de un año sin parada del motor. Va antes de título/Mundial: esos pisan el color. */
-.cierre-split--anio { border-left-color: var(--ice); }
-.cierre-split--titulo,
-.cierre-split--mundial {
-  border-left-color: var(--gold);
-  background:
-    linear-gradient(90deg, var(--gold-fill), transparent 50%),
-    var(--bg-raised);
-}
-.cierre-split-kicker {
-  font-family: var(--font-display);
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  color: var(--ink-dim);
-}
-.cierre-split-resultado {
-  font-family: var(--font-display);
-  font-size: var(--fs-5);
-  font-weight: 700;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.cierre-split--titulo .cierre-split-resultado,
-.cierre-split--mundial .cierre-split-resultado { color: var(--gold); }
-.cierre-split-numero {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--s-2);
-  font-variant-numeric: tabular-nums;
-  color: var(--ink);
-}
-.cierre-split-valor { font-weight: 700; }
-.cierre-split-banda { color: var(--ink-dim); font-size: var(--fs-1); }
-.cierre-split-delta { font-weight: 700; }
+/* el cierre del split (y del año): el resultado grande, el numero que se movio, la banda y el escalon */
+.cierre-split { display: grid; gap: 8px; }
+.cierre-split--titulo::before, .cierre-split--mundial::before { background: var(--gold); box-shadow: 0 0 14px var(--gold); }
+.cierre-split-kicker { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.cierre-split--anio .cierre-split-kicker { color: var(--gold); }
+.cierre-split-resultado { font: 800 var(--t-num-m) / 0.95 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.03em; text-transform: uppercase; color: var(--ink); }
+.cierre-split--titulo .cierre-split-resultado, .cierre-split--mundial .cierre-split-resultado { color: var(--gold); }
+.cierre-split-numero { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.cierre-split-valor { font: 800 22px / 1.1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.01em; }
+.cierre-split-banda { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.cierre-split-delta { font: 700 14px / 1 var(--f-mono); }
 .cierre-split-delta--sube { color: var(--up); }
 .cierre-split-delta--baja { color: var(--down); }
 .cierre-split-delta--igual { color: var(--ink-mute); }
-
-/* V4: lo que suma el cierre de año: cuánto se movió el número en los tres splits y el escalón que se persigue. */
-.cierre-anio {
-  display: grid;
-  gap: var(--s-1);
-  font-size: var(--fs-2);
-  line-height: var(--lh-snug);
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-dim);
-}
+.cierre-anio { display: grid; gap: 4px; font-size: 15px; line-height: 1.4; font-variant-numeric: tabular-nums; color: var(--ink-dim); }
 .cierre-anio-vas { font-weight: 700; color: var(--ink); }
+.cierre-split-linea { padding: 8px 0 8px 32px; font: 500 13px / 1.4 var(--f-mono); color: var(--ink-dim); font-variant-numeric: tabular-nums; }
 
-.cierre-split-linea {
-  padding: var(--s-2) var(--s-4);
-  border-left: 3px solid var(--line-strong);
-  color: var(--ink-dim);
-  font-size: var(--fs-2);
-  font-variant-numeric: tabular-nums;
-}
+/* el aviso del relato: Espacio pasa las lineas */
+.reproduciendo-aviso { align-self: start; margin: 0 0 10px; font: 500 var(--t-rotulo) / 1.3 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
+.reproduciendo-aviso kbd { margin: 0 6px; }
 
-/* --- V4: los carteles y los números que se mueven ------------------------------------------------------------------------
-   El cartel es el encabezado de cada página del relato (`crearCartelDePagina`, components/cierre.js): una línea con la ventana y
-   el año, que no es un beat y no suma espera. El primero del año se marca en oro. Entra con un desliz corto; el camino quieto lo da
-   `base.css` (`prefers-reduced-motion`: las animaciones duran 1 ms). Los números de los efectos de un beat se cuentan desde 0
-   (`animarEfectos`, components/feed.js): con cifras tabulares el renglón no se corre mientras cuentan. */
-.cartel-pagina {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  padding: var(--s-1) var(--s-1) 0;
-  font-family: var(--font-display);
-  font-size: var(--fs-2);
-  font-weight: 700;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  color: var(--ink-dim);
-  animation: entrar-cartel var(--dur-slow) var(--ease) both;
-}
-.cartel-pagina::after { content: ''; flex: 1; height: 1px; background: var(--line-strong); }
-.cartel-pagina--anio { color: var(--gold); }
-.cartel-pagina--anio::after { background: var(--gold-deep); }
-@keyframes entrar-cartel {
-  from { opacity: 0; transform: translateX(-10px); }
-  to   { opacity: 1; transform: none; }
-}
-.efecto-numero { font-variant-numeric: tabular-nums; }
-.cierre-split-valor { font-variant-numeric: tabular-nums; }
-
-/* En el celular la barra de cuartos va fija abajo (cuartos.css) y el reproductor sigue el último beat con `scrollIntoView({ block:
-   'nearest' })`: sin este margen los últimos ~52 px de CUALQUIER beat del relato (no solo la tarjeta de cierre, que ya lo tenía en
-   tarjeta.css) quedaban detrás de la barra. */
-@media (max-width: 899px) {
-  .log-list > * { scroll-margin-bottom: calc(var(--cuartos-barra-alto) + var(--s-3)); }
+@media (max-width: 640px) {
+  .log-item { font-size: 16px; column-gap: 10px; }
+  .log-list > .log-item:is(.log-item--resultado, .log-item--resumen-anio, .log-item--top-mundial), .log-item:is(.log-item--resultado, .log-item--resumen-anio, .log-item--top-mundial), .cierre-split, .mundial { padding: 14px 14px 16px; }
+  .reproduciendo-aviso { display: none; }
+  /* la barra de cuartos va fija abajo: el ultimo beat no queda detras */
+  .log-list > * { scroll-margin-bottom: calc(var(--barra-alto) + 16px); }
 }
 
-/* --- "Lo último que pasó" de una parada (V2-C; PLAN.md §V.4 `.parada-antes`) ---------------------------------------
-   El relato (`#logList`) solo se ve en la pieza `relato`; una parada a mitad de split abre con esta franja: el último beat
-   que el relato ya contó, en UNA línea (si es largo, se corta con "…"), y "ver la página (n)" para abrir, acá mismo, los
-   beats de la página. Lo llena `renderParadaAntes` (components/feed.js). Oculta si la página no tiene beats todavía. */
-.parada-antes {
-  display: grid;
-  gap: var(--s-1);
-  padding: var(--s-2) var(--s-4);
-  background: var(--bg-sunken);
-  border-left: 3px solid var(--line-strong);
-  color: var(--ink-dim);
-  font-size: var(--fs-1);
-  line-height: var(--lh);
-}
-.parada-antes-rotulo {
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-weight: 600;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  color: var(--ink-mute);
-}
-.parada-antes-ultimo {
-  margin: 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--ink);
-}
-.parada-antes-pagina > summary {
-  display: inline-block;
-  cursor: pointer;
-  color: var(--ice);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.parada-antes-beats {
-  display: grid;
-  gap: var(--s-2);
-  margin-top: var(--s-2);
-  max-height: 60vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+/* ==========================================================================
+   LA LINEA "ANTES" DE UNA PARADA (la de la vitrina): lo ultimo que el relato
+   conto, en una linea sobre el mundo, y el split a un toque.
+   ========================================================================== */
+.antes-fila { margin-bottom: 12px; min-width: 0; }
+.antes { display: flex; align-items: center; gap: 12px; min-width: 0; padding-left: 4px; font-size: 14px; color: var(--ink-dim); }
+.antes > .ln-ico { color: var(--luz-texto); }
+.antes-texto { display: flex; align-items: baseline; gap: 12px; min-width: 0; white-space: nowrap; overflow: hidden; }
+.antes-texto b { flex: none; max-width: 42ch; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; }
+.antes-efectos { min-width: 0; max-width: 46ch; font: 500 var(--t-rotulo) / 1.2 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; }
+.btn-split { margin-left: 8px; }
+.split-lista { display: grid; gap: 8px; margin: 12px 0 0; padding: 14px 18px; max-height: 40vh; overflow-y: auto; list-style: none; font-size: 14px; color: var(--ink-dim); background: var(--panel); border-radius: var(--r-panel); box-shadow: inset 0 0 0 1px var(--filete); }
+.split-lista li { display: flex; gap: 10px; align-items: baseline; }
+.split-lista .ln-ico { flex: none; color: var(--luz-texto); transform: translateY(2px); }
+@media (max-width: 640px) {
+  .antes-fila { margin-bottom: 10px; }
+  .antes { font-size: 13px; }
+  .antes-efectos { display: none; }
 }

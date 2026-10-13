@@ -144,6 +144,24 @@ export const ambiente = {
     if (api) seguro('alMontar', () => f(api));
     else alMontar.push(f);
   },
+  // La costura de la bisagra (`components/costura.js`): `cambio` es parcial (al apuntar, solo la posición) y va así al
+  // ambiente, con su `cruce` (ms); la declaración guarda la costura entera, para el ambiente que monte después y para
+  // volver a aplicarla (el celular que gira). `null` la apaga.
+  costura(cambio, cruce = null) {
+    const previa = estado.mundo?.costura ?? null;
+    const completa = cambio === null ? null : { ...(previa ?? {}), ...cambio, a: { ...(previa?.a ?? {}), ...(cambio.a ?? {}) }, b: { ...(previa?.b ?? {}), ...(cambio.b ?? {}) } };
+    estado.mundo = { ...estado.mundo, costura: completa };
+    if (api) seguro('costura', () => api.ambiente({ costura: cambio, ...(cruce != null ? { cruce } : {}) }));
+  },
+  // La geometría de la costura ahora (dónde cae cada cara), para ubicar el DOM encima. Sin ambiente, `{ k: 0 }`.
+  geometria() {
+    return (api && seguro('geometria', () => api.costura())) ?? { k: 0 };
+  },
+  // Un tono solo para la interfaz (las --tono-* de <html>), sin tocar la luz del mundo: la bisagra elegida tiñe la noche
+  // de la pantalla con el de su destino. Dura hasta la próxima declaración del mundo.
+  tenir(tono) {
+    if (api) seguro('tono', () => api.tono?.(tono, { paleta: false }));
+  },
   // El reproductor entró o salió de INST (o del movimiento reducido): el camino quieto de todo el kit.
   inst(si) {
     estado.inst = Boolean(si);

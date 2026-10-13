@@ -1,372 +1,355 @@
-/* La decisión: opciones, peso visual, consecuencia previa. Dueño: V3a (PLAN.md §V.7).
-   Salió de componentes.css / pantallas.css en V2-A: solo mudanza de bloques, ninguna regla cambió. */
-
 /* ==========================================================================
-   2. LA DECISIÓN
-   Barra de acento a la izquierda, título en condensada, opciones como
-   tarjetas. El banner por categoría y el peso bisagra/cierre/normal son de
-   T4 — ver `formatoUi.js` para de dónde sale cada uno.
+   LA DECISION (PLANUI U2a; portado de vitrina/fusion/estilos/decision.css con
+   op=linea). Un panel apoyado abajo, con el mundo arriba: la cabecera (rotulo,
+   titulo, planteo) y el cuerpo (opciones | inspector; la planilla del plan con
+   el inspector abajo). Elegir transforma la opcion en la tarjeta de su
+   resultado. Con destino, la costura de la bisagra (los .dc-*): los destinos
+   arriba del panel, sobre la luz del ambiente.
+   Lo de la linea "antes" y del relato esta en feed.css; las piezas comunes
+   (.panel, .opcion, .inspector, .op-tecla) en primitivos.css.
    ========================================================================== */
 
-.decision {
-  position: relative;
-  margin-top: var(--s-6);
-  padding: var(--s-5);
-  padding-left: calc(var(--s-5) - 3px);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--tab-color, var(--live));
-  animation: entrar-decision var(--dur-slow) var(--ease) both;
-  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+.decision { position: relative; min-width: 0; }
+.parada-decision { position: relative; min-width: 0; }
+.parada-decision > .parada-col { min-width: 0; }
+
+/* ---------- el panel: cabecera + cuerpo (opciones | inspector) ---------- */
+.panel-cab { padding: 22px 28px 20px; }
+.panel-cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 0.52fr); box-shadow: inset 0 1px 0 var(--linea); }
+.parada-decision[data-forma='matriz'] .panel-cuerpo { grid-template-columns: minmax(0, 1fr); }
+.panel-cuerpo > .inspector { background: var(--panel-hondo); box-shadow: inset 1px 0 0 var(--linea); border-bottom-right-radius: var(--r-panel); }
+.parada-decision[data-forma='matriz'] .panel-cuerpo > .inspector { display: grid; grid-template-columns: minmax(200px, 0.36fr) minmax(0, 1fr); column-gap: 24px; box-shadow: inset 0 1px 0 var(--linea); border-bottom-left-radius: var(--r-panel); padding: 14px 28px 16px; }
+.parada-decision[data-forma='matriz'] .inspector .insp-texto { margin-top: 0; grid-column: 2; grid-row: 1 / span 2; }
+.parada-decision[data-forma='matriz'] .inspector .insp-previa { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.parada-decision[data-forma='matriz'] .titulo-parada { font-size: var(--t-titulo-s); }
+.parada-decision[data-forma='matriz'] .panel-cab { padding-bottom: 16px; }
+.panel-cuerpo.con-resultado { grid-template-columns: minmax(0, 1fr); }
+.insp-plan { color: var(--ink); }
+.insp-p { color: var(--ink); }
+
+/* ---------- opciones (lista): label + glifos ---------- */
+.opciones { display: flex; flex-direction: column; padding: 4px 0; }
+.op-caja { position: relative; }
+.opciones > .op-caja + .op-caja { box-shadow: inset 0 1px 0 var(--linea); }
+.opciones .opcion { display: grid; grid-template-columns: 30px minmax(0, 1fr); column-gap: 16px; align-items: start; width: 100%; padding: 16px 22px 16px 28px; }
+.opciones .op-tecla { margin-top: -2px; }
+.op-cuerpo { display: grid; gap: 9px; min-width: 0; }
+.op-label { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.op-desc { display: none; font-size: 14px; line-height: 1.45; color: var(--ink-dim); }
+html[data-textos='completos'] .op-desc { display: block; }
+.op-glifos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); }
+.eje { display: inline-flex; align-items: center; gap: 6px; }
+.eje-nom { color: var(--ink-dim); }
+.opcion.apuntada .eje-nom { color: var(--ink); }
+.riesgo { display: inline-flex; align-items: center; gap: 6px; color: var(--warn); }
+.riesgo[data-riesgo='seguro'] { color: var(--ink-dim); }
+.riesgo[data-riesgo='alto'] { color: var(--danger); }
+.medidor-p { display: inline-flex; align-items: center; gap: 8px; }
+.medidor-p > i { position: relative; display: block; width: 64px; height: 4px; border-radius: var(--r-chip); background: var(--linea-fuerte); overflow: hidden; }
+.medidor-p > i > i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: inherit; background: var(--luz-texto); }
+.medidor-p b { font: 900 13px / 1 var(--f-display); font-stretch: var(--ancho-numero); color: var(--ink); }
+.op-plan { display: inline-flex; align-items: center; gap: 7px; font: 500 var(--t-rotulo) / 1.2 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--luz-texto); }
+html[data-textos='completos'] .op-plan span { text-transform: none; letter-spacing: 0; font: 500 13px / 1.4 var(--f-cuerpo); color: var(--ink-dim); }
+.op-mas { display: none; }
+.gate { color: var(--ink-mute); }
+
+/* ---------- la planilla del plan amateur (opciones en filas, ejes en columnas) ---------- */
+.matriz {
+  --ejes: 5;
+  --cols: 6;
+  display: grid; grid-template-columns: minmax(230px, 2.1fr) repeat(var(--ejes), minmax(78px, 1fr)) minmax(96px, 1.1fr);
+}
+.matriz > .op-caja { display: contents; }
+.mx-cab, .mx-fila { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; column-gap: 0; }
+.mx-cab { padding: 12px 0 10px; background: var(--panel-hondo); box-shadow: inset 0 -1px 0 var(--linea); font: 500 10px / 1.15 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
+.mx-cab > span { padding-right: 14px; }
+.mx-op { display: flex; align-items: center; gap: 0; min-width: 0; }
+.mx-cab .mx-op { padding-left: 28px; }
+.mx-eje { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 7px; }
+.mx-eje .ln-ico { color: var(--ink-dim); }
+.mx-ref { grid-column: 1 / -1; font: 900 15px / 1 var(--f-display); font-stretch: var(--ancho-numero); letter-spacing: -0.01em; text-transform: none; color: var(--ink); }
+.mx-fila { padding: 11px 0; }
+.matriz > .op-caja + .op-caja > .mx-fila { box-shadow: inset 0 1px 0 var(--linea); }
+.mx-fila .mx-op { display: grid; grid-template-columns: 30px minmax(0, 1fr); column-gap: 16px; align-items: center; row-gap: 6px; padding-left: 28px; }
+.mx-fila .op-label { padding-right: 16px; }
+.op-tags { display: inline-flex; gap: 10px; }
+.mx-fila .op-tags { grid-column: 2; }
+.tag { font: 600 10px / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; }
+.tag-perfil { color: var(--luz-texto); }
+.tag-perfil::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--luz); box-shadow: 0 0 8px var(--luz); vertical-align: 1px; }
+.tag-rara { color: var(--gold); }
+.mx-celda { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 7px; padding-right: 14px; }
+.mx-celda > b { font: 900 16px / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; }
+.mx-celda.baja > b { color: var(--ink-dim); }
+.mx-u { font: 500 10px / 1 var(--f-mono); letter-spacing: 0.06em; color: var(--ink-dim); }
+.mx-celda .ln-tri { justify-self: start; }
+.mx-barra { grid-column: 1 / -1; position: relative; display: block; height: 4px; border-radius: var(--r-chip); background: var(--linea); }
+.mx-barra i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: inherit; transform-origin: left; }
+.mx-barra i.sube { background: var(--up); }
+.mx-barra i.baja { background: var(--down); }
+.mx-barra.mixta::after { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--linea-fuerte); }
+.mx-barra.mixta i.sube { left: 50%; }
+.mx-barra.mixta i.baja { left: auto; right: 50%; transform-origin: right; }
+.mx-barra i.riesgo { background: var(--warn); }
+.mx-nada { display: block; width: 12px; height: 1px; background: var(--ink-mute); }
+.mx-riesgo { grid-template-columns: 1fr; gap: 6px; }
+.mx-casa { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; }
+.mx-casa b { font: 900 14px / 1 var(--f-display); font-stretch: var(--ancho-numero); }
+.mx-marca { display: inline-flex; align-items: center; gap: 5px; font: 600 10px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--warn); }
+.mx-riesgo-cab .ln-ico { color: var(--warn); }
+.ln-fantasma .oculta { visibility: hidden; }
+
+/* ---------- el resultado (la opcion crecida): ocupa el cuerpo del panel ---------- */
+.resultado { position: relative; grid-column: 1 / -1; padding-bottom: 22px; outline: none; }
+.resultado::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--luz); box-shadow: 0 0 14px var(--luz); }
+.res-cab {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; column-gap: 16px; align-items: center; padding: 16px 22px 16px 28px;
+  background: linear-gradient(90deg, var(--luz-suave) 0%, var(--luz-tenue) 40%, var(--velo-nada) 70%); background-size: 200% 100%; background-position: 0% 0;
+}
+.res-cab .op-tecla { background: var(--luz-texto); box-shadow: none; color: var(--bg-void); }
+.res-tag { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.res-plan { margin: 14px 28px 0 74px; max-width: 62ch; font-size: 15px; color: var(--ink-dim); }
+.res-texto { margin: 14px 28px 0 74px; max-width: 58ch; font-size: var(--t-cuerpo-g); line-height: 1.45; color: var(--ink); text-wrap: pretty; }
+.res-efectos { margin: 10px 28px 0 74px; max-width: 62ch; font: 500 12px / 1.4 var(--f-mono); letter-spacing: 0.04em; color: var(--ink-dim); }
+.res-numeros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px 40px; margin: 22px 28px 0 74px; }
+.res-num { display: grid; gap: 10px; }
+.rn-fila { display: flex; align-items: baseline; gap: 12px; }
+.rn-fila > .ln-ico { align-self: center; width: 18px; height: 18px; color: var(--ink-dim); }
+.rn-rotulo { display: inline-flex; align-items: center; gap: 7px; font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.rn-valor { font-size: var(--t-num-l); line-height: 0.86; letter-spacing: -0.03em; color: var(--ink); }
+.rn-delta { display: inline-flex; align-items: center; gap: 5px; padding-bottom: 6px; font: 600 14px / 1 var(--f-mono); }
+.rn-delta.sube { color: var(--up); }
+.rn-delta.baja { color: var(--down); }
+.rn-antes { font: 900 var(--t-num) / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--ink-dim); }
+.res-rango .rn-antes { font-size: var(--t-num-s); font-weight: 800; font-stretch: var(--ancho-titulo); }
+.res-rango .rn-valor { font-size: 34px; font-weight: 800; font-stretch: var(--ancho-titulo); letter-spacing: -0.03em; }
+.rn-texto { display: grid; overflow: hidden; padding-bottom: 4px; }
+.rn-texto > span { grid-area: 1 / 1; }
+.resultado:focus-visible { outline: none; box-shadow: none; }
+
+/* ---------- celular ---------- */
+@media (max-width: 640px) {
+  .bisagra { padding-left: 10px; }
+  .parada-decision[data-forma='matriz'] .bisagra { display: none; }
+  .panel-cab { padding: 16px 16px 14px; }
+  .panel-cuerpo { grid-template-columns: minmax(0, 1fr); }
+  .panel-cuerpo > .inspector, .parada-decision[data-forma='matriz'] .panel-cuerpo > .inspector { display: block; padding: 10px 16px 12px; box-shadow: inset 0 1px 0 var(--linea); border-bottom-left-radius: var(--r-panel); }
+  .opciones .opcion { grid-template-columns: 26px minmax(0, 1fr); column-gap: 12px; padding: 12px 52px 12px 16px; }
+  .op-glifos { gap: 6px 12px; font-size: 10px; }
+  .op-mas { display: inline-flex; position: absolute; right: 10px; top: 12px; height: 22px; font-size: 10px; }
+  .insp-kicker { display: none; }
+  .insp-texto { margin-top: 0; font-size: 14px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .insp-previa { display: none; }
+  .parada-decision[data-forma='matriz'] .inspector:not(.expandido) .insp-previa { display: none; }
+  .inspector.expandido .insp-texto { -webkit-line-clamp: unset; display: block; }
+  .inspector.expandido .insp-previa { display: grid; }
+  .matriz { display: block; }
+  .matriz > .op-caja { display: block; position: relative; }
+  .mx-cab, .mx-fila { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); }
+  .mx-cab .mx-op { display: none; }
+  .mx-cab { padding: 8px 0 8px 16px; }
+  .mx-eje-nom { display: none; }
+  .mx-eje { grid-template-columns: 1fr; justify-items: start; }
+  .mx-ref { font-size: 11px; }
+  .mx-fila { position: relative; width: 100%; padding: 12px 0 12px 16px; row-gap: 10px; }
+  .mx-fila .mx-op { grid-column: 1 / -1; grid-template-columns: 26px minmax(0, 1fr); column-gap: 12px; padding-left: 0; }
+  .mx-celda { padding-right: 8px; grid-template-columns: 1fr; gap: 5px; }
+  .mx-celda > b { font-size: 12px; overflow: hidden; }
+  .mx-u { display: none; }
+  .mx-celda .ln-tri { display: none; }
+  .mx-casa { grid-template-columns: 1fr; }
+  .mx-fila .op-label { padding-right: 48px; }
+  .res-cab { grid-template-columns: 26px minmax(0, 1fr); column-gap: 12px; padding: 12px 12px 12px 16px; }
+  .res-tag { display: none; }
+  .res-plan, .res-texto, .res-efectos, .res-numeros { margin-left: 16px; margin-right: 16px; }
+  .res-texto { font-size: 15.5px; }
+  .res-numeros { gap: 16px 28px; }
+  .rn-valor { font-size: var(--t-num-m); }
+  .rn-antes { font-size: 22px; }
+  .res-rango .rn-antes { font-size: 14px; }
+  .res-rango .rn-valor { font-size: 22px; }
 }
 
-/* --- Peso visual (T4) -------------------------------------------------
-   `bisagra`: el escenario entero se nota — borde más grueso en el color de
-   la categoría, con glow, y una marca de agua enorme del label detrás del
-   texto (no un velo de pantalla completa: eso exige un overlay aparte, y
-   esto ya cambia la lectura sin sumar una capa nueva). `cierre`: un
-   milestone, no una alarma — reusa el oro que ya significa "hito" en toda
-   la ficha desde T0b, no el color de la categoría. */
-.decision[data-peso="bisagra"] {
-  padding: var(--s-6);
-  border-left-width: 6px;
-  border-color: var(--tab-color, var(--live));
-  box-shadow: 0 0 50px -14px var(--tab-color, var(--live-glow)), var(--sombra-3);
-  animation:
-    entrar-decision-bisagra var(--dur-slow) var(--ease) both,
-    flash-bisagra 180ms var(--ease);
-  overflow: hidden;
-}
-@keyframes flash-bisagra {
-  from { box-shadow: 0 0 80px -6px var(--tab-color, var(--live)); }
-  to   { box-shadow: 0 0 50px -14px var(--tab-color, var(--live-glow)), var(--sombra-3); }
-}
-.decision[data-peso="bisagra"]::after {
-  content: attr(data-tab-label);
-  position: absolute;
-  right: var(--s-4);
-  bottom: -0.15em;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 96px;
-  line-height: 1;
-  letter-spacing: var(--track-cartel);
-  text-transform: uppercase;
-  color: var(--tab-color, var(--live));
-  opacity: 0.06;
-  pointer-events: none;
-  white-space: nowrap;
-}
-@keyframes entrar-decision-bisagra {
-  from { opacity: 0; transform: scale(0.98) translateY(12px); }
-  to   { opacity: 1; transform: none; }
+/* ======================================================================================================================
+   LA COSTURA DE LA BISAGRA (PLANUI §4.9-§4.10; components/costura.js). La bisagra que es una oferta llega como ¡OFERTA
+   ENCONTRADA! (el aviso del kit, fx.css) sobre la pantalla; aceptar agranda el anillo como un portal y el mundo cruza a
+   la costura del ambiente (la dibuja el shader: aca solo van los destinos encima, con sus logos y lo que arriesgas).
+   ==================================================================================================================== */
+@property --dc-pr { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --dc-pa { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* el aviso: el panel entra al aceptar */
+.parada-decision.dc-espera > .parada-col { visibility: hidden; }
+
+/* el portal: un velo con el hueco del anillo que crece; su borde es el aro dorado de la ceremonia */
+.dc-portal {
+  --dc-px: 50%; --dc-py: 50%; --dc-pr: 0px; --dc-pa: 1;
+  position: fixed; inset: 0; z-index: 39; pointer-events: none;
+  background: radial-gradient(circle at var(--dc-px) var(--dc-py),
+    var(--ln-velo-nada) var(--dc-pr),
+    color-mix(in srgb, var(--ln-oro-claro) calc(var(--dc-pa) * 100%), var(--ln-velo-nada)) calc(var(--dc-pr) + 1px),
+    color-mix(in srgb, var(--ln-oro) calc(var(--dc-pa) * 100%), var(--ln-velo)) calc(var(--dc-pr) + 3px),
+    color-mix(in srgb, var(--tono-luz) calc(var(--dc-pa) * 34%), var(--ln-velo)) calc(var(--dc-pr) + 7px),
+    var(--ln-velo) calc(var(--dc-pr) + 56px));
 }
 
-.decision[data-peso="cierre"] {
-  border-left-color: var(--gold);
-  box-shadow: inset 0 0 0 1px var(--gold-glow);
+/* la costura: los dos destinos, cada uno en el tono de su liga */
+.dc-costura { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.dc-banda { display: none; }
+.dc-lado {
+  position: absolute; left: 0; top: calc(var(--franja-alto) + var(--dc-aire)); display: grid; justify-items: start; gap: 12px;
+  width: max-content; max-width: min(var(--dc-lado-ancho), 42vw); transition: opacity 520ms var(--expo);
 }
-.decision[data-peso="cierre"]::before { background: var(--gold); }
+.dc-lado[data-lado='b'] { justify-items: end; }
+/* el velo de lectura: el vacio de SU tono detras del destino */
+.dc-lado::before {
+  content: ''; position: absolute; inset: -54px -84px -40px; z-index: -1; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tono-vacio) var(--dc-velo-lado), transparent) 0%, color-mix(in srgb, var(--tono-vacio) calc(var(--dc-velo-lado) * 0.75), transparent) 55%, transparent 100%);
+}
+.dc-costura[data-fase='aviso'] .dc-lado { opacity: 0; }
+.dc-logos { display: flex; align-items: center; gap: 22px; }
+.ln-logo.dc-logo-liga { --ln-logo-tam: var(--dc-logo); filter: drop-shadow(0 8px 26px var(--sombra)) drop-shadow(0 0 34px color-mix(in srgb, var(--tono-luz) 42%, transparent)); }
+.ln-logo.dc-logo-org { --ln-logo-tam: var(--dc-logo-org); filter: drop-shadow(0 8px 22px var(--sombra)); }
+.dc-lugar { display: grid; justify-items: inherit; gap: 7px; margin: 0; text-align: left; }
+.dc-lado[data-lado='b'] .dc-lugar { text-align: right; }
+.dc-lugar b { font: 800 30px / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.025em; color: var(--ink); text-shadow: 0 2px 18px var(--tono-vacio); }
+.dc-lugar span { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: color-mix(in srgb, var(--tono-luz) 45%, var(--ink)); }
+/* lo que arriesgas: una fila por camino de ese lado, con su tecla, su nombre corto y la previa del motor en chips */
+.dc-filas { display: grid; gap: 8px; justify-items: inherit; margin: 4px 0 0; padding: 0; list-style: none; }
+.dc-fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 8px 10px; transition: opacity 420ms var(--expo); }
+.dc-lado[data-lado='b'] .dc-fila { justify-content: flex-end; }
+.dc-cabeza { display: inline-flex; align-items: center; gap: 9px; height: 26px; padding: 0 12px 0 0; border-radius: var(--r-control); background: color-mix(in srgb, var(--tono-vacio) var(--dc-chip-fondo), transparent); }
+.dc-tecla {
+  display: inline-grid; place-items: center; min-width: 26px; height: 26px; border-radius: var(--r-control); flex: none;
+  box-shadow: inset 0 0 0 1px var(--linea-fuerte); font: 600 12px / 1 var(--f-mono); color: var(--ink);
+  transition: background-color 200ms ease, color 200ms ease, box-shadow 200ms ease;
+}
+.dc-tecla .ln-ico { width: 14px; height: 14px; }
+.dc-camino { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink); }
+.dc-chips { flex-basis: 100%; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.dc-lado[data-lado='b'] .dc-chips { justify-content: flex-end; }
+.dc-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: var(--r-chip);
+  background: color-mix(in srgb, var(--tono-vacio) var(--dc-chip-fondo), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tono-luz) 24%, transparent);
+  font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim);
+  transition: box-shadow 200ms ease, color 200ms ease;
+}
+.dc-chip .ln-ico { width: 13px; height: 13px; }
+.dc-chip.sube .ln-ico { color: var(--up); }
+.dc-chip.baja .ln-ico { color: var(--down); }
+.dc-chip-riesgo { color: var(--warn); }
+.dc-chip-riesgo[data-riesgo='seguro'] { color: var(--ink-dim); }
+.dc-chip-riesgo[data-riesgo='alto'] { color: var(--danger); }
+/* apuntar un camino: su fila se enciende en el tono de su destino */
+.dc-fila.on .dc-tecla { background: var(--tono-acento); box-shadow: none; color: var(--bg-void); }
+.dc-fila.on .dc-chip { color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tono-luz) 70%, transparent), 0 0 18px -6px var(--tono-luz); }
+.dc-fila.on .dc-chip-riesgo { color: var(--warn); }
+.dc-cerrada .dc-tecla { color: var(--ink-dim); }
+.dc-cerrada .dc-camino { color: var(--ink-dim); }
+.dc-cerrada.on .dc-tecla { color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink-dim), 0 0 20px -4px var(--tono-luz); }
+/* elegido: el otro destino se va; en el elegido quedan su logo y su lugar */
+.dc-costura[data-elegido='a'] .dc-lado[data-lado='b'], .dc-costura[data-elegido='b'] .dc-lado[data-lado='a'] { opacity: 0; }
+.dc-costura:is([data-elegido='a'], [data-elegido='b']) .dc-filas { opacity: 0; transition: opacity 320ms var(--expo); }
+/* compacto (el panel llega hasta el destino): sin las filas; mini: solo los logos, del alto que queda */
+.dc-lado { --dc-logo-cabe: var(--dc-logo); }
+.dc-lado.dc-compacto .dc-filas { display: none; }
+.dc-lado.dc-mini .dc-lugar { display: none; }
+.dc-lado.dc-mini .ln-logo.dc-logo-liga { --ln-logo-tam: min(var(--dc-logo), var(--dc-logo-cabe)); }
+.dc-lado.dc-mini .ln-logo.dc-logo-org { --ln-logo-tam: min(var(--dc-logo-org), var(--dc-logo-cabe)); }
 
-.decision[data-peso="ambiente"] {
-  padding: var(--s-3);
-  border-left-color: var(--line);
-}
-.decision[data-peso="ambiente"]::before { display: none; }
+/* el panel, abajo: al aceptar el foco pasa al titulo (un ancla): sin el recuadro del foco de teclado; el inspector no
+   repite el nombre de la opcion */
+.parada-decision[data-costura] .titulo-parada:focus-visible { box-shadow: none; }
+.parada-decision[data-costura][data-forma='lista'] .insp-kicker { display: none; }
+.parada-decision[data-costura][data-forma='lista'] .insp-texto { margin-top: 0; }
+/* la linea "antes" queda sobre la costura: un velo suave detras, para leerla sobre la luz */
+.shell-cuerpo:has(.parada-decision[data-costura]) .antes { margin-left: -12px; padding: 6px 12px 6px 16px; border-radius: var(--r-chip); background: linear-gradient(90deg, var(--velo-lectura), var(--velo-medio) 70%, var(--velo-nada)); }
 
-/* La pestaña de categoría (T0b): dice qué es el panel antes de que el
-   jugador lea una sola palabra del contenido. `.decision` la arma en JS
-   (`decision.js`, T4) con `data-tab-label`/`--tab-color`; `.mercado`/
-   `.minijuego` se quedan con el texto fijo — no vienen de un evento
-   categorizado. */
-.decision::before,
-.mercado::before,
-.minijuego::before {
-  position: absolute;
-  top: -15px;
-  left: var(--s-4);
-  padding: 5px var(--s-4) 5px var(--s-2);
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-weight: 700;
-  letter-spacing: var(--track-cartel);
-  text-transform: uppercase;
-  color: var(--bg-void);
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
+/* ---------- liga: el monumento de cada lado (el logo, la ciudad, la pared de escudos y lo marcado) ---------- */
+.dc-heroe { position: absolute; left: 0; top: 0; transition: opacity var(--dc-heroe-cruce) var(--expo); }
+.dc-heroe-escala { transform: scale(var(--dc-heroe-k, 1)); transform-origin: 0 0; transition: transform var(--dc-heroe-cruce) var(--expo); }
+.dc-heroe-luz { transition: transform var(--dc-heroe-cruce) var(--expo); }
+.dc-costura[data-fase='aviso'] .dc-heroe { opacity: 0; }
+.dc-costura[data-apunta='a'] .dc-heroe[data-lado='a'] .dc-heroe-luz,
+.dc-costura[data-apunta='b'] .dc-heroe[data-lado='b'] .dc-heroe-luz { transform: translateY(calc(var(--dc-heroe-sube) * -1)); }
+/* se apagan el logo y la pared del otro lado, no lo escrito (la ciudad y lo marcado siguen leyendose) */
+.dc-costura[data-apunta='a'] .dc-heroe[data-lado='b'] :is(.dc-mon-logo, .dc-pared, .dc-marca-escudo),
+.dc-costura[data-apunta='b'] .dc-heroe[data-lado='a'] :is(.dc-mon-logo, .dc-pared, .dc-marca-escudo) { opacity: var(--dc-heroe-apagado-liga); }
+.dc-mon-logo, .dc-pared, .dc-marca-escudo { transition: opacity var(--dc-heroe-cruce) var(--expo); }
+.dc-costura[data-elegido='a'] .dc-heroe[data-lado='b'], .dc-costura[data-elegido='b'] .dc-heroe[data-lado='a'] { opacity: 0; }
+.dc-monumento { position: relative; isolation: isolate; display: grid; justify-items: center; gap: var(--dc-mon-hueco); width: max-content; text-align: center; }
+.dc-monumento::before {
+  content: ''; position: absolute; inset: -18% -22%; z-index: -1; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tono-vacio) var(--dc-velo-lado), transparent) 0%, color-mix(in srgb, var(--tono-vacio) calc(var(--dc-velo-lado) * 0.7), transparent) 60%, transparent 100%);
 }
-.decision::before  { content: attr(data-tab-label); background: var(--tab-color, var(--live)); }
-.mercado::before   { content: "Mercado";   background: var(--cat-mercado); }
-.minijuego::before { content: "Minijuego"; background: var(--warn); }
+.dc-filtros { position: absolute; width: 0; height: 0; overflow: hidden; }
+.dc-grabado-luz { flood-color: color-mix(in srgb, var(--tono-luz) var(--dc-grabado-mezcla), var(--ink)); flood-opacity: var(--dc-grabado-k); }
+.ln-logo.dc-mon-logo { --ln-logo-tam: var(--dc-mon-logo); filter: drop-shadow(0 10px 30px var(--sombra)) drop-shadow(0 0 46px color-mix(in srgb, var(--tono-luz) 52%, transparent)); transition: filter var(--dc-heroe-cruce) var(--expo), opacity var(--dc-heroe-cruce) var(--expo); }
+.ln-logo.dc-mon-logo img, .ln-logo.dc-marca-escudo img { width: 100%; height: 100%; object-fit: contain; }
+.dc-mon-lugar { display: grid; justify-items: center; gap: 7px; margin: 0; }
+.dc-mon-lugar b { font: 800 var(--dc-mon-ciudad) / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.025em; color: var(--ink); text-shadow: 0 2px 18px var(--tono-vacio); }
+.dc-mon-lugar span { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: color-mix(in srgb, var(--tono-luz) 45%, var(--ink)); }
+.dc-pared { display: grid; grid-template-columns: repeat(var(--dc-cols, 5), var(--dc-escudo)); gap: var(--dc-pared-hueco); margin: 2px 0 0; padding: 0; list-style: none; }
+.dc-escudo { display: grid; place-items: center; width: var(--dc-escudo); height: var(--dc-escudo); }
+.dc-escudo img { display: block; width: 100%; height: 100%; object-fit: contain; filter: var(--dc-grabado); }
+.dc-escudo .ln-escudo { width: 86%; height: 100%; }
+.dc-escudo[data-yo] { border-radius: var(--r-control); background: color-mix(in srgb, var(--tono-vacio) var(--dc-chip-fondo), transparent); box-shadow: 0 0 0 2px var(--tono-acento), 0 0 22px -2px var(--tono-luz); }
+.dc-escudo[data-yo] img { filter: none; padding: 3px; }
+.dc-escudo[data-yo] img[data-tinta='oscura'] { filter: brightness(0) invert(1); }
+.dc-marca { display: flex; align-items: center; gap: 10px; margin: 2px 0 0; padding: 6px 14px 6px 6px; border-radius: var(--r-control); background: color-mix(in srgb, var(--tono-vacio) var(--dc-chip-fondo), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tono-luz) 34%, transparent); }
+.ln-logo.dc-marca-escudo { --ln-logo-tam: var(--dc-escudo-yo); }
+.dc-marca-txt { display: grid; gap: 4px; text-align: left; }
+.dc-marca-txt b { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: color-mix(in srgb, var(--tono-luz) 40%, var(--ink)); }
+.dc-marca-txt span { font: 600 14px / 1.1 var(--f-cuerpo); color: var(--ink); white-space: nowrap; }
+.dc-incognito .ln-escudo-forma { fill: color-mix(in srgb, var(--tono-vacio) 60%, var(--tono-luz)); stroke: var(--tono-luz); }
+.dc-incognito .ln-escudo-canto { stroke: var(--tono-luz); }
+.dc-incognito .ln-escudo { animation: dc-llama var(--dc-llama) ease-in-out infinite alternate; }
+@keyframes dc-llama { from { opacity: 0.62; } to { opacity: 1; } }
+.dc-costura[data-apunta='a'] .dc-heroe[data-lado='a'] .ln-logo.dc-mon-logo,
+.dc-costura[data-apunta='b'] .dc-heroe[data-lado='b'] .ln-logo.dc-mon-logo,
+.dc-costura[data-elegido] .ln-logo.dc-mon-logo { filter: drop-shadow(0 10px 30px var(--sombra)) drop-shadow(0 0 64px color-mix(in srgb, var(--tono-luz) 80%, transparent)); }
+/* compacto (la franja libre es baja: 1280x720): el logo y la ciudad, sin la pared */
+.dc-mon-compacto :is(.dc-pared, .dc-marca, .dc-mon-lugar span) { display: none; }
 
-@keyframes entrar-decision {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: none; }
+/* ---------- movimiento reducido ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .dc-lado, .dc-fila, .dc-tecla, .dc-chip, .dc-heroe, .dc-heroe-escala, .dc-heroe-luz, .ln-logo.dc-mon-logo, .dc-pared, .dc-marca-escudo { transition: none; }
+  .dc-incognito .ln-escudo { animation: none; }
 }
+html:is([data-reducido], [data-inst]) :is(.dc-lado, .dc-fila, .dc-tecla, .dc-chip, .dc-heroe, .dc-heroe-escala, .dc-heroe-luz, .ln-logo.dc-mon-logo, .dc-pared, .dc-marca-escudo) { transition: none; }
+html:is([data-reducido], [data-inst]) .dc-incognito .ln-escudo { animation: none; }
 
-/* K6a-U: la pestaña de la decisión bisagra se cortaba arriba (`overflow: hidden` de la marca de agua). Adentro del borde. */
-.decision[data-peso="bisagra"]::before { top: 0; }
-
-.reproduciendo-aviso {
-  margin-top: var(--s-4);
-  padding: var(--s-3) var(--s-4);
-  border-left: 3px solid var(--live);
-  background: var(--bg-surface);
-  color: var(--ink-dim);
-  font-size: var(--fs-2);
-}
-.reproduciendo-aviso[hidden] { display: none; }
-
-.decision-title {
-  font-family: var(--font-display);
-  font-size: var(--fs-6);
-  font-weight: 700;
-  line-height: var(--lh-tight);
-  text-transform: uppercase;
-  margin-bottom: var(--s-2);
-}
-
-/* V3a (PLAN.md §V.4): "qué está en juego" es UNA línea (la primera oración de la descripción, a lo sumo dos renglones);
-   el resto del texto va detrás de "más". `#decisionDesc` es un flex: la oración, el "más" al lado y el resto a todo ancho. */
-.decision-desc {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 var(--s-2);
-  color: var(--ink-dim);
-  font-size: var(--fs-2);
-  line-height: var(--lh-snug);
-  margin-bottom: var(--s-3);
-}
-.decision-desc-linea {
-  flex: 1 1 0;
-  min-width: 0;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-.decision-desc[data-abierta="si"] .decision-desc-linea { display: block; -webkit-line-clamp: unset; }
-.decision-desc-resto {
-  flex: 1 0 100%;
-  margin-top: var(--s-2);
-}
-.decision-desc-resto[hidden] { display: none; }
-
-/* El "más" (del encabezado y de cada fila): un botón chico, pegado a lo que despliega. Reposo discreto. */
-.decision-mas {
-  flex: none;
-  min-height: 24px;
-  padding: 2px var(--s-2);
-  background: transparent;
-  border: 1px solid var(--line-strong);
-  clip-path: none;
-  color: var(--live);
-  font-size: var(--fs-0);
-  letter-spacing: var(--track-label);
-}
-.decision-mas[hidden] { display: none; }
-
-/* --- Las opciones: una FILA por opción -----------------------------------
-   Grilla de una columna (el escenario mide ~720 px: dos columnas dejarían ~340 px de texto por opción). Cada `.option-btn`
-   es hijo directo de `#decisionOptions` y ocupa el renglón que le puso el renderer (`style.gridRow`); su "más" es un
-   botón hermano en ESE renglón, pegado arriba a la derecha. */
-.decision-options { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-2); }
-
-.option-btn {
-  position: relative;
-  flex: 1 1 240px;
-  padding: var(--s-4);
-  padding-right: var(--s-7);
-  text-align: left;
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--r-control);
-  color: var(--ink);
-  font-family: var(--font-ui);
-  font-size: var(--fs-2);
-  text-transform: none;
-  letter-spacing: normal;
-  transition: border-color var(--dur-fast) var(--ease),
-              background var(--dur-fast) var(--ease);
-}
-.option-btn:hover {
-  border-color: var(--live);
-  background: var(--live-fill);
-  box-shadow: none;
-}
-
-.decision-options > .option-btn {
-  grid-column: 1;
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
-  column-gap: var(--s-3);
-  align-content: start;
-  padding: var(--s-3);
-}
-.decision-options > .option-btn > * { grid-column: 2; }
-.decision-options > .decision-mas {
-  grid-column: 1;
-  justify-self: end;
-  align-self: start;
-  margin: var(--s-3) var(--s-3) 0 0;
-  z-index: 1;
-}
-
-/* El atajo de teclado (T4): shell.js escucha 1-4 desde T1, pero hasta acá nada en pantalla lo decía. V3a: en la fila, la
-   tecla va a la izquierda, en su propia columna. */
-.option-atajo {
-  position: absolute;
-  top: var(--s-3);
-  right: var(--s-3);
-  width: 20px;
-  height: 20px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-sharp);
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-weight: 700;
-  color: var(--ink-mute);
-  transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
-}
-.decision-options > .option-btn > .option-atajo { position: static; grid-column: 1; grid-row: 1; }
-.option-btn:hover .option-atajo { border-color: var(--live); color: var(--live); }
-
-.option-title {
-  margin-bottom: var(--s-1);
-  font-family: var(--font-display);
-  font-size: var(--fs-4);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-/* El renglón del título deja lugar al "más" (que se superpone arriba a la derecha); el resto de la fila usa todo el ancho. */
-.decision-options > .option-btn > .option-title { grid-row: 1; margin-bottom: 0; line-height: 20px; padding-right: 56px; }
-.option-btn:hover .option-title { color: var(--live); }
-
-.option-desc {
-  font-weight: 400;
-  font-size: var(--fs-2);
-  line-height: var(--lh-snug);
-  color: var(--ink-dim);
-}
-/* La descripción a dos líneas; entera con el "más" de la fila. */
-.decision-options .option-desc {
-  margin-top: var(--s-1);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-.decision-options .option-btn[data-abierta="si"] .option-desc { display: block; -webkit-line-clamp: unset; }
-
-/* --- La consecuencia, antes de elegir (fase 12d, PLAN.md §12.3) -----------
-   Reusa el idioma visual que ya existía: el kicker de `.minijuego-apuesta-
-   kicker` para "+ MECÁNICA" y el pill de `.ficha-badge` para el riesgo — no
-   se inventan componentes nuevos. `--up`/`--danger` ya significan
-   "sube"/"riesgo" en el resto de la UI (ver tokens.css).
-   V3a: una sola línea de chips (hasta tres de la previa, el riesgo y la rareza); los demás chips de la previa
-   (`--extra`) se ven con el "más" de la fila. */
-.option-previa {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-1) var(--s-2);
-  margin-top: var(--s-2);
-}
-.option-previa-kicker {
-  padding: 1px 6px;
-  border: 1px solid var(--linea-fuerte);
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-weight: 700;
-  letter-spacing: var(--track-cartel);
-  text-transform: uppercase;
-}
-.option-previa-kicker--sube { color: var(--up); }
-.option-previa-kicker--baja { color: var(--danger); }
-/* La magnitud pesa en opacidad, no en un color nuevo: "alta" se lee firme,
-   "baja" apenas se insinúa — el signo ya dice para qué lado se mueve. */
-.option-previa-kicker--magnitud-baja { opacity: 0.55; }
-.option-previa-kicker--magnitud-media { opacity: 0.8; }
-.option-previa-kicker--magnitud-alta { opacity: 1; }
-.option-previa-kicker--extra { display: none; }
-.option-btn[data-abierta="si"] .option-previa-kicker--extra { display: inline-block; }
-
-/* K6c: en el plan del año del amateur, la opción que propone tu perfil (decide el jugador). */
-.option-btn--propuesta { border-color: var(--ice-dim); }
-.option-propuesta {
-  margin-top: 6px;
-  font-family: var(--font-display);
-  font-size: var(--fs-1);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ice-dim);
-}
-
-/* K4c (plan anual): la línea del plan de práctica en cada opción del cierre de año. */
-.option-plan {
-  margin-top: 6px;
-  font-size: var(--fs-2);
-  line-height: var(--lh-snug);
-  color: var(--ice-dim);
-}
-
-.option-riesgo {
-  display: inline-block;
-  padding: 1px var(--s-2);
-  border-radius: var(--r-pill);
-  border: 1px solid var(--line);
-  color: var(--ink-dim);
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-weight: 600;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-}
-.option-riesgo--seguro { border-color: var(--up); color: var(--up); }
-.option-riesgo--incierto { border-color: var(--warn); color: var(--warn); }
-.option-riesgo--ruleta { border-color: var(--danger); color: var(--danger); }
-
-/* Fase 12e (PLAN.md §12.4): rareza de las decisiones de mejora. Calca
-   `.option-riesgo` — misma píldora, tokens que ya existen. El oro se
-   reserva para `rara` (tokens.css: el oro se usa poco a propósito). */
-.option-rareza {
-  display: inline-block;
-  padding: 1px var(--s-2);
-  border-radius: var(--r-pill);
-  border: 1px solid var(--line);
-  color: var(--ink-dim);
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-weight: 600;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-}
-.option-rareza--comun { border-color: var(--line); color: var(--ink-dim); }
-.option-rareza--rara { border-color: var(--gold); color: var(--gold); }
-
-/* Una opción bloqueada se ve, no desaparece (decisión de estructura de la
-   fase 12: `opcionesBloqueadas` no la ve `elegirOpcionAutomatica`, cero
-   consumo de rng). Inerte de verdad: `disabled`, no solo gris. */
-.option-btn--bloqueada {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.option-btn--bloqueada:hover {
-  border-color: var(--line);
-  background: var(--bg-raised);
-}
-.option-gate {
-  margin-top: var(--s-1);
-  color: var(--ink-mute);
-  font-size: var(--fs-1);
-  font-style: italic;
-}
-
-@media (max-width: 520px) {
-  .decision-options > .option-btn { column-gap: var(--s-2); }
-  .decision-desc-linea { -webkit-line-clamp: 3; }
-  .option-previa-kicker { letter-spacing: 0.04em; }
+/* ---------- celular: la costura partida en vertical (A arriba, B abajo) en la banda de arriba; el panel debajo ---------- */
+@media (max-width: 640px) {
+  .dc-banda { display: block; height: var(--dc-banda-cel); }
+  .parada-decision[data-costura='liga'] .dc-banda { height: var(--dc-banda-cel-heroe); }
+  .dc-lado { top: 0; justify-items: start; gap: 6px; max-width: calc(100vw - 20px); }
+  .dc-lado[data-lado='b'] { justify-items: end; }
+  .dc-lado::before { inset: -26px -36px; }
+  .dc-logos { gap: 12px; }
+  .ln-logo.dc-logo-liga { --ln-logo-tam: var(--dc-logo-cel); }
+  .ln-logo.dc-logo-org { --ln-logo-tam: var(--dc-logo-org-cel); }
+  .dc-lado[data-lado='b'] .dc-logos { flex-direction: row-reverse; }
+  .dc-lugar { justify-items: inherit; text-align: inherit; gap: 5px; }
+  .dc-lado[data-lado='b'] .dc-lugar { text-align: right; }
+  .dc-lugar b { font-size: 18px; }
+  .dc-filas { justify-items: inherit; gap: 5px; margin-top: 2px; }
+  .dc-fila { justify-content: inherit; gap: 5px 6px; }
+  .dc-lado[data-lado='b'] .dc-fila { flex-direction: row-reverse; }
+  /* en el celular, lo que arriesgas ya esta en las opciones del panel: el destino lleva su camino */
+  .dc-chips { display: none; }
+  .dc-cabeza { height: 22px; gap: 7px; padding-right: 9px; }
+  .dc-lado[data-lado='b'] .dc-cabeza { flex-direction: row-reverse; padding: 0 0 0 9px; }
+  .dc-tecla { min-width: 22px; height: 22px; font-size: 11px; }
+  .dc-monumento { gap: var(--dc-mon-hueco-cel); }
+  .ln-logo.dc-mon-logo { --ln-logo-tam: var(--dc-mon-logo-cel); }
+  .dc-mon-lugar { gap: 4px; }
+  .dc-mon-lugar b { font-size: var(--dc-mon-ciudad-cel); }
+  .dc-pared { gap: var(--dc-pared-hueco-cel); grid-template-columns: repeat(var(--dc-cols, 5), var(--dc-escudo-cel)); }
+  .dc-escudo { width: var(--dc-escudo-cel); height: var(--dc-escudo-cel); }
+  .dc-escudo[data-yo] { box-shadow: 0 0 0 1.5px var(--tono-acento), 0 0 12px -2px var(--tono-luz); }
+  .dc-escudo[data-yo] img { padding: 1px; }
+  .dc-marca { gap: 6px; padding: 3px 8px 3px 3px; }
+  .ln-logo.dc-marca-escudo { --ln-logo-tam: var(--dc-escudo-yo-cel); }
+  .dc-marca-txt span { display: none; }
 }

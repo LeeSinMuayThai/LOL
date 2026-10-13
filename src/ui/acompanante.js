@@ -16,7 +16,7 @@ import { acompanante as acompananteCarrera } from './cuartos/carrera.js';
 import { TITULOS_DE_CUARTOS } from './cuartos.js';
 import { acompanante as acompananteMercado } from './paradas/mercado.js';
 import { icono, triangulos } from './fx/iconos.js';
-import { num } from './fx/movimiento.js';
+import { num, odometro } from './fx/movimiento.js';
 
 // El corte desde el que el acompañante existe (el mismo de `shell.css`).
 const CONSULTA_ANCHA = '(min-width: 1180px)';
@@ -203,10 +203,33 @@ export function crearAcompanante({ aside, chip, barra = null, contexto, abrirCua
     }
   }
 
+  // PLANUI §0.2 (narrar en el lugar): los números del resultado de una parada ruedan en la placa, desde lo que mostraba
+  // hasta lo que quedó (`cambios`: los de `ui/core/inmediato.js`). Devuelve los nodos que animó (la narración los
+  // termina con Espacio y los pausa con un cuarto abierto). La placa se vuelve a pintar entera cuando cambia la `vista`.
+  function rodar(cambios, retardo = 0) {
+    const animados = [];
+    if (aside.hidden) return animados;
+    for (const c of cambios ?? []) {
+      if (!Number.isFinite(c.antes) || !Number.isFinite(c.despues)) continue;
+      const campo = c.campo.split('.').pop();
+      const valor = aside.querySelector(`[data-campo="${campo}"] .ctx-valor, [data-campo="${campo}"] .ctx-numero`);
+      const a = Math.round(c.antes);
+      const b = Math.round(c.despues);
+      if (!valor || a === b) continue;
+      odometro(valor, a, b, { delay: retardo });
+      const caja = valor.closest('[data-campo]');
+      caja.classList.add(b > a ? 'cambio-sube' : 'cambio-baja');
+      const barra = caja.querySelector('.medidor .valor');
+      if (barra) barra.style.width = `${Math.max(0, Math.min(100, b))}%`;
+      animados.push(caja);
+    }
+    return animados;
+  }
+
   ancho?.addEventListener?.('change', () => pintar(ultimo.estado, ultimo.pieza));
   chip?.addEventListener('click', () => {
     if (chip.dataset.cuarto) abrirCuarto(chip.dataset.cuarto);
   });
 
-  return { pintar };
+  return { pintar, rodar };
 }

@@ -16,10 +16,11 @@ import { etiquetaRol } from '../../data/roles.js';
 import { crearTarjetaResultado, crearTarjetaResultadoSerie } from './serie.js';
 import { crearTarjetaMundial } from './mundial.js';
 import { textoDeProbabilidadJugada } from '../../core/previaDePartido.js';
-import { reconciliar, reemplazarEnElLugar, olvidarContenedor } from '../core/reconciliar.js';
+import { reconciliar, reemplazarEnElLugar } from '../core/reconciliar.js';
 import { formaBeat } from '../../core/log.js';
 import { crearTarjetaCierre, crearLineaSplitAnterior, crearCartelDePagina } from './cierre.js';
 import { moverNumero, leerSoloElFinal } from '../core/delta.js';
+import { icono } from '../fx/iconos.js';
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
 // que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
@@ -31,6 +32,7 @@ function crearRevealTop20(entry) {
   item.className = 'log-item log-item--top-mundial';
   item.dataset.type = 'top_mundial';
   item.dataset.acento = 'gold';
+  item.appendChild(icono('mundo', { clase: 'ln-ico log-ico' }));
 
   const titulo = document.createElement('div');
   titulo.className = 'log-titulo';
@@ -77,6 +79,9 @@ function crearRevealTop20(entry) {
 // `core/temporadaResumen.js` las generó. "LA GRIETA" es la marca del medio
 // que pide el plan (el equivalente ficticio del resumen deportivo).
 const LABEL_BANDA = { rojo: 'Flojo', gris: 'Parejo', ambar: 'Bueno', verde: 'Excelente' };
+// Las viñetas traen su emoji del motor (`core/temporadaResumen.js`); la pantalla dibuja el glifo del kit que le corresponde
+// (PLANUI §5.9: nada de emojis). Uno que no está en la tabla, el punto.
+const GLIFO_DE_VINETA = { '📊': 'nivel', '🏆': 'copa', '🌍': 'mundo', '⚡': 'serie', '🎯': 'meta', '🎀': 'carrera' };
 
 function crearRevealResumenAnio(entry) {
   const item = document.createElement('div');
@@ -107,9 +112,19 @@ function crearRevealResumenAnio(entry) {
     item.appendChild(bajada);
   }
 
+  // La nota grande (PLANUI §8: "la nota (0-10) grande"), con su banda al lado.
   const nota = document.createElement('div');
   nota.className = `resumen-anio-nota resumen-anio-nota--${entry.banda}`;
-  nota.textContent = `Nota de la temporada: ${entry.nota.toFixed(1)} — ${LABEL_BANDA[entry.banda] ?? entry.banda}`;
+  const notaRotulo = document.createElement('span');
+  notaRotulo.className = 'resumen-anio-nota-rotulo';
+  notaRotulo.textContent = 'Nota de la temporada';
+  const notaValor = document.createElement('b');
+  notaValor.className = 'resumen-anio-nota-valor';
+  notaValor.textContent = entry.nota.toFixed(1);
+  const notaBanda = document.createElement('span');
+  notaBanda.className = 'resumen-anio-nota-banda';
+  notaBanda.textContent = LABEL_BANDA[entry.banda] ?? entry.banda;
+  nota.append(notaRotulo, notaValor, notaBanda);
   item.appendChild(nota);
 
   const vinetas = document.createElement('div');
@@ -117,12 +132,9 @@ function crearRevealResumenAnio(entry) {
   for (const vineta of entry.vinetas ?? []) {
     const fila = document.createElement('div');
     fila.className = 'resumen-anio-vineta';
-    const icono = document.createElement('span');
-    icono.className = 'resumen-anio-icono';
-    icono.textContent = vineta.icono;
     const texto = document.createElement('span');
     texto.textContent = vineta.texto;
-    fila.append(icono, texto);
+    fila.append(icono(GLIFO_DE_VINETA[vineta.icono] ?? 'punto', { clase: 'ln-ico resumen-anio-icono' }), texto);
     vinetas.appendChild(fila);
   }
   item.appendChild(vinetas);
@@ -149,12 +161,14 @@ export function crearLogItem(entry) {
   if (entry.type === 'meta') item.classList.add('log-item--breaking');
   if (entry.type === 'escena') item.classList.add('log-item--escena');
   if (entry.type === 'top_mundial') item.classList.add('log-item--top-mundial');
+  // PLANUI §8: cada beat entra con su ícono por `log.type` (el glifo del kit; uno desconocido, el punto).
+  if (!entry.tecnico) item.appendChild(icono(entry.type, { clase: 'ln-ico log-ico' }));
 
   if (entry.type === 'meta') {
-    const pestana = document.createElement('span');
-    pestana.className = 'log-pestana';
-    pestana.textContent = 'PARCHE';
-    item.appendChild(pestana);
+    const rotulo = document.createElement('span');
+    rotulo.className = 'log-rotulo';
+    rotulo.textContent = 'Parche';
+    item.appendChild(rotulo);
   }
 
   // K4-C: el evento que resolvió tu perfil, en una línea de crónica — el título, lo que planteaba, qué tomaste
@@ -442,42 +456,66 @@ export function desdeDeUltimosBeats(logs, limite = LIMITE_FEED) {
 // tenga beats. Sin números: a mitad de la página todavía no son los del cierre.
 export function renderParadaAntes(contenedor, state, { desde = 0, cierreDelAnio = null } = {}) {
   const inicio = Math.max(0, Math.min(desde, state.logs.length));
-  const narrativos = agruparBeats(state.logs.slice(inicio), inicio).filter((beat) => beat.narrativa);
+  const narrativos = agruparBeats(state.logs.slice(inicio), inicio).filter((beat) => beat.narrativa && !beat.narrativa.tecnico);
   contenedor.replaceChildren();
-  const cartelDelAnio = cierreDelAnio?.anio ? crearCartelDePagina({ ventana: 'cierre', nuevoAnio: false, texto: `Cierre de ${cierreDelAnio.anio}` }) : null;
-  if (narrativos.length === 0) {
-    if (cartelDelAnio) {
-      contenedor.append(cartelDelAnio);
-    }
-    contenedor.hidden = !cartelDelAnio;
+  const cartelDelAnio = cierreDelAnio?.anio ? `Cierre de ${cierreDelAnio.anio}` : null;
+  if (narrativos.length === 0 && !cartelDelAnio) {
+    contenedor.hidden = true;
     return;
   }
-  const ultimo = narrativos[narrativos.length - 1].narrativa;
-
-  const rotulo = document.createElement('span');
-  rotulo.className = 'parada-antes-rotulo';
-  rotulo.textContent = 'Lo último que pasó';
+  // PLANUI U2a (la línea "antes" de la vitrina): el ícono del beat, su título (o su línea) y sus efectos en una línea;
+  // al final, "El split · n" abre la página entera como una lista (el ícono y la línea de cada beat).
+  const ultimo = narrativos[narrativos.length - 1]?.narrativa ?? null;
+  const texto = document.createElement('span');
+  texto.className = 'antes-texto';
+  const fuerte = document.createElement('b');
+  fuerte.textContent = cartelDelAnio ?? limpio(ultimo.titulo ?? ultimo.message);
+  texto.append(fuerte);
+  const segunda = cartelDelAnio ? limpio(ultimo?.titulo ?? ultimo?.message) : limpio(ultimo.titulo ? ultimo.efectos ?? ultimo.message : ultimo.efectos);
+  if (segunda) {
+    const efectos = document.createElement('span');
+    efectos.className = 'antes-efectos';
+    efectos.textContent = segunda;
+    texto.append(efectos);
+  }
   const linea = document.createElement('p');
-  linea.className = 'parada-antes-ultimo';
-  linea.textContent = String(ultimo.message ?? '').replace(/\s+/g, ' ').trim();
+  linea.className = 'antes';
+  linea.append(icono(cartelDelAnio ? 'temporada' : ultimo.type), texto);
 
-  const pagina = document.createElement('details');
-  pagina.className = 'parada-antes-pagina';
-  const resumen = document.createElement('summary');
-  resumen.textContent = `ver la página (${narrativos.length})`;
-  const beats = document.createElement('div');
-  beats.className = 'parada-antes-beats';
-  pagina.append(resumen, beats);
-  // El desplegable se pinta al abrirlo: una parada no paga los nodos de una página que casi nunca se abre. Es la misma
-  // `renderPagina` del relato, hasta el final de lo contado.
-  pagina.addEventListener('toggle', () => {
-    if (pagina.open) {
-      olvidarContenedor(beats);
-      beats.replaceChildren();
-      renderPagina(beats, state, { desde: inicio });
-    }
-  });
-
-  contenedor.append(...(cartelDelAnio ? [cartelDelAnio] : []), rotulo, linea, pagina);
+  if (narrativos.length > 0) {
+    const lista = document.createElement('ol');
+    lista.className = 'split-lista';
+    lista.id = 'paradaAntesSplit';
+    lista.hidden = true;
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'btn-split';
+    boton.setAttribute('aria-expanded', 'false');
+    boton.setAttribute('aria-controls', lista.id);
+    boton.textContent = `El split · ${narrativos.length}`;
+    // La lista se arma al abrirla: una parada no paga los nodos de una página que casi nunca se abre.
+    boton.addEventListener('click', () => {
+      const abrir = lista.hidden;
+      if (abrir && lista.childElementCount === 0) {
+        for (const beat of narrativos) {
+          const li = document.createElement('li');
+          const linea = document.createElement('span');
+          linea.textContent = limpio(beat.narrativa.message ?? beat.narrativa.titulo);
+          li.append(icono(beat.narrativa.type), linea);
+          lista.append(li);
+        }
+      }
+      lista.hidden = !abrir;
+      boton.setAttribute('aria-expanded', String(abrir));
+    });
+    linea.append(boton);
+    contenedor.append(linea, lista);
+  } else {
+    contenedor.append(linea);
+  }
   contenedor.hidden = false;
+}
+
+function limpio(texto) {
+  return String(texto ?? '').replace(/\s+/g, ' ').trim();
 }

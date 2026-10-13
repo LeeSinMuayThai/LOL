@@ -113,7 +113,7 @@
             <!-- La línea "antes" de la parada (lo último que el relato contó, y la página a un toque). -->
             <div id="paradaAntes" class="antes-fila" data-piezas="decision" hidden></div>
             <!-- La decisión y el partido: la familia pinta su panel (o su transmisión) entero. -->
-            <div id="decision" class="decision" data-piezas="decision partido" hidden></div>
+            <div id="decision" class="decision" data-piezas="decision partido"></div>
             <!-- La previa del partido: la ve el minijuego (antes del widget). -->
             <div id="previa" class="previa" data-piezas="minijuego" hidden></div>
 
@@ -146,12 +146,12 @@
 
       <!-- La barra de abajo: los 6 cuartos (la letra de aria-keyshortcuts abre cada uno, teclado.js) y la trayectoria. -->
       <nav class="cuartos" id="cuartosBarra" aria-label="Cuartos">
-        <button type="button" class="cuarto-boton" data-cuarto="vos" aria-keyshortcuts="V"><span class="cuarto-letra">V</span>os</button>
-        <button type="button" class="cuarto-boton" data-cuarto="temporada" aria-keyshortcuts="T"><span class="cuarto-letra">T</span>emporada</button>
-        <button type="button" class="cuarto-boton" data-cuarto="equipo" aria-keyshortcuts="E"><span class="cuarto-letra">E</span>quipo</button>
-        <button type="button" class="cuarto-boton" data-cuarto="mundo" aria-keyshortcuts="M"><span class="cuarto-letra">M</span>undo</button>
-        <button type="button" class="cuarto-boton" data-cuarto="carrera" aria-keyshortcuts="C"><span class="cuarto-letra">C</span>arrera</button>
-        <button type="button" class="cuarto-boton" data-cuarto="cronica" aria-keyshortcuts="R">C<span class="cuarto-letra">r</span>ónica</button>
+        <button type="button" class="cuarto-boton" data-cuarto="vos" aria-keyshortcuts="V"><span class="cuarto-nombre"><span class="cuarto-letra">V</span>os</span></button>
+        <button type="button" class="cuarto-boton" data-cuarto="temporada" aria-keyshortcuts="T"><span class="cuarto-nombre"><span class="cuarto-letra">T</span>emporada</span></button>
+        <button type="button" class="cuarto-boton" data-cuarto="equipo" aria-keyshortcuts="E"><span class="cuarto-nombre"><span class="cuarto-letra">E</span>quipo</span></button>
+        <button type="button" class="cuarto-boton" data-cuarto="mundo" aria-keyshortcuts="M"><span class="cuarto-nombre"><span class="cuarto-letra">M</span>undo</span></button>
+        <button type="button" class="cuarto-boton" data-cuarto="carrera" aria-keyshortcuts="C"><span class="cuarto-nombre"><span class="cuarto-letra">C</span>arrera</span></button>
+        <button type="button" class="cuarto-boton" data-cuarto="cronica" aria-keyshortcuts="R"><span class="cuarto-nombre">C<span class="cuarto-letra">r</span>ónica</span></button>
         <div id="trayectoria" class="trayectoria" hidden></div>
       </nav>
 

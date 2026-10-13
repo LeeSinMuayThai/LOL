@@ -8616,7 +8616,7 @@ let errorReproducirBeatsReal = null;
 if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_REPRODUCIR_BEATS.toLowerCase().includes(texto))) {
   try {
     const documentPrevio = globalThis.document;
-    globalThis.document = { createElement: (tag) => new ElementoFalso(tag) };
+    globalThis.document = { createElement: (tag) => new ElementoFalso(tag), createElementNS: (_ns, tag) => new ElementoFalso(tag) };
     try {
       // Velocidad instantánea a propósito: con 'x1'/'x2', `reproducirBeats`
       // evalúa `motionReducido()` → `window.matchMedia`, y `window` no

@@ -132,6 +132,12 @@ export function sinEspera() {
   return velocidad === 'instantaneo' || motionReducido();
 }
 
+// PLANUI §0.2: la escala de las esperas de una narración (la parada que cuenta su resultado en el lugar): 1 en x1, la
+// mitad en x2 (la misma proporción que el pulso del reproductor) y 0 sin espera.
+export function escalaDeEspera() {
+  return sinEspera() ? 0 : ESPERA_MS[velocidad] / ESPERA_MS.x1;
+}
+
 // En la página (cronológica, el beat nuevo abajo), el último renglón se trae a la vista: sin esto, un split largo se
 // contaba por debajo del pliegue.
 function seguirAlUltimo(contenedor) {
