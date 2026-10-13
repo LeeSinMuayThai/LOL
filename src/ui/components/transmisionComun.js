@@ -89,13 +89,17 @@ export function competicionDeEstado(estado, { internacional = false } = {}) {
     const tipo = String(it.clave ?? '').split('|')[1] ?? 'mundial';
     const id = DE_INTERNACIONAL[tipo.toLowerCase()] ?? 'worlds';
     const c = COMPETICIONES[id];
-    return { id, nombre: c.nombre, largo: c.largo, anio: it.anio ?? estado.calendario?.anio ?? null, logo: logoLiga(tipo === 'msi' ? 'msi' : 'mundial').src, tokens: tokensDe(id) };
+    const anio = it.anio ?? estado.calendario?.anio ?? null;
+    return { id, nombre: c.nombre, rotulo: `${c.nombre} ${anio ?? ''}`.trim(), largo: c.largo, anio, logo: logoLiga(tipo === 'msi' ? 'msi' : 'mundial').src, tokens: tokensDe(id) };
   }
-  const liga = estado?.career?.liga ?? null;
-  const id = DE_LIGA[primeraDe(liga)] ?? 'cblol';
+  const carrera = estado?.career ?? {};
+  const id = DE_LIGA[primeraDe(carrera.liga)] ?? 'cblol';
   const c = COMPETICIONES[id];
-  const nombre = liga ? nombreVisibleDeLiga(liga) : c.nombre;
-  return { id, nombre, largo: liga && primeraDe(liga) === liga ? c.largo : nombre, anio: estado?.calendario?.anio ?? null, logo: logoLiga(nombre).src, tokens: tokensDe(id) };
+  const anio = estado?.calendario?.anio ?? null;
+  const nombre = carrera.liga ? nombreVisibleDeLiga(carrera.liga) : c.nombre;
+  // El rótulo de la transmisión: la liga por su nombre visible (nunca el id) y el año.
+  const rotulo = `${carrera.liga ? nombreVisibleDeLiga(carrera.liga) : c.nombre} ${anio ?? ''}`.trim();
+  return { id, nombre, rotulo, largo: carrera.liga && primeraDe(carrera.liga) === carrera.liga ? c.largo : nombre, anio, logo: logoLiga(nombre).src, tokens: tokensDe(id) };
 }
 const tokensDe = (id) => ({ luz: `--comp-${id}-luz`, contra: `--comp-${id}-contra`, acento: `--comp-${id}-acento` });
 

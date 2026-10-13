@@ -157,8 +157,8 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
 
   // ---------- abajo: la franja de transmisión ----------
   const rotulo = fecha
-    ? [`${comp.nombre} ${comp.anio ?? ''}`.trim(), decision.datos?.etiqueta ?? 'Fecha marcada', fechaEnCurso?.local === false ? 'de visita' : fechaEnCurso?.local ? 'de local' : null]
-    : [`${comp.nombre} ${comp.anio ?? ''}`.trim(), ronda, `Bo${formato} · Fearless`, decisivo ? `Van ${marcadorAhora[0]}–${marcadorAhora[1]}` : replan ? `Van ${marcadorAhora[0]}–${marcadorAhora[1]}` : 'cada pick se quema'];
+    ? [comp.rotulo, decision.datos?.etiqueta ?? 'Fecha marcada', fechaEnCurso?.local === false ? 'de visita' : fechaEnCurso?.local ? 'de local' : null]
+    : [comp.rotulo, ronda, `Bo${formato} · Fearless`, decisivo ? `Van ${marcadorAhora[0]}–${marcadorAhora[1]}` : replan ? `Van ${marcadorAhora[0]}–${marcadorAhora[1]}` : 'cada pick se quema'];
   const cab = cabeceraTx({ rotulo, titulo: decision.titulo, descripcion: decision.descripcion, alerta: replan ? 'Replan' : decisivo ? 'Decisivo' : null, logo: logoComp(comp, { clase: 'rot-logo' }) });
 
   // tus libres: cartas de carga (el arte de carga en el bitono de tu org)
@@ -542,7 +542,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     const [a, bb] = finLog?.marcador ?? String(ultimoMp?.marcador ?? `${marcadorAhora[0]}-${marcadorAhora[1]}`).split('-');
     const titular = sigue ? 'La serie sigue' : gano ? (se.ronda === 'final' ? 'Campeones' : `${sNos} gana la serie`) : `${sEllos} gana ${se.ronda === 'final' ? 'la final' : 'la serie'}`;
     const texto = finLog?.message ?? ultimoMp?.cierre ?? '';
-    placaCierre(b, { a, b: bb, t0, titular, texto, gana: sigue ? null : gano, sub: `${sNos} ${a ?? ''}–${bb ?? ''} ${sEllos}${sigue ? ' · la serie sigue' : ''}`, rotulo: `${comp.nombre} ${comp.anio ?? ''} · ${ronda} · Bo${formato}` });
+    placaCierre(b, { a, b: bb, t0, titular, texto, gana: sigue ? null : gano, sub: `${sNos} ${a ?? ''}–${bb ?? ''} ${sEllos}${sigue ? ' · la serie sigue' : ''}`, rotulo: `${comp.rotulo} · ${ronda} · Bo${formato}` });
   }
   function placaCierre(b, { a, b: bb, t0, titular, texto, gana, sub: subT, rotulo: rot }) {
     const res = el('div', { class: 'tx-cierre-res' }, [
@@ -616,7 +616,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
         mc.actualizar({ mapas: s ? [{ resultado: gano ? 'W' : 'L' }] : [] });
       }
     });
-    placaCierre(b, { a: gano ? 1 : 0, b: gano ? 0 : 1, t0: tFin, titular: gano ? `${sNos} gana` : `${sEllos} gana`, texto: partido.message, gana: gano, sub: Number.isFinite(partido.posicion) ? `Quedan ${partido.posicion}.º de ${partido.equipos}` : '', rotulo: `${comp.nombre} ${comp.anio ?? ''} · ${decision.datos?.etiqueta ?? 'Fecha marcada'}` });
+    placaCierre(b, { a: gano ? 1 : 0, b: gano ? 0 : 1, t0: tFin, titular: gano ? `${sNos} gana` : `${sEllos} gana`, texto: partido.message, gana: gano, sub: Number.isFinite(partido.posicion) ? `Quedan ${partido.posicion}.º de ${partido.equipos}` : '', rotulo: `${comp.rotulo} · ${decision.datos?.etiqueta ?? 'Fecha marcada'}` });
     return { beats: b, asentarse: tFin + TX.asentarse };
   }
 

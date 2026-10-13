@@ -17,9 +17,6 @@
   --luz-fuerte: color-mix(in srgb, var(--luz) 40%, transparent);
   --filete: color-mix(in srgb, var(--luz) 34%, var(--linea));
   --filete-fuerte: color-mix(in srgb, var(--luz) 70%, transparent);
-  /* el panel, sobre la noche teñida: la superficie de siempre con la noche del tono */
-  --tx-panel: color-mix(in srgb, var(--tono-noche) 58%, var(--panel));
-  --tx-alto: calc(100vh - var(--franja-alto) - var(--barra-alto) - 48px);
   position: relative;
 }
 .tx .panel { background: var(--tx-panel); }
@@ -229,10 +226,6 @@ html[data-textos='completos'] .tx-insp-t { -webkit-line-clamp: unset; display: b
 /* ---------- el Swiss: la pagina del stream (teñida de la noche de Worlds) y el video adentro del reproductor ---------- */
 .tx-swiss { height: var(--tx-alto); min-height: 560px; }
 .tx-sw {
-  --tx-sw-pagina: color-mix(in srgb, var(--tono-vacio) 72%, var(--tono-noche));
-  --tx-sw-panel: color-mix(in srgb, var(--tono-luz) 4%, var(--tono-noche));
-  --tx-sw-alto: color-mix(in srgb, var(--tono-luz) 9%, var(--tono-noche));
-  --tx-sw-bajo: 212px;
   position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; height: 100%;
 }
 .tx-sw-stream { position: relative; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
@@ -399,7 +392,7 @@ html[data-textos='completos'] .tx-insp-t { -webkit-line-clamp: unset; display: b
 .tx-c6 { color: var(--tx-chat-c6); }
 .tx-c7 { color: var(--tx-chat-c7); }
 .tx-c8 { color: var(--tx-chat-c8); }
-.tx-ins { --tx-ins-color: var(--ink); display: inline-block; width: 16px; height: 16px; margin-right: 4px; vertical-align: -3px; }
+.tx-ins { display: inline-block; width: 16px; height: 16px; margin-right: 4px; vertical-align: -3px; }
 .tx-ins-1 { fill: var(--tx-ins-color); }
 .tx-ins-2 { fill: none; stroke: var(--tx-ins-tinta); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .tx-ins-sub1 { --tx-ins-color: var(--tx-ins-sub1); }
@@ -413,7 +406,7 @@ html[data-textos='completos'] .tx-insp-t { -webkit-line-clamp: unset; display: b
 .tx-ins-mod { --tx-ins-color: var(--tx-ins-mod); }
 .tx-ins-vip { --tx-ins-color: var(--tx-ins-vip); }
 .tx-ins-vip .tx-ins-2 { fill: var(--tx-ins-tinta); stroke: none; }
-.tx-emote { --tx-e-f: var(--ink); --tx-e-l: var(--ink); --tx-e-g: var(--ink); --tx-e-t: var(--ink); display: inline-block; width: 22px; height: 22px; margin: 0 1px; vertical-align: -6px; }
+.tx-emote { display: inline-block; width: 22px; height: 22px; margin: 0 1px; vertical-align: -6px; }
 .tx-ep-f { fill: var(--tx-e-f); }
 .tx-ep-l { fill: var(--tx-e-l); }
 .tx-ep-g { fill: var(--tx-e-g); }
@@ -462,7 +455,6 @@ html[data-textos='completos'] .tx-insp-t { -webkit-line-clamp: unset; display: b
 
 /* ---------- el suspenso del mapa decisivo: la placa entre las dos cartas (la serie) o abajo en el video (el Swiss) ---------- */
 .tx-sus {
-  --tx-sus-carta: clamp(120px, 11.6vw, 176px);
   position: absolute; left: 50%; top: calc(12% + var(--tx-sus-carta) * 280 / 308); z-index: 2; width: min(200px, 80%);
   display: grid; justify-items: center; gap: 8px; padding: 14px 16px 12px; text-align: center; visibility: hidden;
   transform: translate(-50%, -50%);

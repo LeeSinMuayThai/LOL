@@ -966,3 +966,22 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   --dc-pa: 1;
   --dc-logo-cabe: var(--dc-logo);
 }
+
+/* PLANUI §0.2, la transmisión (estilos/transmision.css): el panel sobre la noche teñida, el alto de la pantalla del
+   partido (entre la franja y la barra de cuartos), la página del stream del Swiss y sus paneles (en la noche de Worlds),
+   el alto de la franja de abajo del stream y el ancho de las cartas del suspenso. Los colores de las insignias y los
+   emotes del chat son parámetros: cada clase pone los suyos. */
+:root {
+  --tx-panel: color-mix(in srgb, var(--tono-noche) 58%, var(--panel));
+  --tx-alto: calc(100vh - var(--franja-alto) - var(--barra-alto) - 48px);
+  --tx-sw-pagina: color-mix(in srgb, var(--tono-vacio) 72%, var(--tono-noche));
+  --tx-sw-panel: color-mix(in srgb, var(--tono-luz) 4%, var(--tono-noche));
+  --tx-sw-alto: color-mix(in srgb, var(--tono-luz) 9%, var(--tono-noche));
+  --tx-sw-bajo: 212px;
+  --tx-sus-carta: clamp(120px, 11.6vw, 176px);
+  --tx-ins-color: var(--ink);
+  --tx-e-f: var(--ink);
+  --tx-e-l: var(--ink);
+  --tx-e-g: var(--ink);
+  --tx-e-t: var(--ink);
+}

@@ -71,8 +71,9 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
   const org = it.jugador ?? estado.career?.currentOrg ?? '';
   const handle = estado.player?.name ?? '';
   const rival = decision.datos?.rival ?? it.partidoEnCurso?.rival ?? pg.rival?.nombre ?? '';
-  const ligaRival = it.partidoEnCurso?.ligaRival ?? (it.participantes ?? []).find((p) => p.nombre === rival)?.liga ?? '';
-  const ligaPropia = (it.participantes ?? []).find((p) => p.nombre === org)?.liga ?? estado.career?.liga ?? '';
+  // Las ligas del cruce (sus ids: en pantalla van por nombreVisibleDeLiga).
+  const delRival = { liga: it.partidoEnCurso?.ligaRival ?? (it.participantes ?? []).find((p) => p.nombre === rival)?.liga ?? '' };
+  const deVos = { liga: (it.participantes ?? []).find((p) => p.nombre === org)?.liga ?? estado.career?.liga ?? '' };
   const rondas = (it.swiss?.rondas ?? []).flat().filter((x) => x.a === org || x.b === org).sort((a, b) => a.ronda - b.ronda);
   const rec = it.swiss?.record?.[org] ?? { v: 0, d: 0 };
   const recRival = it.swiss?.record?.[rival];
@@ -122,7 +123,7 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
   const caraB = el('div', { class: 'tx-sw-cara', 'data-lado': 'b', 'aria-hidden': 'true' }, [
     logoOrg(rival, { clase: 'tx-sw-logo-b' }),
     el('p', { class: 'tx-cara-n', text: rival }),
-    el('p', { class: 'tx-cara-q' }, [el('span', { text: ligaRival ? `${nombreVisibleDeLiga(ligaRival)}${recRival ? ` · ${recRival.v}–${recRival.d}` : ''}` : '' })])
+    el('p', { class: 'tx-cara-q' }, [el('span', { text: delRival.liga ? `${nombreVisibleDeLiga(delRival.liga)}${recRival ? ` · ${recRival.v}–${recRival.d}` : ''}` : '' })])
   ]);
   const juego = el('div', { class: 'tx-juego tx-sw-juego', 'aria-live': 'polite' });
   const vivoPill = el('p', { class: 'tx-sw-vivo' }, [el('i'), 'En vivo']);
@@ -206,7 +207,7 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
   const chat = crearChatTx({
     semilla,
     d: {
-      org, sigla: sNos, rival, siglaRival: sEllos, handle, camara: camaraN ?? org, ligaRival: ligaRival ? nombreVisibleDeLiga(ligaRival) : '', ligaPropia: ligaPropia ? nombreVisibleDeLiga(ligaPropia) : '', rec,
+      org, sigla: sNos, rival, siglaRival: sEllos, handle, camara: camaraN ?? org, ligaRival: delRival.liga ? nombreVisibleDeLiga(delRival.liga) : '', ligaPropia: deVos.liga ? nombreVisibleDeLiga(deVos.liga) : '', rec,
       verdugo: ultimo ? (ultimo.ganador !== org ? (ultimo.a === org ? ultimo.b : ultimo.a) : null) : null,
       cruces: (it.partidoEnCurso?.cruces ?? []).filter((x) => ![x.a, x.b].includes(org)).map((x) => [siglaDe(x.a), siglaDe(x.b)]),
       vidaOMuerte
@@ -708,7 +709,7 @@ function crearChatTx({ semilla, d }) {
     ...(d.cruces[0] ? [`${d.cruces[0][0]}–${d.cruces[0][1]} también se define ahora`] : []), d.vidaOMuerte ? 'el que pierde se va, así de simple' : 'sumar y seguir', `${d.camara} en mid, confío`
   ]);
   const juego = mazo(['VAMOOO', 'dale dale dale', 'no no no', 'esa pelea…', ':fe: :fe:', 'mirá ese flank', `${d.handle} jugando con el alma`, 'tranqui tranqui', 'el baron…', ':nervio:', ':ojos:', `${d.camara} :garra:`]);
-  const hinchada = mazo([`${ORG} ${ORG}`, `${ORG} ${ORG} :garra:`, ':garra: :garra: :garra:', `VAMOS ${ORG}`, `${d.handle.toUpperCase()} ${d.handle.toUpperCase()}`, `${ORG} :vamo:`, `:vamo: ${ORG} :vamo:`]);
+  const aliento = mazo([`${ORG} ${ORG}`, `${ORG} ${ORG} :garra:`, ':garra: :garra: :garra:', `VAMOS ${ORG}`, `${d.handle.toUpperCase()} ${d.handle.toUpperCase()}`, `${ORG} :vamo:`, `:vamo: ${ORG} :vamo:`]);
   const consejos = {
     charla: mazo(['QUE HABLE EL COACH', 'charla YA :fe:', 'es ahora o nunca, que hable', 'la charla es para el 2-2, obvio', 'para qué la guardás si te vas a casa :nervio:', 'coach, decí algo']),
     sinCharla: mazo(['guardala para cuartos', 'confío sin charla :garra:', 'si pasan, la charla en cuartos vale oro', 'arriesgado eh :nervio:', 'salen así y listo', 'sin charla, puro corazón'])
@@ -783,7 +784,7 @@ function crearChatTx({ semilla, d }) {
       items = [];
       for (let i = 0; i < CHAT_TX.inicial; i++) items.push(de(nervios, 0));
       let t = 80;
-      for (let i = 0; i < 12; i++, t += az.entre(70, 130)) items.push(de(hinchada, t));
+      for (let i = 0; i < 12; i++, t += az.entre(70, 130)) items.push(de(aliento, t));
       while (t < CHAT_TX.antesHasta) {
         t += az.entre(200, 520);
         const r = az.siguiente();
