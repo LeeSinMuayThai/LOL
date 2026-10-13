@@ -162,6 +162,15 @@ export const ambiente = {
   tenir(tono) {
     if (api) seguro('tono', () => api.tono?.(tono, { paleta: false }));
   },
+  // El tono de la pieza que cambia en el lugar (la org apuntada del mercado, la de la firma): la interfaz (las --tono-*) y
+  // la luz del mundo (`paleta`) cruzan en `cruce` ms, sin volver a declarar el resto del mundo. La declaración lo guarda
+  // (el ambiente que monte después, o el celular que gira, arrancan con este tono).
+  cruzar(tono, paleta, cruce = null) {
+    estado.mundo = { ...estado.mundo, tono, paleta };
+    if (!api) return;
+    seguro('tono', () => api.tono?.(tono, { paleta: false }));
+    seguro('ambiente', () => api.ambiente({ paleta, ...(cruce != null ? { cruce } : {}) }));
+  },
   // El ánimo de un momento (`gloria`, `caida`, `peligro`: el desenlace de una serie, AFUERA), con su retardo en ms. Lo
   // pide la parada mientras cuenta su resultado; `soltarMomento()` devuelve el mundo al ánimo de la `vista` (el del
   // director) cuando la parada se va.

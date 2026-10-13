@@ -1,66 +1,42 @@
-import { plata, faltan as faltanTexto } from '../../core/formato.js';
-import { crearOrgChip } from './orgChip.js';
-import { countUp } from './countUp.js';
-import { reconciliar, reemplazarEnElLugar, olvidarContenedor } from '../core/reconciliar.js';
+// El mercado (PLANUI U2b punto 2 y la compuerta 2 del mercado, §2; portado de `crearOfertasLinea` de
+// vitrina/fusion/js/mercado.js con `op=linea` y la derecha `ofertas` de §4.10). El mercado es tu segunda selección: a los
+// 15 elegiste campeones; ahora elegís equipo, con el mismo gesto.
+//   - LA LLEGADA: la ventana de pases como tiempo que pasa. Un reloj de 14 días corre y cada oferta CAE a su lugar en su
+//     día, con su aviso y el color de su org; los clubes chicos se mueven primero y el bombazo cierra la ventana. Se usa
+//     mientras llegan; Espacio (o elegir una que no llegó) las trae todas. Al retomar, o si la ventana ya se vio (volvés
+//     de negociar), están todas.
+//   - APUNTAR una org (mouse, foco, 1-6) es el aura: la interfaz y la luz del mundo cruzan a su tono, arriba va su escudo
+//     monumental, su nombre gigante y los términos como números grandes con referente; a la derecha, su carta sale de la
+//     pila (las ofertas son cartas formales con membrete y sello, apiladas en el orden en que llegaron). Sin apuntar, el
+//     reposo: vos en el mercado (tu valor, cuántos te llaman, la más alta).
+//   - La comparación es la grilla de escudos (barras de sueldo y jerarquía) y el detalle va al inspector, con la
+//     negociación (pedir más, pedir cláusula); abajo, el representante y no firmar. FIRMAR es el BLOQUEAR del inicio.
+//   - LA FIRMA SOBRE EL CONTRATO (`narrar`, con la respuesta del motor): el contrato sube, la firma se traza y cae el
+//     sello (Firmado, Renovado o, si la org pide una prueba, A prueba). Si firmaste con un club nuevo, sigue el fichaje
+//     (`components/fichaje.js`): tu línea cae sobre el mapa y la firma con tu jersey y tu número.
+//   - "Mientras tanto" (los fichajes del resto del mundo y los asientos que no llegaron a oferta) es la cinta, abajo.
+// El traspaso a mitad de contrato (`motivo: 'traspaso'`) es la misma pantalla con una sola carta: la del club que te
+// quiere, y sus caminos (aceptar, pedir salir, quedarte) en lugar de la grilla.
+//
+// Cada número sale de la decisión del motor (`systems/mercado.js`), tal cual: esta pantalla no calcula nada del juego.
+import { el, svg, animar, quieto, celular, EXPO, DUR } from '../fx/util.js';
+import { entrar, num, odometro } from '../fx/movimiento.js';
+import { icono } from '../fx/iconos.js';
+import { pintarLogo, logoOrg, escudo, iniciales } from '../fx/logos.js';
+import { tonoOrg, tonoEra, paletaDe, aplicarTono } from '../fx/tono.js';
+import { bloquear } from '../fx/ceremonia.js';
+import { cinta } from '../fx/transmision.js';
+import { crearBeats } from '../fx/beats.js';
+import { crearAzar } from '../fx/azar.js';
+import { crearNarracion } from '../narracion.js';
+import { fichajeDe, narrarFichaje, firmaTrazada, trazarFirma, rubricar } from './fichaje.js';
 import { nombreVisibleDeLiga } from '../formatoUi.js';
+import { faltan as faltanTexto } from '../../core/formato.js';
+import { ventanaVisibleDe } from '../../core/vistaDeCarrera.js';
+import { LABEL_DE_VENTANA } from '../core/escena.js';
+import { ROLES } from '../../data/roles.js';
 
-// La pantalla de ofertas (fase 9c, PLAN.md §9.5-9.6): "la trampa del equipo
-// grande visible" hecha tarjeta. Cada campo que se pinta acá ya viene resuelto
-// de `systems/mercado.js` — este componente no calcula nada, solo lo muestra
-// (regla de proceso 2: la fórmula no se reescribe ni se retunea, solo se
-// expone). `proyeccionJerarquia` en particular tiene que leerse tal cual
-// llega: es el mismo número que `roster.js` va a asignar si se acepta.
-//
-// Fase 9Me (§9M.6): negociar, no aceptar. Cada tarjeta suma acciones —firmar,
-// pedir más, pedir cláusula— y abajo hay un "esperar" que no firma nada. El
-// representante pasó de rebarajar a informar: `clubesInteresados`.
-//
-// Fase 9Mg (§9M.8): la pantalla de tres bloques. (1) Vos en el mercado —valor
-// con su referente, el contrato, los años que quedan, quién te mira—; (2) las
-// ofertas + negociación; (3) el mercado del mundo —traspasos cerrados +
-// asientos abiertos en tu rol que no llegaron a oferta—. Todo llega resuelto en
-// `decision.datos`; este componente sigue sin calcular nada.
-//
-// FASE V, V3c (PLAN.md §V.4, "anatomía de una parada"): lo primero que se ve es lo que se decide. Las ofertas son FILAS
-// comparables (los mismos campos, en el mismo orden, en todas: organización y tipo, sueldo, liga y años, plantel, jerarquía),
-// con "Firmar" como acción primaria; lo que ayuda a entender una oferta pero no a elegir entre ofertas (qué pesan tus
-// llamadas, el arraigo, por qué te quieren) y la negociación (secundaria) quedan en el "más" de esa oferta. "Vos en el
-// mercado" son dos líneas. El mercado del mundo vive en el acompañante (≥ 1180 px) o detrás de un desplegable.
-
-const ETIQUETAS_TAG = {
-  renovacion: 'Renovación',
-  salto: 'Ascenso',
-  lateral: 'Lateral',
-  bombazo: 'Bombazo',
-  import: 'Import',
-  descenso: 'Descenso'
-};
-
-const FLECHAS = { sube: '▲', baja: '▼', igual: '→' };
-
-function fila(clase, texto) {
-  const div = document.createElement('div');
-  div.className = clase;
-  div.textContent = texto;
-  return div;
-}
-
-function span(clase, texto) {
-  const el = document.createElement('span');
-  el.className = clase;
-  el.textContent = texto;
-  return el;
-}
-
-function boton(clase, texto, onClick) {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.className = clase;
-  b.textContent = texto;
-  b.addEventListener('click', onClick);
-  return b;
-}
-
+// ================================================================================================= las líneas de una carta
 // K5c-M: dónde está el plantel por fuerza dentro de su liga, en palabras. Lee `oferta.plantelEnLiga` tal cual llega del
 // motor (`core/demanda.js:plantelEnLiga`: puesto, de cuántos y la banda); no calcula nada. `null` si la oferta no lo trae.
 export function lineaDePlantelDeOferta(oferta) {
@@ -91,388 +67,879 @@ export function lineaDeHitoDeOferta(oferta) {
 }
 
 // K6a-U (regla de proceso 12): el motor arma POR QUÉ el club te ficha (`oferta.motivoDemanda`, de
-// `core/demanda.js:asientoAbierto`) y ninguna pantalla lo mostraba. Se dice tal cual viene; sin motivo, sin línea.
+// `core/demanda.js:asientoAbierto`). Se dice tal cual viene; sin motivo, sin línea.
 export function lineaDeMotivoDeOferta(oferta) {
   return oferta.motivoDemanda ? `Por qué te quieren: ${oferta.motivoDemanda}.` : null;
 }
 
-// V3c: el sueldo de una oferta. La primera vez que aparece se pinta quieto, con el número final (regla 1 de §V.3: en una
-// parada nada más se anima; y retomar compara el mismo texto sin esperar un conteo). Solo cuando el número CAMBIA —se pidió
-// más— sube (o baja) desde el que estaba: la regla 3, "el delta se ve". `desde` es el valor anterior, o `null`.
-function sueldoEl(clase, valor, desde) {
-  const el = document.createElement('div');
-  el.className = clase;
-  el.dataset.valor = String(valor);
-  const formato = (n) => `${plata(n)}/año`;
-  if (Number.isFinite(desde) && desde !== valor) {
-    countUp(el, desde, valor, { format: formato });
-  } else {
-    el.textContent = formato(valor);
-  }
-  return el;
-}
+// ================================================================================================= constantes
+const PLANTEL = {
+  abajo: { ico: 'margen', largo: 'plantel flojo' },
+  medio: { ico: 'parejo', largo: 'plantel parejo' },
+  arriba: { ico: 'pelea', largo: 'plantel cargado' },
+  primero: { ico: 'pelea', largo: 'el más fuerte de su liga' }
+};
+const ETIQUETA_TAG = { renovacion: 'Renovación', bombazo: 'Bombazo' };
+const TIPO_DE_CONTRATO = { renovacion: 'renovación', import: 'import', transferencia: 'transferencia', rookie: 'rookie' };
+// El aura: entra a los 120 ms de apuntar (barrer la grilla no dispara seis cruces), vuelve a los 600, el mundo cruza en 350.
+const T_MS = { aura: 120, vuelta: 600, cruce: 350, borde: 620, letra: 26 };
+// La firma sobre el contrato (ms).
+const T_FIRMAR = {
+  duracion: 3000, asentarse: 2400,
+  apaga: 300, sube: 120, subeDur: 480, trazo: 520, trazoDur: 1050, rubrica: 1420, rubricaDur: 420,
+  sello: 1650, selloDur: 380, golpe: 1916, onda: 620, sacude: 220, resultado: 2150,
+  sostener: 900 // lo que se queda el contrato firmado cuando no sigue el fichaje (una renovación, una prueba)
+};
+// Lo que se queda a la vista lo que dijo el club cuando negociás (ms).
+const T_NEGOCIAR = { sostener: 1700, odometro: 900 };
+// La llegada (ms): el bumper, el reloj de la ventana y las ofertas que caen (los de la vitrina, §4.10).
+const VENTANA_DIAS = 14;
+const T_LL = {
+  bumperDur: 800, abre: 0.3, cierra: 0.72,
+  panel: 160, panelDur: 460,
+  heroe: 200,
+  reloj: 760, // el día 1 de la ventana
+  dia: 335, // por día: una llegada por día como mucho, y >= la separación de destellos de beats.js
+  cae: 280, // del aviso al golpe
+  asienta: 340, // del golpe al reposo (el rebote)
+  final: 20, cola: 200,
+  caidaMax: 230, caidaSobre: 70, // cuánto cae una oferta en la grilla (px, tope) y por encima del panel desde donde arranca
+  reposo: 880, cinta: 1150
+};
+const LLEGADA_PESO = { min: 0.7, max: 1.3 }; // el peso de cada salto entre días (azar decorativo, sembrado con la ventana)
+// Las cartas de la derecha: los giros y corrimientos de la pila, la caída, cómo sale una de la pila y queda al frente.
+const CARTA = { giro: 6, dx: 16, dy: 12, caida: 300, giroCaida: 10, frente: 60, sale: { x: 12, y: -40, giro: 7 }, alFrente: { x: 1, y: -2, giro: -1.2, escala: 1.03 }, mueve: 440, corte: 0.45 };
+const CARTA_SELLO = { r: 38 };
+const LETRA_MIN = 34;
+// Las paletas de las orgs inventadas, una distinta para cada una en el orden de la grilla (por hash, varias caían igual).
+const PALETAS_ORG = 4;
+const CAMPOS_TONO = ['luz', 'contra', 'acento', 'noche', 'vacio'];
+const tonoPaleta = (k) => Object.freeze({ id: `org-p${k}`, ...Object.fromEntries(CAMPOS_TONO.map((c) => [c, `--tono-org-p${k}-${c}`])) });
 
-function ligaYAnios(liga, anios) {
-  return `${nombreVisibleDeLiga(liga)} · ${anios} año${anios === 1 ? '' : 's'}`;
-}
+const fmt1 = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 1 });
+const aniosTxt = (n) => `${n} ${n === 1 ? 'año' : 'años'}`;
+const periodo = (anio, n) => (anio && n > 1 ? `${anio}–${anio + n - 1}` : String(anio ?? ''));
+// El logo de la liga de una oferta (o de un club), decorativo: el nombre de la liga va escrito al lado.
+const logoDeSuLiga = (x, tam) => pintarLogo(x.liga, { liga: true, tam, alt: '' });
+const varsDeTono = (t) => ({ '--h-luz': `var(${t.luz})`, '--h-contra': `var(${t.contra})`, '--h-acento': `var(${t.acento})`, '--h-noche': `var(${t.noche})` });
 
-// Tu jerarquía en el vestuario de ese equipo (la barra de la ficha), con la banda que le corresponde entre paréntesis (Rookie,
-// Titular, Referente, Franquicia). `desde` es la de hoy; `hasta`, donde la proyecta el motor al cerrar el primer split allá
-// (D39), y la banda es la de `hasta`. Si no cambia, es solo la de hoy.
-function jerarquiaTexto(pj) {
-  if (pj.desde === pj.hasta) {
-    return `Jerarquía en el equipo: ${pj.hasta} (${pj.etiqueta})`;
-  }
-  return `Jerarquía en el equipo: ${pj.desde} ${FLECHAS[pj.flecha] ?? '→'} ${pj.hasta} al cerrar el primer split (${pj.etiqueta})`;
-}
+// La ventana que ya se vio (volvés de negociar o del representante: la misma parada, re-presentada): la llegada no se
+// repite, la oferta elegida sigue elegida y los sueldos que cambiaron ruedan desde el de antes.
+let ventanaVista = null;
+const claveDeVentana = (estado, decision) => [estado.seed, estado.calendario?.anio, estado.player?.splitCount, decision.datos?.motivo].join('|');
 
-// El "más" de una oferta (V3c): lo que ayuda a entender la oferta pero no a elegir entre ofertas de un vistazo —qué pesan
-// tus llamadas con esa jerarquía, el arraigo que perdés y el que ganás, por qué te quieren— y la negociación (pedir más,
-// pedir cláusula, con su riesgo). Nada se pierde: queda a un toque. `abierto` mantiene el desplegable como estaba cuando la
-// tarjeta se rehace (una ronda de negociación cambia el sueldo; no tiene que cerrarte lo que estabas leyendo).
-function construirMas(filas, negociacion, abierto) {
-  const det = document.createElement('details');
-  det.className = 'mercado-card-mas';
-  det.open = abierto;
-  const sum = document.createElement('summary');
-  sum.textContent = negociacion ? 'más · arraigo y negociar' : 'más · arraigo';
-  det.appendChild(sum);
-  for (const f of filas) {
-    det.appendChild(f);
-  }
-  if (negociacion) {
-    det.appendChild(negociacion);
-  }
-  return det;
-}
-
-function construirTarjeta(oferta, onElegir, onNegociar, previo = {}) {
-  const card = document.createElement('div');
-  card.className = `mercado-card mercado-card--${oferta.tag}`;
-
-  const header = document.createElement('div');
-  header.className = 'mercado-card-header';
-  const org = document.createElement('span');
-  org.className = 'mercado-card-org';
-  org.append(crearOrgChip(oferta.org, { size: 24 }), document.createTextNode(oferta.org));
-  const tag = document.createElement('span');
-  tag.className = 'mercado-card-tag';
-  tag.textContent = ETIQUETAS_TAG[oferta.tag] ?? oferta.tag;
-  header.append(org, tag);
-  card.appendChild(header);
-
-  card.appendChild(sueldoEl('mercado-card-salario', oferta.salarioAnualUSD, previo.salario));
-
-  // Los mismos campos, en el mismo orden y en las mismas dos líneas, en todas las ofertas: (1) liga y años y dónde queda el
-  // plantel; (2) tu jerarquía allá, lo que falta para el hito (una renovación) y el estado de la negociación.
-  const datos = document.createElement('div');
-  datos.className = 'mercado-card-datos';
-  const linea1 = document.createElement('div');
-  linea1.className = 'mercado-card-linea';
-  linea1.appendChild(span('mercado-card-liga', ligaYAnios(oferta.liga, oferta.anios)));
-  const lineaPlantel = lineaDePlantelDeOferta(oferta);
-  if (lineaPlantel) {
-    linea1.appendChild(span('mercado-card-plantel', lineaPlantel));
-  }
-  const linea2 = document.createElement('div');
-  linea2.className = 'mercado-card-linea';
-  linea2.appendChild(span('mercado-card-jerarquia', jerarquiaTexto(oferta.proyeccionJerarquia)));
-  const lineaHito = lineaDeHitoDeOferta(oferta);
-  if (lineaHito) {
-    linea2.appendChild(span('mercado-card-hito', lineaHito));
-  }
-  const neg = oferta.negociacion ?? { escalones: 0, clausula: false };
-  if (neg.escalones > 0) {
-    linea2.appendChild(span('mercado-card-neg', `Pediste más ${neg.escalones}×`));
-  }
-  if (neg.clausula) {
-    linea2.appendChild(span('mercado-card-neg', 'Con cláusula de salida'));
-  }
-  datos.append(linea1, linea2);
-  card.appendChild(datos);
-
-  // "Firmar" es la acción primaria y el PRIMER botón de la tarjeta (`paradas/mercado.js` le pone el atajo y el número).
-  const acciones = document.createElement('div');
-  acciones.className = 'mercado-card-acciones';
-  acciones.appendChild(boton('mercado-card-btn mercado-card-btn--firmar', 'Firmar', () => onElegir({ opcionId: oferta.id })));
-  card.appendChild(acciones);
-
-  // Negociar (secundario): pedir más y pedir cláusula, dentro del "más".
-  const info = oferta.negociacionInfo;
-  const puedePedirMas = info && neg.escalones < info.escalonesMax;
-  let negociacion = null;
-  if (puedePedirMas || !neg.clausula) {
-    negociacion = document.createElement('div');
-    negociacion.className = 'mercado-card-negociar';
-    if (puedePedirMas) {
-      const pm = boton('mercado-card-btn mercado-card-btn--sec', 'Pedir más', () => onNegociar({ negociar: 'pedirMas', opcionId: oferta.id }));
-      pm.title = info.riesgoTexto ?? '';
-      negociacion.appendChild(pm);
-    }
-    if (!neg.clausula) {
-      negociacion.appendChild(boton('mercado-card-btn mercado-card-btn--sec', 'Pedir cláusula', () => onNegociar({ negociar: 'clausula', opcionId: oferta.id })));
-    }
-    if (puedePedirMas && info.riesgoTexto) {
-      negociacion.appendChild(fila('mercado-card-riesgo-neg', info.riesgoTexto));
-    }
-  }
-
-  const filas = [fila('mercado-card-picks', oferta.proyeccionPicks)];
-  if (oferta.riesgo) {
-    filas.push(fila('mercado-card-riesgo', oferta.riesgo));
-  }
-  if (oferta.costeArraigo.pierde > 0) {
-    filas.push(fila('mercado-card-arraigo', oferta.costeArraigo.etiqueta));
-  }
-  filas.push(fila('mercado-card-arraigo', oferta.arraigoInicial.etiqueta));
-  const lineaMotivo = lineaDeMotivoDeOferta(oferta);
-  if (lineaMotivo) {
-    filas.push(fila('mercado-card-motivo', lineaMotivo));
-  }
-  card.appendChild(construirMas(filas, negociacion, previo.abierto === true));
-
-  return card;
-}
-
-// Fase 9Mf: la decisión de traspaso a mitad de contrato (`motivo: 'traspaso'`): aceptar / pedir salir / quedarse. Misma
-// fila que una oferta (V3c): el mismo orden de campos, el botón primario a la derecha. La descripción es lo que explica la
-// opción: se queda a la vista.
-function construirTarjetaTraspaso(opcion, onElegir, previo = {}) {
-  const card = document.createElement('div');
-  card.className = `mercado-card mercado-card--${opcion.tipo === 'aceptar' ? 'bombazo' : 'lateral'}`;
-
-  const header = document.createElement('div');
-  header.className = 'mercado-card-header';
-  const org = document.createElement('span');
-  org.className = 'mercado-card-org';
-  if (opcion.org) {
-    org.append(crearOrgChip(opcion.org, { size: 24 }), document.createTextNode(opcion.label));
-  } else {
-    org.textContent = opcion.label;
-  }
-  header.appendChild(org);
-  card.appendChild(header);
-
-  const conDatos = opcion.tipo !== 'quedarse';
-  if (conDatos) {
-    card.appendChild(sueldoEl('mercado-card-salario', opcion.salarioAnualUSD, previo.salario));
-  }
-
-  const datos = document.createElement('div');
-  datos.className = 'mercado-card-datos';
-  if (conDatos) {
-    const linea = document.createElement('div');
-    linea.className = 'mercado-card-linea';
-    linea.appendChild(span('mercado-card-liga', ligaYAnios(opcion.liga, opcion.anios)));
-    if (opcion.proyeccionJerarquia) {
-      linea.appendChild(span('mercado-card-jerarquia', jerarquiaTexto(opcion.proyeccionJerarquia)));
-    }
-    datos.appendChild(linea);
-  }
-  datos.appendChild(fila('mercado-card-picks', opcion.descripcion));
-  card.appendChild(datos);
-
-  const acciones = document.createElement('div');
-  acciones.className = 'mercado-card-acciones';
-  acciones.appendChild(boton(
-    `mercado-card-btn${opcion.tipo === 'quedarse' ? '' : ' mercado-card-btn--firmar'}`,
-    'Elegir',
-    () => onElegir({ opcionId: opcion.id })
-  ));
-  card.appendChild(acciones);
-
-  return card;
-}
-
-// Fase 9Mg — bloque 1: "Vos en el mercado". V3c: dos líneas, arriba de las ofertas. Primera: tu valor con su referente (regla
-// 13: contra tu sueldo vigente, nunca un número suelto). Segunda: tu contrato y los años que quedan (y, si el representante ya
-// te los nombró, quién te sigue sin ofertar). Todo llega en `decision.datos.vos` / `decision.datos.clubesInteresados`.
-function construirBloqueVos(vos, interesados) {
-  const box = document.createElement('div');
-  box.className = 'mercado-vos';
-
-  const valorLinea = document.createElement('div');
-  valorLinea.className = 'mercado-vos-valor';
-  valorLinea.appendChild(span('mercado-vos-titulo', 'Tu valor'));
-  if (vos.valorUSD > 0) {
-    // Quieto: es un dato, no un resultado (regla 1 de §V.3).
-    valorLinea.appendChild(span('mercado-vos-cifra', `${plata(vos.valorUSD)}/año`));
-    let ref;
-    if (vos.sobreSueldoPct === null) {
-      ref = 'tu valor de mercado hoy';
-    } else if (vos.sobreSueldoPct > 0) {
-      ref = `${vos.sobreSueldoPct}% por encima de tu sueldo`;
-    } else if (vos.sobreSueldoPct < 0) {
-      ref = `${Math.abs(vos.sobreSueldoPct)}% por debajo de tu sueldo`;
-    } else {
-      ref = 'en línea con tu sueldo';
-    }
-    valorLinea.appendChild(span('mercado-vos-ref', ref));
-  } else {
-    valorLinea.appendChild(span('mercado-vos-ref', 'Todavía no tenés valor de mercado.'));
-  }
-  box.appendChild(valorLinea);
-
-  if (vos.contrato) {
-    const c = vos.contrato;
-    const restante = c.aniosRestantes <= 0
-      ? 'vence esta pretemporada'
-      : (c.aniosRestantes === 1 ? '1 año restante' : `${c.aniosRestantes} años restantes`);
-    const clausula = c.clausula === 'salida' ? ' · con cláusula de salida' : '';
-    const contratoEl = document.createElement('div');
-    contratoEl.className = 'mercado-vos-contrato';
-    contratoEl.append(
-      crearOrgChip(c.org, { size: 18 }),
-      document.createTextNode(
-        `${c.org}${c.liga ? ` · ${nombreVisibleDeLiga(c.liga)}` : ''} · ${plata(c.salarioUSD)}/año · ${restante}${clausula}`
-      )
-    );
-    box.appendChild(contratoEl);
-  } else {
-    box.appendChild(fila('mercado-vos-contrato', 'Sos agente libre: no tenés contrato.'));
-  }
-
-  if (interesados && interesados.length > 0) {
-    const miran = document.createElement('div');
-    miran.className = 'mercado-vos-miran';
-    miran.appendChild(span('mercado-vos-kicker', 'Te siguen sin ofertar'));
-    for (const i of interesados) {
-      const chip = document.createElement('span');
-      chip.className = 'mercado-chip-org';
-      chip.append(crearOrgChip(i.org, { size: 16 }), document.createTextNode(i.org));
-      miran.appendChild(chip);
-    }
-    box.appendChild(miran);
-  }
-
-  return box;
-}
-
-// Fase 9Mg — bloque 3: "El mercado del mundo". Los traspasos que se cerraron este offseason (9Mc) y, debajo, los asientos
-// abiertos en tu rol que no llegaron a oferta — juntos explican por qué te llegó lo que te llegó. Los asientos que el
-// representante ya nombró en el bloque 1 ("te siguen") no se repiten acá. V3c: a ≥ 1180 px vive en el acompañante (que lo
-// pinta con `desplegable: false`) y no se repite en el escenario (`mercado.css` oculta `#mercadoMundo`); debajo de 1180 va
-// detrás de un desplegable. Devuelve si hay algo que mostrar.
-export function renderMundo(contenedor, traspasos, asientos, yaEnBloque1, { desplegable = false } = {}) {
-  const asientosNuevos = asientos.filter((a) => !yaEnBloque1.has(a.org));
-  contenedor.replaceChildren();
-  if (traspasos.length === 0 && asientosNuevos.length === 0) {
-    contenedor.hidden = true;
-    return false;
-  }
-  contenedor.hidden = false;
-
-  const cuerpo = desplegable ? document.createElement('details') : contenedor;
-  if (desplegable) {
-    cuerpo.className = 'mercado-mundo-det';
-    const n = traspasos.length;
-    const sum = document.createElement('summary');
-    sum.className = 'mercado-mundo-titulo';
-    sum.textContent = n > 0
-      ? `El mercado del mundo · ${n} fichaje${n === 1 ? '' : 's'} cerrado${n === 1 ? '' : 's'}`
-      : 'El mercado del mundo';
-    cuerpo.appendChild(sum);
-  } else {
-    cuerpo.appendChild(fila('mercado-mundo-titulo', 'El mercado del mundo'));
-  }
-
-  if (traspasos.length > 0) {
-    const n = traspasos.length;
-    cuerpo.appendChild(fila('mercado-mundo-sub',
-      `${n} fichaje${n === 1 ? '' : 's'} cerrado${n === 1 ? '' : 's'} este offseason`));
-    for (const t of traspasos) {
-      const item = document.createElement('div');
-      item.className = 'mercado-mundo-item';
-      item.append(crearOrgChip(t.org, { size: 16 }), document.createTextNode(t.motivo));
-      cuerpo.appendChild(item);
-    }
-  }
-  if (asientosNuevos.length > 0) {
-    cuerpo.appendChild(fila('mercado-mundo-sub', 'Asientos abiertos en tu puesto que no llegaron a oferta'));
-    for (const a of asientosNuevos) {
-      const item = document.createElement('div');
-      item.className = 'mercado-mundo-item';
-      item.append(crearOrgChip(a.org, { size: 16 }), document.createTextNode(`${a.org} · ${nombreVisibleDeLiga(a.liga)}`));
-      cuerpo.appendChild(item);
-    }
-  }
-  if (desplegable) {
-    contenedor.appendChild(cuerpo);
-  }
-  return true;
-}
-
-// Lo que una tarjeta ya mostrada tiene que conservar cuando se rehace (una ronda de negociación): si el "más" estaba abierto
-// y el sueldo de donde sube.
-function previoDe(nodo) {
-  const salario = Number(nodo.querySelector('.mercado-card-salario')?.dataset.valor);
+// Una oferta del motor, en los campos que usa la pantalla.
+function normalizar(o) {
   return {
-    abierto: nodo.querySelector('.mercado-card-mas')?.open === true,
-    salario: Number.isFinite(salario) ? salario : null
+    id: o.id,
+    org: o.org,
+    liga: o.liga,
+    tier: o.tier,
+    sueldo: o.salarioAnualUSD ?? 0,
+    anios: o.anios ?? 1,
+    jer: o.proyeccionJerarquia ?? null,
+    plantel: o.plantelEnLiga ?? null,
+    tipo: o.datos?.tipo ?? null,
+    clausula: Boolean(o.negociacion?.clausula || o.datos?.clausula === 'salida'),
+    escalones: o.negociacion?.escalones ?? 0,
+    tag: o.tag
   };
 }
 
-export function renderMercado(elements, decision, onElegir, onRepresentante, onNegociar, onEsperar) {
-  const {
-    mercadoPanel, mercadoTitle, mercadoDesc, mercadoVos, mercadoGrid, mercadoMundo,
-    mercadoRepresentante, mercadoEsperar
-  } = elements;
+// El día de la ventana en que llega cada oferta y el orden de llegada: los clubes chicos (tier más alto en número) se
+// mueven primero y, en su tier, de menor a mayor sueldo; el bombazo cierra la ventana. Los saltos entre días, del azar
+// decorativo sembrado con la ventana: el mismo calendario cada vez. La última llega el día VENTANA_DIAS - 1.
+function diasDeLlegada(ofertas, semilla) {
+  const orden = ofertas.map((_, i) => i).sort((a, b) => {
+    const A = ofertas[a];
+    const B = ofertas[b];
+    return (A.tag === 'bombazo') - (B.tag === 'bombazo') || (B.tier ?? 0) - (A.tier ?? 0) || (A.salarioAnualUSD ?? 0) - (B.salarioAnualUSD ?? 0) || a - b;
+  });
+  const dias = ofertas.map(() => 1);
+  if (ofertas.length < 2) return { dias, orden };
+  const azar = crearAzar(`ventana|${semilla}|${ofertas.map((o) => o.org).join('|')}`);
+  const pesos = orden.slice(1).map(() => azar.entre(LLEGADA_PESO.min, LLEGADA_PESO.max));
+  const total = pesos.reduce((a, b) => a + b, 0);
+  const tramo = VENTANA_DIAS - 2;
+  let acum = 0;
+  let previo = 1;
+  orden.forEach((i, k) => {
+    if (!k) return;
+    acum += pesos[k - 1];
+    previo = Math.min(VENTANA_DIAS - 1, Math.max(previo + 1, 1 + Math.round((acum / total) * tramo)));
+    dias[i] = previo;
+  });
+  return { dias, orden };
+}
 
-  mercadoTitle.textContent = decision.titulo;
-  mercadoDesc.textContent = decision.descripcion;
+// La letra más grande con la que `nodo` entra en su ancho (sin pasar la del CSS).
+function ajustarLetra(nodo, min = LETRA_MIN) {
+  if (!nodo?.isConnected) return;
+  nodo.style.fontSize = '';
+  const ancho = nodo.clientWidth;
+  const largo = nodo.scrollWidth;
+  if (!ancho || largo <= ancho) return;
+  const base = parseFloat(getComputedStyle(nodo).fontSize);
+  nodo.style.fontSize = `${Math.max(min, Math.floor(base * (ancho / largo) * 0.98))}px`;
+}
 
-  const esTraspaso = decision.datos.motivo === 'traspaso';
+// ================================================================================================= la pila de cartas
+// Las ofertas como cartas formales: el membrete (la banda en la noche de la org, con su escudo), a quién va, los términos y
+// el sello. Caen sobre la pila en el orden en que llegan (la última, arriba); apuntar una org la saca de la pila y la pone
+// al frente; al soltar vuelve a su lugar. Los giros y corrimientos, del azar decorativo.
+function pilaDeCartas({ ofertas, norm, tonos, yo, dias, orden, semilla }) {
+  const id = `ms-carta-${semilla}`.replace(/\W/g, '');
+  const azar = crearAzar(`cartas|${semilla}`);
+  const altura = ofertas.map(() => 0);
+  orden.forEach((i, k) => (altura[i] = k + 1));
+  const pila = ofertas.map(() => ({ r: azar.entre(-CARTA.giro, CARTA.giro), dx: azar.entre(-CARTA.dx, CARTA.dx), dy: azar.entre(-CARTA.dy, CARTA.dy) }));
+  const enPila = (i, extra = {}) => `translate(${(pila[i].dx + (extra.dx ?? 0)).toFixed(1)}px, ${(pila[i].dy + (extra.dy ?? 0)).toFixed(1)}px) rotate(${(pila[i].r + (extra.r ?? 0)).toFixed(2)}deg) scale(${extra.s ?? 1})`;
+  const sale = (i) => `translate(${CARTA.sale.x}%, ${CARTA.sale.y}%) rotate(${(pila[i].r + CARTA.sale.giro).toFixed(2)}deg)`;
+  const frente = `translate(${CARTA.alFrente.x}%, ${CARTA.alFrente.y}%) rotate(${CARTA.alFrente.giro}deg) scale(${CARTA.alFrente.escala})`;
+  const fila = (k, v) => el('div', { class: 'ms-carta-fila' }, [el('dt', { text: k }), el('dd', { text: v })]);
+  const cartas = ofertas.map((o, i) => {
+    const x = norm[i];
+    const anillo = svg('svg', { class: 'ms-carta-anillo', viewBox: '0 0 100 100', 'aria-hidden': 'true' }, [
+      svg('defs', {}, svg('path', { id: `${id}-sello-${i}`, d: `M 50 ${50 - CARTA_SELLO.r} a ${CARTA_SELLO.r} ${CARTA_SELLO.r} 0 1 1 -0.01 0` })),
+      svg('circle', { class: 'ms-carta-aro', cx: '50', cy: '50', r: String(CARTA_SELLO.r + 8) }),
+      svg('circle', { class: 'ms-carta-aro', cx: '50', cy: '50', r: String(CARTA_SELLO.r - 8) }),
+      svg('text', { class: 'ms-carta-sello-txt' }, svg('textPath', { href: `#${id}-sello-${i}`, startOffset: '0' }, document.createTextNode(`${o.org} · ${nombreVisibleDeLiga(o.liga)} · ${yo.anio ?? ''} · `.toUpperCase()))),
+      svg('text', { class: 'ms-carta-sello-ini', x: '50', y: '57', 'text-anchor': 'middle' }, document.createTextNode(iniciales(o.org)))
+    ]);
+    return el('article', { class: 'ms-carta', 'data-i': String(i), style: { ...varsDeTono(tonos[i]), zIndex: String(altura[i]), transform: enPila(i) } }, [
+      el('header', { class: 'ms-carta-membrete' }, [
+        el('span', { class: 'ms-carta-escudo' }, pintarLogo(o.org, { tam: 44, alt: '' })),
+        el('div', { class: 'ms-carta-quien' }, [el('b', { class: 'ms-carta-org', text: o.org }), el('span', { class: 'ms-carta-liga' }, [logoDeSuLiga(o, 12), `${nombreVisibleDeLiga(o.liga)}${o.tier ? ` · tier ${o.tier}` : ''}`])]),
+        dias ? el('span', { class: 'ms-carta-dia', text: `Día ${dias[i]}` }) : null
+      ]),
+      el('div', { class: 'ms-carta-cuerpo' }, [
+        el('p', { class: 'ms-carta-k', text: `Oferta de contrato · ${yo.ventana} ${yo.anio ?? ''}`.trim() }),
+        el('p', { class: 'ms-carta-para' }, ['Para ', el('b', { text: yo.handle }), yo.rolEtiqueta ? ` · ${yo.rolEtiqueta}` : '']),
+        o.descripcion || o.motivoDemanda ? el('p', { class: 'ms-carta-texto', text: [o.descripcion, o.motivoDemanda ? `Te quieren: ${o.motivoDemanda}.` : null].filter(Boolean).join(' ') }) : null,
+        el('dl', { class: 'ms-carta-terminos' }, [
+          fila('Sueldo', `USD ${num(x.sueldo)} / año`),
+          fila('Contrato', `${aniosTxt(x.anios)} · ${periodo(yo.anio, x.anios)}`),
+          x.tipo ? fila('Modalidad', `${TIPO_DE_CONTRATO[x.tipo] ?? x.tipo}${x.clausula ? ', con cláusula' : ''}`) : null,
+          x.jer ? fila('Jerarquía', `${x.jer.hasta} de 100, proyectada`) : null,
+          x.plantel ? fila('Plantel', `${x.plantel.puesto}.º de ${x.plantel.de} en ${nombreVisibleDeLiga(x.plantel.liga ?? o.liga)}`) : null
+        ]),
+        el('footer', { class: 'ms-carta-pie' }, [el('div', { class: 'ms-carta-firma' }, [el('i'), el('span', { text: `Por ${o.org}` })]), el('span', { class: 'ms-carta-sello' }, anillo)])
+      ])
+    ]);
+  });
+  const bandeja = el('div', { class: 'ms-cartas-bandeja' }, el('span', { text: 'La bandeja de ofertas' }));
+  const nodo = el('div', { class: 'ms-cartas' }, [bandeja, ...cartas]);
+  let alFrente = null;
+  function mostrar(i, { animado = true } = {}) {
+    if (i === alFrente) return;
+    const antes = alFrente;
+    alFrente = i;
+    if (antes != null) {
+      const c = cartas[antes];
+      c.classList.remove('al-frente');
+      c.style.zIndex = String(altura[antes]);
+      c.style.transform = enPila(antes);
+      if (animado) animar(c, [{ transform: frente, zIndex: CARTA.frente }, { transform: sale(antes), zIndex: CARTA.frente, offset: CARTA.corte }, { transform: sale(antes), zIndex: altura[antes], offset: CARTA.corte + 0.01 }, { transform: enPila(antes), zIndex: altura[antes] }], { dur: CARTA.mueve });
+    }
+    if (i != null) {
+      const c = cartas[i];
+      c.classList.add('al-frente');
+      c.style.zIndex = String(CARTA.frente);
+      c.style.transform = frente;
+      if (animado) animar(c, [{ transform: enPila(i), zIndex: altura[i] }, { transform: sale(i), zIndex: altura[i], offset: CARTA.corte }, { transform: sale(i), zIndex: CARTA.frente, offset: CARTA.corte + 0.01 }, { transform: frente, zIndex: CARTA.frente }], { dur: CARTA.mueve });
+    }
+  }
+  // La llegada: cada carta cae sobre la pila en su día (acelera, golpea, se asienta); la bandeja vacía se va con la primera.
+  function llegada({ w, tCae, tToca }) {
+    const D = T_LL.cae + T_LL.asienta;
+    const toca = T_LL.cae / D;
+    cartas.forEach((c, i) => w(animar(c, [
+      { opacity: 0, transform: enPila(i, { dy: -CARTA.caida, r: -CARTA.giroCaida, s: 1.05 }), easing: 'cubic-bezier(.5,0,.85,.4)' },
+      { opacity: 1, transform: enPila(i, { dy: -CARTA.caida * 0.8, r: -CARTA.giroCaida * 0.8, s: 1.05 }), offset: 0.14, easing: 'cubic-bezier(.5,0,.85,.4)' },
+      { opacity: 1, transform: enPila(i, { dy: 3, s: 0.99 }), offset: toca, easing: EXPO },
+      { opacity: 1, transform: enPila(i) }
+    ], { delay: tCae[i], dur: D, easing: 'linear' })));
+    w(animar(bandeja, [{ opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }], { delay: T_LL.heroe, dur: Math.max(DUR.larga, Math.min(...tToca) - T_LL.heroe), easing: 'linear', fill: 'none' }));
+  }
+  // FIRMAR: la carta de la org elegida (al frente) recibe su sello con el golpe.
+  function firmar(i, { w, t, texto }) {
+    const c = cartas[i];
+    if (!c) return;
+    c.querySelector('.ms-carta-firmada')?.remove();
+    const f = el('span', { class: 'ms-carta-firmada', 'aria-hidden': 'true', text: texto });
+    c.append(f);
+    w(animar(f, [{ opacity: 0, transform: 'rotate(-14deg) scale(2.4)', easing: 'cubic-bezier(.55,0,1,.45)' }, { opacity: 1, transform: 'rotate(-9deg) scale(.92)', offset: 0.7, easing: EXPO }, { opacity: 1, transform: 'rotate(-9deg)' }], { delay: t - T_FIRMAR.selloDur * 0.7, dur: T_FIRMAR.selloDur, easing: 'linear' }));
+  }
+  return { nodo, mostrar, llegada, firmar };
+}
 
-  // Bloque 1: vos en el mercado.
-  if (mercadoVos) {
-    mercadoVos.replaceChildren();
-    if (decision.datos.vos) {
-      mercadoVos.appendChild(construirBloqueVos(decision.datos.vos, decision.datos.clubesInteresados ?? []));
-      mercadoVos.hidden = false;
+// ================================================================================================= la pantalla
+// `ctx`: { estado, mundo, sonido, responder, controlar, retomar }. Devuelve { nodo, titulo, mundo, entrar(), narrar(ctx),
+// destruir() }.
+export function crearMercado(contenedor, decision, { estado, mundo = null, sonido = null, responder, controlar = null, retomar = false }) {
+  const datos = decision.datos ?? {};
+  const traspaso = datos.motivo === 'traspaso';
+  // las ofertas (en un traspaso, una sola: la del club que te quiere, que traen aceptar y pedir salir)
+  const caminos = traspaso ? decision.opciones : [];
+  const ofertas = traspaso ? [decision.opciones.find((o) => o.org)].filter(Boolean) : decision.opciones;
+  const norm = ofertas.map(normalizar);
+  const vos = datos.vos ?? {};
+  const valor = vos.valorUSD ?? 0;
+  const rol = estado.player?.role ?? 'mid';
+  const yo = {
+    handle: estado.player?.name ?? '',
+    rol,
+    rolEtiqueta: ROLES[rol]?.label ?? '',
+    anio: estado.calendario?.anio ?? null,
+    edad: estado.age,
+    ventana: LABEL_DE_VENTANA[ventanaVisibleDe(estado)] ?? 'Pretemporada'
+  };
+  const inventadas = ofertas.filter((o) => !logoOrg(o.org).src).map((o) => o.org);
+  const tonos = ofertas.map((o) => (inventadas.includes(o.org) ? tonoPaleta((inventadas.indexOf(o.org) % PALETAS_ORG) + 1) : tonoOrg(o.org)));
+  const maxSueldo = Math.max(1, ...norm.map((x) => x.sueldo));
+  const semilla = `${estado.seed}|${yo.anio}|${estado.player?.splitCount}`;
+  const { dias, orden } = diasDeLlegada(ofertas, semilla);
+  const tCae = dias.map((d) => T_LL.reloj + (d - 1) * T_LL.dia);
+  const tToca = tCae.map((t) => t + T_LL.cae);
+  const diaFinal = Math.max(...dias, 1);
+  const asentarseLl = Math.max(...tToca, 0) + T_LL.asienta + T_LL.final;
+  const clave = claveDeVentana(estado, decision);
+  const vista = ventanaVista?.clave === clave ? ventanaVista : null;
+  ventanaVista = { clave, sueldos: new Map(norm.map((x) => [x.id, x.sueldo])), elegida: vista?.elegida ?? null };
+  const conLlegada = !traspaso && !retomar && !vista && !quieto();
+  const fx = () => mundo?.fx?.() ?? null;
+  const html = document.documentElement;
+  const tonoReposo = () => tonoEra(html.dataset.era);
+
+  const raiz = el('section', { class: 'ms-mercado', 'data-forma': traspaso ? 'traspaso' : 'ofertas', 'data-heroe': '', style: { '--ms-cols': String(Math.max(4, ofertas.length)) } });
+  let vivo = true;
+  let elegido = false; // ya se respondió (firmar, un camino, negociar, esperar)
+  let entrando = false;
+  let elegida = -1;
+  let mostrada = null;
+  let tAura = 0;
+  let beats = null;
+  let soltarControl = () => {};
+  let respuesta = null; // { tipo: 'firmar' | 'camino' | 'negociar' | 'representante' | 'esperar', i }
+
+  // ---------------------------------------------------------------------------------------------- armar
+  const bumper = el('div', { class: 'ms-bumper', 'aria-hidden': 'true' }, [
+    el('i', { class: 'ms-bumper-banda' }),
+    el('p', { class: 'ms-bumper-txt' }, [el('span', { text: 'Ventana de pases' }), el('b', { text: 'abierta' })]),
+    el('p', { class: 'ms-bumper-sub', text: `${yo.ventana} ${yo.anio ?? ''} · ${VENTANA_DIAS} días · buscan ${yo.rolEtiqueta || 'tu rol'}` })
+  ]);
+  const lineaLuz = el('i', { class: 'ms-linea-luz', 'aria-hidden': 'true' });
+  // el reloj de la ventana (decorativo: la grilla y el rótulo dicen cuántas llegaron)
+  const celdas = Array.from({ length: VENTANA_DIAS }, (_, k) => el('li', { class: 'ms-reloj-d' }, ofertas.map((o, i) => (dias[i] === k + 1 ? el('i', { class: 'ms-reloj-marca', 'data-i': String(i), style: { '--ms-acento': `var(${tonos[i].acento})` } }) : null))));
+  const relojN = el('b', { class: 'ms-reloj-n', text: String(conLlegada ? 1 : diaFinal).padStart(2, '0') });
+  const relojUlt = el('p', { class: 'ms-reloj-ult' });
+  const reloj = traspaso ? null : el('div', { class: 'ms-reloj', 'aria-hidden': 'true' }, [
+    el('p', { class: 'ms-reloj-k' }, [el('span', { text: 'Ventana de pases' }), el('span', { class: 'ms-reloj-de', text: `${VENTANA_DIAS} días` })]),
+    el('div', { class: 'ms-reloj-fila' }, [el('p', { class: 'ms-reloj-dia' }, [el('span', { text: 'Día' }), relojN]), el('ol', { class: 'ms-reloj-dias' }, celdas)]),
+    relojUlt
+  ]);
+  // la derecha: las cartas (sin campeón)
+  const heroe = pilaDeCartas({ ofertas, norm, tonos, yo, dias: traspaso ? null : dias, orden, semilla });
+  const heroeNodo = el('aside', { class: 'ms-heroe', 'aria-hidden': 'true' }, el('div', { class: 'ms-heroe-in ms-h-ofertas' }, heroe.nodo));
+  // el aura
+  const velo = el('div', { class: 'ms-velo', 'aria-hidden': 'true' });
+  const aura = el('section', { class: 'ms-aura', 'aria-live': 'polite', 'aria-label': 'La oferta apuntada' });
+  // el panel
+  const [primera, resto] = partirTexto(decision.descripcion ?? '');
+  const btnMas = resto ? el('button', { type: 'button', class: 'btn-mas', 'aria-expanded': 'false', text: 'más' }) : null;
+  const planteo = el('p', { class: 'planteo ms-planteo' }, [el('span', { class: 'planteo-1', text: primera }), resto ? el('span', { class: 'planteo-resto', text: ` ${resto}` }) : null, btnMas]);
+  btnMas?.addEventListener('click', () => {
+    const a = !planteo.classList.contains('abierto');
+    planteo.classList.toggle('abierto', a);
+    btnMas.setAttribute('aria-expanded', String(a));
+    btnMas.textContent = a ? 'menos' : 'más';
+  });
+  const rotN = el('span', { class: 'bisagra ms-rot-n', text: traspaso ? 'a mitad de contrato' : `${ofertas.length} ${ofertas.length === 1 ? 'oferta' : 'ofertas'}` });
+  const rotulo = el('p', { class: 'rotulo-cat' }, [el('i', { class: 'punto-luz' }), el('span', { text: 'Mercado' }), el('span', { class: 'bisagra', text: `${yo.ventana} ${yo.anio ?? ''}`.trim() }), rotN]);
+  const titulo = el('h1', { class: 'titulo-parada ms-titulo', id: 'mercadoTitulo', tabindex: '-1', text: decision.titulo });
+  const cab = el('header', { class: 'ms-cab' }, [
+    el('div', { class: 'ms-cab-t' }, [rotulo, titulo, planteo]),
+    traspaso ? null : el('div', { class: 'ms-cab-der' }, reloj)
+  ]);
+
+  // la grilla de escudos (las ofertas) o los caminos (el traspaso)
+  const escudos = traspaso ? [] : ofertas.map((o, i) => {
+    const x = norm[i];
+    const t = tonos[i];
+    const desc = el('span', { class: 'solo-lectores', id: `ms-desc-${i}` }, [
+      `USD ${num(x.sueldo)} por año, ${aniosTxt(x.anios)}`,
+      x.jer ? `, jerarquía proyectada ${x.jer.hasta} de 100` : '',
+      x.plantel ? `, ${x.plantel.puesto}.º de ${x.plantel.de} en su liga` : '',
+      '.'
+    ]);
+    const tag = ETIQUETA_TAG[o.tag];
+    return el('button', { type: 'button', class: 'ms-op', 'data-atajo': i < 9 ? String(i + 1) : null, 'data-tono': t.id, 'aria-pressed': 'false', 'aria-keyshortcuts': i < 9 ? String(i + 1) : null, 'aria-label': `${o.org}, ${nombreVisibleDeLiga(o.liga)}${o.tier ? `, tier ${o.tier}` : ''}${tag ? `, ${tag.toLowerCase()}` : ''}`, 'aria-describedby': desc.id, style: { '--ms-acento': `var(${t.acento})`, '--ms-luz': `var(${t.luz})` } }, [
+      el('span', { class: 'ms-op-vacio', 'aria-hidden': 'true' }, escudo('?')),
+      el('span', { class: 'ms-op-tecla', 'aria-hidden': 'true', text: String(i + 1) }),
+      tag ? el('span', { class: 'ms-op-tag', 'data-tag': o.tag, text: tag }) : null,
+      el('span', { class: 'ms-op-cresta' }, pintarLogo(o.org, { tam: 54, alt: '' })),
+      el('span', { class: 'ms-op-txt' }, [
+        el('b', { class: 'ms-op-org', text: o.org }),
+        el('span', { class: 'ms-op-liga' }, [logoDeSuLiga(o, 13), nombreVisibleDeLiga(o.liga), o.tier ? ` · T${o.tier}` : ''])
+      ]),
+      el('span', { class: 'ms-op-barras', 'aria-hidden': 'true' }, [
+        el('i', { class: 'ms-op-barra ms-op-sueldo', style: { '--v': (x.sueldo / maxSueldo).toFixed(3) } }),
+        el('i', { class: 'ms-op-barra ms-op-jer', style: { '--v': ((x.jer?.hasta ?? 0) / 100).toFixed(3) } })
+      ]),
+      el('i', { class: 'ms-op-borde', 'aria-hidden': 'true' }),
+      el('i', { class: 'ms-op-estela', 'aria-hidden': 'true' }),
+      el('i', { class: 'ms-op-polvo', 'aria-hidden': 'true' }),
+      desc
+    ]);
+  });
+  const filasCamino = caminos.map((c, i) => el('button', { type: 'button', class: 'ms-camino', 'data-atajo': String(i + 1), 'data-tipo': c.tipo, 'aria-keyshortcuts': String(i + 1) }, [
+    el('span', { class: 'op-tecla', 'aria-hidden': 'true', text: String(i + 1) }),
+    el('span', { class: 'ms-camino-t' }, [el('b', { text: c.label }), c.descripcion ? el('span', { text: c.descripcion }) : null])
+  ]));
+  const grilla = traspaso
+    ? el('div', { class: 'ms-caminos', role: 'group', 'aria-label': 'Qué hacés' }, filasCamino)
+    : el('div', { class: 'ms-grilla', role: 'group', 'aria-label': `Ofertas: elegí tu equipo (1 a ${Math.min(ofertas.length, 9)})` }, escudos);
+  const ranura = el('div', { class: 'ms-ranura' });
+  const inspector = el('div', { class: 'ms-insp', 'aria-live': 'polite' });
+  const boton = bloquear({ texto: 'Firmar', tecla: null, sonido, alBloquear: () => firmar(elegida) });
+  boton.nodo.setAttribute('aria-keyshortcuts', 'Enter');
+  boton.nodo.append(el('kbd', { 'aria-hidden': 'true', text: 'Enter' }));
+  boton.habilitar(false);
+  // la negociación de la oferta elegida, junto a FIRMAR (pedir más, pedir cláusula)
+  const negociar = el('div', { class: 'ms-negociar' });
+  const firmarCaja = traspaso ? null : el('div', { class: 'ms-firmar' }, [boton.nodo, negociar]);
+  // lo de abajo: los clubes que te siguen (si el representante ya habló), el representante y no firmar
+  const interesados = datos.clubesInteresados ?? [];
+  const btnRepresentante = !traspaso && datos.representanteDisponible
+    ? el('button', { type: 'button', class: 'btn-mas ms-otra', title: 'Te dice qué clubes te siguen sin haber ofertado. Una vez por carrera.' }, [icono('chat'), 'Llamar al representante'])
+    : null;
+  const btnEsperar = traspaso ? null : el('button', { type: 'button', class: 'btn-mas ms-otra', title: 'Esta ventana no firmás con nadie.' }, 'No firmar esta ventana');
+  const otras = traspaso ? null : el('div', { class: 'ms-otras' }, [
+    el('p', { class: 'ms-leyenda', 'aria-hidden': 'true' }, [el('span', {}, [el('i', { class: 'ms-ley-sueldo' }), el('span', { text: 'sueldo / año' })]), el('span', {}, [el('i', { class: 'ms-ley-jer' }), el('span', { text: 'jerarquía proyectada' })])]),
+    interesados.length ? el('p', { class: 'ms-siguen' }, [el('span', { class: 'ms-siguen-k', text: 'Te siguen sin ofertar' }), ...interesados.map((x) => el('span', { class: 'ms-siguen-org', title: x.motivo ?? '' }, [pintarLogo(x.org, { tam: 16, alt: '' }), x.org]))]) : null,
+    el('span', { class: 'ms-otras-botones' }, [btnRepresentante, btnEsperar])
+  ]);
+  const cierre = el('footer', { class: 'ms-cierre' }, [ranura, inspector, firmarCaja, otras]);
+  const panel = el('section', { class: 'panel ms-panel', 'aria-labelledby': 'mercadoTitulo' }, [cab, grilla, cierre]);
+  // "mientras tanto": la cinta de la transmisión
+  const yaNombrados = new Set(interesados.map((x) => x.org));
+  const items = [
+    ...(datos.traspasosMundo ?? []).map((t) => ({ texto: t.motivo, logo: pintarLogo(t.org, { tam: 22, alt: '' }) })),
+    ...(datos.asientosAbiertos ?? []).filter((a) => !yaNombrados.has(a.org)).map((a) => ({ texto: `${a.org} (${nombreVisibleDeLiga(a.liga)}) tiene un asiento abierto en tu puesto`, logo: pintarLogo(a.org, { tam: 22, alt: '' }) }))
+  ];
+  const tira = items.length ? el('div', { class: 'ms-cinta' }, cinta({ rotulo: 'Mientras tanto', items })) : null;
+  raiz.append(...[velo, aura, heroeNodo, panel, tira, conLlegada ? bumper : null, conLlegada ? lineaLuz : null].filter(Boolean));
+  contenedor.replaceChildren(raiz);
+
+  // ---------------------------------------------------------------------------------------------- el aura
+  const terminoNodo = (t) => el('div', { class: 'ms-termino', 'data-t': t.id ?? null }, [
+    el('dt', { class: 'ms-termino-k', text: t.k }),
+    el('dd', { class: 'ms-termino-v' }, [el('b', { class: 'ms-num', text: t.n }), t.u ? el('span', { class: 'ms-unidad', text: t.u }) : null]),
+    t.ref ? el('dd', { class: 'ms-ref', text: t.ref }) : null
+  ]);
+  function terminosDe(i) {
+    const x = norm[i];
+    const pl = PLANTEL[x.plantel?.banda] ?? null;
+    return [
+      { id: 'sueldo', k: 'Sueldo', n: num(x.sueldo), u: 'USD / año', ref: valor ? `${fmt1.format(x.sueldo / valor)}× tu valor (${num(valor)})` : null },
+      { k: 'Contrato', n: String(x.anios), u: x.anios === 1 ? 'año' : 'años', ref: periodo(yo.anio, x.anios) },
+      x.jer ? { k: 'Jerarquía', n: String(x.jer.hasta), u: 'de 100', ref: ['proyectada', x.jer.etiqueta ? x.jer.etiqueta.toLowerCase() : null].filter(Boolean).join(' · ') } : null,
+      x.plantel ? { k: 'Plantel', n: `${x.plantel.puesto}.º`, u: `de ${x.plantel.de}`, ref: pl?.largo ?? null } : null
+    ].filter(Boolean);
+  }
+  // los términos del reposo que dependen de cuántas llegaron: cuántos te llaman y la más alta
+  function terminosLlegadas(ya) {
+    const mejor = ya.reduce((a, i) => (a == null || norm[i].sueldo > norm[a].sueldo ? i : a), null);
+    const o = mejor == null ? null : ofertas[mejor];
+    return [
+      { id: 'llaman', k: 'Te llaman', n: String(ya.length), u: ya.length === 1 ? 'club' : 'clubes', ref: `buscan ${yo.rolEtiqueta || 'tu rol'}` },
+      { id: 'alta', k: 'La más alta', n: o ? num(norm[mejor].sueldo) : '—', u: 'USD / año', ref: !o ? 'esperando ofertas' : valor ? `${fmt1.format(norm[mejor].sueldo / valor)}× tu valor · ${o.org}` : o.org }
+    ];
+  }
+  function pintarAura(i, { animado = true } = {}) {
+    aura.dataset.estado = i == null ? 'reposo' : 'org';
+    let escudoNodo;
+    let nombre;
+    let kicker;
+    let terminos;
+    if (i == null) {
+      const c = vos.contrato;
+      const restante = c ? (c.aniosRestantes <= 0 ? 'vence ahora' : `${aniosTxt(c.aniosRestantes)} de contrato`) : null;
+      escudoNodo = el('span', { class: 'ms-aura-escudo ms-aura-vacio' }, escudo('?'));
+      kicker = [el('span', { text: c ? `${c.org} · ${restante}` : 'Agente libre' }), Number.isFinite(yo.edad) ? el('span', { text: `${yo.edad} años` }) : null, yo.rolEtiqueta ? el('span', { text: yo.rolEtiqueta }) : null];
+      nombre = 'Elegí tu equipo';
+      terminos = [{ k: 'Tu valor', n: valor ? num(valor) : '—', u: 'USD', ref: c ? `con contrato: USD ${num(c.salarioUSD)} / año` : 'sin contrato: agente libre' }, ...terminosLlegadas(llegadas())];
     } else {
-      mercadoVos.hidden = true;
+      const o = ofertas[i];
+      const x = norm[i];
+      escudoNodo = el('span', { class: 'ms-aura-escudo' }, pintarLogo(o.org, { tam: 172, alt: '' }));
+      kicker = [
+        el('span', {}, [logoDeSuLiga(o, 16), nombreVisibleDeLiga(o.liga)]),
+        o.tier ? el('span', { text: `tier ${o.tier}` }) : null,
+        x.tipo ? el('span', { text: `${TIPO_DE_CONTRATO[x.tipo] ?? x.tipo}${x.clausula ? ', con cláusula' : ''}` }) : null,
+        traspaso ? el('span', { text: 'te quiere a mitad de contrato' }) : el('span', { text: `oferta ${i + 1} de ${ofertas.length}` }),
+        ETIQUETA_TAG[o.tag] ? el('span', { class: 'ms-aura-tag', 'data-tag': o.tag, text: ETIQUETA_TAG[o.tag] }) : null
+      ];
+      nombre = o.org;
+      terminos = terminosDe(i);
+    }
+    const nom = el('h2', { class: 'ms-aura-nombre', 'aria-label': nombre }, [...String(nombre)].map((c) => el('span', { class: 'ms-aura-letra', 'aria-hidden': 'true', text: c })));
+    const k = el('p', { class: 'ms-aura-k' }, kicker.filter(Boolean));
+    const dl = el('dl', { class: 'ms-terminos' }, terminos.map(terminoNodo));
+    aura.replaceChildren(el('div', { class: 'ms-aura-cab' }, [escudoNodo, el('div', { class: 'ms-aura-t' }, [k, nom])]), dl);
+    ajustarLetra(nom);
+    if (!animado || quieto()) return;
+    animar(escudoNodo, [{ opacity: 0, transform: 'scale(.86)', filter: 'blur(8px)' }, { opacity: 1, transform: 'none', filter: 'blur(0px)' }], { dur: 360 });
+    nom.querySelectorAll('.ms-aura-letra').forEach((l, j) => animar(l, [{ opacity: 0, transform: 'translateY(34%)' }, { opacity: 1, transform: 'none' }], { delay: 40 + j * T_MS.letra, dur: 300 }));
+    animar(k, [{ opacity: 0, transform: 'translateX(-10px)' }, { opacity: 1, transform: 'none' }], { delay: 60, dur: 280 });
+    dl.querySelectorAll('.ms-termino').forEach((t, j) => animar(t, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: 120 + j * 50, dur: 300 }));
+  }
+
+  // ---------------------------------------------------------------------------------------------- la llegada en el tiempo
+  // El tiempo de la llegada: el del reloj mientras entra; fuera de la entrada, todas llegaron.
+  const tLlegada = () => (entrando && beats && !beats.quieto ? beats.ahora() : Infinity);
+  const llego = (i) => tToca[i] <= tLlegada();
+  const llegadas = (t = tLlegada()) => ofertas.map((_, i) => i).filter((i) => tToca[i] <= t);
+  let ultDia = -1;
+  let ultN = -1;
+  function pintarLlegadas(t) {
+    const ya = llegadas(t);
+    escudos.forEach((b, i) => {
+      const si = ya.includes(i);
+      b.dataset.llego = si ? '1' : '0';
+      if (si) b.removeAttribute('aria-disabled');
+      else b.setAttribute('aria-disabled', 'true');
+    });
+    reloj?.querySelectorAll('.ms-reloj-marca').forEach((x) => x.classList.toggle('llego', ya.includes(Number(x.dataset.i))));
+    if (!traspaso) rotN.textContent = `${ya.length} ${ya.length === 1 ? 'oferta' : 'ofertas'}`;
+    const ult = ya.length ? ya.reduce((a, i) => (tToca[i] > tToca[a] ? i : a)) : null;
+    relojUlt.replaceChildren(...(ult == null ? [el('span', { text: 'Esperando ofertas' })] : ya.length === ofertas.length ? [el('b', { text: `${ya.length} ${ya.length === 1 ? 'oferta' : 'ofertas'}` }), ` en ${diaFinal} ${diaFinal === 1 ? 'día' : 'días'}`] : [pintarLogo(ofertas[ult].org, { tam: 16, alt: '' }), el('span', { text: 'Llegó ' }), el('b', { text: ofertas[ult].org })]));
+    if (mostrada != null || aura.dataset.estado !== 'reposo') return;
+    for (const x of terminosLlegadas(ya)) {
+      const nodo = aura.querySelector(`[data-t='${x.id}']`);
+      if (!nodo) continue;
+      nodo.querySelector('.ms-num').textContent = x.n;
+      const u = nodo.querySelector('.ms-unidad');
+      if (u) u.textContent = x.u;
+      const r = nodo.querySelector('.ms-ref');
+      if (r) r.textContent = x.ref;
     }
   }
 
-  // Bloque 2: las ofertas. Fase V, V0b: `reconciliar` en vez de `innerHTML = ''` — la clave es `oferta.id`, la misma que
-  // ya se usa para resolver la decisión (`opcionId`), así que una ronda de negociación (`neg.escalones`/`neg.clausula`
-  // cambian, el id no) actualiza la tarjeta existente en vez de destruirla y rehacerla. V3c: la tarjeta que se rehace
-  // conserva su "más" abierto y el sueldo del que sube; un mercado NUEVO (otra lista de ofertas) arranca de cero.
-  const lista = decision.opciones.map((o) => o.id).join('|');
-  if (mercadoGrid.dataset.lista !== lista) {
-    olvidarContenedor(mercadoGrid);
-    mercadoGrid.replaceChildren();
-    mercadoGrid.dataset.lista = lista;
-  }
-  const construirCard = esTraspaso
-    ? (oferta, previo) => construirTarjetaTraspaso(oferta, onElegir, previo)
-    : (oferta, previo) => construirTarjeta(oferta, onElegir, onNegociar, previo);
-  reconciliar(
-    mercadoGrid,
-    decision.opciones,
-    (oferta) => oferta.id,
-    (oferta) => construirCard(oferta),
-    (nodo, oferta) => reemplazarEnElLugar(nodo, construirCard(oferta, previoDe(nodo)))
-  );
-
-  // Bloque 3: el mercado del mundo (detrás de un desplegable; a ≥ 1180 px lo oculta el CSS y lo pinta el acompañante). Los
-  // clubes que el bloque 1 ya nombró ("te siguen") no se repiten en "asientos abiertos".
-  if (mercadoMundo) {
-    const yaEnBloque1 = new Set((decision.datos.clubesInteresados ?? []).map((i) => i.org));
-    renderMundo(
-      mercadoMundo, decision.datos.traspasosMundo ?? [], decision.datos.asientosAbiertos ?? [], yaEnBloque1,
-      { desplegable: true }
+  // ---------------------------------------------------------------------------------------------- el cierre del panel
+  function pintarCierre(i) {
+    if (traspaso) {
+      ranura.replaceChildren(el('span', { class: 'ms-ranura-cara' }, pintarLogo(ofertas[0]?.org ?? '', { tam: 40, alt: '' })), el('span', { class: 'ms-ranura-t' }, [el('span', { class: 'ms-ranura-k', text: 'Te quiere' }), el('b', { text: ofertas[0]?.org ?? '' })]));
+      inspector.replaceChildren(el('p', { class: 'ms-insp-texto', text: datos.conClausula ? 'Tenés cláusula de salida: si aceptás, te vas.' : 'Si aceptás, tu club decide si te suelta; si pedís salir, empujás, pero si te lo niegan se resiente el clima.' }));
+      return;
+    }
+    if (i < 0) {
+      ranura.replaceChildren(el('span', { class: 'ms-ranura-cara ms-ranura-libre', 'aria-hidden': 'true' }, escudo('?')), el('span', { class: 'ms-ranura-t' }, [el('span', { class: 'ms-ranura-k', text: 'Tu equipo' }), el('b', { text: vos.contrato?.org && vos.contrato.aniosRestantes > 0 ? vos.contrato.org : 'Libre' })]));
+      inspector.replaceChildren(el('p', { class: 'ms-insp-texto', text: `Apuntá un escudo para verte en ese equipo. 1 a ${Math.min(ofertas.length, 9)} eligen; Enter firma.` }));
+      negociar.replaceChildren();
+      boton.habilitar(false);
+      return;
+    }
+    const o = ofertas[i];
+    const x = norm[i];
+    const pl = PLANTEL[x.plantel?.banda] ?? PLANTEL.medio;
+    ranura.replaceChildren(el('span', { class: 'ms-ranura-cara' }, pintarLogo(o.org, { tam: 40, alt: '' })), el('span', { class: 'ms-ranura-t' }, [el('span', { class: 'ms-ranura-k', text: 'Tu equipo' }), el('b', { text: o.org })]));
+    const hito = lineaDeHitoDeOferta(o);
+    const info = o.negociacionInfo;
+    const puedePedirMas = info && x.escalones < info.escalonesMax;
+    negociar.replaceChildren(...[
+      puedePedirMas ? el('button', { type: 'button', class: 'btn-mas', title: info.riesgoTexto ?? '', onclick: () => negociar1(i, 'pedirMas') }, [icono('mercado'), 'Pedir más']) : null,
+      !x.clausula ? el('button', { type: 'button', class: 'btn-mas', title: 'Una cláusula de salida: si después te quiere uno grande, te podés ir.', onclick: () => negociar1(i, 'clausula') }, [icono('candado'), 'Pedir cláusula']) : null
+    ].filter(Boolean));
+    inspector.replaceChildren(
+      el('p', { class: 'ms-insp-texto', text: [o.descripcion, lineaDeMotivoDeOferta(o)].filter(Boolean).join(' ') }),
+      el('ul', { class: 'ms-insp-previa' }, [
+        o.riesgo ? el('li', {}, [icono(pl.ico), o.riesgo]) : null,
+        o.costeArraigo?.pierde > 0 ? el('li', { class: 'ms-extra' }, [icono('arraigo'), o.costeArraigo.etiqueta]) : null,
+        o.arraigoInicial ? el('li', {}, [icono('arraigo'), o.arraigoInicial.etiqueta]) : null,
+        hito ? el('li', {}, [icono('meta'), hito]) : null,
+        o.proyeccionPicks ? el('li', { class: 'ms-extra' }, [icono('jerarquia'), o.proyeccionPicks]) : null,
+        x.escalones > 0 ? el('li', {}, [icono('mercado'), `Pediste más ${x.escalones === 1 ? 'una vez' : `${x.escalones} veces`}`]) : null,
+        x.clausula ? el('li', {}, [icono('candado'), 'Con cláusula de salida']) : null,
+        puedePedirMas && info.riesgoTexto ? el('li', { class: 'ms-insp-riesgo ms-extra' }, [icono('incierto'), info.riesgoTexto]) : null
+      ])
     );
+    boton.habilitar(true);
   }
 
-  mercadoRepresentante.hidden = !decision.datos.representanteDisponible;
-  mercadoRepresentante.onclick = () => onRepresentante();
+  // ---------------------------------------------------------------------------------------------- apuntar y elegir
+  // La luz: la interfaz y el mundo cruzan al tono de la org (o al de la era, en reposo).
+  function ponerTono(tono, cruce = T_MS.cruce) {
+    aplicarTono(raiz, tono);
+    mundo?.cruzar?.(tono, paletaDe(tono), cruce);
+  }
+  function mostrar(i, { animado = true } = {}) {
+    if (i === mostrada || !vivo) return;
+    mostrada = i;
+    escudos.forEach((b, k) => b.classList.toggle('apuntada', k === i));
+    pintarAura(i, { animado });
+    heroe.mostrar(i, { animado });
+    ponerTono(i == null ? tonoReposo() : tonos[i]);
+    if (i != null && animado) fx()?.pulso?.('apuntar');
+  }
+  const sigue = () => vivo && raiz.isConnected && !elegido;
+  function previsualizar(i) {
+    if (!sigue() || !llego(i)) return;
+    clearTimeout(tAura);
+    if (quieto()) return mostrar(i);
+    tAura = setTimeout(() => sigue() && mostrar(i), T_MS.aura);
+  }
+  function soltar() {
+    if (!sigue()) return;
+    clearTimeout(tAura);
+    const base = elegida >= 0 ? elegida : null;
+    if (quieto()) return mostrar(base);
+    tAura = setTimeout(() => sigue() && mostrar(base), T_MS.vuelta);
+  }
+  function elegir1(i, { mover = false } = {}) {
+    if (elegido || i < 0 || i >= ofertas.length) return;
+    if (entrando && !llego(i)) saltarEntrada();
+    clearTimeout(tAura);
+    if (i !== elegida) {
+      elegida = i;
+      ventanaVista.elegida = ofertas[i].id;
+      escudos.forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+      pintarCierre(i);
+      sonido?.clic?.();
+    }
+    mostrar(i);
+    if (mover && document.activeElement !== escudos[i]) escudos[i].focus({ preventScroll: true });
+  }
+  escudos.forEach((b, i) => {
+    b.addEventListener('pointerenter', () => !celular() && previsualizar(i));
+    b.addEventListener('pointerleave', () => !celular() && soltar());
+    b.addEventListener('focus', () => llego(i) && elegir1(i));
+    b.addEventListener('click', () => elegir1(i, { mover: true }));
+  });
+  // las flechas recorren la grilla
+  grilla.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey || elegido || traspaso) return;
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const i = escudos.indexOf(document.activeElement);
+    const j = Math.max(0, Math.min(escudos.length - 1, (i < 0 ? elegida : i) + (e.key === 'ArrowRight' ? 1 : -1)));
+    elegir1(j, { mover: true });
+  });
 
-  if (mercadoEsperar) {
-    // En un traspaso no se "espera": quedarse ES la opción de rechazar.
-    mercadoEsperar.hidden = esTraspaso;
-    mercadoEsperar.onclick = () => onEsperar();
+  // ---------------------------------------------------------------------------------------------- responder
+  function bloquearPantalla() {
+    elegido = true;
+    clearTimeout(tAura);
+    saltarEntrada();
+    raiz.classList.add('ms-respondio');
+    for (const b of [...escudos, ...filasCamino, btnRepresentante, btnEsperar]) if (b) b.disabled = true;
+    negociar.querySelectorAll('button').forEach((b) => (b.disabled = true));
+  }
+  function firmar(i) {
+    if (elegido || i < 0 || !ofertas[i]) return;
+    mostrar(i);
+    bloquearPantalla();
+    respuesta = { tipo: 'firmar', i };
+    responder({ opcionId: ofertas[i].id });
+  }
+  function negociar1(i, como) {
+    if (elegido) return;
+    bloquearPantalla();
+    respuesta = { tipo: 'negociar', i, como };
+    responder({ negociar: como, opcionId: ofertas[i].id });
+  }
+  btnRepresentante?.addEventListener('click', () => {
+    if (elegido) return;
+    bloquearPantalla();
+    respuesta = { tipo: 'representante' };
+    responder({ representante: true });
+  });
+  btnEsperar?.addEventListener('click', () => {
+    if (elegido) return;
+    bloquearPantalla();
+    respuesta = { tipo: 'esperar' };
+    responder({ negociar: 'esperar' });
+  });
+  filasCamino.forEach((b, k) => b.addEventListener('click', () => {
+    if (elegido) return;
+    const c = caminos[k];
+    b.setAttribute('aria-pressed', 'true');
+    bloquearPantalla();
+    respuesta = { tipo: 'camino', i: c.org ? 0 : null, camino: c };
+    responder({ opcionId: c.id });
+  }));
+  // Enter firma la elegida (salvo con el foco en otro botón, o con un cuarto abierto)
+  const teclaEnter = (e) => {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.repeat || e.key !== 'Enter' || traspaso) return;
+    if (elegido || elegida < 0 || !raiz.isConnected || document.querySelector('dialog[open]')) return;
+    const enBoton = e.target?.closest?.('button, a, input, summary');
+    if (enBoton && !enBoton.classList.contains('ms-op')) return;
+    e.preventDefault();
+    boton.bloquear();
+  };
+  document.addEventListener('keydown', teclaEnter);
+
+  // ---------------------------------------------------------------------------------------------- la entrada
+  // La llegada: el bumper abre la ventana, el panel sube con la grilla vacía y el reloj corre los días; cada oferta cae en
+  // el suyo. Un solo reloj (beats.js); Espacio la saltea y un cuarto abierto la pausa (`controlar`, el del reproductor).
+  function llegada() {
+    const bt = crearBeats({ duracion: asentarseLl + T_LL.cola, asentarse: asentarseLl });
+    beats = bt;
+    entrando = true;
+    const w = (a) => bt.waapi(a);
+    soltarControl = controlar?.({ saltar: saltarEntrada, pausar: () => bt.pausar(), reanudar: () => bt.reanudar() }) ?? (() => {});
+    const td = bt.destello(60);
+    if (td != null) fx()?.pulso?.('elegir', td);
+    // el bumper: la banda se abre, el rótulo entra apretándose y la banda se cierra en una línea de luz que se apaga
+    const D = T_LL.bumperDur;
+    w(animar(bumper, [{ opacity: 1 }, { opacity: 1, offset: 0.97 }, { opacity: 0 }], { dur: D, easing: 'linear' }));
+    w(animar(bumper.querySelector('.ms-bumper-banda'), [{ transform: 'scaleY(0)', easing: EXPO }, { transform: 'scaleY(1)', offset: T_LL.abre, easing: 'linear' }, { transform: 'scaleY(1)', offset: T_LL.cierra, easing: 'cubic-bezier(.7,0,.3,1)' }, { transform: 'scaleY(.01)' }], { dur: D, easing: 'linear' }));
+    w(animar(bumper.querySelector('.ms-bumper-txt'), [
+      { opacity: 0, letterSpacing: '0.42em', filter: 'blur(8px)', easing: EXPO },
+      { opacity: 1, letterSpacing: '0em', filter: 'blur(0px)', offset: 0.36, easing: 'linear' },
+      { opacity: 1, letterSpacing: '0em', transform: 'none', filter: 'blur(0px)', offset: T_LL.cierra - 0.04, easing: 'cubic-bezier(.7,0,.3,1)' },
+      { opacity: 0, letterSpacing: '0em', transform: 'scaleY(.2)', filter: 'blur(4px)', offset: 0.9 },
+      { opacity: 0, letterSpacing: '0em', transform: 'scaleY(.2)', filter: 'blur(4px)' }
+    ], { dur: D, easing: 'linear' }));
+    w(animar(bumper.querySelector('.ms-bumper-sub'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none', offset: 0.45 }, { opacity: 1, transform: 'none', offset: T_LL.cierra - 0.06 }, { opacity: 0, transform: 'none', offset: 0.82 }, { opacity: 0, transform: 'none' }], { delay: 120, dur: D - 120, easing: 'linear' }));
+    w(animar(lineaLuz, [{ opacity: 0, transform: 'scaleX(.6)' }, { opacity: 1, transform: 'none', offset: 0.2 }, { opacity: 0, transform: 'scaleX(1.06)' }], { delay: D * T_LL.cierra, dur: D * (1 - T_LL.cierra) + 240, easing: 'linear' }));
+    // el panel sube con la grilla vacía; adentro, el orden de siempre (luz -> rótulo -> título -> opciones)
+    w(animar(panel, [{ opacity: 0, transform: 'translateY(22px)' }, { opacity: 1, transform: 'none' }], { delay: T_LL.panel, dur: T_LL.panelDur }));
+    w(entrar(rotulo, T_LL.panel + 120, 10));
+    w(animar(titulo, [{ opacity: 0, transform: 'translateY(40%)' }, { opacity: 1, transform: 'none' }], { delay: T_LL.panel + 200, dur: 420 }));
+    w(entrar(planteo, T_LL.panel + 300, 10));
+    w(entrar(cierre, T_LL.panel + 520, 10));
+    if (reloj) w(entrar(reloj, T_LL.reloj - 220, 8));
+    // el reloj: el día que corre, las celdas que pasan y las llegadas
+    bt.agregar({
+      en(t) {
+        const d = t < T_LL.reloj ? 1 : Math.min(diaFinal, 1 + Math.floor((t - T_LL.reloj) / T_LL.dia));
+        if (d !== ultDia) {
+          ultDia = d;
+          relojN.textContent = String(d).padStart(2, '0');
+          celdas.forEach((c, k) => {
+            c.classList.toggle('pasado', k + 1 < d);
+            c.classList.toggle('hoy', k + 1 === d);
+          });
+        }
+        const n = tToca.filter((x) => x <= t).length;
+        if (n !== ultN) {
+          ultN = n;
+          pintarLlegadas(t);
+        }
+      }
+    });
+    // las ofertas caen a su lugar, cada una en su día (medido: la grilla está quieta en su lugar final)
+    const techo = panel.getBoundingClientRect().top - T_LL.caidaSobre;
+    const dur = T_LL.cae + T_LL.asienta;
+    const toca = T_LL.cae / dur;
+    escudos.forEach((b, i) => {
+      const t0 = tCae[i];
+      const tt = tToca[i];
+      const cresta = b.querySelector('.ms-op-cresta');
+      const r = cresta.getBoundingClientRect();
+      const alto = Math.round(Math.max(0, Math.min(T_LL.caidaMax, r.top + r.height / 2 - techo)));
+      const estela = b.querySelector('.ms-op-estela');
+      estela.style.height = `${Math.max(0, Math.round(alto - (r.top - b.getBoundingClientRect().top)))}px`;
+      w(animar(estela, [{ opacity: 0, transform: 'scaleY(.2)' }, { opacity: 1, transform: 'scaleY(1)', offset: 0.3 }, { opacity: 0.7, transform: 'scaleY(1)', offset: toca }, { opacity: 0, transform: 'scaleY(.05)' }], { delay: t0, dur, easing: 'linear' }));
+      w(animar(cresta, [
+        { opacity: 0, transform: `translateY(${-alto}px) scale(.62)`, filter: 'blur(5px)', easing: 'cubic-bezier(.5,0,.9,.4)' },
+        { opacity: 1, transform: `translateY(${Math.round(-alto * 0.86)}px) scale(.7)`, filter: 'blur(3px)', offset: 0.08, easing: 'cubic-bezier(.5,0,.9,.4)' },
+        { opacity: 1, transform: 'translateY(7%) scale(1.18, .8)', filter: 'blur(0px)', offset: toca, easing: 'cubic-bezier(.2,.7,.3,1)' },
+        { opacity: 1, transform: 'translateY(-9%) scale(.95, 1.06)', filter: 'blur(0px)', offset: toca + (1 - toca) * 0.45, easing: 'ease-in-out' },
+        { opacity: 1, transform: 'none', filter: 'blur(0px)' }
+      ], { delay: t0, dur, easing: 'linear' }));
+      w(animar(b.querySelector('.ms-op-vacio'), [{ opacity: 1 }, { opacity: 0 }], { delay: tt - 40, dur: 140, easing: 'linear' }));
+      w(animar(b.querySelector('.ms-op-txt'), [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { delay: tt + 40, dur: 300 }));
+      b.querySelectorAll('.ms-op-barra').forEach((x, k) => w(animar(x, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: tt + 100 + k * 50, dur: 480 })));
+      const tag = b.querySelector('.ms-op-tag');
+      if (tag) w(animar(tag, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], { delay: tt + 160, dur: 260 }));
+      w(animar(b.querySelector('.ms-op-polvo'), [{ opacity: 0.9, transform: 'scaleX(.3)' }, { opacity: 0, transform: 'scaleX(1.7)' }], { delay: tt, dur: 520, fill: 'none' }));
+      w(animar(b.querySelector('.ms-op-borde'), [{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 0 }], { delay: tt - 20, dur: T_MS.borde, easing: 'ease-out' }));
+      w(animar(b, [{ transform: 'none' }, { transform: 'translateY(4px)', offset: 0.25 }, { transform: 'none' }], { delay: tt, dur: 260, easing: 'ease-out' }));
+      bt.esperar(t0).then((ya) => ya && sonido?.ding?.());
+      bt.esperar(tt).then((ya) => ya && sonido?.golpe?.());
+      const tp = bt.destello(tt);
+      if (tp != null) fx()?.pulso?.('apuntar', tp);
+    });
+    heroe.llegada({ w, tCae, tToca });
+    // el aura en reposo y la cinta (el mundo se mueve mientras esperás)
+    w(animar(aura, [{ opacity: 0 }, { opacity: 1 }], { delay: T_LL.reposo, dur: 200, easing: 'linear' }));
+    w(animar(aura.querySelector('.ms-aura-escudo'), [{ opacity: 0, transform: 'scale(.8)', filter: 'blur(8px)' }, { opacity: 1, transform: 'none', filter: 'blur(0px)' }], { delay: T_LL.reposo, dur: 380 }));
+    w(animar(aura.querySelector('.ms-aura-k'), [{ opacity: 0, transform: 'translateX(-10px)' }, { opacity: 1, transform: 'none' }], { delay: T_LL.reposo + 40, dur: 300 }));
+    aura.querySelectorAll('.ms-aura-letra').forEach((l, j) => w(animar(l, [{ opacity: 0, transform: 'translateY(34%)' }, { opacity: 1, transform: 'none' }], { delay: T_LL.reposo + 60 + j * 16, dur: 300 })));
+    aura.querySelectorAll('.ms-termino').forEach((t, j) => w(entrar(t, T_LL.reposo + 140 + j * 50, 10)));
+    if (tira) w(animar(tira, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { delay: T_LL.cinta, dur: 420 }));
+    bt.esperar(asentarseLl).then(() => {
+      if (beats !== bt) return;
+      entrando = false;
+      soltarControl();
+      pintarLlegadas(Infinity);
+    });
+    bt.iniciar();
+  }
+  function saltarEntrada() {
+    if (!entrando) return;
+    entrando = false;
+    beats?.saltar();
+    soltarControl();
+    pintarLlegadas(Infinity);
+  }
+  // un clic afuera de los escudos y los botones mientras llegan: llegan todas
+  raiz.addEventListener('click', (e) => entrando && !e.target.closest('button, a, input, select, summary') && saltarEntrada());
+
+  // el primer cuadro: el reposo (o, volviendo de negociar, la que estaba elegida, con su sueldo nuevo rodando)
+  pintarAura(null, { animado: false });
+  pintarCierre(-1);
+  if (traspaso) {
+    mostrar(0, { animado: false });
+  } else if (conLlegada) {
+    pintarLlegadas(0);
+  } else {
+    pintarLlegadas(Infinity);
+    const k = vista?.elegida != null ? ofertas.findIndex((o) => o.id === vista.elegida) : -1;
+    if (k >= 0) {
+      elegir1(k);
+      const antes = vista.sueldos.get(ofertas[k].id);
+      const sueldo = aura.querySelector("[data-t='sueldo'] .ms-num");
+      if (sueldo && Number.isFinite(antes) && antes !== norm[k].sueldo) odometro(sueldo, antes, norm[k].sueldo, { dur: T_NEGOCIAR.odometro });
+    } else ponerTono(tonoReposo(), 0);
   }
 
-  mercadoPanel.hidden = false;
+  // ---------------------------------------------------------------------------------------------- narrar
+  // `ctx` (app.js, `narrarRespuesta`). Devuelve cuántos de los logs nuevos contó (desde el primero).
+  async function narrar(ctx) {
+    if (!respuesta || !raiz.isConnected) return 0;
+    const logs = ctx.logs ?? [];
+    if (respuesta.tipo === 'negociar' || respuesta.tipo === 'representante') return narrarCharla(ctx, logs);
+    if (respuesta.tipo === 'esperar') return 0;
+    const i = respuesta.i;
+    const f = fichajeDe(ctx.antes, ctx.despues, logs);
+    const prueba = ctx.despues?.pendiente?.decision?.datos?.momento === 'tryout' ? ctx.despues.pendiente.decision : null;
+    if (i == null || (!f && !prueba)) return 0;
+    await narrarContrato(ctx, i, f, prueba);
+    if (f && !f.renovacion && raiz.isConnected) await narrarFichaje(ctx, f, { mundo, sonido, valor, tono: tonos[i] });
+    return f ? f.hasta : 0;
+  }
+
+  // Lo que dijo el club (o el representante), en el lugar del inspector; la parada vuelve re-presentada con lo nuevo.
+  async function narrarCharla(ctx, logs) {
+    const sigueLaVentana = ctx.despues?.pendiente?.decision?.presentacion === 'mercado';
+    if (!logs.length || !sigueLaVentana) return 0;
+    const narracion = crearNarracion(ctx, [raiz]);
+    try {
+      const nodo = el('div', { class: 'ms-charla', role: 'status', tabindex: '-1' }, [icono(respuesta.tipo === 'representante' ? 'chat' : 'mercado'), el('p', { text: logs.map((l) => l.message).join(' ') })]);
+      inspector.replaceChildren(nodo);
+      animar(nodo, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { dur: DUR.larga });
+      const i = respuesta.i;
+      const nueva = i != null ? ctx.despues.pendiente.decision.opciones.find((o) => o.id === ofertas[i].id) : null;
+      const sueldo = aura.querySelector("[data-t='sueldo'] .ms-num");
+      if (nueva && sueldo && nueva.salarioAnualUSD !== norm[i].sueldo) {
+        odometro(sueldo, norm[i].sueldo, nueva.salarioAnualUSD, { dur: T_NEGOCIAR.odometro });
+        ventanaVista.sueldos.set(nueva.id, nueva.salarioAnualUSD);
+      }
+      nodo.focus({ preventScroll: true });
+      await narracion.esperar(T_NEGOCIAR.sostener);
+    } finally {
+      narracion.fin();
+    }
+    return logs.length;
+  }
+
+  // La firma sobre el contrato: el contrato sube sobre la cabeza y la grilla, la firma se traza, cae el sello.
+  async function narrarContrato(ctx, i, f, prueba) {
+    const o = ofertas[i];
+    const x = norm[i];
+    const tono = tonos[i];
+    const sello = f ? (f.renovacion ? 'Renovado' : 'Firmado') : 'A prueba';
+    raiz.classList.add('ms-firmando');
+    panel.style.setProperty('--ms-cierre', `${cierre.offsetHeight}px`);
+    for (const n of [cab, grilla, inspector]) {
+      n.setAttribute('inert', '');
+      n.setAttribute('aria-hidden', 'true');
+    }
+    const firma = firmaTrazada(yo.handle, 'ms-ct-firma');
+    const onda = el('i', { class: 'ms-onda', 'aria-hidden': 'true' });
+    const selloNodo = el('span', { class: 'ms-sello', 'aria-hidden': 'true' }, [el('b', { text: sello }), el('span', { text: `${yo.ventana} ${yo.anio ?? ''}`.trim() }), onda]);
+    const sigueTexto = f
+      ? (f.renovacion ? `Seguís en ${o.org}` : `Tu nuevo club: ${o.org}`)
+      : `La prueba de ingreso en ${o.org}`;
+    const res = el('div', { class: 'ms-res', tabindex: '-1', 'aria-label': `${sello}: ${o.org}` }, [
+      el('p', { class: 'ms-res-sigue' }, [icono('flecha'), el('span', { text: sigueTexto })]),
+      prueba ? el('p', { class: 'ms-res-texto', text: prueba.datos?.apuesta ?? prueba.descripcion ?? '' }) : f?.log ? el('p', { class: 'ms-res-texto', text: f.log.message }) : null
+    ]);
+    const contrato = el('article', { class: 'ms-contrato', 'data-tono': tono.id, 'aria-label': `Contrato con ${o.org}`, style: { '--ms-acento': `var(${tono.acento})`, '--ms-luz': `var(${tono.luz})` } }, [
+      el('header', { class: 'ms-ct-cab' }, [
+        el('span', { class: 'ms-ct-logo' }, pintarLogo(o.org, { tam: 54, alt: '' })),
+        el('div', { class: 'ms-ct-quien' }, [
+          el('p', { class: 'ms-ct-k', text: traspaso ? 'Contrato de traspaso' : 'Contrato de jugador profesional' }),
+          el('h2', { class: 'ms-ct-t' }, [el('span', { text: o.org }), el('i', { text: '×' }), el('span', { text: yo.handle })]),
+          el('p', { class: 'ms-ct-sub', text: [nombreVisibleDeLiga(o.liga), periodo(yo.anio, f?.anios ?? x.anios), `USD ${num(f?.salario ?? x.sueldo)} / año`, x.tipo ? `${TIPO_DE_CONTRATO[x.tipo] ?? x.tipo}${(f?.clausula ?? x.clausula) ? ', con cláusula' : ''}` : null].filter(Boolean).join(' · ') })
+        ])
+      ]),
+      el('div', { class: 'ms-ct-firmas' }, [
+        el('div', { class: 'ms-ct-parte' }, [el('span', { class: 'ms-ct-sello-org', 'aria-hidden': 'true' }, pintarLogo(o.org, { tam: 34, alt: '' })), el('i', { class: 'ms-ct-linea' }), el('span', { class: 'ms-ct-firmante', text: `Por ${o.org}` })]),
+        el('div', { class: 'ms-ct-parte ms-ct-vos' }, [firma.nodo, selloNodo, el('i', { class: 'ms-ct-linea' }), el('span', { class: 'ms-ct-firmante', text: `${yo.handle} · el jugador` })])
+      ]),
+      res
+    ]);
+    panel.append(contrato);
+    const bt = crearBeats({ duracion: T_FIRMAR.duracion, asentarse: T_FIRMAR.asentarse });
+    const narracion = crearNarracion(ctx, [], { reloj: bt });
+    const w = (a) => bt.waapi(a);
+    try {
+      for (const n of [cab, grilla]) w(animar(n, [{ opacity: 1 }, { opacity: 0 }], { dur: T_FIRMAR.apaga, easing: 'linear' }));
+      w(animar(inspector, [{ opacity: 1, visibility: 'visible' }, { opacity: 0, visibility: 'visible' }], { dur: T_FIRMAR.apaga, easing: 'linear' }));
+      w(animar(contrato, [{ opacity: 0, transform: 'translateY(46px) scale(.98)' }, { opacity: 1, transform: 'none' }], { delay: T_FIRMAR.sube, dur: T_FIRMAR.subeDur }));
+      [...contrato.querySelectorAll('.ms-ct-cab, .ms-ct-parte')].forEach((n, k) => w(entrar(n, T_FIRMAR.sube + 120 + k * 70, 8)));
+      w(trazarFirma(firma, T_FIRMAR.trazo, T_FIRMAR.trazoDur));
+      w(rubricar(firma, T_FIRMAR.rubrica, T_FIRMAR.rubricaDur));
+      w(animar(selloNodo, [
+        { opacity: 0, transform: 'rotate(-15deg) scale(2.6)', easing: 'cubic-bezier(.55,0,1,.45)' },
+        { opacity: 1, transform: 'rotate(-7deg) scale(.9)', offset: (T_FIRMAR.golpe - T_FIRMAR.sello) / T_FIRMAR.selloDur, easing: EXPO },
+        { opacity: 1, transform: 'rotate(-7deg)' }
+      ], { delay: T_FIRMAR.sello, dur: T_FIRMAR.selloDur, easing: 'linear' }));
+      w(animar(onda, [{ opacity: 0, transform: 'scale(1)' }, { opacity: 0.9, transform: 'scale(1)', offset: 0.02 }, { opacity: 0, transform: 'scale(2.8)' }], { delay: T_FIRMAR.golpe, dur: T_FIRMAR.onda }));
+      w(animar(contrato, [{ translate: '0 0' }, { translate: '0 4px', offset: 0.18 }, { translate: '-3px -1px', offset: 0.42 }, { translate: '2px 1px', offset: 0.7 }, { translate: '0 0' }], { delay: T_FIRMAR.golpe, dur: T_FIRMAR.sacude, easing: 'linear' }));
+      const td = bt.destello(T_FIRMAR.golpe);
+      if (td != null) fx()?.pulso?.('logro', td);
+      bt.esperar(T_FIRMAR.golpe).then((llego) => llego && sonido?.golpe?.());
+      heroe.firmar(i, { w, t: T_FIRMAR.golpe, texto: sello });
+      w(animar(res, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: T_FIRMAR.resultado, dur: DUR.larga }));
+      [...res.children].forEach((c, k) => w(entrar(c, T_FIRMAR.resultado + 80 + k * 70, 8)));
+      bt.iniciar();
+      await bt.esperar(T_FIRMAR.asentarse);
+      res.focus({ preventScroll: true });
+      // lo que se queda el contrato firmado si no sigue el fichaje
+      if (!f || f.renovacion) await narracion.esperar(T_FIRMAR.sostener);
+    } finally {
+      narracion.fin();
+    }
+  }
+
+  return {
+    nodo: raiz,
+    titulo,
+    // el mundo del mercado: sin campeón (la derecha son las cartas); la luz, la del tono (la era en reposo)
+    mundo: { arte: null, escena: null, costura: null, encuadre: 'derecha', velo: 0.55, lightsticks: 0 },
+    entrar() {
+      ajustarLetra(aura.querySelector('.ms-aura-nombre'));
+      if (conLlegada) llegada();
+    },
+    narrar,
+    destruir() {
+      vivo = false;
+      clearTimeout(tAura);
+      document.removeEventListener('keydown', teclaEnter);
+      soltarControl();
+      beats?.destruir();
+      boton.destruir();
+    }
+  };
+}
+
+// La primera oración del planteo y el resto (el "más").
+function partirTexto(texto) {
+  const m = /^(.+?[.!?])\s+(.+)$/s.exec(String(texto).trim());
+  return m ? [m[1], m[2]] : [String(texto).trim(), ''];
 }

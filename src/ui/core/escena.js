@@ -60,7 +60,7 @@ export const CUARTOS = ['vos', 'temporada', 'equipo', 'mundo', 'carrera', 'croni
 // módulo puro, para que `teclado.js` no arrastre todos los renderers de los cuartos al importarla.
 export const PIEZAS_SIN_CUARTOS = ['inicio', 'minijuego'];
 // Lo que puede mostrar el acompañante (≥ 1180 px). `null` = nada.
-export const TIPOS_DE_ACOMPANANTE = ['vos', 'mercado', 'carrera', 'serie', 'swiss', 'previa', 'tabla'];
+export const TIPOS_DE_ACOMPANANTE = ['vos', 'carrera', 'serie', 'swiss', 'previa', 'tabla'];
 const SIN_ACOMPANANTE = Object.freeze({ tipo: null, cuarto: null });
 // PLANUI §0.2: el partido (el cara a cara, el stream) y el mercado (las ofertas y la camiseta) son de pantalla completa,
 // como en la vitrina: su contexto va adentro de su pieza, no en una placa al costado.

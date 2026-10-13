@@ -110,9 +110,10 @@ export function leerNumeroJersey(seed) {
   return numeroValido(marcador.numeroJersey) ? marcador.numeroJersey : null;
 }
 
+// Sin marcador de esta carrera todavía (se retomó justo en la parada), queda uno con la seed y el número: no alcanza para
+// retomar la página (le falta su inicio), pero el número sobrevive hasta que el relato guarde el marcador entero.
 export function guardarNumeroJersey(seed, numero) {
   if (!numeroValido(numero)) return false;
   const marcador = cargarVista();
-  if (!marcador || marcador.seed !== seed) return false;
-  return guardarVista({ ...marcador, numeroJersey: numero });
+  return guardarVista(marcador?.seed === seed ? { ...marcador, numeroJersey: numero } : { seed, numeroJersey: numero });
 }

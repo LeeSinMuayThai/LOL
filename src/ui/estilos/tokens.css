@@ -985,3 +985,31 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   --tx-e-g: var(--ink);
   --tx-e-t: var(--ink);
 }
+
+/* PLANUI §0.2, el mercado (estilos/mercado.css): el alto de la pantalla (entre la franja y la barra de cuartos) y lo que
+   reserva abajo para la cinta de "mientras tanto"; el mapa y el jersey del fichaje. Los colores de una pieza de org (su
+   escudo, su carta, su jersey: --ms-*, --h-*) y las medidas que pone cada nodo (las columnas de la grilla, el alto del
+   cierre bajo el contrato, las letras de un handle) son parámetros: cada pieza pone los suyos; acá quedan los del tono de
+   la pantalla. */
+:root {
+  --ms-alto: calc(100vh - var(--franja-alto) - var(--barra-alto) - 48px);
+  --ms-pie: calc(var(--ln-tv-cinta) - 8px);
+  --fj-mapa: min(56vh, 520px);
+  --fj-jersey: min(32vw, 44vh, 440px);
+  --fj-n: 8;
+  --ms-cols: 6;
+  --ms-cierre: 0px;
+  --ms-acento: var(--tono-acento);
+  --ms-luz: var(--tono-luz);
+  --ms-texto-dim: color-mix(in srgb, var(--ink-dim) 60%, var(--ink));
+  --ms-sello: color-mix(in srgb, var(--tono-luz) 28%, var(--ms-tinta-papel));
+  --h-luz: var(--tono-luz);
+  --h-contra: var(--tono-contra);
+  --h-acento: var(--tono-acento);
+  --h-noche: var(--tono-noche);
+  --h-cuerpo: color-mix(in srgb, var(--h-noche) 92%, var(--h-luz));
+  --h-manga: color-mix(in srgb, var(--h-noche) 87%, var(--h-luz));
+  --h-vivo: var(--h-luz);
+  --h-tinta: var(--h-luz);
+  --h-borde: var(--h-contra);
+}

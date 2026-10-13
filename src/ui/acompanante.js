@@ -14,7 +14,6 @@ import { fichaCompleta } from '../core/ficha.js';
 import { acompanante as acompanantePartido } from './paradas/partido.js';
 import { acompanante as acompananteCarrera } from './cuartos/carrera.js';
 import { TITULOS_DE_CUARTOS } from './cuartos.js';
-import { acompanante as acompananteMercado } from './paradas/mercado.js';
 import { icono, triangulos } from './fx/iconos.js';
 import { num, odometro } from './fx/movimiento.js';
 
@@ -22,7 +21,7 @@ import { num, odometro } from './fx/movimiento.js';
 const CONSULTA_ANCHA = '(min-width: 1180px)';
 // El cuarto que dice el contexto de las piezas de pantalla completa (sin acompañante): la barra lo marca igual.
 const CUARTO_DE_PIEZA = { partido: 'temporada', mercado: 'mundo' };
-const KICKER_DE_TIPO = { tabla: 'Temporada', serie: 'La serie', swiss: 'El Swiss', previa: 'La previa', mercado: 'Mientras tanto', carrera: 'Tu carrera' };
+const KICKER_DE_TIPO = { tabla: 'Temporada', serie: 'La serie', swiss: 'El Swiss', previa: 'La previa', carrera: 'Tu carrera' };
 
 function nodo(etiqueta, clase, texto = null) {
   const el = document.createElement(etiqueta);
@@ -142,8 +141,7 @@ export function pintarVos(caja, estado) {
   if (pie.childElementCount) caja.append(pie);
 }
 
-// Los otros tipos: el kicker de la placa y el renderer de su dueño adentro (la tabla, la serie, la previa, el mercado
-// del mundo, la carrera).
+// Los otros tipos: el kicker de la placa y el renderer de su dueño adentro (la tabla, la serie, la previa y la carrera).
 function enLaPlaca(tipo, pintor) {
   return (caja, estado, contexto) => {
     const kicker = nodo('p', 'ctx-kicker');
@@ -161,7 +159,6 @@ const PINTORES = {
     caja.appendChild(panel);
     ui.renderTabla(panel, estado);
   }),
-  mercado: enLaPlaca('mercado', acompananteMercado),
   serie: enLaPlaca('serie', acompanantePartido),
   swiss: enLaPlaca('swiss', acompanantePartido),
   previa: enLaPlaca('previa', acompanantePartido),

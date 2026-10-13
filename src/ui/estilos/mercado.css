@@ -1,381 +1,608 @@
-/* El mercado de pases: las ofertas en filas comparables, "Vos en el mercado" en dos líneas, el mundo, el representante. Dueño: V3c
-   (PLAN.md §V.7). Salió de componentes.css / pantallas.css en V2-A; V3c (FASE V) lo rehace con la gramática de una parada
-   (§V.4): lo primero que se ve es lo que se decide. */
+/* ==========================================================================
+   EL MERCADO (PLANUI U2b punto 2 y la compuerta 2 del mercado; portado de
+   vitrina/fusion/estilos/mercado.css con op=linea, §4.9-§4.10). Tres piezas:
+   - el mercado (ms-): el aura de la org apuntada arriba, las cartas de las
+     ofertas a la derecha, el panel de cliente abajo (el reloj de la ventana,
+     la grilla de escudos, el inspector, FIRMAR) y "mientras tanto" en la cinta;
+     al firmar, el contrato sube sobre el panel;
+   - el jersey (jy-): la prenda de la org de espaldas, en capas;
+   - el fichaje (fj-): la capa a pantalla completa con tu línea cayendo sobre el
+     mapa y la firma (el walkout) con tu jersey y tu número.
+   El tono de la org apuntada (`--tono-*` en el nodo y en <html>) manda en toda
+   la pantalla; en reposo es el de la era. Los colores de cada pieza de una org
+   (su escudo, su carta, su jersey) vienen por nombre de token (--h-*, --ms-*).
+   ========================================================================== */
+.mercado { display: block; min-width: 0; }
+
+.ms-mercado {
+  /* la interfaz sigue al tono (en reposo, la luz de la era) */
+  --luz: var(--tono-luz);
+  --luz-texto: color-mix(in srgb, var(--tono-acento) 52%, var(--ink));
+  --luz-suave: color-mix(in srgb, var(--tono-luz) 22%, transparent);
+  --luz-tenue: color-mix(in srgb, var(--tono-luz) 10%, transparent);
+  --luz-fuerte: color-mix(in srgb, var(--tono-luz) 40%, transparent);
+  --filete: color-mix(in srgb, var(--tono-luz) 34%, var(--linea));
+  --filete-fuerte: color-mix(in srgb, var(--tono-luz) 70%, transparent);
+  --ms-acento: var(--tono-acento);
+  --ms-luz: var(--tono-luz);
+  --ms-texto-dim: color-mix(in srgb, var(--ink-dim) 60%, var(--ink));
+  position: relative; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) auto;
+  column-gap: var(--canal); min-height: var(--ms-alto); padding-bottom: var(--ms-pie);
+}
+/* el velo de lectura del aura y del panel, en la noche del tono (la derecha queda libre para las cartas) */
+.ms-velo {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--tono-vacio) 94%, transparent) 0%, color-mix(in srgb, var(--tono-vacio) 90%, transparent) 46%, color-mix(in srgb, var(--tono-vacio) 55%, transparent) 62%, color-mix(in srgb, var(--tono-vacio) 0%, transparent) 78%),
+    linear-gradient(0deg, color-mix(in srgb, var(--tono-vacio) 70%, transparent) 0%, color-mix(in srgb, var(--tono-vacio) 0%, transparent) 42%);
+}
+
+/* ---------- el aura: el escudo monumental, el nombre gigante, los términos con su referente ---------- */
+.ms-aura { grid-column: 1 / span 7; grid-row: 1; position: relative; z-index: 1; display: grid; align-content: start; gap: 20px; min-width: 0; }
+.ms-aura-cab { display: grid; grid-template-columns: var(--ms-aura-escudo) minmax(0, 1fr); align-items: center; column-gap: 28px; min-width: 0; }
+.ms-aura-escudo { position: relative; display: grid; place-items: center; width: var(--ms-aura-escudo); height: var(--ms-aura-escudo); }
+.ms-aura-escudo::before {
+  content: ''; position: absolute; inset: -24%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tono-luz) 34%, transparent), color-mix(in srgb, var(--tono-luz) 0%, transparent) 74%);
+}
+.ms-aura-escudo .ln-logo { position: relative; width: 100%; height: 100%; }
+.ms-aura-escudo .ln-logo img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 14px 40px var(--sombra)); }
+:is(.ms-aura-escudo, .ms-op, .ms-contrato, .ms-ranura) .ln-escudo-forma { fill: color-mix(in srgb, var(--tono-noche) 80%, var(--escudo-fondo)); stroke: var(--tono-acento); }
+.ms-op .ln-escudo-forma { stroke: var(--ms-acento); }
+.ms-aura-vacio .ln-escudo { width: 64%; height: 74%; overflow: visible; }
+:is(.ms-aura-vacio, .ms-op-vacio, .ms-ranura-libre) .ln-escudo-forma { fill: none; stroke: var(--linea-fuerte); stroke-width: 0.9; stroke-dasharray: 2.2 2.2; }
+.ms-aura-vacio .ln-escudo-forma { stroke: var(--luz-fuerte); }
+:is(.ms-aura-vacio, .ms-op-vacio, .ms-ranura-libre) .ln-escudo-canto { display: none; }
+.ms-aura-vacio .ln-escudo-ini { fill: var(--luz-texto); }
+:is(.ms-op-vacio, .ms-ranura-libre) .ln-escudo-ini { fill: var(--ink-mute); }
+.ms-aura-t { display: grid; gap: 10px; min-width: 0; }
+.ms-aura-k {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0;
+  font: 600 var(--t-rotulo-g) / 1.2 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto);
+}
+.ms-aura-k > span { display: inline-flex; align-items: center; gap: 8px; }
+.ms-aura-k > span + span { padding-left: 14px; box-shadow: inset 1px 0 0 var(--linea-fuerte); color: var(--ms-texto-dim); }
+.ms-aura-tag[data-tag='bombazo'] { color: var(--warn); }
+.ms-aura-nombre {
+  margin: 0 0 0 -0.03em; min-width: 0; overflow: visible; white-space: nowrap;
+  font: 900 var(--ms-nombre) / 0.86 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: -0.012em; text-transform: uppercase;
+  color: var(--ink); text-shadow: 0 0 70px color-mix(in srgb, var(--tono-luz) 42%, transparent);
+}
+.ms-aura-letra { display: inline-block; white-space: pre; }
+.ms-terminos { display: flex; flex-wrap: wrap; gap: 16px 44px; margin: 0; }
+.ms-termino { display: grid; align-content: start; gap: 5px; min-width: 0; padding-left: 14px; box-shadow: inset 2px 0 0 color-mix(in srgb, var(--tono-acento) 72%, transparent); }
+.ms-termino-k { font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ms-texto-dim); }
+.ms-termino-v { display: flex; align-items: baseline; gap: 8px; margin: 0; }
+.ms-num { font: 900 var(--t-num-m) / 0.92 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--ink); }
+.ms-unidad { font: 600 12px / 1 var(--f-mono); letter-spacing: 0.06em; color: var(--ms-texto-dim); }
+.ms-ref { margin: 0; font: 600 12px / 1.3 var(--f-mono); letter-spacing: 0.02em; color: var(--luz-texto); }
+/* en una pantalla baja (un portátil), el aura se achica para que el panel entre entero arriba de la cinta */
+@media (min-width: 641px) and (max-height: 960px) {
+  .ms-mercado { --ms-aura-escudo: 132px; --ms-nombre: clamp(56px, 7vw, 100px); }
+  .ms-aura { gap: 14px; }
+  .ms-panel { margin-top: 12px; }
+  .ms-op { padding-top: 26px; gap: 7px; }
+  .ms-grilla { padding-bottom: 14px; }
+}
+@media (min-width: 1024px) {
+  /* los términos en una sola fila: si saltaban a dos al apuntar una org, el panel bajaba y el escudo se iba de abajo del
+     mouse (un bucle de hover) */
+  .ms-terminos { flex-wrap: nowrap; column-gap: var(--ms-terminos-gap); }
+  .ms-num { font-size: var(--ms-num-aura); }
+}
+
+/* ---------- el panel de cliente: la cabeza con el reloj, la grilla de escudos, el inspector y FIRMAR ---------- */
+.ms-panel { grid-column: 1 / span 8; grid-row: 3; position: relative; z-index: 1; align-self: end; display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 18px; min-width: 0; }
+.ms-cab { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; padding: 16px 24px 12px; }
+.ms-cab-t { min-width: 0; }
+.ms-titulo { margin: 8px 0 0; font: 800 var(--t-titulo-s) / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.035em; color: var(--ink); }
+.ms-planteo { margin-top: 8px; font-size: 15px; color: color-mix(in srgb, var(--ink-dim) 70%, var(--ink)); }
+.ms-cab-der { display: grid; justify-items: end; flex: none; }
+.ms-leyenda { display: grid; gap: 7px; flex: none; margin: 0; padding-bottom: 4px; font: 500 10px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ms-texto-dim); }
+.ms-leyenda > span { display: inline-flex; align-items: center; gap: 8px; }
+.ms-leyenda i { width: 22px; height: 3px; border-radius: 2px; }
+.ms-ley-sueldo { background: var(--ink); }
+.ms-ley-jer { background: var(--ink-mute); }
+
+/* el reloj de la ventana */
+.ms-reloj { display: grid; justify-items: end; gap: 7px; }
+.ms-reloj-k { display: flex; gap: 10px; margin: 0; font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.ms-reloj-de { color: var(--ms-texto-dim); }
+.ms-reloj-fila { display: flex; align-items: center; gap: 12px; }
+.ms-reloj-dia { display: flex; align-items: baseline; gap: 6px; margin: 0; font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ms-texto-dim); }
+.ms-reloj-n { min-width: 2ch; font: 900 30px / 0.9 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--ink); }
+.ms-reloj-dias { display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.ms-reloj-d { position: relative; width: var(--ms-reloj-celda); height: var(--ms-reloj-celda-alto); border-radius: 2px; box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+.ms-reloj-d.pasado { background: var(--luz-tenue); box-shadow: inset 0 0 0 1px var(--filete); }
+.ms-reloj-d.hoy { background: var(--luz-suave); box-shadow: inset 0 0 0 1px var(--tono-acento), 0 0 10px var(--luz-fuerte); }
+.ms-reloj-marca { position: absolute; left: 2px; right: 2px; bottom: 2px; height: 5px; border-radius: 1px; opacity: 0; background: var(--ms-acento); box-shadow: 0 0 8px var(--ms-acento); }
+.ms-reloj-marca.llego { opacity: 1; }
+.ms-reloj-ult { display: flex; align-items: center; gap: 6px; min-height: 16px; margin: 0; font: 500 12px / 1 var(--f-cuerpo); color: var(--ms-texto-dim); }
+.ms-reloj-ult b { font-weight: 700; color: var(--ink); }
+
+/* la grilla de escudos */
+.ms-grilla { display: grid; grid-template-columns: repeat(var(--ms-cols), minmax(0, 1fr)); gap: 10px; padding: 2px 24px 18px; }
+.ms-op {
+  all: unset; box-sizing: border-box; position: relative; cursor: pointer; display: grid; justify-items: center; align-content: start; gap: 9px;
+  min-width: 0; padding: 30px 10px 12px; border-radius: var(--r-control);
+  background: color-mix(in srgb, var(--ms-luz) 6%, var(--panel-hondo));
+  box-shadow: inset 0 0 0 1px var(--linea), inset 0 -2px 0 color-mix(in srgb, var(--ms-acento) 80%, transparent);
+  transition: transform 160ms var(--expo), box-shadow 160ms ease, background-color 160ms ease;
+}
+.ms-op:hover:not(:disabled), .ms-op.apuntada {
+  background: color-mix(in srgb, var(--ms-luz) 15%, var(--panel-hondo)); transform: translateY(-3px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ms-acento) 70%, transparent), inset 0 -2px 0 var(--ms-acento);
+}
+.ms-op[aria-pressed='true'] { box-shadow: inset 0 0 0 2px var(--ms-acento), 0 0 26px color-mix(in srgb, var(--ms-acento) 36%, transparent); }
+.ms-op:active:not(:disabled) { transform: translateY(1px) scale(0.97); transition-duration: 60ms; }
+.ms-op:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.ms-op:disabled { cursor: default; }
+.ms-op[data-llego='0'] { cursor: default; }
+.ms-op[data-llego='0']:hover { transform: none; }
+.ms-op-vacio {
+  position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; border-radius: inherit; pointer-events: none; opacity: 0;
+  background: var(--panel-hondo); box-shadow: inset 0 0 0 1px var(--linea-fuerte);
+}
+.ms-op-vacio .ln-escudo { width: 34px; height: 40px; overflow: visible; }
+.ms-op-tecla {
+  position: absolute; left: 8px; top: 8px; z-index: 4; display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: 4px; box-shadow: inset 0 0 0 1px var(--linea-fuerte); font: 600 10.5px / 1 var(--f-mono); color: var(--ink-dim);
+}
+.ms-op[aria-pressed='true'] .ms-op-tecla { background: var(--ms-acento); box-shadow: none; color: var(--org-tinta); }
+.ms-op-tag { position: absolute; right: 8px; top: 12px; z-index: 4; font: 700 9px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); }
+.ms-op-tag[data-tag='bombazo'] { color: var(--warn); }
+.ms-op-cresta { position: relative; z-index: 3; display: grid; place-items: center; width: 58px; height: 58px; }
+.ms-op-cresta::before {
+  content: ''; position: absolute; inset: -12px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ms-luz) 24%, transparent), color-mix(in srgb, var(--ms-luz) 0%, transparent));
+}
+.ms-op-cresta .ln-logo { position: relative; }
+.ms-op-txt { display: grid; justify-items: center; gap: 5px; min-width: 0; max-width: 100%; text-align: center; }
+.ms-op-org { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 13.5px / 1.1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.015em; color: var(--ink); }
+.ms-op-liga { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; overflow: hidden; font: 500 9.5px / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); white-space: nowrap; }
+.ms-op-barras { display: grid; gap: 4px; width: 100%; padding: 2px 4px 0; }
+.ms-op-barra { display: block; height: 3px; border-radius: 2px; transform-origin: left; background: linear-gradient(90deg, var(--ink) calc(var(--v) * 100%), var(--linea) 0); }
+.ms-op-jer { background: linear-gradient(90deg, var(--ink-mute) calc(var(--v) * 100%), var(--linea) 0); }
+.ms-op-estela {
+  position: absolute; left: 50%; bottom: 100%; z-index: 1; width: 3px; margin-left: -1.5px; transform-origin: 50% 100%; pointer-events: none; opacity: 0;
+  background: linear-gradient(0deg, var(--ms-acento), color-mix(in srgb, var(--ms-acento) 0%, transparent));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--ms-acento) 80%, transparent), 0 0 30px color-mix(in srgb, var(--ms-acento) 40%, transparent);
+}
+.ms-op-borde {
+  position: absolute; inset: -1px; z-index: 5; border-radius: inherit; pointer-events: none; opacity: 0;
+  box-shadow: 0 0 0 2px var(--ms-acento), 0 0 28px color-mix(in srgb, var(--ms-acento) 60%, transparent), inset 0 0 24px color-mix(in srgb, var(--ms-acento) 28%, transparent);
+}
+.ms-op-polvo {
+  position: absolute; left: 16%; right: 16%; top: 80px; z-index: 2; height: 12px; border-radius: 50%; pointer-events: none; opacity: 0;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ms-acento) 75%, transparent), color-mix(in srgb, var(--ms-acento) 0%, transparent));
+}
+
+/* el traspaso: los caminos en lugar de la grilla */
+.ms-caminos { display: grid; gap: 0; padding: 0 0 6px; }
+.ms-camino {
+  all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 14px;
+  padding: 12px 24px; box-shadow: inset 0 -1px 0 var(--linea); transition: background-color 140ms ease;
+}
+.ms-camino:hover:not(:disabled), .ms-camino:focus-visible { background: var(--luz-tenue); }
+.ms-camino:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.ms-camino[aria-pressed='true'] { background: var(--luz-suave); box-shadow: inset 3px 0 0 var(--tono-acento), inset 0 -1px 0 var(--linea); }
+.ms-camino:disabled:not([aria-pressed='true']) { opacity: 0.45; cursor: default; }
+.ms-camino-t { display: grid; gap: 4px; min-width: 0; }
+.ms-camino-t b { font: 700 16px / 1.25 var(--f-cuerpo); color: var(--ink); }
+.ms-camino-t span { font: 400 13.5px / 1.4 var(--f-cuerpo); color: var(--ink-dim); }
+
+/* el cierre: tu equipo, el inspector, FIRMAR; abajo, lo de afuera (te siguen, el representante, no firmar) */
+.ms-cierre {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 24px; padding: 14px 24px 12px;
+  background: var(--panel-hondo); box-shadow: inset 0 1px 0 var(--linea); border-radius: 0 0 var(--r-panel) var(--r-panel);
+}
+.ms-mercado[data-forma='traspaso'] .ms-cierre { grid-template-columns: auto minmax(0, 1fr); }
+.ms-ranura { display: grid; grid-template-columns: auto auto; align-items: center; justify-content: start; column-gap: 12px; min-width: 160px; }
+.ms-ranura-cara { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--luz), 0 0 18px var(--luz-fuerte); }
+.ms-ranura-libre { box-shadow: inset 0 0 0 1px var(--linea); }
+.ms-ranura-libre .ln-escudo { width: 26px; height: 30px; overflow: visible; }
+.ms-ranura-t { display: grid; gap: 5px; }
+.ms-ranura-k { font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.ms-ranura b { font: 800 17px / 1.05 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.02em; color: var(--ink); }
+.ms-insp { min-width: 0; }
+.ms-insp-texto { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: 0; font-size: 13.5px; line-height: 1.42; color: var(--ink); }
+html[data-textos='completos'] .ms-insp-texto { display: block; }
+.ms-insp-previa { display: flex; flex-wrap: wrap; gap: 3px 18px; margin: 6px 0 0; padding: 0; list-style: none; font-size: 11.5px; color: var(--ink-dim); }
+.ms-insp-previa li { display: inline-flex; align-items: center; gap: 6px; }
+.ms-insp-previa .ln-ico { color: var(--luz-texto); }
+.ms-insp-riesgo { color: var(--warn); }
+.ms-insp-riesgo .ln-ico { color: var(--warn); }
+html[data-textos='breves'] .ms-extra { display: none; }
+.ms-negociar { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.ms-negociar:empty { display: none; }
+.ms-negociar .btn-mas:disabled { opacity: 0.45; cursor: default; }
+.ms-charla { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 10px; padding: 8px 12px; border-radius: var(--r-control); background: var(--luz-tenue); box-shadow: inset 2px 0 0 var(--tono-acento); }
+.ms-charla:focus { outline: none; }
+.ms-charla p { margin: 0; font: 500 14px / 1.4 var(--f-cuerpo); color: var(--ink); }
+.ms-charla .ln-ico { margin-top: 3px; color: var(--luz-texto); }
+.ms-firmar { display: grid; justify-items: center; gap: 8px; }
+.ms-firmar .ln-bloquear { min-width: 210px; gap: 12px; }
+.ms-firmar .ln-bloquear kbd { color: inherit; box-shadow: inset 0 0 0 1px currentColor; opacity: 0.7; }
+.ms-otras { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; margin-top: 10px; padding-top: 8px; box-shadow: inset 0 1px 0 var(--linea); }
+.ms-otras .ms-leyenda { display: flex; gap: 16px; padding: 0; }
+.ms-otras-botones { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.ms-otra:disabled { opacity: 0.45; cursor: default; }
+.ms-siguen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0; font-size: 12px; color: var(--ink); }
+.ms-siguen-k { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.ms-siguen-org { display: inline-flex; align-items: center; gap: 6px; }
+
+/* la entrada: el bumper y la línea de luz de la que caen las ofertas */
+.ms-bumper {
+  position: fixed; left: 0; right: 0; top: var(--ms-bumper-y); z-index: 7; height: var(--ms-bumper-alto); margin-top: calc(var(--ms-bumper-alto) / -2);
+  display: grid; align-content: center; justify-items: center; gap: 12px; pointer-events: none; opacity: 0;
+}
+.ms-bumper-banda {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tono-noche) 0%, transparent), color-mix(in srgb, var(--tono-noche) 94%, transparent) 16%, color-mix(in srgb, var(--tono-noche) 94%, transparent) 84%, color-mix(in srgb, var(--tono-noche) 0%, transparent));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--tono-acento) 60%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--tono-acento) 60%, transparent);
+}
+.ms-bumper-txt {
+  position: relative; display: flex; flex-wrap: wrap; justify-content: center; gap: 0 0.26em; margin: 0; white-space: nowrap;
+  font: 900 var(--ms-bumper-letra) / 0.9 var(--f-display); font-stretch: var(--ancho-momento); text-transform: uppercase; color: var(--ink);
+}
+.ms-bumper-txt b { font-weight: 900; color: var(--luz-texto); }
+.ms-bumper-sub { position: relative; margin: 0; font: 600 var(--t-rotulo-g) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ms-texto-dim); }
+.ms-linea-luz {
+  position: fixed; left: 3%; right: 3%; top: var(--ms-bumper-y); z-index: 7; height: 3px; margin-top: -1.5px; border-radius: 2px; pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--luz-blanca) 0%, transparent), color-mix(in srgb, var(--luz-blanca) 80%, var(--tono-luz)) 18%, color-mix(in srgb, var(--luz-blanca) 80%, var(--tono-luz)) 82%, color-mix(in srgb, var(--luz-blanca) 0%, transparent));
+  box-shadow: 0 0 16px color-mix(in srgb, var(--tono-luz) 90%, transparent), 0 0 60px color-mix(in srgb, var(--tono-luz) 55%, transparent);
+}
+/* "mientras tanto": la cinta, abajo, sobre la barra de los cuartos */
+.ms-cinta { position: fixed; left: 0; right: 0; bottom: var(--barra-alto); z-index: 5; }
+
+/* FIRMAR: el contrato sube sobre la cabeza y la grilla; abajo queda FIRMAR, bloqueado */
+.ms-firmando .ms-insp { opacity: 0; visibility: hidden; }
+.ms-firmando :is(.ms-cab, .ms-grilla, .ms-caminos) { opacity: 0; }
+.ms-contrato {
+  position: absolute; left: 0; right: 0; top: 0; bottom: var(--ms-cierre); z-index: 2; display: grid; grid-template-rows: auto auto minmax(0, 1fr);
+  padding: 18px 24px 14px; border-radius: var(--r-panel) var(--r-panel) 0 0; overflow: hidden;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--ms-luz) 12%, var(--panel-hondo)), var(--panel-hondo) 62%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ms-acento) 50%, var(--linea)), inset 0 2px 0 var(--ms-acento);
+}
+.ms-ct-cab { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 16px; }
+.ms-ct-logo { display: grid; place-items: center; width: 58px; height: 58px; }
+.ms-ct-quien { display: grid; gap: 5px; min-width: 0; }
+.ms-ct-k { margin: 0; font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.ms-ct-t { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 12px; margin: 0; font: 800 26px / 1.05 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.03em; color: var(--ink); overflow-wrap: anywhere; }
+.ms-ct-t i { font-style: normal; font-weight: 400; color: var(--ms-acento); }
+.ms-ct-sub { margin: 0; font: 500 11px / 1.3 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-dim); }
+.ms-ct-firmas { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr); align-items: end; gap: 30px; margin-top: 6px; }
+.ms-ct-parte { position: relative; display: grid; align-content: end; gap: 6px; min-width: 0; }
+.ms-ct-sello-org { display: grid; place-items: center; width: 40px; height: 40px; opacity: 0.85; }
+.ms-ct-linea { display: block; height: 1px; background: var(--linea-fuerte); }
+.ms-ct-firmante { font: 500 10px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); }
+.ms-ct-firma { display: block; width: min(330px, 100%); height: auto; margin-bottom: -16px; overflow: visible; }
+.ms-ct-firma-trazo {
+  font: italic 800 92px / 1 var(--f-display); font-stretch: 85%; fill: var(--ink); stroke: var(--ms-acento); stroke-width: 1.6; paint-order: stroke;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--ms-acento) 60%, transparent));
+}
+.ms-ct-firma-rubrica { fill: none; stroke: var(--ms-acento); stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 700; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--ms-acento) 60%, transparent)); }
+.ms-sello {
+  position: absolute; right: 6px; top: -4px; display: grid; justify-items: center; gap: 3px; padding: 8px 13px 7px; border-radius: var(--r-control);
+  transform: rotate(-7deg); color: var(--ms-acento); background: color-mix(in srgb, var(--ms-acento) 10%, var(--panel-hondo)); box-shadow: inset 0 0 0 2px var(--ms-acento);
+}
+.ms-sello b { font: 900 19px / 1 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.16em; text-transform: uppercase; }
+.ms-sello span { font: 600 9px / 1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; }
+.ms-onda { position: absolute; inset: -5px; border-radius: var(--r-control); pointer-events: none; opacity: 0; box-shadow: 0 0 0 2px var(--ms-acento), 0 0 24px color-mix(in srgb, var(--ms-acento) 50%, transparent); }
+.ms-res { display: grid; align-content: end; gap: 8px; margin-top: 18px; padding-top: 12px; box-shadow: inset 0 1px 0 var(--linea); }
+.ms-res:focus { outline: none; }
+.ms-res-sigue { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font: 600 15px / 1.25 var(--f-cuerpo); color: var(--ink); }
+.ms-res-sigue .ln-ico { color: var(--luz-texto); }
+.ms-res-texto { max-width: 70ch; margin: 0; font-size: 13.5px; line-height: 1.45; color: color-mix(in srgb, var(--ink-dim) 70%, var(--ink)); }
+
+/* ---------- la derecha: las cartas, quietas en su columna mientras la página baja ---------- */
+.ms-heroe {
+  position: sticky; top: calc(var(--franja-alto) + 26px); z-index: 0; grid-column: 9 / span 4; grid-row: 1 / span 3; align-self: start;
+  height: var(--ms-heroe-alto); min-width: 0; pointer-events: none;
+}
+.ms-heroe-in { position: relative; width: 100%; height: 100%; }
+.ms-h-ofertas { display: grid; place-items: center end; padding-right: 3%; }
+.ms-cartas { position: relative; height: min(var(--ms-carta-alto), calc(var(--ms-heroe-alto) - 50px)); aspect-ratio: 0.74; max-width: 100%; }
+.ms-cartas-bandeja { position: absolute; inset: 0; opacity: 0; display: grid; place-items: end center; padding-bottom: 20px; border: 1px dashed var(--linea-fuerte); border-radius: 6px; }
+.ms-cartas-bandeja span { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.ms-carta {
+  --ms-sello: color-mix(in srgb, var(--h-luz) 28%, var(--ms-tinta-papel));
+  position: absolute; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; border-radius: 4px; transform-origin: 50% 60%;
+  background: linear-gradient(172deg, color-mix(in srgb, var(--h-luz) 9%, transparent), color-mix(in srgb, var(--oscuro-total) 0%, transparent) 38%, color-mix(in srgb, var(--oscuro-total) 14%, transparent)), var(--ms-papel);
+  box-shadow: inset 0 -1px 0 var(--ms-papel-canto), 0 22px 46px var(--sombra), 0 3px 8px var(--sombra);
+  color: var(--ms-tinta-papel);
+}
+.ms-carta.al-frente { box-shadow: inset 0 -1px 0 var(--ms-papel-canto), 0 30px 60px var(--sombra), 0 0 0 1px color-mix(in srgb, var(--h-acento) 40%, transparent), 0 0 40px color-mix(in srgb, var(--h-luz) 22%, transparent); }
+.ms-carta-membrete {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px 16px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--h-noche) 86%, var(--h-luz)), var(--h-noche)); box-shadow: inset 0 -3px 0 var(--h-acento);
+}
+.ms-carta-escudo { display: grid; place-items: center; width: 44px; height: 44px; }
+.ms-carta-escudo .ln-escudo-forma { fill: var(--h-noche); stroke: var(--h-acento); }
+.ms-carta-quien { display: grid; gap: 5px; min-width: 0; }
+.ms-carta-org { overflow: hidden; font: 800 18px / 1.05 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: -0.02em; white-space: nowrap; text-overflow: ellipsis; color: var(--ink); }
+.ms-carta-liga { display: inline-flex; align-items: center; gap: 5px; font: 500 10px / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); }
+.ms-carta-dia { align-self: start; font: 600 10px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); }
+.ms-carta-cuerpo { display: flex; flex-direction: column; gap: 10px; min-height: 0; padding: 18px 20px 16px; }
+.ms-carta-k { margin: 0; font: 600 10.5px / 1.2 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ms-tinta-papel-suave); }
+.ms-carta-para { margin: 0; font: 500 14px / 1.3 var(--f-cuerpo); color: var(--ms-tinta-papel); }
+.ms-carta-para b { font-weight: 700; }
+.ms-carta-texto { margin: 0; font: 400 13.5px / 1.45 var(--f-cuerpo); color: var(--ms-tinta-papel); }
+.ms-carta-terminos { display: grid; margin: 4px 0 0; border-top: 1px solid color-mix(in srgb, var(--ms-tinta-papel) 18%, transparent); }
+.ms-carta-fila { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid color-mix(in srgb, var(--ms-tinta-papel) 12%, transparent); }
+.ms-carta-fila dt { font: 600 10px / 1.3 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ms-tinta-papel-suave); }
+.ms-carta-fila dd { margin: 0; font: 700 13px / 1.3 var(--f-cuerpo); font-variant-numeric: tabular-nums; text-align: right; color: var(--ms-tinta-papel); }
+.ms-carta-pie { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 10px; }
+.ms-carta-firma { display: grid; flex: 1; gap: 6px; max-width: 150px; }
+.ms-carta-firma i { display: block; height: 1px; background: color-mix(in srgb, var(--ms-tinta-papel) 45%, transparent); }
+.ms-carta-firma span { font: 500 10px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ms-tinta-papel-suave); }
+.ms-carta-sello { display: block; width: 84px; height: 84px; rotate: -12deg; mix-blend-mode: multiply; }
+.ms-carta-anillo { display: block; width: 100%; height: 100%; overflow: visible; }
+.ms-carta-aro { fill: none; stroke: var(--ms-sello); stroke-width: 1.6; }
+.ms-carta-sello-txt { font: 700 8.6px / 1 var(--f-mono); letter-spacing: 1.2px; fill: var(--ms-sello); }
+.ms-carta-sello-ini { font: 900 22px / 1 var(--f-display); font-stretch: var(--ancho-momento); fill: var(--ms-sello); }
+.ms-carta-firmada {
+  position: absolute; right: 18px; top: 46%; z-index: 3; padding: 8px 14px; border-radius: 4px; rotate: -9deg; mix-blend-mode: multiply;
+  box-shadow: inset 0 0 0 3px var(--ms-sello); font: 900 26px / 1 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ms-sello);
+}
 
 /* ==========================================================================
-   3. EL MERCADO (fase 9c; V3c)
+   EL JERSEY: la tela en capas (color plano, luz multiply, brillo screen)
    ========================================================================== */
+.jy { position: relative; width: 100%; }
+.jy::before {
+  content: ''; position: absolute; left: -14%; right: -14%; top: -6%; bottom: -4%; z-index: -1; pointer-events: none;
+  background: radial-gradient(50% 46% at 50% 42%, color-mix(in srgb, var(--tono-luz) 22%, transparent), color-mix(in srgb, var(--tono-luz) 0%, transparent) 72%);
+}
+.jy-prenda { position: relative; isolation: isolate; width: 100%; aspect-ratio: 600 / 660; transform-origin: 50% 4%; }
+.jy-prenda > svg, .jy-capa, .jy-capa > svg, .jy-barridos { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+/* el color: la capa trae los derivados de los tokens de la org (--h-*, en el nodo del jersey) */
+.jy-capa {
+  --h-cuerpo: color-mix(in srgb, var(--h-noche) 92%, var(--h-luz)); --h-manga: color-mix(in srgb, var(--h-noche) 87%, var(--h-luz));
+  --h-vivo: var(--h-luz); --h-tinta: var(--h-luz); --h-borde: var(--h-contra);
+}
+.jy-sombra { filter: blur(18px); opacity: 0.75; transform: translate(2%, 4%); }
+.jy-sombra path { fill: var(--oscuro-total); }
+.jy-luz { mix-blend-mode: multiply; }
+.jy-brillo { mix-blend-mode: screen; opacity: 0.34; }
+.jy-barridos { mix-blend-mode: screen; }
+.jy-barrido { position: absolute; inset: 0; opacity: 0; background: linear-gradient(105deg, color-mix(in srgb, var(--h-luz) 0%, transparent) 30%, color-mix(in srgb, var(--h-luz) 62%, transparent) 50%, color-mix(in srgb, var(--h-luz) 0%, transparent) 70%); }
+.jy-base { fill: var(--ms-cam-gris); }
+.jy-cresta { fill: none; stroke: var(--luz-blanca); stroke-linecap: round; }
+.jy-valle { fill: none; stroke: var(--oscuro-total); stroke-linecap: round; }
+.jy-difusa { lighting-color: var(--luz-blanca); }
+.jy-especular { lighting-color: color-mix(in srgb, var(--luz-blanca) 84%, var(--tono-luz)); }
+.jy-sombra-stop { stop-color: var(--oscuro-total); }
+.jy-filo { fill: none; stroke: var(--tono-luz); stroke-width: 8; opacity: 0.5; }
+.jy-cuerpo { fill: var(--h-cuerpo); }
+.jy-manga { fill: var(--h-manga); }
+.jy-interior { fill: color-mix(in srgb, var(--h-noche) 45%, var(--oscuro-total)); }
+.jy-vivo { fill: var(--h-vivo); }
+.jy-lat-a { stop-color: var(--h-vivo); }
+.jy-lat-b { stop-color: var(--h-vivo); stop-opacity: 0.5; }
+.jy-esq-a { stop-color: var(--h-luz); stop-opacity: 0.16; }
+.jy-esq-b { stop-color: var(--h-luz); stop-opacity: 0; }
+.jy-nombre { font: 800 38px / 1 var(--f-display); font-stretch: 125%; letter-spacing: 8px; fill: var(--h-tinta); }
+.jy-num { font: 900 232px / 1 var(--f-display); font-stretch: 78%; letter-spacing: 2px; }
+.jy-num-borde { fill: none; stroke: var(--h-borde); stroke-width: 14px; stroke-linejoin: round; }
+.jy-num-hueco { fill: none; stroke: var(--h-cuerpo); stroke-width: 6px; stroke-linejoin: round; }
+.jy-num-tinta { fill: var(--h-tinta); }
+.jy-escudo, .jy-parche { position: absolute; z-index: 1; display: grid; place-items: center; aspect-ratio: 1; translate: -50% -50%; }
+.jy-escudo { left: 50%; top: 13.6%; width: 6.6%; }
+.jy-parche { left: 17.8%; top: 26.6%; width: 6.2%; rotate: -14deg; filter: saturate(0.85) brightness(0.92); }
+:is(.jy-escudo, .jy-parche) .ln-logo { width: 100%; height: 100%; }
+:is(.jy-escudo, .jy-parche) .ln-logo img { width: 100%; height: 100%; object-fit: contain; }
+.jy-escudo .ln-escudo-forma { fill: var(--h-noche); stroke: var(--h-acento); }
 
-/* El panel es una columna que se envuelve: título, qué está en juego, tu valor, las ofertas, y DESPUÉS lo secundario (llamar al
-   representante, esperar, el mundo). `order` pone lo secundario detrás de las ofertas sin tocar el HTML. */
-.mercado {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: var(--s-3);
-  margin-top: var(--s-3);
-  padding: var(--s-4);
-  padding-left: calc(var(--s-4) - 3px);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--cat-mercado);
-  animation: entrar-decision var(--dur-slow) var(--ease) both;
+/* ==========================================================================
+   EL FICHAJE: tu línea cae sobre el mapa, y la firma (el walkout)
+   ========================================================================== */
+.fj {
+  --luz-texto: color-mix(in srgb, var(--tono-acento) 52%, var(--ink));
+  position: fixed; inset: 0; z-index: 200; display: grid; align-content: center; padding: 64px var(--margen) 56px; overflow: hidden; isolation: isolate;
 }
-.mercado > * {
-  flex: 1 0 100%;
-  min-width: 0;
-  margin: 0;
-}
-.mercado > .decision-title { font-size: var(--fs-5); line-height: var(--lh-tight); }
-.mercado > .decision-desc { font-size: var(--fs-2); line-height: var(--lh-snug); }
-.mercado > .decision-title + .decision-desc { margin-top: calc(var(--s-1) * -1); }
-.mercado > .mercado-representante-btn { order: 1; }
-.mercado > .mercado-mundo { order: 2; }
+.fj-fondo { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0; background: color-mix(in srgb, var(--tono-vacio) 86%, transparent); }
+/* en la firma, lo que está abajo de la capa (el mercado, la franja, los cuartos) no se ve: queda el mundo */
+.shell:has(> .fj[data-fase='firma']) > :not(.fj, dialog) { visibility: hidden; }
 
-.mercado-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
+/* c. el mapa */
+.fj-mapa-escena {
+  position: fixed; inset: 0; z-index: 1; display: grid; grid-template-rows: auto minmax(0, 1fr); justify-items: center; align-content: center; gap: 26px;
+  padding: 40px 20px; pointer-events: none; opacity: 0;
 }
+.fj-pl-cab { display: grid; justify-items: center; gap: 10px; text-align: center; }
+.fj-pl-k { display: inline-flex; align-items: center; gap: 8px; margin: 0; font: 600 var(--t-rotulo-g) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.fj-pl-org { max-width: 100%; margin: 0; overflow-wrap: anywhere; text-wrap: balance; font: 900 var(--ms-pl-org) / 0.9 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink); text-shadow: 0 0 60px color-mix(in srgb, var(--tono-luz) 45%, transparent); }
+.fj-pl-mapa { position: relative; width: min(var(--fj-mapa), 86vw); aspect-ratio: 1; }
+.fj-pl-marca { position: absolute; inset: 12%; display: grid; place-items: center; opacity: 0.16; }
+.fj-pl-marca .ln-logo { width: 100%; height: 100%; }
+.fj-pl-marca .ln-logo img { width: 100%; height: 100%; object-fit: contain; }
+.fj-pl-marca .ln-escudo { width: 60%; height: 70%; overflow: visible; }
+.fj-pl-grieta { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.fj-pl-grieta [pathLength] { stroke-dasharray: 1; stroke-dashoffset: 0; }
+.fj-pl-borde { stroke: var(--filete-fuerte); stroke-width: 0.1; }
+.fj-pl-rio { stroke: var(--tono-luz); stroke-width: 1.1; opacity: 0.12; }
+.fj-pl-carril { stroke: var(--linea-fuerte); stroke-width: 0.2; }
+.fj-pl-carril-vos { stroke: var(--tono-acento); stroke-width: 0.26; opacity: 0.8; }
+.fj-pl-base { stroke: var(--filete-fuerte); stroke-width: 0.14; }
+.fj-pl-pos { position: absolute; z-index: 1; display: grid; justify-items: center; gap: 7px; translate: -50% -22px; text-align: center; }
+.fj-pl-nodo { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--panel-hondo); box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+.fj-pl-glifo { width: 24px; height: 24px; }
+.fj-pl-glifo .ln-gr-carril { stroke: var(--ink-dim); }
+.fj-pl-txt { display: grid; justify-items: center; gap: 4px; padding: 5px 8px; border-radius: var(--r-control); background: color-mix(in srgb, var(--tono-vacio) 74%, transparent); }
+.fj-pl-rol { white-space: nowrap; font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink); }
+.fj-pl-quien { white-space: nowrap; font: 600 12px / 1 var(--f-cuerpo); color: var(--ink); }
+.fj-pl-anunciar { font: 500 11px / 1 var(--f-mono); letter-spacing: 0.06em; color: var(--ink-dim); }
+.fj-pl-vos { z-index: 2; translate: -50% -48px; }
+.fj-pl-vos .fj-pl-nodo { width: 96px; height: 96px; background: color-mix(in srgb, var(--tono-luz) 16%, var(--panel-hondo)); box-shadow: inset 0 0 0 2px var(--tono-acento), 0 0 34px color-mix(in srgb, var(--tono-luz) 50%, transparent); }
+.fj-pl-vos .fj-pl-glifo { width: 50px; height: 50px; }
+.fj-pl-vos .fj-pl-glifo .ln-gr-carril { stroke: var(--tono-acento); }
+.fj-pl-halo { position: absolute; inset: -14px; border-radius: 50%; box-shadow: 0 0 0 1px color-mix(in srgb, var(--tono-acento) 50%, transparent); }
+.fj-pl-vos .fj-pl-rol { color: var(--luz-texto); }
+.fj-pl-handle { white-space: nowrap; font: 900 var(--ms-pl-handle) / 0.9 var(--f-display); font-size: min(var(--ms-pl-handle), calc(var(--ms-pl-handle-ancho) / (var(--fj-n) * 0.62))); font-stretch: var(--ancho-momento); letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink); text-shadow: 0 0 30px color-mix(in srgb, var(--tono-luz) 45%, transparent); }
+.fj-pl-estela {
+  position: absolute; z-index: 1; width: 4px; margin-left: -2px; translate: 0 -100%; transform-origin: 50% 100%; pointer-events: none; opacity: 0;
+  background: linear-gradient(0deg, var(--tono-acento), color-mix(in srgb, var(--tono-acento) 0%, transparent));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--tono-acento) 80%, transparent), 0 0 36px color-mix(in srgb, var(--tono-luz) 50%, transparent);
+}
+.fj-pl-ping { position: absolute; z-index: 1; width: 96px; height: 96px; border-radius: 50%; opacity: 0; transform: translate(-50%, -50%); box-shadow: 0 0 0 3px var(--tono-acento), 0 0 22px var(--tono-acento); pointer-events: none; }
 
-/* --- La oferta: una fila. Los mismos campos, en el mismo orden, en todas: organización y tipo · sueldo · liga y años ·
-   plantel · jerarquía; "Firmar" aparte, primario; lo demás, en el "más". ------------------------------------------------- */
-.mercado-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    "head salario"
-    "datos datos"
-    "acciones acciones"
-    "mas mas";
-  align-items: center;
-  column-gap: var(--s-3);
-  row-gap: var(--s-1);
-  padding: var(--s-2) var(--s-3);
-  text-align: left;
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--r-control);
-  color: var(--ink);
-  font-family: var(--font-ui);
-  font-size: var(--fs-2);
-  text-transform: none;
-  letter-spacing: normal;
-  transition: border-color var(--dur-fast) var(--ease);
+/* d. la firma: el apagón, el haz, la inundación, la onda, el confeti y el bloque */
+.fj-velo {
+  position: fixed; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tono-vacio) 94%, transparent) 0%, color-mix(in srgb, var(--tono-vacio) 88%, transparent) 46%, color-mix(in srgb, var(--tono-vacio) 58%, transparent) 60%, color-mix(in srgb, var(--tono-vacio) 0%, transparent) 76%);
 }
-.mercado-card:hover {
-  border-color: var(--cat-mercado);
-  background: var(--bg-raised);
-  box-shadow: none;
+.fj-negro { position: fixed; inset: 0; z-index: 6; pointer-events: none; opacity: 0; background: color-mix(in srgb, var(--oscuro-total) 97%, transparent); }
+.fj-haz {
+  position: fixed; left: 50%; top: 0; z-index: 7; width: min(560px, 62vw); height: 100vh; transform: translateX(-50%); transform-origin: 50% 0;
+  pointer-events: none; opacity: 0.16; mix-blend-mode: screen; filter: blur(8px); clip-path: polygon(43% 0, 57% 0, 100% 100%, 0 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--luz-blanca) 72%, transparent) 0%, color-mix(in srgb, var(--tono-contra) 30%, transparent) 55%, color-mix(in srgb, var(--tono-contra) 0%, transparent) 100%);
 }
-.mercado-card--bombazo { border-color: var(--gold-deep); }
+.fj-inunda {
+  position: fixed; inset: 0; z-index: 7; pointer-events: none; opacity: 0; mix-blend-mode: screen;
+  background: radial-gradient(circle at 50% 46%, color-mix(in srgb, var(--tono-luz) 82%, transparent) 0%, color-mix(in srgb, var(--tono-luz) 34%, transparent) 32%, color-mix(in srgb, var(--tono-luz) 0%, transparent) 74%);
+}
+.fj-onda {
+  position: fixed; left: 50%; top: 46%; z-index: 8; width: 260px; height: 260px; border-radius: 50%; pointer-events: none; opacity: 0; transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 3px var(--tono-luz), 0 0 46px color-mix(in srgb, var(--tono-luz) 60%, transparent), inset 0 0 36px color-mix(in srgb, var(--tono-luz) 40%, transparent);
+}
+.fj-confeti { z-index: 8; }
+.fj-intro { position: fixed; left: 50%; top: 0; z-index: 9; height: 100vh; transform: translateX(-50%); display: grid; align-content: center; justify-items: center; gap: 46px; pointer-events: none; }
+.fj-intro-liga, .fj-intro-rol { display: grid; justify-items: center; gap: 14px; opacity: 0; }
+.fj-intro-liga .ln-logo img { filter: drop-shadow(0 0 30px color-mix(in srgb, var(--luz-blanca) 40%, transparent)); }
+.fj-region { font: 900 128px / 0.86 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.1em; color: var(--ink); text-shadow: 0 0 40px color-mix(in srgb, var(--luz-blanca) 40%, transparent); }
+.fj-region-k { margin-top: -4px; font: 600 var(--t-rotulo-g) / 1 var(--f-mono); letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink); }
+.fj-intro-rol { font: 600 var(--t-rotulo-g) / 1 var(--f-mono); letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink); }
+.fj-glifo { width: 132px; height: 132px; }
+.fj-glifo .ln-gr-mapa { stroke: var(--ink); opacity: 0.5; }
+.fj-glifo .ln-gr-carril { stroke: var(--luz-blanca); stroke-width: 2.2; filter: drop-shadow(0 0 6px var(--tono-contra)); }
+.fj-bloque { position: relative; z-index: 5; display: grid; justify-items: start; max-width: min(820px, 56vw); min-width: 0; }
+.fj-k { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 0; font: 600 var(--t-rotulo-g) / 1.2 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: color-mix(in srgb, var(--ink-dim) 50%, var(--ink)); }
+.fj-k > span { display: inline-flex; align-items: center; gap: 8px; }
+.fj-k > span + span { padding-left: 16px; box-shadow: inset 1px 0 0 var(--linea-fuerte); }
+.fj-k b { font-weight: 700; color: var(--ink); }
+.fj-k .ln-gr-carril { stroke: var(--tono-acento); }
+.fj-logo { position: relative; display: grid; place-items: center; width: 150px; height: 150px; margin: 22px 0 8px; }
+.fj-halo {
+  position: absolute; inset: -46%; border-radius: 50%; pointer-events: none; opacity: 0.8;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tono-luz) 40%, transparent), color-mix(in srgb, var(--tono-luz) 0%, transparent) 72%);
+}
+.fj-logo .ln-logo { position: relative; width: 100%; height: 100%; }
+.fj-logo .ln-logo img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 30px var(--sombra)); }
+.fj-logo .ln-escudo-forma { fill: color-mix(in srgb, var(--tono-noche) 80%, var(--escudo-fondo)); stroke: var(--tono-acento); }
+.fj-cabeza { position: relative; width: 100%; min-width: 0; }
+.fj-handle {
+  position: relative; max-width: 100%; margin: 0 0 0 -0.04em; white-space: nowrap;
+  font: 900 var(--t-momento-l) / 0.82 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: -0.012em; text-transform: uppercase;
+  color: var(--ink); text-shadow: 0 0 80px color-mix(in srgb, var(--tono-luz) 50%, transparent);
+}
+.fj-handle:focus { outline: none; }
+.fj-letras, .fj-letra { display: inline-block; }
+.fj-brillo {
+  position: absolute; left: 0; top: 0; pointer-events: none; color: transparent; -webkit-text-fill-color: transparent; text-shadow: none;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--luz-blanca) 0%, transparent) 38%, color-mix(in srgb, var(--luz-blanca) 85%, var(--tono-luz)) 50%, color-mix(in srgb, var(--luz-blanca) 0%, transparent) 62%);
+  background-size: 250% 100%; background-position: 160% 0; -webkit-background-clip: text; background-clip: text;
+}
+.fj-firma { position: absolute; right: -2%; top: 90%; width: min(380px, 52%); height: auto; overflow: visible; transform: rotate(-5deg); pointer-events: none; }
+.fj-firma-trazo {
+  font: italic 800 92px / 1 var(--f-display); font-stretch: 85%; fill: color-mix(in srgb, var(--tono-luz) 60%, var(--luz-blanca)); stroke: var(--tono-luz); stroke-width: 1.6; paint-order: stroke;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--tono-luz) 70%, transparent));
+}
+.fj-firma-rubrica { fill: none; stroke: var(--tono-luz); stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 700; filter: drop-shadow(0 0 6px var(--tono-luz)); }
+.fj-bienvenida {
+  margin: 70px 0 0; max-width: 100%; overflow: hidden;
+  font: 900 var(--ms-bienvenida) / 1.02 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.01em; text-transform: uppercase; color: var(--ink);
+}
+.fj-bienvenida span { display: block; overflow-wrap: anywhere; }
+.fj-placas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.fj-log { max-width: 58ch; margin: 16px 0 0; font-size: 15px; color: color-mix(in srgb, var(--ink-dim) 50%, var(--ink)); }
 
-.mercado-card-header {
-  grid-area: head;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: var(--s-2);
-  row-gap: 0;
-  min-width: 0;
+/* a la derecha: tu jersey, el número que elegís y "Seguir" */
+.fj-lado {
+  position: fixed; right: max(var(--margen), 4vw); top: 50%; z-index: 5; display: grid; justify-items: center; gap: 14px;
+  width: var(--fj-jersey); transform: translateY(-50%);
 }
-.mercado-card-org {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  min-width: 0;
-  font-family: var(--font-display);
-  font-size: var(--fs-4);
-  font-weight: 700;
-  line-height: var(--lh-tight);
-  text-transform: uppercase;
+.fj-lado .jy { width: 100%; }
+.fj-numero { display: grid; justify-items: center; gap: 8px; }
+.fj-num-k { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.fj-num-fila { display: flex; align-items: center; gap: 10px; }
+.fj-num-paso {
+  all: unset; box-sizing: border-box; cursor: pointer; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--linea-fuerte); background: var(--panel-hondo); font: 700 20px / 1 var(--f-mono); color: var(--ink);
+  transition: background-color 140ms ease, box-shadow 140ms ease, transform 110ms ease;
 }
-.mercado-card-tag {
-  white-space: nowrap;
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
-  color: var(--cat-mercado);
+.fj-num-paso:hover { background: var(--luz-tenue); box-shadow: inset 0 0 0 1px var(--luz-fuerte); }
+.fj-num-paso:active { transform: scale(0.94); }
+.fj-num-paso:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.fj-num-campo {
+  box-sizing: border-box; width: 92px; height: 64px; padding: 0; border: 0; border-radius: var(--r-control); text-align: center;
+  background: var(--panel-hondo); box-shadow: inset 0 0 0 2px var(--tono-acento), 0 0 22px color-mix(in srgb, var(--tono-luz) 30%, transparent);
+  font: 900 44px / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--ink); caret-color: var(--tono-acento);
 }
+.fj-num-campo:focus { outline: none; box-shadow: inset 0 0 0 2px var(--ink), 0 0 26px color-mix(in srgb, var(--tono-luz) 45%, transparent); }
+.fj-num-ayuda { margin: 0; font: 500 10.5px / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); }
+.fj-seguir { min-width: 180px; justify-content: center; }
 
-.mercado-card-salario {
-  grid-area: salario;
-  justify-self: end;
-  font-family: var(--font-display);
-  font-size: var(--fs-5);
-  font-weight: 700;
-  line-height: var(--lh-tight);
-  color: var(--gold);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
+html:is([data-reducido], [data-inst]) .fj-pl-grieta [pathLength] { stroke-dashoffset: 0; }
 
-/* Lo que se compara: liga y años, plantel, jerarquía (y lo que falta para el hito, en una renovación). */
-.mercado-card-datos {
-  grid-area: datos;
-  font-size: var(--fs-2);
-  line-height: var(--lh-snug);
-  color: var(--ink-dim);
-}
-.mercado-card-linea {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: var(--s-3);
-}
-.mercado-card-liga { color: var(--ink); }
-.mercado-card-jerarquia { min-width: 0; }
-.mercado-card-hito { color: var(--cat-mercado); }
+/* ==========================================================================
+   EL CELULAR
+   ========================================================================== */
+@media (max-width: 640px) {
+  .ms-mercado { display: block; min-height: 0; padding-bottom: var(--ms-pie); }
+  .ms-velo { background: linear-gradient(180deg, color-mix(in srgb, var(--tono-vacio) 70%, transparent) 0%, color-mix(in srgb, var(--tono-vacio) 40%, transparent) 26%, color-mix(in srgb, var(--tono-vacio) 86%, transparent) 52%); }
+  .ms-aura { gap: 14px; margin-bottom: 14px; }
+  .ms-aura-cab { grid-template-columns: 78px minmax(0, 1fr); column-gap: 14px; }
+  .ms-aura-escudo { width: 78px; height: 78px; }
+  .ms-aura-nombre { font-size: var(--ms-nombre-cel); }
+  .ms-aura-k { font-size: 10.5px; gap: 4px 10px; }
+  .ms-aura-k > span + span { padding-left: 10px; }
+  .ms-terminos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+  .ms-num { font-size: 30px; }
+  .ms-ref { font-size: 11px; }
+  .ms-heroe { position: relative; top: auto; height: var(--ms-heroe-cel); margin: 0 0 14px; }
+  .ms-h-ofertas { place-items: center; padding-right: 0; }
+  .ms-cartas { zoom: 0.44; height: var(--ms-carta-alto); max-width: none; }
+  .ms-panel { margin-top: 0; }
+  .ms-cab { display: block; padding: 14px 14px 10px; }
+  .ms-cab-der, .ms-reloj { justify-items: start; }
+  .ms-cab-der { margin-top: 12px; }
+  .ms-grilla { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 2px 12px 14px; }
+  .ms-op { padding: 28px 6px 10px; }
+  .ms-op-org { font-size: 12.5px; }
+  .ms-camino { padding: 12px 14px; }
+  .ms-cierre { grid-template-columns: minmax(0, 1fr); row-gap: 12px; padding: 12px 14px 12px; }
+  .ms-mercado[data-forma='traspaso'] .ms-cierre { grid-template-columns: minmax(0, 1fr); }
+  .ms-firmar, .ms-firmar .ln-bloquear { width: 100%; }
+  .ms-otras-botones { margin-left: 0; }
+  .ms-bumper-txt { flex-direction: column; align-items: center; line-height: 0.92; }
+  .ms-contrato { padding: 14px 14px 12px; }
+  .ms-ct-t { font-size: 21px; }
+  .ms-ct-firmas { grid-template-columns: minmax(0, 1fr); gap: 14px; }
 
-.mercado-card-neg {
-  font-size: var(--fs-0);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
-  color: var(--cat-mercado);
+  .fj { align-content: start; padding: 28px 18px 24px; overflow-y: auto; }
+  .fj-pl-org { font-size: 34px; }
+  .fj-pl-quien, .fj-pl-anunciar { display: none; }
+  .fj-pl-pos { gap: 4px; translate: -50% -16px; }
+  .fj-pl-nodo { width: 32px; height: 32px; }
+  .fj-pl-glifo { width: 18px; height: 18px; }
+  .fj-pl-vos { translate: -50% -30px; }
+  .fj-pl-vos .fj-pl-nodo, .fj-pl-ping { width: 60px; height: 60px; }
+  .fj-pl-vos .fj-pl-glifo { width: 32px; height: 32px; }
+  .fj-pl-handle { font-size: min(24px, calc(var(--ms-pl-handle-ancho-cel) / (var(--fj-n) * 0.62))); }
+  .fj-velo { background: linear-gradient(180deg, color-mix(in srgb, var(--tono-vacio) 62%, transparent) 0%, color-mix(in srgb, var(--tono-vacio) 84%, transparent) 34%, color-mix(in srgb, var(--tono-vacio) 90%, transparent) 100%); }
+  .fj-bloque { max-width: 100%; justify-items: center; text-align: center; }
+  .fj-k { justify-content: center; font-size: 10.5px; gap: 6px 12px; }
+  .fj-k > span + span { padding-left: 12px; }
+  .fj-logo { width: 84px; height: 84px; margin: 14px 0 6px; }
+  .fj-handle { font-size: var(--ms-handle-cel); margin-left: 0; }
+  .fj-firma { right: 50%; top: 92%; width: 72%; transform: translateX(50%) rotate(-5deg); }
+  .fj-bienvenida { margin-top: 54px; font-size: 22px; }
+  .fj-placas { flex-direction: column; align-items: stretch; width: 100%; }
+  .fj-placas .ln-placa { max-width: 100%; text-align: left; }
+  .fj-log { display: none; }
+  .fj-region { font-size: 84px; }
+  .fj-glifo { width: 84px; height: 84px; }
+  .fj-intro { gap: 32px; }
+  .fj-lado { position: relative; right: auto; top: auto; width: min(240px, 70vw); margin: 22px auto 0; transform: none; }
 }
-
-.mercado-card-acciones {
-  grid-area: acciones;
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  margin-top: var(--s-1);
-}
-
-/* "Firmar" (y "Elegir" en un traspaso): el primario. */
-.mercado-card-btn {
-  flex: 1 1 auto;
-  min-height: 44px;
-  padding: var(--s-2) var(--s-3);
-  background: transparent;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-control);
-  color: var(--ink-dim);
-  font-family: var(--font-ui);
-  font-size: var(--fs-2);
-  text-transform: none;
-  letter-spacing: normal;
-  transition: border-color var(--dur-fast) var(--ease),
-              color var(--dur-fast) var(--ease);
-}
-.mercado-card-btn:hover {
-  border-color: var(--cat-mercado);
-  color: var(--ink);
-}
-.mercado-card-btn--firmar {
-  border-color: var(--cat-mercado);
-  background: var(--cat-mercado);
-  color: var(--bg-void);
-  font-weight: 700;
-}
-.mercado-card-btn--firmar:hover {
-  background: var(--gold);
-  border-color: var(--gold);
-  color: var(--bg-void);
-}
-/* Negociar (pedir más, pedir cláusula): secundario, dentro del "más". */
-.mercado-card-btn--sec {
-  flex: 0 1 auto;
-  min-height: 36px;
-  font-size: var(--fs-1);
-}
-
-/* El "más" de una oferta: lo que no sirve para elegir de un vistazo y la negociación. */
-.mercado-card-mas {
-  grid-area: mas;
-  font-size: var(--fs-2);
-  line-height: var(--lh-snug);
-  color: var(--ink-dim);
-}
-.mercado-card-mas > summary {
-  width: fit-content;
-  padding: 2px 0;
-  cursor: pointer;
-  font-size: var(--fs-1);
-  color: var(--ink-mute);
-}
-.mercado-card-mas > summary:hover { color: var(--ink); }
-.mercado-card-mas[open] > summary { margin-bottom: var(--s-1); }
-.mercado-card-mas > div + div { margin-top: var(--s-1); }
-.mercado-card-picks,
-.mercado-card-arraigo,
-.mercado-card-motivo {
-  font-size: var(--fs-2);
-  line-height: var(--lh-snug);
-  color: var(--ink-dim);
-}
-.mercado-card-riesgo {
-  font-size: var(--fs-1);
-  line-height: var(--lh-snug);
-  color: var(--warn);
-}
-.mercado-card-negociar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-2);
-  margin-top: var(--s-2);
-}
-.mercado-card-riesgo-neg {
-  flex: 1 0 100%;
-  font-size: var(--fs-1);
-  line-height: var(--lh-snug);
-  color: var(--ink-mute);
-}
-
-/* Desde 640 px la fila se acomoda a lo ancho: el sueldo arriba a la derecha y "Firmar" debajo, a la derecha; los datos y el "más"
-   a la izquierda. (Debajo, todo apilado: el celular lee de arriba para abajo.) */
-@media (min-width: 640px) {
-  .mercado-card {
-    grid-template-areas:
-      "head salario"
-      "datos acciones"
-      "mas acciones";
-    align-items: start;
-  }
-  .mercado-card-acciones { margin-top: 0; align-self: end; }
-  .mercado-card-btn--firmar { min-width: 112px; }
-}
-
-/* --- Vos en el mercado (fase 9Mg, bloque 1): dos líneas ---------------------------------------------------------------- */
-.mercado-vos {
-  display: grid;
-  gap: var(--s-1);
-  padding: var(--s-2) var(--s-3);
-  border-left: 3px solid var(--cat-mercado);
-  background: var(--bg-sunken);
-  border-radius: 0;
-}
-.mercado-vos-valor {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  column-gap: var(--s-2);
-}
-.mercado-vos-titulo {
-  font-size: var(--fs-0);
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
-  color: var(--ink-mute);
-}
-.mercado-vos-cifra {
-  font-family: var(--font-display);
-  font-size: var(--fs-4);
-  font-weight: 700;
-  color: var(--gold);
-  font-variant-numeric: tabular-nums;
-}
-.mercado-vos-ref {
-  font-size: var(--fs-1);
-  color: var(--ink-mute);
-}
-.mercado-vos-contrato {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  font-size: var(--fs-1);
-  line-height: var(--lh-snug);
-  color: var(--ink-dim);
-}
-.mercado-vos-miran {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-1) var(--s-2);
-  font-size: var(--fs-1);
-  line-height: var(--lh-snug);
-  color: var(--ink-mute);
-}
-.mercado-chip-org {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-1);
-  color: var(--ink-dim);
-}
-
-/* --- El mercado del mundo (fase 9Mc/9Mg, bloque 3) ---------------------------------------------------------------------
-   A ≥ 1180 px vive en el acompañante y NO se repite en el escenario (el `<aside>` está fuera de `.mercado`); debajo va detrás
-   de un desplegable. */
-.mercado-mundo {
-  padding: var(--s-3) var(--s-4);
-  border-left: 3px solid var(--line-strong);
-  background: var(--bg-sunken);
-  border-radius: 0;
-}
-@media (min-width: 1180px) {
-  .mercado > .mercado-mundo { display: none; }
-}
-.mercado-mundo-titulo {
-  font-size: var(--fs-1);
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
-  color: var(--ink-mute);
-}
-.mercado-mundo-det > summary { cursor: pointer; }
-.mercado-mundo-det > summary:hover { color: var(--ink); }
-.mercado-mundo-det[open] > summary { margin-bottom: var(--s-2); }
-div.mercado-mundo-titulo { margin-bottom: var(--s-2); }
-.mercado-mundo-item {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  font-size: var(--fs-2);
-  line-height: var(--lh-snug);
-  color: var(--ink-dim);
-}
-/* Sub-encabezados dentro de "El mercado del mundo" (traspasos cerrados / asientos abiertos). */
-.mercado-mundo-sub {
-  margin-top: var(--s-3);
-  margin-bottom: var(--s-1);
-  font-size: var(--fs-0);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
-  color: var(--ink-mute);
-}
-.mercado-mundo-sub:first-of-type { margin-top: 0; }
-
-/* --- Llamar al representante y esperar: secundarios, después de las ofertas --------------------------------------------- */
-.mercado-representante-btn {
-  flex: 1 1 14rem;
-  padding: var(--s-2) var(--s-3);
-  background: transparent;
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--r-control);
-  color: var(--ink-dim);
-  font-family: var(--font-ui);
-  font-size: var(--fs-1);
-  line-height: var(--lh-snug);
-  text-transform: none;
-  letter-spacing: normal;
-}
-.mercado-representante-btn:hover:not(:disabled) {
-  border-color: var(--live);
-  color: var(--ink);
-  background: transparent;
-  box-shadow: none;
-}
-
-/* --- El número del atajo (V2-B): 1-4 llevan el foco al "Firmar" de la oferta n y Enter firma. El número se ve, a la izquierda
-   del botón; misma caja que `.option-atajo` de las decisiones, pero en la fila (no absoluta). -------------------------------- */
-.mercado-atajo {
-  flex: none;
-  align-self: center;
-  width: 20px;
-  height: 20px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-sharp);
-  font-family: var(--font-display);
-  font-size: var(--fs-0);
-  font-weight: 700;
-  color: var(--ink-mute);
-}
-.mercado-atajo:has(+ .mercado-card-btn:focus-visible) { border-color: var(--live); color: var(--live); }
-/* El corte de esquina (`clip-path`) se come el anillo de foco (`outline`, base.css): con el foco puesto por el atajo, el botón
-   pierde el corte y el anillo se ve. */
-.mercado-card-btn:focus-visible { clip-path: none; }

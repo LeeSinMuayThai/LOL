@@ -9,7 +9,7 @@
 //     "Continuar" arrancaba una carrera nueva y BORRABA la guardada (D86), y Enter sobre "Copiar…" de la tarjeta final
 //     volvía al inicio (D87). Se borró;
 //   - Espacio con el foco en el body o en un encabezado, durante el relato → saltea un beat;
-//   - 1-4 → clic en `[data-atajo=n]` de la pieza activa (decisión, partido o mercado). En el minijuego solo en su fase PREVIA
+//   - 1-6 → clic en `[data-atajo=n]` de la pieza activa (decisión, partido o mercado). En el minijuego solo en su fase PREVIA
 //     (`data-fase="previa"`: la charla del coach; V es "¡Vamos!", V3d): después es dueño de sus teclas (1-5, Q/W/E/R, A/D, A/S —
 //     `components/minijuegos/comun.js`). Si el elemento marcado trae `data-atajo-foco`
 //     (el "Firmar" del mercado), la tecla solo le lleva el FOCO — con el scroll mínimo para verlo — y Enter hace el resto;
@@ -31,9 +31,9 @@ const TECLA_AYUDA = '?';
 // La tecla de "¡Vamos!" en la previa de un minijuego (V3d, D94): ningún minijuego la usa.
 const TECLA_VAMOS = 'V';
 
-// Las piezas donde 1-4 eligen una opción.
+// Las piezas donde 1-6 eligen una opción (el mercado trae hasta seis ofertas).
 const PIEZAS_CON_ATAJOS = ['decision', 'partido', 'mercado'];
-const ATAJOS = ['1', '2', '3', '4'];
+const ATAJOS = ['1', '2', '3', '4', '5', '6'];
 const INTERACTIVO = 'button, a[href], input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])';
 
 function piezaActiva() {

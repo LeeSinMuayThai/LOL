@@ -280,6 +280,9 @@ export function iniciar() {
           sonido: sonido.sonidoFx,
           // Sin espera entre beats (INST o movimiento reducido): la parada entra y cuenta en su cuadro final.
           rapido: () => reproductor.sinEspera(),
+          // Una entrada larga de la parada (la llegada de las ofertas del mercado) se registra como narración: Espacio la
+          // saltea y un cuarto abierto la pausa (`{ saltar, pausar, reanudar }`; devuelve cómo soltarla).
+          controlar: (control) => reproductor.narrar(control),
           retomar,
           // El marco de la parada: la línea "antes" (lo que encabeza el panel), la placa "Vos" y el margen de la pantalla
           // (la costura de la bisagra ubica sus destinos contra ellos).

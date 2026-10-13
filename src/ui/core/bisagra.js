@@ -30,12 +30,12 @@ export function primeraDe(ligaId) {
   return liga.tier === 1 ? liga.id : PRIMERA_DE_REGION.get(liga.regionId) ?? null;
 }
 
-// { id, nombre, region, ciudad, primera } de una liga del juego. `null` si no es una liga conocida.
+// { id, nombre, region, regionId, ciudad, primera } de una liga del juego. `null` si no es una liga conocida.
 export function lugarDeLiga(ligaId) {
   const liga = POR_ID.get(ligaId);
   if (!liga) return null;
   const primera = primeraDe(ligaId);
-  return { id: liga.id, nombre: liga.nombre, region: liga.region, ciudad: CIUDAD[primera] ?? null, primera };
+  return { id: liga.id, nombre: liga.nombre, region: liga.region, regionId: liga.regionId, ciudad: CIUDAD[primera] ?? null, primera };
 }
 
 // La liga a la que te lleva un efecto `ofertaDeImport` HOY: la primera de su lista de preferencia que puede ficharte (la
