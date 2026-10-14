@@ -178,8 +178,7 @@
 }
 .cv-arte-luz {
   position: absolute; inset: 0;
-  background: repeating-linear-gradient(115deg, color-mix(in srgb, var(--tono-luz, var(--luz)) 10%, transparent) 0 2px, transparent 2px 15px);
-  mask-image: radial-gradient(ellipse 60% 80% at 50% 45%, var(--bg-void), transparent 85%);
+  background: radial-gradient(ellipse 42% 58% at 50% 36%, color-mix(in srgb, var(--tono-luz, var(--luz)) 34%, transparent), transparent 78%);
 }
 .cv-arte-logo .cv-logo {
   position: relative; z-index: 1; display: grid; place-items: center; width: 46%; height: 64%; margin-top: -8%;
