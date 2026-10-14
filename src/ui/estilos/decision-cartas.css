@@ -1,1 +1,322 @@
-/* La decisión en la variante `cartas` de la previa (?dc=cartas, PLANUI §0.4). Todo va adentro de su raíz: nada genérico. */
+/* La decisión en la variante `cartas` de la previa (?dc=cartas, PLANUI §0.4, ola P1 D-A): cartas de aumento (Arena / TFT).
+   Todo va adentro de su raíz (.cv-raiz) y con el prefijo cv-: nada genérico. Colores: solo tokens (el eje de cada carta
+   llega inline en --eje / --eje-f, `estiloEje`). */
+
+@property --cv-giro {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* --- el lugar: las cartas piden una columna más (la placa "Vos" se corre, como con la planilla) --- */
+.shell-cuerpo:has(.cv-raiz) .escenario { grid-column: 1 / span 9; }
+@media (min-width: 1180px) {
+  .shell-cuerpo:has(.cv-raiz) .acompanante:not([hidden]) { grid-column: 10 / span 3; }
+}
+
+.cv-raiz { --cv-gap: 22px; --cv-radio: 14px; position: relative; min-width: 0; }
+.cv-raiz.dc-espera > .cv-col { visibility: hidden; }
+.cv-col { position: relative; min-width: 0; }
+.cv-plegado { display: none !important; }
+.cv-fantasma { position: absolute; left: 0; top: 0; width: 100%; height: 0; pointer-events: none; z-index: 3; }
+.cv-fantasma .cv-mano { overflow: visible; }
+
+/* --- la cabecera: compacta, arriba a la izquierda --- */
+.cv-cab { max-width: 780px; margin: 0 0 6px; }
+.cv-rotulo {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0;
+  font: 600 11px/1.2 var(--f-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-dim);
+}
+.cv-rotulo-luz { width: 6px; height: 6px; border-radius: 50%; background: var(--luz); box-shadow: 0 0 10px var(--luz); }
+.cv-bisagra { padding: 2px 8px; border-radius: 999px; color: var(--gold); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 45%, transparent); }
+.cv-titulo {
+  margin: 8px 0 8px; outline: none; color: var(--ink);
+  font-family: var(--f-display); font-weight: 800; font-stretch: 125%;
+  font-size: clamp(24px, 2.4vw, 38px); line-height: 1.02; letter-spacing: -0.01em; text-wrap: balance;
+}
+.cv-titulo:focus-visible { box-shadow: none; }
+.cv-raiz[data-forma='matriz'] .cv-titulo { font-size: clamp(22px, 2.1vw, 32px); }
+.cv-planteo { margin: 0; max-width: 70ch; color: var(--ink-dim); font: 400 15px/1.45 var(--f-cuerpo); }
+.cv-planteo-resto { display: none; }
+.cv-planteo.abierto .cv-planteo-resto, html[data-textos='completos'] .cv-planteo-resto { display: inline; }
+.cv-mas {
+  appearance: none; border: 0; background: none; padding: 0 2px; margin-left: 6px; cursor: pointer;
+  font: 600 12px/1 var(--f-mono); color: var(--luz-texto); text-decoration: underline; text-underline-offset: 3px;
+}
+.cv-mas:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* --- la leyenda de la planilla --- */
+.cv-leyenda {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 18px; margin: 12px 0 0;
+  font: 500 12px/1.2 var(--f-mono); color: var(--ink-dim);
+}
+.cv-leyenda-rot { color: var(--ink-mute); letter-spacing: 0.12em; text-transform: uppercase; font-size: 10px; }
+.cv-leyenda-eje { display: inline-flex; align-items: center; gap: 6px; }
+.cv-leyenda-eje svg { width: 15px; height: 15px; color: var(--eje); }
+.cv-leyenda-eje > span { color: var(--eje); }
+.cv-leyenda-eje b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* --- la mano: las cartas una al lado de la otra, centradas --- */
+.cv-mano {
+  container-type: inline-size;
+  display: flex; justify-content: center; align-items: stretch; gap: var(--cv-gap, 22px);
+  padding: 18px 4px 24px;
+}
+.cv-ranura {
+  --cv-ancho: min(260px, calc((100cqi - (var(--cv-n, 1) - 1) * var(--cv-gap, 22px)) / var(--cv-n, 1)));
+  --cv-arte: calc(var(--cv-ancho, 260px) * 0.62);
+  position: relative; flex: 0 0 var(--cv-ancho, 260px); display: flex; min-width: 0;
+}
+.cv-raiz[data-forma='matriz'] .cv-ranura { --cv-arte: calc(var(--cv-ancho, 260px) * 0.34); }
+.cv-raiz[data-forma='matriz'] .cv-mano { padding-top: 26px; }
+
+/* el halo del eje, abajo */
+.cv-halo {
+  position: absolute; left: 8%; right: 8%; bottom: -22px; height: 46px; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--eje, var(--luz)) 60%, transparent), transparent 70%);
+  filter: blur(10px); transition: opacity 260ms var(--expo);
+}
+
+/* --- la carta: un objeto --- */
+.cv-raiz .opcion.cv-carta {
+  --cv-alza: 0px; --cv-esc: 1; --cv-rx: 0deg; --cv-ry: 0deg; --cv-mx: 50%;
+  position: relative; display: flex; flex-direction: column; width: 100%; min-height: 100%;
+  border-radius: var(--cv-radio, 14px); background: none; isolation: isolate;
+  transform: perspective(900px) translateY(var(--cv-alza, 0px)) scale(var(--cv-esc, 1)) rotateX(var(--cv-rx, 0deg)) rotateY(var(--cv-ry, 0deg));
+  transition: transform 240ms var(--expo), opacity 260ms ease, filter 260ms ease;
+  box-shadow: 0 18px 40px var(--sombra);
+}
+.cv-raiz .opcion.cv-carta::before { content: none; }
+.cv-raiz .opcion.cv-carta.apuntada { background: none; }
+.cv-raiz .opcion.cv-carta:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+
+/* el marco: el degradé del eje (detrás de la cara, se ve como borde) */
+.cv-marco {
+  position: absolute; inset: 0; border-radius: inherit; z-index: -1;
+  background: linear-gradient(165deg, var(--eje, var(--luz)) 0%, color-mix(in srgb, var(--eje, var(--luz)) 22%, transparent) 38%, color-mix(in srgb, var(--eje, var(--luz)) 12%, transparent) 62%, color-mix(in srgb, var(--eje, var(--luz)) 70%, transparent) 100%);
+}
+.cv-rara .cv-marco {
+  background: conic-gradient(from var(--cv-giro, 0deg), var(--foil-1), var(--foil-2), var(--foil-3), var(--foil-4), var(--foil-5), var(--foil-1));
+  animation: cv-giro 6s linear infinite;
+}
+.cv-rara.opcion.cv-carta { box-shadow: 0 18px 40px var(--sombra), 0 0 26px color-mix(in srgb, var(--foil-2) 35%, transparent); }
+@keyframes cv-giro { to { --cv-giro: 360deg; } }
+
+.cv-cara {
+  position: relative; flex: 1; display: flex; flex-direction: column; margin: 2px; overflow: hidden;
+  border-radius: calc(var(--cv-radio, 14px) - 2px);
+  background: linear-gradient(180deg, var(--panel-opaco) 40%, color-mix(in srgb, var(--eje, var(--luz)) 9%, var(--panel-opaco)) 100%);
+}
+
+/* la ventana de arte */
+.cv-arte {
+  position: relative; flex: none; height: var(--cv-arte, 160px); overflow: hidden;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--eje, var(--luz)) 45%, var(--bg-void)), var(--bg-void) 85%);
+}
+.cv-arte-img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 24%;
+  opacity: 0; transform: scale(1.02); transition: opacity 400ms ease, transform 700ms var(--expo);
+}
+.cv-cargada .cv-arte-img { opacity: 1; }
+.cv-sin-arte .cv-arte-img { display: none; }
+.cv-arte-glifo {
+  position: absolute; inset: 0; display: grid; place-items: center; color: var(--eje, var(--luz)); opacity: 0.55;
+  transition: opacity 300ms ease;
+}
+.cv-arte-glifo svg { width: 42%; height: 42%; filter: drop-shadow(0 0 18px var(--eje, var(--luz))); }
+.cv-cargada .cv-arte-glifo { opacity: 0; }
+.cv-arte-tinte {
+  position: absolute; inset: 0; mix-blend-mode: color; opacity: 0.32;
+  background: linear-gradient(0deg, var(--eje, var(--luz)), transparent 75%);
+}
+.cv-arte-vineta {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 85% 75% at 50% 32%, transparent 45%, color-mix(in srgb, var(--bg-void) 70%, transparent) 100%),
+    linear-gradient(180deg, transparent 52%, var(--panel-opaco) 100%);
+}
+.cv-cerrada .cv-arte { background: repeating-linear-gradient(135deg, var(--linea) 0 2px, transparent 2px 12px), var(--bg-sunken); }
+
+/* el medallón del eje: el "ícono del aumento", en el borde entre el arte y el cuerpo */
+.cv-medallon {
+  --cv-med: 50px;
+  display: block; width: var(--cv-med, 50px); height: calc(var(--cv-med, 50px) * 1.12); padding: 2.5px; box-sizing: border-box;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: linear-gradient(180deg, var(--eje, var(--luz)), color-mix(in srgb, var(--eje, var(--luz)) 35%, var(--bg-void)));
+}
+.cv-cara > .cv-medallon { position: absolute; left: 50%; top: calc(var(--cv-arte, 160px) - var(--cv-med, 50px) * 0.56); transform: translateX(-50%); z-index: 2; }
+.cv-medallon-in {
+  display: grid; place-items: center; width: 100%; height: 100%;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--eje, var(--luz)) 30%, var(--panel-opaco)), var(--panel-opaco) 80%);
+  color: var(--eje, var(--luz));
+}
+.cv-medallon-in svg { width: 46%; height: 46%; filter: drop-shadow(0 0 6px var(--eje, var(--luz))); }
+.cv-cerrada .cv-medallon { --eje: var(--ink-mute); }
+
+/* el cuerpo */
+.cv-cuerpo {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+  padding: 33px 14px 10px; min-width: 0;
+}
+.cv-label {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+  color: var(--ink); font-family: var(--f-display); font-weight: 750; font-stretch: 112%; font-size: 18px; line-height: 1.14;
+  text-wrap: balance;
+}
+.cv-desc { display: none; color: var(--ink-dim); font: 400 13px/1.4 var(--f-cuerpo); }
+html[data-textos='completos'] .cv-raiz .cv-desc { display: block; }
+.cv-chips { justify-content: center; gap: 5px; }
+.cv-chips .eje-chip { padding: 2px 8px 2px 6px; font-size: 11.5px; }
+.cv-plan { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-dim); font: 500 12px/1.3 var(--f-mono); }
+.cv-plan svg { width: 14px; height: 14px; flex: none; color: var(--eje, var(--luz)); }
+.cv-tags { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; gap: 6px; pointer-events: none; z-index: 2; }
+.cv-tag {
+  padding: 3px 8px; border-radius: 999px; font: 700 10px/1.2 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink); background: color-mix(in srgb, var(--bg-void) 70%, transparent); box-shadow: inset 0 0 0 1px var(--linea);
+}
+.cv-tag-perfil { margin-left: auto; color: var(--gold); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 50%, transparent); }
+.cv-tag-rara {
+  color: var(--bg-void); background: linear-gradient(100deg, var(--foil-1), var(--foil-2), var(--foil-3), var(--foil-4)); box-shadow: none;
+}
+
+/* el pie: las gemas del riesgo y la p */
+.cv-pie { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 7px; width: 100%; }
+.cv-pie:empty { display: none; }
+.cv-gemas { display: inline-flex; align-items: center; gap: 8px; font: 600 10px/1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-mute); }
+.cv-gemas-fila { display: inline-flex; gap: 5px; }
+.cv-gemas-fila i { width: 8px; height: 8px; transform: rotate(45deg); background: color-mix(in srgb, var(--ink) 12%, transparent); }
+.cv-gemas[data-riesgo='seguro'] .on { background: var(--ink-mute); }
+.cv-gemas[data-riesgo='incierto'] .on { background: var(--warn); box-shadow: 0 0 6px color-mix(in srgb, var(--warn) 60%, transparent); }
+.cv-gemas[data-riesgo='incierto'] { color: var(--warn); }
+.cv-gemas[data-riesgo='ruleta'] .on { background: var(--gold); box-shadow: 0 0 8px var(--gold); animation: cv-latido 1.4s ease-in-out infinite; }
+.cv-gemas[data-riesgo='ruleta'] .on:nth-child(2) { animation-delay: 0.15s; }
+.cv-gemas[data-riesgo='ruleta'] .on:nth-child(3) { animation-delay: 0.3s; }
+.cv-gemas[data-riesgo='ruleta'] { color: var(--gold); }
+.cv-gemas[data-riesgo='alto'] .on { background: var(--down); box-shadow: 0 0 8px var(--down); }
+.cv-gemas[data-riesgo='alto'] { color: var(--down); }
+@keyframes cv-latido { 0%, 100% { opacity: 1; transform: rotate(45deg) scale(1); } 50% { opacity: 0.45; transform: rotate(45deg) scale(0.8); } }
+.cv-p { display: inline-flex; align-items: center; gap: 8px; font: 700 12px/1 var(--f-mono); color: var(--ink); }
+.cv-p-riel { width: 72px; height: 3px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 14%, transparent); overflow: hidden; }
+.cv-p-riel i { display: block; height: 100%; background: var(--eje, var(--luz)); box-shadow: 0 0 6px var(--eje, var(--luz)); }
+
+/* la tecla, en una placa al pie */
+.cv-raiz .cv-tecla { align-self: center; margin: 2px 0 12px; flex: none; }
+.cv-raiz .opcion.cv-carta.apuntada .cv-tecla { background: var(--eje, var(--luz)); color: var(--bg-void); }
+
+/* la planilla en la carta: una fila por eje */
+.cv-mx { display: grid; gap: 5px; width: 100%; }
+.cv-mx-fila { display: grid; grid-template-columns: 16px minmax(0, 1fr) 54px; align-items: center; gap: 8px; font: 600 12px/1 var(--f-mono); }
+.cv-mx-fila svg { width: 14px; height: 14px; color: var(--eje); }
+.cv-mx-riel { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--eje) 12%, transparent); overflow: hidden; }
+.cv-mx-riel i { display: block; height: 100%; border-radius: 3px; transform-origin: left; }
+.cv-mx-fila.sube .cv-mx-riel i { background: var(--eje); box-shadow: 0 0 8px color-mix(in srgb, var(--eje) 60%, transparent); }
+.cv-mx-fila.baja .cv-mx-riel i { background: color-mix(in srgb, var(--eje) 28%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--eje) 50%, transparent); }
+.cv-mx-fila b { text-align: right; font-variant-numeric: tabular-nums; }
+.cv-mx-fila.sube b { color: var(--up); }
+.cv-mx-fila.baja b { color: var(--down); }
+.cv-mx-fila.vacia { opacity: 0.4; }
+.cv-mx-fila.vacia b { color: var(--ink-mute); }
+.cv-mx-fila small { font-size: 9px; color: var(--ink-dim); }
+.cv-mx-casa { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px; margin-top: 4px; padding-top: 7px; box-shadow: inset 0 1px 0 var(--linea); }
+.cv-casa { display: inline-flex; align-items: center; gap: 6px; font: 700 12px/1 var(--f-mono); color: var(--eje-casa); }
+.cv-casa svg { width: 14px; height: 14px; }
+.cv-casa-riel { width: 44px; height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--down) 14%, transparent); overflow: hidden; }
+.cv-casa-riel i { display: block; height: 100%; background: var(--down); }
+.cv-marca { display: inline-flex; align-items: center; gap: 3px; font: 600 11px/1 var(--f-mono); color: var(--warn); }
+.cv-marca svg { width: 12px; height: 12px; }
+
+/* la cerrada: se ve, con su motivo */
+.cv-cerrada .cv-marco { background: var(--linea); }
+.cv-cerrada .cv-label { color: var(--ink-mute); }
+.cv-gate { color: var(--ink-mute); font: 400 12px/1.4 var(--f-cuerpo); }
+.cv-gate b { color: var(--ink-dim); font: 700 10px/1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; }
+.cv-raiz .opcion.cv-carta.cv-cerrada { cursor: not-allowed; box-shadow: none; }
+
+/* el brillo que la cruza y el destello al elegir */
+.cv-brillo, .cv-destello { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3; }
+.cv-brillo {
+  overflow: hidden; opacity: 0; transition: opacity 200ms ease;
+  background: linear-gradient(115deg, transparent 32%, color-mix(in srgb, var(--luz-blanca) 26%, transparent) 46%, transparent 60%) no-repeat;
+  background-size: 260% 100%; background-position: 130% 0; mix-blend-mode: screen;
+}
+.cv-brillo::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: radial-gradient(circle at var(--cv-mx, 50%) 30%, color-mix(in srgb, var(--luz-blanca) 14%, transparent), transparent 55%);
+}
+.cv-destello {
+  opacity: 0; mix-blend-mode: screen;
+  background: radial-gradient(circle at 50% 42%, var(--luz-blanca), color-mix(in srgb, var(--eje, var(--luz)) 80%, transparent) 55%, transparent 100%);
+}
+
+/* apuntar: sube, crece, se inclina; brillo y halo; las otras se apagan */
+.cv-mano[data-activa] .opcion.cv-carta.apuntada:not(.cv-cerrada) {
+  --cv-alza: -14px; --cv-esc: 1.04;
+  transition: transform 140ms linear, opacity 260ms ease, filter 260ms ease;
+  box-shadow: 0 30px 60px var(--sombra), 0 0 34px color-mix(in srgb, var(--eje, var(--luz)) 30%, transparent);
+}
+.cv-mano[data-activa] .opcion.cv-carta.apuntada .cv-brillo { opacity: 1; animation: cv-barrido 900ms var(--expo) both; }
+.cv-mano[data-activa] .opcion.cv-carta.apuntada .cv-arte-img { transform: scale(1.08); }
+.cv-mano[data-activa] .cv-ranura.cv-arriba .cv-halo { opacity: 1; }
+/* las otras se apagan sin volverse transparentes: detrás está el mundo (y, con destino, la costura) */
+.cv-mano[data-activa] .cv-ranura:not(.cv-arriba) .opcion.cv-carta { filter: brightness(0.62) saturate(0.7); }
+@keyframes cv-barrido { from { background-position: 130% 0; } to { background-position: -30% 0; } }
+
+/* elegir: la elegida queda arriba con su luz; las otras, quemadas (`quemar`) */
+.cv-raiz.eligiendo .opcion.cv-carta { cursor: default; }
+.cv-raiz.eligiendo .opcion.cv-carta[aria-pressed='true'] {
+  --cv-alza: -14px; --cv-esc: 1.04; opacity: 1;
+  box-shadow: 0 30px 60px var(--sombra), 0 0 48px color-mix(in srgb, var(--eje, var(--luz)) 50%, transparent);
+}
+.cv-raiz.eligiendo .cv-ranura .opcion.cv-carta.ln-quemada { opacity: 1; box-shadow: none; }
+
+/* --- la banda: la prosa de la apuntada, una por vez --- */
+.cv-inspector {
+  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 8px 28px; align-content: start;
+  padding: 12px 18px; border-radius: 12px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--linea);
+}
+.cv-insp-kicker { display: flex; align-items: center; gap: 9px; margin: 0; color: var(--ink); font: 700 15px/1.25 var(--f-display); }
+.cv-insp-kicker svg { width: 15px; height: 15px; }
+.cv-insp-n { display: inline-grid; place-items: center; min-width: 20px; height: 20px; border-radius: 5px; font: 700 11px/1 var(--f-mono); color: var(--bg-void); background: var(--ink-dim); }
+.cv-insp-texto { margin: 5px 0 0; color: var(--ink-dim); font: 400 13.5px/1.45 var(--f-cuerpo); }
+.cv-insp-lista { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 16px; align-content: start; }
+.cv-insp-lista li { display: flex; gap: 8px; align-items: flex-start; color: var(--ink-dim); font: 400 13px/1.4 var(--f-cuerpo); }
+.cv-insp-lista svg { width: 14px; height: 14px; flex: none; margin-top: 2px; color: var(--eje, var(--ink-mute)); }
+.cv-insp-riesgo[data-riesgo='alto'] svg { color: var(--down); }
+.cv-insp-riesgo[data-riesgo='ruleta'] svg { color: var(--gold); }
+.cv-insp-perfil svg { color: var(--gold); }
+
+/* --- "lo que pasó": el dorso de la carta --- */
+.cv-raiz .resultado.cv-resultado {
+  position: relative; margin: 18px 0 22px; padding: 20px 24px 22px; border-radius: var(--cv-radio, 14px);
+  transform-origin: 50% 50%; backface-visibility: hidden;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--eje, var(--luz)) 12%, var(--panel-opaco)), var(--panel-opaco) 70%);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--eje, var(--luz)) 70%, transparent), 0 26px 60px var(--sombra), 0 0 50px color-mix(in srgb, var(--eje, var(--luz)) 22%, transparent);
+}
+.cv-raiz .resultado.cv-resultado::before {
+  top: 0; bottom: auto; left: 18px; right: 18px; width: auto; height: 3px; border-radius: 0 0 3px 3px;
+  background: var(--eje, var(--luz)); box-shadow: 0 0 14px var(--eje, var(--luz));
+}
+.cv-dorso { --cv-med: 92px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; z-index: 2; }
+
+/* --- el celular: un carrusel con scroll-snap, la carta al 78% --- */
+@media (max-width: 640px) {
+  .cv-titulo { font-size: clamp(24px, 7.4vw, 32px); font-stretch: 112%; }
+  .cv-planteo { font-size: 14px; }
+  .cv-mano {
+    justify-content: flex-start; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory;
+    scrollbar-width: none; gap: 14px; padding: 22px calc((100% - 74vw) / 2) 28px;
+  }
+  .cv-mano::-webkit-scrollbar { display: none; }
+  .cv-ranura { --cv-ancho: 74vw; --cv-arte: calc(var(--cv-ancho, 260px) * 0.56); scroll-snap-align: center; }
+  .cv-raiz[data-forma='matriz'] .cv-ranura { --cv-arte: calc(var(--cv-ancho, 260px) * 0.36); }
+  .cv-inspector { grid-template-columns: minmax(0, 1fr); padding: 12px 14px; }
+  .cv-raiz .resultado.cv-resultado { padding: 16px 16px 18px; }
+}
+
+/* --- movimiento reducido: cuadros fijos, nada gira ni late --- */
+@media (prefers-reduced-motion: reduce) {
+  .cv-rara .cv-marco, .cv-gemas .on, .cv-mano[data-activa] .opcion.cv-carta.apuntada .cv-brillo { animation: none; }
+  .cv-raiz .opcion.cv-carta, .cv-arte-img, .cv-halo, .cv-brillo { transition-duration: 120ms; }
+}
+html[data-reducido] .cv-rara .cv-marco, html[data-reducido] .cv-gemas .on, html[data-reducido] .cv-mano[data-activa] .opcion.cv-carta.apuntada .cv-brillo { animation: none; }
