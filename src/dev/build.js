@@ -139,7 +139,12 @@ const SPLITS_DE_VERIFICACION = 30;
 // relato con forma (feed.js y feed.css: la semana, el parche, la crónica, la alerta, los mapas) y las narraciones nuevas
 // (la firma después de la prueba, el mapa decisivo en el cara a cara, el fundido del movimiento reducido). Subido a 3700:
 // ~100 KB (2,8%) de margen sobre el peso medido ese día, no una expectativa.
-const PESO_MAXIMO_KB = 3700;
+//
+// Re-medido en la integración de P1 (2026-10-14, `p1-integracion`): 3803 KB contra 3700. Lo que creció son las tres
+// variantes de la decisión que el usuario compara en las previas (cartas, draft y hextech, cada una con su hoja), el
+// movimiento nuevo y las dos variantes del stream. Es transitorio: en P2 quedan una decisión y un stream, y se borran las
+// otras. Subido a 3900: ~100 KB (2,5%) de margen sobre el peso medido ese día; en P2 se vuelve a medir y se baja.
+const PESO_MAXIMO_KB = 3900;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);

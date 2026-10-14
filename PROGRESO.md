@@ -34,6 +34,59 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-14 — PLANUI P1: las previas para elegir, el movimiento que INST apagaba y la serie equipo contra equipo
+
+El usuario jugó C1 en lolero.lol y dijo que la pantalla de elegir es "full HTML", que no ve ninguna animación, que la
+serie decía "Sylas contra LOUD" estando firmado en LOS, y que en el stream del Swiss no se encuentra la encuesta. Su
+mensaje textual y el plan están en `PLANUI.md` §0.4.
+
+**El diagnóstico (medido):**
+- En su Chrome la velocidad estaba guardada en INST, que apagaba TODO el movimiento, no solo las esperas.
+  `prefers-reduced-motion` daba falso.
+- Con la GPU de su máquina (RTX 2060) el juego anda a 240 fps. SwiftShader, con lo que medían los revisores, da
+  0,4-3 fps.
+
+**Lo que se hizo:**
+- **Base** (Supervisor, `0dd733a`):
+  - el modo previa: `?previa=<muestra>` abre una partida de muestra en un almacén en memoria, sin tocar la carrera
+    guardada;
+  - `previa.html` y las muestras (`previa/generar.mjs`);
+  - las perillas `?dc=` y `?sw=`;
+  - `decision/comun.js`, la lectura de la decisión y "lo que pasó", movidas de `crearDecision` sin cambiarlas.
+- **M · movimiento:**
+  - INST pasa a ser "rápido": el relato no espera, pero todo se anima y las narraciones corren enteras a escala 0,35;
+  - `data-inst` deja de existir;
+  - el botón dice "VEL 1× / 2× / RÁPIDO";
+  - hay transición al entrar al juego, al retomar, al volver y en cada página del relato, con una franja de luz;
+  - las entradas, de 380 ms y 20 px.
+- **Tres direcciones de la decisión** (`?dc=`):
+  - cartas de aumento (Arena/TFT);
+  - champ select (franjas de pick y lock-in);
+  - cliente hextech (marco dorado, anillos y estallido).
+- **P · partido:**
+  - la serie, equipo contra equipo con logos, y el duelo de campeones por mapa;
+  - el fondo de la post-serie, con el último mapa;
+  - el stream con `?sw=prediccion` (la predicción es la decisión) y `?sw=pausa` (pausa de transmisión);
+  - la serie sin scroll horizontal.
+- **Integración:** Espacio saltea las narraciones también en rápido (`teclado.js`).
+- **Revisión** (Sonnet, con GPU): "OK con menores". Arreglados el BLOQUEAR suelto en el aviso del draft, la leyenda
+  tapada en las cartas, el foco del título en hextech, la placa que pisaba la predicción y el scroll de la serie.
+
+**Costo** (pedido del usuario): workers Opus · high, de 192K a 238K tokens cada uno, con tope de llamadas (antes,
+400-540K).
+
+**Medido en `p1-integracion`:**
+- `validate.js --rapido`: 382 OK, 0 FAIL;
+- `huella.js`: 1844448410, el motor no cambió;
+- `simulate.js 1000`: exit 0;
+- build: 3803 KB. El techo sube de 3700 a 3900, transitorio: en P2 se borran dos variantes.
+
+**Deuda del motor** que va a "arreglar el juego": D103-D105 (las fechas sin pick por partido, el Swiss sin campeón, el
+rival por mapa sin guardar).
+
+**Siguiente:** el usuario elige en `lolero.lol/previa.html` → P2: queda la elegida, se borran las otras y las
+perillas, y una ronda de pulido.
+
 ### 2026-10-13 — PLANUI C1: lo que dijo el usuario jugando lolero.lol (colores por eje, el relato con forma, sin cortes en frío)
 
 El usuario jugó la ola 2 rehecha en lolero.lol y mandó cinco capturas; su mensaje textual y el plan están en
