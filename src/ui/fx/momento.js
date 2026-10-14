@@ -250,8 +250,6 @@ function bloqueDe(titulo, hijos, clase = '') {
   return el('section', { class: `mo-r-bloque ${clase}`.trim() }, [el('h3', { class: 'mo-r-rotulo', text: titulo }), ...hijos]);
 }
 
-const ligaVisible = (liga, tier) => (liga ? (nombreVisibleDeLiga(liga) ?? String(liga)) : tier === 3 ? 'Tier 3' : 'Liga');
-
 // La pantalla del resumen de la temporada. `datos`: lo que arma `resumenDelTramo` (`ui/core/momentos.js`). Resuelve al
 // Continuar. Todas las velocidades la muestran; `escala` acorta la entrada.
 export function mostrarResumen(datos, { escala = 1, controlar = null } = {}) {
@@ -280,7 +278,8 @@ export function mostrarResumen(datos, { escala = 1, controlar = null } = {}) {
       const bloques = [];
       if (datos.splits.length) {
         bloques.push(bloqueDe('Tus splits', [el('ol', { class: 'mo-r-splits' }, datos.splits.map((s) => el('li', {}, [
-          el('b', { text: ligaVisible(s.liga, s.tier) }),
+          // la liga por su nombre visible, nunca el id crudo (K5); en tier 3 no hay liga, es una zona
+          el('b', { text: `${s.liga ? nombreVisibleDeLiga(s.liga) : s.tier === 3 ? 'Tier 3' : 'Liga'}` }),
           el('span', { text: s.org ?? '' }),
           el('span', { class: 'mo-r-pos', text: s.posicion != null ? `${s.posicion}.º${s.equipos ? ` de ${s.equipos}` : ''}` : '—' })
         ])))]));
@@ -305,7 +304,7 @@ export function mostrarResumen(datos, { escala = 1, controlar = null } = {}) {
         bloques.push(bloqueDe('Lo que más se movió', [el('div', { class: 'eje-chips mo-r-ejes' }, datos.ejes.map((x) => chipEje({ eje: x.eje, valor: x.valor, cambio: true, sufijo: x.sufijo })))]));
       }
       if (datos.mundo && (datos.mundo.campeones.length || datos.mundo.campeonMundial)) {
-        const filas = datos.mundo.campeones.map((c) => el('li', {}, [logoOrg(c.org, { clase: 'mo-r-logo' }), el('b', { text: c.org }), el('span', { text: ligaVisible(c.liga, null) })]));
+        const filas = datos.mundo.campeones.map((c) => el('li', {}, [logoOrg(c.org, { clase: 'mo-r-logo' }), el('b', { text: c.org }), el('span', { text: `${nombreVisibleDeLiga(c.liga)}` })]));
         if (datos.mundo.campeonMundial) {
           filas.push(el('li', { class: 'mo-r-mundial' }, [logoOrg(datos.mundo.campeonMundial, { clase: 'mo-r-logo' }), el('b', { text: datos.mundo.campeonMundial }), el('span', { text: 'Mundial' })]));
         }
