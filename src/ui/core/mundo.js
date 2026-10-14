@@ -27,6 +27,15 @@ export function mainDe(vista) {
   return claveDe(mejor.name);
 }
 
+// Tu campeón en la luz del mundo ahora (P1, PLANUI §0.4): justo después de una serie (`serie.postSerie`, hasta que la
+// etapa siguiente lo baja) es el del último mapa que jugaste, no el del split: con Fearless cada mapa fue otro y el relato
+// de después tiene que verse como el final de la serie. Si no, el de `mainDe`.
+export function campeonDeAhora(vista) {
+  const se = vista?.serie;
+  const ultimo = se?.postSerie ? (se.mapas ?? []).at(-1)?.campeon : null;
+  return (ultimo && claveDe(ultimo)) || mainDe(vista);
+}
+
 // El mundo de una pieza antes de que su familia declare nada. El inicio lo maneja su pantalla (el champ select); el
 // relato y las paradas comunes llevan tu campeón en la luz de la era; la final, también (la leyenda).
 export const MUNDO_VACIO = Object.freeze({
@@ -36,5 +45,5 @@ export const MUNDO_VACIO = Object.freeze({
 
 export function mundoBase(pieza, vista) {
   if (pieza === 'inicio') return { ...MUNDO_VACIO, encuadre: 'inicio', velo: 0.75 };
-  return { ...MUNDO_VACIO, arte: mainDe(vista) };
+  return { ...MUNDO_VACIO, arte: campeonDeAhora(vista) };
 }

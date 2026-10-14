@@ -3,7 +3,8 @@
 // el suyo), arriba el marcador de la transmisión con la fuerza y los mapas, en el medio los nombres gigantes y abajo una
 // franja de transmisión: tus libres como cartas de carga, el plan como barras (la chance de cada mapa y la de la serie)
 // y la tira de Fearless. Elegir responde al motor; lo que pasó lo cuenta la transmisión (`narrar`, PLANUI §0.2): mapa a
-// mapa, la costura cambia a los campeones del mapa y entran sus cartas de carga, VICTORIA/DERROTA del lado del ganador,
+// mapa, la costura cambia a los campeones del mapa y entran sus cartas de carga con su duelo en el rótulo del mapa
+// ("Sylas vs Ahri": cada mapa, su campeón), VICTORIA/DERROTA del lado del ganador,
 // el pip y el golpe del marcador, el quemado de Fearless; el decisivo (el Bo5 a 2-2) con su suspenso. Al final, la placa
 // de cierre. Todo con los logs reales de la respuesta (`ctx.logs`), cortados donde termina la serie.
 //
@@ -16,7 +17,10 @@
 //
 // Los modos de la narración (PLANUI §0.3, `narracion.js`): la secuencia entera; con movimiento reducido, cuadros fijos
 // (cada vestuario, cada mapa con su VICTORIA o DERROTA, el decisivo antes y después, la placa de cierre) con un fundido
-// corto y su tiempo de lectura; en INST, el cuadro final (la placa de cierre, los pips) un instante a la vista.
+// corto y su tiempo de lectura. La velocidad rápida corre la misma secuencia más rápido (P1: sin modo INST).
+//
+// Lo grande del centro son los EQUIPOS (P1, PLANUI §0.4: "Sylas contra LOUD" no se entendía): el escudo y la sigla de
+// cada org; el duelo de campeones va como segunda línea (los retratos y "Sylas vs Ahri", o solo el tuyo).
 import { el, celular, quieto, EXPO } from '../fx/util.js';
 import { entrar, lineasConMascara } from '../fx/movimiento.js';
 import { animar } from '../fx/util.js';
@@ -152,23 +156,52 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
   const sub = el('div', { class: 'tx-sub' }, [fuerza('a', fuerzaPropia), el('span', { class: 'tx-mapas', role: 'img', 'aria-label': etqMapas }, pipsMapa), fuerza('b', fuerzaRival)]);
   const arriba = el('div', { class: 'tx-arriba' }, [mc.nodo, sub]);
 
-  // ---------- el centro: los nombres gigantes sobre la costura ----------
-  function parCaras(nA, nB, { subA, subB, clase = '' } = {}) {
-    const cara = (lado, n, subT, org) => el('div', { class: 'tx-cara', 'data-lado': lado, 'data-equipo': n ? null : '' }, [
-      el('p', { class: 'tx-cara-n', text: n || org }),
-      el('p', { class: 'tx-cara-q' }, [logoOrg(org, { clase: 'tx-cara-logo' }), el('span', { text: subT })])
-    ]);
-    return el('div', { class: `tx-par ${clase}`.trim(), 'aria-hidden': 'true' }, [cara('a', nA, subA, nos), cara('b', nB, subB, ellos)]);
+  // ---------- el centro: los equipos gigantes sobre la costura y, debajo, el duelo de campeones ----------
+  // un retrato de campeón (el ícono de Data Dragon; sin red, el hueco con su borde)
+  function retrato(n, lado) {
+    const r = el('span', { class: 'tx-retrato', 'data-lado': lado, 'aria-hidden': 'true' });
+    ponerRetrato(r, n);
+    return r;
   }
-  const subA = `${handle} · ${sNos}`;
-  const subBReposo = fecha ? `${sEllos} · ${fechaEnCurso?.local === false ? 'de local' : 'de visita'}` : `${sEllos} · ${replan ? 'te lo leyó' : 'su intención'}`;
-  const parReposo = parCaras(tuyoN, suyoN, { subA, subB: subBReposo, clase: 'tx-par-reposo' });
-  const caras = el('div', { class: 'tx-caras' }, [parReposo]);
+  function ponerRetrato(r, n) {
+    const k = claveDe(n);
+    r.replaceChildren();
+    r.dataset.n = n ?? '';
+    if (!k) return;
+    cargas.push(cargarImagen(urlIcono(k)).then((img) => {
+      if (!img || r.dataset.n !== n) return;
+      const c = img.cloneNode();
+      c.alt = '';
+      r.replaceChildren(c);
+    }));
+  }
+  // el duelo: "Sylas vs Ahri" con sus retratos; si el rival no tiene campeón a la vista, solo el tuyo
+  function duelo(nA, nB, clase = '') {
+    if (!nA && !nB) return null;
+    const nombre = (n, lado) => el('b', { class: 'tx-duelo-n', 'data-lado': lado, text: n });
+    const partes = nB
+      ? [retrato(nA, 'a'), nombre(nA ?? '—', 'a'), el('i', { class: 'tx-duelo-vs', text: 'vs' }), nombre(nB, 'b'), retrato(nB, 'b')]
+      : [retrato(nA, 'a'), nombre(nA, 'a'), el('small', { class: 'tx-duelo-tuyo', text: 'tu campeón' })];
+    return el('p', { class: `tx-duelo ${clase}`.trim(), 'aria-hidden': 'true' }, partes);
+  }
+  function parCaras({ subA, subB, clase = '' } = {}) {
+    const cara = (lado, org, sigla, subT) => el('div', { class: 'tx-cara', 'data-lado': lado }, [
+      el('p', { class: 'tx-cara-eq' }, [logoOrg(org, { clase: 'tx-cara-escudo' }), el('span', { class: 'tx-cara-n', text: sigla || org })]),
+      el('p', { class: 'tx-cara-q' }, [el('span', { text: subT })])
+    ]);
+    return el('div', { class: `tx-par ${clase}`.trim(), 'aria-hidden': 'true' }, [cara('a', nos, sNos, subA), cara('b', ellos, sEllos, subB)]);
+  }
+  const subA = `${handle} · ${nos}`;
+  const subBReposo = fecha ? `${ellos} · ${fechaEnCurso?.local === false ? 'de local' : 'de visita'}` : `${ellos}${replan ? ' · te leyó' : ''}`;
+  const parReposo = parCaras({ subA, subB: subBReposo, clase: 'tx-par-reposo' });
+  const dueloReposo = duelo(tuyoN, suyoN, 'tx-duelo-reposo');
+  const caras = el('div', { class: 'tx-caras' }, [parReposo, dueloReposo]);
   const juego = el('div', { class: 'tx-juego', 'aria-live': 'polite' });
   // si el rival no tiene campeón a la vista, su lado queda solo tono y su logo va encima, donde cae su cara
   const logoB = suyo ? null : el('div', { class: 'tx-logo-b', 'aria-hidden': 'true' }, logoOrg(ellos));
   const escenario = el('div', { class: 'tx-escenario' }, [caras, juego, logoB]);
-  const vs = el('p', { class: 'solo-lectores', text: `${tuyoN ?? nos} (${handle}, ${nos}) contra ${suyoN ? `${suyoN} (${ellos})` : ellos}` });
+  const dueloLector = tuyoN ? (suyoN ? `; el duelo, ${tuyoN} contra ${suyoN}` : `; tu campeón, ${tuyoN}`) : '';
+  const vs = el('p', { class: 'solo-lectores', text: `${nos} contra ${ellos} (vos, ${handle}, en ${nos})${dueloLector}` });
 
   // ---------- abajo: la franja de transmisión ----------
   const rotulo = fecha
@@ -284,13 +317,16 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
   if (ops.length) apuntar(0);
 
   // el aura: apuntar un libre cruza tu lado de la costura (el nombre lo sigue)
-  const nombreA = parReposo.querySelector('[data-lado="a"] .tx-cara-n');
+  const nombreA = dueloReposo?.querySelector('.tx-duelo-n[data-lado="a"]');
+  const retratoA = dueloReposo?.querySelector('.tx-retrato[data-lado="a"]');
   let auraVigente = tuyoN;
   function apuntarCampeon(n) {
     if (elegida || !n || n === auraVigente) return;
     auraVigente = n;
     mundo?.costura?.({ a: { arte: claveDe(n) } }, quieto() ? 0 : TX.cruce);
+    if (!nombreA) return;
     nombreA.textContent = n;
+    if (retratoA) ponerRetrato(retratoA, n);
     if (!quieto()) anim(nombreA, [{ opacity: 0, transform: 'translateX(-24px)', clipPath: 'inset(0 100% 0 0)' }, { opacity: 1, transform: 'none', clipPath: 'inset(0 0 0 0)' }], { duration: 320, easing: EXPO });
   }
 
@@ -310,6 +346,8 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
   function entrada() {
     anim(arriba, [{ opacity: 0, transform: 'translateY(-18px)' }, { opacity: 1, transform: 'none' }], { delay: Math.max(0, 140 + d0), duration: 380, easing: EXPO });
     parReposo.querySelectorAll('.tx-cara').forEach((c, i) => anim(c, [{ opacity: 0, transform: `translateX(${i ? 40 : -40}px)`, clipPath: i ? 'inset(0 0 0 100%)' : 'inset(0 100% 0 0)' }, { opacity: 1, transform: 'none', clipPath: 'inset(0 0 0 0)' }], { delay: Math.max(0, 300 + d0) + i * 90, duration: 480, easing: EXPO }));
+    parReposo.querySelectorAll('.tx-cara-escudo').forEach((x, i) => anim(x, [{ opacity: 0, transform: 'scale(1.6) rotate(-8deg)', filter: 'blur(8px)' }, { opacity: 1, transform: 'none', filter: 'none' }], { delay: Math.max(0, 380 + d0) + i * 90, duration: 520, easing: EXPO }));
+    if (dueloReposo) anim(dueloReposo, [{ opacity: 0, transform: 'translate(-50%, -10px)', clipPath: 'inset(0 50% 0 50%)' }, { opacity: 1, transform: 'translate(-50%, 0)', clipPath: 'inset(0 0 0 0)' }], { delay: Math.max(0, 520 + d0), duration: 460, easing: EXPO });
     anim(franjaTx, [{ opacity: 0, transform: 'translateY(26px)' }, { opacity: 1, transform: 'none' }], { delay: Math.max(0, 180 + d0), duration: 360, easing: EXPO });
     entrar(cab.rotulo, Math.max(0, 260 + d0), 8);
     lineasConMascara(cab.titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: Math.max(0, 300 + d0) + i * 70, dur: 420 }));
@@ -394,8 +432,6 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       b.beats.iniciar();
       if (narracion.modo === 'reducido' && cuadrosQuietos()) {
         await contarEnCuadros(b.beats, b.cuadros, narracion, { escenario, vivo: () => raiz.isConnected });
-      } else if (narracion.modo === 'inst') {
-        await narracion.vistazo();
       } else if (!narracion.saltada) {
         await b.beats.esperar(b.asentarse);
         await narracion.esperar(TX.sostener);
@@ -442,6 +478,9 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
 
     // los nombres de la selección se van cuando entra el primer mapa
     b.waapi(irseEn(parReposo, mapasT[0]?.t0 ?? TX.t0));
+    if (dueloReposo) b.waapi(irseEn(dueloReposo, mapasT[0]?.t0 ?? TX.t0));
+    // los retratos de cada mapa, antes de que entre el primero
+    for (const mp of mapasT) for (const k of [mp.k, mp.rk]) if (k) cargarImagen(urlIcono(k));
     if (logoB) b.waapi(irseEn(logoB, mapasT[0]?.t0 ?? TX.t0));
 
     const quemados = new Set(quemados0);
@@ -465,7 +504,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       const { l, t0, k, rk, s } = mp;
       const gano = l.resultado === 'W';
       const tR = t0 + TX.resultado + s;
-      const par = parCaras(l.campeon, l.rivalJuega, { subA, subB: l.rivalJuega ? sEllos : '', clase: 'tx-par-mapa' });
+      const par = parCaras({ subA, subB: ellos, clase: 'tx-par-mapa' });
       caras.append(par);
       bb.waapi(ventanaTx(par, t0, tSig - t0 + (esUltimo ? 200 : 0), 160, 160));
       par.querySelectorAll('.tx-cara-n').forEach((x, i) => bb.waapi(anim(x, [{ transform: `translateX(${i ? 34 : -34}px)`, clipPath: i ? 'inset(0 0 0 100%)' : 'inset(0 100% 0 0)' }, { transform: 'none', clipPath: 'inset(0 0 0 0)' }], { delay: t0 + 140 + i * 60, duration: 420, easing: EXPO })));
@@ -483,7 +522,11 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       // con movimiento reducido, en su cuadro (cae en `tR`, igual que la placa).
       const nombreDelLado = par.querySelectorAll('.tx-cara-n')[gano ? 0 : 1];
       if (nombreDelLado) bb.waapi(anim(nombreDelLado, [{ opacity: 1 }, { opacity: 0.2 }], { delay: tR, duration: 260, easing: 'ease-out', fill: 'forwards', forzar: true }));
-      const rot = el('p', { class: 'tx-mapa-n' }, [el('b', { text: `Mapa ${l.mapa}` }), l.mapa === formato && formato > 1 ? el('span', { text: 'el decisivo' }) : null]);
+      // el rótulo del mapa lleva su duelo: cada mapa, su campeón (Fearless no repite)
+      const rot = el('div', { class: 'tx-mapa-n' }, [
+        el('p', { class: 'tx-mapa-k' }, [el('b', { text: `Mapa ${l.mapa}` }), l.mapa === formato && formato > 1 ? el('span', { text: 'el decisivo' }) : null]),
+        duelo(l.campeon, l.rivalJuega, 'tx-duelo-mapa')
+      ]);
       const capa = el('div', { class: 'tx-mapa', 'data-res': l.resultado }, [rot, cA, cB, caja]);
       juego.append(capa);
       bb.waapi(ventanaTx(capa, t0, tSig - t0 + (esUltimo ? 200 : 0), 120, 220));
@@ -501,7 +544,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
         }
         cuadros.push({ t: t0 + CUADRO.mapa + s, lectura: LECTURA.mapa, al: () => quemarHasta(t0 + CUADRO.mapa + s) });
       }
-      bb.waapi(anim(rot, [{ opacity: 0, transform: 'translateY(-10px)', letterSpacing: '0.4em' }, { opacity: 1, transform: 'none' }], { delay: t0 + TX.rotulo, duration: 360, easing: EXPO }));
+      bb.waapi(anim(rot, [{ opacity: 0, transform: 'translate(-50%, -10px)', letterSpacing: '0.4em' }, { opacity: 1, transform: 'translate(-50%, 0)' }], { delay: t0 + TX.rotulo, duration: 360, easing: EXPO }));
       [cA, cB].forEach((c, j) => c && bb.waapi(anim(c, [{ opacity: 0, transform: `translateX(${j ? 52 : -52}vw) rotate(${j ? 5 : -5}deg)` }, { opacity: 1, transform: 'none' }], { delay: t0 + TX.carta + j * 60, duration: TX.cartaDur, easing: EXPO })));
       bb.waapi(vd.animaciones);
       const [cg, cp] = gano ? [cA, cB] : [cB, cA];
@@ -622,8 +665,8 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     const nodo = el('div', { class: 'tx-cierre', role: 'status', 'aria-label': `${titular}: ${nos} ${a}, ${ellos} ${bb}` }, [res, titulo, el('div', { class: 'tx-cierre-pie' }, placa)]);
     juego.append(nodo);
     cierreNodo = nodo;
-    // la placa entra y QUEDA (fill forwards: antes se iba con su animación de entrada y el cierre duraba 360 ms). En INST
-    // no hay animación: el cuadro final la trae puesta.
+    // la placa entra y QUEDA (fill forwards: antes se iba con su animación de entrada y el cierre duraba 360 ms). Sin
+    // animación (movimiento reducido), queda puesta igual.
     const ver = anim(nodo, [{ opacity: 0, visibility: 'visible' }, { opacity: 1, visibility: 'visible' }], { delay: t0, duration: 360, fill: 'forwards', forzar: true });
     if (!ver) nodo.style.visibility = 'visible';
     b.waapi([
@@ -653,6 +696,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     // los cuadros del movimiento reducido: lo que dejó el momento, EN JUEGO, el resultado y el cierre
     const cuadros = [];
     b.waapi(irseEn(parReposo, tJuego));
+    if (dueloReposo) b.waapi(irseEn(dueloReposo, tJuego));
     if (logoB) b.waapi(irseEn(logoB, tFin));
     placas.forEach((x) => {
       juego.append(x.caja);

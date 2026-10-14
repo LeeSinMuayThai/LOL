@@ -1071,3 +1071,14 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
 :root {
   --dur-fundido: 120ms;
 }
+
+/* P1-p1-partido (PLANUI §0.4): los colores de las opciones de la predicción del stream (`?sw=prediccion`), los de las
+   predicciones de Twitch: azul y rosa para las dos primeras, y dos más si hay cuatro. */
+:root {
+  --pr-0: #387aff;
+  --pr-1: #f5009b;
+  --pr-2: #00c7ac;
+  --pr-3: #ffb31a;
+  /* el color de la opción de la predicción (cada opción lo cambia por el suyo) */
+  --pr-c: var(--pr-0);
+}
