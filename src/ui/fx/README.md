@@ -9,8 +9,8 @@ Reglas que cumple todo el kit:
 - cero colores literales: los colores salen de los tokens **por nombre** (`util.js leerColor`, normalizado por un canvas
   de 1×1); al shader viajan como uniformes (el GLSL no tiene tripletes literales, PLANUI §9.5);
 - el azar decorativo es `azar.js`, nunca `rngUi` ni `Math.random`;
-- todo efecto degrada a nada si falla; con INST (`<html data-inst>`, lo pone `api.inst(si)`), `data-reducido` o
-  `prefers-reduced-motion` todo aparece en su cuadro final; ≤ 3 destellos por segundo;
+- todo efecto degrada a nada si falla; con `data-reducido` o `prefers-reduced-motion` todo aparece en su cuadro final. La
+  velocidad rápida (lo que era INST) ya no apaga nada desde PLANUI §0.4: no hay `data-inst`; ≤ 3 destellos por segundo;
 - las hojas viven en `src/ui/estilos/fx.css` (prefijos `ln-` y `cu-`), con los tokens de `tokens.css` (los nombres de la vitrina).
 
 ## La raíz: `index.js`
@@ -30,7 +30,7 @@ está envuelto: un fallo degrada a nada.
 | `quiebre(retardo)` | la luz que se quiebra un instante ("te leyeron") |
 | `congelar(ms)` / `pausar()` / `reanudar()` / `destruir()` | capturas; minijuego o cuarto abierto (la pestaña oculta ya pausa sola) |
 | `aura` | el foco de campeón (`aura.js`): `pantalla(clave, { pegajosa })`, `ir(clave)`, `alCambiar(fn)` |
-| `inst(si)` | el reproductor entró o salió de INST |
+| `inst(si)` | el reproductor entró o salió de la velocidad rápida (desde PLANUI §0.4 no apaga nada) |
 | `reloj()`, `cuadros()`, `intensidad()`, `impl` | el reloj del ambiente, los cuadros dibujados (fps), el estado del mundo, `'webgl'`/`'css'` |
 
 ## Los módulos

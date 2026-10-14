@@ -113,7 +113,9 @@ document.addEventListener('keydown', (evento) => {
   if (evento.key === ' ' || evento.key === 'Enter') {
     if (focoEnAlgoInteractivo(activo)) return; // su acción nativa
     // Espacio saltea un beat del relato, o la narración de una parada (su resultado contado en el lugar, PLANUI §0.2).
-    if (evento.key === ' ' && (pieza === 'relato' || narrando()) && velocidadActual() !== 'instantaneo') {
+    // En rápido el relato no espera (no hay beat que saltear), pero las narraciones corren enteras (PLANUI §0.4): Espacio
+    // las saltea igual.
+    if (evento.key === ' ' && (narrando() || (pieza === 'relato' && velocidadActual() !== 'instantaneo'))) {
       evento.preventDefault();
       saltarBeat();
     }
