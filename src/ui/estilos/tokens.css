@@ -1127,6 +1127,7 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
 /* W1-T (PLANUI §0.7, W6; estilos/tarjeta.css): la tarjeta final cuenta la historia — el apodo, el escalón de arraigo
    por org (barra chica con las marcas de cada escalón) y el duelo eterno. */
 :root {
+  --tj-m: 0;
   --tj-barra-alto: 6px;
   --tj-barra-ancho: 120px;
   --tj-barra-fondo: rgba(255, 255, 255, 0.08);

@@ -242,7 +242,7 @@ function bloqueApodo(apodo, veredicto) {
   el.className = `tarjeta-apodo tarjeta-apodo--${apodo.id}`;
   el.setAttribute('aria-label', 'Tu apodo');
   el.append(
-    linea('tarjeta-apodo-k', apodo.id === 'leyenda' ? 'Para la hinchada, para siempre' : 'Para la hinchada'),
+    linea('tarjeta-apodo-k', apodo.id === 'leyenda' ? 'Para los fans, para siempre' : 'Para los fans'),
     linea('tarjeta-apodo-v', apodo.texto),
     linea('tarjeta-veredicto tarjeta-veredicto--sub', veredicto)
   );
@@ -250,7 +250,7 @@ function bloqueApodo(apodo, veredicto) {
 }
 
 // Una org de la historia con el escalón al que llegaste: el nombre, el valor y una barra chica con las marcas de cada
-// escalón (Querido, Ídolo, Leyenda). Ídolo y Leyenda se pintan: es lo que la hinchada se acuerda.
+// escalón (Querido, Ídolo, Leyenda). Ídolo y Leyenda se pintan: es lo que los fans recuerdan.
 function filaDeOrg(fila, arraigo, anioDeCierre, hitos) {
   const el = document.createElement('div');
   el.className = `tarjeta-org tarjeta-org--${arraigo.id}`;
@@ -269,7 +269,7 @@ function filaDeOrg(fila, arraigo, anioDeCierre, hitos) {
   barra.setAttribute('aria-hidden', 'true');
   for (const id of ['querido', 'idolo', 'leyenda']) {
     const marca = document.createElement('i');
-    marca.style.setProperty('--m', String(hitos[id]));
+    marca.style.setProperty('--tj-m', String(hitos[id]));
     barra.appendChild(marca);
   }
   escalon.append(nombre, valor, barra);
@@ -352,7 +352,7 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
   container.appendChild(linea('tarjeta-identidad',
     `${state.player.name} · ${modulos.etiquetaRol(state.player.role)} · se retiró a los ${t.edadRetiro}`));
 
-  // W1: si la hinchada te hizo Ídolo o Leyenda en algún lado, ese es el titular; el veredicto pasa a ser la bajada.
+  // W1: si los fans te hicieron Ídolo o Leyenda en algún lado, ese es el titular; el veredicto pasa a ser la bajada.
   const registro = state.career?.registro ?? null;
   const apodo = registro ? apodoDeLealtad(registro) : null;
   if (apodo) {

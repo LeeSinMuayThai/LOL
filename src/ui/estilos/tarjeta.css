@@ -470,7 +470,7 @@ details.tarjeta-internacionales > summary { cursor: pointer; font-size: var(--fs
   position: absolute;
   top: -2px;
   bottom: -2px;
-  left: calc(var(--m) * 1%);
+  left: calc(var(--tj-m) * 1%);
   width: 1px;
   background: var(--tj-barra-marca);
 }
