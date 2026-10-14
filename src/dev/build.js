@@ -144,7 +144,10 @@ const SPLITS_DE_VERIFICACION = 30;
 // variantes de la decisión que el usuario compara en las previas (cartas, draft y hextech, cada una con su hoja), el
 // movimiento nuevo y las dos variantes del stream. Es transitorio: en P2 quedan una decisión y un stream, y se borran las
 // otras. Subido a 3900: ~100 KB (2,5%) de margen sobre el peso medido ese día; en P2 se vuelve a medir y se baja.
-const PESO_MAXIMO_KB = 3900;
+//
+// Re-medido en la integración de P2 (2026-10-14, `p2-integracion`): 3689 KB, con una decisión (las cartas, con sus
+// emblemas) y un stream (la predicción, con el riel EN VIVO). Bajado a 3800: ~110 KB (3%) de margen sobre el peso medido.
+const PESO_MAXIMO_KB = 3800;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);

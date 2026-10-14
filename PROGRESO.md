@@ -34,6 +34,54 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-14 — PLANUI P2: las cartas sin campeones de decoración y el stream lleno
+
+El usuario miró las previas de P1 y eligió las **cartas** y la **predicción** (PLANUI §0.5, textual). Sobre las cartas
+dijo: "no quiero que haya campeones en todos lados donde no tienen nada que ver". Sobre el stream, que la pantalla
+"queda un poco vacía" entre el video y el chat y a la izquierda, y que quiere algo "más lleno, no tan fake".
+
+- **Lo medido.**
+  - Cada carta llevaba un campeón del pool por índice (Ashe, Kalista y Varus en una decisión sobre el coach).
+  - Detrás de toda la decisión iba el campeón del split.
+  - En el stream, a 1920, había ~200 px muertos entre el video y el chat, y nada a la izquierda.
+  - El emote `:garra:` se leía como `///`.
+- **La regla nueva:** un campeón aparece solo cuando la pantalla habla de él.
+- **Las cartas, la decisión de siempre.**
+  - Se borraron el renderer viejo (`components/decision.js`), las variantes draft y hextech con sus hojas, la perilla
+    `dc` y 121 líneas de `decision.css`.
+  - El arte de cada carta, por prioridad:
+    1. el campeón que la opción nombra (`campeonesNombrados` en `ui/core/mundo.js`, sin "Vi" ni "Karma");
+    2. el logo de la liga o del equipo del destino;
+    3. si no, el emblema del aumento (`decision/emblema.js`): una ilustración SVG propia por eje y por stat, sin dos
+       iguales en una mano.
+  - El fondo, sin campeón salvo que la decisión lo nombre: va la marca de agua del eje que domina.
+  - El check K4c-P lee `cartas.js`.
+- **La predicción, el stream de siempre.**
+  - Se borraron la pausa, el panel chico y la perilla `sw`.
+  - Tres columnas como una plataforma de streaming:
+    - el riel "CANALES EN VIVO", con los otros cruces de la ronda, co-streams inventados y Worlds en otros idiomas;
+      los números salen de `fx/azar`, sembrados, y solo se muestran filas enteras;
+    - el player al centro, con su escena escalada por `cqw`;
+    - el chat, de 340 px.
+  - Gap de 12 px y sin scroll vertical a 1100×800, 1280×800, 1440×900 y 1920×1080.
+  - A 390, el riel es una tira.
+  - Los emotes se rehicieron en formas llenas.
+- **La limpieza:**
+  - las reglas `html[data-inst]` muertas en 6 hojas;
+  - la rama `'inst'` de `mercado.js`;
+  - `previa/perillas.js`;
+  - la página `/previa`, que ahora tiene las muestras sin variantes.
+- **El costo.**
+  - 2 workers Opus 5.5 · high: 63 + 16 llamadas (~257K) y 84 + 14 (~262K).
+  - 1 revisor Sonnet: 34 llamadas, ~141K. Su veredicto fue "Requiere corrección", por un solo bloqueante: en el
+    player más angosto, el logo del rival pisaba el marcador. Se arregló en una ronda por worker y quedó medido sin
+    solapes.
+- **Verificación** (`p2-integracion`):
+  - `validate --rapido`: 382 OK, 0 FAIL;
+  - `huella`: 1844448410;
+  - `simulate 1000`: exit 0;
+  - build: 3689 KB, con el techo bajado de 3900 a 3800.
+
 ### 2026-10-14 — PLANUI P1: las previas para elegir, el movimiento que INST apagaba y la serie equipo contra equipo
 
 El usuario jugó C1 en lolero.lol y dijo que la pantalla de elegir es "full HTML", que no ve ninguna animación, que la

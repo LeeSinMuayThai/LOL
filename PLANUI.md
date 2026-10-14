@@ -36,7 +36,7 @@
 | **U2 rehecha** | La ola 2 portada de la vitrina con `op=linea` sobre tres contratos nuevos: el marco, el mundo de cada parada y narrar la respuesta en el lugar (§0.2) | 🔶 2026-10-13 |
 | **C1 (adelantada)** | Lo que dijo el usuario jugando lolero.lol: colores por eje, el relato con forma, sin cortes en frío, la firma tras la prueba, el mapa decisivo narrado y la regla del movimiento reducido (§0.3) | ✅ 2026-10-13: mergeada y publicada (`c4f9e55`); el usuario la jugó (§0.4) |
 | **P1 · previas** | La decisión en tres direcciones (cartas, champ select, hextech) y el stream en dos, para elegir en `lolero.lol/previa.html`; INST deja de apagar el movimiento; la serie equipo contra equipo (§0.4) | ✅ 2026-10-14: 5 workers Opus high + 1 revisor Sonnet ("OK con menores", arreglados); publicada. El usuario eligió cartas + predicción (§0.5) |
-| **P2** | La dirección elegida queda; se borran las otras y las perillas; las cartas sin campeones de decoración y el stream lleno (§0.5) | 🔶 2026-10-14 |
+| **P2** | La dirección elegida queda; se borran las otras y las perillas; las cartas sin campeones de decoración y el stream lleno (§0.5) | ✅ 2026-10-14: 2 workers Opus high + 1 revisor Sonnet (1 bloqueante, arreglado); publicada |
 | **U3** | Los momentos + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
