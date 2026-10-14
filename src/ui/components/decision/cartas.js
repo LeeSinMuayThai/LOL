@@ -115,12 +115,14 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
     return { tipo: 'emblema' };
   }
   const glifoDe = (campo) => (campo ? glifoDeCampo(campo) : null);
-  const emblemaDe = (campo, glifo = null) => emblema(ejeDe(campo), { glifo: glifo ?? glifoDe(campo) });
+  const emblemaDe = (campo, glifo = null, { variante = 0, acento = null } = {}) => emblema(ejeDe(campo), { glifo: glifo ?? glifoDe(campo), variante, acento });
+  // el segundo eje que sube en la opción (el acento del emblema repetido), o null
+  const segundoEje = (o, eje) => (o.previa ?? []).filter((p) => p.signo !== '-').map((p) => ejeDe(p.campo)).find((e) => e && e !== eje) ?? null;
   // `arte`: lo de `arteDe`, con el `campo` que domina (el color y el emblema) y, en las cerradas, el `glifo` (el candado)
   function ventana(arte) {
     const vineta = el('i', { class: 'cv-arte-vineta' });
     if (arte.tipo === 'emblema') {
-      return el('span', { class: 'cv-arte cv-arte-emblema', 'aria-hidden': 'true' }, [emblemaDe(arte.campo, arte.glifo), vineta]);
+      return el('span', { class: 'cv-arte cv-arte-emblema', 'aria-hidden': 'true' }, [emblemaDe(arte.campo, arte.glifo, arte), vineta]);
     }
     if (arte.tipo === 'liga' || arte.tipo === 'org') {
       const nodo = el('span', { class: `cv-arte cv-arte-logo cv-arte-${arte.tipo}`, 'aria-hidden': 'true' }, [
@@ -199,11 +201,19 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
   const mano = el('div', { class: 'cv-mano', id: 'decisionOptions', role: 'group', 'aria-label': esMatriz ? 'El plan del año: opciones por eje' : 'Opciones', style: { '--cv-n': String(Math.max(1, total)) } });
   const cartas = [];
   const ranuras = [];
+  // dos emblemas iguales en la misma mano (mismo eje y misma stat): el repetido cambia de composición y lleva acento
+  const vistos = new Map();
   disponibles.forEach((o, i) => {
     const campo = dominante(o);
     const eje = ejeDe(campo);
     const rara = o.rareza && o.rareza !== 'comun';
     const arte = arteDe(o, campo);
+    if (arte.tipo === 'emblema') {
+      const clave = `${eje}|${glifoDe(campo)}`;
+      arte.variante = vistos.get(clave) ?? 0;
+      vistos.set(clave, arte.variante + 1);
+      arte.acento = arte.variante ? segundoEje(o, eje) : null;
+    }
     const cuerpo = el('span', { class: 'cv-cuerpo' }, [
       tags(o),
       el('span', { class: 'cv-label', text: o.label }),

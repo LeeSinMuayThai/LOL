@@ -147,8 +147,12 @@
 }
 .cv-emb .cv-emb-lleno, .cv-emb .ln-lleno { fill: currentColor; }
 .cv-emb .ln-lleno { stroke: none; }
+/* la planilla: la ventana es baja, el emblema crece (se recorta el patrón, nunca la placa) */
+.cv-raiz[data-forma='matriz'] .cv-emb { top: -3%; height: 112%; }
+.cv-emb-insignia { filter: drop-shadow(0 0 4px currentColor); }
 .cv-emb-fondo { fill: var(--bg-void); fill-opacity: 0.74; }
 .cv-emb-filo { opacity: 0.5; }
+.cv-emb-filo.cv-emb-acento { opacity: 0.95; filter: drop-shadow(0 0 4px currentColor); }
 .cv-emb-reflejo { stroke: var(--ink); opacity: 0.32; }
 .cv-emb-hueco { stroke: var(--bg-void); }
 .cv-emb-hueco-lleno { fill: var(--bg-void); }
@@ -334,6 +338,7 @@ html[data-textos='completos'] .cv-raiz .cv-desc { display: block; }
 .cv-insp-riesgo[data-riesgo='alto'] svg { color: var(--down); }
 .cv-insp-riesgo[data-riesgo='ruleta'] svg { color: var(--gold); }
 .cv-insp-perfil svg { color: var(--gold); }
+.cv-insp-lista .cv-insp-plan, .cv-insp-lista .cv-insp-perfil { grid-column: 1 / -1; }
 
 /* --- "lo que pasó": el dorso de la carta --- */
 .cv-raiz .resultado.cv-resultado {
