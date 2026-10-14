@@ -10956,8 +10956,12 @@ check('K5c-R: con las perillas prendidas, el que se queda en tier 2 sin ofertas 
   if (forks === 0 || retiros === 0 || tarjetas === 0) {
     problemas.push(`el check no mide nada: ${forks} bifurcaciones, ${retiros} retiros y ${tarjetas} tarjetas con el motivo de la presión`);
   }
-  // Con las perillas neutras (las del repo), la misma muestra degradada no frena nunca por la presión: reproduce hoy.
-  const neutras = muestraK5CR('neutras', {}, { degradar: true, responderBase: retirarseK5CR })
+  // Con las perillas neutras, la misma muestra degradada no frena nunca por la presión: reproduce hoy.
+  // F2 (PLANUI §0.8): "neutras" eran las del repo (`{}`), pero desde K5c paso 3 (Final2) las del repo están prendidas (20 años,
+  // 4 splits) y el 0 solo valía por la muestra. Con la llamada de tier 2 las carreras cambian de camino y en las seeds 2 y 15 la
+  // presión frena bien (cuenta 6 desde los 20, en tier 2 con club, sin ofertas de tier 1; las llamadas fueron a los 17 y 18 y no
+  // suman). Lo que este renglón protege es la perilla apagada: se apaga explícita (99, "nunca dispara").
+  const neutras = muestraK5CR('neutras', { edadDesde: 99, splitsSinOfertaTier1: 99 }, { degradar: true, responderBase: retirarseK5CR })
     .flatMap((c) => c.pasos.flatMap((p) => p.decisiones)).filter((d) => d.variante === 'presion_tier2').length;
   if (neutras !== 0) {
     problemas.push(`con las perillas neutras frenó ${neutras} veces por la presión de tier 2`);
@@ -27836,7 +27840,9 @@ const SEEDS_K6BR = 40;
 // K6c (regla 17): con el plan del año y la vara por nivel las carreras de `resolverAuto` cambiaron de camino y las seeds 1-40 ya
 // no traen ninguna vuelta de free agent (47 "¿Volvés?", 0 vueltas). La cosecha sigue en ronda (seeds 41, 42, ...) hasta tener
 // una, con el mismo tope de splits por carrera; lo que se mide de cada pregunta y de cada vuelta no cambia.
-const SEEDS_EN_RONDA_K6BR = 200;
+// F2 (PLANUI §0.8): con la llamada de tier 2 la primera vuelta de free agent cae en la seed 219 (medido con la misma cosecha: 9
+// vueltas en 600 seeds, contra 5 en 200 en f8503ce; el camino sigue, las carreras cambiaron de seeds). El tope sube a 400.
+const SEEDS_EN_RONDA_K6BR = 400;
 function cosechaVueltaK6BR() {
   const cosecha = { vueltas: [], preguntas: [], seeds: 0 };
   for (let seed = 1; seed <= SEEDS_EN_RONDA_K6BR && (seed <= SEEDS_K6BR || cosecha.vueltas.length === 0); seed += 1) {
