@@ -29150,6 +29150,60 @@ check('V3e (regla 15): la ficha dice el nivel de hoy (nunca "tier 3" ya en tier 
   }
 });
 
+// ============================================================================================================
+// W1-T (PLANUI §0.7, W6): la tarjeta final cuenta la historia. Lo que la pantalla promete: el apodo sale de la
+// lealtad (Leyenda gana a Ídolo, el valor más alto gana, Querido no da apodo), el duelo eterno dice quién se lo llevó
+// con la misma cuenta que `systems/rivales.js`, y las finales que se escaparon traen año y rival.
+// ============================================================================================================
+const W1T = await import('../core/legado.js');
+const w1tFila = (org, arraigoMaximo, titulos = []) => ({ org, desdeAnio: 2030, hastaAnio: 2032, arraigoMaximo, titulos });
+const w1tRegistro = (porOrg, extra = {}) => ({ porOrg, titulos: [], internacionales: [], picos: { nivel: 80 }, ...extra });
+
+check('W1-T: el apodo sale de la lealtad (Leyenda > Ídolo, el valor más alto; Querido no da apodo)', () => {
+  const { hitos } = BALANCE.arraigo;
+  const mal = [];
+  const nada = W1T.apodoDeLealtad(w1tRegistro([w1tFila('A', hitos.idolo - 1), w1tFila('B', hitos.querido)]));
+  if (nada !== null) mal.push(`sin Ídolo no hay apodo: ${JSON.stringify(nada)}`);
+  const idolo = W1T.apodoDeLealtad(w1tRegistro([w1tFila('A', hitos.querido), w1tFila('B', hitos.idolo)]));
+  if (idolo?.texto !== 'Ídolo de B') mal.push(`Ídolo en B: ${JSON.stringify(idolo)}`);
+  const leyenda = W1T.apodoDeLealtad(w1tRegistro([w1tFila('A', hitos.leyenda), w1tFila('B', hitos.leyenda + 5), w1tFila('C', hitos.idolo)]));
+  if (leyenda?.texto !== 'Leyenda de B' || leyenda.id !== 'leyenda') mal.push(`dos Leyendas, gana la más alta (B): ${JSON.stringify(leyenda)}`);
+  const empate = W1T.apodoDeLealtad(w1tRegistro([w1tFila('A', hitos.leyenda), w1tFila('B', hitos.leyenda, [{ nombre: 'LCK', anio: 2031 }])]));
+  if (empate?.org !== 'B') mal.push(`a igual arraigo, la de más títulos (B): ${JSON.stringify(empate)}`);
+  const escalones = W1T.arraigoPorOrg(w1tRegistro([w1tFila('A', hitos.querido), w1tFila('B', hitos.leyenda)])).map((a) => a.id).join(',');
+  if (escalones !== 'querido,leyenda') mal.push(`el escalón por org: ${escalones}`);
+  if (mal.length) throw new Error(mal.join(' | '));
+});
+
+check('W1-T: el duelo eterno cuenta como rivales.js y dice quién se lo llevó; las finales perdidas traen año y rival', () => {
+  const mal = [];
+  const archirrival = (titulos, internacionales, nivel) => ({
+    handle: 'Rival', rol: 'mid', org: 'R9', nivel, titulos, internacionales, duelo: { tuyos: 0, suyos: 0 },
+    historial: [{ anio: 2031, org: 'R9', nivel, titulos: titulos + internacionales }]
+  });
+  const registro = w1tRegistro([w1tFila('A', 10)], {
+    titulos: [{ nombre: 'LCK', anio: 2031, org: 'A', liga: 'lck', tier: 1 }],
+    internacionales: [
+      { torneo: 'Mundial 2032', anio: 2032, org: 'A', resultado: 'final', campeon: 'Gen.G',
+        camino: [{ etapa: 'semis', rival: 'T1', gano: true, marcador: [3, 1] }, { etapa: 'final', rival: 'Gen.G', gano: false, marcador: [1, 3] }] },
+      { torneo: 'Mundial 2033', anio: 2033, org: 'A', resultado: 'campeon', campeon: 'A', camino: [] }
+    ]
+  });
+  const st = (rival) => ({ career: { registro }, mundo: { archirrival: rival } });
+  if (W1T.dueloEterno(st(null)) !== null) mal.push('sin archirrival no hay duelo');
+  const gana = W1T.dueloEterno(st(archirrival(1, 0, 70)));
+  if (gana.tuyos !== 2 || gana.suyos !== 1 || gana.ganador !== 'vos' || !gana.porTrofeos) mal.push(`2 a 1 lo ganás vos: ${JSON.stringify(gana)}`);
+  const pierde = W1T.dueloEterno(st(archirrival(2, 1, 70)));
+  if (pierde.ganador !== 'el') mal.push(`2 a 3 se lo lleva él: ${pierde.ganador}`);
+  const porNivel = W1T.dueloEterno(st(archirrival(2, 0, 90)));
+  if (porNivel.ganador !== 'el' || porNivel.porTrofeos) mal.push(`a igual trofeos, el nivel pico: ${JSON.stringify(porNivel)}`);
+  const finales = W1T.finalesPerdidas(registro);
+  if (finales.length !== 1 || finales[0].anio !== 2032 || finales[0].rival !== 'Gen.G' || finales[0].marcador?.join('-') !== '1-3') {
+    mal.push(`la final del 2032 vs Gen.G 1-3: ${JSON.stringify(finales)}`);
+  }
+  if (mal.length) throw new Error(mal.join(' | '));
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);

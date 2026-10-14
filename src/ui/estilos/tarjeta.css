@@ -399,3 +399,153 @@ details.tarjeta-internacionales > summary { cursor: pointer; font-size: var(--fs
 .carrera-resumen .carrera-escalon { padding: var(--s-2) var(--s-3); font-size: var(--fs-2); }
 .carrera-resumen .carrera-escalon-vas { font-size: var(--fs-3); }
 .carrera-resumen .carrera-pie { margin: 0; }
+
+/* ==========================================================================
+   W1-T (PLANUI §0.7, W6): el final cuenta la historia. El apodo de la lealtad arriba ("LEYENDA DE T1") con el
+   veredicto de bajada, el escalón de arraigo por org, "Las que se escaparon" y "El duelo eterno". Solo tokens.
+   ========================================================================== */
+.tarjeta-apodo { margin: var(--s-4) 0 var(--s-2); }
+.tarjeta-apodo-k {
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.tarjeta-apodo-v {
+  margin-top: var(--s-1);
+  font-family: var(--font-display);
+  font-size: var(--fs-8);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  text-transform: uppercase;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.tarjeta-apodo--leyenda .tarjeta-apodo-v { color: var(--gold); text-shadow: var(--tj-apodo-sombra); }
+.tarjeta-apodo--idolo .tarjeta-apodo-v { color: var(--live); }
+.tarjeta .tarjeta-apodo .tarjeta-veredicto--sub {
+  margin: var(--s-2) auto 0;
+  max-width: 40ch;
+  font-size: var(--fs-4);
+  font-weight: 500;
+  text-transform: none;
+  color: var(--ink-dim);
+}
+@media (max-width: 639px) {
+  .tarjeta-apodo-v { font-size: var(--fs-7); }
+  .tarjeta .tarjeta-apodo .tarjeta-veredicto--sub { font-size: var(--fs-3); }
+}
+
+/* --- El escalón de arraigo por org ------------------------------------------------------------------------------ */
+.tarjeta-org { padding-bottom: var(--s-2); border-top: 1px solid var(--line-faint); }
+.tarjeta-org > .ficha-historia-fila { border-top: none; padding-bottom: 0; }
+.tarjeta-org-arraigo {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: 2px;
+  padding-left: calc(16px + var(--s-2));
+  font-size: var(--fs-0);
+  color: var(--ink-mute);
+}
+.tarjeta-org-escalon {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+.tarjeta-org-valor { font-variant-numeric: tabular-nums; }
+.tarjeta-org-barra {
+  position: relative;
+  flex: 0 1 var(--tj-barra-ancho);
+  min-width: 48px;
+  height: var(--tj-barra-alto);
+  background:
+    linear-gradient(90deg, currentColor calc(var(--v) * 1%), transparent 0),
+    var(--tj-barra-fondo);
+}
+.tarjeta-org-barra > i {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: calc(var(--m) * 1%);
+  width: 1px;
+  background: var(--tj-barra-marca);
+}
+.tarjeta-org--querido .tarjeta-org-arraigo { color: var(--ice); }
+.tarjeta-org--idolo .tarjeta-org-arraigo { color: var(--live); }
+.tarjeta-org--leyenda .tarjeta-org-arraigo { color: var(--gold); }
+.tarjeta-org--idolo, .tarjeta-org--leyenda { padding-left: var(--s-2); border-left: 2px solid currentColor; }
+.tarjeta-org--idolo { color: var(--live); }
+.tarjeta-org--leyenda { color: var(--gold); background: var(--gold-fill); }
+.tarjeta-org--idolo .ficha-historia-fila, .tarjeta-org--leyenda .ficha-historia-fila { color: var(--ink); }
+
+/* --- Las que se escaparon ------------------------------------------------------------------------------------------- */
+.tarjeta-escapadas { margin-top: var(--s-5); text-align: left; }
+.tarjeta-escapada {
+  padding: var(--s-1) 0 var(--s-1) var(--s-2);
+  border-left: 2px solid var(--down);
+  font-size: var(--fs-2);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.tarjeta-escapada + .tarjeta-escapada { margin-top: var(--s-1); }
+.tarjeta-escapada-pie { margin-top: var(--s-2); font-size: var(--fs-1); font-style: italic; color: var(--ink-dim); }
+
+/* --- El duelo eterno ------------------------------------------------------------------------------------------------ */
+.tarjeta-duelo {
+  margin-top: var(--s-5);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--line-faint);
+  text-align: left;
+}
+.tarjeta-duelo-marcador {
+  font-family: var(--font-display);
+  font-size: var(--fs-6);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.tarjeta-duelo--vos .tarjeta-duelo-marcador { color: var(--gold); }
+.tarjeta-duelo-meta { margin: var(--s-1) 0 var(--s-3); font-size: var(--fs-1); color: var(--ink-mute); overflow-wrap: anywhere; }
+.tarjeta-duelo-tabla {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+  max-width: 520px;
+  gap: var(--s-1) var(--s-2);
+  align-items: baseline;
+}
+.tarjeta-duelo-k {
+  font-family: var(--font-display);
+  font-size: var(--fs-0);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.tarjeta-duelo-quien { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tarjeta-duelo-fila { font-size: var(--fs-1); color: var(--ink-dim); }
+.tarjeta-duelo-v {
+  font-family: var(--font-display);
+  font-size: var(--fs-4);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+}
+.tarjeta-duelo-v--gana { color: var(--ink); }
+.tarjeta-duelo-veredicto {
+  margin-top: var(--s-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-3);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.tarjeta-duelo--vos .tarjeta-duelo-veredicto { color: var(--gold); }
+.tarjeta-duelo--el .tarjeta-duelo-veredicto { color: var(--down); }

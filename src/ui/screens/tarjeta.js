@@ -3,6 +3,7 @@ import { descargarTarjeta, copiarTarjeta, copiarTexto } from '../exportar.js';
 import { miles, textoParaCompartir, linkDeEstado } from '../resultado.js';
 import { esBuenPapel } from '../../core/registro.js';
 import { goldenRoadsDeEstado, medallaDeGoldenRoad } from '../core/trayectoria.js';
+import { apodoDeLealtad, arraigoPorOrg, dueloEterno, finalesPerdidas } from '../../core/legado.js';
 
 // La tarjeta de legado (fase 9R5b, PLAN.md §10.2/§10.3): la pantalla final.
 // TODA salida termina acá — la del mundialista con confeti y la del pibe al que
@@ -233,6 +234,102 @@ function bloqueInternacionales(internacionales) {
   return intlSec;
 }
 
+// --- W1 · El final cuenta la historia (PLANUI §0.7, W6) ---
+
+// El apodo de la lealtad, arriba de todo ("LEYENDA DE T1"), con el veredicto de siempre como bajada.
+function bloqueApodo(apodo, veredicto) {
+  const el = document.createElement('section');
+  el.className = `tarjeta-apodo tarjeta-apodo--${apodo.id}`;
+  el.setAttribute('aria-label', 'Tu apodo');
+  el.append(
+    linea('tarjeta-apodo-k', apodo.id === 'leyenda' ? 'Para la hinchada, para siempre' : 'Para la hinchada'),
+    linea('tarjeta-apodo-v', apodo.texto),
+    linea('tarjeta-veredicto tarjeta-veredicto--sub', veredicto)
+  );
+  return el;
+}
+
+// Una org de la historia con el escalón al que llegaste: el nombre, el valor y una barra chica con las marcas de cada
+// escalón (Querido, Ídolo, Leyenda). Ídolo y Leyenda se pintan: es lo que la hinchada se acuerda.
+function filaDeOrg(fila, arraigo, anioDeCierre, hitos) {
+  const el = document.createElement('div');
+  el.className = `tarjeta-org tarjeta-org--${arraigo.id}`;
+  el.appendChild(filaHistoria(fila, anioDeCierre));
+  const escalon = document.createElement('div');
+  escalon.className = 'tarjeta-org-arraigo';
+  const nombre = document.createElement('span');
+  nombre.className = 'tarjeta-org-escalon';
+  nombre.textContent = arraigo.label;
+  const valor = document.createElement('span');
+  valor.className = 'tarjeta-org-valor';
+  valor.textContent = String(arraigo.valor);
+  const barra = document.createElement('span');
+  barra.className = 'tarjeta-org-barra';
+  barra.style.setProperty('--v', String(arraigo.valor));
+  barra.setAttribute('aria-hidden', 'true');
+  for (const id of ['querido', 'idolo', 'leyenda']) {
+    const marca = document.createElement('i');
+    marca.style.setProperty('--m', String(hitos[id]));
+    barra.appendChild(marca);
+  }
+  escalon.append(nombre, valor, barra);
+  el.appendChild(escalon);
+  return el;
+}
+
+// "Las que se escaparon": las finales del Mundial que jugaste y perdiste, con año, org y rival.
+function bloqueEscapadas(finales) {
+  const el = document.createElement('section');
+  el.className = 'tarjeta-escapadas';
+  el.appendChild(linea('tarjeta-historia-titulo', 'LAS QUE SE ESCAPARON'));
+  for (const f of finales) {
+    const marcador = f.marcador ? ` · ${f.marcador[0]}-${f.marcador[1]}` : '';
+    const rival = f.rival ? ` vs ${f.rival}` : '';
+    el.appendChild(linea('tarjeta-escapada', `Final del ${f.competicion} ${f.anio}${rival}${marcador} · con ${f.org}`));
+  }
+  el.appendChild(linea('tarjeta-escapada-pie', finales.length === 1
+    ? 'A una serie de ser campeón del mundo.'
+    : `${finales.length} veces a una serie de ser campeón del mundo.`));
+  return el;
+}
+
+const VEREDICTO_DUELO = {
+  vos: (d) => (d.porTrofeos ? 'Lo ganaste vos.' : 'Lo ganaste vos: mismos trofeos, pero llegaste más alto.'),
+  el: (d) => (d.porTrofeos ? `Se lo llevó ${d.handle}.` : `Se lo llevó ${d.handle}: mismos trofeos, pero llegó más alto.`),
+  empate: () => 'Tablas: ninguno le sacó una sola ventaja al otro.'
+};
+
+// "EL DUELO ETERNO": vos contra el archirrival de toda la carrera, lado a lado (regla 13), y quién se lo llevó.
+function bloqueDuelo(duelo, nombre) {
+  const el = document.createElement('section');
+  el.className = `tarjeta-duelo tarjeta-duelo--${duelo.ganador}`;
+  el.setAttribute('aria-label', 'El duelo eterno');
+  el.appendChild(linea('tarjeta-historia-titulo', 'EL DUELO ETERNO'));
+  el.appendChild(linea('tarjeta-duelo-marcador', `${nombre} ${duelo.tuyos} · ${duelo.suyos} ${duelo.handle}`));
+  const donde = duelo.orgs.length > 0 ? ` (${duelo.orgs.join(', ')})` : '';
+  el.appendChild(linea('tarjeta-duelo-meta',
+    `${duelo.handle}${donde}, el rival de toda tu carrera. Cuentan los títulos de liga y los Mundiales.`));
+  const tabla = document.createElement('div');
+  tabla.className = 'tarjeta-duelo-tabla';
+  const celdaDuelo = (clase, texto) => {
+    const c = document.createElement('span');
+    c.className = clase;
+    c.textContent = String(texto);
+    tabla.appendChild(c);
+  };
+  celdaDuelo('tarjeta-duelo-k', '');
+  celdaDuelo('tarjeta-duelo-k tarjeta-duelo-quien', nombre);
+  celdaDuelo('tarjeta-duelo-k tarjeta-duelo-quien', duelo.handle);
+  for (const f of duelo.filas) {
+    celdaDuelo('tarjeta-duelo-fila', f.etiqueta);
+    celdaDuelo(`tarjeta-duelo-v${f.tuyos > f.suyos ? ' tarjeta-duelo-v--gana' : ''}`, f.tuyos);
+    celdaDuelo(`tarjeta-duelo-v${f.suyos > f.tuyos ? ' tarjeta-duelo-v--gana' : ''}`, f.suyos);
+  }
+  el.appendChild(tabla);
+  el.appendChild(linea('tarjeta-duelo-veredicto', VEREDICTO_DUELO[duelo.ganador](duelo)));
+  return el;
+}
+
 // `extras.lineaHistorial`: la línea "tu mejor…" que arma `app.js` con el
 // historial local (puede faltar: el historial es una conveniencia).
 export function renderTarjeta(container, state, modulos, extras = {}) {
@@ -255,6 +352,13 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
   container.appendChild(linea('tarjeta-identidad',
     `${state.player.name} · ${modulos.etiquetaRol(state.player.role)} · se retiró a los ${t.edadRetiro}`));
 
+  // W1: si la hinchada te hizo Ídolo o Leyenda en algún lado, ese es el titular; el veredicto pasa a ser la bajada.
+  const registro = state.career?.registro ?? null;
+  const apodo = registro ? apodoDeLealtad(registro) : null;
+  if (apodo) {
+    container.appendChild(bloqueApodo(apodo, t.veredicto));
+  }
+
   if (t.puntaje) {
     container.appendChild(bloqueNumero(state, t.puntaje, extras.lineaHistorial ?? null));
     const goldenRoads = goldenRoadsDeEstado(state);
@@ -265,7 +369,9 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
     container.appendChild(bloqueLeyenda(state, t.puntaje, modulos));
   }
 
-  container.appendChild(linea('tarjeta-veredicto', t.veredicto));
+  if (!apodo) {
+    container.appendChild(linea('tarjeta-veredicto', t.veredicto));
+  }
 
   const totales = t.totales;
   const franja = document.createElement('div');
@@ -287,8 +393,21 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
     const historia = document.createElement('div');
     historia.className = 'tarjeta-historia';
     historia.appendChild(linea('tarjeta-historia-titulo', 'TU HISTORIA, ORG POR ORG'));
-    historia.append(...t.historia.map((fila) => filaHistoria(fila, state.calendario?.anio)));
+    // W1: cada org con el escalón de arraigo al que llegaste (del registro; una tarjeta sin registro queda como antes).
+    const arraigos = registro ? arraigoPorOrg(registro) : [];
+    historia.append(...t.historia.map((fila, i) => (arraigos[i]?.org === fila.org
+      ? filaDeOrg(fila, arraigos[i], state.calendario?.anio, modulos.BALANCE.arraigo.hitos)
+      : filaHistoria(fila, state.calendario?.anio))));
     container.appendChild(historia);
+  }
+
+  const escapadas = registro ? finalesPerdidas(registro) : [];
+  if (escapadas.length > 0) {
+    container.appendChild(bloqueEscapadas(escapadas));
+  }
+  const duelo = registro && state.mundo ? dueloEterno(state) : null;
+  if (duelo) {
+    container.appendChild(bloqueDuelo(duelo, state.player.name));
   }
 
   const internacionales = state.career?.registro?.internacionales ?? t.internacionales ?? [];
