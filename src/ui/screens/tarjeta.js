@@ -283,7 +283,8 @@ function bloqueEscapadas(finales) {
   el.className = 'tarjeta-escapadas';
   el.appendChild(linea('tarjeta-historia-titulo', 'LAS QUE SE ESCAPARON'));
   for (const f of finales) {
-    const marcador = f.marcador ? ` · ${f.marcador[0]}-${f.marcador[1]}` : '';
+    // el ganador primero, como el log de la serie: `marcador` es [tuyo, suyo] y la final se perdió
+    const marcador = f.marcador ? ` · ${f.marcador[1]}-${f.marcador[0]}` : '';
     const rival = f.rival ? ` vs ${f.rival}` : '';
     el.appendChild(linea('tarjeta-escapada', `${f.etiqueta ?? `Final del ${f.competicion}`} ${f.anio}${rival}${marcador} · con ${f.org}`));
   }

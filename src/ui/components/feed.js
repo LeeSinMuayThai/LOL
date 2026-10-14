@@ -995,12 +995,18 @@ export function renderParadaAntes(contenedor, state, { desde = 0, cierreDelAnio 
   const franja = franjaDelTramo(state.logs, inicio);
   contenedor.replaceChildren();
   const cartelDelAnio = cierreDelAnio?.anio ? `Cierre de ${cierreDelAnio.anio}` : null;
-  if (franja.cuantas === 0 && !cartelDelAnio) {
+  const conElecciones = (franja.elecciones ?? []).length > 0;
+  if (franja.cuantas === 0 && !cartelDelAnio && !conElecciones) {
     contenedor.hidden = true;
     return;
   }
   // F3 (PLANUI §0.8, punto 6): lo que elegiste y lo que salió, arriba y aparte, más grande que las líneas comunes.
   for (const e of franja.elecciones ?? []) contenedor.append(bloqueDeEleccion(e));
+  // F3: si lo único que pasó en el tramo es lo que elegiste, el bloque alcanza: no hay franja "Mientras tanto" vacía.
+  if (franja.cuantas === 0 && !cartelDelAnio) {
+    contenedor.hidden = false;
+    return;
+  }
   const rotulo = document.createElement('span');
   rotulo.className = 'mt-rotulo';
   rotulo.append(icono(cartelDelAnio ? 'temporada' : 'serie'), cartelDelAnio ? `${cartelDelAnio} · Mientras tanto` : 'Mientras tanto');

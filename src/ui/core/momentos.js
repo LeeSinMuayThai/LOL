@@ -120,14 +120,15 @@ export function franjaDelTramo(logs, desde = 0) {
   const propias = narrativos.map((log) => ({ log, eleccion: eleccionDelJugador(log) })).filter((x) => x.eleccion);
   const elecciones = propias.map((x) => x.eleccion).reverse().slice(0, ELECCIONES_DE_FRANJA);
   const mostradas = new Set(propias.slice(-ELECCIONES_DE_FRANJA).map((x) => x.log));
-  const titulares = narrativos
-    .filter((log) => !mostradas.has(log))
+  // La elegida ya sale arriba: ni cuenta en la franja, ni suma sus chips, ni repite su titular.
+  const restantes = narrativos.filter((log) => !mostradas.has(log));
+  const titulares = restantes
     .map((log, i) => ({ log, i, peso: pesoDe(log) }))
     .sort((a, b) => b.peso - a.peso || b.i - a.i)
     .slice(0, TITULARES_DE_FRANJA)
     .map(({ log }) => ({ type: log.type ?? null, texto: String(log.titulo ?? log.message ?? '').replace(/\s+/g, ' ').trim() }))
     .filter((t) => t.texto);
-  return { cuantas: narrativos.length, ejes: ejesSumados(narrativos).slice(0, EJES_DE_FRANJA), titulares, elecciones };
+  return { cuantas: restantes.length, ejes: ejesSumados(restantes).slice(0, EJES_DE_FRANJA), titulares, elecciones };
 }
 
 // El resumen de la temporada (PLANUI §0.6, punto 2): `null` si el tramo no trae el log `edad` con su nota. `fotoAnio` es
