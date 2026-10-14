@@ -374,10 +374,11 @@ html[data-textos='breves'] .ms-extra { display: none; }
 /* ---------- LA FIRMA AL FRENTE (PLANUI §0.6 punto 1): el papel de arriba de la pila, grande, sobre un velo ---------- */
 .ms-frente { position: fixed; inset: 0; z-index: 190; display: grid; place-items: center; pointer-events: none; }
 .ms-frente-velo {
-  position: absolute; inset: 0; backdrop-filter: blur(4px);
+  position: absolute; inset: 0;
   background: radial-gradient(ellipse at 50% 48%, color-mix(in srgb, var(--ms-frente-luz) 14%, color-mix(in srgb, var(--ms-frente-fondo) 84%, transparent)) 0%, color-mix(in srgb, var(--ms-frente-fondo) 96%, transparent) 70%);
 }
-.ms-frente-papel { position: relative; flex: none; transform-origin: 50% 50%; }
+.ms-frente-papel { position: relative; flex: none; transform-origin: 50% 50%; will-change: transform, opacity; }
+.ms-frente-sombra { position: absolute; inset: 0; z-index: 4; border-radius: 4px; pointer-events: none; opacity: 0; background: var(--oscuro-total); }
 /* en el papel escalado, los sellos sin mezcla multiply: con el papel en su propia capa, la mezcla se dibujaba dos veces */
 .ms-frente-papel :is(.ms-carta-sello, .ms-carta-firmada) { mix-blend-mode: normal; }
 .ms-frente-papel .ms-carta { box-shadow: inset 0 -1px 0 var(--ms-papel-canto), 0 40px 90px var(--sombra), 0 0 0 1px color-mix(in srgb, var(--h-acento) 40%, transparent), 0 0 60px color-mix(in srgb, var(--h-luz) 24%, transparent); }
@@ -454,7 +455,7 @@ html[data-textos='breves'] .ms-extra { display: none; }
 .fj-pl-cab { display: grid; justify-items: center; gap: 10px; text-align: center; }
 .fj-pl-k { display: inline-flex; align-items: center; gap: 8px; margin: 0; font: 600 var(--t-rotulo-g) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
 .fj-pl-org { max-width: 100%; margin: 0; overflow-wrap: anywhere; text-wrap: balance; font: 900 var(--ms-pl-org) / 0.9 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink); text-shadow: 0 0 60px color-mix(in srgb, var(--tono-luz) 45%, transparent); }
-.fj-pl-mapa { position: relative; width: min(var(--fj-mapa), 86vw); aspect-ratio: 1; }
+.fj-pl-mapa { position: relative; width: min(var(--fj-mapa), 86vw); aspect-ratio: 1; will-change: transform; }
 .fj-pl-marca { position: absolute; inset: 12%; display: grid; place-items: center; opacity: 0.16; }
 .fj-pl-marca .ln-logo { width: 100%; height: 100%; }
 .fj-pl-marca .ln-logo img { width: 100%; height: 100%; object-fit: contain; }

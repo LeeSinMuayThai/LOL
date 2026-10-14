@@ -128,7 +128,8 @@ const T_FRENTE = {
   caen: 40, caenPaso: 45, caenDur: 520,
   trazo: 470, trazoDur: 820, rubrica: 1290, rubricaDur: 210,
   sello: 1500, selloDur: 300,
-  fin: 2300, vuelve: 460
+  fin: 2300, vuelve: 460,
+  entrega: 1950 // con fichaje, el papel pasa al fichaje acá: el resto del sostén lo cubre el jersey que se monta (fichaje.js)
 };
 // El papel al frente: su ancho (tope en px, fracción del ancho de la pantalla en escritorio y en el celular), el aire que
 // deja arriba y abajo (px), la pose del despegue (px, grados) y cómo caen los otros papeles (vh, grados).
@@ -334,6 +335,12 @@ function sellarCarta(c, { w, t, texto, dur }) {
   const f = el('span', { class: 'ms-carta-firmada', 'aria-hidden': 'true', text: texto });
   c.querySelector('.ms-carta-pie')?.append(f);
   c.classList.add('ms-carta-sellada');
+  // el sello de la firma toma el lugar del sello redondo del club: el del club se va con el golpe (no se pisan)
+  const delClub = c.querySelector('.ms-carta-sello');
+  if (delClub) {
+    delClub.style.opacity = '0';
+    w(animar(delClub, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.7)' }], { delay: Math.max(0, t - dur * 0.25), dur: dur * 0.5, easing: 'ease-in' }));
+  }
   w(animar(f, [{ opacity: 0, transform: 'rotate(-14deg) scale(2.4)', easing: 'cubic-bezier(.55,0,1,.45)' }, { opacity: 1, transform: 'rotate(-9deg) scale(.92)', offset: 0.7, easing: EXPO }, { opacity: 1, transform: 'rotate(-9deg)' }], { delay: Math.max(0, t - dur * 0.7), dur, easing: 'linear' }));
   return f;
 }
@@ -798,6 +805,8 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     if (elegido || i < 0 || !ofertas[i]) return;
     mostrar(i);
     bloquearPantalla();
+    // con movimiento reducido no hay ceremonia en FIRMAR: mientras responde el motor, la grilla y el inspector se apagan ya
+    if (quieto()) raiz.classList.add('ms-firmando');
     respuesta = { tipo: 'firmar', i };
     responder({ opcionId: ofertas[i].id });
   }
@@ -979,9 +988,19 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     if (i == null || (!f && !prueba)) return 0;
     // la oferta pide prueba: su tono y tu valor quedan para la firma después de la prueba
     if (prueba && !f) pruebaPendiente = { seed: estado.seed, org: ofertas[i].org, tono: tonos[i], valor };
-    const papel = await narrarContrato(ctx, i, f, prueba);
+    // con un club nuevo, el fichaje se monta ANTES del papel (casi invisible, esperando el papel firmado); el jersey, que
+    // es lo caro de dibujar, entra en el sostén del papel (`fichaje.js`)
+    let entregar = () => {};
+    const papelListo = new Promise((r) => (entregar = r));
+    const fichaje = f && !f.renovacion ? narrarFichaje(ctx, f, { mundo, sonido, valor, tono: tonos[i], papel: papelListo }) : null;
+    let papel = null;
     try {
-      if (papel) await narrarFichaje(ctx, f, { mundo, sonido, valor, tono: tonos[i], papel, saltado: papel.saltado });
+      papel = await narrarContrato(ctx, i, f, prueba);
+    } finally {
+      entregar(papel);
+    }
+    try {
+      if (fichaje) await fichaje;
     } finally {
       papel?.soltar();
     }
@@ -1079,7 +1098,10 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     Object.assign(papel.style, { transform: 'none', zIndex: '', visibility: '', opacity: '' });
     const firma = firmaTrazada(yo.handle, 'ms-papel-firma');
     papel.querySelector('.ms-carta-vos')?.prepend(firma.nodo);
-    const caja = el('div', { class: 'ms-frente-papel', style: { width: `${ancho}px`, height: `${alto}px` } }, papel);
+    // la sombra: el papel se apaga detrás del mapa (opacidad, sin `filter`: un desenfoque animado sobre el papel grande
+    // trababa la GPU justo cuando cae el mapa)
+    const sombra = el('i', { class: 'ms-frente-sombra', 'aria-hidden': 'true' });
+    const caja = el('div', { class: 'ms-frente-papel', style: { width: `${ancho}px`, height: `${alto}px` } }, [papel, sombra]);
     const velo = el('div', { class: 'ms-frente-velo', style: { '--ms-frente-fondo': `var(${tono.vacio})`, '--ms-frente-luz': `var(${tono.luz})` } });
     const capa = el('div', { class: 'ms-frente', 'aria-hidden': 'true' }, [velo, caja]);
     (document.querySelector('.shell') ?? document.body).append(capa);
@@ -1149,7 +1171,7 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
       if (narracion.modo === 'reducido') {
         fundirCuadro(capa);
         await narracion.esperar(T_FIRMAR.lectura);
-      } else await bt.esperar(T(T_FRENTE.fin));
+      } else await bt.esperar(T(conFichaje ? T_FRENTE.entrega : T_FRENTE.fin));
       if (!conFichaje) await narracion.esperar(T_FIRMAR.sostener);
     } finally {
       narracion.fin();
@@ -1160,7 +1182,7 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
       carta.style.visibility = '';
       h.nodo.style.opacity = '';
     };
-    if (conFichaje && raiz.isConnected) return { capa, caja, escala, saltado, soltar };
+    if (conFichaje && raiz.isConnected) return { capa, caja, sombra, escala, saltado, soltar };
     // sin fichaje: el papel vuelve a la pila (sellada) y la hoja sellada aparece en el panel
     const vuelta = animar(caja, [{ transform: alFrente }, { transform: enLaPila }], { dur: T(T_FRENTE.vuelve), easing: 'cubic-bezier(.6,0,.3,1)', fill: 'forwards' });
     animar(velo, [{ opacity: 1 }, { opacity: 0 }], { dur: T(T_FRENTE.vuelve), easing: 'linear', fill: 'forwards' });
