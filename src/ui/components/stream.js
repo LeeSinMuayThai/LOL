@@ -57,7 +57,8 @@ const TXS = {
   entrada: -200 // la parada entra después del relato: un poco antes que en la vitrina
 };
 // el zoom y el paneo de la cámara del video: el marco de la costura crece (zoom) y se corre (paneo) adentro de la caja
-const CAMARA = { zoom: [1.03, 1.1], paneo: 0.025 };
+// (y el aire mínimo entre el marcador y la cara de B, en px)
+const CAMARA = { zoom: [1.03, 1.1], paneo: 0.025, aire: 10 };
 // la racha de hype (decorativa): dónde arranca, hasta dónde la sube la tensión, el empujón de apuntar y al elegir
 const HYPE = { desde: 0.18, tension: 0.58, subida: 9000, apuntar: 0.08, elegir: 0.86 };
 const ETQ_CAMBIO = { 'career.arraigo': ['arraigo', 'Arraigo'], 'player.stats.hype': ['hype', 'Hype'], 'player.worlds': ['mundo', 'Mundiales'] };
@@ -68,10 +69,12 @@ const PRED = { puntos: [180000, 2600000], votan: [1400, 9800], cerrada: 600, irs
 // el riel EN VIVO (decorativo, de `fx/azar.js`): los espectadores de cada cruce (canal oficial) y de cada co-stream, cuántos
 // co-streams, cada cuánto se mueven los números y cuánto, y la escalera de la entrada
 const RIEL = {
-  cruce: [38000, 164000], costream: [1800, 46000], costreams: [4, 6], oficial: [24000, 620000], tick: 4000, mueve: [-0.012, 0.022], escalera: 40, desde: 260, mil: 1000,
-  idiomas: ['Español', 'Español', 'Português', 'Português', 'English'],
-  // la transmisión oficial en otros idiomas (canales de la liga, no personas)
-  oficiales: ['English', '한국어', '中文', 'Português', 'Français', 'Deutsch', 'Tiếng Việt', '日本語']
+  cruce: [38000, 164000], costream: [1800, 46000], costreams: [6, 8], oficial: [24000, 620000], tick: 4000, mueve: [-0.012, 0.022], escalera: 40, desde: 260, mil: 1000,
+  // el idioma de cada co-stream: la sigla del chip y el nombre (en el title)
+  idiomas: [['ES', 'Español'], ['ES', 'Español'], ['PT', 'Português'], ['PT', 'Português'], ['EN', 'English']],
+  // la transmisión oficial en otros idiomas (canales de la liga, no personas); el riel muestra las filas que entran enteras
+  oficiales: ['English', '한국어', '中文', 'Português', 'Français', 'Deutsch', 'Tiếng Việt', '日本語', 'Italiano', 'Polski', 'Türkçe', 'ไทย'],
+  pie: 8 // el padding de abajo de la lista: lo que no entra entero ahí se esconde
 };
 const SWISS = BALANCE.mundial;
 
@@ -326,7 +329,10 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     const r = player.getBoundingClientRect();
     if (!g?.b || !(r.width > 2)) return;
     caraB.style.left = `${g.b.x * innerWidth - r.left}px`;
-    caraB.style.top = `${g.b.y * innerHeight - r.top}px`;
+    // en un player angosto la cara de B queda alta: nunca pisa el marcador (baja hasta `CAMARA.aire` debajo de él)
+    const ty = new DOMMatrixReadOnly(getComputedStyle(caraB).transform).m42;
+    const piso = mc.nodo.getBoundingClientRect().bottom - r.top + CAMARA.aire - ty;
+    caraB.style.top = `${Math.max(g.b.y * innerHeight - r.top, piso)}px`;
   }
 
   // ---------- entrar ----------
@@ -695,7 +701,7 @@ function crearRiel({ semilla, comp, org, rival, sNos, sEllos, proxima, cruces, r
     const numero = el('b', { class: 'num', text: corto(n) });
     const li = el('li', { class: 'tx-rl-it', title: titulo }, [
       avatar,
-      el('span', { class: 'tx-rl-txt' }, [el('b', { class: 'tx-rl-n', text: nombre }), el('span', { class: 'tx-rl-sub', text: sub })]),
+      el('span', { class: 'tx-rl-txt' }, [el('b', { class: 'tx-rl-n', text: nombre }), el('span', { class: 'tx-rl-sub' }, sub)]),
       el('span', { class: 'tx-rl-esp' }, [el('i', { class: 'tx-rl-punto', 'aria-hidden': 'true' }), numero])
     ]);
     items.push({ li, n, numero });
@@ -709,7 +715,7 @@ function crearRiel({ semilla, comp, org, rival, sNos, sEllos, proxima, cruces, r
     return item({
       avatar: el('span', { class: 'tx-rl-av tx-rl-dos', 'aria-hidden': 'true' }, [logoOrg(x.a, { clase: 'tx-rl-logo' }), logoOrg(x.b, { clase: 'tx-rl-logo' })]),
       nombre: `${siglaDe(x.a)} vs ${siglaDe(x.b)}${r ? ` · ${r}` : ''}`,
-      sub: canal,
+      sub: [canal],
       n: az.entero(RIEL.cruce[0], RIEL.cruce[1]),
       titulo: `${x.a} vs ${x.b}`
     });
@@ -727,24 +733,45 @@ function crearRiel({ semilla, comp, org, rival, sNos, sEllos, proxima, cruces, r
   const listaCo = costreams.map((c) => item({
     avatar: el('span', { class: `tx-rl-av tx-rl-ini tx-rl-c${c.color}`, 'aria-hidden': 'true', text: c.nombre.slice(0, 2).toUpperCase() }),
     nombre: c.nombre,
-    sub: `${c.idioma} · co-stream · ${sNos || org} vs ${sEllos || rival}`,
-    n: c.n
+    sub: [el('span', { class: 'tx-rl-idioma', text: c.idioma[0] }), `${sNos || org} vs ${sEllos || rival}`],
+    n: c.n,
+    titulo: `${c.nombre} · co-stream en ${c.idioma[1]} · ${org} vs ${rival}`
   }));
   const listaOficial = RIEL.oficiales.map((idioma) => item({
     avatar: el('span', { class: 'tx-rl-av tx-rl-comp', 'aria-hidden': 'true' }, logoComp(comp, { clase: 'tx-rl-logo' })),
-    nombre: `${comp.nombre} · ${idioma}`,
-    sub: `transmisión oficial · Swiss, ronda ${proxima}`,
+    nombre: idioma,
+    sub: [`${comp.nombre} · oficial`],
+    titulo: `${comp.nombre} · transmisión oficial en ${idioma} · Swiss, ronda ${proxima}`,
     n: az.entero(RIEL.oficial[0], RIEL.oficial[1])
   }));
-  const grupo = (titulo, lista) => (lista.length ? [el('p', { class: 'tx-rl-k', text: titulo }), el('ul', { class: 'tx-rl-lista' }, lista)] : []);
+  const grupos = [];
+  const grupo = (titulo, lista) => {
+    if (!lista.length) return [];
+    const k = el('p', { class: 'tx-rl-k', text: titulo });
+    grupos.push({ k, lista });
+    return [k, el('ul', { class: 'tx-rl-lista' }, lista)];
+  };
+  const cuerpo = el('div', { class: 'tx-rl-cuerpo' }, [...grupo(`Ronda ${proxima} · los cruces`, listaCruces), ...grupo('Co-streams de tu partida', listaCo), ...grupo(`${comp.nombre} en otros idiomas`, listaOficial)]);
   const nodo = el('aside', { class: 'tx-riel', 'aria-label': 'Canales en vivo' }, [
     el('p', { class: 'tx-rl-cab' }, [el('i', { class: 'tx-rl-punto', 'aria-hidden': 'true' }), el('span', { text: 'Canales en vivo' })]),
-    el('div', { class: 'tx-rl-cuerpo' }, [...grupo(`Ronda ${proxima} · los cruces`, listaCruces), ...grupo('Co-streams de tu partida', listaCo), ...grupo(`${comp.nombre} en otros idiomas`, listaOficial)])
+    cuerpo
   ]);
+  // solo las filas que entran enteras (nunca media fila); en la tira del celular, todas (tiene scroll propio)
+  function ajustar() {
+    for (const x of [...items.map((i) => i.li), ...grupos.map((g) => g.k)]) delete x.dataset.fuera;
+    const cs = getComputedStyle(cuerpo);
+    if (cs.display === 'flex' && cs.flexDirection === 'row') return;
+    const alto = cuerpo.clientHeight - RIEL.pie;
+    for (const x of items) if (x.li.offsetTop + x.li.offsetHeight > alto) x.li.dataset.fuera = '';
+    for (const g of grupos) if (g.lista.every((li) => li.dataset.fuera != null)) g.k.dataset.fuera = '';
+  }
+  const alCambiar = () => ajustar();
   let reloj = 0;
   return {
     nodo,
     entrar(desde) {
+      ajustar();
+      addEventListener('resize', alCambiar);
       items.forEach((x, i) => entrar(x.li, desde + i * RIEL.escalera, 8));
       if (quieto()) return;
       reloj = setInterval(() => {
@@ -755,7 +782,10 @@ function crearRiel({ semilla, comp, org, rival, sNos, sEllos, proxima, cruces, r
         }
       }, RIEL.tick);
     },
-    destruir: () => clearInterval(reloj)
+    destruir() {
+      clearInterval(reloj);
+      removeEventListener('resize', alCambiar);
+    }
   };
 }
 
