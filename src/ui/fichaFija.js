@@ -16,7 +16,7 @@
 // (`animar`: con movimiento reducido aparece quieta).
 import {
   nivelDelAnio, escaleraDeArraigo, escaleraDeJerarquia, escaleraDeHype, puntajeEnVivo, vitrinaDeTitulos, dineroGanado,
-  estadoInternacional
+  estadoInternacional, statsDeJuego
 } from '../core/ficha.js';
 import { plata, faltan } from '../core/formato.js';
 import { moverNumero } from './core/delta.js';
@@ -112,6 +112,7 @@ export function datosDeLaFicha(estado) {
   return {
     amateur,
     nivel: nivelDelAnio(estado),
+    juego: statsDeJuego(estado),
     arraigo: escaleraDeArraigo(estado),
     carrera: puntajeEnVivo(estado),
     jerarquia: escaleraDeJerarquia(estado),
@@ -263,11 +264,31 @@ function escalones(a) {
   return lista;
 }
 
+// F4 (PLANUI §0.8, punto 8): "TU JUEGO", los seis stats que mueven las cartas del cierre, cada uno con su valor y su ▲▼ del año
+// (la misma foto que el nivel). Va solo en la hoja: la tira ya está llena.
+function bloqueJuego(stats) {
+  const caja = nodo('div', 'fj-juego');
+  caja.append(nodo('span', 'fj-rot fj-juego-rot', 'Tu juego'));
+  const grilla = nodo('ul', 'fj-juego-stats');
+  for (const s of stats) {
+    const celda = nodo('li', 'fj-stat');
+    celda.dataset.stat = s.id;
+    celda.title = `${s.rotulo} ${s.valor}${s.delta ? `, ${s.delta > 0 ? '+' : ''}${s.delta} en el año` : ''}`;
+    celda.append(nodo('span', 'fj-stat-rot', s.corto), nodo('b', 'fj-stat-valor', num(s.valor)));
+    const delta = deltaNodo(s.delta);
+    if (delta) celda.append(delta);
+    grilla.append(celda);
+  }
+  caja.append(grilla);
+  return caja;
+}
+
 function pintarHoja(hoja, d) {
   const filas = [];
   const nivel = fila('Nivel', 'nivel', num(d.nivel.valor), [LABEL_BANDA[d.nivel.banda] ?? '', deltaNodo(d.nivel.delta, 'en el año')]);
   nivel.dataset.banda = d.nivel.banda;
   filas.push(nivel);
+  if (d.juego?.length) filas.push(bloqueJuego(d.juego));
   if (d.arraigo) {
     const a = d.arraigo;
     const texto = a.esMaxima

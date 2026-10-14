@@ -576,13 +576,13 @@
           },
           {
             "weight": 4,
-            "texto": "Lo planteás y el silencio dura un segundo de más. Nadie te contradice, pero el que estaba antes en ese lugar te mira distinto desde entonces y los scrims se ponen tensos.",
+            "texto": "Lo planteás y el silencio dura un segundo de más. Nadie te contradice y un poco de lugar te queda, pero el que estaba antes en ese lugar te mira distinto desde entonces y los scrims se ponen tensos.",
             "effects": [
               {
                 "type": "stat",
                 "path": "career.jerarquia",
-                "min": -3,
-                "max": 0,
+                "min": 1,
+                "max": 2,
                 "clamp": [
                   0,
                   100
@@ -1154,6 +1154,16 @@
             "weight": 3,
             "texto": "Te llevás pocas cosas y el audio de grupo termina en silencio. Por lo menos cerrás sin pelearte con nadie, pero dos semanas sin tocar el cliente se notan.",
             "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
@@ -1797,13 +1807,13 @@
           },
           {
             "weight": 5,
-            "texto": "Respondés rápido, con la cabeza caliente, y el hilo se te da vuelta: te citan el mensaje, lo recortan, lo vuelven meme. El comunicado del club llega a la hora.",
+            "texto": "Respondés rápido, con la cabeza caliente, y el hilo se te da vuelta: te citan el mensaje, lo recortan, lo vuelven meme. Hablan de vos, aunque no como querías. El comunicado del club llega a la hora.",
             "effects": [
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": -6,
-                "max": -2,
+                "min": 1,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -2083,13 +2093,13 @@
           },
           {
             "weight": 4,
-            "texto": "Pedís y la dirección te escucha con cortesía, pero el plantel se arma igual que ya estaba decidido. Quedás como el que se cree dueño del vestuario.",
+            "texto": "Pedís y la dirección te escucha con cortesía, pero el plantel se arma igual que ya estaba decidido. Algo de lugar te queda, aunque quedás como el que se cree dueño del vestuario.",
             "effects": [
               {
                 "type": "stat",
                 "path": "career.jerarquia",
-                "min": -4,
-                "max": -1,
+                "min": 1,
+                "max": 2,
                 "clamp": [
                   0,
                   100
@@ -2219,13 +2229,13 @@
           },
           {
             "weight": 2,
-            "texto": "Doce horas de cola un lunes, y otras doce el martes. A la tercera semana no ganás ni las que tenés ganadas: la cabeza no da más.",
+            "texto": "Doce horas de cola un lunes, y otras doce el martes. A la tercera semana apenas ganás las que tenés ganadas: la cabeza no da más.",
             "effects": [
               {
                 "type": "ladder",
                 "path": "player.ranked",
-                "min": -12,
-                "max": -2
+                "min": 2,
+                "max": 8
               },
               {
                 "type": "stat",
@@ -2652,13 +2662,13 @@
           },
           {
             "weight": 4,
-            "texto": "Te rechazan en tres seguidos, y en uno ni te explican por qué. Volvés con tu nombre en una planilla y con la cabeza hecha pedazos.",
+            "texto": "Te rechazan en tres seguidos, y en uno ni te explican por qué. Volvés con tu nombre en una planilla (al menos ya te vieron) y con la cabeza hecha pedazos.",
             "effects": [
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": -3,
-                "max": -1,
+                "min": 1,
+                "max": 3,
                 "clamp": [
                   0,
                   100

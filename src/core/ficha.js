@@ -434,3 +434,26 @@ export function dineroGanado(registro) {
   const valor = Number(registro?.dineroTotalUSD);
   return Number.isFinite(valor) && valor > 0 ? valor : 0;
 }
+
+// --- F4 (PLANUI §0.8, punto 8): "tu juego", los stats que mueven las cartas ---
+//
+// La carta del cierre dice "Mecánica ~+5, Macro ~+2, Consistencia ~-6" y la ficha solo mostraba el nivel: se elegía a ciegas.
+// Acá van los seis stats con su valor y su movimiento del año, con la misma foto y el mismo umbral que el nivel
+// (`deltaDelAnio`: un número, una fuente). `corto` es el nombre con que aparece en las cartas (`CORTO` de
+// `ui/components/decision/comun.js`: "Calls", "Adapt.", "Cabeza"); `rotulo`, el de la previa ("Consistencia").
+const STATS_DE_JUEGO = [
+  ['mecanica', 'Mecánica'], ['macro', 'Macro'], ['laneo', 'Laneo'],
+  ['shotcalling', 'Calls'], ['adaptabilidad', 'Adapt.'], ['mentalidad', 'Cabeza']
+];
+
+// `[{ id, rotulo, corto, valor, delta }]`; `delta` es 0 si no llega al umbral o la foto no trae el stat.
+export function statsDeJuego(state) {
+  const stats = state.player?.stats ?? {};
+  return STATS_DE_JUEGO.filter(([id]) => Number.isFinite(stats[id])).map(([id, corto]) => ({
+    id,
+    rotulo: etiquetaCampo(`player.stats.${id}`),
+    corto,
+    valor: Math.round(stats[id]),
+    delta: deltaDelAnio(state, `player.stats.${id}`, stats[id])
+  }));
+}
