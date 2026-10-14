@@ -66,6 +66,7 @@ function construirContexto(state) {
     liga: ligaDeCarrera(state),
     internacionalEsteAnio: registro.internacionales.find((entrada) => entrada.anio === anio) ?? null,
     // F3: los Mundiales de años anteriores (para el "primero" y la bajada de veterano) y la final doméstica perdida del año.
+    swissPrevio: registro.internacionales.some((entrada) => entrada.anio < anio && entrada.resultado === 'eliminado'),
     mundialesPrevios: registro.internacionales.filter((entrada) => entrada.anio < anio).length,
     finalPerdidaEsteAnio: (registro.finales ?? []).find((final) => final.anio === anio && !final.gano) ?? null,
     tituloEsteAnio: registro.titulos.find((titulo) => titulo.anio === anio) ?? null,
@@ -244,7 +245,7 @@ function candidatoAusencia(state, ctx) {
   };
 }
 
-// F3 (D106, PLANUI §0.8): la final doméstica perdida del año. La bajada dice contra quién y cómo (marcador tuyo primero).
+// F3 (D106, PLANUI §0.8): la final doméstica perdida del año. La bajada dice contra quién y cómo (el marcador con el ganador primero, como el log de la serie).
 function candidatoFinalPerdida(state, ctx) {
   const final = ctx.finalPerdidaEsteAnio;
   if (!final) {
@@ -264,12 +265,13 @@ function candidatoPrimerMundial(state, ctx) {
   return { titular: 'TU PRIMER MUNDIAL', bajada: 'Te tocó irte en el Swiss, pero ya estuviste.' };
 }
 
-// F3: un Mundial que no es el primero y se acaba en el Swiss.
+// F3: un Mundial que no es el primero y se acaba en el Swiss. El "otra vez" exige un Swiss previo con eliminación: si los
+// Mundiales de antes fueron mejores (cuartos, final, título), es "AFUERA EN EL SWISS" a secas.
 function candidatoAfueraEnElSwiss(state, ctx) {
   if (ctx.internacionalEsteAnio?.resultado !== 'eliminado' || ctx.mundialesPrevios === 0) {
     return null;
   }
-  return { titular: 'OTRA VEZ AFUERA EN EL SWISS', bajada: 'Worlds se te acabó en la primera fase.' };
+  return { titular: ctx.swissPrevio ? 'OTRA VEZ AFUERA EN EL SWISS' : 'AFUERA EN EL SWISS', bajada: 'Worlds se te acabó en la primera fase.' };
 }
 
 // El titular es "EL PARCHE QUE TE MATÓ..." (un hecho puntual, pasado), no
