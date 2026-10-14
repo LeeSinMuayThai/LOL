@@ -111,9 +111,12 @@ function alParar(ctx) {
   if (sistema.id === 'edadCierre' && decision.opciones?.some((o) => o.plan)) ofrecer('cierre', state.phase === 'profesional' ? 2 : 1, ctx);
   if (sistema.id === 'serie' && motivo === 'plan' && esBo5DeLiga(state) && !decision.datos?.replan) ofrecer('serie', (PRIORIDAD_RONDA[state.serie.ronda] ?? 0) + 1, ctx);
   if (sistema.id === 'internacional' && motivo === 'swiss') ofrecer('swiss', 1, ctx);
+  // F2 (PLANUI §0.8): la llamada de tier 2 en el split del salto, y la última fecha que frena porque el split no frenó.
+  if (sistema.id === 'competitivo' && motivo === 'llamada_tier2' && nOpc === 2) ofrecer('llamada', 1, ctx);
+  if (sistema.id === 'temporada' && (state.career.temporada?.fechaEnCurso?.motivos ?? []).includes('ultima_fecha')) ofrecer('ultima-fecha', 1, ctx);
 }
 
-const QUIERO = ['evento', 'destino', 'plan', 'cierre', 'serie', 'swiss', 'final', 'firma', 'final-perdida', 'mudanza', 'primer-club'];
+const QUIERO = ['evento', 'destino', 'plan', 'cierre', 'serie', 'swiss', 'final', 'firma', 'final-perdida', 'mudanza', 'primer-club', 'llamada', 'ultima-fecha'];
 for (let seed = 1; seed <= SEEDS && !QUIERO.every((n) => muestras.has(n) && (n !== 'serie' || muestras.get(n).prioridad >= 3)); seed += 1) {
   jugarCarrera(seed, { alParar, responder, alCerrarSplit: ({ despues }) => confirmar(despues) });
 }

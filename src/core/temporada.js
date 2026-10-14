@@ -343,6 +343,11 @@ export function textoPorQueImporta(state) {
   if (motivo === 'revancha') {
     return `Es la revancha: ${fecha.rival} te eliminó la última vez que se cruzaron.`;
   }
+  // F2 (PLANUI §0.8): la última fecha que frena porque el split no frenó en ninguna otra parte (`systems/temporada.js`,
+  // la marca `ultima_fecha` en los motivos). No define nada: el porqué es que es la última.
+  if ((fecha.motivos ?? []).includes('ultima_fecha')) {
+    return `Es la última fecha del split regular: lo que pase contra ${fecha.rival} es lo último que queda en la tabla.`;
+  }
   return null;
 }
 

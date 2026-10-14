@@ -20741,6 +20741,9 @@ check('K3-B la ficha lista solo las marcas cuyo acumulado (por stat, origen y a�
 // ============================================================================
 
 const MOTIVOS_K4A = ['define_clasificacion', 'archirrival', 'clasico', 'revancha'];
+// F2 (PLANUI §0.8): la marca de la parada garantizada (`ultima_fecha`, systems/temporada.js) marca la última fecha de un split que
+// no frenó en ninguna otra parte. No es un motivo de la prioridad, ni puntero ni presión: es "que ningún split pase sin una parada".
+const MARCAS_K4A = [...MOTIVOS_K4A, 'ultima_fecha'];
 
 // Una liga sintética de 10 equipos con el formato de tier 1 (6 clasifican, 2 con bye) y UNA fecha por jugar: la última,
 // contra R9. Las victorias de cada org son las de la tabla de hoy; los demás cruces de la jornada son parejos (p = 0,5).
@@ -20910,7 +20913,7 @@ check('K4-A a lo sumo una fecha marcada por split', () => {
 
 check('K4-A puntero y presión nunca marcan: toda fecha marcada lo es por uno de los cuatro motivos', () => {
   const { motivosVistos, principales } = cosechaDeCarrerasK4A();
-  const fuera = [...motivosVistos].filter((m) => !MOTIVOS_K4A.includes(m));
+  const fuera = [...motivosVistos].filter((m) => !MARCAS_K4A.includes(m));
   if (fuera.length > 0) {
     throw new Error(`fechas marcadas con motivos fuera de los cuatro: ${fuera.join(', ')}`);
   }
@@ -20952,7 +20955,8 @@ check('K4-A la previa de la fecha marcada dice por qué importa, sin ids crudos,
       problemas.push(`fecha ${i}: "${texto}" muestra un id crudo`);
     }
     const principal = motivoPrincipal(st.career.temporada.fechaEnCurso.motivos);
-    const esperado = { define_clasificacion: /ganás|playoffs/, archirrival: /archirrival/, clasico: /ex equipo/, revancha: /revancha/ }[principal];
+    // F2: la parada garantizada sin otro motivo (principal `parejo`) dice que es la última fecha.
+    const esperado = { define_clasificacion: /ganás|playoffs/, archirrival: /archirrival/, clasico: /ex equipo/, revancha: /revancha/, parejo: /última fecha/ }[principal];
     if (!esperado.test(texto)) {
       problemas.push(`fecha ${i}: "${texto}" no habla del motivo ${principal}`);
     }

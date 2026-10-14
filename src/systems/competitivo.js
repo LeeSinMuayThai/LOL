@@ -1,4 +1,4 @@
-import { chance } from '../core/rng.js';
+import { chance, weightedPick } from '../core/rng.js';
 import { clamp } from '../core/numeros.js';
 import { crearLog } from '../core/log.js';
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
@@ -8,8 +8,10 @@ import { conPlantelesDe, fuerzaDePlantel } from '../core/plantel.js';
 import { BALANCE } from '../data/balance.js';
 import { nombreVisibleDeLiga, esLigaFranquiciada } from '../core/ligas.js';
 import { nivelDelJugador } from '../core/ficha.js';
-import { calibreDeLiga } from '../core/demanda.js';
-import { entero } from '../core/formato.js';
+import { calibreDeLiga, orgsQueTeFicharian, asientoAbierto } from '../core/demanda.js';
+import { entero, plata } from '../core/formato.js';
+import { etiquetaRol } from '../data/roles.js';
+import { construirOferta, aceptarOferta } from './mercado.js';
 
 // El tránsito entre tiers.
 //
@@ -80,8 +82,106 @@ function saltarATier2(state, logsPrevios, motivo = '') {
         registro: conFilaCerrada(state, 'ascenso')
       }
     },
-    logs: [...logsPrevios, crearLog('competitivo', `${motivo}Te ganás el salto a ${nombreVisibleDeLiga(liga.id)}. Sos agente libre de tier 2: en la pretemporada elegís club.`)]
+    logs: [...logsPrevios, crearLog('competitivo', `${motivo}Te ganás el salto a ${nombreVisibleDeLiga(liga.id)}. ${saltoAMitadDeAnio(state)
+      ? 'Sos agente libre de tier 2.'
+      : 'Sos agente libre de tier 2: en la pretemporada elegís club.'}`)]
   };
+}
+
+// --- F2 (PLANUI §0.8, "el año muerto"): la llamada de un club de tier 2 en el split del salto ---
+//
+// El mercado corre solo en la pretemporada (`systems/mercado.js`). Un salto en el segundo o el tercer split del año te
+// dejaba agente libre el resto del año, sin club, sin mercado y sin una sola decisión: en las dos carreras jugadas de
+// §0.8 el año de los 16 pasó en un clic. Ahora, en ese mismo split, frena la llamada del club de tier 2 de tu región que
+// tiene tu rol libre y te puede pagar (`orgsQueTeFicharian`: el asiento abierto, la banda, el presupuesto y la disputa,
+// las mismas reglas del mercado; de esos, el que más paga). Firmás ahora (`aceptarOferta`, el contrato de siempre) o
+// esperás la pretemporada. Sin club con lugar, la parada igual ocurre y lo dice.
+//
+// Los asientos: firmar a mitad de año no mueve a nadie del plantel del mundo. Es la misma regla que la firma de la
+// pretemporada (`core/mercadoMundial.js`, "el incumbente sigue": tu casilla queda con su NPC, que `companerosDelPlantel`
+// nunca cuenta como compañero), así que nadie queda en dos orgs. Tus compañeros los arma `roster.js` el split que viene,
+// igual que cuando firmás sin equipo en la pretemporada.
+export const MOTIVO_LLAMADA = 'llamada_tier2';
+
+function saltoAMitadDeAnio(state) {
+  return calcularContexto(state).ventana !== 'pretemporada';
+}
+
+function clubQueTeLlama(state, liga) {
+  const candidatos = orgsQueTeFicharian(state)
+    .filter((entrada) => entrada.liga.id === liga.id)
+    .sort((a, b) => b.presupuesto - a.presupuesto || a.org.nombre.localeCompare(b.org.nombre));
+  return candidatos[0] ?? null;
+}
+
+function decisionDeLlamada(state, liga, oferta) {
+  const rol = etiquetaRol(state.player.role);
+  const porQue = asientoAbierto(state, oferta.org, state.player.role).motivo;
+  const contrato = `${plata(oferta.salarioAnualUSD)} al año, hasta la pretemporada`;
+  return {
+    tipo: 'opciones',
+    titulo: `${oferta.org} te quiere`,
+    descripcion: `No terminaste de festejar el salto y ya suena el teléfono. ${oferta.org} busca ${rol} para lo que queda del `
+      + `año en ${nombreVisibleDeLiga(liga.id)}${porQue ? ` (${porQue})` : ''}: ${contrato}. La pretemporada trae el mercado entero, `
+      + 'con más ofertas o con ninguna.',
+    opciones: [
+      // La opción de firmar ES la oferta (con los campos de una carta del mercado): `resolver` la firma tal cual, y la
+      // decisión no suma campos nuevos a la forma del estado (los guardados, D71).
+      {
+        ...oferta,
+        id: 'firmar',
+        label: `Firmar con ${oferta.org}`,
+        descripcion: `Firmás ahora (${contrato}) y el split que viene ya jugás en ${nombreVisibleDeLiga(liga.id)}.`
+      },
+      {
+        id: 'esperar',
+        label: 'Agradecer y esperar la pretemporada',
+        descripcion: 'Seguís agente libre lo que queda del año, entrenando por tu cuenta. En la pretemporada elegís entre todo lo que haya.'
+      }
+    ],
+    datos: { motivo: MOTIVO_LLAMADA }
+  };
+}
+
+function decisionSinLugar(state, liga) {
+  return {
+    tipo: 'opciones',
+    titulo: 'El teléfono no suena todavía',
+    descripcion: `Te ganaste el lugar en ${nombreVisibleDeLiga(liga.id)}, pero a mitad de año ningún club tiene el puesto de `
+      + `${etiquetaRol(state.player.role)} libre para vos. Hasta la pretemporada no se mueve nadie: ahí se abre el mercado.`,
+    opciones: [
+      {
+        id: 'esperar',
+        label: 'Entrenar por tu cuenta hasta la pretemporada',
+        descripcion: 'Seguís agente libre lo que queda del año. En la pretemporada elegís club.'
+      }
+    ],
+    datos: { motivo: MOTIVO_LLAMADA }
+  };
+}
+
+// El salto que acaba de pasar (`salto`, lo que devolvió `saltarATier2`) con su llamada, si el mercado no corre en este split.
+// `construirOferta` tira el sueldo, los años y la jerarquía proyectada una sola vez, acá (regla 15: lo que la carta dice es
+// lo que se firma).
+function conLlamadaDeTier2(salto, rng) {
+  const { state } = salto;
+  if (state.career.tier !== 2 || state.career.currentOrg || !saltoAMitadDeAnio(state)) {
+    return salto;
+  }
+  const liga = state.mundo.ligas.find((candidata) => candidata.id === state.career.liga);
+  if (!liga) {
+    return salto;
+  }
+  const club = clubQueTeLlama(state, liga);
+  if (!club) {
+    return { ...salto, decision: decisionSinLugar(state, liga) };
+  }
+  // El contrato es por lo que queda del año (`competitivo.llamadaTier2.aniosContrato`): en la pretemporada se vence y vas al
+  // mercado entero, con la renovación de este club como una oferta más. Con los 1-3 años de un contrato de mercado, la
+  // llamada te ataba al tier 2: medido (1000 carreras de 15 splits), llegar a tier 1 bajaba de 46,6% a 40,5%.
+  const oferta = construirOferta(state, club.liga, club.org, null, rng);
+  const deLoQueQueda = { ...oferta, anios: BALANCE.competitivo.llamadaTier2.aniosContrato, motivoDemanda: club.motivo };
+  return { ...salto, decision: decisionDeLlamada(state, liga, deLoQueQueda) };
 }
 
 // Rama tier3-nivel ("el nivel manda en tier 3", D34): tu nivel contra el calibre de la liga tier 2 de tu región. Si lo supera
@@ -112,8 +212,8 @@ function resolverTier3(state, rng) {
   // Rama tier3-nivel: con nivel de sobra, el salto es seguro y no consume `rng` (la tirada de abajo queda para el resto).
   const sobra = nivelSobreTier2(state);
   if (sobra?.alcanza) {
-    return saltarATier2(state, [], `Te sobraba nivel para el circuito chico: ${entero(sobra.nivel)} de nivel contra el `
-      + `${entero(sobra.calibre)} de un equipo medio de ${nombreVisibleDeLiga(sobra.liga.id)}. `);
+    return conLlamadaDeTier2(saltarATier2(state, [], `Te sobraba nivel para el circuito chico: ${entero(sobra.nivel)} de nivel contra el `
+      + `${entero(sobra.calibre)} de un equipo medio de ${nombreVisibleDeLiga(sobra.liga.id)}. `), rng);
   }
   if (!chance(c.probSalidaTier3, rng)) {
     return { state, logs: [] };
@@ -126,7 +226,7 @@ function resolverTier3(state, rng) {
   if (!chance(probAscenso, rng)) {
     return disolverEquipo(state, []);
   }
-  return saltarATier2(state, []);
+  return conLlamadaDeTier2(saltarATier2(state, []), rng);
 }
 
 // Un tier 3 disuelto nunca queda mucho tiempo sin equipo: es la característica
@@ -238,4 +338,28 @@ export function aplicar(state, rng) {
   // Tier 1 y tier 2 con equipo: no se sortea nada. El mercado (más abajo en el
   // split) decide si te vas, te quedás o subís.
   return { state, logs: [] };
+}
+
+// F2: la única decisión de este sistema es la llamada de tier 2 (`conLlamadaDeTier2`). Firmar es la firma de siempre
+// (`aceptarOferta`, con su log "Firmás con…", que la UI monta como la firma del relato); esperar no toca nada.
+export function resolver(state, decision, respuesta, rng) {
+  const oferta = decision.opciones.find((opcion) => opcion.id === 'firmar') ?? null;
+  if (respuesta.opcionId === 'firmar' && oferta) {
+    return aceptarOferta(state, oferta, rng);
+  }
+  return {
+    state,
+    logs: [crearLog('competitivo', oferta
+      ? `Le decís a ${oferta.org} que no, por ahora. Seguís agente libre hasta la pretemporada.`
+      : 'Seguís agente libre hasta la pretemporada, entrenando por tu cuenta.')]
+  };
+}
+
+export function resolverAuto(state, decision, rng) {
+  const pesos = BALANCE.competitivo.llamadaTier2;
+  if (decision.opciones.length === 1) {
+    return { opcionId: decision.opciones[0].id };
+  }
+  const peso = (opcion) => (opcion.id === 'firmar' ? pesos.pesoAutoFirmar : pesos.pesoAutoEsperar);
+  return { opcionId: weightedPick(decision.opciones, peso, rng).id };
 }
