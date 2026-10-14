@@ -5,7 +5,7 @@
 // `.shell[data-pieza]`.
 import { tableroDeSerie, seguimientoGoldenRoad } from '../../core/vistaDeCarrera.js';
 import { seguimientoParaMostrar, textoDeEscalon } from './trayectoria.js';
-import { nivelDelJugador, bandaDeNivel } from '../../core/ficha.js';
+import { nivelDelJugador, bandaDeNivel, puntajeEnVivo } from '../../core/ficha.js';
 import { puntosAbsolutos, desdePuntos, etiquetaDeRanked, servidorDeLaPartida } from '../../core/ranked.js';
 import { tierPorId } from '../../data/ranked.js';
 import { escalonDeCarrera } from '../../core/puntaje.js';
@@ -138,7 +138,10 @@ export function fotoDeSplit(estado) {
     temporadaActiva: Boolean(estado.career?.temporada?.activa),
     // FASE V (V4): la edad con la que arrancó el split. Con ella `cierreDeSplit` sabe si el split cerró un año.
     edad: estado.age ?? null,
-    numero: numeroDe(estado)
+    numero: numeroDe(estado),
+    // W1-D (PLANUI §0.7, W2): el puntaje de la carrera al arrancar el split (`puntajeEnVivo`). La foto del primer split del
+    // año (`fotoAnio`) es el "antes" del delta del puntaje en el diario; `null` si el registro todavía no se puntúa.
+    puntaje: puntajeEnVivo(estado).total
   };
 }
 

@@ -116,7 +116,7 @@
 
 /* ---- el resumen de la temporada ---- */
 .mo-resumen { cursor: default; padding: 0; }
-.mo-r-velo { opacity: 0.97; }
+.mo-r-velo { opacity: 1; } /* W1-D: el diario es una pantalla propia: la de atrás no se lee */
 .mo-r-panel {
   position: relative; z-index: 1; width: min(1040px, 100vw); height: 100dvh; display: flex; flex-direction: column;
 }
