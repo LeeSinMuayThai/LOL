@@ -395,6 +395,98 @@ y un brief cerrado:
 
 Después, un revisor Sonnet con GPU. Al final: merge, push, deploy y el enlace al usuario.
 
+### 0.6 Lo que dijo el usuario jugando P2 (2026-10-14, textual): el relato que pasa volando, la firma y la copa
+
+> "[el relato] hay que fixear eso […] o hacer que esté en otro lado, o que no aparezca después de la respuesta […] se
+> ve dos segundos, una banda de texto, no tiene sentido, no se puede leer […] Supongo que eso es más tema de motor […]
+> pero fíjate, si se te ocurre alguna maravilla con la UI […] [la firma] me gustaría que en el papel de la derecha
+> también se ponga la firma o que se ponga el papel […] enfrente de todo como más grande y que ahí también se ponga la
+> firma. Y después […] que de ahí caiga como desde arriba superpuesto la línea […] Y de ahí se vaya para la izquierda de
+> última y aparezca o se esfume o quede, pero que aparezca después el logo del equipo y la remera. […] hacelo bien, que
+> quede bien hecho, full avanzado, profesional y sé creativo. También te quiero decir que gané el [EMEA] Master y no
+> vino el resumen de la season ni la copa ni nada."
+
+**Lo medido** (scout + capturas con GPU):
+- **El relato en RÁPIDO** (el valor guardado `instantaneo`; el usuario juega así).
+  - `sinPulso()` pone la espera entre beats en 0 (`reproductor.js:144`, `:222`): `renderPagina` pinta cada beat en el
+    mismo tick y la parada siguiente entra enseguida.
+  - Medido en `?previa=evento`, eligiendo 1: a los 1,5 s ya estaba en pantalla la decisión siguiente ("Cierre de
+    2029"), y el tramo entero del split pasó como una página que se ve un instante.
+  - Eso es "la banda de texto". Lo único que queda es la línea mono de "lo último que pasó" (`renderParadaAntes`,
+    `feed.js:962`).
+- **El resumen de la temporada existe y en rápido se saltea.**
+  - `tarjetaSeVe = cierre && !sinPulso()` (`app.js:514`) y `ESPERA_CIERRE_ANIO_MS.instantaneo = 0`.
+  - El resumen del año (`crearRevealResumenAnio`, `feed.js:89`, el log `edad`) llega recién después de responder "Fin
+    de año", y en rápido pasa volando como el resto.
+- **La copa no existe en el juego.**
+  - `fx/trofeo.js` (la copa 3D del kit) no lo importa nadie.
+  - No hay `ui/core/momentos.js` ni `fx/momento.js`: los momentos de §6.5 (U3a) nunca se construyeron.
+  - El título se registra (`systems/serie.js` `aplicarTitulo` y `rendimiento.js:202-216`, en `registro.titulos`), y la
+    UI solo lo detecta como texto (`resultadoDelSplit`, `ui/core/escena.js:166`).
+- **La firma** es una sola escena con awaits:
+  1. `narrarContrato`: la hoja de la izquierda sube, la firma se traza en ella (`.ms-ct-vos`) y cae el sello.
+  2. `narrarFichaje`: un overlay `.fj` con el mapa de la Grieta (`escenaDelMapa`, `T_MAPA`) y después el walkout
+     (`laFirma`, la camiseta y el número).
+  - En el papel de la derecha (`pilaDeCartas`) solo cae el sello "Firmado". Con `top: 46%`, el sello tapa la fila
+    "2 años 2030-2031" (`mercado.css:364-367`).
+  - Ningún check de `validate.js` fija la firma.
+
+**Cómo queda.**
+
+1. **La firma, una sola coreografía** (1×, en ms desde FIRMAR; en rápido, escala 0,35; Espacio salta al walkout).
+   | ms | Qué pasa |
+   |---|---|
+   | 0-450 | Se apagan la grilla y la hoja. El papel de arriba de la pila se despega, gira a plano y viaja al centro: es grande (~min(560 px, 44vw)) y va adelante de todo, sobre un velo. Los otros papeles caen. |
+   | 450-1500 | Tu firma se traza en el papel: la misma letra de `trazarFirma`, en una línea nueva "[NICK] · EL JUGADOR", al lado de la del club. |
+   | 1500-1800 | El sello FIRMADO cae al pie del papel (nunca sobre los términos), con el golpe. |
+   | 1800-2300 | Se sostiene. |
+   | 2300-3300 | El mapa de la Grieta con las cinco líneas y el escudo cae desde arriba, superpuesto al papel. El papel se va atrás: escala .9, blur y apagado. |
+   | 3300-4300 | Tu línea cae y se enciende (lo de hoy). |
+   | 4300-5100 | El mapa se va a la izquierda y se achica (FLIP) hasta el lugar del escudo del walkout. El mapa se funde en el logo del equipo: el escudo del mapa es el logo. El papel se esfuma. |
+   | 5100- | El walkout de hoy: nombre, bienvenida, contrato, la camiseta que entra con el cono de luz, el confeti y el número. |
+
+   - Con movimiento reducido, tres cuadros fijos: el papel firmado, el mapa y el walkout.
+   - Archivos: `components/mercado.js`, `components/fichaje.js` y `estilos/mercado.css`.
+2. **Los momentos: la copa y el resumen** (U3a adelantada, solo lo que pidió el usuario).
+   - **El título** (liga o torneo) y **el Mundial** (variante dorada) son un takeover, con la secuencia de §6.5:
+     1. apagón;
+     2. golpe de luz en el tono de tu org;
+     3. "CAMPEONES" enorme, la liga y el año, y el logo;
+     4. la copa 3D de `fx/trofeo.js` que sube y gira, con confeti en los colores del equipo;
+     5. asentarse.
+   - Dura ≤ 2,4 s a 1× (×0,35 en rápido, nunca 0). Después queda en el cuadro final hasta Continuar (Enter o clic).
+   - La señal sale de la UI, sin tocar el motor: `registro.titulos` crece entre la foto y la vista, o un log
+     `internacional` `campeon`. `momentosVistos` va al final de `almacenamiento.js`: retomar no los repite.
+   - **El resumen de la temporada se ve en todas las velocidades** y espera a Continuar. Una pantalla con:
+     - la nota y la banda, la titular y las viñetas (`temporadaResumen.js`);
+     - tus splits (liga, posición y récord);
+     - los títulos;
+     - el rango o los LP de antes → después, con el odómetro;
+     - los ejes que se movieron, como chips;
+     - "En el mundo": los campeones de las ligas y del Mundial (`mundo.escenaAnual`), con logos.
+3. **El relato en rápido: "Mientras tanto".** En rápido, el tramo no se pinta como página que pasa volando. La parada
+   siguiente abre con una franja "Mientras tanto" en lugar de la línea mono de `renderParadaAntes`.
+   - **La franja tiene:**
+     - cuántas cosas pasaron;
+     - los ejes sumados del tramo, como chips de color;
+     - 2-3 titulares (primero tus resultados y los eventos con elección; el mundo al final).
+   - **Clic o una tecla** la abren como un cajón sobre la parada, con la página entera del tramo y scroll. Esc la
+     cierra.
+   - A 1× y 2× el relato sigue como hoy, y la franja aparece igual, como repaso.
+   - En rápido no se muestra la pista "Espacio pasa las líneas".
+   - Las constantes `x1` no cambian (los espejos de `simulate.js`, "K0 espejos").
+   - Los checks V4 y H8 se actualizan a la regla nueva, sin aflojarlos.
+
+**Cómo se hace.**
+- Dos workers en paralelo, con worktrees desde master:
+  - **F · la firma** (Opus 5.5 · high, tope 80);
+  - **M · momentos + relato** (Opus 5.5 · xhigh, tope 110), porque es lo más acoplado: el reproductor, los checks de
+    tiempos y el espejo de `simulate.js`.
+- Después, un revisor Sonnet con GPU, una ronda de arreglos por worker, merge, push, deploy y el enlace.
+- Muestras nuevas para probarlo, en `previa/generar.mjs`:
+  - `final` (la final de playoffs que se gana);
+  - `firma` (el mercado con una oferta de otro club).
+
 ## 1. Por qué un tercer plan
 
 ### 1.1 Cómo se ve hoy
