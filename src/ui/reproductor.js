@@ -16,8 +16,9 @@ const ESPERA_MS = { x1: 700, x2: 350, instantaneo: 0 };
 // FASE V (V4): el momento del cierre de año. Si el split cerró un año y el motor NO frenó en el cierre (`edadCierre` frena en
 // ~92% de los años de `criterio` y en ~73% de los de `malas`: medido en 100 carreras × 60 splits), la tarjeta "Cierre de 2031"
 // se sostiene este tiempo ADEMÁS de la espera de su beat. Una por año como máximo, nunca junto a la parada del motor (T9). No
-// suma clics: Espacio la salta como a un beat, y en rápido o con movimiento reducido pasa sola. Es un espejo para `simulate.js`
-// (`ESPERA_CIERRE_ANIO_MS`) y lo guarda el check "K0 espejos de la UI".
+// suma clics: Espacio la salta como a un beat, y en rápido no espera (el valor 0). PLANUI §0.6: en TODAS las velocidades, después
+// de la tarjeta entra el resumen de la temporada (un momento, `momentos` de `reproducirBeats`), que espera a Continuar. Es un
+// espejo para `simulate.js` (`ESPERA_CIERRE_ANIO_MS`; los `x1` no cambian) y lo guarda el check "K0 espejos de la UI".
 const ESPERA_CIERRE_ANIO_MS = { x1: 2400, x2: 1200, instantaneo: 0 };
 // PLANUI §0.4 (P1, el movimiento): el botón dice el ESTADO, no una acción ("INST" se leía como "apretá para ir
 // instantáneo" y el jugador creía haberlo sacado). El valor guardado sigue siendo `instantaneo`, por compatibilidad con
@@ -192,9 +193,29 @@ function seguirAlUltimo(contenedor) {
 // (`renderPagina`: cronológica, desde `inicioDePagina`) en vez de la ventana de `renderFeed`, y la tarjeta de `cierre`
 // (si el split cerró) entra JUNTO con el último beat: usa su espera, no suma una propia. Sin `pagina`, el camino de
 // siempre (`renderFeed`), el que miden los checks de H8.
-export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, registroDespues, bisagra, state, offset = 0, pagina = null } = {}) {
+//
+// `momentos` (PLANUI §0.6, U3a; opcional): `[{ indice, alFinal?, mostrar }]`, los de `ui/core/momentos.js` que `app.js` ya
+// filtró. Uno entra después del beat que trae su log (`indice <= beat.clave`) y de la espera de ese beat; uno `alFinal` (el
+// resumen de la temporada), después del último beat y de la espera del año. El relato no sigue hasta que `mostrar()`
+// resuelve (el jugador apretó Continuar), en TODAS las velocidades: en rápido el relato no espera entre beats, pero un
+// momento espera igual. Sin beats nuevos (la parada ya contó todo el tramo en el lugar), los momentos entran igual.
+export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, registroDespues, bisagra, state, offset = 0, pagina = null, momentos = null } = {}) {
   if (!logList) {
     return;
+  }
+  const pendientes = Array.isArray(momentos) ? [...momentos] : [];
+  // ¿Hay un momento para mostrar después del beat `clave` (`Infinity`: el final del tramo, también los `alFinal`)?
+  const toca = (m, clave) => clave === Infinity || (!m.alFinal && m.indice <= clave);
+  async function mostrarMomentos(clave) {
+    for (let i = pendientes.findIndex((m) => toca(m, clave)); i >= 0; i = pendientes.findIndex((m) => toca(m, clave))) {
+      const [momento] = pendientes.splice(i, 1);
+      skipActual = null;
+      try {
+        await momento.mostrar();
+      } catch (error) {
+        console.error('No se pudo mostrar el momento:', error);
+      }
+    }
   }
   if (nuevasEntradas.length === 0) {
     if (pagina?.cierre) {
@@ -212,6 +233,7 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
         skipActual = null;
       }
     }
+    await mostrarMomentos(Infinity);
     return;
   }
 
@@ -243,6 +265,10 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
         await esperarLaPausa();
       }
     }
+    // sin momentos pendientes para este beat no hay `await`: en rápido la tanda sigue siendo sincrónica
+    if (!ultimo && pendientes.some((m) => toca(m, beat.clave))) {
+      await mostrarMomentos(beat.clave);
+    }
   }
 
   skipActual = null;
@@ -260,4 +286,8 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
   if (bisagra) {
     sonido.swellBisagra();
   }
+
+  // el último beat ya se pintó (con la tarjeta de cierre, si el split cerró) y esperó: el título que trajo y el resumen
+  // de la temporada, en ese orden
+  await mostrarMomentos(Infinity);
 }

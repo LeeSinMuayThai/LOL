@@ -1102,4 +1102,23 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
 :root {
   --ms-frente-luz: var(--tono-luz);
   --ms-frente-fondo: var(--tono-vacio);
+
+/* U3a-momentos (PLANUI §0.6, estilos/momentos.css): el takeover del título y el resumen de la temporada (`mo-`), y la
+   franja "Mientras tanto" con su cajón (`mt-`). El takeover va arriba de todo lo del juego (los cuartos, en la capa
+   superior del navegador, lo tapan y lo pausan). */
+:root {
+  --mo-z: 200;
+  --mo-negro: #030407;
+  --mo-panel: rgba(255, 255, 255, 0.045);
+  --mo-filete: rgba(255, 255, 255, 0.12);
+  --mo-sombra-letra: rgba(0, 0, 0, 0.55);
+  --mo-seguir-tinta: #0b0c10;
+  --mo-seguir-fondo: #f4f2ec;
+  --mo-kbd-fondo: rgba(0, 0, 0, 0.12);
+  --mt-fondo: rgba(255, 255, 255, 0.035);
+  --mt-fondo-hover: rgba(255, 255, 255, 0.07);
+  --mt-filete: rgba(255, 255, 255, 0.1);
+  --mt-velo: rgba(3, 4, 7, 0.62);
+  --mt-cajon-fondo: #0d0f15;
+  --mt-cajon-sombra: -24px 0 60px rgba(0, 0, 0, 0.5);
 }

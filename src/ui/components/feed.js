@@ -21,9 +21,10 @@ import { formaBeat } from '../../core/log.js';
 import { crearTarjetaCierre, crearLineaSplitAnterior, crearCartelDePagina } from './cierre.js';
 import { moverNumero, leerSoloElFinal } from '../core/delta.js';
 import { icono, triangulos } from '../fx/iconos.js';
-import { chipsDeTexto, leerRango, rangoAntes, numeroConSigno, LP_POR_DIVISION } from './chipsEje.js';
+import { chipsDeTexto, chipEje, leerRango, rangoAntes, numeroConSigno, LP_POR_DIVISION } from './chipsEje.js';
 import { crearCampeonTile } from './campeonTile.js';
 import METAS from '../../data/metas.json' with { type: 'json' };
+import { LABEL_BANDA, GLIFO_DE_VINETA, franjaDelTramo } from '../core/momentos.js';
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
 // que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
@@ -81,10 +82,8 @@ function crearRevealTop20(entry) {
 // 6 viñetas ya armadas — acá solo se pintan, en el mismo orden fijo que
 // `core/temporadaResumen.js` las generó. "LA GRIETA" es la marca del medio
 // que pide el plan (el equivalente ficticio del resumen deportivo).
-const LABEL_BANDA = { rojo: 'Flojo', gris: 'Parejo', ambar: 'Bueno', verde: 'Excelente' };
-// Las viñetas traen su emoji del motor (`core/temporadaResumen.js`); la pantalla dibuja el glifo del kit que le corresponde
-// (PLANUI §5.9: nada de emojis). Uno que no está en la tabla, el punto.
-const GLIFO_DE_VINETA = { '📊': 'nivel', '🏆': 'copa', '🌍': 'mundo', '⚡': 'serie', '🎯': 'meta', '🎀': 'carrera' };
+// La banda en palabras y el glifo de cada viñeta: `ui/core/momentos.js` (los comparte con la pantalla del resumen). Una
+// viñeta que no está en la tabla, el punto.
 
 function crearRevealResumenAnio(entry) {
   const item = document.createElement('div');
@@ -959,66 +958,111 @@ export function desdeDeUltimosBeats(logs, limite = LIMITE_FEED) {
 // FASE V (V4): `cierreDelAnio` (`{ anio }`) es el de una parada que ES el cierre de año (la de `edadCierre`, que frena el motor): se
 // pinta como el cartel de una línea "Cierre de 2031" (el de las páginas, `crearCartelDePagina`), arriba de todo, aunque la página no
 // tenga beats. Sin números: a mitad de la página todavía no son los del cierre.
-export function renderParadaAntes(contenedor, state, { desde = 0, cierreDelAnio = null } = {}) {
-  const inicio = Math.max(0, Math.min(desde, state.logs.length));
-  const narrativos = agruparBeats(state.logs.slice(inicio), inicio).filter((beat) => beat.narrativa && !beat.narrativa.tecnico);
+//
+// PLANUI §0.6 (U3a, punto 3): la línea se vuelve la franja "Mientras tanto" (en rápido es lo que se VE del tramo; a 1× y 2×,
+// un repaso): cuántas cosas pasaron, los efectos sumados por eje (chips) y 2-3 titulares — tus resultados y los eventos
+// con elección primero, el mundo al final (`franjaDelTramo`, ui/core/momentos.js). `tramoDesde` (por defecto `desde`) es
+// donde arrancó el tramo: la última respuesta del jugador. Clic o L la abren como un cajón sobre la parada con la página
+// entera del tramo (`renderPagina`, con scroll); Esc o L lo cierran y el foco vuelve a la franja.
+export function renderParadaAntes(contenedor, state, { desde = 0, cierreDelAnio = null, tramoDesde = desde } = {}) {
+  const inicio = Math.max(0, Math.min(tramoDesde ?? desde, state.logs.length));
+  const franja = franjaDelTramo(state.logs, inicio);
   contenedor.replaceChildren();
   const cartelDelAnio = cierreDelAnio?.anio ? `Cierre de ${cierreDelAnio.anio}` : null;
-  if (narrativos.length === 0 && !cartelDelAnio) {
+  if (franja.cuantas === 0 && !cartelDelAnio) {
     contenedor.hidden = true;
     return;
   }
-  // PLANUI U2a (la línea "antes" de la vitrina): el ícono del beat, su título (o su línea) y sus efectos en una línea;
-  // al final, "El split · n" abre la página entera como una lista (el ícono y la línea de cada beat).
-  const ultimo = narrativos[narrativos.length - 1]?.narrativa ?? null;
-  const texto = document.createElement('span');
-  texto.className = 'antes-texto';
-  const fuerte = document.createElement('b');
-  fuerte.textContent = cartelDelAnio ?? limpio(ultimo.titulo ?? ultimo.message);
-  texto.append(fuerte);
-  const segunda = cartelDelAnio ? limpio(ultimo?.titulo ?? ultimo?.message) : limpio(ultimo.titulo ? ultimo.efectos ?? ultimo.message : ultimo.efectos);
-  if (segunda) {
-    const efectos = document.createElement('span');
-    efectos.className = 'antes-efectos';
-    efectos.textContent = segunda;
-    texto.append(efectos);
+  const rotulo = document.createElement('span');
+  rotulo.className = 'mt-rotulo';
+  rotulo.append(icono(cartelDelAnio ? 'temporada' : 'serie'), cartelDelAnio ? `${cartelDelAnio} · Mientras tanto` : 'Mientras tanto');
+  if (franja.cuantas === 0) {
+    const sola = document.createElement('p');
+    sola.className = 'mt-franja mt-franja--sola';
+    sola.append(rotulo);
+    contenedor.append(sola);
+    contenedor.hidden = false;
+    return;
   }
-  const linea = document.createElement('p');
-  linea.className = 'antes';
-  linea.append(icono(cartelDelAnio ? 'temporada' : ultimo.type), texto);
-
-  if (narrativos.length > 0) {
-    const lista = document.createElement('ol');
-    lista.className = 'split-lista';
-    lista.id = 'paradaAntesSplit';
-    lista.hidden = true;
-    const boton = document.createElement('button');
-    boton.type = 'button';
-    boton.className = 'btn-split';
-    boton.setAttribute('aria-expanded', 'false');
-    boton.setAttribute('aria-controls', lista.id);
-    boton.textContent = `El split · ${narrativos.length}`;
-    // La lista se arma al abrirla: una parada no paga los nodos de una página que casi nunca se abre.
-    boton.addEventListener('click', () => {
-      const abrir = lista.hidden;
-      if (abrir && lista.childElementCount === 0) {
-        for (const beat of narrativos) {
-          const li = document.createElement('li');
-          const linea = document.createElement('span');
-          linea.textContent = limpio(beat.narrativa.message ?? beat.narrativa.titulo);
-          li.append(icono(beat.narrativa.type), linea);
-          lista.append(li);
-        }
-      }
-      lista.hidden = !abrir;
-      boton.setAttribute('aria-expanded', String(abrir));
-    });
-    linea.append(boton);
-    contenedor.append(linea, lista);
-  } else {
-    contenedor.append(linea);
+  const boton = document.createElement('button');
+  boton.type = 'button';
+  boton.className = 'mt-franja';
+  boton.setAttribute('aria-haspopup', 'dialog');
+  boton.setAttribute('aria-keyshortcuts', 'L');
+  const cuenta = document.createElement('b');
+  cuenta.className = 'mt-cuenta';
+  cuenta.textContent = franja.cuantas === 1 ? '1 cosa pasó' : `${franja.cuantas} cosas pasaron`;
+  const cabeza = document.createElement('span');
+  cabeza.className = 'mt-cabeza';
+  cabeza.append(rotulo, cuenta);
+  if (franja.ejes.length > 0) {
+    const ejes = document.createElement('span');
+    ejes.className = 'eje-chips mt-ejes';
+    for (const x of franja.ejes) ejes.append(chipEje({ eje: x.eje, valor: x.valor, cambio: true, sufijo: x.sufijo }));
+    cabeza.append(ejes);
   }
+  const titulares = document.createElement('span');
+  titulares.className = 'mt-titulares';
+  for (const t of franja.titulares) {
+    const fila = document.createElement('span');
+    fila.className = 'mt-titular';
+    const texto = document.createElement('span');
+    texto.textContent = t.texto;
+    fila.append(icono(t.type), texto);
+    titulares.append(fila);
+  }
+  const abrir = document.createElement('span');
+  abrir.className = 'mt-abrir';
+  const tecla = document.createElement('kbd');
+  tecla.textContent = 'L';
+  abrir.append('Ver todo', tecla);
+  boton.append(cabeza, titulares, abrir);
+  boton.addEventListener('click', () => abrirCajon(state, inicio, franja.cuantas, boton));
+  contenedor.append(boton);
   contenedor.hidden = false;
+}
+
+// El cajón de "Mientras tanto": un `<dialog>` modal (el foco queda adentro; Esc lo cierra nativo) con la página del tramo.
+function abrirCajon(state, desde, cuantas, boton) {
+  if (document.querySelector('dialog.mt-cajon[open]')) return;
+  const dialogo = document.createElement('dialog');
+  dialogo.className = 'mt-cajon';
+  dialogo.setAttribute('aria-label', 'Mientras tanto: el tramo entero');
+  const cabeza = document.createElement('header');
+  cabeza.className = 'mt-cajon-cabeza';
+  const titulo = document.createElement('h2');
+  titulo.textContent = 'Mientras tanto';
+  const cuenta = document.createElement('span');
+  cuenta.textContent = cuantas === 1 ? '1 cosa' : `${cuantas} cosas`;
+  const cerrar = document.createElement('button');
+  cerrar.type = 'button';
+  cerrar.className = 'mt-cajon-cerrar';
+  const esc = document.createElement('kbd');
+  esc.textContent = 'Esc';
+  cerrar.append('Cerrar', esc);
+  cerrar.addEventListener('click', () => dialogo.close());
+  cabeza.append(titulo, cuenta, cerrar);
+  const pagina = document.createElement('div');
+  pagina.className = 'log-list relato-pagina mt-pagina';
+  renderPagina(pagina, state, { desde });
+  dialogo.append(cabeza, pagina);
+  dialogo.addEventListener('keydown', (e) => {
+    if ((e.key === 'l' || e.key === 'L') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      dialogo.close();
+    }
+  });
+  // el clic en el velo (afuera de la caja) también lo cierra
+  dialogo.addEventListener('click', (e) => {
+    if (e.target === dialogo) dialogo.close();
+  });
+  dialogo.addEventListener('close', () => {
+    dialogo.remove();
+    if (boton.isConnected) boton.focus({ preventScroll: true });
+  });
+  document.body.append(dialogo);
+  dialogo.showModal();
+  cerrar.focus({ preventScroll: true });
 }
 
 function limpio(texto) {

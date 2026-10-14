@@ -1,0 +1,173 @@
+/* Los momentos y el relato en rápido (PLANUI §0.6, U3a). Prefijos: `mo-` (fx/momento.js: el takeover del título y el
+   resumen de la temporada) y `mt-` (components/feed.js: la franja "Mientras tanto" y su cajón). Colores: solo tokens
+   (el bloque U3a-momentos de tokens.css y los de siempre). */
+
+/* ---- el relato en rápido: la página se arma pero no pasa como una banda de texto; sin la pista de Espacio ---- */
+.shell[data-relato='rapido'][data-pieza='relato'] #logList { opacity: 0; pointer-events: none; }
+.shell[data-relato='rapido'] .aviso-espacio { display: none; }
+
+/* ================================================================================== la franja "Mientras tanto" */
+#paradaAntes:has(.mt-franja) { margin-bottom: 14px; }
+.mt-franja {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; width: 100%;
+  margin: 0; padding: 12px 16px; text-align: left; font: inherit; color: var(--ink-dim);
+  background: var(--mt-fondo); border: 0; border-radius: var(--r-panel); box-shadow: inset 0 0 0 1px var(--mt-filete);
+  cursor: pointer; transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+.mt-franja:hover { background: var(--mt-fondo-hover); box-shadow: inset 0 0 0 1px var(--luz-fuerte); }
+.mt-franja:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.mt-franja--sola { display: flex; cursor: default; }
+.mt-cabeza { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; min-width: 0; grid-column: 1; }
+.mt-rotulo { display: inline-flex; align-items: center; gap: 8px; font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.mt-rotulo .ln-ico { width: 14px; height: 14px; }
+.mt-cuenta { font: 650 15px / 1.2 var(--f-cuerpo); text-transform: none; letter-spacing: 0; color: var(--ink); }
+.mt-ejes { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.mt-titulares { grid-column: 1; text-transform: none; letter-spacing: 0; display: grid; gap: 4px; min-width: 0; font-size: 14px; line-height: 1.35; }
+.mt-titular { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.mt-titular > span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mt-titular:first-child { color: var(--ink); }
+.mt-titular .ln-ico { flex: none; width: 13px; height: 13px; color: var(--luz-texto); transform: translateY(2px); }
+.mt-abrir { grid-column: 2; grid-row: 1 / span 2; display: inline-flex; align-items: center; gap: 8px; font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
+.mt-franja:hover .mt-abrir { color: var(--ink); }
+@media (max-width: 560px) {
+  .mt-franja { grid-template-columns: minmax(0, 1fr); padding: 10px 12px; }
+  .mt-abrir { grid-column: 1; grid-row: auto; justify-self: start; }
+  .mt-titular:nth-child(n + 3) { display: none; }
+}
+
+/* ---- el cajón: un <dialog> modal a la derecha (abajo en el celular) con la página entera del tramo ---- */
+.mt-cajon {
+  position: fixed; inset: 0 0 0 auto; width: min(620px, 100vw); max-width: 100vw; height: 100dvh; max-height: 100dvh;
+  margin: 0; padding: 0; display: flex; flex-direction: column; color: var(--ink);
+  background: var(--mt-cajon-fondo); border: 0; box-shadow: -1px 0 0 var(--mt-filete), var(--mt-cajon-sombra);
+}
+.mt-cajon:not([open]) { display: none; }
+.mt-cajon::backdrop { background: var(--mt-velo); }
+.mt-cajon[open] { animation: mt-entra 260ms cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes mt-entra { from { transform: translateX(40px); opacity: 0; } }
+.mt-cajon-cabeza { display: flex; align-items: center; gap: 12px; padding: 18px 22px 14px; box-shadow: inset 0 -1px 0 var(--mt-filete); }
+.mt-cajon-cabeza h2 { margin: 0; font: 800 22px / 1 var(--f-display); font-stretch: var(--ancho-titulo); text-transform: lowercase; }
+.mt-cajon-cabeza > span { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
+.mt-cajon-cerrar { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; font: 600 13px / 1 var(--f-cuerpo); color: var(--ink); background: var(--mt-fondo); border: 0; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--mt-filete); cursor: pointer; }
+.mt-cajon-cerrar:hover { box-shadow: inset 0 0 0 1px var(--luz-fuerte); }
+.mt-pagina { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 22px 28px; }
+@media (max-width: 560px) {
+  .mt-cajon { inset: auto 0 0 0; width: 100vw; height: 86dvh; border-radius: 16px 16px 0 0; box-shadow: 0 -1px 0 var(--mt-filete), var(--mt-cajon-sombra); }
+  @keyframes mt-entra { from { transform: translateY(40px); opacity: 0; } }
+  .mt-cajon-cabeza { padding: 16px 16px 12px; }
+  .mt-pagina { padding: 6px 16px 24px; }
+}
+
+/* ================================================================================== el takeover (fx/momento.js) */
+.mo {
+  position: fixed; inset: 0; z-index: var(--mo-z); display: grid; place-items: center; overflow: hidden;
+  color: var(--ink); background: transparent; outline: none; cursor: pointer;
+}
+.mo-negro { position: absolute; inset: 0; background: var(--mo-negro); opacity: 0.92; }
+.mo-golpe {
+  position: absolute; inset: -20%; opacity: 0.32; pointer-events: none;
+  background: radial-gradient(ellipse 46% 42% at 50% 46%, var(--tono-luz, var(--gold)), transparent 70%);
+  mix-blend-mode: screen;
+}
+.mo-mundial .mo-golpe { background: radial-gradient(ellipse 50% 46% at 50% 46%, var(--gold), transparent 72%); }
+.mo-confeti { z-index: 1; }
+
+/* el título: la copa a la izquierda y el bloque a la derecha; en el celular, la copa arriba */
+.mo-titulo { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(16px, 4vw, 64px); padding: 6vh 6vw 12vh; place-items: center; }
+.mo-copa { position: relative; z-index: 0; width: min(380px, 30vw, 52vh); aspect-ratio: 3 / 4; justify-self: end; }
+.mo-copa-sube { position: absolute; inset: 0; }
+.mo-placa {
+  position: absolute; display: grid; place-items: center; overflow: hidden; padding: 0 4%; text-align: center; white-space: nowrap;
+  font: 700 10px / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); text-overflow: ellipsis;
+}
+.mo-copa-sube > :is(canvas, svg) { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.mo-bloque { position: relative; z-index: 2; display: grid; gap: clamp(10px, 2vh, 22px); justify-items: start; min-width: 0; justify-self: start; }
+.mo-campeones {
+  margin: 0; display: flex; font: 900 min(var(--t-momento-l), 10.5vw) / 0.84 var(--f-display); font-stretch: var(--ancho-momento);
+  letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink); text-shadow: 0 6px 40px var(--mo-sombra-letra);
+}
+.mo-letra { display: inline-block; transform-origin: 50% 100%; }
+.mo-mundial .mo-campeones { color: var(--gold); }
+.mo-liga { display: flex; align-items: center; gap: 14px; margin: 0; }
+.mo-logo-comp { height: 44px; min-width: 44px; }
+.mo-liga-txt { display: grid; gap: 4px; font: 600 var(--t-rotulo-g) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.mo-liga-txt b { font: 800 22px / 1 var(--f-display); font-stretch: var(--ancho-titulo); letter-spacing: 0; text-transform: none; color: var(--ink); }
+.mo-equipo { display: flex; align-items: center; gap: 12px; margin: 0; font: 750 clamp(18px, 2vw, 26px) / 1.1 var(--f-display); color: var(--ink); }
+.mo-logo-org { width: 52px; height: 52px; }
+.mo-seguir {
+  position: absolute; z-index: 3; left: 50%; bottom: max(28px, 5vh); transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 10px; padding: 12px 22px; font: 700 15px / 1 var(--f-cuerpo); color: var(--mo-seguir-tinta);
+  background: var(--mo-seguir-fondo); border: 0; border-radius: 999px; cursor: pointer; box-shadow: 0 10px 30px var(--mo-sombra-letra);
+}
+.mo-seguir kbd { font: 600 11px / 1 var(--f-mono); padding: 3px 6px; border-radius: 4px; background: var(--mo-kbd-fondo); color: inherit; }
+.mo-seguir:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+.mo:not([data-asentado]) .mo-seguir { pointer-events: none; }
+@media (max-width: 760px) {
+  .mo-titulo { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; gap: 8px; padding: 4vh 16px 14vh; align-content: center; }
+  .mo-copa { justify-self: center; width: min(220px, 52vw, 34vh); }
+  .mo-bloque { justify-self: center; justify-items: center; text-align: center; }
+  .mo-campeones { font-size: min(var(--t-momento-l), 17vw); }
+  .mo-liga-txt b { font-size: 18px; }
+  .mo-logo-comp { height: 34px; min-width: 34px; }
+  .mo-logo-org { width: 40px; height: 40px; }
+}
+
+/* ---- el resumen de la temporada ---- */
+.mo-resumen { cursor: default; padding: 0; }
+.mo-r-velo { opacity: 0.9; }
+.mo-r-panel {
+  position: relative; z-index: 1; width: min(980px, 100vw); max-height: 100dvh; overflow-y: auto; overscroll-behavior: contain;
+  display: grid; gap: 20px; padding: clamp(24px, 5vh, 48px) clamp(16px, 4vw, 48px) 0;
+}
+.mo-r-pie { position: sticky; bottom: 0; z-index: 2; display: grid; place-items: center; margin: -8px calc(-1 * clamp(16px, 4vw, 48px)) 0; padding: 28px 0 18px; background: linear-gradient(to bottom, transparent, var(--mo-negro) 42%); }
+.mo-resumen .mo-seguir { position: static; transform: none; }
+.mo-r-cabeza { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 14px; box-shadow: inset 0 -1px 0 var(--mo-filete); }
+.mo-r-marca { display: grid; gap: 8px; margin: 0; font: 600 var(--t-rotulo-g) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.mo-r-marca b { color: var(--gold); }
+.mo-r-nota { display: flex; align-items: baseline; gap: 12px; }
+.mo-r-nota-rotulo, .mo-r-nota-banda { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.mo-r-nota-valor { font: 900 var(--t-num-l) / 0.9 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--ink); }
+.mo-r-nota--rojo :is(.mo-r-nota-valor, .mo-r-nota-banda) { color: var(--down); }
+.mo-r-nota--ambar :is(.mo-r-nota-valor, .mo-r-nota-banda) { color: var(--warn); }
+.mo-r-nota--verde :is(.mo-r-nota-valor, .mo-r-nota-banda) { color: var(--up); }
+.mo-r-titular h2 { margin: 0; font: 800 clamp(26px, 3.4vw, 40px) / 1.05 var(--f-display); font-stretch: var(--ancho-titulo); text-wrap: balance; }
+.mo-r-bajada { margin: 10px 0 0; font-size: 16px; line-height: 1.45; color: var(--ink-dim); }
+.mo-r-vinetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px 24px; margin: 0; padding: 0; list-style: none; font-size: 15px; line-height: 1.4; color: var(--ink-dim); }
+.mo-r-vinetas li { display: flex; gap: 10px; align-items: baseline; }
+.mo-r-vinetas .ln-ico { flex: none; color: var(--gold); transform: translateY(2px); }
+.mo-r-grilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.mo-r-bloque { display: grid; align-content: start; gap: 10px; padding: 14px 16px; background: var(--mo-panel); border-radius: var(--r-panel); box-shadow: inset 0 0 0 1px var(--mo-filete); min-width: 0; }
+.mo-r-rotulo { margin: 0; font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.mo-r-splits, .mo-r-copas, .mo-r-mundo { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
+.mo-r-splits li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: baseline; }
+.mo-r-splits li > span:nth-child(2) { color: var(--ink-dim); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mo-r-pos { font: 700 14px / 1 var(--f-display); font-variant-numeric: tabular-nums; }
+.mo-r-copas li { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+.mo-r-copa { width: 22px; height: 22px; color: var(--gold); }
+.mo-r-num { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; margin: 0; }
+.mo-r-num-antes { font: 700 var(--t-num-s) / 1 var(--f-display); color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.mo-r-flecha { width: 16px; height: 16px; color: var(--ink-mute); }
+.mo-r-num-valor { font: 900 var(--t-num-m) / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; }
+.mo-r-num-delta { font: 700 15px / 1 var(--f-mono); color: var(--up); }
+.mo-r-num-delta.baja { color: var(--down); }
+.mo-r-num-texto { flex-basis: 100%; font-size: 14px; color: var(--ink-dim); }
+.mo-r-ejes { display: flex; flex-wrap: wrap; gap: 6px; }
+.mo-r-mundo li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.mo-r-mundo li > span:last-child { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
+.mo-r-mundo b { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mo-r-mundial b { color: var(--gold); }
+.mo-r-logo { width: 26px; height: 26px; }
+@media (max-width: 560px) {
+  .mo-r-panel { gap: 16px; padding: 22px 16px 0; }
+  .mo-r-pie { margin-inline: -16px; }
+  .mo-r-vinetas, .mo-r-grilla { grid-template-columns: minmax(0, 1fr); }
+  .mo-r-nota-valor { font-size: var(--t-num-m); }
+}
+
+/* movimiento reducido: los cuadros finales, sin transiciones (los pone fx/momento.js; el fundido corto es suyo) */
+@keyframes mt-fundido { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .mt-cajon[open] { animation: mt-fundido var(--dur-fundido) linear; }
+  .mt-franja { transition: none; }
+}
+html[data-reducido] .mt-cajon[open] { animation: mt-fundido var(--dur-fundido) linear; }

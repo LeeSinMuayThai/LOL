@@ -117,3 +117,24 @@ export function guardarNumeroJersey(seed, numero) {
   const marcador = cargarVista();
   return guardarVista(marcador?.seed === seed ? { ...marcador, numeroJersey: numero } : { seed, numeroJersey: numero });
 }
+
+/* U3a-momentos (PLANUI §0.6) */
+// Los momentos que esta carrera ya mostró (el takeover del título o del Mundial, el resumen de la temporada): viven en el
+// marcador `lolcs-vista`, como el número del jersey, y nunca en el `state`. Recargar no los repite. Una carrera nueva borra
+// el marcador (`borrarVista`) y con él la lista. Las claves salen de `ui/core/momentos.js`.
+const MOMENTOS_VISTOS_MAX = 64;
+
+export function leerMomentosVistos(seed) {
+  const marcador = cargarVista();
+  if (!marcador || (seed != null && marcador.seed !== seed)) return [];
+  return Array.isArray(marcador.momentosVistos) ? marcador.momentosVistos.filter((c) => typeof c === 'string') : [];
+}
+
+export function anotarMomentoVisto(seed, clave) {
+  if (typeof clave !== 'string' || !clave) return false;
+  const vistos = leerMomentosVistos(seed);
+  if (vistos.includes(clave)) return true;
+  const marcador = cargarVista();
+  const propio = marcador?.seed === seed ? marcador : { seed };
+  return guardarVista({ ...propio, momentosVistos: [...vistos, clave].slice(-MOMENTOS_VISTOS_MAX) });
+}

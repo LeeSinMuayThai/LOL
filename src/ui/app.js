@@ -32,6 +32,8 @@ import { VERSION_JUEGO } from '../data/version.js';
 import { iniciarDesafio } from '../core/desafio.js';
 import { interpretarSeed } from '../core/numeros.js';
 import { previaDeDecision } from '../core/previaDePartido.js';
+import { momentosDelTramo, resumenDelTramo } from './core/momentos.js';
+import { mostrarTitulo, mostrarResumen } from './fx/momento.js';
 
 export function iniciar() {
   const shellEl = document.querySelector('.shell');
@@ -68,10 +70,14 @@ export function iniciar() {
   const esperaEl = document.createElement('div');
   esperaEl.className = 'reproduciendo-aviso';
   esperaEl.setAttribute('role', 'status');
-  // PLANUI §8: una pista chica arriba de la página, no un cartel ("Espacio pasa las líneas").
+  // PLANUI §8: una pista chica arriba de la página, no un cartel ("Espacio pasa las líneas"). PLANUI §0.6: en rápido la
+  // pista se esconde (Espacio no tiene beat que pasar): `.shell[data-relato="rapido"]`, estilos/momentos.css.
   const teclaEspacio = document.createElement('kbd');
   teclaEspacio.textContent = 'Espacio';
-  esperaEl.append('Se está jugando el split ·', teclaEspacio, 'pasa las líneas');
+  const pistaEspacio = document.createElement('span');
+  pistaEspacio.className = 'aviso-espacio';
+  pistaEspacio.append(' ·', teclaEspacio, 'pasa las líneas');
+  esperaEl.append('Se está jugando el split', pistaEspacio);
   esperaEl.dataset.piezas = 'relato';
   decisionPanel.after(esperaEl);
   const continuarBtn = document.getElementById('continuarBtn');
@@ -264,7 +270,9 @@ export function iniciar() {
             const cierre = cierreDeSplit(pagina.fotoInicio, estado, { cierreFrenado: false, fotoAnio: pagina.fotoAnio });
             cierreDelAnio = cierre.anio ? { anio: cierre.anio.anio } : null;
           }
-          ui.renderParadaAntes(paradaAntesEl, estado, { desde: pagina.desde, cierreDelAnio });
+          // PLANUI §0.6: la franja "Mientras tanto" cuenta el tramo desde la última respuesta (`pagina.tramo`).
+          const tramoDesde = Number.isInteger(pagina.tramo) && pagina.tramo <= estado.logs.length ? pagina.tramo : pagina.desde;
+          ui.renderParadaAntes(paradaAntesEl, estado, { desde: pagina.desde, cierreDelAnio, tramoDesde });
         } catch (error) {
           console.error('No se pudo armar "lo último que pasó":', error);
           paradaAntesEl.hidden = true;
@@ -393,6 +401,8 @@ export function iniciar() {
       cierreFrenado: false,
       ultimoCierre: pagina.ultimoCierre,
       cierreVisto: pagina.cierreVisto,
+      // PLANUI §0.6: dónde arrancó el tramo de "Mientras tanto" (la última respuesta): sigue de página en página.
+      tramo: pagina.tramo,
       // Lo que importa es si la tarjeta del split anterior SE VIO (la velocidad de cuando se reprodujo), no la de ahora.
       anterior: pagina.ultimoCierre && !pagina.cierreVisto ? pagina.ultimoCierre : null
     };
@@ -411,7 +421,9 @@ export function iniciar() {
       cierreVisto: pagina.cierreVisto,
       logs: estado.logs.length,
       // El número de tu jersey (cosmético, de esta carrera): sobrevive a cada guardado del marcador.
-      numeroJersey: almacenamiento.leerNumeroJersey(estado.seed)
+      numeroJersey: almacenamiento.leerNumeroJersey(estado.seed),
+      // PLANUI §0.6: los momentos que esta carrera ya mostró (la copa, el resumen del año): retomar no los repite.
+      momentosVistos: almacenamiento.leerMomentosVistos(estado.seed)
     };
   }
 
@@ -460,6 +472,41 @@ export function iniciar() {
   // suma a la `vista` los beats que la página en curso YA mostró (regla 4 de §V.3: nunca uno por contar).
   let relatoEnCurso = null;
 
+  // PLANUI §0.6 (U3a): los momentos del tramo que cuenta esta llamada (`ui/core/momentos.js`), sin los ya vistos. El takeover
+  // del título (o del Mundial) entra tras el beat de la final; el resumen de la temporada, al final del tramo (después de la
+  // tarjeta "Cierre de …"). Los dos esperan a Continuar en TODAS las velocidades; la entrada va a `escalaDeEspera()`.
+  function momentosDeLaLlamada(estado, registroAntes, desde) {
+    const lista = [];
+    try {
+      const vistos = new Set(almacenamiento.leerMomentosVistos(estado.seed));
+      const opciones = () => ({ escala: reproductor.escalaDeEspera(), sonido: sonido.sonidoFx, controlar: (control) => reproductor.narrar(control) });
+      for (const momento of momentosDelTramo({ registroAntes, despues: estado, desde })) {
+        if (vistos.has(momento.clave)) continue;
+        lista.push({
+          indice: momento.indice,
+          mostrar: () => {
+            almacenamiento.anotarMomentoVisto(estado.seed, momento.clave);
+            return mostrarTitulo(momento, opciones());
+          }
+        });
+      }
+      const resumen = resumenDelTramo({ despues: estado, desde, fotoAnio: pagina.fotoAnio });
+      if (resumen && !vistos.has(resumen.clave)) {
+        lista.push({
+          indice: resumen.indice,
+          alFinal: true,
+          mostrar: () => {
+            almacenamiento.anotarMomentoVisto(estado.seed, resumen.clave);
+            return mostrarResumen(resumen, opciones());
+          }
+        });
+      }
+    } catch (error) {
+      console.error('No se pudieron armar los momentos del tramo:', error);
+    }
+    return lista;
+  }
+
   // `{ estado, hasta }` mientras el relato cuenta: el estado de esa llamada y el índice (exclusive) de `estado.logs` hasta
   // donde llegó la pantalla, o `null` si no hay relato en curso. Lo que se mostró son los beats de la página que están en
   // `#logList` (cada uno, un nodo; la línea "Split anterior" y la tarjeta de cierre no cuentan): el beat n-ésimo termina
@@ -492,6 +539,9 @@ export function iniciar() {
     // sin parada) entra con transición: la página vacía (con su cartel o la línea "Split anterior") se pinta adentro del
     // cambio y los beats empiezan cuando el cambio ya está en el DOM.
     const paginaNueva = !trasElegir && contados === 0 && logsAntes === pagina.desde && escena.pieza() === 'relato';
+    // PLANUI §0.6: en rápido la página del tramo se arma (para la Crónica y el cajón de "Mientras tanto") pero no se ve
+    // pasar como una banda de texto; la pista de Espacio tampoco (estilos/momentos.css).
+    shellEl.dataset.relato = reproductor.sinPulso() ? 'rapido' : 'pulso';
     escena.revelar(estadoActual, {
       reproduciendo: true,
       transicion: trasElegir,
@@ -510,8 +560,10 @@ export function iniciar() {
         console.error('No se pudo armar el cierre del split:', error);
       }
     }
-    // La tarjeta se ve si el relato espera entre beats: la velocidad se lee ACÁ, la de la llamada que la reproduce.
-    const tarjetaSeVe = Boolean(cierre) && !reproductor.sinPulso();
+    const momentos = momentosDeLaLlamada(estadoActual, registroAntes, logsAntes);
+    // La tarjeta se ve si el relato espera entre beats: la velocidad se lee ACÁ, la de la llamada que la reproduce. En rápido,
+    // la de un cierre de año también se ve: el resumen de la temporada la sostiene hasta Continuar (PLANUI §0.6).
+    const tarjetaSeVe = Boolean(cierre) && (!reproductor.sinPulso() || momentos.some((m) => m.alFinal));
     relatoEnCurso = estadoActual;
     // Lo que la parada ya contó en el lugar entra a la página sin volver a contarse (PLANUI §0.2).
     if (contados > 0) {
@@ -524,7 +576,8 @@ export function iniciar() {
         bisagra,
         state: estadoActual,
         offset: logsAntes + contados,
-        pagina: { desde: pagina.desde, anterior: pagina.anterior, cierre, cartel: pagina.cartel }
+        pagina: { desde: pagina.desde, anterior: pagina.anterior, cierre, cartel: pagina.cartel },
+        momentos
       });
     } finally {
       relatoEnCurso = null;
@@ -647,6 +700,8 @@ export function iniciar() {
       const registroAntes = antes.career.registro;
       const rngAntes = rng.estado();
       const vistaParada = paradaVisible;
+      // PLANUI §0.6: el tramo de "Mientras tanto" arranca con esta respuesta.
+      pagina.tramo = logsAntes;
       store.escribir(pipeline.resolverDecision(antes, respuesta, rng).state);
       const contados = await narrarRespuesta(vistaParada, { antes, despues: store.leer(), respuesta, rngAntes, logsAntes });
 
