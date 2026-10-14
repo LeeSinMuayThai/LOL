@@ -13,6 +13,8 @@ import { crearStream } from '../components/stream.js';
 import { mostrar as mostrarDecision } from './decision.js';
 import { previaDeDecision } from '../../core/previaDePartido.js';
 import { tableroDeSerie } from '../../core/vistaDeCarrera.js';
+import { cuadroDelMundial } from '../../core/internacional.js';
+import { crearCuadroMundial } from '../components/mundial.js';
 
 // La pieza de una parada de partido, por lo que dice la parada (nunca por su prosa).
 export function piezaDePartido(pendiente, estado) {
@@ -32,6 +34,9 @@ export function mostrar(contenedor, decision, ctx) {
   const vista = pieza === 'stream'
     ? crearStream(contenedor, decision, { estado, previa, mundo, sonido, responder })
     : crearCaraACara(contenedor, decision, { estado, previa, mundo, sonido, responder, modo: pieza === 'fecha' ? 'fecha' : 'serie', internacional });
+  // F1 (PLANUI §0.8): en cuartos, semis y final del Mundial, el cuadro de 8 con tu camino, arriba del cara a cara
+  const cuadro = pieza === 'serie' && estado.serie?.torneo === 'mundial' ? cuadroDelMundial(estado.internacional, estado.serie.etapa) : null;
+  if (cuadro) contenedor.querySelector('.tx-arriba')?.append(crearCuadroMundial(cuadro));
   mundo?.declarar?.(vista.mundo);
   vista.alMontar?.();
   marcarFoco(vista.titulo);

@@ -460,3 +460,80 @@ export function recordDelJugador(t) {
   const r = t?.jugador ? t.swiss.record[t.jugador] : null;
   return r ? `${r.v}-${r.d}` : null;
 }
+
+// --- F1 (PLANUI §0.8): el Swiss y el bracket como tablero, para la pantalla ---
+// Puros y sin `rng`: leen `state.internacional` y lo devuelven armado para pintar. La UI no recalcula nada del torneo.
+
+// El Swiss ronda por ronda, como los Swiss reales: en cada ronda los cruces agrupados por el récord con el que llegaron
+// (0-0; 1-0 y 0-1; …). La ronda que se está por jugar (`t.partidoEnCurso.cruces`) va al final con `enCurso` y sin
+// ganador. `pasaron` (3 victorias) y `afuera` (3 derrotas) salen del récord de hoy, en el orden en que se definieron.
+export function tableroDelSwiss(t) {
+  const record = Object.fromEntries(t.participantes.map((p) => [p.nombre, { v: 0, d: 0 }]));
+  const ligaDe = Object.fromEntries(t.participantes.map((p) => [p.nombre, p.liga]));
+  const definido = {};
+  const agrupar = (cruces) => {
+    const pools = new Map();
+    for (const c of cruces) {
+      const { v, d } = record[c.a];
+      const clave = `${v}-${d}`;
+      if (!pools.has(clave)) {
+        pools.set(clave, { v, d, cruces: [] });
+      }
+      pools.get(clave).cruces.push({ a: c.a, b: c.b, ganador: c.ganador ?? null, propio: Boolean(t.jugador) && (c.a === t.jugador || c.b === t.jugador) });
+    }
+    return [...pools.values()].sort((x, y) => (y.v - y.d) - (x.v - x.d) || y.v - x.v);
+  };
+  const rondas = t.swiss.rondas.map((partidos, i) => {
+    const ronda = { ronda: i + 1, enCurso: false, pools: agrupar(partidos) };
+    for (const c of partidos) {
+      const perdedor = c.ganador === c.a ? c.b : c.a;
+      record[c.ganador] = { ...record[c.ganador], v: record[c.ganador].v + 1 };
+      record[perdedor] = { ...record[perdedor], d: record[perdedor].d + 1 };
+      for (const n of [c.ganador, perdedor]) {
+        if (definido[n] == null && (record[n].v >= M().victoriasParaAvanzar || record[n].d >= M().derrotasParaQuedarAfuera)) {
+          definido[n] = i + 1;
+        }
+      }
+    }
+    return ronda;
+  });
+  if (t.partidoEnCurso?.cruces) {
+    rondas.push({ ronda: rondas.length + 1, enCurso: true, pools: agrupar(t.partidoEnCurso.cruces) });
+  }
+  const conRecord = (nombre) => ({ nombre, liga: ligaDe[nombre], ...t.swiss.record[nombre], ronda: definido[nombre] });
+  const porRonda = (x, y) => x.ronda - y.ronda || x.nombre.localeCompare(y.nombre);
+  const nombres = t.participantes.map((p) => p.nombre);
+  return {
+    jugador: t.jugador,
+    ligas: ligaDe,
+    record: t.swiss.record,
+    rondas,
+    pasaron: nombres.filter((n) => t.swiss.record[n].v >= M().victoriasParaAvanzar).map(conRecord).sort(porRonda),
+    afuera: nombres.filter((n) => t.swiss.record[n].d >= M().derrotasParaQuedarAfuera).map(conRecord).sort(porRonda)
+  };
+}
+
+// El cuadro de 8 con lo que se sabe hoy: las etapas jugadas con su marcador; la próxima con sus cruces (sin resultado);
+// las que siguen, vacías (`a`/`b` en `null`). `null` si el Swiss todavía no sembró el bracket. Mismo formato que
+// `resumenDelMundial(t).bracket` (lo pinta `ui/components/mundial.js`), más `jugador` y `etapaEnCurso`.
+export function cuadroDelMundial(t, etapaEnCurso = null) {
+  if (!t?.bracket) {
+    return null;
+  }
+  const vacias = (n) => Array.from({ length: n }, () => ({ a: null, b: null, marcador: null, ganador: null }));
+  let anteriorJugada = true;
+  const etapas = ETAPAS_BRACKET.map((etapa, i) => {
+    const jugada = t.bracket[etapa];
+    let series;
+    if (jugada) {
+      series = jugada.map(({ a, b, marcador, ganador }) => ({ a, b, marcador, ganador }));
+    } else if (anteriorJugada) {
+      series = crucesDeEtapa(t, etapa).map(({ a, b }) => ({ a, b, marcador: null, ganador: null }));
+    } else {
+      series = vacias(M().clasificanAlBracket / 2 ** (i + 1));
+    }
+    anteriorJugada = Boolean(jugada);
+    return { etapa, series };
+  });
+  return { jugador: t.jugador, etapaEnCurso, bracket: etapas, campeon: t.campeon };
+}

@@ -110,11 +110,23 @@ function alParar(ctx) {
   if (sistema.id === 'amateur' && motivo === 'plan_amateur' && nOpc === 4) ofrecer('plan', 1, ctx);
   if (sistema.id === 'edadCierre' && decision.opciones?.some((o) => o.plan)) ofrecer('cierre', state.phase === 'profesional' ? 2 : 1, ctx);
   if (sistema.id === 'serie' && motivo === 'plan' && esBo5DeLiga(state) && !decision.datos?.replan) ofrecer('serie', (PRIORIDAD_RONDA[state.serie.ronda] ?? 0) + 1, ctx);
-  if (sistema.id === 'internacional' && motivo === 'swiss') ofrecer('swiss', 1, ctx);
+  // F1 (PLANUI §0.8): cada ronda del Swiss frena. `swiss` sigue siendo el 2-2 (el de vida o muerte, el de siempre);
+  // `swiss-2-2` es el mismo; `swiss-ronda` una ronda que no lo es (mejor un 1-1, la del medio); `mundial-cuartos` el plan
+  // de los cuartos del Mundial, con el cuadro de 8.
+  if (sistema.id === 'internacional' && motivo === 'swiss') {
+    const r = state.internacional.swiss.record[state.internacional.jugador];
+    if (decision.datos?.vidaOMuerte !== false) {
+      ofrecer('swiss', 1, ctx);
+      ofrecer('swiss-2-2', 1, ctx);
+    } else {
+      ofrecer('swiss-ronda', r.v === 1 && r.d === 1 ? 3 : r.v + r.d > 0 ? 2 : 1, ctx);
+    }
+  }
+  if (sistema.id === 'internacional' && motivo === 'plan' && state.serie?.torneo === 'mundial' && state.serie.etapa === 'cuartos' && !decision.datos?.replan) ofrecer('mundial-cuartos', 1, ctx);
 }
 
-const QUIERO = ['evento', 'destino', 'plan', 'cierre', 'serie', 'swiss', 'final', 'firma', 'final-perdida', 'mudanza', 'primer-club'];
-for (let seed = 1; seed <= SEEDS && !QUIERO.every((n) => muestras.has(n) && (n !== 'serie' || muestras.get(n).prioridad >= 3)); seed += 1) {
+const QUIERO = ['evento', 'destino', 'plan', 'cierre', 'serie', 'swiss', 'swiss-2-2', 'swiss-ronda', 'mundial-cuartos', 'final', 'firma', 'final-perdida', 'mudanza', 'primer-club'];
+for (let seed = 1; seed <= SEEDS && !QUIERO.every((n) => muestras.has(n) && (!['serie', 'swiss-ronda'].includes(n) || muestras.get(n).prioridad >= 3)); seed += 1) {
   jugarCarrera(seed, { alParar, responder, alCerrarSplit: ({ despues }) => confirmar(despues) });
 }
 fs.mkdirSync(SALIDA, { recursive: true });
