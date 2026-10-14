@@ -115,3 +115,186 @@
   .ficha-ranked-nombre { font-size: var(--fs-5); }
   .ficha-stat-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* ==========================================================================
+   W1 (PLANUI §0.7): LA FICHA FIJA, debajo de la franja y en todas las anchuras (`src/ui/fichaFija.js`). Una sola
+   superficie (la de la franja): la tira con los números y su próximo escalón; tocarla abre la hoja con la ficha completa.
+   El celular deja en la tira solo lo marcado `data-tira` (nivel, arraigo, títulos).
+   ========================================================================== */
+.ficha-fija {
+  position: fixed;
+  top: var(--franja-linea);
+  left: 0;
+  right: 0;
+  z-index: 99;
+  height: var(--ficha-alto);
+  background: var(--franja-fondo);
+  box-shadow: inset 0 -1px 0 var(--linea);
+  font: 500 var(--t-rotulo) / 1 var(--f-mono);
+  letter-spacing: var(--tracking-mono);
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.shell[data-pieza="inicio"] > .ficha-fija { display: none; }
+.fj-tira {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0 var(--margen);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+.fj-tira:hover { background: var(--luz-tenue); }
+.fj-tira:focus-visible { outline: 1px solid var(--luz-fuerte); outline-offset: -3px; }
+.fj-item { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; min-width: 0; }
+.fj-item + .fj-item { padding-left: var(--s-4); box-shadow: inset 1px 0 0 var(--linea); }
+.fj-rot { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-mute); }
+.fj-rot .ln-ico { width: 12px; height: 12px; }
+.fj-num {
+  font: 800 20px / 1 var(--f-display);
+  font-stretch: var(--ancho-numero);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.fj-chico { font-size: 15px; }
+.fj-nivel[data-banda="prospecto"] .fj-num { color: var(--nivel-prospecto); }
+.fj-nivel[data-banda="titular"] .fj-num { color: var(--nivel-titular); }
+.fj-nivel[data-banda="elite"] .fj-num { color: var(--nivel-elite); }
+.fj-nivel[data-banda="clase_mundial"] .fj-num { color: var(--nivel-clase_mundial); }
+.fj-escalon {
+  font: 800 13px / 1 var(--f-display);
+  font-stretch: var(--ancho-titulo);
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--ink);
+}
+/* El próximo escalón se lee como una frase corta ("→ Querido 25"), en la letra del cuerpo; el número, en mono. */
+.fj-prox { font: 500 12px / 1 var(--f-cuerpo); color: var(--ink-dim); text-transform: none; letter-spacing: 0; }
+.fj-prox b { font: 600 11px / 1 var(--f-mono); color: var(--ink); }
+.fj-delta { display: inline-flex; align-items: center; gap: 3px; font-variant-numeric: tabular-nums; }
+.fj-delta.sube { color: var(--up); }
+.fj-delta.baja { color: var(--down); }
+.fj-sufijo { font-style: normal; color: var(--ink-mute); margin-left: 4px; text-transform: none; letter-spacing: 0.02em; }
+/* La escalera del arraigo: la barra del escalón en el color de su eje (equipo); en Leyenda, oro y llena. */
+.fj-barra { position: relative; display: inline-block; width: 64px; height: 4px; border-radius: 2px; background: var(--linea-fuerte); overflow: hidden; }
+.fj-barra i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--eje-equipo); }
+.fj-arraigo .fj-rot .ln-ico,
+.fj-jer .fj-rot .ln-ico { color: var(--eje-equipo); }
+.fj-hype .fj-rot .ln-ico { color: var(--eje-fama); }
+.fj-arraigo[data-escalon="idolo"] .fj-escalon { color: var(--luz-texto); }
+.fj-arraigo[data-escalon="leyenda"] .fj-escalon { color: var(--gold); }
+.fj-arraigo[data-escalon="leyenda"] .fj-barra i { background: var(--gold); }
+.fj-carrera .fj-escalon { color: var(--luz-texto); }
+.fj-chip { padding: 4px 8px; border-radius: var(--r-chip); box-shadow: inset 0 0 0 1px var(--linea-fuerte); color: var(--ink-dim); }
+.fj-int[data-estado="clasificado"] .fj-chip,
+.fj-int[data-estado="jugando"] .fj-chip { box-shadow: inset 0 0 0 1px var(--luz-fuerte); color: var(--luz-texto); }
+.fj-int[data-estado="en_carpeta"] .fj-chip { color: var(--ink); }
+/* La vitrina mini: una copa por título, en el color de su tier. */
+.fj-vitrina { display: inline-flex; align-items: center; gap: 1px; }
+.fj-copa { width: 14px; height: 14px; color: var(--fj-copa-vacia); }
+.fj-copa[data-tier="1"] { color: var(--fj-copa-primera); }
+.fj-copa[data-tier="2"] { color: var(--fj-copa-desarrollo); }
+.fj-copa[data-tier="3"] { color: var(--fj-copa-circuito); }
+.fj-abre {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-right: 1.5px solid var(--ink-mute);
+  border-bottom: 1.5px solid var(--ink-mute);
+  transform: translateY(-2px) rotate(45deg);
+}
+.ficha-fija[data-abierta="si"] .fj-abre { transform: translateY(2px) rotate(-135deg); }
+
+/* La hoja: la ficha completa, bajo la tira. Filas separadas por líneas (las de la placa "Vos"). */
+.fj-hoja {
+  position: absolute;
+  top: 100%;
+  left: var(--margen);
+  width: min(560px, calc(100vw - 2 * var(--margen)));
+  max-height: calc(100vh - var(--franja-alto) - var(--barra-alto) - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px 18px 12px;
+  border-radius: 0 0 var(--r-panel) var(--r-panel);
+  background: var(--panel-hondo);
+  box-shadow: inset 0 0 0 1px var(--filete), var(--fj-hoja-sombra);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.fj-fila {
+  display: grid;
+  grid-template-columns: 116px 64px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px 10px;
+  padding: 10px 0 9px;
+  font: 400 var(--t-chico) / 1.35 var(--f-cuerpo);
+  color: var(--ink-dim);
+}
+.fj-fila + .fj-fila { box-shadow: inset 0 1px 0 var(--linea); }
+.fj-fila .fj-rot { font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; }
+.fj-fila-valor { font: 800 17px / 1 var(--f-display); font-stretch: var(--ancho-numero); color: var(--ink); font-variant-numeric: tabular-nums; }
+.fj-fila[data-banda="prospecto"] .fj-fila-valor { color: var(--nivel-prospecto); }
+.fj-fila[data-banda="titular"] .fj-fila-valor { color: var(--nivel-titular); }
+.fj-fila[data-banda="elite"] .fj-fila-valor { color: var(--nivel-elite); }
+.fj-fila[data-banda="clase_mundial"] .fj-fila-valor { color: var(--nivel-clase_mundial); }
+.fj-fuerte { font-weight: 700; color: var(--ink); }
+.fj-fila-texto .fj-delta { margin-left: 8px; font: 500 11px / 1 var(--f-mono); }
+.fj-fila > .fj-escalones,
+.fj-fila > .fj-vitrina-hoja { grid-column: 2 / -1; }
+.fj-escalones { display: flex; gap: 4px; font: 500 10px / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.fj-escalones i { flex: 1; padding: 6px 0 0; font-style: normal; color: var(--ink-mute); box-shadow: inset 0 2px 0 var(--linea-fuerte); }
+.fj-escalones i[data-paso="hecho"] { color: var(--ink-dim); box-shadow: inset 0 2px 0 var(--eje-equipo); }
+.fj-escalones i[data-paso="actual"] { color: var(--ink); box-shadow: inset 0 2px 0 var(--eje-equipo); }
+.fj-fila[data-escalon="leyenda"] .fj-escalones i { box-shadow: inset 0 2px 0 var(--gold); }
+.fj-fila[data-escalon="leyenda"] .fj-escalones i[data-paso="actual"] { color: var(--gold); }
+.fj-vitrina-hoja { display: grid; gap: 8px; }
+.fj-grupo { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0; }
+.fj-grupo-rot { flex: 0 0 100%; font: 500 10px / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute); }
+.fj-titulo { display: inline-flex; align-items: center; gap: 5px; color: var(--ink); }
+
+/* El escritorio angosto (hasta 1599): los rótulos de jerarquía, hype e internacional quedan en su glifo, y la carrera dice
+   su número y el próximo escalón (el actual, en la hoja). Entre 641 y 1279, además, sin plata ni internacional ni los
+   próximos de jerarquía y hype (siguen en la hoja). */
+@media (min-width: 641px) and (max-width: 1599px) {
+  .fj-tira { gap: var(--s-2); letter-spacing: 0.06em; }
+  .fj-item { gap: 6px; }
+  .fj-item + .fj-item { padding-left: var(--s-2); }
+  .fj-escalon { font-stretch: 100%; }
+  .fj-barra { width: 40px; }
+  .fj-prox { letter-spacing: 0; }
+  .fj-jer .fj-rot-txt, .fj-hype .fj-rot-txt, .fj-int .fj-rot, .fj-titulos .fj-rot, .fj-carrera .fj-escalon,
+  .fj-jer .fj-delta, .fj-hype .fj-delta { display: none; }
+}
+@media (min-width: 641px) and (max-width: 1279px) {
+  .fj-item[data-prio="5"], .fj-item[data-prio="7"], .fj-jer .fj-prox, .fj-hype .fj-prox { display: none; }
+}
+
+/* El celular: la tira compacta (nivel, la barra del arraigo y hasta tres copas); el resto, en la hoja de ancho entero.
+   Si no entra, se corta el arraigo, nunca los títulos. */
+@media (max-width: 640px) {
+  .fj-tira { gap: var(--s-2); padding: 0 12px; }
+  .fj-item:not([data-tira]) { display: none; }
+  .fj-item + .fj-item { padding-left: 0; box-shadow: none; }
+  .fj-item[data-tira] ~ .fj-item[data-tira] { padding-left: var(--s-2); box-shadow: inset 1px 0 0 var(--linea); }
+  .fj-rot-txt, .fj-arraigo .fj-delta, .fj-carrera .fj-escalon, .fj-hype .fj-prox, .fj-hype .fj-delta { display: none; }
+  .fj-item { gap: 5px; }
+  .fj-num { font-size: 18px; }
+  .fj-barra { width: 32px; }
+  .fj-arraigo { flex: 0 1 auto; overflow: hidden; }
+  .fj-vitrina .fj-copa:nth-child(n + 4) { display: none; }
+  .fj-hoja { left: 0; width: 100vw; padding: 4px 14px 12px; }
+  .fj-fila { grid-template-columns: 92px 44px minmax(0, 1fr); }
+}

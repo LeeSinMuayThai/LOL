@@ -76,7 +76,7 @@ body { padding: 0; }
   display: flex;
   align-items: center;
   gap: var(--s-5);
-  height: var(--franja-alto);
+  height: var(--franja-linea, var(--franja-alto));
   padding: 0 var(--margen);
   background: var(--franja-fondo);
   font: 500 var(--t-rotulo) / 1 var(--f-mono);

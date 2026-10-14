@@ -4,6 +4,8 @@ import { bandaDeArraigo as idDeBandaDeArraigo } from './registro.js';
 import { etiquetaCampo } from './selectors.js';
 import { deltaCorto } from './formato.js';
 import { ORIGEN_DESGASTE, desgasteDe } from './curvas.js';
+import { conSplitPendienteAsentado } from './registro.js';
+import { puntajeDeCarrera, escalonDeCarrera } from './puntaje.js';
 
 // La ficha de carrera (fase 8, PLAN.md §8.3): lo que la UI pinta en la
 // tarjeta permanente (`src/ui/components/ficha.js`). Puro, sin RNG — se
@@ -98,12 +100,15 @@ export function bandaDeMentalidad(state) {
 }
 
 const LABELS_HYPE = { ignoto: 'ignoto', conocido: 'conocido', figura: 'figura', estrella: 'estrella' };
+// W1 (PLANUI §0.7): los techos de cada banda de hype en un solo lugar, para que la escalera de la ficha
+// (`escaleraDeHype`) nombre el mismo umbral que usa esta banda. Los valores son los de siempre.
+const TECHOS_HYPE = { ignoto: 25, conocido: 55, figura: 80 };
 
 export function bandaDeHype(state) {
   const valor = state.player.stats.hype;
-  const id = valor <= 25 ? 'ignoto'
-    : valor <= 55 ? 'conocido'
-      : valor <= 80 ? 'figura'
+  const id = valor <= TECHOS_HYPE.ignoto ? 'ignoto'
+    : valor <= TECHOS_HYPE.conocido ? 'conocido'
+      : valor <= TECHOS_HYPE.figura ? 'figura'
         : 'estrella';
   return { id, label: LABELS_HYPE[id], valor: Math.round(valor), delta: delta(state, 'hype') };
 }
@@ -275,4 +280,156 @@ export function fichaCompleta(state) {
     rankMundial: state.flags?.rankMundialActual ?? null,
     rankMundialPico: state.career.registro?.picos?.rankMundial ?? 0
   };
+}
+
+// --- W1 (PLANUI §0.7): la ficha fija, "que se sienta el avance" ---
+//
+// Helpers puros de lectura para la ficha que la UI muestra siempre (`src/ui/fichaFija.js`): cada número con su próximo
+// escalón con nombre y su movimiento del año (contra `flags.edadSnapshot`, la misma foto que las flechas ▲▼). Ninguno
+// consume rng ni escribe el estado; no cambian lo que devuelven las funciones de arriba.
+
+// El movimiento del año de un campo del snapshot (`CAMPOS_EDAD`); 0 debajo de `umbralFlecha`, como las flechas.
+function deltaDelAnio(state, ruta, actual) {
+  const antes = state.flags?.edadSnapshot?.[ruta];
+  if (antes === undefined || !Number.isFinite(actual)) {
+    return 0;
+  }
+  const diferencia = actual - antes;
+  return Math.abs(diferencia) >= BALANCE.ficha.umbralFlecha ? Math.round(diferencia) : 0;
+}
+
+// El arraigo y la jerarquía son con TU org: si la fila abierta del registro arrancó este año (cambiaste de club), la
+// foto de inicio de año es de otro club y no hay delta del año que contar.
+function orgNuevaEsteAnio(state) {
+  const fila = (state.career?.registro?.porOrg ?? []).find((f) => f.hastaAnio === null && f.org === state.career.currentOrg);
+  const splitCount = state.player?.splitCount;
+  if (!fila || !Number.isFinite(fila.desdeSplit) || !Number.isFinite(splitCount)) {
+    return false;
+  }
+  const inicioDelAnio = splitCount - (splitCount % BALANCE.edad.splitsPorEdad);
+  return fila.desdeSplit >= inicioDelAnio;
+}
+
+// Una banda (`{ id, label, valor, piso, techo, esMaxima }`) vuelta escalera: el progreso dentro del escalón (0-1) y el
+// próximo escalón con el número en el que se entra (`umbral`). `entraEnTecho`: si el próximo escalón empieza EN el techo
+// (el arraigo: `valor >= hito`) o pasándolo (jerarquía y hype: `valor <= techo` todavía es la banda de abajo).
+function escalera(banda, ids, labels, { entraEnTecho }) {
+  const i = ids.indexOf(banda.id);
+  const rango = banda.techo - banda.piso;
+  const progreso = rango > 0 ? Math.max(0, Math.min(1, (banda.valor - banda.piso) / rango)) : 1;
+  const proximo = banda.esMaxima ? null : ids[i + 1];
+  const umbral = proximo ? (entraEnTecho ? banda.techo : Math.floor(banda.techo) + 1) : null;
+  return {
+    ...banda,
+    paso: i + 1,
+    pasos: ids.length,
+    progreso,
+    siguiente: proximo ? { id: proximo, label: labels[proximo], umbral, falta: Math.max(0, Math.ceil(umbral - banda.valor)) } : null
+  };
+}
+
+// El arraigo con la org actual como escalera (Uno más → Querido → Ídolo → Leyenda, `BALANCE.arraigo.hitos`). `null` sin
+// org (amateur, agente libre): no hay club del que hablar.
+export function escaleraDeArraigo(state) {
+  const org = state.career?.currentOrg ?? null;
+  if (!org) {
+    return null;
+  }
+  const valor = state.career.arraigo ?? 0;
+  const banda = bandaDeArraigoFicha(valor);
+  return {
+    ...escalera(banda, ['uno_mas', 'querido', 'idolo', 'leyenda'], LABELS_ARRAIGO, { entraEnTecho: true }),
+    org,
+    delta: orgNuevaEsteAnio(state) ? 0 : deltaDelAnio(state, 'career.arraigo', valor)
+  };
+}
+
+// La jerarquía en tu org con su próximo escalón (las bandas de `bandaDeJerarquia`). `null` sin org.
+export function escaleraDeJerarquia(state) {
+  if (!state.career?.currentOrg) {
+    return null;
+  }
+  const banda = bandaDeJerarquia(state);
+  return {
+    ...escalera(banda, ['rookie', 'titular', 'referente', 'franquicia'], LABELS_JERARQUIA, { entraEnTecho: false }),
+    delta: orgNuevaEsteAnio(state) ? 0 : deltaDelAnio(state, 'career.jerarquia', state.career.jerarquia)
+  };
+}
+
+// El hype con su próximo escalón (las bandas de `bandaDeHype`, con los mismos techos).
+export function escaleraDeHype(state) {
+  const banda = bandaDeHype(state);
+  const ids = ['ignoto', 'conocido', 'figura', 'estrella'];
+  const i = ids.indexOf(banda.id);
+  const pisos = [0, TECHOS_HYPE.ignoto, TECHOS_HYPE.conocido, TECHOS_HYPE.figura];
+  const techos = [TECHOS_HYPE.ignoto, TECHOS_HYPE.conocido, TECHOS_HYPE.figura, BALANCE.stats.max];
+  const conRango = { ...banda, valor: state.player.stats.hype, piso: pisos[i], techo: techos[i], esMaxima: i === ids.length - 1 };
+  return { ...escalera(conRango, ids, LABELS_HYPE, { entraEnTecho: false }), valor: banda.valor, delta: banda.delta };
+}
+
+// El nivel con su movimiento del año: la misma suma ponderada de `nivelDelJugador` sobre la foto de inicio de año.
+// `delta: null` si la foto no tiene alguno de los stats que pesa tu rol (una carrera vieja).
+export function nivelDelAnio(state) {
+  const ahora = nivelDelJugador(state);
+  const snapshot = state.flags?.edadSnapshot ?? {};
+  const { pesos } = ROLES[state.player.role];
+  let antes = 0;
+  for (const [stat, peso] of Object.entries(pesos)) {
+    const valor = snapshot[`player.stats.${stat}`];
+    if (valor === undefined) {
+      return { valor: Math.round(ahora), banda: bandaDeNivel(ahora), delta: null };
+    }
+    antes += valor * peso;
+  }
+  const diferencia = ahora - antes;
+  return {
+    valor: Math.round(ahora),
+    banda: bandaDeNivel(ahora),
+    delta: Math.abs(diferencia) >= BALANCE.ficha.umbralFlecha ? Math.round(diferencia) : 0
+  };
+}
+
+// El puntaje de la carrera EN VIVO: el mismo `puntajeDeCarrera` de la tarjeta final, sobre el registro asentado (como
+// `escalonDeCarrera`), y el escalón con su "te falta…". `total` es `null` si el registro todavía no se puede puntuar
+// (`puntajeDeCarrera` falla fuerte); el escalón sale igual.
+export function puntajeEnVivo(state) {
+  let total = null;
+  try {
+    total = puntajeDeCarrera(conSplitPendienteAsentado(state)).total;
+  } catch {
+    total = null;
+  }
+  let escalon = null;
+  try {
+    escalon = escalonDeCarrera(state);
+  } catch {
+    escalon = null;
+  }
+  return { total, actual: escalon?.actual ?? null, siguiente: escalon?.siguiente ?? null };
+}
+
+// La vitrina: los títulos del registro agrupados por tier (primera, desarrollo, circuito chico), de arriba hacia abajo.
+// Cada grupo trae sus títulos en orden (nombre, año, org y su `indice` en el registro: los nuevos son los de índice más
+// alto) para que la pantalla dibuje una copa por título.
+export function vitrinaDeTitulos(registro) {
+  const titulos = registro?.titulos ?? [];
+  const grupos = new Map();
+  titulos.forEach((titulo, indice) => {
+    const tier = Number.isFinite(titulo.tier) ? titulo.tier : null;
+    if (!grupos.has(tier)) {
+      grupos.set(tier, []);
+    }
+    grupos.get(tier).push({ nombre: titulo.nombre, anio: titulo.anio, org: titulo.org, indice });
+  });
+  const orden = (tier) => (tier === null ? Number.POSITIVE_INFINITY : tier);
+  return {
+    total: titulos.length,
+    grupos: [...grupos.entries()].sort(([a], [b]) => orden(a) - orden(b)).map(([tier, lista]) => ({ tier, titulos: lista }))
+  };
+}
+
+// La plata ganada en la carrera (`registro.dineroTotalUSD`, que acumula `systems/roster.js` cada split con contrato).
+export function dineroGanado(registro) {
+  const valor = Number(registro?.dineroTotalUSD);
+  return Number.isFinite(valor) && valor > 0 ? valor : 0;
 }

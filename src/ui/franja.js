@@ -9,6 +9,10 @@
 // FASE V (V4): cuando la `vista` cambia, el número se mueve desde el valor que la franja mostraba hasta el nuevo
 // (`crearDelta` + `moverNumero`, ui/core/delta.js): llega al final de los beats y nunca antes. Con movimiento reducido, en
 // INST o en una carrera nueva el número aparece ya en su valor final.
+//
+// W1 (PLANUI §0.7): debajo de la franja vive la ficha fija (`fichaFija.js`, la crea y la pinta esta franja con la misma
+// `vista`): el nivel con su ▲▼ del año, el arraigo como escalera, el puntaje, la jerarquía, el hype, el cupo, la vitrina y
+// la plata. En el profesional el nivel es de la ficha y la franja no lo repite; en el amateur la franja sigue con la soloQ.
 import { cierreDeSplit, deltaDeCierre, numeroDe, textoDeNumeroEn, LABEL_DE_VENTANA } from './core/escena.js';
 import { crearDelta, moverNumero } from './core/delta.js';
 import { trayectoriaDeCarrera } from './core/trayectoria.js';
@@ -16,6 +20,7 @@ import { ventanaVisibleDe } from '../core/vistaDeCarrera.js';
 import { bandaDeNivel } from '../core/ficha.js';
 import { BALANCE } from '../data/balance.js';
 import { glifoRol, triangulos } from './fx/iconos.js';
+import { crearFichaFija, hayFicha } from './fichaFija.js';
 
 // La ventana REAL de la pausa (`ventanaVisibleDe`, K6a-U), con los nombres de los carteles de las páginas.
 const LABEL_VENTANA = LABEL_DE_VENTANA;
@@ -160,6 +165,19 @@ export function crearFranja({ franja, estadoEl, trayectoriaEl = null, etiquetaRo
     publicarAlto();
   }
 
+  // W1 (PLANUI §0.7): la ficha fija, debajo de la franja y en todas las anchuras (`fichaFija.js`). Mientras se ve, el nivel
+  // es suyo (con el ▲▼ del año) y la franja no lo repite; en el amateur la franja sigue diciendo la soloQ.
+  let ficha = null;
+  if (franja && typeof document !== 'undefined') {
+    const seccion = document.createElement('section');
+    seccion.className = 'ficha-fija';
+    seccion.id = 'fichaFija';
+    seccion.setAttribute('aria-label', 'Tu ficha');
+    seccion.hidden = true;
+    franja.insertAdjacentElement('afterend', seccion);
+    ficha = crearFichaFija(seccion);
+  }
+
   // De dónde viene el número: la lectura de la `vista` anterior (`crearDelta`). Una carrera nueva, la final o el inicio
   // vuelven a empezar sin "antes". Si el número cambió de naturaleza (rango → nivel) tampoco hay desde dónde.
   let delta = null;
@@ -185,6 +203,11 @@ export function crearFranja({ franja, estadoEl, trayectoriaEl = null, etiquetaRo
 
   function pintar(estado) {
     pintarTrayectoria(trayectoriaEl, estado);
+    try {
+      ficha?.pintar(estado, { animar: animar() });
+    } catch (error) {
+      console.error('No se pudo pintar la ficha:', error);
+    }
     if (!estadoEl) return;
     const movimiento = movimientoDe(estado);
     if (!estado?.player) {
@@ -207,7 +230,8 @@ export function crearFranja({ franja, estadoEl, trayectoriaEl = null, etiquetaRo
     const pips = estado.phase === 'retirado' ? null : crearPips(estado);
     if (pips) cuando.append(pips);
 
-    const numero = estado.terminado ? crearPico(estado) : crearNumero(estado, fotoDeLaPagina?.() ?? null, movimiento);
+    const numeroEnLaFicha = ficha && hayFicha(estado) && estado.phase === 'profesional';
+    const numero = estado.terminado ? crearPico(estado) : numeroEnLaFicha ? null : crearNumero(estado, fotoDeLaPagina?.() ?? null, movimiento);
     estadoEl.replaceChildren(...[quien, club, cuando, numero].filter(Boolean));
   }
 
