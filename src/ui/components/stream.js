@@ -7,16 +7,14 @@
 // opciones ("la decisión movió el número, el dado salió igual") y lo que se movió. Lo decorativo (el chat, los
 // espectadores, la cámara) sale de `fx/azar.js` con la semilla de la carrera: nunca del rng del motor ni de `rngUi`.
 //
-// Las dos variantes de la previa (P1, PLANUI §0.4: "es muy difícil encontrar la poll"), por `?sw=`; sin perilla, el de
-// siempre (la decisión en el panel de la barra):
-// - `prediccion`: la predicción ES la decisión. Una tarjeta de predicción al estilo Twitch encima del video, con las
-//   opciones como botones (la chance del motor de cada una, en % y barra, y los puntos del chat, decorativos); al elegir,
-//   PREDICCIÓN CERRADA, el chat explota y sigue la narración. El chat queda al costado y su pie dice "modo espectador".
-// - `pausa`: pausa de transmisión. El video se apaga y se desatura, el cartel "Pausa · decisión del staff" y al centro el
-//   gráfico de transmisión con la pregunta y las opciones; al elegir, el gráfico se va con un barrido y el stream vuelve.
+// La decisión ES una predicción al estilo Twitch (P1 la eligió, P2 la dejó de siempre: PLANUI §0.5): la tarjeta con las
+// opciones como botones (la chance del motor de cada una, en % y barra, y los puntos del chat, decorativos); al elegir,
+// PREDICCIÓN CERRADA, el chat explota y sigue la narración. La página es una plataforma de streaming en tres columnas:
+// a la izquierda el riel EN VIVO (los otros cruces de la ronda como canales y co-streamers inventados que miran tu
+// partida), al centro el player, la info del canal y los paneles, y a la derecha el chat en modo espectador.
 // Lo grande del video son los EQUIPOS (la sigla con su escudo); tu campeón va como segunda línea ("tu campeón").
 import { el, svg, quieto, celular, EXPO } from '../fx/util.js';
-import { entrar, esperar, lineasConMascara, num, odometro } from '../fx/movimiento.js';
+import { entrar, esperar, lineasConMascara, num } from '../fx/movimiento.js';
 import { animar } from '../fx/util.js';
 import { icono, glifoDeCampo, triangulos } from '../fx/iconos.js';
 import { marcador as marcadorTx, placaInferior } from '../fx/transmision.js';
@@ -30,7 +28,6 @@ import { claveDe } from '../core/mundo.js';
 import { nombreVisibleDeLiga } from '../formatoUi.js';
 import { BALANCE } from '../../data/balance.js';
 import { crearNarracion } from '../narracion.js';
-import { perilla } from '../previa/perillas.js';
 import { anim, pct, ventanaTx, irseEn, tonosDeLados, carasDe, cabeceraTx, competicionDeEstado, TX_SUS, programarSuspenso, placaDecisiva, latirPlaca, entrarPlaca, cuadrosQuietos, apareceEn, contarEnCuadros } from './transmisionComun.js';
 
 const TXS = {
@@ -63,12 +60,19 @@ const TXS = {
 const CAMARA = { zoom: [1.03, 1.1], paneo: 0.025 };
 // la racha de hype (decorativa): dónde arranca, hasta dónde la sube la tensión, el empujón de apuntar y al elegir
 const HYPE = { desde: 0.18, tension: 0.58, subida: 9000, apuntar: 0.08, elegir: 0.86 };
-const ETQ_PRED = { charla: 'con la charla', sinCharla: 'guardando la charla' };
 const ETQ_CAMBIO = { 'career.arraigo': ['arraigo', 'Arraigo'], 'player.stats.hype': ['hype', 'Hype'], 'player.worlds': ['mundo', 'Mundiales'] };
 const STREAM = { calidades: ['1080p60'], esconder: 2600 };
-// las variantes (P1): los puntos que apuesta el chat en cada opción y cuántos votan (decorativos, de `fx/azar.js`); cuánto
-// queda la tarjeta cerrada antes de irse; la explosión del chat al elegir; los tiempos del barrido de la pausa
-const VARIANTE = { puntos: [180000, 2600000], votan: [1400, 9800], cerrada: 600, irse: 380, explota: 18, gapExplota: 58, barrido: 520, vuelve: 640 };
+// la predicción: los puntos que apuesta el chat en cada opción y cuántos votan (decorativos, de `fx/azar.js`); cuánto queda
+// la tarjeta cerrada antes de irse del video; la explosión del chat al elegir
+const PRED = { puntos: [180000, 2600000], votan: [1400, 9800], cerrada: 600, irse: 380, explota: 18, gapExplota: 58 };
+// el riel EN VIVO (decorativo, de `fx/azar.js`): los espectadores de cada cruce (canal oficial) y de cada co-stream, cuántos
+// co-streams, cada cuánto se mueven los números y cuánto, y la escalera de la entrada
+const RIEL = {
+  cruce: [38000, 164000], costream: [1800, 46000], costreams: [4, 6], oficial: [24000, 620000], tick: 4000, mueve: [-0.012, 0.022], escalera: 40, desde: 260, mil: 1000,
+  idiomas: ['Español', 'Español', 'Português', 'Português', 'English'],
+  // la transmisión oficial en otros idiomas (canales de la liga, no personas)
+  oficiales: ['English', '한국어', '中文', 'Português', 'Français', 'Deutsch', 'Tiếng Việt', '日本語']
+};
 const SWISS = BALANCE.mundial;
 
 // Los logs del Bo1 dentro de la respuesta: la charla (si la hubo), el partido del Swiss y, si te eliminó, el cierre.
@@ -125,14 +129,6 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
       el('span', { text: `R${r.ronda}` }), logoOrg(otro, { clase: 'tx-cam-logo' }), el('b', { text: siglaDe(otro) })
     ]);
   };
-  const r5 = el('li', { 'data-res': 'vivo', title: `Ronda ${proxima}: ${rival}` }, [el('span', { text: `R${proxima}` }), logoOrg(rival, { clase: 'tx-cam-logo' }), el('b', { text: sEllos })]);
-  const camino = el('ol', { class: 'tx-camino', 'aria-label': `Swiss: vas ${rec.v}-${rec.d}` }, [...rondas.map(pipCamino), r5]);
-  const vom = el('div', { class: 'tx-sw-vom' }, placaInferior({
-    rotulo: vidaOMuerte ? 'Eliminación · vida o muerte' : `Swiss · ronda ${proxima}`,
-    titulo: `${org} vs ${rival}`,
-    sub: `${rec.v}–${rec.d}${recRival ? ` contra ${recRival.v}–${recRival.d}` : ''}${vidaOMuerte ? ': el que pierde se vuelve a casa' : ''}`,
-    tono: tComp
-  }));
   // tu lado: tu equipo en grande y, debajo, tu campeón (el rival del Bo1 no tiene pick en el motor: solo el tuyo)
   const retratoCam = el('span', { class: 'tx-retrato', 'aria-hidden': 'true' });
   if (camara) cargarImagen(urlIcono(camara)).then((img) => img && retratoCam.replaceChildren(Object.assign(img.cloneNode(), { alt: '' })));
@@ -150,7 +146,7 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
   const vivoPill = el('p', { class: 'tx-sw-vivo' }, [el('i'), 'En vivo']);
   const controles = barraPlayer();
   const player = el('div', { class: 'tx-sw-player', 'data-ui': 'on' }, [
-    el('div', { class: 'tx-sw-graf' }, [vivoPill, logoComp(comp, { clase: 'tx-sw-agua' }), mc.nodo, caraA, caraB, vom, camino, juego]),
+    el('div', { class: 'tx-sw-graf' }, [vivoPill, logoComp(comp, { clase: 'tx-sw-agua' }), mc.nodo, caraA, caraB, juego]),
     controles.nodo
   ]);
 
@@ -178,102 +174,61 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
       el('div', { class: 'tx-sw-fila' }, [clip, hype])
     ])
   ]);
-  const recDe = (n) => it.swiss?.record?.[n];
-  const ladoCruce = (n) => [logoOrg(n, { clase: 'tx-cruce-logo' }), el('b', { text: siglaDe(n), title: n }), el('span', { class: 'num', text: recDe(n) ? `${recDe(n).v}–${recDe(n).d}` : '' })];
-  const cruces = el('section', { class: 'tx-sw-cruces', 'aria-label': `Swiss, ronda ${proxima}: los cruces` }, [
-    el('p', { class: 'eq-kicker', text: `Ronda ${proxima} · los cruces` }),
-    el('ul', {}, (it.partidoEnCurso?.cruces ?? []).map((x) => {
-      const vos = [x.a, x.b].includes(org);
-      return el('li', { 'data-vos': vos ? '' : null }, [...ladoCruce(x.a), el('i', { text: 'vs' }), ...ladoCruce(x.b).reverse(), vos ? el('small', { text: 'en pantalla' }) : null]);
-    }))
+  // ---------- el riel EN VIVO (izquierda) y los paneles del canal (debajo de la info) ----------
+  const riel = crearRiel({ semilla, comp, org, rival, sNos, sEllos, proxima, cruces: (it.partidoEnCurso?.cruces ?? []).filter((x) => ![x.a, x.b].includes(org)), record: it.swiss?.record ?? {} });
+  const tabla = Object.entries(it.swiss?.record ?? {}).reduce((g, [n, r]) => {
+    const k = `${r.v}–${r.d}`;
+    (g[k] ??= []).push(n);
+    return g;
+  }, {});
+  const filasTabla = Object.entries(tabla).sort(([a], [b]) => (Number(b.split('–')[0]) - Number(b.split('–')[1])) - (Number(a.split('–')[0]) - Number(a.split('–')[1])));
+  // la ronda que se juega: al terminar el Bo1 recibe su V o su D
+  const r5 = el('li', { 'data-res': 'vivo', title: `Ronda ${proxima}: ${rival}` }, [el('span', { text: `R${proxima}` }), logoOrg(rival, { clase: 'tx-cam-logo' }), el('b', { text: sEllos }), el('small', { text: 'en vivo' })]);
+  const paneles = el('section', { class: 'tx-sw-paneles', 'aria-label': 'Paneles del canal' }, [
+    el('div', { class: 'tx-pn' }, [
+      el('p', { class: 'tx-pn-k', text: `Tu camino · ${sNos || org} ${rec.v}–${rec.d}` }),
+      el('ol', { class: 'tx-pn-camino' }, [...rondas.map(pipCamino), r5])
+    ]),
+    filasTabla.length ? el('div', { class: 'tx-pn' }, [
+      el('p', { class: 'tx-pn-k', text: 'La tabla del Swiss' }),
+      el('ul', { class: 'tx-pn-tabla' }, filasTabla.map(([k, ns]) => el('li', {}, [el('b', { class: 'num', text: k }), el('span', { class: 'tx-pn-eqs' }, ns.map((n) => el('span', { class: 'tx-pn-eq', 'data-vos': n === org ? '' : null, title: n }, [logoOrg(n, { clase: 'tx-pn-logo' }), siglaDe(n)])))])))
+    ]) : null
   ]);
 
-  // ---------- la decisión: un panel de cliente al costado (nunca tapa el video) ----------
-  const variante = perilla('sw', ['prediccion', 'pausa']);
-  if (variante) raiz.dataset.sw = variante;
+  // ---------- la decisión: la tarjeta de predicción (encima del video si el player es ancho; si no, saliendo de abajo) ----------
   const cab = cabeceraTx({ rotulo: [`${comp.nombre} ${anio}`, `Swiss · ronda ${proxima} · Bo1`], titulo: decision.titulo, descripcion: decision.descripcion, logo: logoComp(comp, { clase: 'rot-logo' }) });
-  const ICONOS = { charla: 'charla', sinCharla: 'sinCharla' };
   const pctDe = (o) => {
     const po = pOpc[o.id];
     return po && Number.isFinite(po.p) ? po.porcentaje ?? Math.round(po.p * 100) : null;
   };
-  const azV = variante ? azarFx(`variante-${semilla}`) : null;
+  const azV = azarFx(`variante-${semilla}`);
   const tecla = (i) => el('span', { class: 'op-tecla', 'aria-hidden': 'true', text: String(i + 1) });
   const filas = ops.map((o, i) => {
-    const base = { type: 'button', 'data-atajo': i < 4 ? String(i + 1) : null, 'data-id': o.id, 'aria-describedby': `tx-sw-desc-${i + 1}` };
     const p = pctDe(o);
-    if (variante === 'prediccion') {
-      // la opción de la predicción: su color (el de Twitch), la chance del motor con ella y lo que apuesta el chat
-      return el('button', { ...base, class: 'opcion tx-pr-op', 'data-color': String(i % 4), style: { '--v': String((p ?? 0) / 100) } }, [
-        tecla(i),
-        el('span', { class: 'tx-pr-op-t' }, [el('span', { class: 'op-label', text: o.label }), el('small', { text: p != null ? 'tu chance de ganar el Bo1' : '' })]),
-        el('b', { class: 'num tx-pr-op-p', text: p != null ? `${p}%` : '—' }),
-        el('i', { class: 'tx-pr-op-barra', 'aria-hidden': 'true' }),
-        el('span', { class: 'tx-pr-op-puntos', 'aria-hidden': 'true' }, [icoPrediccion(), el('span', { text: num(azV.entero(VARIANTE.puntos[0], VARIANTE.puntos[1])) }), el('span', { class: 'tx-pr-op-votan', text: `${num(azV.entero(VARIANTE.votan[0], VARIANTE.votan[1]))} votan` })])
-      ]);
-    }
-    if (variante === 'pausa') {
-      return el('button', { ...base, class: 'opcion tx-pz-op' }, [
-        tecla(i), icono(ICONOS[o.id] ?? 'serie'),
-        el('span', { class: 'tx-pz-op-t' }, [el('span', { class: 'op-label', text: o.label }), el('small', { text: o.descripcion ?? '' })]),
-        p != null ? el('b', { class: 'num tx-pz-op-p', text: `${p}%` }) : el('span')
-      ]);
-    }
-    return el('button', { ...base, class: 'opcion tx-sw-op' }, [tecla(i), icono(ICONOS[o.id] ?? 'serie'), el('span', { class: 'op-label', text: o.label })]);
+    // la opción de la predicción: su color (el de Twitch), la chance del motor con ella y lo que apuesta el chat
+    return el('button', { type: 'button', 'data-atajo': i < 4 ? String(i + 1) : null, 'data-id': o.id, 'aria-describedby': `tx-sw-desc-${i + 1}`, class: 'opcion tx-pr-op', 'data-color': String(i % 4), style: { '--v': String((p ?? 0) / 100) } }, [
+      tecla(i),
+      el('span', { class: 'tx-pr-op-t' }, [el('span', { class: 'op-label', text: o.label }), el('small', { text: p != null ? 'tu chance de ganar el Bo1' : '' })]),
+      el('b', { class: 'num tx-pr-op-p', text: p != null ? `${p}%` : '—' }),
+      el('i', { class: 'tx-pr-op-barra', 'aria-hidden': 'true' }),
+      el('span', { class: 'tx-pr-op-puntos', 'aria-hidden': 'true' }, [icoPrediccion(), el('span', { text: num(azV.entero(PRED.puntos[0], PRED.puntos[1])) }), el('span', { class: 'tx-pr-op-votan', text: `${num(azV.entero(PRED.votan[0], PRED.votan[1]))} votan` })])
+    ]);
   });
-  const insp = el('p', { class: 'tx-sw-insp', 'aria-live': 'polite', text: 'Apuntá una opción: la predicción del stream se mueve con el número del motor.' });
+  const insp = el('p', { class: 'tx-sw-insp', 'aria-live': 'polite', text: 'Apuntá una opción: tu chance de ganar el Bo1 cambia con cada una.' });
   const ocultas = el('div', { class: 'solo-lectores' }, ops.map((o, i) => el('div', { id: `tx-sw-desc-${i + 1}`, text: `${o.descripcion ?? ''} ${pOpc[o.id]?.texto ?? ''}` })));
-  const opsNodo = el('div', { class: variante === 'prediccion' ? 'tx-pr-ops' : variante === 'pausa' ? 'tx-pz-ops' : 'tx-sw-ops', id: 'decisionOptions', role: 'group', 'aria-label': 'Opciones' }, filas);
-  // sin perilla: el panel de cliente de siempre, al costado del video
-  const panel = variante ? null : el('section', { class: 'tx-sw-decision panel', 'aria-label': decision.titulo }, [cab.nodo, opsNodo, insp, ocultas]);
-  // `prediccion`: la tarjeta de predicción, encima del video
+  const opsNodo = el('div', { class: 'tx-pr-ops', id: 'decisionOptions', role: 'group', 'aria-label': 'Opciones' }, filas);
   const prEstado = el('span', { class: 'tx-pr-estado', text: 'Elegí' });
-  const tarjeta = variante === 'prediccion' ? el('section', { class: 'tx-pr', 'aria-label': `Predicción: ${decision.titulo}` }, [
+  const tarjeta = el('section', { class: 'tx-pr', 'aria-label': `Predicción: ${decision.titulo}` }, [
     el('p', { class: 'tx-pr-cab' }, [el('i', { class: 'tx-pr-ico' }, icoPrediccion()), el('b', { class: 'tx-pr-k', text: 'Predicción' }), prEstado]),
     cab.nodo, opsNodo, insp, ocultas
-  ]) : null;
-  // `pausa`: el velo y el cartel sobre el video, y el gráfico de transmisión al centro
-  const pzVelo = variante === 'pausa' ? el('i', { class: 'tx-pz-velo', 'aria-hidden': 'true' }) : null;
-  const pzCartel = variante === 'pausa' ? el('p', { class: 'tx-pz-cartel' }, [el('i', { class: 'tx-pz-barras', 'aria-hidden': 'true' }, [el('i'), el('i')]), el('b', { text: 'Pausa' }), el('span', { text: 'Decisión del staff' })]) : null;
-  const grafico = variante === 'pausa' ? el('section', { class: 'tx-pz', 'aria-label': `Pausa: ${decision.titulo}` }, [
-    el('p', { class: 'tx-pz-k' }, [logoComp(comp, { clase: 'rot-logo' }), el('b', { text: 'Pausa técnica' }), el('span', { text: `${sNos} pidió la pausa · el staff decide` })]),
-    cab.nodo, opsNodo, insp, ocultas
-  ]) : null;
-  // en el celular el video mide 390 x 219: la tarjeta va justo debajo, primera de la columna
-  const cx = celular() ? '0' : '-50%';
-  if (tarjeta && !celular()) player.append(tarjeta);
-  if (pzVelo) player.append(pzVelo, pzCartel);
-
-  // la previa como predicción del stream: el número del motor, que se mueve al apuntar una opción
-  const p0 = Number.isFinite(pg.p) ? Math.round(pg.p * 100) : Number.isFinite(pg.porcentaje) ? pg.porcentaje : 50;
-  const predP = el('b', { class: 'num tx-pred-p', text: `${p0}%` });
-  const predEt = el('span', { class: 'tx-pred-et', text: 'de ganar el Bo1 · así como están' });
-  const predNo = el('b', { class: 'num tx-pred-no', text: `${100 - p0}%` });
-  const predBarra = el('i', { class: 'tx-pred-si', style: { '--v': String(p0 / 100) } });
-  const pregunta = vidaOMuerte ? `¿${org} pasa de ronda?` : `¿${org} gana el Bo1?`;
-  const pred = el('section', { class: 'tx-pred', 'aria-live': 'polite', 'aria-label': `Predicción del stream: ${org} gana, ${p0}%` }, [
-    el('p', { class: 'tx-pred-k' }, [icoPrediccion(), el('span', { text: 'Predicción' }), el('b', { text: pregunta })]),
-    el('div', { class: 'tx-pred-fila' }, [el('span', { class: 'tx-pred-lado', 'data-lado': 'si' }, [predP, el('small', { text: 'sí' })]), el('i', { class: 'tx-pred-barra' }, predBarra), el('span', { class: 'tx-pred-lado', 'data-lado': 'no' }, [el('small', { text: 'no' }), predNo])]),
-    predEt
   ]);
-  let pMostrado = p0;
-  function moverPrediccion(p, etiqueta) {
-    if (p === pMostrado && predEt.textContent === etiqueta) return;
-    odometro(predP, pMostrado, p, { dur: 520 });
-    predP.append('%');
-    odometro(predNo, 100 - pMostrado, 100 - p, { dur: 520 });
-    predNo.append('%');
-    pMostrado = p;
-    predBarra.style.setProperty('--v', String(p / 100));
-    predEt.textContent = etiqueta;
-    pred.setAttribute('aria-label', `Predicción del stream: ${org} gana, ${p}% ${etiqueta}`);
-  }
+  // encima del video la tarjeta es absoluta (y se va al cerrar); debajo, queda cerrada en su lugar, como en Twitch
+  const encimaDelVideo = () => getComputedStyle(tarjeta).position === 'absolute';
 
   // ---------- el chat vivo ----------
   const ultimo = rondas[rondas.length - 1];
   const chat = crearChatTx({
     semilla,
-    espectador: Boolean(variante),
     d: {
       org, sigla: sNos, rival, siglaRival: sEllos, handle, camara: camaraN ?? org, ligaRival: delRival.liga ? nombreVisibleDeLiga(delRival.liga) : '', ligaPropia: deVos.liga ? nombreVisibleDeLiga(deVos.liga) : '', rec,
       verdugo: ultimo ? (ultimo.ganador !== org ? (ultimo.a === org ? ultimo.b : ultimo.a) : null) : null,
@@ -282,11 +237,11 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     }
   });
 
-  // en el celular, el video queda fijo arriba y lo demás corre debajo
-  const scrollCel = celular() ? el('div', { class: 'tx-sw-scroll' }, variante ? [tarjeta ?? grafico, info, chat.nodo, cruces] : [panel, pred, info, chat.nodo, cruces]) : null;
+  // en el celular, el video queda fijo arriba y lo demás corre debajo: la predicción, la info, la tira EN VIVO y el chat
+  const scrollCel = celular() ? el('div', { class: 'tx-sw-scroll' }, [tarjeta, info, riel.nodo, chat.nodo]) : null;
   const sw = scrollCel
     ? el('div', { class: 'tx-sw' }, [player, scrollCel])
-    : el('div', { class: 'tx-sw' }, [el('div', { class: 'tx-sw-stream' }, [player, info, cruces]), el('div', { class: 'tx-sw-lateral' }, variante ? [chat.nodo] : [panel, pred, chat.nodo]), grafico]);
+    : el('div', { class: 'tx-sw' }, [riel.nodo, el('div', { class: 'tx-sw-stream' }, [player, tarjeta, info, paneles]), el('div', { class: 'tx-sw-lateral' }, [chat.nodo])]);
   raiz.append(sw);
   contenedor.replaceChildren(raiz);
 
@@ -301,8 +256,6 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     const o = ops[apuntada];
     filas.forEach((f, j) => f.classList.toggle('apuntada', j === apuntada));
     insp.textContent = o.descripcion ?? '';
-    const po = pOpc[o.id];
-    if (po && Number.isFinite(po.p)) moverPrediccion(po.porcentaje ?? Math.round(po.p * 100), ETQ_PRED[o.id] ?? `con «${o.label}»`);
     if (cambia) {
       chat.rafaga(o.id);
       empujarHype(HYPE.apuntar);
@@ -389,27 +342,16 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     anim(mc.nodo, [{ opacity: 0, transform: 'translateY(-14px)' }, { opacity: 1, transform: 'none' }], { delay: dl(360), duration: 360, easing: EXPO });
     anim(caraA, [{ opacity: 0, transform: 'translateX(-30px)', clipPath: 'inset(0 100% 0 0)' }, { opacity: 1, transform: 'none', clipPath: 'inset(0 0 0 0)' }], { delay: dl(520), duration: 480, easing: EXPO });
     anim(caraB, [{ opacity: 0 }, { opacity: 1 }], { delay: dl(640), duration: 420 });
-    anim(vom, [{ opacity: 0, transform: 'translateX(-16px)' }, { opacity: 1, transform: 'none' }], { delay: dl(700), duration: 360, easing: EXPO });
-    camino.querySelectorAll('li').forEach((li, i) => anim(li, [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { delay: dl(760) + i * 60, duration: 260, easing: EXPO }));
-    if (panel) anim(panel, [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }], { delay: dl(300), duration: 340, easing: EXPO });
-    const tCab = variante ? 360 : 0;
-    if (tarjeta) {
-      // la tarjeta sube desde abajo del video, se abre de alto y las opciones entran con su barra
-      anim(tarjeta, [{ opacity: 0, transform: `translate(${cx}, 48px) scale(0.92)`, filter: 'blur(6px)' }, { opacity: 1, transform: `translate(${cx}, 0)`, filter: 'none' }], { delay: dl(620), duration: 560, easing: EXPO });
-      filas.forEach((f, i) => anim(f.querySelector('.tx-pr-op-barra'), [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: dl(1000) + i * 90, duration: 700, easing: EXPO }));
-    }
-    if (grafico) {
-      // la pausa: el video se apaga, cae el cartel y el gráfico se abre desde el centro
-      anim(pzVelo, [{ opacity: 0 }, { opacity: 1 }], { delay: dl(260), duration: 520 });
-      anim(pzCartel, [{ opacity: 0, transform: 'translate(-50%, -24px)' }, { opacity: 1, transform: 'translate(-50%, 0)' }], { delay: dl(420), duration: 420, easing: EXPO });
-      anim(grafico, [{ opacity: 0, clipPath: 'inset(48% 0 48% 0)' }, { opacity: 1, clipPath: 'inset(0 0 0 0)' }], { delay: dl(560), duration: 560, easing: EXPO });
-    }
+    const tCab = 360;
+    // la tarjeta sube desde abajo, se abre de alto y las opciones entran con su barra (su lugar lo pone el CSS con `translate`)
+    anim(tarjeta, [{ opacity: 0, transform: 'translateY(48px) scale(0.92)', filter: 'blur(6px)' }, { opacity: 1, transform: 'none', filter: 'none' }], { delay: dl(620), duration: 560, easing: EXPO });
+    filas.forEach((f, i) => anim(f.querySelector('.tx-pr-op-barra'), [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: dl(1000) + i * 90, duration: 700, easing: EXPO }));
     entrar(cab.rotulo, dl(380 + tCab), 8);
     lineasConMascara(cab.titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: dl(420 + tCab) + i * 70, dur: 420 }));
     filas.forEach((f, i) => entrar(f, dl(560 + tCab) + i * 60, 12));
-    if (!variante) entrar(pred, dl(640), 10);
     entrar(info, dl(420), 10);
-    entrar(cruces, dl(520), 10);
+    entrar(paneles, dl(560), 10);
+    riel.entrar(dl(RIEL.desde));
     chat.guion('antes');
     controles.mostrar();
     if (!quietoSw) {
@@ -442,8 +384,7 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     });
     insp.textContent = op.descripcion ?? '';
     filas[i].dataset.elegida = '';
-    if (tarjeta) cerrarPrediccion(i);
-    if (grafico) reanudar();
+    cerrarPrediccion(i);
     empujarHype(0, HYPE.elegir);
     fx()?.pulso?.('peligro');
     mundo?.aquietar?.(false);
@@ -457,23 +398,15 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
       apuntar(apuntada < 0 ? 0 : apuntada + (e.key === 'ArrowDown' ? 1 : -1), { mover: true });
     }
   });
-  // `prediccion`: PREDICCIÓN CERRADA, la opción elegida marcada, el chat explota y la tarjeta se va del video
+  // PREDICCIÓN CERRADA, la opción elegida marcada y el chat explota; encima del video, la tarjeta se va y deja ver el Bo1
   function cerrarPrediccion(i) {
     tarjeta.dataset.cerrada = '';
     prEstado.textContent = 'Predicción cerrada';
     chat.explotar(ops[i].id);
     anim(prEstado, [{ transform: 'scale(1.4)', filter: 'brightness(1.8)' }, { transform: 'none', filter: 'none' }], { duration: 420, easing: EXPO });
-    if (quietoSw) anim(tarjeta, [{ opacity: 1 }, { opacity: 0, visibility: 'hidden' }], { delay: VARIANTE.cerrada, duration: 150, fill: 'forwards', forzar: true });
-    else anim(tarjeta, [{ opacity: 1, transform: `translate(${cx}, 0)` }, { opacity: 0, visibility: 'hidden', transform: `translate(${cx}, 60px) scale(0.94)` }], { delay: VARIANTE.cerrada, duration: VARIANTE.irse, easing: EXPO, fill: 'forwards' });
-  }
-  // `pausa`: el gráfico se va con un barrido, el velo se levanta y el stream vuelve
-  function reanudar() {
-    raiz.dataset.reanudado = '';
-    const d = quietoSw ? 150 : VARIANTE.barrido;
-    if (quietoSw) anim(grafico, [{ opacity: 1 }, { opacity: 0, visibility: 'hidden' }], { delay: 200, duration: d, fill: 'forwards', forzar: true });
-    else anim(grafico, [{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 0 0 100%)', visibility: 'hidden' }], { delay: 260, duration: d, easing: EXPO, fill: 'forwards' });
-    anim(pzVelo, [{ opacity: 1 }, { opacity: 0 }], { delay: 260, duration: quietoSw ? 150 : VARIANTE.vuelve, fill: 'forwards', forzar: true });
-    anim(pzCartel, [{ opacity: 1 }, { opacity: 0, visibility: 'hidden' }], { delay: 260, duration: quietoSw ? 150 : 320, fill: 'forwards', forzar: true });
+    if (!encimaDelVideo()) return;
+    if (quietoSw) anim(tarjeta, [{ opacity: 1 }, { opacity: 0, visibility: 'hidden' }], { delay: PRED.cerrada, duration: 150, fill: 'forwards', forzar: true });
+    else anim(tarjeta, [{ opacity: 1, transform: 'none' }, { opacity: 0, visibility: 'hidden', transform: 'translateY(60px) scale(0.94)' }], { delay: PRED.cerrada, duration: PRED.irse, easing: EXPO, fill: 'forwards' });
   }
 
   // ---------- narrar: el Bo1, el resultado y AFUERA (una secuencia de beats) ----------
@@ -491,9 +424,6 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     const gano = partido?.resultado === 'W';
     const recFinal = fin?.mundial?.record ?? `${gano ? rec.v + 1 : rec.v}-${gano ? rec.d : rec.d + 1}`;
     const fuera = fin?.mundial?.resultado === 'eliminado';
-    const pElegida = Math.round((partido?.p ?? pOpc[op.id]?.p ?? 0) * 100);
-    moverPrediccion(pElegida, `${ETQ_PRED[op.id] ?? op.label} · predicción cerrada`);
-    pred.dataset.cerrada = '';
 
     let t = TXS.t0;
     const placas = [];
@@ -517,7 +447,6 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     const cuadros = [];
     const enCuadros = cuadrosQuietos();
 
-    b.waapi(irseEn(vom, TXS.t0, TXS.golpe));
     placas.forEach((x) => {
       juego.append(x.nodo);
       b.waapi(ventanaTx(x.nodo, x.t0, TXS.charla));
@@ -588,7 +517,7 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
       });
       const afuera = afueraNodo({ op, otro, partido, pOtro, fin, recFinal, fuera, cambios: ctx.inmediato?.()?.cambios ?? [] });
       sw.append(afuera.nodo);
-      b.waapi([irseEn(player, tAfuera + TXS.golpe, 1), irseEn(info, tAfuera + TXS.golpe, 1), irseEn(cruces, tAfuera + TXS.golpe, 1)]);
+      b.waapi([irseEn(player, tAfuera + TXS.golpe, 1), irseEn(info, tAfuera + TXS.golpe, 1), irseEn(paneles, tAfuera + TXS.golpe, 1), ...(encimaDelVideo() ? [] : [irseEn(tarjeta, tAfuera + TXS.golpe, 1)])]);
       if (scrollCel) b.waapi(irseEn(scrollCel, tAfuera + TXS.golpe, 1));
       b.waapi(afuera.animar(tAfuera));
       const tg = b.destello(tAfuera + TXS.golpe);
@@ -672,19 +601,18 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
       removeEventListener('scroll', alMover);
       controles.destruir();
       chat.destruir();
+      riel.destruir();
       beats?.destruir();
       mundo?.soltarMomento?.();
     }
   };
 }
 
-// ---------- el reproductor (el patrón de los streams, sin marcas): reproducir, volumen, EN VIVO, calidad, completa ----------
+// ---------- el reproductor (el patrón de los streams, sin marcas): pausar (congela la gráfica), EN VIVO, la calidad (un dato,
+// no un botón) y pantalla completa: todo lo que parece clicable anda ----------
 const ICONO_PLAYER = {
   play: ['M7 4.5v15l12-7.5z'],
   pausa: ['M6.5 4.5h4v15h-4z', 'M13.5 4.5h4v15h-4z'],
-  volumen: ['M4 9.5h3.5L12 5.5v13l-4.5-4H4z', 'M15.5 8.5a5 5 0 0 1 0 7', 'M18 6a8.5 8.5 0 0 1 0 12'],
-  mudo: ['M4 9.5h3.5L12 5.5v13l-4.5-4H4z', 'M16 9.5l5 5', 'M21 9.5l-5 5'],
-  calidad: ['M12 8.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z', 'M12 2.5v3', 'M12 18.5v3', 'M2.5 12h3', 'M18.5 12h3', 'M5.3 5.3l2.1 2.1', 'M16.6 16.6l2.1 2.1', 'M5.3 18.7l2.1-2.1', 'M16.6 7.4l2.1-2.1'],
   completa: ['M4 9V4h5', 'M20 9V4h-5', 'M4 15v5h5', 'M20 15v5h-5']
 };
 const LLENOS = new Set(['play', 'pausa']);
@@ -697,10 +625,9 @@ function icoPlayer(nombre) {
 function barraPlayer() {
   const boton = (clase, etiqueta, ico) => el('button', { type: 'button', class: `tx-pl-btn ${clase}`, 'aria-label': etiqueta, title: etiqueta }, icoPlayer(ico));
   const play = boton('tx-pl-play', 'Pausar', 'pausa');
-  const vol = boton('tx-pl-vol', 'Silenciar', 'volumen');
-  const calidad = el('span', { class: 'tx-pl-calidad' }, [icoPlayer('calidad'), el('span', { text: STREAM.calidades[0] })]);
+  const calidad = el('span', { class: 'tx-pl-calidad' }, STREAM.calidades[0]);
   const completa = boton('tx-pl-completa', 'Pantalla completa', 'completa');
-  const nodo = el('div', { class: 'tx-pl-barra' }, [play, vol, el('span', { class: 'tx-pl-vivo' }, [el('i'), 'En vivo']), el('span', { class: 'tx-pl-espacio' }), calidad, completa]);
+  const nodo = el('div', { class: 'tx-pl-barra' }, [play, el('span', { class: 'tx-pl-vivo' }, [el('i'), 'En vivo']), el('span', { class: 'tx-pl-espacio' }), calidad, completa]);
   let reloj = 0;
   const player = () => nodo.closest('.tx-sw-player');
   const mostrar = () => {
@@ -727,11 +654,6 @@ function barraPlayer() {
     }
     mostrar();
   });
-  vol.addEventListener('click', () => {
-    const mudo = vol.toggleAttribute('data-mudo');
-    vol.replaceChildren(icoPlayer(mudo ? 'mudo' : 'volumen'));
-    vol.setAttribute('aria-label', mudo ? 'Activar sonido' : 'Silenciar');
-  });
   completa.addEventListener('click', () => {
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     else player()?.requestFullscreen?.().catch(() => {});
@@ -756,6 +678,87 @@ const icoClip = () => icoDe('tx-ico-clip', ['M4 6.5h11.5l4.5-2.5v15l-4.5-2.5H4z'
 const icoLlama = () => icoDe('tx-ico-llama lleno', ['M12 2.5c.8 3.6 4.8 5.5 4.8 10a4.8 4.8 0 0 1-9.6 0c0-2.4 1.5-3.6 2.3-5.6.5 1.9 1.3 2.7 2 3.1-.4-2.4-.2-5.1.5-7.5z']);
 const icoPrediccion = () => icoDe('tx-ico-pred', ['M4 19V11', 'M10 19V6', 'M16 19v-9', 'M21 19H3']);
 
+// los nombres inventados del chat y de los co-streams
+const NOMBRES = ['tito', 'nacho', 'lu', 'sofi', 'beto', 'gabi', 'duda', 'caio', 'rafa', 'mel', 'juanma', 'bia', 'teo', 'pipe', 'lara', 'vini', 'flor', 'gui', 'cami', 'tomi', 'pato', 'ana', 'leo', 'nina'];
+const COLAS = ['_br', '99', 'gg', '.mid', 'zinho', '777', '_lol', '', '2k', 'tv', '_ok', 'xd', '10'];
+
+// ---------- el riel EN VIVO (P2, PLANUI §0.5): los otros cruces de la ronda como canales y los co-streams de tu partida ----------
+// Es contexto, no navegación: nada es un botón. Los espectadores salen de `fx/azar.js` con la semilla de la partida y se mueven
+// de a poco (un tick cada `RIEL.tick`); con movimiento reducido, todo quieto.
+function crearRiel({ semilla, comp, org, rival, sNos, sEllos, proxima, cruces, record }) {
+  const az = azarFx(`riel-${semilla}`);
+  const recTxt = (n) => (record[n] ? `${record[n].v}–${record[n].d}` : '');
+  const items = [];
+  // los espectadores, cortos como en las plataformas: 159,8 k
+  const corto = (n) => (n >= RIEL.mil ? `${(Math.round(n / (RIEL.mil / 10)) / 10).toLocaleString('es-AR')} k` : String(n));
+  const item = ({ avatar, nombre, sub, n, titulo = null }) => {
+    const numero = el('b', { class: 'num', text: corto(n) });
+    const li = el('li', { class: 'tx-rl-it', title: titulo }, [
+      avatar,
+      el('span', { class: 'tx-rl-txt' }, [el('b', { class: 'tx-rl-n', text: nombre }), el('span', { class: 'tx-rl-sub', text: sub })]),
+      el('span', { class: 'tx-rl-esp' }, [el('i', { class: 'tx-rl-punto', 'aria-hidden': 'true' }), numero])
+    ]);
+    items.push({ li, n, numero });
+    return li;
+  };
+  const canal = `LoL Esports · ${comp.nombre}`;
+  const listaCruces = cruces.map((x) => {
+    const ra = recTxt(x.a);
+    const rb = recTxt(x.b);
+    const r = ra && ra === rb ? ra : [ra, rb].filter(Boolean).join(' · ');
+    return item({
+      avatar: el('span', { class: 'tx-rl-av tx-rl-dos', 'aria-hidden': 'true' }, [logoOrg(x.a, { clase: 'tx-rl-logo' }), logoOrg(x.b, { clase: 'tx-rl-logo' })]),
+      nombre: `${siglaDe(x.a)} vs ${siglaDe(x.b)}${r ? ` · ${r}` : ''}`,
+      sub: canal,
+      n: az.entero(RIEL.cruce[0], RIEL.cruce[1]),
+      titulo: `${x.a} vs ${x.b}`
+    });
+  });
+  const cuantos = az.entero(RIEL.costreams[0], RIEL.costreams[1]);
+  const vistos = new Set();
+  const costreams = [];
+  while (costreams.length < cuantos && vistos.size < NOMBRES.length) {
+    const base = az.elegir(NOMBRES);
+    if (vistos.has(base)) continue;
+    vistos.add(base);
+    costreams.push({ nombre: `${base}${az.elegir(COLAS)}`, color: az.entero(1, CHAT_TX.colores), idioma: az.elegir(RIEL.idiomas), n: az.entero(RIEL.costream[0], RIEL.costream[1]) });
+  }
+  costreams.sort((a, b) => b.n - a.n);
+  const listaCo = costreams.map((c) => item({
+    avatar: el('span', { class: `tx-rl-av tx-rl-ini tx-rl-c${c.color}`, 'aria-hidden': 'true', text: c.nombre.slice(0, 2).toUpperCase() }),
+    nombre: c.nombre,
+    sub: `${c.idioma} · co-stream · ${sNos || org} vs ${sEllos || rival}`,
+    n: c.n
+  }));
+  const listaOficial = RIEL.oficiales.map((idioma) => item({
+    avatar: el('span', { class: 'tx-rl-av tx-rl-comp', 'aria-hidden': 'true' }, logoComp(comp, { clase: 'tx-rl-logo' })),
+    nombre: `${comp.nombre} · ${idioma}`,
+    sub: `transmisión oficial · Swiss, ronda ${proxima}`,
+    n: az.entero(RIEL.oficial[0], RIEL.oficial[1])
+  }));
+  const grupo = (titulo, lista) => (lista.length ? [el('p', { class: 'tx-rl-k', text: titulo }), el('ul', { class: 'tx-rl-lista' }, lista)] : []);
+  const nodo = el('aside', { class: 'tx-riel', 'aria-label': 'Canales en vivo' }, [
+    el('p', { class: 'tx-rl-cab' }, [el('i', { class: 'tx-rl-punto', 'aria-hidden': 'true' }), el('span', { text: 'Canales en vivo' })]),
+    el('div', { class: 'tx-rl-cuerpo' }, [...grupo(`Ronda ${proxima} · los cruces`, listaCruces), ...grupo('Co-streams de tu partida', listaCo), ...grupo(`${comp.nombre} en otros idiomas`, listaOficial)])
+  ]);
+  let reloj = 0;
+  return {
+    nodo,
+    entrar(desde) {
+      items.forEach((x, i) => entrar(x.li, desde + i * RIEL.escalera, 8));
+      if (quieto()) return;
+      reloj = setInterval(() => {
+        if (!nodo.isConnected) return;
+        for (const x of items) {
+          x.n = Math.max(1, Math.round(x.n * (1 + az.entre(RIEL.mueve[0], RIEL.mueve[1]))));
+          x.numero.textContent = corto(x.n);
+        }
+      }, RIEL.tick);
+    },
+    destruir: () => clearInterval(reloj)
+  };
+}
+
 // ---------- el chat del stream: decorativo, determinista (fx/azar.js) y armado con los datos reales ----------
 // Nombres de colores, insignias propias (sub con sus meses, mod, VIP), emotes propios en SVG, mensajes destacados y
 // ráfagas sincronizadas: el nombre de tu org al entrar, consejos al apuntar, y al terminar una pared de GG (o de F si
@@ -777,15 +780,24 @@ function insignia(tipo, etiqueta) {
   INSIGNIAS[tipo].forEach((d, i) => s.append(svg('path', { d, class: i ? 'tx-ins-2' : 'tx-ins-1' })));
   return s;
 }
+// Los emotes propios (P2, PLANUI §0.5: el `///` de la garra se leía como un error): formas llenas que se leen a 20-24 px. Las
+// capas: `f` el fondo, `l` la forma, `g` el acento, `w` la luz, `t` un trazo grueso y `k` un trazo fino; cada clase pone sus
+// colores.
+const CUADRO = 'M2 6a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v12a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z';
+const CIRCULO = 'M12 1.5a10.5 10.5 0 1 1 0 21 10.5 10.5 0 0 1 0-21z';
 const EMOTES = {
-  garra: [['f', 'M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5z'], ['t', 'M7 18L10.5 6'], ['t', 'M11 18.5L14.5 6.5'], ['t', 'M15 18l3-9']],
-  vamo: [['f', 'M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19z'], ['t', 'M7.5 12.5L12 8l4.5 4.5'], ['t', 'M7.5 17L12 12.5l4.5 4.5']],
-  fe: [['f', 'M12 2c1 4.4 6 6.6 6 12.4A6 6 0 0 1 6 14.4c0-3 1.9-4.5 2.9-7 .6 2.4 1.6 3.4 2.5 3.9C10.9 8.3 11.2 5 12 2z'], ['l', 'M12 12.5c.5 2 2.6 3 2.6 5.1a2.6 2.6 0 0 1-5.2 0c0-1.3.8-2 1.3-3 .3.9.6 1.3 1 1.5-.1-1.2.1-2.5.3-3.6z']],
-  gg: [['f', 'M2.5 6A3 3 0 0 1 5.5 3h13a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-13a3 3 0 0 1-3-3z'], ['t', 'M10.6 9.2A3.4 3.4 0 1 0 11 12.6H8.6'], ['t', 'M18.2 9.2a3.4 3.4 0 1 0 .4 3.4h-2.4']],
-  f: [['f', 'M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5z'], ['l', 'M8 6h8.5v3H11v2h4.5v3H11v4.5H8z'], ['g', 'M18 13.5c.9 1.5 1.4 2.3 1.4 3a1.4 1.4 0 0 1-2.8 0c0-.7.5-1.5 1.4-3z']],
-  nervio: [['f', 'M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19z'], ['l', 'M8.6 9.6a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zM15.4 9.6a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z'], ['t', 'M7.8 16.2q1.4-1.2 2.8 0t2.8 0 2.8 0'], ['g', 'M19 3.5c.9 1.5 1.4 2.3 1.4 3a1.4 1.4 0 0 1-2.8 0c0-.7.5-1.5 1.4-3z']],
-  ojos: [['l', 'M7 6.5c2.5 0 4 2.5 4 5.5s-1.5 5.5-4 5.5S3 15 3 12s1.5-5.5 4-5.5zM17 6.5c2.5 0 4 2.5 4 5.5s-1.5 5.5-4 5.5-4-2.5-4-5.5 1.5-5.5 4-5.5z'], ['f', 'M8.2 10a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8zM18.2 10a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8z']],
-  copa: [['f', 'M7 3.5h10V8c0 3-2 5-4.2 5.4v3.1h2.7V19h-7v-2.5h2.7v-3.1C9 13 7 11 7 8z'], ['t', 'M7 5.5H4.5c0 3 1.2 4.5 3 4.8M17 5.5h2.5c0 3-1.2 4.5-3 4.8']]
+  // el puño cerrado: cuatro nudillos y el pulgar cruzado
+  garra: [['f', CUADRO], ['w', 'M5 9.4a1.75 1.75 0 0 1 3.5 0 1.75 1.75 0 0 1 3.5 0 1.75 1.75 0 0 1 3.5 0 1.75 1.75 0 0 1 3.5 0v5a5 5 0 0 1-5 5h-4a5 5 0 0 1-5-5z'], ['k', 'M8.5 9.4v2.8M12 9.4v2.8M15.5 9.4v2.8'], ['k', 'M5 13h5.4a1.7 1.7 0 0 1 0 3.4H8']],
+  // la flecha para arriba, gruesa
+  vamo: [['f', CIRCULO], ['w', 'M12 4.5l6.5 6.5h-4v2h-5v-2h-4z'], ['w', 'M9.5 14.5h5v5h-5z']],
+  // la llama, grande, sobre el cuadro oscuro
+  fe: [['f', CUADRO], ['l', 'M12 2.8c1.2 4.2 6.6 6.2 6.6 11.6A6.6 6.6 0 0 1 5.4 14.4c0-3 1.9-4.6 3-7.2.6 2.4 1.6 3.4 2.6 3.9-.4-2.8-.1-5.6 1-8.3z'], ['g', 'M12 12c.6 2 3 3 3 5.4a3 3 0 0 1-6 0c0-1.4.9-2.2 1.5-3.3.3 1 .7 1.5 1.1 1.7-.1-1.3.1-2.6.4-3.8z']],
+  gg: [['f', CUADRO], ['t', 'M10.4 8.6A3.6 3.6 0 1 0 10.8 13H8.6'], ['t', 'M18.4 8.6a3.6 3.6 0 1 0 .4 4.4h-2.2']],
+  f: [['f', CUADRO], ['l', 'M7.5 5.5h9v3.4h-5.4v2h4.8v3.3h-4.8v4.3H7.5z'], ['g', 'M18.2 12.5c1 1.6 1.6 2.6 1.6 3.4a1.6 1.6 0 0 1-3.2 0c0-.8.6-1.8 1.6-3.4z']],
+  // la mueca: los ojos abiertos, los dientes apretados y la gota de sudor
+  nervio: [['f', CIRCULO], ['l', 'M8.3 6.8c1.2 0 1.9 1.2 1.9 2.7s-.7 2.7-1.9 2.7-1.9-1.2-1.9-2.7.7-2.7 1.9-2.7zM15.7 6.8c1.2 0 1.9 1.2 1.9 2.7s-.7 2.7-1.9 2.7-1.9-1.2-1.9-2.7.7-2.7 1.9-2.7z'], ['l', 'M5.6 14.2h12.8a2 2 0 0 1 0 4H5.6a2 2 0 0 1 0-4z'], ['w', 'M6.6 15.2h10.8v2H6.6z'], ['k', 'M9.4 15.2v2M12 15.2v2M14.6 15.2v2'], ['g', 'M19.6 1.8c1.4 2.1 2.1 3.3 2.1 4.3a2.1 2.1 0 0 1-4.2 0c0-1 .7-2.2 2.1-4.3z']],
+  ojos: [['l', 'M7 5.5c2.8 0 4.4 2.9 4.4 6.5S9.8 18.5 7 18.5 2.6 15.6 2.6 12 4.2 5.5 7 5.5zM17 5.5c2.8 0 4.4 2.9 4.4 6.5s-1.6 6.5-4.4 6.5-4.4-2.9-4.4-6.5 1.6-6.5 4.4-6.5z'], ['f', 'M8.4 9.6a2.4 2.4 0 1 1 0 4.8 2.4 2.4 0 0 1 0-4.8zM18.4 9.6a2.4 2.4 0 1 1 0 4.8 2.4 2.4 0 0 1 0-4.8z']],
+  copa: [['f', 'M6.5 2.5h11V8c0 3.3-2.2 5.6-4.5 6v2.5h3V20h-8v-3.5h3V14c-2.3-.4-4.5-2.7-4.5-6z'], ['t', 'M6.5 5H3.8c0 3.2 1.3 4.8 3.3 5.2M17.5 5h2.7c0 3.2-1.3 4.8-3.3 5.2']]
 };
 function emote(nombre) {
   const s = svg('svg', { class: `tx-emote tx-em-${nombre}`, viewBox: '0 0 24 24', role: 'img', 'aria-label': `:${nombre}:` });
@@ -797,10 +809,8 @@ const partesConEmotes = (texto) => String(texto).split(/(:[a-z]+:)/).filter(Bool
   return k && EMOTES[k] ? emote(k) : p;
 });
 
-function crearChatTx({ semilla, d, espectador = false }) {
+function crearChatTx({ semilla, d }) {
   const az = azarFx(`chat-${semilla}`);
-  const NOMBRES = ['tito', 'nacho', 'lu', 'sofi', 'beto', 'gabi', 'duda', 'caio', 'rafa', 'mel', 'juanma', 'bia', 'teo', 'pipe', 'lara', 'vini', 'flor', 'gui', 'cami', 'tomi', 'pato', 'ana', 'leo', 'nina'];
-  const COLAS = ['_br', '99', 'gg', '.mid', 'zinho', '777', '_lol', '', '2k', 'tv', '_ok', 'xd', '10'];
   const usuarios = Array.from({ length: CHAT_TX.usuarios }, () => ({
     nombre: `${az.elegir(NOMBRES)}${az.elegir(COLAS)}`,
     color: az.entero(1, CHAT_TX.colores),
@@ -869,9 +879,7 @@ function crearChatTx({ semilla, d, espectador = false }) {
   const nodo = el('aside', { class: 'tx-chat', 'aria-label': 'Chat del stream' }, [
     el('header', { class: 'tx-chat-cab' }, [icono('chat'), el('b', { text: 'Chat del stream' }), modo]),
     pista,
-    espectador
-      ? el('footer', { class: 'tx-chat-pie', 'data-espectador': '' }, [el('i', { class: 'tx-chat-ojo', 'aria-hidden': 'true' }), el('span', { text: 'Modo espectador' })])
-      : el('footer', { class: 'tx-chat-pie' }, [el('span', { text: 'Mandá un mensaje' }), el('span', { class: 'tx-chat-em', 'aria-hidden': 'true' }, [emote('garra'), emote('fe'), emote('gg')]), el('kbd', { text: 'Enter' })])
+    el('footer', { class: 'tx-chat-pie' }, [el('i', { class: 'tx-chat-ojo', 'aria-hidden': 'true' }), el('span', { text: 'Modo espectador' })])
   ]);
 
   let items = [];
@@ -954,7 +962,7 @@ function crearChatTx({ semilla, d, espectador = false }) {
     if (fase !== 'antes') return;
     const ahora = quieto() ? Math.max(0, ...items.map((x) => x.t)) + 1 : reloj();
     const muro = pared(true);
-    for (let i = 0; i < VARIANTE.explota; i++) items.push(de(i % 2 && consejos[id] ? consejos[id] : muro, ahora + 20 + i * VARIANTE.gapExplota, { explota: true }));
+    for (let i = 0; i < PRED.explota; i++) items.push(de(i % 2 && consejos[id] ? consejos[id] : muro, ahora + 20 + i * PRED.gapExplota, { explota: true }));
     render(ahora);
   }
   return { nodo, guion, rafaga, explotar, destruir: () => animacion?.cancel() };

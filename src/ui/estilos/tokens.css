@@ -1072,7 +1072,7 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   --dur-fundido: 120ms;
 }
 
-/* P1-p1-partido (PLANUI §0.4): los colores de las opciones de la predicción del stream (`?sw=prediccion`), los de las
+/* P1-p1-partido (PLANUI §0.4; de siempre desde P2): los colores de las opciones de la predicción del stream, los de las
    predicciones de Twitch: azul y rosa para las dos primeras, y dos más si hay cuatro. */
 :root {
   --pr-0: #387aff;
@@ -1081,4 +1081,19 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   --pr-3: #ffb31a;
   /* el color de la opción de la predicción (cada opción lo cambia por el suyo) */
   --pr-c: var(--pr-0);
+}
+
+/* P2-p2-stream (PLANUI §0.5, estilos/transmision.css): las tres columnas del stream (el riel EN VIVO, colapsado a los
+   avatares en pantallas medianas, y el chat), el gap entre ellas, y las capas nuevas de los emotes: la luz y el trazo fino
+   (cada emote pone las suyas) y el fondo rojo de la garra. */
+:root {
+  --tx-rl-ancho: 240px;
+  --tx-rl-angosto: 64px;
+  --tx-chat-ancho: 340px;
+  --tx-sw-gap: 12px;
+  /* el ancho del player: lo pone la columna del medio (100cqw, topeado por el alto de la pantalla) */
+  --tx-sw-pw: 100%;
+  --tx-e-w: var(--ink);
+  --tx-e-k: var(--ink);
+  --tx-em-garra-fondo: #e0412b;
 }
