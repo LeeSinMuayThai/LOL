@@ -34,6 +34,29 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-14 — La firma sale en todas las firmas, no solo en el mercado
+
+El usuario probó dos firmas en lolero.lol y la escena (el mapa con tu línea, el escudo, la firma trazada y el jersey) se vio
+una sola vez. Medido con una sonda sobre 60 carreras: además de las firmas del mercado con parada, hay 28 firmas con club
+nuevo que el motor hace solas en el relato (la mudanza pendiente de un evento, que se firma en la pretemporada, y la
+academia cuando el club te sienta), y el primer club de la carrera no tiene contrato (`asignarOrgTier3` y el tier 2 directo
+de `amateur.js` no crean `career.contrato`), así que `fichajeDe` devolvía null.
+
+- `components/fichaje.js`: `fichajeDe` cuenta el club nuevo sin contrato (el primer club, el equipo chico que "te
+  levanta"), con placas "Primer equipo" y "Tu línea" en vez de sueldo y años, y "Tier 3" donde no hay liga.
+  `fichajeDelRelato` encuentra la firma del tramo que ninguna parada mostró (`fichajeYaNarrado`).
+- `app.js`: esa firma entra como momento del relato, tras su beat, o antes del relato si la carta ya dijo su renglón.
+  Queda en `momentosVistos`, así que recargar no la repite. `reproductor.js` muestra antes del primer beat los momentos
+  cuyo log ya contó la parada.
+- `fichaFija.js`: en el amateur, sin ficha anterior y sin arraigo, `previo.arraigo` reventaba con null y la ficha no se
+  pintaba. Era un bug de W1.
+- `previa/generar.mjs`: muestras `primer-club` (seed 13, "Cripta Collective te quiere") y `mudanza` (seed 1, el tier 3
+  que te levanta).
+
+Verificado con GPU: el primer club a 1440 y 390, el equipo chico en rápido, y el mercado (`?previa=firma`) sigue
+saliendo una sola vez; 0 errores de consola. Huella 1844448410 (el motor no cambió), `validate --rapido` 388 OK y 0 FAIL,
+`simulate 1000` sin errores, build 3846 KB (techo 3850).
+
 ### 2026-10-14 — PLANUI §0.7, ola W1: "que se sienta el avance" (la ficha, el diario, "tan cerca" y la tarjeta que cuenta la historia)
 
 El usuario, textual: el juego "no se siente como el objetivo del inicio… la season pasa muy rápido, no sentís un

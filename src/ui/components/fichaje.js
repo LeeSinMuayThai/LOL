@@ -104,7 +104,7 @@ const LETRA_MIN = 34;
 export function fichajeDe(antes, despues, logs = []) {
   const c0 = antes?.career?.contrato ?? {};
   const c1 = despues?.career?.contrato ?? {};
-  if (!c1.org || c1.tipo === 'ninguno') return null;
+  if (!c1.org || c1.tipo === 'ninguno') return fichajeSinContrato(antes, despues, logs);
   const igual = ['org', 'salarioAnualUSD', 'anios', 'firmadoEnAnio', 'firmadoAEdad', 'tipo'].every((k) => c0[k] === c1[k]);
   if (igual) return null;
   const i = logs.findIndex((l) => l?.type === 'mercado' && /^(Firmás|Renovás) con /.test(l.message ?? ''));
@@ -126,6 +126,66 @@ export function fichajeDe(antes, despues, logs = []) {
     log: i >= 0 ? logs[i] : null,
     hasta: i >= 0 ? i + 1 : 0
   };
+}
+
+// El renglón del motor que firma con `org`: el mercado ("Firmás con…"), el primer club del amateur ("Firmaste con…") o
+// el equipo chico que te levanta en tier 3 ("… te levanta").
+function esLogDeFirma(l, org) {
+  const msg = l?.message ?? '';
+  if (!org) return false;
+  if (l?.type === 'mercado') return msg.startsWith(`Firmás con ${org} `);
+  if (l?.type === 'amateur') return msg.startsWith(`Firmaste con ${org}`);
+  if (l?.type === 'competitivo') return msg.startsWith(`${org} te levanta`);
+  return false;
+}
+
+// Un club nuevo sin contrato del mercado: el primero (tier 3, o tier 2 directo, `systems/amateur.js`) o el equipo chico
+// que te levanta (`systems/competitivo.js`). No hay sueldo ni años: la firma cuenta el club, la línea y el jersey.
+function fichajeSinContrato(antes, despues, logs) {
+  const org = despues?.career?.currentOrg;
+  if (!org || org === antes?.career?.currentOrg) return null;
+  const i = logs.findIndex((l) => l?.type !== 'mercado' && esLogDeFirma(l, org));
+  if (i < 0) return null;
+  return {
+    org,
+    liga: despues.career.liga ?? null,
+    tier: despues.career.tier ?? null,
+    salario: null,
+    anios: null,
+    tipo: null,
+    clausula: false,
+    sinContrato: true,
+    renovacion: false,
+    primero: !(antes?.career?.orgs ?? []).length,
+    anio: despues.calendario?.anio ?? null,
+    handle: despues.player?.name ?? '',
+    rol: despues.player?.role ?? 'mid',
+    companeros: (despues.career?.companeros ?? []).map((c) => ({ handle: c.handle, rol: c.role })),
+    seed: despues.seed,
+    log: logs[i],
+    hasta: i + 1
+  };
+}
+
+// El fichaje que el motor firmó solo, dentro del relato (sin parada que lo cuente): la mudanza que quedó pendiente de un
+// evento, que se firma en la pretemporada, la academia cuando el club te sienta (`systems/mercado.js`), el primer club
+// de una oferta sin prueba o el equipo chico que te levanta. Lo busca desde `desde` (los logs que la parada ya contó
+// quedan antes): `{ indice, f }` o `null`. "Firmás con" es siempre un club nuevo (la renovación dice "Renovás con").
+// Las firmas que ya mostró una parada (el mercado, la prueba): el relato no las repite.
+const narrados = new Set();
+const claveDeFichaje = (f) => `${f.seed}|${f.org}|${f.anio}|${f.log?.message ?? ''}`;
+export const fichajeYaNarrado = (f) => narrados.has(claveDeFichaje(f));
+
+export function fichajeDelRelato(despues, desde = 0) {
+  const logs = despues?.logs ?? [];
+  const org = despues?.career?.currentOrg;
+  for (let i = logs.length - 1; i >= Math.max(0, desde); i -= 1) {
+    if (!esLogDeFirma(logs[i], org)) continue;
+    const orgs = despues.career.orgs ?? [];
+    const f = fichajeDe({ career: { contrato: {}, currentOrg: null, orgs: orgs.slice(0, -1) } }, despues, [logs[i]]);
+    return f ? { indice: i, f } : null;
+  }
+  return null;
 }
 
 // El número que propone la firma: el que ya elegiste en esta carrera o, la primera vez, los dígitos del final del handle
@@ -167,8 +227,8 @@ function ajustarLetra(nodo, min = LETRA_MIN) {
 
 // La liga del fichaje en pantalla: su logo (decorativo, el nombre va al lado) y su nombre visible con el año.
 function laLigaDe(f) {
-  const logoDeLaLiga = (tam) => pintarLogo(f.liga, { liga: true, tam, alt: '' });
-  const ligaYAnio = `${nombreVisibleDeLiga(f.liga)}${f.anio ? ` ${f.anio}` : ''}`;
+  const logoDeLaLiga = (tam) => (f.liga ? pintarLogo(f.liga, { liga: true, tam, alt: '' }) : null);
+  const ligaYAnio = `${f.liga ? nombreVisibleDeLiga(f.liga) : `Tier ${f.tier ?? 3}`}${f.anio ? ` ${f.anio}` : ''}`;
   return { logoDeLaLiga, ligaYAnio };
 }
 
@@ -226,7 +286,7 @@ function laFirma(f, tono, { numero, valor }) {
   const kicker = el('p', { class: 'fj-k' }, [
     el('span', { class: 'fj-k-liga' }, [logoDeLaLiga(20), lugar?.regionId ? el('b', { text: lugar.regionId }) : null, el('span', { text: ligaYAnio })]),
     el('span', { class: 'fj-k-rol' }, [glifoRol(f.rol), el('span', { text: rolEtiqueta })]),
-    el('span', { text: f.primero ? 'Primer contrato' : f.tipo === 'import' ? 'Import' : 'Nuevo club' })
+    el('span', { text: f.sinContrato ? (f.primero ? 'Primer equipo' : 'Nuevo equipo') : f.primero ? 'Primer contrato' : f.tipo === 'import' ? 'Import' : 'Nuevo club' })
   ]);
   const halo = el('i', { class: 'fj-halo', 'aria-hidden': 'true' });
   const logo = el('div', { class: 'fj-logo' }, [halo, pintarLogo(f.org, { tam: 150, alt: f.org })]);
@@ -236,7 +296,10 @@ function laFirma(f, tono, { numero, valor }) {
   const nombre = el('h1', { class: 'fj-handle', id: 'fichajeTitulo', tabindex: '-1', 'aria-label': bienvenida }, [el('span', { class: 'fj-letras', 'aria-hidden': 'true' }, letras), brillo]);
   const cabeza = el('div', { class: 'fj-cabeza' }, [nombre, firma.nodo]);
   const linea = el('p', { class: 'fj-bienvenida', 'aria-hidden': 'true' }, el('span', { text: bienvenida }));
-  const placas = el('div', { class: 'fj-placas' }, [
+  const placas = el('div', { class: 'fj-placas' }, f.sinContrato ? [
+    placaInferior({ rotulo: f.primero ? 'Primer equipo' : 'Nuevo equipo', titulo: f.org, sub: ligaYAnio, tono }),
+    placaInferior({ rotulo: 'Tu línea', titulo: rolEtiqueta, sub: f.primero ? 'Se terminó el soloQ de pieza' : '', tono })
+  ] : [
     placaInferior({ rotulo: f.primero ? 'Primer contrato' : 'Contrato', titulo: `USD ${num(f.salario)} / año`, sub: valor ? `${fmt1.format(f.salario / valor)}× tu valor de mercado (USD ${num(valor)})` : '', tono }),
     placaInferior({ rotulo: ligaYAnio, titulo: aniosTxt(f.anios), sub: [TIPO_DE_CONTRATO[f.tipo] ?? null, f.clausula ? 'con cláusula de salida' : 'sin cláusula de salida'].filter(Boolean).join(' · '), tono })
   ]);
@@ -271,6 +334,7 @@ function laFirma(f, tono, { numero, valor }) {
 // saltó (Espacio): va al walkout.
 export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor = 0, tono: tonoDado = null, papel: papelDado = null, saltado = false } = {}) {
   if (!f || typeof document === 'undefined') return;
+  narrados.add(claveDeFichaje(f));
   // en rápido (o a 2×), el mapa y el viaje con la escala de la narración (nunca saltados); el walkout, a su tiempo
   const K = Number.isFinite(ctx?.escala) && ctx.escala > 0 ? Math.min(1, ctx.escala) : 1;
   const M = (ms) => Math.round(ms * K);

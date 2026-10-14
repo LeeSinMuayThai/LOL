@@ -34,6 +34,7 @@ import { interpretarSeed } from '../core/numeros.js';
 import { previaDeDecision } from '../core/previaDePartido.js';
 import { momentosDelTramo, resumenDelTramo } from './core/momentos.js';
 import { mostrarTitulo, mostrarResumen, precalentarCopa } from './fx/momento.js';
+import { fichajeDelRelato, fichajeYaNarrado, narrarFichaje } from './components/fichaje.js';
 
 export function iniciar() {
   const shellEl = document.querySelector('.shell');
@@ -475,11 +476,25 @@ export function iniciar() {
   // PLANUI §0.6 (U3a): los momentos del tramo que cuenta esta llamada (`ui/core/momentos.js`), sin los ya vistos. El takeover
   // del título (o del Mundial) entra tras el beat de la final; el resumen de la temporada, al final del tramo (después de la
   // tarjeta "Cierre de …"). Los dos esperan a Continuar en TODAS las velocidades; la entrada va a `escalaDeEspera()`.
+  // La firma con un club nuevo que ninguna parada mostró (la mudanza pendiente, la academia, el primer club de una oferta
+  // directa: la carta la dice como resultado, pero no la escena) entra como momento tras su beat (o antes del relato, si
+  // la parada ya contó su renglón): el mapa con tu línea, el escudo y el jersey, como en el mercado.
   function momentosDeLaLlamada(estado, registroAntes, desde) {
     const lista = [];
     try {
       const vistos = new Set(almacenamiento.leerMomentosVistos(estado.seed));
       const opciones = () => ({ escala: reproductor.escalaDeEspera(), sonido: sonido.sonidoFx, controlar: (control) => reproductor.narrar(control) });
+      const firma = fichajeDelRelato(estado, desde);
+      const claveFirma = firma && `fichaje:${firma.f.anio}:${firma.f.org}:${firma.indice}`;
+      if (firma && !vistos.has(claveFirma) && !fichajeYaNarrado(firma.f)) {
+        lista.push({
+          indice: firma.indice,
+          mostrar: () => {
+            almacenamiento.anotarMomentoVisto(estado.seed, claveFirma);
+            return narrarFichaje({ modo: reproductor.modoDeMovimiento(), escala: reproductor.escalaDeEspera(), controlar: (control) => reproductor.narrar(control) }, firma.f, { mundo: ambiente, sonido: sonido.sonidoFx });
+          }
+        });
+      }
       for (const momento of momentosDelTramo({ registroAntes, despues: estado, desde })) {
         if (vistos.has(momento.clave)) continue;
         precalentarCopa(momento);

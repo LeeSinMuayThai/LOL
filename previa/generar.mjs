@@ -63,16 +63,32 @@ function confirmar(st) {
   }
   candidatoFirma = null;
 }
+// La firma que el motor hace solo, en el relato (la mudanza pendiente de un evento, la academia: `mudanza`): la última
+// parada que no es del mercado, confirmada cuando en la parada siguiente el club cambió sin que pasara por el mercado.
+let candidatoMudanza = null;
+let candidatoPrimero = null;
+function confirmarMudanza(ctx) {
+  const st = ctx.state;
+  if (candidatoMudanza?.eleccion && orgDe(st) && orgDe(st) !== candidatoMudanza.orgAntes && !muestras.has('mudanza')) {
+    muestras.set('mudanza', { ...candidatoMudanza, prioridad: 1 });
+  }
+  // `primer-club`: la parada del amateur tras la que llega el primer club (la prueba o la oferta directa)
+  if (candidatoPrimero?.eleccion && orgDe(st) && !muestras.has('primer-club')) muestras.set('primer-club', { ...candidatoPrimero, prioridad: 1 });
+  candidatoPrimero = !orgDe(st) && !(st.career?.orgs ?? []).length ? candidato(ctx, {}) : null;
+  const delMercado = ctx.decision.presentacion === 'mercado' || ctx.decision.datos?.momento === 'tryout';
+  candidatoMudanza = st.phase === 'profesional' && orgDe(st) && !delMercado ? candidato(ctx, { orgAntes: orgDe(st) }) : null;
+}
 function responder(sistema, st, decision, rng) {
   const r = ESTRATEGIAS.criterio(sistema, st, decision, rng);
   const i = (decision.opciones ?? []).findIndex((o) => o.id === r?.opcionId);
-  for (const c of [candidatoFinal, candidatoFirma]) if (c && c.decision === decision && i >= 0) c.eleccion = i + 1;
+  for (const c of [candidatoFinal, candidatoFirma, candidatoMudanza, candidatoPrimero]) if (c && c.decision === decision && i >= 0) c.eleccion = i + 1;
   return r;
 }
 
 function alParar(ctx) {
   const { sistema, state, decision } = ctx;
   confirmar(state);
+  confirmarMudanza(ctx);
   if (decision.presentacion === 'mercado' && state.phase === 'profesional' && !muestras.has('firma') && orgDe(state)) {
     candidatoFirma = candidato(ctx, { orgAntes: orgDe(state) });
   }
@@ -97,7 +113,7 @@ function alParar(ctx) {
   if (sistema.id === 'internacional' && motivo === 'swiss') ofrecer('swiss', 1, ctx);
 }
 
-const QUIERO = ['evento', 'destino', 'plan', 'cierre', 'serie', 'swiss', 'final', 'firma', 'final-perdida'];
+const QUIERO = ['evento', 'destino', 'plan', 'cierre', 'serie', 'swiss', 'final', 'firma', 'final-perdida', 'mudanza', 'primer-club'];
 for (let seed = 1; seed <= SEEDS && !QUIERO.every((n) => muestras.has(n) && (n !== 'serie' || muestras.get(n).prioridad >= 3)); seed += 1) {
   jugarCarrera(seed, { alParar, responder, alCerrarSplit: ({ despues }) => confirmar(despues) });
 }

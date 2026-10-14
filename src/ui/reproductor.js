@@ -245,6 +245,8 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
   const esperaDelAnio = instantaneo ? 0 : ESPERA_CIERRE_ANIO_MS[velocidad];
 
   const beats = agruparBeats(nuevasEntradas, offset);
+  // un momento cuyo log ya contó la parada en el lugar (la firma que la carta dijo como resultado) entra antes del relato
+  await mostrarMomentos(offset - 1);
   for (const [i, beat] of beats.entries()) {
     const ultimo = i === beats.length - 1;
     if (pagina) {

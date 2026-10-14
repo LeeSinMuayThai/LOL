@@ -426,7 +426,7 @@ export function crearFichaFija(seccion) {
       mover(caja, caja?.querySelector('.fj-num'), campo, campo === 'dinero' ? conPlata : num);
     }
     // El arraigo: la barra se llena desde donde estaba (si subiste de escalón, desde el piso del nuevo) y el ▲ pulsa.
-    const antesArraigo = previo?.arraigo?.org === ahora.arraigo?.org ? previo.arraigo : null;
+    const antesArraigo = previo?.arraigo && previo.arraigo.org === ahora.arraigo?.org ? previo.arraigo : null;
     if (arraigo && antesArraigo && antesArraigo.valor !== ahora.arraigo.valor) {
       const desde = antesArraigo.paso === ahora.arraigo.paso ? antesArraigo.progreso : antesArraigo.paso < ahora.arraigo.paso ? 0 : 1;
       const lleno = arraigo.querySelector('.fj-barra i');
