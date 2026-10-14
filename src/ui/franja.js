@@ -204,7 +204,9 @@ export function crearFranja({ franja, estadoEl, trayectoriaEl = null, etiquetaRo
   function pintar(estado) {
     pintarTrayectoria(trayectoriaEl, estado);
     try {
-      ficha?.pintar(estado, { animar: animar() });
+      // La ficha se mueve en todas las velocidades (W1-H: "que se sienta el avance" también en RÁPIDO); `animar()` falso
+      // es RÁPIDO o movimiento reducido, y del reducido se ocupan `moverNumero` y el kit.
+      ficha?.pintar(estado, { rapido: !animar() });
     } catch (error) {
       console.error('No se pudo pintar la ficha:', error);
     }

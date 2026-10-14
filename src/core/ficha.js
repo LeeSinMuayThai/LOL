@@ -298,16 +298,15 @@ function deltaDelAnio(state, ruta, actual) {
   return Math.abs(diferencia) >= BALANCE.ficha.umbralFlecha ? Math.round(diferencia) : 0;
 }
 
-// El arraigo y la jerarquía son con TU org: si la fila abierta del registro arrancó este año (cambiaste de club), la
-// foto de inicio de año es de otro club y no hay delta del año que contar.
-function orgNuevaEsteAnio(state) {
-  const fila = (state.career?.registro?.porOrg ?? []).find((f) => f.hastaAnio === null && f.org === state.career.currentOrg);
-  const splitCount = state.player?.splitCount;
-  if (!fila || !Number.isFinite(fila.desdeSplit) || !Number.isFinite(splitCount)) {
-    return false;
-  }
-  const inicioDelAnio = splitCount - (splitCount % BALANCE.edad.splitsPorEdad);
-  return fila.desdeSplit >= inicioDelAnio;
+// El arraigo y la jerarquía son con TU org: solo hay delta del año si la fila abierta del registro es de esta org y
+// arrancó ANTES del año calendario en curso (la misma regla que el diario, `mismaOrgTodoElAnio` de ui/core/momentos.js).
+// Se cuenta por `calendario.anio` y no por `splitCount`: en la parada del cierre de año el contador ya pasó al año que
+// viene y el año que se cierra es todavía el del calendario. Sin fila o sin año, no hay delta.
+function mismaOrgTodoElAnio(state) {
+  const org = state.career?.currentOrg;
+  const anio = state.calendario?.anio;
+  const abierta = (state.career?.registro?.porOrg ?? []).filter((f) => f.hastaAnio == null).at(-1);
+  return Boolean(org && abierta && abierta.org === org && Number.isFinite(anio) && Number.isFinite(abierta.desdeAnio) && abierta.desdeAnio < anio);
 }
 
 // Una banda (`{ id, label, valor, piso, techo, esMaxima }`) vuelta escalera: el progreso dentro del escalón (0-1) y el
@@ -319,12 +318,15 @@ function escalera(banda, ids, labels, { entraEnTecho }) {
   const progreso = rango > 0 ? Math.max(0, Math.min(1, (banda.valor - banda.piso) / rango)) : 1;
   const proximo = banda.esMaxima ? null : ids[i + 1];
   const umbral = proximo ? (entraEnTecho ? banda.techo : Math.floor(banda.techo) + 1) : null;
+  // La distancia sale de los números que la pantalla muestra (el umbral y el valor redondeado): "72 → 81" dice 9. Si el
+  // redondeo ya toca el umbral sin haber entrado, falta 1.
+  const falta = proximo ? Math.max(1, umbral - Math.round(banda.valor)) : null;
   return {
     ...banda,
     paso: i + 1,
     pasos: ids.length,
     progreso,
-    siguiente: proximo ? { id: proximo, label: labels[proximo], umbral, falta: Math.max(0, Math.ceil(umbral - banda.valor)) } : null
+    siguiente: proximo ? { id: proximo, label: labels[proximo], umbral, falta } : null
   };
 }
 
@@ -340,7 +342,7 @@ export function escaleraDeArraigo(state) {
   return {
     ...escalera(banda, ['uno_mas', 'querido', 'idolo', 'leyenda'], LABELS_ARRAIGO, { entraEnTecho: true }),
     org,
-    delta: orgNuevaEsteAnio(state) ? 0 : deltaDelAnio(state, 'career.arraigo', valor)
+    delta: mismaOrgTodoElAnio(state) ? deltaDelAnio(state, 'career.arraigo', valor) : 0
   };
 }
 
@@ -352,11 +354,15 @@ export function escaleraDeJerarquia(state) {
   const banda = bandaDeJerarquia(state);
   return {
     ...escalera(banda, ['rookie', 'titular', 'referente', 'franquicia'], LABELS_JERARQUIA, { entraEnTecho: false }),
-    delta: orgNuevaEsteAnio(state) ? 0 : deltaDelAnio(state, 'career.jerarquia', state.career.jerarquia)
+    delta: mismaOrgTodoElAnio(state) ? deltaDelAnio(state, 'career.jerarquia', state.career.jerarquia) : 0
   };
 }
 
 // El hype con su próximo escalón (las bandas de `bandaDeHype`, con los mismos techos).
+// Los escalones del hype con mayúscula, como los de jerarquía y arraigo ("Figura", como "Titular"); `bandaDeHype` sigue
+// devolviendo su etiqueta de siempre.
+const ESCALONES_DE_HYPE = { ignoto: 'Ignoto', conocido: 'Conocido', figura: 'Figura', estrella: 'Estrella' };
+
 export function escaleraDeHype(state) {
   const banda = bandaDeHype(state);
   const ids = ['ignoto', 'conocido', 'figura', 'estrella'];
@@ -364,7 +370,8 @@ export function escaleraDeHype(state) {
   const pisos = [0, TECHOS_HYPE.ignoto, TECHOS_HYPE.conocido, TECHOS_HYPE.figura];
   const techos = [TECHOS_HYPE.ignoto, TECHOS_HYPE.conocido, TECHOS_HYPE.figura, BALANCE.stats.max];
   const conRango = { ...banda, valor: state.player.stats.hype, piso: pisos[i], techo: techos[i], esMaxima: i === ids.length - 1 };
-  return { ...escalera(conRango, ids, LABELS_HYPE, { entraEnTecho: false }), valor: banda.valor, delta: banda.delta };
+  const escalon = escalera(conRango, ids, ESCALONES_DE_HYPE, { entraEnTecho: false });
+  return { ...escalon, label: ESCALONES_DE_HYPE[banda.id], valor: banda.valor, delta: banda.delta };
 }
 
 // El nivel con su movimiento del año: la misma suma ponderada de `nivelDelJugador` sobre la foto de inicio de año.
@@ -390,22 +397,16 @@ export function nivelDelAnio(state) {
 }
 
 // El puntaje de la carrera EN VIVO: el mismo `puntajeDeCarrera` de la tarjeta final, sobre el registro asentado (como
-// `escalonDeCarrera`), y el escalón con su "te falta…". `total` es `null` si el registro todavía no se puede puntuar
-// (`puntajeDeCarrera` falla fuerte); el escalón sale igual.
+// `escalonDeCarrera`), y el escalón con su "te falta…". Todo `null` mientras no haya registro.
 export function puntajeEnVivo(state) {
-  let total = null;
-  try {
-    total = puntajeDeCarrera(conSplitPendienteAsentado(state)).total;
-  } catch {
-    total = null;
+  // El caso esperado sin número: todavía no hay jugador o registro que contar. Cualquier otra falla tira (la de
+  // `puntajeDeCarrera` dice qué le falta a la carrera).
+  if (!state?.player || !state.career?.registro) {
+    return { total: null, actual: null, siguiente: null };
   }
-  let escalon = null;
-  try {
-    escalon = escalonDeCarrera(state);
-  } catch {
-    escalon = null;
-  }
-  return { total, actual: escalon?.actual ?? null, siguiente: escalon?.siguiente ?? null };
+  const total = puntajeDeCarrera(conSplitPendienteAsentado(state)).total;
+  const { actual, siguiente } = escalonDeCarrera(state);
+  return { total, actual, siguiente };
 }
 
 // La vitrina: los títulos del registro agrupados por tier (primera, desarrollo, circuito chico), de arriba hacia abajo.

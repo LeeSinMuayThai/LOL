@@ -29251,6 +29251,27 @@ check('W1-H: la ficha fija nombra el próximo escalón con su umbral real (arrai
   };
   conMismaBanda(F.escaleraDeJerarquia, (valor) => ({ ...base, career: { ...base.career, jerarquia: valor } }));
   conMismaBanda(F.escaleraDeHype, (valor) => ({ ...base, player: { ...base.player, stats: { hype: valor } } }));
+  // La distancia sale de los números que se muestran: hype 71,6 se ve 72 y "→ Estrella 81" dice 9 (no 10).
+  const hype72 = F.escaleraDeHype({ ...base, player: { ...base.player, stats: { hype: 71.6 } } });
+  if (hype72.valor !== 72 || hype72.siguiente?.umbral - hype72.valor !== hype72.siguiente?.falta || hype72.label !== 'Figura') {
+    problemas.push(`hype 71,6: se ve ${hype72.valor} ${hype72.label}, umbral ${hype72.siguiente?.umbral}, falta ${hype72.siguiente?.falta}`);
+  }
+  // El año en que cambiaste de org (la fila abierta arrancó este año calendario, como en la parada del cierre de año, con
+  // el contador de splits ya en el año siguiente): ni ▲ de arraigo ni de jerarquía. Con la org desde el año pasado, sí.
+  const conOrgDesde = (desdeAnio) => ({
+    career: { currentOrg: 'Org de prueba', arraigo: 18, jerarquia: 37, registro: { porOrg: [{ org: 'Org de prueba', desdeAnio, hastaAnio: null, desdeSplit: 11 }] } },
+    player: { splitCount: 12 },
+    calendario: { anio: 2029 },
+    flags: { edadSnapshot: { 'career.arraigo': 0, 'career.jerarquia': 0 } }
+  });
+  const nueva = conOrgDesde(2029);
+  if (F.escaleraDeArraigo(nueva).delta !== 0 || F.escaleraDeJerarquia(nueva).delta !== 0) {
+    problemas.push(`org nueva este año: delta de arraigo ${F.escaleraDeArraigo(nueva).delta}, de jerarquía ${F.escaleraDeJerarquia(nueva).delta}`);
+  }
+  const vieja = conOrgDesde(2028);
+  if (F.escaleraDeArraigo(vieja).delta !== 18 || F.escaleraDeJerarquia(vieja).delta !== 37) {
+    problemas.push(`org desde el año pasado: delta de arraigo ${F.escaleraDeArraigo(vieja).delta}, de jerarquía ${F.escaleraDeJerarquia(vieja).delta}`);
+  }
   // El puntaje en vivo, el nivel del año y la vitrina sobre carreras jugadas, split a split.
   let estados = 0;
   let conTotal = 0;

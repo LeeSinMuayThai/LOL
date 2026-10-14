@@ -409,12 +409,15 @@ body { padding: 0; }
 html[data-transicion] .fx-ambiente { view-transition-name: fx-ambiente; }
 html[data-transicion] .escenario { view-transition-name: escenario; }
 html[data-transicion] .franja { view-transition-name: franja; }
+/* W1: la ficha fija va con la franja (su propio nombre: se ve viva durante la transición, con sus números rodando). */
+html[data-transicion] .ficha-fija:not([hidden]) { view-transition-name: ficha; }
 html[data-transicion] .cuartos { view-transition-name: cuartos; }
 ::view-transition-group(fx-ambiente),
 ::view-transition-new(fx-ambiente) { animation: none; }
 ::view-transition-old(fx-ambiente) { display: none; }
 ::view-transition-group(root),
 ::view-transition-group(franja),
+::view-transition-group(ficha),
 ::view-transition-group(cuartos) { animation-duration: var(--dur-entrada); }
 ::view-transition-group(escenario) { animation-duration: 420ms; animation-timing-function: var(--expo); }
 ::view-transition-old(escenario) { animation: vt-salir 220ms ease-in both; }
@@ -444,10 +447,12 @@ html[data-transicion] .fx-barrido { view-transition-name: fx-barrido; }
 html[data-transicion='fundido']::view-transition-old(root),
 html[data-transicion='fundido']::view-transition-old(escenario),
 html[data-transicion='fundido']::view-transition-old(franja),
+html[data-transicion='fundido']::view-transition-old(ficha),
 html[data-transicion='fundido']::view-transition-old(cuartos) { animation: vt-fundido-sale var(--dur-fundido) linear both !important; }
 html[data-transicion='fundido']::view-transition-new(root),
 html[data-transicion='fundido']::view-transition-new(escenario),
 html[data-transicion='fundido']::view-transition-new(franja),
+html[data-transicion='fundido']::view-transition-new(ficha),
 html[data-transicion='fundido']::view-transition-new(cuartos) { animation: vt-fundido-entra var(--dur-fundido) linear both !important; }
 @keyframes vt-fundido-sale { to { opacity: 0; } }
 @keyframes vt-fundido-entra { from { opacity: 0; } }
