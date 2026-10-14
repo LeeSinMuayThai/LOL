@@ -425,7 +425,7 @@ html[data-transicion] .cuartos { view-transition-name: cuartos; }
 .fx-barrido {
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2147483000;
   pointer-events: none; transform: translateX(-100%);
-  background: linear-gradient(105deg, transparent 36%, color-mix(in oklab, var(--luz) 24%, transparent) 47%, color-mix(in oklab, var(--ink) 30%, transparent) 50%, color-mix(in oklab, var(--luz) 24%, transparent) 53%, transparent 64%);
+  background: linear-gradient(105deg, transparent 36%, color-mix(in srgb, var(--luz) 24%, transparent) 47%, color-mix(in srgb, var(--ink) 30%, transparent) 50%, color-mix(in srgb, var(--luz) 24%, transparent) 53%, transparent 64%);
 }
 html[data-transicion] .fx-barrido { view-transition-name: fx-barrido; }
 ::view-transition-old(fx-barrido) { display: none; }
