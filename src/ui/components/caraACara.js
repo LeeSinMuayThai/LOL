@@ -37,6 +37,8 @@ import {
   TX_SUS, TX_SUS_PIP, esDecisivo, expoSus, cuadrosLatido, cuadrosTira, latirPlaca, programarSuspenso, placaDecisiva, entrarPlaca,
   cuadrosQuietos, apareceEn, contarEnCuadros
 } from './transmisionComun.js';
+import { tanCercaDeLaFinal } from '../core/momentos.js';
+import { probabilidadDeMapa, ajusteDeCharla } from '../../core/serie.js';
 
 const TX = {
   t0: 360, // el primer mapa, después de fijar el plan
@@ -652,9 +654,25 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     const [a, bb] = finLog?.marcador ?? String(ultimoMp?.marcador ?? `${marcadorAhora[0]}-${marcadorAhora[1]}`).split('-');
     const titular = sigue ? 'La serie sigue' : gano ? (se.ronda === 'final' ? 'Campeones' : `${sNos} gana la serie`) : `${sEllos} gana ${se.ronda === 'final' ? 'la final' : 'la serie'}`;
     const texto = finLog?.message ?? ultimoMp?.cierre ?? '';
-    placaCierre(b, { a, b: bb, t0, titular, texto, gana: sigue ? null : gano, sub: `${sNos} ${a ?? ''}–${bb ?? ''} ${sEllos}${sigue ? ' · la serie sigue' : ''}`, rotulo: `${comp.rotulo} · ${ronda} · Bo${formato}` });
+    // W1-D (PLANUI §0.7, W3): la final que se perdió en el mapa que la definía dice qué tan cerca estuvo
+    const esFinal = se.ronda === 'final' || (se.torneo === 'mundial' && se.etapa === 'final');
+    const cerca = finLog && !gano && esFinal
+      ? tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: esDecisivo(ultimoMp, formato), pFinal: ultimoMp?.p, pSinJugada: pSinLaJugada(ultimoMp) })
+      : null;
+    placaCierre(b, { a, b: bb, t0, titular, texto, cerca, gana: sigue ? null : gano, sub: `${sNos} ${a ?? ''}–${bb ?? ''} ${sEllos}${sigue ? ' · la serie sigue' : ''}`, rotulo: `${comp.rotulo} · ${ronda} · Bo${formato}` });
   }
-  function placaCierre(b, { a, b: bb, t0, titular, texto, gana, sub: subT, rotulo: rot }) {
+  // La chance que tenía el mapa decisivo sin el minijuego (el plan y la charla, la misma cuenta que `systems/serie.js`), para
+  // decir si la jugada lo movió a favor o en contra. `null` si el decisivo no se jugó como minijuego.
+  function pSinLaJugada(l) {
+    const d = decision.datos ?? {};
+    if (!soloNarrar || !d.conMinijuego || !Number.isFinite(d.fuerzaPropia)) return null;
+    try {
+      return probabilidadDeMapa(estado, d.fuerzaPropia, (d.ajustePlan ?? 0) + ajusteDeCharla(Boolean(l?.charla)));
+    } catch {
+      return null;
+    }
+  }
+  function placaCierre(b, { a, b: bb, t0, titular, texto, cerca = null, gana, sub: subT, rotulo: rot }) {
     const res = el('div', { class: 'tx-cierre-res' }, [
       el('span', { class: 'tx-cierre-eq', 'data-lado': 'a', 'data-gana': gana === true ? '' : null }, [logoOrg(nos, { clase: 'tx-cierre-logo' }), el('b', { class: 'num', text: String(a ?? '') })]),
       el('i', { class: 'tx-cierre-guion', 'aria-hidden': 'true', text: '–' }),
@@ -662,7 +680,8 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     ]);
     const titulo = el('p', { class: 'tx-cierre-t', 'data-gano': gana == null ? 'sigue' : String(Boolean(gana)), text: titular });
     const placa = placaInferior({ rotulo: rot, titulo: texto, sub: subT, tono: tComp });
-    const nodo = el('div', { class: 'tx-cierre', role: 'status', 'aria-label': `${titular}: ${nos} ${a}, ${ellos} ${bb}` }, [res, titulo, el('div', { class: 'tx-cierre-pie' }, placa)]);
+    const casi = cerca ? el('p', { class: 'tx-cierre-cerca' }, [el('b', { text: cerca.rotulo }), el('span', { text: cerca.texto })]) : null;
+    const nodo = el('div', { class: 'tx-cierre', role: 'status', 'aria-label': `${titular}: ${nos} ${a}, ${ellos} ${bb}${cerca ? `. ${cerca.rotulo}: ${cerca.texto}` : ''}` }, [res, titulo, ...(casi ? [casi] : []), el('div', { class: 'tx-cierre-pie' }, placa)]);
     juego.append(nodo);
     cierreNodo = nodo;
     // la placa entra y QUEDA (fill forwards: antes se iba con su animación de entrada y el cierre duraba 360 ms). Sin
@@ -673,7 +692,8 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       ver,
       anim(res, [{ transform: 'scale(1.35)', filter: 'blur(10px) brightness(2)' }, { transform: 'none', filter: 'none' }], { delay: t0, duration: 520, easing: EXPO }),
       anim(titulo, [{ opacity: 0, letterSpacing: '0.32em', transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: t0 + 220, duration: 560, easing: EXPO }),
-      anim(placa, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { delay: t0 + 480, duration: 420, easing: EXPO })
+      anim(placa, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { delay: t0 + 480, duration: 420, easing: EXPO }),
+      ...(casi ? [anim(casi, [{ opacity: 0, transform: 'translateY(8px)', filter: 'blur(4px)' }, { opacity: 1, transform: 'none', filter: 'none' }], { delay: t0 + 380, duration: 520, easing: EXPO })] : [])
     ]);
   }
 
@@ -768,7 +788,8 @@ export function crearCaraACaraDeNarracion(contenedor, decision, { estado, previa
     titulo: decision?.titulo ?? 'El mapa decisivo',
     descripcion: '',
     opciones: [],
-    datos: { motivo: 'decisivo', campeonElegido: datos.campeonElegido ?? null, fuerzaPropia: datos.fuerzaPropia ?? null }
+    // `conMinijuego` y `ajustePlan` (W1-D): con ellos la placa de cierre sabe cuánto movió la jugada la chance del mapa
+    datos: { motivo: 'decisivo', campeonElegido: datos.campeonElegido ?? null, fuerzaPropia: datos.fuerzaPropia ?? null, ajustePlan: datos.ajustePlan ?? null, conMinijuego: datos.motivo === 'minijuego' }
   };
   return crearCaraACara(contenedor, narrable, { estado, previa, mundo, sonido, responder: () => {}, modo: 'serie', internacional, soloNarrar: true, pMapa });
 }

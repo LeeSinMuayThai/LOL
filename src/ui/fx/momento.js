@@ -20,7 +20,7 @@ import { logoOrg, logoComp, COMPETICIONES } from './competicion.js';
 import { logoLiga } from './logos.js';
 import { icono } from './iconos.js';
 import { odometro, num } from './movimiento.js';
-import { chipEje, numeroConSigno } from '../components/chipsEje.js';
+import { chipEje } from '../components/chipsEje.js';
 import { nombreVisibleDeLiga } from '../../core/ligas.js';
 
 const T = {
@@ -40,7 +40,9 @@ const T = {
   asentarse: 2400
 };
 // El resumen: los bloques entran escalonados; el número rueda.
-const T_RES = { paso: 90, entra: 420, numero: 520, numeroDur: 900, asentarse: 1500 };
+const T_RES = { paso: 90, entra: 420, numero: 520, numeroDur: 900, asentarse: 1500, sello: 260, selloDur: 520 };
+// W1-D: el glifo del kit de cada escalón que se sube
+const ICONO_DE_ASCENSO = { arraigo: 'arraigo', carrera: 'nivel', jerarquia: 'jerarquia', hype: 'hype' };
 const CONFETI = { cantidad: 220, celular: 0.55, alfa: 0.35, calma: 500 };
 const FUNDIDO = 120; // ms: el fundido corto de movimiento reducido (--dur-fundido)
 const SALIDA = 240;
@@ -343,6 +345,41 @@ export function mostrarResumen(datos, { escala = 1, controlar = null } = {}) {
         ...(datos.bajada ? [el('p', { class: 'mo-r-bajada', text: datos.bajada })] : [])
       ]);
       const vinetas = el('ul', { class: 'mo-r-vinetas' }, datos.vinetas.map((v) => el('li', {}, [icono(v.glifo ?? 'punto'), el('span', { text: v.texto })])));
+      // W1-D (PLANUI §0.7, W2): el diario. El escalón que subiste (uno fuerte, los demás en chips), la decisión del año y los
+      // números con su "antes".
+      const ascensos = datos.ascensos ?? [];
+      const ascenso = ascensos.length ? el('div', { class: `mo-r-ascenso mo-r-ascenso--${ascensos[0].eje}` }, [
+        el('p', { class: 'mo-r-ascenso-rotulo' }, [icono(ICONO_DE_ASCENSO[ascensos[0].eje] ?? 'margen'), el('span', { text: ascensos[0].rotulo ?? 'Subiste de escalón' })]),
+        el('h3', { class: 'mo-r-ascenso-texto', text: ascensos[0].texto }),
+        ...(ascensos.length > 1 ? [el('ul', { class: 'mo-r-ascenso-chips' }, ascensos.slice(1).map((a) => el('li', {}, [icono(ICONO_DE_ASCENSO[a.eje] ?? 'margen'), el('span', { text: a.chip ?? a.texto })])))] : [])
+      ]) : null;
+      const uh = datos.ultimaHora;
+      const ultima = uh ? el('div', { class: `mo-r-ultima mo-r-ultima--${uh.tipo}` }, [
+        el('p', { class: 'mo-r-ultima-rotulo' }, [el('b', { text: 'Última hora' }), el('span', { text: uh.rotulo })]),
+        el('p', { class: 'mo-r-ultima-texto' }, [el('strong', { text: uh.eleccion }), ...(uh.salio ? [' ', el('span', { text: uh.salio })] : [])])
+      ]) : null;
+      const odos = [];
+      const datoDe = ({ rotulo, antes, despues, delta, banda, texto = null, eje = null }) => {
+        const valor = el('b', { class: 'mo-r-dato-valor', text: num(despues) });
+        if (Number.isFinite(antes)) odos.push({ valor, antes, despues });
+        const sube = Number.isFinite(delta) && delta > 0;
+        const baja = Number.isFinite(delta) && delta < 0;
+        return el('li', { class: 'mo-r-dato', 'data-eje': eje }, [
+          el('span', { class: 'mo-r-dato-rotulo', text: rotulo }),
+          el('span', { class: 'mo-r-dato-fila' }, [
+            valor,
+            ...(Number.isFinite(delta) ? [el('span', { class: `mo-r-dato-delta${baja ? ' baja' : sube ? '' : ' igual'}`, text: `${sube ? '▲' : baja ? '▼' : '='} ${sube || baja ? Math.abs(delta) : ''}`.trim() })] : [])
+          ]),
+          ...(banda || texto ? [el('span', { class: 'mo-r-dato-banda', text: banda ?? texto })] : [])
+        ]);
+      };
+      const datosDelAnio = [];
+      if (datos.numero && Number.isFinite(datos.numero.despues)) {
+        const n = datos.numero;
+        datosDelAnio.push(datoDe({ eje: 'nivel', rotulo: n.etiqueta === 'rango' ? 'Tu rango' : 'Tu nivel', antes: n.antes, despues: n.despues, delta: Number.isFinite(n.antes) ? Math.round(n.despues - n.antes) : null, texto: n.texto ?? null }));
+      }
+      for (const d of datos.deltas ?? []) datosDelAnio.push(datoDe(d));
+      const numeros = datosDelAnio.length ? el('ul', { class: 'mo-r-datos' }, datosDelAnio) : null;
       const bloques = [];
       if (datos.splits.length) {
         bloques.push(bloqueDe('Tus splits', [el('ol', { class: 'mo-r-splits' }, datos.splits.map((s) => el('li', {}, [
@@ -356,41 +393,38 @@ export function mostrarResumen(datos, { escala = 1, controlar = null } = {}) {
       if (copas.length) {
         bloques.push(bloqueDe(copas.length === 1 ? 'El título' : 'Los títulos', [el('ul', { class: 'mo-r-copas' }, copas.map((n) => el('li', {}, [icono('copa', { clase: 'ln-ico mo-r-copa' }), el('b', { text: n })])))], 'mo-r-bloque--copas'));
       }
-      let valor = null;
-      if (datos.numero && Number.isFinite(datos.numero.despues)) {
-        const n = datos.numero;
-        valor = el('b', { class: 'mo-r-num-valor', text: num(n.despues) });
-        const delta = Number.isFinite(n.antes) ? n.despues - n.antes : null;
-        bloques.push(bloqueDe(n.etiqueta === 'rango' ? 'Tu rango' : 'Tu nivel', [el('p', { class: 'mo-r-num' }, [
-          ...(Number.isFinite(n.antes) ? [el('span', { class: 'mo-r-num-antes', text: num(n.antes) }), icono('flecha', { clase: 'ln-ico mo-r-flecha' })] : []),
-          valor,
-          ...(delta != null ? [el('span', { class: `mo-r-num-delta${delta < 0 ? ' baja' : ''}`, text: numeroConSigno(delta) })] : []),
-          ...(n.texto ? [el('span', { class: 'mo-r-num-texto', text: n.texto })] : [])
-        ])]));
-      }
+      // lo que sobra para leer el año en cinco segundos va plegado al final: lo que más se movió y "En el mundo"
+      const plegados = [];
       if (datos.ejes.length) {
-        bloques.push(bloqueDe('Lo que más se movió', [el('div', { class: 'eje-chips mo-r-ejes' }, datos.ejes.map((x) => chipEje({ eje: x.eje, valor: x.valor, cambio: true, sufijo: x.sufijo })))]));
+        plegados.push(bloqueDe('Lo que más se movió', [el('div', { class: 'eje-chips mo-r-ejes' }, datos.ejes.map((x) => chipEje({ eje: x.eje, valor: x.valor, cambio: true, sufijo: x.sufijo })))]));
       }
       if (datos.mundo && (datos.mundo.campeones.length || datos.mundo.campeonMundial)) {
         const filas = datos.mundo.campeones.map((c) => el('li', {}, [logoOrg(c.org, { clase: 'mo-r-logo' }), el('b', { text: c.org }), el('span', { text: `${nombreVisibleDeLiga(c.liga)}` })]));
         if (datos.mundo.campeonMundial) {
           filas.push(el('li', { class: 'mo-r-mundial' }, [logoOrg(datos.mundo.campeonMundial, { clase: 'mo-r-logo' }), el('b', { text: datos.mundo.campeonMundial }), el('span', { text: 'Mundial' })]));
         }
-        bloques.push(bloqueDe('En el mundo', [el('ul', { class: 'mo-r-mundo' }, filas)], 'mo-r-bloque--mundo'));
+        plegados.push(bloqueDe('En el mundo', [el('ul', { class: 'mo-r-mundo' }, filas)], 'mo-r-bloque--mundo'));
       }
+      const mas = plegados.length ? el('details', { class: 'mo-r-mas' }, [el('summary', { text: 'Más del año' }), el('div', { class: 'mo-r-grilla' }, plegados)]) : null;
       // el cuerpo scrollea solo y el pie (Continuar) queda debajo, afuera del scroll: el botón nunca tapa una fila
-      const cuerpo = el('div', { class: 'mo-r-cuerpo' }, [cabeza, titular, vinetas, el('div', { class: 'mo-r-grilla' }, bloques)]);
+      const grilla = bloques.length ? el('div', { class: 'mo-r-grilla' }, bloques) : null;
+      const piezas = [cabeza, titular, ascenso, ultima, numeros, vinetas, grilla, mas].filter(Boolean);
+      const cuerpo = el('div', { class: 'mo-r-cuerpo' }, piezas);
       const panel = el('div', { class: 'mo-r-panel' }, [cuerpo, el('div', { class: 'mo-r-pie' }, [seguir])]);
       raiz.prepend(el('div', { class: 'mo-negro mo-r-velo', 'aria-hidden': 'true' }), panel);
 
       const quieto = reducido();
       const animaciones = [];
-      const piezas = [cabeza, titular, vinetas, ...bloques, seguir];
-      piezas.forEach((nodo, i) => {
+      [...piezas, seguir].forEach((nodo, i) => {
         animaciones.push(animar(nodo, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { delay: E(i * T_RES.paso), dur: E(T_RES.entra), easing: EXPO, fill: 'backwards' }));
       });
-      if (valor && !quieto && Number.isFinite(datos.numero.antes)) {
-        odometro(valor, datos.numero.antes, datos.numero.despues, { delay: E(T_RES.numero), dur: E(T_RES.numeroDur) });
+      // el escalón cae como un sello después de entrar
+      const texto = ascenso?.querySelector('.mo-r-ascenso-texto');
+      if (texto) {
+        animaciones.push(animar(texto, [{ opacity: 0, transform: 'scale(1.35)', filter: 'blur(6px)' }, { opacity: 1, transform: 'scale(0.97)', filter: 'blur(0px)', offset: 0.7 }, { opacity: 1, transform: 'none', filter: 'blur(0px)' }], { delay: E(piezas.indexOf(ascenso) * T_RES.paso + T_RES.sello), dur: E(T_RES.selloDur), easing: EXPO, fill: 'backwards' }));
+      }
+      if (!quieto) {
+        for (const o of odos) odometro(o.valor, o.antes, o.despues, { delay: E(T_RES.numero), dur: E(T_RES.numeroDur) });
       }
       let timer = null;
       const alAsentarse = quieto ? null : new Promise((r) => {

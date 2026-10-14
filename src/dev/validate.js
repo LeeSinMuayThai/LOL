@@ -29261,6 +29261,110 @@ check('W1-H: la ficha fija nombra el próximo escalón con su umbral real (arrai
   if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
 });
 
+// ============================================================================
+// W1-D (PLANUI §0.7, W2 y W3): el diario de la temporada y "tan cerca", sin tocar el motor (`ui/core/momentos.js`).
+// - El diario: en carreras reales (`avanzarSplitAuto`), cada resumen trae como mucho 4 viñetas; la "Última hora" cita una
+//   elección con texto entero (sin tokens crudos); los deltas del arraigo y el hype son los de `flags.edadSnapshot` (la foto
+//   del año) contra hoy; un ascenso de arraigo solo se anuncia si la banda de verdad subió, y el escalón de carrera "de
+//   antes" nunca queda por debajo del "ahora" del año anterior (nunca se anuncia un escalón que ya tenías). La muestra tiene
+//   que traer firmas, planes del cierre y ascensos (si no, no probaría nada).
+// - "Tan cerca": la chance "sin la jugada" que recalcula la placa de cierre (`probabilidadDeMapa` con el plan y la charla)
+//   es la del motor: con el minijuego en 0,5 da la p con la que se tiró el mapa, y la jugada mueve la p hacia su lado.
+const NOMBRE_CHECK_W1D = 'W1-D: el diario cita la decisión del año y anuncia solo escalones que subieron; "tan cerca" recalcula la chance sin la jugada igual que el motor (PLANUI §0.7)';
+let errorW1D = null;
+if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_W1D.toLowerCase().includes(texto))) {
+  try {
+    const { resumenDelTramo, escalonDelAnio, tanCercaDeLaFinal, VINETAS_DEL_DIARIO } = await import('../ui/core/momentos.js');
+    const { bandaDeArraigoFicha } = await import('../core/ficha.js');
+    const { NIVELES } = await import('../core/puntaje.js');
+    const { probabilidadDeMapa, ajusteDeCharla } = await import('../core/serie.js');
+    const rango = (id) => NIVELES.findIndex((n) => n.id === id);
+    const ORDEN_ARRAIGO = ['uno_mas', 'querido', 'idolo', 'leyenda'];
+    const mal = [];
+    const tipos = {};
+    const ejes = {};
+    let resumenes = 0;
+    for (let seed = 1; seed <= 8; seed += 1) {
+      const rng = mulberry32(seed);
+      let estado = createInitialState(seed, rng);
+      let ahoraPrevio = null;
+      for (let i = 0; i < 90 && !estado.terminado; i += 1) {
+        const desde = estado.logs.length;
+        estado = avanzarSplitAuto(estado, rng).state;
+        const r = resumenDelTramo({ despues: estado, desde, fotoAnio: null });
+        if (!r) continue;
+        resumenes += 1;
+        const donde = `seed ${seed} ${r.anio}`;
+        if (r.vinetas.length > VINETAS_DEL_DIARIO) mal.push(`${donde}: ${r.vinetas.length} viñetas`);
+        const uh = r.ultimaHora;
+        if (uh) {
+          tipos[uh.tipo] = (tipos[uh.tipo] ?? 0) + 1;
+          const textos = [uh.rotulo, uh.eleccion, uh.salio].join(' ');
+          if (!['firma', 'bifurcacion', 'evento', 'plan'].includes(uh.tipo) || !/^(Elegiste|Cerraste el año eligiendo) \S/.test(uh.eleccion) || !uh.rotulo
+            || /\{[a-zA-Z]+\}|undefined|null|NaN/.test(textos)) mal.push(`${donde}: última hora mal formada ${JSON.stringify(uh)}`);
+        }
+        const foto = estado.flags.edadSnapshot;
+        for (const d of r.deltas) {
+          const esperado = d.eje === 'hype' ? foto['player.stats.hype'] : foto['career.arraigo'];
+          if (d.antes !== Math.round(esperado) || d.delta !== d.despues - d.antes) mal.push(`${donde}: delta ${JSON.stringify(d)} contra la foto ${esperado}`);
+        }
+        for (const a of r.ascensos) {
+          ejes[a.eje] = (ejes[a.eje] ?? 0) + 1;
+          if (!a.texto) mal.push(`${donde}: ascenso sin texto`);
+          if (a.eje === 'arraigo' && !(ORDEN_ARRAIGO.indexOf(bandaDeArraigoFicha(estado.career.arraigo).id) > ORDEN_ARRAIGO.indexOf(bandaDeArraigoFicha(foto['career.arraigo']).id))) {
+            mal.push(`${donde}: anunció ${a.texto} sin subir de banda`);
+          }
+        }
+        const esc = escalonDelAnio(estado, r.anio);
+        if (esc && ahoraPrevio && rango(esc.antes.id) < rango(ahoraPrevio)) mal.push(`${donde}: el escalón de antes (${esc.antes.id}) quedó debajo del de fin del año pasado (${ahoraPrevio})`);
+        ahoraPrevio = esc?.ahora.id ?? ahoraPrevio;
+      }
+    }
+    if (resumenes === 0 || !tipos.firma || !tipos.plan || Object.keys(ejes).length === 0) mal.push(`muestra vacía: ${resumenes} resúmenes, ${JSON.stringify(tipos)}, ascensos ${JSON.stringify(ejes)}`);
+
+    // "Tan cerca": la chance sin la jugada, contra el motor. El motor se resuelve aparte con una tirada fija (la p del mapa no
+    // depende de la tirada) y a la carrera se le contesta lo mismo.
+    let jugadas = 0;
+    const RESULTADOS = [0.5, 0.15, 0.9];
+    for (let seed = 1; seed <= 40; seed += 1) {
+      const rng = mulberry32(seed);
+      let estado = createInitialState(seed, rng);
+      const responder = (sistema, st, decision, r) => {
+        const datos = decision.datos ?? {};
+        if (sistema.id !== 'serie' || datos.motivo !== 'minijuego' || datos.momento !== 'mapa_decisivo') return sistema.resolverAuto(st, decision, r);
+        const resultado = RESULTADOS[jugadas % RESULTADOS.length];
+        const respuesta = datos.charla?.disponible ? { resultado, charla: false } : { resultado };
+        const aparte = sistema.resolver(st, decision, respuesta, () => 0.5);
+        const mapa = (aparte.logs ?? []).find((l) => l?.mapa);
+        const pSin = probabilidadDeMapa(st, datos.fuerzaPropia, (datos.ajustePlan ?? 0) + ajusteDeCharla(Boolean(mapa?.charla)));
+        if (!mapa || !Number.isFinite(mapa.p)) mal.push(`seed ${seed}: el decisivo no dejó el log del mapa con su p`);
+        else if (resultado === 0.5 && Math.abs(mapa.p - pSin) > 1e-9) mal.push(`seed ${seed}: con la jugada en 0,5 el motor tiró con ${mapa.p} y la placa calcula ${pSin}`);
+        else if (resultado !== 0.5 && Math.sign(mapa.p - pSin) !== Math.sign(resultado - 0.5)) mal.push(`seed ${seed}: la jugada en ${resultado} movió la p de ${pSin} a ${mapa.p}`);
+        const cerca = tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: true, pFinal: mapa?.p, pSinJugada: pSin });
+        if (resultado > 0.5 && !/^Ganaste la jugada/.test(cerca?.texto ?? '')) mal.push(`seed ${seed}: jugada ganada y la placa dice ${cerca?.texto}`);
+        if (resultado < 0.5 && !/^La jugada no salió/.test(cerca?.texto ?? '')) mal.push(`seed ${seed}: jugada perdida y la placa dice ${cerca?.texto}`);
+        jugadas += 1;
+        return respuesta;
+      };
+      for (let i = 0; i < 60 && !estado.terminado; i += 1) {
+        estado = avanzarSplitAuto(estado, rng, responder).state;
+      }
+    }
+    if (jugadas < 6) mal.push(`solo ${jugadas} jugadas del mapa decisivo en la muestra`);
+    if (tanCercaDeLaFinal({ perdioLaFinal: false, decisivo: true, pFinal: 0.5 }) || tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: false, pFinal: 0.5 })) {
+      mal.push('"tan cerca" salió fuera de una final perdida en el mapa decisivo');
+    }
+    console.log(`      ${resumenes} resúmenes, última hora ${JSON.stringify(tipos)}, ascensos ${JSON.stringify(ejes)}, ${jugadas} jugadas del decisivo`);
+    if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
+  } catch (error) {
+    errorW1D = error;
+  }
+}
+
+check(NOMBRE_CHECK_W1D, () => {
+  if (errorW1D) throw errorW1D;
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);

@@ -36,7 +36,23 @@ const orgDe = (st) => st.career?.currentOrg ?? null;
 function candidato(ctx, extra) {
   return { seed: ctx.state.seed, titulo: ctx.decision.titulo ?? '', decision: ctx.decision, eleccion: null, guardado: guardadoDe(ctx.state, ctx.rng, ctx.rngUi, ctx.pagina), ...extra };
 }
+// W1-D (PLANUI §0.7, W3): la final que se pierde en el mapa decisivo (`final-perdida`, para "tan cerca"). Se guarda la partida
+// en la pausa del minijuego del decisivo de una final de liga y se confirma cuando la serie termina perdida.
+let candidatoPerdida = null;
+function confirmarFinalPerdida(st) {
+  if (!candidatoPerdida || muestras.has('final-perdida')) return;
+  const fin = (st.logs ?? []).slice(candidatoPerdida.logsAntes).find((l) => l?.postSerie);
+  if (!fin) return;
+  if (fin.ronda === 'final' && !fin.gano) muestras.set('final-perdida', { ...candidatoPerdida, prioridad: 1 });
+  candidatoPerdida = null;
+}
+function ofrecerFinalPerdida({ sistema, state, decision }, ctx) {
+  if (muestras.has('final-perdida') || sistema.id !== 'serie' || state.serie?.ronda !== 'final' || state.serie.torneo === 'mundial') return;
+  if (decision.datos?.motivo !== 'minijuego' || decision.datos.momento !== 'mapa_decisivo') return;
+  candidatoPerdida = candidato(ctx, { logsAntes: state.logs.length });
+}
 function confirmar(st) {
+  confirmarFinalPerdida(st);
   if (candidatoFinal?.eleccion && titulosDe(st) > candidatoFinal.titulosAntes) {
     if (!muestras.has('final')) muestras.set('final', { ...candidatoFinal, prioridad: 1 });
     candidatoFinal = null;
@@ -64,6 +80,7 @@ function alParar(ctx) {
   if (sistema.id === 'serie' && state.serie?.ronda === 'final' && !state.serie.postSerie && esBo5DeLiga(state) && decision.opciones?.length && !muestras.has('final')) {
     candidatoFinal = candidato(ctx, { titulosAntes: titulosDe(state) });
   }
+  ofrecerFinalPerdida(ctx, ctx);
   if (decision.presentacion) return;
   const motivo = motivoDe(decision);
   const nOpc = decision.opciones?.length ?? 0;
@@ -80,7 +97,7 @@ function alParar(ctx) {
   if (sistema.id === 'internacional' && motivo === 'swiss') ofrecer('swiss', 1, ctx);
 }
 
-const QUIERO = ['evento', 'destino', 'plan', 'cierre', 'serie', 'swiss', 'final', 'firma'];
+const QUIERO = ['evento', 'destino', 'plan', 'cierre', 'serie', 'swiss', 'final', 'firma', 'final-perdida'];
 for (let seed = 1; seed <= SEEDS && !QUIERO.every((n) => muestras.has(n) && (n !== 'serie' || muestras.get(n).prioridad >= 3)); seed += 1) {
   jugarCarrera(seed, { alParar, responder, alCerrarSplit: ({ despues }) => confirmar(despues) });
 }
