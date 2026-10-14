@@ -34,6 +34,82 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-14 — PLANUI §0.8, ola F: "que se sienta más divertido" (el Mundial se juega, ningún año muerto, la consecuencia en el momento, la carta que mueve un número que ves)
+
+El usuario jugó la W1: "se nota un poquito, un poquito […] ahora quiero que veas si el juego se puede sentir más
+divertido", y pidió "ver un Swiss Stage simulado con los brackets simulados y ver dónde estás vos".
+
+**Lo jugado.** El supervisor jugó seis años en RÁPIDO, de los 15 a los 21: tier 3, dos finales perdidas con RED y el
+título, el bombazo de la LCP rechazado y cuatro Mundiales. El análisis está en PLANUI §0.8.
+- **Diagnóstico:** el juego tiene ~10 paradas por año, pero las gasta en lo que menos pesa y saltea lo que más pesa:
+  - el año de los 16, sin club;
+  - splits sin ninguna parada;
+  - el Mundial, que frenaba solo en el 2-2.
+- Además, lo que elegís mueve una probabilidad que no ves.
+- El usuario eligió las cuatro piezas juntas.
+
+**Las piezas:**
+- **F1 · el Mundial se juega.** Opus high, 94 + 12 llamadas.
+  - Cada ronda tuya del Swiss frena: una sola opción y lo que se juega en el título ("ronda 3 · 1-1 vs Top Esports: el
+    que gana queda a una de cuartos").
+  - Lleva el tablero del Swiss: los 16 equipos agrupados por récord, vos marcado, quiénes pasaron y quiénes quedaron
+    afuera (`components/swiss.js`, `core/internacional.js:tableroDelSwiss`).
+  - El cuadro de 8 con tu camino en cuartos, semis y final.
+  - Esas paradas no gastan el tope T9 ni el presupuesto del split, así que **la huella no se movió**.
+  - Agrega +0,9 paradas por carrera.
+- **F2 · ningún año muerto.** Opus high, 130 + 14 + 7 llamadas.
+  - El salto de tier 3 a mitad de año frena con la llamada de un tier 2 de tu región (`competitivo.js:conLlamadaDeTier2`):
+    firmás ahora o esperás la pretemporada.
+  - El split con club que no frenó frena en su última fecha (`temporada.js`, `ultima_fecha`).
+  - Splits con club tier 1/2 sin parada: **3.804 → 0** por cada 1000 carreras.
+  - La llamada solo sale en el split del medio. En el de playoffs, el contrato vencía sin jugarse (204 de 511).
+  - Queda que 169 de cada 1000 carreras tienen **un** split sin parada: el salto en el split de playoffs, justo antes
+    del mercado. Antes era un año entero.
+- **F3 · la consecuencia en el momento.** Sonnet high, 83 + 5 llamadas.
+  - El bloque "LO QUE ELEGISTE" va arriba de "Mientras tanto", con tu opción, lo que pasó y los deltas, y sale de la
+    cuenta y los chips de la franja.
+  - D106: `registro.finales` guarda las finales domésticas.
+  - Titulares nuevos (en 1000 carreras): "SE ESCAPÓ LA FINAL" (291), "TU PRIMER MUNDIAL" (198) y "(OTRA VEZ) AFUERA EN
+    EL SWISS" (177, con "otra vez" solo después de un Swiss perdido).
+  - "La espina más grande de tu carrera" queda para quien ya jugó un Mundial.
+  - La tarjeta lista también las finales de liga que se escaparon.
+  - Efecto aceptado: `debut` deja de titular (65 → 0), porque ese año gana el primer Mundial o la final.
+- **F4 · la carta mueve un número que ves.** Sonnet high, 82 llamadas.
+  - "TU JUEGO" en la hoja de la ficha: mecánica, macro, laneo, calls, adapt. y cabeza, con su ▲▼ del año.
+  - "TU RECESO" en el diario: "Mecánica 67 → 72 ▲5", con los deltas reales del motor.
+  - El stat principal de cada carta del cierre siempre suma: seis ramas con piso 1 en `cierre_edad.json`.
+- **La revisión** (Sonnet, 44 llamadas) no encontró nada que bloquee. Marcó 2 cosas para arreglar, ya arregladas:
+  - lo que se juega quedaba detrás del "más" en las rondas del Swiss;
+  - "OTRA VEZ AFUERA" salía sin un Swiss previo.
+  Y cinco menores, arreglados: el cuadro de 8 en el celular, "WG WG", los chips duplicados, el marcador y la llamada
+  en playoffs.
+
+**En la integración** (supervisor):
+- Los checks del Mundial (T9 y la previa del 2-2) no cuentan las rondas que no son el 2-2.
+- Guardado VERSION 16, con `migrarDe15` y `registro.finales: []` desde el estado inicial.
+- `VERSION_JUEGO` 'F' con la huella **433142448** (corrimiento declarado por F2 y F4).
+- El techo de peso pasa a 4000 KB (3904 medido).
+- El check de guardar y recargar busca el servicio militar entre las seeds coreanas. Con las carreras nuevas, `criterio`
+  llega a la citación en 2 de 218 coreanos (antes ~5%); el sistema anda igual con el bot por defecto (4-5 de 61).
+
+**Números** (base `f8503ce` → F, 1000 carreras; ninguna meta D-D se movió más de 2 puntos):
+
+| | Base | F |
+|---|---|---|
+| Llega a pro | 75,5% | 75,5% |
+| Llega a tier 1 | 71,7% | 71,2% |
+| Títulos por carrera | 2,04 | 2,22 |
+| Mundial ganado | 5,1% | 4,5% |
+| Paradas por split pro | 1,46 | 1,81 |
+
+**Verificación:**
+- `validate --rapido`: 388 OK, 0 FAIL.
+- `simulate.js 1000` dos veces: 0 crashes, idénticas.
+- Build: 3904 KB contra un techo de 4000.
+- El validate completo corre en segundo plano.
+
+**Deuda nueva:** D109 (el cuadro de los playoffs de tu liga).
+
 ### 2026-10-14 — La firma sale en todas las firmas, no solo en el mercado
 
 El usuario probó dos firmas en lolero.lol y la escena (el mapa con tu línea, el escudo, la firma trazada y el jersey) se vio
