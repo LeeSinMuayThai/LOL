@@ -40,7 +40,8 @@
 | **U3a (adelantada)** | Lo que dijo el usuario jugando P2 (§0.6): la copa y el resumen de la temporada, "Mientras tanto" en rápido y la firma de una sola coreografía | ✅ 2026-10-14: 2 workers (Opus high + Opus xhigh) + scout + revisor Sonnet; publicada |
 | **W · ola W1** | "Que se sienta el avance" (§0.7): la ficha en todas las anchuras, el diario con "Última hora" y el ascenso, "tan cerca" y la vitrina, la tarjeta final con el duelo y el arraigo | ✅ 2026-10-14: 3 workers Opus high + revisor Sonnet (0 bloqueantes, 3 para arreglar, arreglados en una ronda); publicada. Falta que el usuario la juegue en RÁPIDO |
 | **Arreglo · la firma en todas las firmas** | El usuario (2026-10-14): "se vio bien… pero solo se vio una vez. Y probé dos". El fichaje (el mapa con tu línea, el escudo, la firma trazada y el jersey) solo lo montaban el mercado y la prueba con contrato. Faltaba en el primer club (la oferta directa del amateur o la prueba con un tier 3 no crean contrato: `fichajeDe` devolvía null), en el equipo chico que te levanta y en las firmas que el motor hace solas en el relato (la mudanza pendiente, la academia). Ahora `fichajeDe` cuenta el club nuevo sin contrato (placas "Primer equipo" y "Tu línea", sin sueldo) y el relato monta como momento la firma que ninguna parada mostró (`fichajeDelRelato`, sin repetir ni al recargar). Muestras `?previa=primer-club` y `?previa=mudanza`. El "20 % más" de la firma queda para cuando diga qué parte | ✅ 2026-10-14 |
-| **W · olas W2-W3** | La carta de pretemporada y ¿gloria o billetera? (motor chico, medido); después, la final sin tirada y la plata (§0.7) | ⬜ después de que el usuario juegue la W1 |
+| **W · olas W2-W3** | La carta de pretemporada y ¿gloria o billetera? (motor chico, medido); después, la final sin tirada y la plata (§0.7) | ⬜ el usuario jugó la W1 ("se nota un poquito"); W4 lo reemplaza F4, W5/W7/W8 quedan después de F |
+| **F · ola F** | Lolero jugado seis años (§0.8): el Mundial se juega y se ve (Swiss y bracket con "vos"), ningún año muerto, la consecuencia en el momento y el diario que titula lo que pasó, la carta que mueve un número que ves | ⬜ a confirmar con el usuario |
 | **U3** | El resto de los momentos (banners, ceremonias, primer contrato) + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
@@ -622,6 +623,112 @@ archivos disjuntos:
 
 Después, un revisor Sonnet con GPU para toda la ola, una ronda de arreglos al mismo worker, merge, push, deploy, y **el
 usuario juega en RÁPIDO**.
+
+### 0.8 F · "que se sienta más divertido": Lolero jugado (2026-10-14, el usuario textual + seis años jugados)
+
+> "se nota un poquito, un poquito. Después hay cosas que hay que cambiar un poco. […] hay cosas que faltan, como ver
+> cómo va el torneo, ver un Swiss Stage simulado con los brackets simulados y ver dónde estás vos. Todo eso falta, no sé
+> si es la UI o la Info. […] eso es para más adelante. Pero ahora quiero que veas si el juego se puede sentir más
+> divertido."
+
+**Lo que se hizo.** El supervisor jugó Lolero en RÁPIDO sobre master local (`ef5fa87`, con `8194a94` entrando a
+mitad), con el ojo de §0.7. Fueron dos carreras: mid en LAS, perfil Hambriento, decidiendo de verdad.
+- La primera fue en Chrome y llegó a los 17. Se cortó porque Windows marca la ventana tapada como oculta y las
+  animaciones no avanzan.
+- La segunda fue en un Chromium propio y duró seis años, de los 15 a los 21:
+  - un tier 3 a los 15;
+  - RED Canids (CBLOL) entre 2028 y 2030, con dos finales perdidas y el título en 2030;
+  - la renovación contra un bombazo de US$1,2M de la LCP;
+  - el salto a paiN a mitad de contrato;
+  - tres títulos en total y cuatro Mundiales.
+- Los minijuegos los jugó un bot, así que su dificultad no se juzga acá.
+
+**Lo que funciona (no tocar).**
+- El mercado: la decisión más legible y linda del juego.
+- La firma con el número de camiseta.
+- La serie: el mapa decisivo en 2-2 con la chance en vivo, y el "te leyeron, quemaron a Azir: ¿con qué plan seguís?".
+- El diario del año con título: "CAMPEONES DE LA CBLOL", "¡Ahora sos Querido de RED!", con nivel ▲8, arraigo ▲22, hype
+  ▲28 y puntaje ▲72. Ahí sí se siente El Ídolo.
+- Las revanchas ("FURIA te eliminó la última vez").
+
+**Lo que no.** Cada punto tiene evidencia jugada:
+1. **El año muerto.** En las dos carreras, el año de los 16 pasó en un clic: "Agente libre", "Sin equipo esta
+   temporada", y una nota 7,4 "bueno" sin haber jugado.
+   - La causa: el salto de tier 3 a tier 2 te deja agente libre **hasta la pretemporada siguiente**
+     (`systems/competitivo.js:62-84`).
+   - Sin mercado y sin decisiones en todo el año.
+2. **Splits sin parada.** En 2028, de la firma en la pretemporada a los cuartos de final no hubo ninguna parada: el
+   split regular no se vio.
+   - Los partidos clave del split regular ("Cuentas pendientes", "Todo o nada", "La revancha") salen 2-3 veces en
+     los años siguientes, pero **no están garantizados**.
+3. **El Mundial pasa en el log.**
+   - 2029 y 2030: 0-3 en el Swiss, cero paradas. Fueron tres líneas en "Mientras tanto" y una tarjeta en el relato
+     (`components/mundial.js`).
+   - El motor frena **solo en el 2-2** (`systems/internacional.js:92-111`).
+   - El Swiss de 16 con los récords por ronda y el bracket de 8 ya se simulan enteros en `state.internacional`.
+   - **Respuesta a "no sé si es la UI o la info": la info está, falta la pantalla** (y frenar en cada ronda tuya).
+4. **Las paradas están al revés.**
+   - El split regular tiene 2-3 Bo1 con parada por año.
+   - Lo que más importa no tiene ninguna: tu primer Mundial, el Swiss, el año que esperás un llamado.
+   - El Ídolo hace lo contrario: la liga es un clic, y el Mundial se juega partido por partido.
+5. **La decisión de partido es una cuenta.**
+   - "Forzar el cierre 24% / la paciencia 35%"; en la serie, "71% / 73% / 68%".
+   - Gana el número más grande. La otra opción no te da nada que veas.
+   - Los planes de Fearless son los mismos tres en cada serie.
+6. **La consecuencia no se ve.**
+   - Ejemplos: "Te confiscaron la PC" (salió el 36% de riesgo) o "el coach se lo tomó como un cuestionamiento a su
+     autoridad".
+   - Son una línea en "Mientras tanto", arriba de la decisión siguiente, y en RÁPIDO se pasan.
+   - El diario cita una sola decisión por año.
+7. **El diario titula lo que no pasó.**
+   - 2028: final de CBLOL perdida → titular "WORLDS, POR TWITCH — la espina más grande de tu carrera", a los 18.
+   - 2029: segunda final perdida y primer Mundial → titular "EL PARCHE QUE TE MATÓ EL AZIR".
+   - No hay candidato para la final doméstica perdida (D106), ni para el primer Mundial o el Swiss.
+     `candidatoPapelInternacional` cuenta desde cuartos (`core/temporadaResumen.js:189-214`).
+8. **La carta del cierre ya existe; §0.7 se equivocó.** El cierre del año son 3 cartas que mueven stats en el acto
+   ("Mecánica ~+5, Macro ~+2, Consistencia ~-6") y fijan el plan del año siguiente. Contra la de El Ídolo le falta:
+   - **el stat que mueve no está en ninguna pantalla**: la ficha muestra el nivel, nunca la mecánica ni la macro;
+   - casi todas dicen RULETA;
+   - los tres ejes se repiten todos los años: juego, cabeza y stream.
+9. **Un bug de la W1:** la ficha se rompía sin club (`fichaFija.js:429`, `previo` nulo). Lo arregló `8194a94` en
+   paralelo.
+
+**La esencia, leyendo entre líneas.** Lolero no tiene pocas paradas: tiene ~10 por año a mitad de carrera. **Las gasta
+en lo que menos pesa y saltea lo que más pesa.** Y lo que elegís **mueve una probabilidad que no ves, no un número que
+ves**. El Ídolo hace las dos cosas al revés:
+- la liga es un clic y el Mundial se juega entero;
+- cada elección mueve un número de la ficha en el acto.
+
+**La propuesta: ola F.** Es UI más motor chico y medido, **a confirmar con el usuario**. F1 adelanta "el torneo" que el
+usuario dejó para después, porque jugando resultó ser un problema de diversión: el clímax del año pasa fuera de
+pantalla.
+- **F1 · El Mundial se juega.**
+  - La pantalla del Swiss: los 16 equipos con sus récords por ronda (1-0, 0-1…), **vos marcado** y tu próximo rival.
+  - **Cada ronda tuya es una parada**, un Bo1 con el formato del partido clave.
+  - Después, el bracket de 8 con tu camino. Los playoffs de tu liga usan el mismo cuadro: "dónde estás vos".
+  - Motor: `avanzarSwiss` frena en cada ronda tuya (una perilla en `balance.js`).
+  - UI: un componente que lee `state.internacional`.
+- **F2 · Ningún año muerto.**
+  - El salto a tier 2 abre el mercado ahí mismo, en una ventana de mitad de año, en vez de esperar la pretemporada
+    siguiente.
+  - Cada split garantiza al menos una parada donde jugás.
+  - Motor chico. Con `simulate.js`, base contra cambio, se miden las paradas por carrera y los objetivos D-D.
+- **F3 · La consecuencia en el momento, y el diario titula lo que pasó.**
+  - El resultado de tu última decisión abre la pantalla siguiente como bloque propio (tu elección, lo que pasó y los
+    deltas), no como una línea de "Mientras tanto".
+  - Titulares nuevos:
+    - "SE ESCAPÓ LA FINAL" (hace falta D106: guardar las finales domésticas en el registro);
+    - "TU PRIMER MUNDIAL" / "AFUERA EN EL SWISS".
+- **F4 · La carta mueve un número que ves.** Reemplaza a W4.
+  - Los stats (mecánica, macro, laneo, cabeza, sinergia) con ▲▼ en la hoja de la ficha y en el diario: "elegiste el
+    receso: mecánica 51 → 56".
+  - El stat principal de cada carta es seguro (el mínimo de su rango, mayor a 0, en `balance.js`). Lo incierto queda
+    para lo secundario.
+- Quedan para después: W5 (la traición; se jugó un salto a paiN a mitad de contrato sin chequear qué marcó), W7 y W8.
+
+**Cómo se haría.** Cuatro workers Opus high en worktrees, dueños de archivos disjuntos (F1, F2, F3, F4), y un revisor
+Sonnet. Como F1-F3 tocan el motor, el validate completo corre en segundo plano. Después, deploy, y el usuario juega en
+RÁPIDO.
 
 ## 1. Por qué un tercer plan
 
