@@ -9,6 +9,7 @@ import { hueDeOrg, inicialesDeOrg } from './formatoUi.js';
 import { miles } from './resultado.js';
 import { goldenRoadsDeEstado, medallaDeGoldenRoad } from './core/trayectoria.js';
 import { VERSION_JUEGO } from '../data/version.js';
+import { apodoDeLealtad, dueloEterno } from '../core/legado.js';
 
 const ANCHO = 1200;
 const ALTO = 630;
@@ -56,6 +57,15 @@ function envolver(ctx, texto, x, y, anchoMax, lineHeight, maxLineas = 3) {
   }
   if (linea) ctx.fillText(linea, x, cy);
   return cy + lineHeight;
+}
+
+// Una sola línea: si no entra en `anchoMax`, se corta con "…" (`envolver` con una línea igual parte en dos).
+function unaLinea(ctx, texto, x, y, anchoMax) {
+  let cortado = texto;
+  while (ctx.measureText(cortado + '…').width > anchoMax && cortado.length > 1) {
+    cortado = cortado.slice(0, -1);
+  }
+  ctx.fillText(ctx.measureText(texto).width > anchoMax ? cortado.trimEnd() + '…' : texto, x, y);
 }
 
 // Dibuja la tarjeta y devuelve el canvas ya pintado (no el blob): quien
@@ -126,10 +136,34 @@ export async function dibujarTarjeta(state, modulos) {
     ctx.textAlign = 'left';
   }
 
-  // --- El veredicto, la pieza central ---
-  ctx.fillStyle = acento;
-  ctx.font = '700 46px "Mona Sans", sans-serif';
-  envolver(ctx, t.veredicto, 60, puntaje ? 270 : 200, ANCHO - 120, 56, 3);
+  // --- El titular: el apodo de la lealtad (W1, "LEYENDA DE T1") con el veredicto de bajada; sin apodo, el veredicto ---
+  const registro = state.career?.registro ?? null;
+  const apodo = registro ? apodoDeLealtad(registro) : null;
+  const duelo = registro && state.mundo ? dueloEterno(state) : null;
+  const yTitular = puntaje ? 262 : 200;
+  if (apodo) {
+    ctx.fillStyle = apodo.id === 'leyenda' ? leerToken('--gold') : leerToken('--live');
+    ctx.font = '700 54px "Mona Sans", sans-serif';
+    unaLinea(ctx, apodo.texto.toUpperCase(), 60, yTitular, ANCHO - 120);
+    ctx.fillStyle = leerToken('--ink-dim');
+    ctx.font = '600 24px "Mona Sans", sans-serif';
+    envolver(ctx, t.veredicto, 60, yTitular + 44, ANCHO - 120, 32, 2);
+  } else {
+    ctx.fillStyle = acento;
+    ctx.font = '700 40px "Mona Sans", sans-serif';
+    envolver(ctx, t.veredicto, 60, yTitular, ANCHO - 120, 48, duelo ? 3 : 4);
+  }
+
+  // --- El duelo eterno (W1): una línea, los trofeos de cada lado y quién se lo llevó ---
+  if (duelo) {
+    const quien = { vos: 'LO GANASTE VOS', el: `SE LO LLEVÓ ${duelo.handle.toUpperCase()}`, empate: 'TABLAS' }[duelo.ganador];
+    ctx.fillStyle = leerToken('--ink-mute');
+    ctx.font = '700 15px "Mona Sans", sans-serif';
+    ctx.fillText('EL DUELO ETERNO · TÍTULOS Y MUNDIALES', 60, 404);
+    ctx.fillStyle = duelo.ganador === 'vos' ? leerToken('--gold') : leerToken('--ink');
+    ctx.font = '700 28px "Mona Sans", sans-serif';
+    unaLinea(ctx, `${state.player.name} ${duelo.tuyos} · ${duelo.suyos} ${duelo.handle} — ${quien}`, 60, 438, ANCHO - 120);
+  }
 
   // --- Totales como celdas ---
   const totales = t.totales;

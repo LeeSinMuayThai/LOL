@@ -1,6 +1,7 @@
 import LIGAS from '../data/leagues.json' with { type: 'json' };
 import { BALANCE } from '../data/balance.js';
-import { splitsJugadosEnTier, esBuenPapel, mundialesGanados, titulosDeFila } from './registro.js';
+import { splitsJugadosEnTier, esBuenPapel, mundialesGanados, titulosDeFila, trofeosDelDuelo } from './registro.js';
+import { bandaDeArraigoFicha } from './ficha.js';
 import { aniosProDe } from './puntaje.js';
 import { desdePuntos, etiquetaDeRanked, servidorDeLaPartida } from './ranked.js';
 import { plural } from './formato.js';
@@ -288,4 +289,89 @@ export function componerLegado(state) {
     historia: r.porOrg.map((fila) => ({ ...fila, titulos: titulosDeFila(fila, r) })),
     internacionales: r.internacionales
   };
+}
+
+// --- W1 · El final cuenta la historia (PLANUI §0.7, W6): el apodo, el duelo y las finales que se escaparon ---
+//
+// Lecturas puras del registro y del mundo, sin `rng` ni DOM. Las usa la tarjeta final (`ui/screens/tarjeta.js`) y su
+// PNG (`ui/exportar.js`); no entran en `componerLegado` para que una tarjeta guardada antes de W1 también las muestre.
+
+// El escalón de arraigo al que llegaste en cada org (el pico de la fila, `arraigoMaximo`), con su banda de la ficha:
+// "Uno más", "Querido", "Ídolo", "Leyenda". Una fila por org, en el orden de la historia.
+export function arraigoPorOrg(registro) {
+  return registro.porOrg.map((fila) => ({ org: fila.org, ...bandaDeArraigoFicha(Math.round(fila.arraigoMaximo ?? 0)) }));
+}
+
+// El apodo que sale de la lealtad (El Ídolo: "Leyenda de…"): la org donde más alto llegó el arraigo, si llegó a Ídolo o
+// a Leyenda. Si hay varias, gana el valor más alto; a igual valor, la de más títulos y después la primera. `null` si
+// en ninguna org pasaste de Querido.
+const ESCALONES_CON_APODO = ['idolo', 'leyenda'];
+
+export function apodoDeLealtad(registro) {
+  const candidatas = registro.porOrg
+    .map((fila, i) => ({ fila, i, banda: bandaDeArraigoFicha(Math.round(fila.arraigoMaximo ?? 0)) }))
+    .filter(({ banda }) => ESCALONES_CON_APODO.includes(banda.id))
+    .sort((a, b) => (b.banda.valor - a.banda.valor)
+      || (titulosDeFila(b.fila, registro).length - titulosDeFila(a.fila, registro).length)
+      || (a.i - b.i));
+  if (candidatas.length === 0) {
+    return null;
+  }
+  const { fila, banda } = candidatas[0];
+  return { id: banda.id, label: banda.label, org: fila.org, valor: banda.valor, texto: `${banda.label} de ${fila.org}` };
+}
+
+// El duelo eterno contra el archirrival (fase 11): lo mismo que cuenta `systems/rivales.js` —títulos de liga más
+// Mundiales ganados, de cada lado— más el nivel pico. Se recalcula acá desde el registro y el archirrival porque el
+// duelo guardado se actualiza en el cierre de edad, y el retiro puede llegar antes del último. Quién ganó: más trofeos;
+// a igual cantidad, el nivel pico más alto; si también empatan, tablas. `null` si no hay archirrival.
+export function dueloEterno(state) {
+  const archirrival = state.mundo?.archirrival;
+  if (!archirrival) {
+    return null;
+  }
+  const registro = state.career.registro;
+  const tuyos = trofeosDelDuelo(registro);
+  const suyos = archirrival.titulos + archirrival.internacionales;
+  const nivelTuyo = Math.round(registro.picos.nivel);
+  const nivelSuyo = Math.round(Math.max(archirrival.nivel ?? 0, ...archirrival.historial.map((h) => h.nivel ?? 0)));
+  const orgsSuyas = [...new Set(archirrival.historial.map((h) => h.org).filter(Boolean))];
+  const diferencia = (tuyos - suyos) || (nivelTuyo - nivelSuyo);
+  const ganador = diferencia > 0 ? 'vos' : (diferencia < 0 ? 'el' : 'empate');
+  return {
+    handle: archirrival.handle,
+    rol: archirrival.rol ?? null,
+    org: archirrival.org,
+    orgs: orgsSuyas,
+    tuyos,
+    suyos,
+    filas: [
+      { id: 'titulos', etiqueta: 'Títulos de liga', tuyos: registro.titulos.length, suyos: archirrival.titulos },
+      { id: 'mundiales', etiqueta: 'Mundiales', tuyos: mundialesGanados(registro).length, suyos: archirrival.internacionales },
+      { id: 'nivel', etiqueta: 'Nivel pico', tuyos: nivelTuyo, suyos: nivelSuyo }
+    ],
+    ganador,
+    porTrofeos: tuyos !== suyos
+  };
+}
+
+// Las finales que se escaparon: las del Mundial que llegaste a jugar y perdiste (`resultado: 'final'`), con el año, la
+// org y el rival de la final (del camino, K5-A). Las finales domésticas perdidas no quedan en el registro con su rival
+// ni su año (solo un texto en `career.hitos`): no se derivan.
+export function finalesPerdidas(registro) {
+  return registro.internacionales
+    .filter((intl) => intl.resultado === 'final')
+    .map((intl) => {
+      const final = (intl.camino ?? []).find((m) => m.etapa === 'final' && !m.gano) ?? null;
+      return {
+        anio: intl.anio,
+        competicion: 'Mundial',
+        org: intl.org,
+        // El campeón de un Mundial cuya final perdiste es quien te la ganó (registros sin camino de bracket).
+        rival: final?.rival ?? intl.campeon ?? null,
+        // [tuyo, suyo] (`caminoDelJugador`)
+        marcador: final?.marcador ?? null
+      };
+    })
+    .sort((a, b) => a.anio - b.anio);
 }

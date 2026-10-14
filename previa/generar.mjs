@@ -97,3 +97,43 @@ for (const nombre of QUIERO) {
   fs.writeFileSync(path.join(SALIDA, `${nombre}.json`), JSON.stringify(salida));
   console.log(`${nombre}: seed ${m.seed} · "${m.titulo}"${m.eleccion ? ` · elegí la ${m.eleccion}` : ''} · ${Math.round(JSON.stringify(salida).length / 1024)} KB`);
 }
+
+// W1-T (PLANUI §0.7, W6): la muestra `tarjeta`, la tarjeta final. Una carrera jugada hasta el retiro, guardada en su ÚLTIMA
+// parada con la elección del bot (`eleccion`): contestándola igual, la carrera termina y se ve la tarjeta. Se elige la
+// seed que más cuenta: el apodo de la lealtad (Leyenda o Ídolo de una org), una final que se escapó, ≥ 1 título, el
+// archirrival y ≥ 2 orgs. Barre sus propias seeds (1..80: la de Leyenda con finales perdidas es la 61), aparte de
+// las muestras de arriba.
+{
+  const { apodoDeLealtad, dueloEterno, finalesPerdidas } = await import('../src/core/legado.js');
+  const SEEDS_TARJETA = 80;
+  let mejor = null;
+  for (let seed = 1; seed <= SEEDS_TARJETA; seed += 1) {
+    let ultima = null;
+    const { state } = jugarCarrera(seed, {
+      alParar: (ctx) => {
+        ultima = ctx.state.phase === 'profesional' ? candidato(ctx, {}) : null;
+      },
+      responder: (sistema, st, decision, rng) => {
+        const r = ESTRATEGIAS.criterio(sistema, st, decision, rng);
+        const i = (decision.opciones ?? []).findIndex((o) => o.id === r?.opcionId);
+        if (ultima && ultima.decision === decision && i >= 0) ultima.eleccion = i + 1;
+        return r;
+      }
+    });
+    const r = state.career.registro;
+    if (!state.terminado || !state.tarjeta || !ultima?.eleccion || r.titulos.length < 1 || r.porOrg.length < 2 || !dueloEterno(state)) continue;
+    const apodo = apodoDeLealtad(r);
+    const puntos = (apodo ? (apodo.id === 'leyenda' ? 120 : 100) : 0) + (finalesPerdidas(r).length > 0 ? 100 : 0)
+      + (dueloEterno(state).tuyos + dueloEterno(state).suyos > 0 ? 10 : 0) + Math.min(r.titulos.length, 5);
+    if (!mejor || puntos > mejor.puntos) mejor = { ...ultima, puntos, prioridad: 1, apodo: apodo?.texto ?? null };
+  }
+  if (!mejor) {
+    console.log('FALTA tarjeta');
+  } else {
+    const problemas = validarGuardado(mejor.guardado);
+    if (problemas.length) throw new Error(`tarjeta: ${problemas.join('; ')}`);
+    const salida = { muestra: 'tarjeta', seed: mejor.seed, titulo: mejor.titulo, eleccion: mejor.eleccion, ...mejor.guardado };
+    fs.writeFileSync(path.join(SALIDA, 'tarjeta.json'), JSON.stringify(salida));
+    console.log(`tarjeta: seed ${mejor.seed} · "${mejor.titulo}" · elegí la ${mejor.eleccion} · apodo ${mejor.apodo ?? '—'} · ${Math.round(JSON.stringify(salida).length / 1024)} KB`);
+  }
+}
