@@ -67,9 +67,12 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // carga con `migrarDe13`, que arranca las dos con sus valores iniciales; uno de la 12 o de antes pasa además por las de antes · 15 (FASE V,
 // GR-m, el Golden Road: `career.registro.porSplit`, una fila por split jugado en una tabla, `{ anio, split, org, liga, tier,
 // posicion, equipos, nivel }`). Un guardado de la 14 carga con `migrarDe14`, que lo arranca vacío: lo ya jugado no trae sus filas,
-// así que esos años no pueden dar Golden Road (aceptado, PLAN.md §V.6); uno de la 13 o de antes pasa además por las de antes.
-export const VERSION = 15;
-const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14];
+// así que esos años no pueden dar Golden Road (aceptado, PLAN.md §V.6); uno de la 13 o de antes pasa además por las de antes · 16 (ola F,
+// PLANUI §0.8: `career.registro.finales`, las finales domésticas jugadas `{ anio, liga, org, rival, gano, marcador }` — D106 —, y las
+// paradas nuevas del Mundial y de la llamada de tier 2, que viajan en la decisión pendiente). Un guardado de la 15 carga con `migrarDe15`,
+// que arranca las finales vacías: las ya jugadas no quedaron guardadas; uno de la 14 o de antes pasa además por las de antes.
+export const VERSION = 16;
+const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15];
 
 // El marcador de los años pro, reconstruido de lo que la 11 sí guardaba. La fila del registro de la org del primer contrato de tier
 // 2 o 1 la abre `roster.js` el split siguiente al de la firma, así que la firma fue en su `desdeSplit` - 1. Sin esa fila todavía
@@ -203,22 +206,38 @@ export function migrarDe14(state) {
   };
 }
 
-// De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10`, `migrarDe11`, `migrarDe12`,
-// `migrarDe13` y `migrarDe14`; la 11, por las cuatro últimas; la 12, por las tres últimas; la 13, por las dos últimas).
+// 15 -> 16. Ola F (D106): `career.registro.finales` arranca vacío; quien lo lee ya usa `?? []`, así que esto solo deja la forma
+// igual a la de una carrera nueva. Si ya hay finales se respetan; sin carrera o sin registro queda como está. Puro.
+export function migrarDe15(state) {
+  const registro = state.career?.registro;
+  if (!registro) {
+    return state;
+  }
+  return {
+    ...state,
+    career: { ...state.career, registro: { ...registro, finales: Array.isArray(registro.finales) ? registro.finales : [] } }
+  };
+}
+
+// De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10` … `migrarDe15`; cada versión
+// siguiente, por las que le faltan).
 function migrar(version, state) {
   if (version === 10) {
-    return migrarDe14(migrarDe13(migrarDe12(migrarDe11(migrarDe10(state)))));
+    return migrarDe15(migrarDe14(migrarDe13(migrarDe12(migrarDe11(migrarDe10(state))))));
   }
   if (version === 11) {
-    return migrarDe14(migrarDe13(migrarDe12(migrarDe11(state))));
+    return migrarDe15(migrarDe14(migrarDe13(migrarDe12(migrarDe11(state)))));
   }
   if (version === 12) {
-    return migrarDe14(migrarDe13(migrarDe12(state)));
+    return migrarDe15(migrarDe14(migrarDe13(migrarDe12(state))));
   }
   if (version === 13) {
-    return migrarDe14(migrarDe13(state));
+    return migrarDe15(migrarDe14(migrarDe13(state)));
   }
-  return version === 14 ? migrarDe14(state) : state;
+  if (version === 14) {
+    return migrarDe15(migrarDe14(state));
+  }
+  return version === 15 ? migrarDe15(state) : state;
 }
 
 export function serializar(state, rng, rngUi) {

@@ -938,7 +938,11 @@ const FORMAS_CONOCIDAS = {
   // FASE V (GR-m, el Golden Road): `registro.porSplit`, una fila por split jugado en una tabla (`anio`, `split`, `org`, `liga`, `tier`,
   // `posicion`, `equipos`, `nivel`; la escribe `systems/rendimiento.js`). Nada más cambia la forma ni mueve las carreras de muestra
   // (la huella del juego es la de la 14). Un guardado de la 14 carga con `migrarDe14`, que lo arranca vacío.
-  15: 'ee5493864fb3'
+  15: 'ee5493864fb3',
+  // Ola F (PLANUI §0.8): `registro.finales`, las finales domésticas jugadas (D106, `systems/serie.js`), y las carreras de muestra
+  // se mueven con la llamada de tier 2 y la última fecha que frena (F2) y la carta del cierre (F4). Un guardado de la 15 carga
+  // con `migrarDe15`, que arranca las finales vacías.
+  16: '3161319961f7'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
