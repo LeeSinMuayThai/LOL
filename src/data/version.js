@@ -79,7 +79,7 @@
 // casa, Final2 con la LPL en 91, el no-pro con piso de soloQ, El GOAT = nuevo Faker). Sin esto, después del merge dos juegos
 // distintos compartirían "v K4c" en el desafío, el historial y el texto compartido. La etiqueta no entra en la huella (la tupla de
 // `calcularHuellaJuego` no la lee): la huella del bloque C es la de abajo. Misma `VERSION` del guardado (12, no salió de la rama).
-export const VERSION_JUEGO = 'K6d';
+export const VERSION_JUEGO = 'F';
 // K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
@@ -184,4 +184,9 @@ export const VERSION_JUEGO = 'K6d';
 // K6d (el arreglo del retiro, sin cambio de huella: ninguna de las 40 seeds vuelve del retiro con la racha en rojo): volver del
 // retiro corta la racha de splits en rojo (`flags.splitsMentalBajo`, `systems/retiro.js`), que antes sobrevivía congelada al
 // tiempo afuera y podía quemarte en el primer split de vuelta.
-export const HUELLA_JUEGO = 79304237;
+// F (la ola F, PLANUI §0.8, 275262637; corrimiento declarado — lo que eligió el usuario el 2026-10-14, "los 4 juntos"):
+// `VERSION_JUEGO` pasa a 'F'. F2: el salto de tier 3 frena con la llamada de un tier 2 de tu región y el split con club que no
+// frenó frena en su última fecha; F4: el stat principal de cada carta del cierre siempre suma (seis ramas con piso 1). F1 (cada
+// ronda del Swiss frena, con una sola opción y sin gastar el presupuesto) y F3 (las finales al registro, los titulares) no mueven
+// la huella. Ninguna seed de K6d reproduce su carrera. Guardado VERSION 16.
+export const HUELLA_JUEGO = 275262637;
