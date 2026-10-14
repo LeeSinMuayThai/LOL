@@ -34,6 +34,60 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-14 — PLANUI U3a (adelantada): la copa, el resumen de la temporada, "Mientras tanto" y la firma de punta a punta
+
+El usuario jugó P2 (PLANUI §0.6, textual) y pidió tres cosas:
+- que el relato en rápido no pase como "una banda de texto [que] no se puede leer";
+- la firma como una sola transición: el papel al frente y firmado, cae la línea, se va a la izquierda y aparecen el
+  logo y la remera;
+- que ganó el EMEA Masters "y no vino el resumen de la season ni la copa ni nada".
+
+- **Lo medido (scout + capturas).**
+  - En rápido, `sinPulso()` pone la espera en 0 y el tramo entero se pinta en un tick: a los 1,5 s ya está la parada
+    siguiente.
+  - La tarjeta del cierre del año estaba escondida en rápido (`tarjetaSeVe = cierre && !sinPulso()`).
+  - La copa 3D (`fx/trofeo.js`) existía y nadie la usaba: los momentos de §6.5 nunca se construyeron.
+  - En el papel de la derecha solo caía el sello, y tapaba "2 años".
+- **Los momentos** (`ui/core/momentos.js`, puro; `fx/momento.js`; `momentos.css`).
+  - **El título y el Mundial:** un takeover con apagón, "CAMPEONES", la liga y el logo, la copa 3D y confeti en el tono
+    de la org (oro en el Mundial).
+    - Dura 2,4 s a 1× y ×0,35 en rápido, y después espera a Continuar.
+    - Lo dispara el crecimiento de `registro.titulos` o el log `internacional` `campeon`.
+    - `momentosVistos` va en `lolcs-vista`.
+  - **El resumen de la temporada,** en todas las velocidades y esperando a Continuar: la nota, la titular y las viñetas,
+    tus splits, el título, el nivel de antes → después con el odómetro, los ejes que más se movieron y "En el mundo".
+- **"Mientras tanto".**
+  - En rápido, el tramo ya no pasa volando. La parada siguiente abre con una franja: cuántas cosas pasaron, los ejes
+    sumados y 3 titulares.
+  - Clic o L la abren como un cajón con la página entera; Esc la cierra.
+  - En rápido se esconde la pista de Espacio.
+- **La firma** (`mercado.js`, `fichaje.js`), una sola coreografía:
+  1. el papel de la pila pasa al frente (FLIP) y tu firma se traza en una línea nueva "[NICK] · el jugador";
+  2. el sello cae al pie;
+  3. el mapa cae encima y tu línea se enciende;
+  4. el mapa viaja a la izquierda y se vuelve el escudo del walkout;
+  5. la camiseta y el número.
+- **Las muestras nuevas** de `/previa`: `final` (la final que se gana) y `firma` (el mercado con un club nuevo).
+  `captura.mjs` suma `--antes` (teclas antes de la acción).
+- **Un bug de integración, y su check.** El merge de `tokens.css` del Supervisor perdió una llave: el bloque de los
+  momentos quedó anidado y salió sin sus tokens (el revisor lo encontró en el navegador).
+  - Se arregló, y se sumó "CSS: cada hoja tiene las llaves balanceadas". Ese check falla con la llave perdida (probado
+    rompiéndolo).
+- **Lo que quedó menor:**
+  - en rápido, la copa 3D se ve recién a ~1,2 s del takeover (espera su primer cuadro);
+  - después de firmar hay un sostén de ~0,6 s sin cuadros: el jersey monta sus filtros SVG con la pantalla quieta;
+  - la renovación (sin club nuevo) no tiene muestra y no se vio en el navegador.
+- **El costo.**
+  - Firma: Opus 5.5 · high, 73 + 18 llamadas (~290K).
+  - Momentos: Opus 5.5 · xhigh, 87 + 20 (~341K).
+  - Scout Sonnet: 45 llamadas (~152K).
+  - Revisor Sonnet: 39 + 9 (~208K).
+- **Verificación** (`u3a-integracion`):
+  - `validate --rapido`: 384 OK, 0 FAIL;
+  - `huella`: 1844448410;
+  - `simulate 1000`: exit 0;
+  - build: 3760 KB, con el techo subido de 3800 a 3850.
+
 ### 2026-10-14 — PLANUI P2: las cartas sin campeones de decoración y el stream lleno
 
 El usuario miró las previas de P1 y eligió las **cartas** y la **predicción** (PLANUI §0.5, textual). Sobre las cartas

@@ -147,7 +147,11 @@ const SPLITS_DE_VERIFICACION = 30;
 //
 // Re-medido en la integración de P2 (2026-10-14, `p2-integracion`): 3689 KB, con una decisión (las cartas, con sus
 // emblemas) y un stream (la predicción, con el riel EN VIVO). Bajado a 3800: ~110 KB (3%) de margen sobre el peso medido.
-const PESO_MAXIMO_KB = 3800;
+//
+// Re-medido en la integración de U3a (2026-10-14, `u3a-integracion`): 3760 KB. Lo nuevo son los momentos (el takeover
+// con la copa, el resumen de la temporada, la franja "Mientras tanto" con su cajón: `fx/momento.js`, `core/momentos.js`,
+// `momentos.css`) y la firma de una sola coreografía. Subido a 3850: ~90 KB (2,4%) de margen sobre el peso medido.
+const PESO_MAXIMO_KB = 3850;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
