@@ -29,6 +29,9 @@
 
 /* ---------- la serie: arriba la grafica, en el medio la costura (los nombres), abajo la franja ---------- */
 .tx-serie { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; row-gap: 10px; height: var(--tx-alto); min-height: 520px; }
+/* P1: las cartas de carga de cada mapa esperan su entrada a 52vw del centro (fill backwards): sin recorte, la página
+   tenía scroll horizontal (1671 px a 1440, 517 a 390). Se recorta solo a lo ancho: VICTORIA/DERROTA sale por arriba. */
+.tx-serie { overflow-x: clip; }
 .tx-arriba { position: relative; z-index: 3; display: grid; justify-items: center; gap: 8px; }
 .tx-mc { min-width: min(600px, 100%); }
 .tx-sub { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; width: min(600px, 100%); }
@@ -553,7 +556,7 @@ html:is([data-reducido], [data-inst]) :is(.tx-mp[data-siguiente], .tx-af-t, .tx-
 .tx-swiss[data-sw='prediccion'] :is(.tx-sw-vom, .tx-camino) { display: none; }
 .tx-swiss[data-sw='prediccion'] .tx-sw-cara[data-lado='a'] { top: 17%; }
 .tx-swiss[data-sw='prediccion'] .tx-sw-cara[data-lado='b'] .tx-cara-q { display: none; }
-.tx-swiss[data-sw='prediccion'] .tx-sw-cara[data-lado='b'] { transform: translate(-50%, -62%); }
+.tx-swiss[data-sw='prediccion'] .tx-sw-cara[data-lado='b'] { transform: translate(-50%, -80%); }
 .tx-swiss[data-sw='prediccion'] .tx-sw-logo-b { width: clamp(64px, 10cqw, 128px); height: clamp(64px, 10cqw, 128px); }
 .tx-swiss[data-sw] .tx-chat { opacity: 0.82; }
 .tx-chat-pie[data-espectador] { box-shadow: none; justify-content: center; font: 600 10.5px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; }

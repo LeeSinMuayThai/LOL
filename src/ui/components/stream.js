@@ -68,7 +68,7 @@ const ETQ_CAMBIO = { 'career.arraigo': ['arraigo', 'Arraigo'], 'player.stats.hyp
 const STREAM = { calidades: ['1080p60'], esconder: 2600 };
 // las variantes (P1): los puntos que apuesta el chat en cada opción y cuántos votan (decorativos, de `fx/azar.js`); cuánto
 // queda la tarjeta cerrada antes de irse; la explosión del chat al elegir; los tiempos del barrido de la pausa
-const VARIANTE = { puntos: [180000, 2600000], votan: [1400, 9800], cerrada: 600, irse: 380, explota: 18, gapExplota: 32, barrido: 520, vuelve: 640 };
+const VARIANTE = { puntos: [180000, 2600000], votan: [1400, 9800], cerrada: 600, irse: 380, explota: 18, gapExplota: 58, barrido: 520, vuelve: 640 };
 const SWISS = BALANCE.mundial;
 
 // Los logs del Bo1 dentro de la respuesta: la charla (si la hubo), el partido del Swiss y, si te eliminó, el cierre.
@@ -920,9 +920,12 @@ function crearChatTx({ semilla, d, espectador = false }) {
       return;
     }
     const ahora = reloj();
+    // la explosión de la predicción cerrada (P1) que todavía no salió sigue corriendo: el relato del Bo1 entra después
+    const pendientes = items.filter((x) => x.explota && x.t > ahora).map((x) => ({ ...x, t: x.t - ahora }));
     items = items.filter((x) => x.t <= ahora).slice(-CHAT_TX.inicial).map((x) => ({ ...x, t: 0 }));
+    items.push(...pendientes);
     const { tPost = 2600, tFin = 4000, gano = false, fuera = true } = o;
-    let t = 0;
+    let t = pendientes.length ? Math.min(pendientes[pendientes.length - 1].t, tPost - 400) : 0;
     while (t < tPost - 200) {
       t += az.entre(110, 230);
       items.push(de(juego, Math.min(t, tPost - 200)));
@@ -951,7 +954,7 @@ function crearChatTx({ semilla, d, espectador = false }) {
     if (fase !== 'antes') return;
     const ahora = quieto() ? Math.max(0, ...items.map((x) => x.t)) + 1 : reloj();
     const muro = pared(true);
-    for (let i = 0; i < VARIANTE.explota; i++) items.push(de(i % 2 && consejos[id] ? consejos[id] : muro, ahora + 20 + i * VARIANTE.gapExplota));
+    for (let i = 0; i < VARIANTE.explota; i++) items.push(de(i % 2 && consejos[id] ? consejos[id] : muro, ahora + 20 + i * VARIANTE.gapExplota, { explota: true }));
     render(ahora);
   }
   return { nodo, guion, rafaga, explotar, destruir: () => animacion?.cancel() };
