@@ -1102,6 +1102,7 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
 :root {
   --ms-frente-luz: var(--tono-luz);
   --ms-frente-fondo: var(--tono-vacio);
+}
 
 /* U3a-momentos (PLANUI §0.6, estilos/momentos.css): el takeover del título y el resumen de la temporada (`mo-`), y la
    franja "Mientras tanto" con su cajón (`mt-`). El takeover va arriba de todo lo del juego (los cuartos, en la capa

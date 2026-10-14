@@ -242,6 +242,26 @@ check('CSS: todo var(--token) usado está definido en tokens.css', () => {
   }
 });
 
+// U3a (PLANUI §0.6): un merge de tokens.css perdió la llave que cerraba un bloque y el siguiente quedó anidado
+// (`:root :root`, que no matchea nada): el takeover y el resumen salieron sin sus tokens, y el check de arriba no lo vio
+// (lee las definiciones por texto, no por estructura). Cada hoja cierra cada llave que abre, en orden.
+check('CSS: cada hoja tiene las llaves balanceadas (ningún bloque queda anidado por una llave perdida)', () => {
+  const hallazgos = [];
+  for (const archivo of fs.readdirSync(estilosDir).filter((f) => f.endsWith('.css'))) {
+    const texto = fs.readFileSync(path.join(estilosDir, archivo), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
+    let nivel = 0;
+    for (const c of texto) {
+      if (c === '{') nivel += 1;
+      if (c === '}') nivel -= 1;
+      if (nivel < 0) break;
+    }
+    if (nivel !== 0) hallazgos.push(`${archivo} (${nivel > 0 ? `${nivel} sin cerrar` : 'una llave de más'})`);
+  }
+  if (hallazgos.length > 0) {
+    throw new Error(hallazgos.join(', '));
+  }
+});
+
 check('CSS: contraste WCAG ≥ 4.5:1 en los pares tinta/superficie que se leen', () => {
   const tokensTexto = fs.readFileSync(path.join(estilosDir, 'tokens.css'), 'utf8');
   // Los pares que el CSS realmente usa para texto que hay que leer, más el
