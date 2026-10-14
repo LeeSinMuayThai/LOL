@@ -73,6 +73,12 @@
     radial-gradient(130% 110% at 70% 30%, var(--hx-velo-0) 50%, var(--hx-velo) 100%);
 }
 .hx-cab { position: relative; z-index: 1; padding: 44px 36px 18px; max-width: 740px; }
+/* el velo detrás del texto de la ilustración: el título y el planteo nunca van sobre el splash crudo */
+.hx-cab::before {
+  content: ''; position: absolute; inset: 0 -100vw 0 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, var(--hx-velo-0) 0%, var(--hx-velo-medio) 30%, var(--hx-velo) 100%);
+}
+.hx-planteo { text-shadow: 0 1px 8px var(--hx-noche); }
 .hx-rotulo {
   display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 0 8px;
   font: 600 12px/1.2 var(--f-display); letter-spacing: 0.18em; text-transform: uppercase; color: var(--hx-oro);
@@ -292,7 +298,9 @@
   .hx-mx-cab > .hx-mx-op, .hx-mx-cab > .hx-mx-riesgo-cab { display: none; }
   .hx-mx-fila > .hx-mx-op, .hx-mx-fila > .hx-mx-riesgo { grid-column: 1 / -1; }
   .hx-mx-eje-nom { font-size: 9px; letter-spacing: 0.04em; }
-  .hx-mx-hoy { font-size: 13px; }
+  .hx-mx-hoy { font-size: 12px; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.15; }
+  .hx-mx-hoy small { display: block; }
+  .hx-cab::before { background: linear-gradient(180deg, var(--hx-velo-0) 0%, var(--hx-velo) 22%, var(--hx-velo) 100%); }
   .hx-mx-celda > b { font-size: 13px; }
 }
 
@@ -306,7 +314,8 @@ html[data-reducido] .hx-splash { animation: none; transform: scale(1.08); }
 html[data-reducido] .hx-raiz .opcion.hx-op.apuntada .hx-op-luz { animation: none; }
 
 /* el título recibe el foco de la parada (data-foco): sin recuadro */
-.hx-raiz .hx-titulo:focus, .hx-raiz .hx-titulo:focus-visible { outline: none; box-shadow: none; }
+/* el foco que el juego le da al título por código (tabindex="-1", nunca por Tab): sin contorno. Los botones conservan el suyo. */
+.hx-raiz .hx-titulo[tabindex="-1"]:focus, .hx-raiz .hx-titulo[tabindex="-1"]:focus-visible { outline: none; box-shadow: none; }
 /* tres opciones: la tercera, a lo ancho */
 @media (min-width: 761px) {
   .hx-opciones[data-n="3"] > .hx-caja:last-child { grid-column: 1 / -1; }
