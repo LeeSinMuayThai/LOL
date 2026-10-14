@@ -8,6 +8,7 @@
 //   - cualquier otra parada de estos sistemas, la decisión de siempre (las cartas, `components/decision/cartas.js`).
 // La familia declara el mundo de su pieza (la costura cara a cara) y devuelve la vista con `narrar` y `destruir`.
 import { marcarFoco } from '../escena.js';
+import { celular } from '../fx/util.js';
 import { crearCaraACara } from '../components/caraACara.js';
 import { crearStream } from '../components/stream.js';
 import { mostrar as mostrarDecision } from './decision.js';
@@ -36,7 +37,8 @@ export function mostrar(contenedor, decision, ctx) {
     : crearCaraACara(contenedor, decision, { estado, previa, mundo, sonido, responder, modo: pieza === 'fecha' ? 'fecha' : 'serie', internacional });
   // F1 (PLANUI §0.8): en cuartos, semis y final del Mundial, el cuadro de 8 con tu camino, arriba del cara a cara
   const cuadro = pieza === 'serie' && estado.serie?.torneo === 'mundial' ? cuadroDelMundial(estado.internacional, estado.serie.etapa) : null;
-  if (cuadro) contenedor.querySelector('.tx-arriba')?.append(crearCuadroMundial(cuadro));
+  // (en el celular, después de las opciones: arriba empujaba el plan dos pantallas abajo)
+  if (cuadro) contenedor.querySelector(celular() ? '.tx-cuerpo' : '.tx-arriba')?.append(crearCuadroMundial(cuadro));
   mundo?.declarar?.(vista.mundo);
   vista.alMontar?.();
   marcarFoco(vista.titulo);

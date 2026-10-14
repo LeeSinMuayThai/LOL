@@ -747,27 +747,29 @@ html[data-reducido] :is(.tx-pr, .tx-pr-estado, .tx-rl-punto) { animation: none; 
 
 /* ---------- F1 · el cuadro de 8 del Mundial en el cara a cara (components/mundial.js:crearCuadroMundial) ---------- */
 /* ancho: la gráfica arriba a la izquierda, al lado del marcador; en el celular, debajo del duelo; en el medio no entra */
-.tx-arriba > .mundial-cuadro { display: grid; gap: 6px; width: 100%; padding: 8px 10px; background: var(--velo-medio); box-shadow: inset 0 0 0 1px var(--ln-tv-raya), inset 0 2px 0 var(--luz); backdrop-filter: blur(6px); font: 700 11px / 1.2 var(--f-mono); color: var(--ink); text-align: left; }
-.tx-arriba > .mundial-cuadro .mundial-rotulo { font: 700 9.5px / 1.1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); opacity: 1; }
-.tx-arriba > .mundial-cuadro .mundial-bracket { gap: 8px; align-items: center; }
-.tx-arriba > .mundial-cuadro .mundial-etapa { gap: 3px; }
-.tx-arriba > .mundial-cuadro .mundial-etapa--ahora .mundial-rotulo { color: var(--luz); }
-.tx-arriba > .mundial-cuadro .mundial-serie { gap: 1px; padding: 2px 5px; border-radius: 0; font-size: 10.5px; background: var(--ln-tv-placa); }
-.tx-arriba > .mundial-cuadro .mundial-serie--tuya { outline: 0; background: var(--ln-tv-placa); box-shadow: inset 2px 0 0 var(--luz); }
-.tx-arriba > .mundial-cuadro .mundial-serie--ahora { box-shadow: inset 0 0 0 1px var(--luz), 0 0 12px var(--luz-fuerte); }
-.tx-arriba > .mundial-cuadro .mundial-equipo { opacity: 0.75; }
-.tx-arriba > .mundial-cuadro .mundial-equipo--gano { opacity: 1; }
-.tx-arriba > .mundial-cuadro .mundial-equipo--perdio { opacity: 0.4; }
-.tx-arriba > .mundial-cuadro .mundial-equipo--vos { opacity: 1; color: var(--luz); }
+.tx-arriba > .mundial-cuadro, .tx-cuerpo > .mundial-cuadro { display: grid; gap: 6px; width: 100%; padding: 8px 10px; background: var(--velo-medio); box-shadow: inset 0 0 0 1px var(--ln-tv-raya), inset 0 2px 0 var(--luz); backdrop-filter: blur(6px); font: 700 11px / 1.2 var(--f-mono); color: var(--ink); text-align: left; }
+.mundial-cuadro .mundial-rotulo { font: 700 9.5px / 1.1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); opacity: 1; }
+.mundial-cuadro .mundial-bracket { gap: 8px; align-items: center; }
+.mundial-cuadro .mundial-etapa { gap: 3px; }
+.mundial-cuadro .mundial-etapa--ahora .mundial-rotulo { color: var(--luz); }
+.mundial-cuadro .mundial-serie { gap: 1px; padding: 2px 5px; border-radius: 0; font-size: 10.5px; background: var(--ln-tv-placa); }
+.mundial-cuadro .mundial-serie--tuya { outline: 0; background: var(--ln-tv-placa); box-shadow: inset 2px 0 0 var(--luz); }
+.mundial-cuadro .mundial-serie--ahora { box-shadow: inset 0 0 0 1px var(--luz), 0 0 12px var(--luz-fuerte); }
+.mundial-cuadro .mundial-equipo { opacity: 0.75; }
+.mundial-cuadro .mundial-equipo--gano { opacity: 1; }
+.mundial-cuadro .mundial-equipo--perdio { opacity: 0.4; }
+.mundial-cuadro .mundial-equipo--vos { opacity: 1; color: var(--luz); }
 @media (min-width: 1200px) { .tx-arriba > .mundial-cuadro { position: absolute; top: 0; left: 2%; width: min(330px, calc(48% - 310px)); } }
 @media (min-width: 641px) and (max-width: 1199.98px) { .tx-arriba > .mundial-cuadro { display: none; } }
-.tx-arriba > .mundial-cuadro .mundial-equipo-nombre { display: inline-flex; align-items: center; gap: 4px; }
-.tx-arriba > .mundial-cuadro .mundial-equipo-logo { width: 13px; height: 13px; flex: none; }
-.tx-arriba > .mundial-cuadro .mundial-equipo-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.tx-arriba > .mundial-cuadro .mundial-serie { min-height: 34px; justify-content: center; }
+.mundial-cuadro .mundial-equipo-nombre { display: inline-flex; align-items: center; gap: 4px; }
+.mundial-cuadro .mundial-equipo-logo { width: 13px; height: 13px; flex: none; }
+.mundial-cuadro .mundial-equipo-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.mundial-cuadro .mundial-serie { min-height: 34px; justify-content: center; }
 /* las rondas jugadas sin escudo (entra la sigla entera con cinco o seis columnas); la de ahora y los definidos, con escudo */
 .sw:not(.sw--compacto) .sw-ronda:not([data-encurso]) .sw-logo { display: none; }
 /* la ronda de ahora, más ancha que las jugadas: lleva escudos y tu cruce */
 .sw:not(.sw--compacto) .sw-grilla { display: flex; align-items: start; }
 .sw:not(.sw--compacto) .sw-grilla > * { flex: 1 1 0; }
 .sw:not(.sw--compacto) .sw-ronda[data-encurso] { flex-grow: 1.4; }
+/* revisión de F1: el escudo que no tiene imagen es texto (`ln-tv-mono`): al lado de la sigla se leía "WG WG" */
+.sw-logo:has(.ln-tv-mono), .mundial-equipo-logo:has(.ln-tv-mono) { display: none; }

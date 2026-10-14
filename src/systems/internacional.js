@@ -69,7 +69,9 @@ function loQueSeJuega({ v, d }) {
   const cara = v + 1 >= m.victoriasParaAvanzar && d + 1 >= m.derrotasParaQuedarAfuera ? 'vida o muerte'
     : v + 1 >= m.victoriasParaAvanzar ? (d === 0 ? `${v + 1}-0 y pasás` : 'una más y estás en cuartos')
       : d + 1 >= m.derrotasParaQuedarAfuera ? 'una más y te volvés'
-        : v + d === 0 ? 'arranca tu Mundial' : null;
+        : v + d === 0 ? 'arranca tu Mundial'
+          : v === d ? 'el que gana queda a una de cuartos'
+            : v > d ? 'ganás y quedás a una de cuartos' : 'perdés y quedás a una de volverte';
   return { cara, linea: `${ganar[0].toUpperCase()}${ganar.slice(1)}; ${perder}.` };
 }
 
@@ -95,8 +97,9 @@ function construirDecisionSwiss(state) {
     const { cara, linea } = loQueSeJuega(record);
     return {
       tipo: 'opciones',
-      titulo: `Swiss del Mundial · ronda ${ronda} · ${record.v}-${record.d} vs ${e.rival}${cara ? `: ${cara}` : ''}`,
-      descripcion: `${vienesDe(t)}Al Bo1 contra ${e.rival} (${nombreVisibleDeLiga(e.ligaRival)}). ${linea}`,
+      titulo: `Swiss del Mundial · ronda ${ronda} · ${record.v}-${record.d} vs ${e.rival}: ${cara}`,
+      // revisión de F1: lo que se juega va primero (se lee sin abrir "más"); de dónde venís, después
+      descripcion: `${linea} Bo1 contra ${e.rival} (${nombreVisibleDeLiga(e.ligaRival)}). ${vienesDe(t)}`.trim(),
       opciones: [{ id: 'jugar', label: 'A jugarlo', descripcion: 'Bo1 de Swiss: la charla del coach se guarda para el 2-2 o el bracket.' }],
       datos
     };
