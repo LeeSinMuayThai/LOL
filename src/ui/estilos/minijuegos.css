@@ -88,7 +88,7 @@
 @media (prefers-reduced-motion: reduce) {
   .minijuego, .minijuego-widget--hit, .minijuego-widget--miss, .minijuego-widget--hit::after, .minijuego-widget--miss::after, .minijuego-resultado { animation: none; }
 }
-html:is([data-reducido], [data-inst]) :is(.minijuego, .minijuego-widget--hit, .minijuego-widget--miss, .minijuego-widget--hit::after, .minijuego-widget--miss::after, .minijuego-resultado) { animation: none; }
+html[data-reducido] :is(.minijuego, .minijuego-widget--hit, .minijuego-widget--miss, .minijuego-widget--hit::after, .minijuego-widget--miss::after, .minijuego-resultado) { animation: none; }
 
 /* ---------- la tecla de un botón (1, 2 de la charla; V de "¡Vamos!") ---------- */
 .minijuego-atajo {
@@ -129,7 +129,7 @@ html:is([data-reducido], [data-inst]) :is(.minijuego, .minijuego-widget--hit, .m
 .minijuego-espera-boton:active { transform: scale(0.97); }
 .minijuego-espera-boton:focus-visible { outline: 2px solid var(--ink); outline-offset: 10px; }
 .minijuego-espera-boton .minijuego-atajo { color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 70%, transparent); }
-html:is([data-reducido], [data-inst]) .minijuego-espera-boton::after { animation: none; }
+html[data-reducido] .minijuego-espera-boton::after { animation: none; }
 @media (prefers-reduced-motion: reduce) { .minijuego-espera-boton::after { animation: none; } }
 
 /* ---------- el veredicto: una tarjeta con su color ---------- */

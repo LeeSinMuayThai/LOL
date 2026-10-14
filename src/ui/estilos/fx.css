@@ -4,7 +4,7 @@
    odometro, el titulo por linea). Prefijos: ln- (el kit, la ceremonia y la transmision) y cu- (los momentos); nada
    generico. Los colores, solo de tokens.css (los mismos nombres que la vitrina). Las variables locales de cada pieza
    (--lc-*, --ln-bq-*, --ln-tv-acento-txt, --cu-m*, --ln-logo-tam) llevan su valor por defecto como fallback en cada uso:
-   no viven en tokens.css. El camino quieto: html[data-reducido], html[data-inst] y prefers-reduced-motion. */
+   no viven en tokens.css. El camino quieto: html[data-reducido] y prefers-reduced-motion. */
 
 /* ======================================================================================================================
    EL AMBIENTE (src/ui/fx/ambiente.js): el canvas WebGL y su respaldo CSS
@@ -100,7 +100,7 @@
 .ln-luz-css[data-congelado]::after, .ln-luz-css[data-congelado] * { animation-play-state: paused !important; }
 @keyframes lc-latido { from { opacity: 0; } to { opacity: 0.5; } }
 @media (prefers-reduced-motion: reduce) { .ln-luz-css *, .ln-luz-css::after { animation: none !important; transition: none !important; } }
-html[data-reducido] .ln-luz-css *, html[data-reducido] .ln-luz-css::after, html[data-inst] .ln-luz-css *, html[data-inst] .ln-luz-css::after { animation: none !important; transition: none !important; }
+html[data-reducido] .ln-luz-css *, html[data-reducido] .ln-luz-css::after { animation: none !important; transition: none !important; }
 
 /* PLANUI §4.9 · LA COSTURA sin WebGL: dos capas recortadas por la diagonal (clip-path, js/ambiente.js), cada una con la
    noche y la luz de su tono y el arte en su bitono; entre las dos, la linea de luz. El campeon de siempre le deja el lugar. */
@@ -329,7 +329,7 @@ html[data-reducido] .ln-luz-css *, html[data-reducido] .ln-luz-css::after, html[
 
 /* ---------- el camino quieto ---------- */
 @media (prefers-reduced-motion: reduce) { .ln-bloquear.encendido { animation: none; } }
-html[data-reducido] .ln-bloquear.encendido, html[data-inst] .ln-bloquear.encendido { animation: none; }
+html[data-reducido] .ln-bloquear.encendido { animation: none; }
 
 @media (max-width: 640px) {
   .ln-aviso-tarjeta { padding: 24px 18px 22px; gap: 14px; }
@@ -423,8 +423,8 @@ html[data-reducido] .ln-bloquear.encendido, html[data-inst] .ln-bloquear.encendi
   .ln-cinta-tira, .ln-placa { animation: none; }
   .ln-cinta-item[aria-hidden='true'] { display: none; }
 }
-html[data-reducido] :is(.ln-cinta-tira, .ln-placa), html[data-inst] :is(.ln-cinta-tira, .ln-placa) { animation: none; }
-html[data-reducido] .ln-cinta-item[aria-hidden='true'], html[data-inst] .ln-cinta-item[aria-hidden='true'] { display: none; }
+html[data-reducido] :is(.ln-cinta-tira, .ln-placa) { animation: none; }
+html[data-reducido] .ln-cinta-item[aria-hidden='true'] { display: none; }
 
 @media (max-width: 640px) {
   .ln-marcador { height: 48px; }

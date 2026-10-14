@@ -35,8 +35,8 @@
 | **U2 + U2c** | Las pantallas del norte (inicio + decisión; partido + mercado) + franja, cuartos y contenedor de minijuegos | ❌ 2026-10-11, hecha por fuera del plan y descartada el 2026-10-13 (§0.2): el inicio quedaba pintado encima de todas las piezas y las pantallas no seguían la vitrina. `src/ui` volvió al cierre de la ola 1 (`1a63b63`) |
 | **U2 rehecha** | La ola 2 portada de la vitrina con `op=linea` sobre tres contratos nuevos: el marco, el mundo de cada parada y narrar la respuesta en el lugar (§0.2) | 🔶 2026-10-13 |
 | **C1 (adelantada)** | Lo que dijo el usuario jugando lolero.lol: colores por eje, el relato con forma, sin cortes en frío, la firma tras la prueba, el mapa decisivo narrado y la regla del movimiento reducido (§0.3) | ✅ 2026-10-13: mergeada y publicada (`c4f9e55`); el usuario la jugó (§0.4) |
-| **P1 · previas** | La decisión en tres direcciones (cartas, champ select, hextech) y el stream en dos, para elegir en `lolero.lol/previa.html`; INST deja de apagar el movimiento; la serie equipo contra equipo (§0.4) | ✅ 2026-10-14: 5 workers Opus high + 1 revisor Sonnet ("OK con menores", arreglados); publicada. Esperando que el usuario elija |
-| **P2** | La dirección elegida queda; se borran las otras y las perillas; una ronda de pulido (§0.4) | ⬜ |
+| **P1 · previas** | La decisión en tres direcciones (cartas, champ select, hextech) y el stream en dos, para elegir en `lolero.lol/previa.html`; INST deja de apagar el movimiento; la serie equipo contra equipo (§0.4) | ✅ 2026-10-14: 5 workers Opus high + 1 revisor Sonnet ("OK con menores", arreglados); publicada. El usuario eligió cartas + predicción (§0.5) |
+| **P2** | La dirección elegida queda; se borran las otras y las perillas; las cartas sin campeones de decoración y el stream lleno (§0.5) | 🔶 2026-10-14 |
 | **U3** | Los momentos + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
@@ -331,6 +331,69 @@ muertas, y hay una ronda de pulido con sus notas.
 **El costo** (pedido explícito). Workers Opus 5.5 · high (no xhigh), con tope duro de llamadas (70; partido 80). El
 brief trae los archivos a leer y la coreografía en ms. Sin validate completo, ≤ 12 capturas y una entrega de ≤ 10
 líneas. Meta: ~150-250K por worker; las olas anteriores, 400-540K.
+
+### 0.5 P2: lo que eligió el usuario (2026-10-14, textual) y cómo queda
+
+> "el de las tarjetas me gustó. ¿Qué es lo que pasa? Que tenga el campeón atrás no pega mucho atrás de la tarjeta. O
+> sea, me refiero en la tarjeta. Que haya un campeón random. Entonces, a lo que me refiero, estamos abusando el recurso
+> del campeón. ¿Qué sé yo? ¿Qué otra cosa podríamos poner ahí? No se me ocurre. Pero no quiero que haya campeones en
+> todos lados donde no tienen nada que ver. […] me gustó el de la predicción del stream, pero quiero que arregles la
+> pantalla del stream. […] está el chat, está el stream, pero la pantalla queda un poco vacía […] entre el espacio que
+> hay en el chat y el stream ahí está vacío después a la izquierda del stream no hay nada se podría poner algo a la
+> izquierda centrar un poco más el stream y rellenar […] que quede más lleno no tan fake […] quizás con streamers o
+> transmisiones falsas […] un overlay […] sé creativo y soluciona estos problemas. Y ya está."
+
+**Lo medido** (capturas con GPU, 1440 y 1920):
+- Cada carta lleva en su ventana un campeón del pool por índice (`cartas.js`, `claveDeArte`): Ashe, Kalista y Varus
+  en "El coach que también es el dueño".
+- Además, detrás de toda la decisión está el campeón del split (`paradas/decision.js`, `mainDe`). Sivir aparece
+  enorme detrás de una decisión sobre el coach.
+- El stream a 1920: el video (16:9) termina en x≈1313 y el chat empieza en 1512. Quedan ~200 px vacíos en el medio y,
+  a la izquierda, solo el margen. Abajo, la fila "Ronda 5 · los cruces" es una banda medio vacía.
+- El chat usa `///` como emote, y eso se lee como un error.
+
+**La regla nueva (vale para todo lo que sigue):** un campeón aparece solo cuando la pantalla habla de él. Es decir,
+cuando:
+- es tu campeón jugando (la serie, el stream, el relato de tus partidas);
+- o la decisión lo nombra.
+
+Nunca va como decoración. Se queda como está en el relato y en la luz de la era: ahí es tu campeón del split jugando.
+
+**Cómo queda:**
+1. **La decisión de siempre son las cartas** (`components/decision/cartas.js`).
+   - Se borran `components/decision.js`, las variantes `draft` y `hextech` con sus hojas, y la perilla `dc`.
+   - De `decision.css` queda solo lo que usan la costura y los demás.
+   - El arte de cada carta, por prioridad:
+     1. el campeón que la opción o el evento nombra;
+     2. el logo del equipo o de la liga adonde lleva la opción (las ofertas, el destino);
+     3. si no, **el emblema del aumento**: una ilustración vectorial propia por eje (8 motivos, en el color del eje,
+        con profundidad). Es el ícono de un aumento de Arena o TFT, que no son splashes.
+   - El fondo de la decisión sigue la misma regla: el campeón solo si la decisión lo nombra; si no, la luz de la era
+     sin campeón. La costura del destino no cambia.
+2. **El stream de siempre es la predicción.** Se borran la pausa, el panel chico y la perilla `sw`.
+   - La pantalla se llena como una plataforma de streaming de verdad, en tres columnas sin bandas vacías:
+     - a la izquierda, un riel "EN VIVO";
+     - el player al centro, ocupando lo que queda;
+     - el chat pegado a la derecha.
+   - El riel tiene:
+     - los otros cruces de la ronda como canales en vivo (con logos, marcador y espectadores), que reemplazan la
+       fila de abajo;
+     - co-streamers inventados que miran tu partida (los nombres del chat).
+   - Los números salen de `fx/azar.js`, sembrados. Nada del riel parece un botón.
+   - A 390, el riel pasa a ser una tira bajo la info, sin scroll horizontal de página.
+   - Fuera los `///`.
+3. **Limpieza** (Supervisor):
+   - las reglas `[data-inst]` muertas y la rama `'inst'` de `mercado.js`;
+   - `perillas.js`;
+   - la página de la previa, con las muestras sin variantes;
+   - el techo de peso, re-medido y bajado.
+
+**Cómo se hace:** el Supervisor hace la limpieza. Dos workers Opus 5.5 · high, cada uno con un tope de ~70 llamadas
+y un brief cerrado:
+- **cartas:** la decisión y su fondo;
+- **stream:** el stream.
+
+Después, un revisor Sonnet con GPU. Al final: merge, push, deploy y el enlace al usuario.
 
 ## 1. Por qué un tercer plan
 

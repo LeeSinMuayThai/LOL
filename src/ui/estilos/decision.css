@@ -385,8 +385,8 @@ html[data-textos='completos'] .res-mas { display: none; }
   .dc-lado, .dc-fila, .dc-tecla, .dc-chip, .dc-heroe, .dc-heroe-escala, .dc-heroe-luz, .ln-logo.dc-mon-logo, .dc-pared, .dc-marca-escudo { transition: none; }
   .dc-incognito .ln-escudo { animation: none; }
 }
-html:is([data-reducido], [data-inst]) :is(.dc-lado, .dc-fila, .dc-tecla, .dc-chip, .dc-heroe, .dc-heroe-escala, .dc-heroe-luz, .ln-logo.dc-mon-logo, .dc-pared, .dc-marca-escudo) { transition: none; }
-html:is([data-reducido], [data-inst]) .dc-incognito .ln-escudo { animation: none; }
+html[data-reducido] :is(.dc-lado, .dc-fila, .dc-tecla, .dc-chip, .dc-heroe, .dc-heroe-escala, .dc-heroe-luz, .ln-logo.dc-mon-logo, .dc-pared, .dc-marca-escudo) { transition: none; }
+html[data-reducido] .dc-incognito .ln-escudo { animation: none; }
 
 /* ---------- celular: la costura partida en vertical (A arriba, B abajo) en la banda de arriba; el panel debajo ---------- */
 @media (max-width: 640px) {

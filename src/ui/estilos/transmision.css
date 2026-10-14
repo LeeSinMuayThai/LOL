@@ -495,7 +495,7 @@ html[data-textos='completos'] .tx-insp-t { -webkit-line-clamp: unset; display: b
 
 /* el camino quieto: nada late ni respira */
 @media (prefers-reduced-motion: reduce) { .tx-mp[data-siguiente], .tx-af-t, .tx-sw-vivo i, .tx-sw-punto, .tx-sus-punto { animation: none; } }
-html:is([data-reducido], [data-inst]) :is(.tx-mp[data-siguiente], .tx-af-t, .tx-sw-vivo i, .tx-sw-punto, .tx-sus-punto) { animation: none; }
+html[data-reducido] :is(.tx-mp[data-siguiente], .tx-af-t, .tx-sw-vivo i, .tx-sw-punto, .tx-sus-punto) { animation: none; }
 
 @media (max-width: 640px) {
   .tx-swiss { height: auto; min-height: 0; }

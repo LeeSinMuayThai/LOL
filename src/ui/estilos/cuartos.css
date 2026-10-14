@@ -21,7 +21,7 @@
 @keyframes cuarto-entra { from { opacity: 0; transform: translateY(8px); } }
 /* La franja queda a la vista (y quieta) arriba del cuarto: el velo no la tapa. */
 .cuarto::backdrop { background: transparent; }
-html:is([data-reducido], [data-inst]) .cuarto[open] { animation: none; }
+html[data-reducido] .cuarto[open] { animation: none; }
 @media (prefers-reduced-motion: reduce) { .cuarto[open] { animation: none; } }
 
 .cuarto-cabecera {

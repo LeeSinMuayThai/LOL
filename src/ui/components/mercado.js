@@ -205,18 +205,13 @@ function firmarHoja(bt, h, { fx = () => null, sonido = null } = {}) {
 }
 
 // Lo que se queda a la vista la hoja sellada, según el modo de la narración (PLANUI §0.3): la secuencia hasta asentarse
-// y `sostener` ms más; con movimiento reducido, un cuadro fijo con su fundido corto y su tiempo de lectura; en INST, el
-// cuadro final un instante.
+// y `sostener` ms más (en rápido, con la escala corta de la narración); con movimiento reducido, un cuadro fijo con su
+// fundido corto y su tiempo de lectura.
 async function sostenerHoja(bt, narracion, h, sostener) {
   if (narracion.modo === 'reducido') {
     fundirCuadro(h.nodo);
     h.res.focus({ preventScroll: true });
     await narracion.esperar(T_FIRMAR.lectura);
-    return;
-  }
-  if (narracion.modo === 'inst') {
-    h.res.focus({ preventScroll: true });
-    await narracion.vistazo();
     return;
   }
   await bt.esperar(T_FIRMAR.asentarse);
