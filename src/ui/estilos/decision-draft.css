@@ -292,3 +292,29 @@ html[data-reducido] .dr-raiz :is(.dr-arte-img, .dr-apuntado) { transform: none; 
   .dr-raiz[data-forma='matriz'] .dr-panel-arte { grid-column: 1; grid-row: 1 / span 6; height: auto; min-height: 100%; margin: -14px 0; }
   .dr-raiz[data-forma='matriz'] .dr-panel-arte-velo { background: linear-gradient(90deg, transparent 40%, var(--dr-panel-fondo)); }
 }
+
+/* revisión P1: con el aviso de la costura abierto no asoma nada de la franja (ni el BLOQUEAR, que se pone visible solo) */
+.dr-raiz.dc-espera .dr-caja .dr-bloquear { visibility: hidden; opacity: 0; pointer-events: none; }
+/* lo que entra desde el costado (las franjas, el panel) no ensancha la página */
+.dr-raiz .dr-cuerpo { overflow-x: clip; }
+/* la planilla entra en 1440×900: franjas más bajas, arte más angosto, cabecera y panel más compactos */
+.dr-raiz[data-forma='matriz'] { --dr-franja-alto: 60px; --dr-arte-ancho: 88px; --dr-panel-arte-alto: 96px; }
+.dr-raiz[data-forma='matriz'] > .dr-col { padding-top: 14px; padding-bottom: 14px; }
+.dr-raiz[data-forma='matriz'] .dr-cab { gap: 6px; padding: 0 0 8px; }
+.dr-raiz[data-forma='matriz'] .dr-centro { padding: 12px 0 6px; gap: 3px; }
+.dr-raiz[data-forma='matriz'] .dr-label-txt { font-size: var(--t-opcion); }
+.dr-raiz[data-forma='matriz'] .dr-n b { font-size: 24px; }
+.dr-raiz[data-forma='matriz'] .dr-franjas { gap: 5px; padding-bottom: 14px; }
+.dr-raiz[data-forma='matriz'] .dr-cuerpo { gap: 10px; }
+.dr-raiz[data-forma='matriz'] .dr-panel-nombre { font-size: 18px; }
+.dr-raiz[data-forma='matriz'] .dr-panel-texto { line-height: 1.4; }
+@container dr (min-width: 760px) {
+  .dr-matriz { row-gap: 5px; }
+  .dr-matriz > .dr-mx-cab { padding-bottom: 5px; }
+  .dr-raiz[data-forma='matriz'] .dr-panel { padding-top: 10px; padding-bottom: 10px; row-gap: 4px; }
+  .dr-raiz[data-forma='matriz'] .dr-panel-arte { margin: -10px 0; }
+}
+/* el valor de hoy de SoloQ ("Plata I · 20") no pisa la columna de al lado: parte en dos líneas */
+@container dr (min-width: 760px) {
+  .dr-raiz .dr-mx-ref { white-space: normal; font-size: 14px; line-height: 1.05; }
+}
