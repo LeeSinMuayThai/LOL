@@ -151,7 +151,12 @@ const SPLITS_DE_VERIFICACION = 30;
 // Re-medido en la integración de U3a (2026-10-14, `u3a-integracion`): 3760 KB. Lo nuevo son los momentos (el takeover
 // con la copa, el resumen de la temporada, la franja "Mientras tanto" con su cajón: `fx/momento.js`, `core/momentos.js`,
 // `momentos.css`) y la firma de una sola coreografía. Subido a 3850: ~90 KB (2,4%) de margen sobre el peso medido.
-const PESO_MAXIMO_KB = 3850;
+//
+// Re-medido en la integración de la ola F (2026-10-14, `f-integracion`, PLANUI §0.8): 3904 KB contra 3850. Lo nuevo es la ficha
+// fija y el diario de W1 (que ya dejaron el margen en 4 KB), el tablero del Swiss y el cuadro de 8 (`components/swiss.js`,
+// `mundial.js`), el bloque "Lo que elegiste", "Tu receso" y "Tu juego". Subido a 4000: ~100 KB (2,5%) de margen sobre el
+// peso medido.
+const PESO_MAXIMO_KB = 4000;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
