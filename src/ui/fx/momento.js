@@ -360,21 +360,27 @@ export function mostrarResumen(datos, { escala = 1, controlar = null } = {}) {
       ]) : null;
       const odos = [];
       const datoDe = ({ rotulo, antes, despues, delta, banda, texto = null, eje = null }) => {
-        const valor = el('b', { class: 'mo-r-dato-valor', text: num(despues) });
+        // las columnas del odómetro son decorado (aria-hidden): el valor real lo lee el lector de pantalla
+        const valor = el('b', { class: 'mo-r-dato-valor', 'aria-hidden': 'true', text: num(despues) });
         if (Number.isFinite(antes)) odos.push({ valor, antes, despues });
         const sube = Number.isFinite(delta) && delta > 0;
         const baja = Number.isFinite(delta) && delta < 0;
+        const cambio = sube ? `subió ${num(delta)}` : baja ? `bajó ${num(-delta)}` : Number.isFinite(delta) ? 'igual' : '';
         return el('li', { class: 'mo-r-dato', 'data-eje': eje }, [
           el('span', { class: 'mo-r-dato-rotulo', text: rotulo }),
           el('span', { class: 'mo-r-dato-fila' }, [
+            el('span', { class: 'solo-lectores', text: `${num(despues)}${cambio ? `, ${cambio}` : ''}` }),
             valor,
-            ...(Number.isFinite(delta) ? [el('span', { class: `mo-r-dato-delta${baja ? ' baja' : sube ? '' : ' igual'}`, text: `${sube ? '▲' : baja ? '▼' : '='} ${sube || baja ? Math.abs(delta) : ''}`.trim() })] : [])
+            ...(Number.isFinite(delta) ? [el('span', { class: `mo-r-dato-delta${baja ? ' baja' : sube ? '' : ' igual'}`, 'aria-hidden': 'true', text: `${sube ? '▲' : baja ? '▼' : '='} ${sube || baja ? num(Math.abs(delta)) : ''}`.trim() })] : [])
           ]),
           ...(banda || texto ? [el('span', { class: 'mo-r-dato-banda', text: banda ?? texto })] : [])
         ]);
       };
       const datosDelAnio = [];
-      if (datos.numero && Number.isFinite(datos.numero.despues)) {
+      // el nivel del año sale de la ficha (`deltas`, eje 'nivel'): la foto de la página queda solo para el rango (amateur) o
+      // si la ficha no tiene el delta
+      const nivelDeLaFicha = (datos.deltas ?? []).some((d) => d.eje === 'nivel');
+      if (datos.numero && Number.isFinite(datos.numero.despues) && (datos.numero.etiqueta === 'rango' || !nivelDeLaFicha)) {
         const n = datos.numero;
         datosDelAnio.push(datoDe({ eje: 'nivel', rotulo: n.etiqueta === 'rango' ? 'Tu rango' : 'Tu nivel', antes: n.antes, despues: n.despues, delta: Number.isFinite(n.antes) ? Math.round(n.despues - n.antes) : null, texto: n.texto ?? null }));
       }

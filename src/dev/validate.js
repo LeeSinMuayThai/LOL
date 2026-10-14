@@ -29264,18 +29264,20 @@ check('W1-H: la ficha fija nombra el próximo escalón con su umbral real (arrai
 // ============================================================================
 // W1-D (PLANUI §0.7, W2 y W3): el diario de la temporada y "tan cerca", sin tocar el motor (`ui/core/momentos.js`).
 // - El diario: en carreras reales (`avanzarSplitAuto`), cada resumen trae como mucho 4 viñetas; la "Última hora" cita una
-//   elección con texto entero (sin tokens crudos); los deltas del arraigo y el hype son los de `flags.edadSnapshot` (la foto
-//   del año) contra hoy; un ascenso de arraigo solo se anuncia si la banda de verdad subió, y el escalón de carrera "de
+//   elección con texto entero (sin tokens crudos); un número, una fuente: el delta del año del nivel, el arraigo y el hype es
+//   el MISMO que dice la ficha (`nivelDelAnio`, `escaleraDeArraigo/Hype`), y el del puntaje es `puntajeEnVivo` de hoy contra
+//   el de la foto de la UI al arrancar el año (`fotoDeSplit`, como viaja en `lolcs-vista`); sin esa foto, no hay delta del
+//   puntaje. Un ascenso de arraigo solo se anuncia si la banda de verdad subió, y el escalón de carrera "de
 //   antes" nunca queda por debajo del "ahora" del año anterior (nunca se anuncia un escalón que ya tenías). La muestra tiene
 //   que traer firmas, planes del cierre y ascensos (si no, no probaría nada).
 // - "Tan cerca": la chance "sin la jugada" que recalcula la placa de cierre (`probabilidadDeMapa` con el plan y la charla)
 //   es la del motor: con el minijuego en 0,5 da la p con la que se tiró el mapa, y la jugada mueve la p hacia su lado.
-const NOMBRE_CHECK_W1D = 'W1-D: el diario cita la decisión del año y anuncia solo escalones que subieron; "tan cerca" recalcula la chance sin la jugada igual que el motor (PLANUI §0.7)';
+const NOMBRE_CHECK_W1D = 'W1-D: el diario cita la decisión del año, da los mismos deltas que la ficha (y el del puntaje contra la foto del año) y anuncia solo escalones que subieron; "tan cerca" recalcula la chance sin la jugada igual que el motor (PLANUI §0.7)';
 let errorW1D = null;
 if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_W1D.toLowerCase().includes(texto))) {
   try {
     const { resumenDelTramo, escalonDelAnio, tanCercaDeLaFinal, VINETAS_DEL_DIARIO } = await import('../ui/core/momentos.js');
-    const { bandaDeArraigoFicha } = await import('../core/ficha.js');
+    const { bandaDeArraigoFicha, nivelDelAnio, escaleraDeArraigo, escaleraDeHype, puntajeEnVivo } = await import('../core/ficha.js');
     const { NIVELES } = await import('../core/puntaje.js');
     const { probabilidadDeMapa, ajusteDeCharla } = await import('../core/serie.js');
     const rango = (id) => NIVELES.findIndex((n) => n.id === id);
@@ -29284,14 +29286,18 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_W1D.toLowerCase().inc
     const tipos = {};
     const ejes = {};
     let resumenes = 0;
+    let puntajes = 0;
     for (let seed = 1; seed <= 8; seed += 1) {
       const rng = mulberry32(seed);
       let estado = createInitialState(seed, rng);
       let ahoraPrevio = null;
+      let fotoAnio = null;
       for (let i = 0; i < 90 && !estado.terminado; i += 1) {
         const desde = estado.logs.length;
+        // la foto del primer split del año, como la guarda `app.js` (JSON, como viaja en `lolcs-vista`)
+        if (estado.player.splitCount % BALANCE.edad.splitsPorEdad === 0) fotoAnio = JSON.parse(JSON.stringify(fotoDeSplitV2(estado)));
         estado = avanzarSplitAuto(estado, rng).state;
-        const r = resumenDelTramo({ despues: estado, desde, fotoAnio: null });
+        const r = resumenDelTramo({ despues: estado, desde, fotoAnio });
         if (!r) continue;
         resumenes += 1;
         const donde = `seed ${seed} ${r.anio}`;
@@ -29303,15 +29309,25 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_W1D.toLowerCase().inc
           if (!['firma', 'bifurcacion', 'evento', 'plan'].includes(uh.tipo) || !/^(Elegiste|Cerraste el año eligiendo) \S/.test(uh.eleccion) || !uh.rotulo
             || /\{[a-zA-Z]+\}|undefined|null|NaN/.test(textos)) mal.push(`${donde}: última hora mal formada ${JSON.stringify(uh)}`);
         }
-        const foto = estado.flags.edadSnapshot;
+        const ficha = { nivel: nivelDelAnio(estado).delta, hype: escaleraDeHype(estado).delta, arraigo: escaleraDeArraigo(estado)?.delta ?? null };
+        const deltaDe = (eje) => r.deltas.find((d) => d.eje === eje) ?? null;
         for (const d of r.deltas) {
-          const esperado = d.eje === 'hype' ? foto['player.stats.hype'] : foto['career.arraigo'];
-          if (d.antes !== Math.round(esperado) || d.delta !== d.despues - d.antes) mal.push(`${donde}: delta ${JSON.stringify(d)} contra la foto ${esperado}`);
+          if (Number.isFinite(d.delta) && d.despues - d.antes !== d.delta) mal.push(`${donde}: delta ${JSON.stringify(d)} no cierra`);
+          if (d.eje === 'puntaje') {
+            puntajes += 1;
+            if (d.antes !== fotoAnio?.puntaje || d.despues !== puntajeEnVivo(estado).total) mal.push(`${donde}: puntaje ${JSON.stringify(d)} contra la foto ${fotoAnio?.puntaje}`);
+          } else if (!(d.eje === 'arraigo' && d.delta === null) && d.delta !== ficha[d.eje]) {
+            mal.push(`${donde}: el diario dice ${d.eje} ${d.delta} y la ficha ${ficha[d.eje]}`);
+          }
         }
+        if (Number.isFinite(ficha.nivel) && !deltaDe('nivel')) mal.push(`${donde}: la ficha tiene el delta del nivel y el diario no`);
+        if (Number.isFinite(fotoAnio?.puntaje) && fotoAnio.edad + 1 === estado.age && Number.isFinite(puntajeEnVivo(estado).total) && !deltaDe('puntaje')) mal.push(`${donde}: con la foto del año, el diario no trajo el delta del puntaje`);
+        if (deltaDe('puntaje') && !(fotoAnio?.edad + 1 === estado.age)) mal.push(`${donde}: delta del puntaje sin la foto de este año`);
         for (const a of r.ascensos) {
           ejes[a.eje] = (ejes[a.eje] ?? 0) + 1;
           if (!a.texto) mal.push(`${donde}: ascenso sin texto`);
-          if (a.eje === 'arraigo' && !(ORDEN_ARRAIGO.indexOf(bandaDeArraigoFicha(estado.career.arraigo).id) > ORDEN_ARRAIGO.indexOf(bandaDeArraigoFicha(foto['career.arraigo']).id))) {
+          const da = deltaDe('arraigo')?.delta;
+          if (a.eje === 'arraigo' && !(da > 0 && ORDEN_ARRAIGO.indexOf(bandaDeArraigoFicha(estado.career.arraigo).id) > ORDEN_ARRAIGO.indexOf(bandaDeArraigoFicha(estado.career.arraigo - da).id))) {
             mal.push(`${donde}: anunció ${a.texto} sin subir de banda`);
           }
         }
@@ -29320,7 +29336,7 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_W1D.toLowerCase().inc
         ahoraPrevio = esc?.ahora.id ?? ahoraPrevio;
       }
     }
-    if (resumenes === 0 || !tipos.firma || !tipos.plan || Object.keys(ejes).length === 0) mal.push(`muestra vacía: ${resumenes} resúmenes, ${JSON.stringify(tipos)}, ascensos ${JSON.stringify(ejes)}`);
+    if (resumenes === 0 || !tipos.firma || !tipos.plan || Object.keys(ejes).length === 0 || puntajes === 0) mal.push(`muestra vacía: ${resumenes} resúmenes, ${JSON.stringify(tipos)}, ascensos ${JSON.stringify(ejes)}, ${puntajes} deltas del puntaje`);
 
     // "Tan cerca": la chance sin la jugada, contra el motor. El motor se resuelve aparte con una tirada fija (la p del mapa no
     // depende de la tirada) y a la carrera se le contesta lo mismo.
@@ -29343,6 +29359,9 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_W1D.toLowerCase().inc
         const cerca = tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: true, pFinal: mapa?.p, pSinJugada: pSin });
         if (resultado > 0.5 && !/^Ganaste la jugada/.test(cerca?.texto ?? '')) mal.push(`seed ${seed}: jugada ganada y la placa dice ${cerca?.texto}`);
         if (resultado < 0.5 && !/^La jugada no salió/.test(cerca?.texto ?? '')) mal.push(`seed ${seed}: jugada perdida y la placa dice ${cerca?.texto}`);
+        // los puntos son la resta de los porcentajes que se muestran
+        const nums = (cerca?.texto ?? '').match(/te costó (\d+) puntos? de chance \(de (\d+)% a (\d+)%\)/);
+        if (nums && Number(nums[1]) !== Math.max(1, Number(nums[2]) - Number(nums[3]))) mal.push(`seed ${seed}: ${cerca.texto}`);
         jugadas += 1;
         return respuesta;
       };
@@ -29354,7 +29373,7 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_W1D.toLowerCase().inc
     if (tanCercaDeLaFinal({ perdioLaFinal: false, decisivo: true, pFinal: 0.5 }) || tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: false, pFinal: 0.5 })) {
       mal.push('"tan cerca" salió fuera de una final perdida en el mapa decisivo');
     }
-    console.log(`      ${resumenes} resúmenes, última hora ${JSON.stringify(tipos)}, ascensos ${JSON.stringify(ejes)}, ${jugadas} jugadas del decisivo`);
+    console.log(`      ${resumenes} resúmenes (${puntajes} con el delta del puntaje), última hora ${JSON.stringify(tipos)}, ascensos ${JSON.stringify(ejes)}, ${jugadas} jugadas del decisivo`);
     if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
   } catch (error) {
     errorW1D = error;

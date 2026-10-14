@@ -253,3 +253,5 @@
 .tx-cierre-cerca b { font: 900 clamp(22px, 2.6vw, 32px) / 1 var(--f-display); font-stretch: var(--ancho-titulo); text-transform: uppercase; color: var(--tx-cerca); }
 .tx-cierre-cerca span { font-size: 16px; line-height: 1.4; color: var(--ink); text-wrap: balance; }
 @media (max-width: 560px) { .tx-cierre-cerca span { font-size: 14px; } }
+/* el Continuar de "tan cerca" (el botón del kit de los momentos, `.mo-seguir`, en el flujo de la placa) */
+.tx-cierre-seguir { position: static; transform: none; pointer-events: auto; margin-top: 4px; }

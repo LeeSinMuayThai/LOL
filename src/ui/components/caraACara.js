@@ -421,6 +421,37 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
   let beats = null;
   // la placa de cierre: al terminar la narración queda puesta (la foto de la transición al relato la lleva)
   let cierreNodo = null;
+  // W1-D (PLANUI §0.7, W3): la final perdida en el decisivo ("tan cerca") es un momento grande: la placa frena y espera
+  // Continuar (Enter, Espacio o clic) en todas las velocidades, como el diario. `soltarEspera` la suelta si la vista se va.
+  let esperaCerca = false;
+  let soltarEspera = null;
+  function esperarContinuar() {
+    if (!cierreNodo?.isConnected) return Promise.resolve();
+    return new Promise((resolver) => {
+      const boton = el('button', { type: 'button', class: 'mo-seguir tx-cierre-seguir' }, ['Continuar', el('kbd', { text: 'Enter' })]);
+      const listo = () => {
+        document.removeEventListener('keydown', tecla, true);
+        soltarEspera = null;
+        boton.remove();
+        resolver();
+      };
+      function tecla(e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        if (document.querySelector('dialog[open]')) return; // un cuarto abierto es dueño del teclado
+        e.preventDefault();
+        e.stopPropagation();
+        if (!e.repeat) listo();
+      }
+      boton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        listo();
+      });
+      cierreNodo.append(boton);
+      document.addEventListener('keydown', tecla, true);
+      soltarEspera = listo;
+      boton.focus({ preventScroll: true });
+    });
+  }
   async function narrar(ctx) {
     if (!elegida || !raiz.isConnected) return 0;
     const logs = fecha ? logsDeLaFecha(ctx.logs ?? []) : logsDeLaSerie(ctx.logs ?? []);
@@ -442,6 +473,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       if (cierreNodo?.isConnected) cierreNodo.style.visibility = 'visible';
       narracion.fin();
     }
+    if (esperaCerca && raiz.isConnected) await esperarContinuar();
     return logs.length;
   }
 
@@ -659,6 +691,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     const cerca = finLog && !gano && esFinal
       ? tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: esDecisivo(ultimoMp, formato), pFinal: ultimoMp?.p, pSinJugada: pSinLaJugada(ultimoMp) })
       : null;
+    esperaCerca = Boolean(cerca);
     placaCierre(b, { a, b: bb, t0, titular, texto, cerca, gana: sigue ? null : gano, sub: `${sNos} ${a ?? ''}–${bb ?? ''} ${sEllos}${sigue ? ' · la serie sigue' : ''}`, rotulo: `${comp.rotulo} · ${ronda} · Bo${formato}` });
   }
   // La chance que tenía el mapa decisivo sin el minijuego (el plan y la charla, la misma cuenta que `systems/serie.js`), para
@@ -770,6 +803,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     listo: () => Promise.all([...cargas, logosListos(raiz)]),
     narrar,
     destruir() {
+      soltarEspera?.();
       cancelAnimationFrame(seguirRaf);
       beats?.destruir();
       mundo?.soltarMomento?.();

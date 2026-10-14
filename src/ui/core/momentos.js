@@ -9,7 +9,7 @@ import { efectosDeTexto } from '../components/chipsEje.js';
 import { cierreDeSplit } from './escena.js';
 import { formaBeat } from '../../core/log.js';
 import { TODOS_LOS_EVENTOS } from '../../data/events/index.js';
-import { bandaDeArraigoFicha, bandaDeHype, bandaDeJerarquia } from '../../core/ficha.js';
+import { bandaDeArraigoFicha, bandaDeHype, bandaDeJerarquia, nivelDelAnio, escaleraDeArraigo, escaleraDeJerarquia, escaleraDeHype, puntajeEnVivo } from '../../core/ficha.js';
 import { hechosDeCarrera, nivelDeCarrera, NIVELES } from '../../core/puntaje.js';
 import { conSplitPendienteAsentado } from '../../core/registro.js';
 
@@ -161,7 +161,7 @@ export function resumenDelTramo({ despues, desde = 0, fotoAnio = null } = {}) {
     mundo,
     // W1-D (PLANUI §0.7, W2): el diario. La decisión del año, los escalones que subiste y cuánto se movió lo tuyo.
     ultimaHora: ultimaHoraDelAnio(logs.slice(inicio, i), registro, anio),
-    ...ascensosYDeltas(despues, anio)
+    ...ascensosYDeltas(despues, anio, fotoAnio)
   };
 }
 
@@ -334,38 +334,48 @@ export function escalonDelAnio(despues, anio) {
 }
 
 // `{ ascensos, deltas }`. `ascensos`: `[{ eje, id, label, rotulo, texto, chip }]`, el primero es el banner (`rotulo` arriba,
-// `texto` grande); los demás van como chips (`chip`). `deltas`: `[{ eje, rotulo, antes,
-// despues, delta, banda }]` (el arraigo y el hype; el nivel ya tiene su bloque). Sin la foto de ESTE año (si
-// `flags.edadSnapshot` ya es la del siguiente), nada: nunca se compara contra otro año.
-export function ascensosYDeltas(despues, anio) {
+// `texto` grande); los demás van como chips (`chip`). `deltas`: `[{ eje, rotulo, antes, despues, delta, banda }]` (el nivel,
+// el arraigo, el hype y el puntaje de carrera). Un número, una fuente: los deltas del año son los de la ficha
+// (`nivelDelAnio`, `escaleraDeArraigo/Jerarquia/Hype` de `core/ficha.js`, contra `flags.edadSnapshot`); el del puntaje,
+// contra `fotoAnio.puntaje` (la foto de la UI al arrancar el año). Sin la foto de ESTE año, nada: nunca se compara contra
+// otro año ni se inventa un delta.
+export function ascensosYDeltas(despues, anio, fotoAnio = null) {
   const ascensos = [];
   const deltas = [];
   const foto = despues?.flags?.edadSnapshot;
   if (!foto || anio == null || despues.calendario?.anio !== anio) return { ascensos, deltas };
   const org = mismaOrgTodoElAnio(despues, anio);
-  const par = (antes, ahora) => Number.isFinite(antes) && Number.isFinite(ahora);
-  const arraigoAntes = foto['career.arraigo'];
-  const arraigo = despues.career?.arraigo;
-  if (org && par(arraigoAntes, arraigo)) {
-    const a = bandaDeArraigoFicha(arraigoAntes);
-    const b = bandaDeArraigoFicha(arraigo);
-    deltas.push({ eje: 'arraigo', rotulo: `Arraigo · ${org}`, antes: Math.round(arraigoAntes), despues: Math.round(arraigo), delta: Math.round(arraigo) - Math.round(arraigoAntes), banda: b.label });
-    if (sube('arraigo', a.id, b.id)) ascensos.push({ eje: 'arraigo', id: b.id, label: b.label, rotulo: `Tu arraigo con ${org}`, texto: `¡Ahora sos ${b.label} de ${org}!`, chip: `${b.label} de ${org}` });
+  const conDelta = (d) => Number.isFinite(d);
+  const nivel = nivelDelAnio(despues);
+  if (conDelta(nivel.delta)) deltas.push({ eje: 'nivel', rotulo: 'Tu nivel', antes: nivel.valor - nivel.delta, despues: nivel.valor, delta: nivel.delta, banda: null });
+  const arraigo = escaleraDeArraigo(despues);
+  if (arraigo && despues.phase === 'profesional') {
+    const valor = Math.round(arraigo.valor);
+    // con una org nueva este año, el arraigo arranca de nuevo: el valor sin delta (ni ascenso)
+    const delta = org ? arraigo.delta : null;
+    deltas.push({ eje: 'arraigo', rotulo: 'Arraigo', antes: conDelta(delta) ? valor - delta : null, despues: valor, delta, banda: `${arraigo.label} · ${arraigo.org}` });
+    if (org && delta > 0 && sube('arraigo', bandaDeArraigoFicha(arraigo.valor - delta).id, arraigo.id)) {
+      ascensos.push({ eje: 'arraigo', id: arraigo.id, label: arraigo.label, rotulo: `Tu arraigo con ${org}`, texto: `¡Ahora sos ${arraigo.label} de ${org}!`, chip: `${arraigo.label} de ${org}` });
+    }
   }
-  const hypeAntes = foto['player.stats.hype'];
-  const hype = despues.player?.stats?.hype;
-  if (par(hypeAntes, hype)) {
-    const a = bandaHype(hypeAntes);
-    const b = bandaHype(hype);
-    deltas.push({ eje: 'hype', rotulo: 'Hype', antes: Math.round(hypeAntes), despues: Math.round(hype), delta: Math.round(hype) - Math.round(hypeAntes), banda: b.label });
-    if (sube('hype', a.id, b.id)) ascensos.push({ eje: 'hype', id: b.id, label: b.label, rotulo: 'Tu hype', texto: `¡${TEXTO_DE_HYPE[b.id] ?? `Ya sos ${b.label}`}!`, chip: TEXTO_DE_HYPE[b.id] ?? `Ya sos ${b.label}` });
+  const hype = escaleraDeHype(despues);
+  if (conDelta(hype.valor) && conDelta(hype.delta)) {
+    deltas.push({ eje: 'hype', rotulo: 'Hype', antes: hype.valor - hype.delta, despues: hype.valor, delta: hype.delta, banda: hype.label });
+    if (hype.delta > 0 && sube('hype', bandaHype(hype.valor - hype.delta).id, hype.id)) {
+      ascensos.push({ eje: 'hype', id: hype.id, label: hype.label, rotulo: 'Tu hype', texto: `¡${TEXTO_DE_HYPE[hype.id] ?? `Ya sos ${hype.label}`}!`, chip: TEXTO_DE_HYPE[hype.id] ?? `Ya sos ${hype.label}` });
+    }
   }
-  const jerAntes = foto['career.jerarquia'];
-  const jer = despues.career?.jerarquia;
-  if (org && par(jerAntes, jer)) {
-    const a = bandaJerarquia(jerAntes);
-    const b = bandaJerarquia(jer);
-    if (sube('jerarquia', a.id, b.id)) ascensos.push({ eje: 'jerarquia', id: b.id, label: b.label, rotulo: `Tu lugar en ${org}`, texto: `¡Ahora sos ${b.label} en ${org}!`, chip: `${b.label} en ${org}` });
+  const jer = escaleraDeJerarquia(despues);
+  if (org && jer && jer.delta > 0 && sube('jerarquia', bandaJerarquia(jer.valor - jer.delta).id, jer.id)) {
+    ascensos.push({ eje: 'jerarquia', id: jer.id, label: jer.label, rotulo: `Tu lugar en ${org}`, texto: `¡Ahora sos ${jer.label} en ${org}!`, chip: `${jer.label} en ${org}` });
+  }
+  // el puntaje: solo con la foto de la UI de este año (la edad con la que arrancó el año es la de hoy menos uno: el cierre
+  // ya cumplió). Una partida retomada a mitad de año no la tiene: sin delta.
+  if (conDelta(fotoAnio?.puntaje) && conDelta(fotoAnio?.edad) && fotoAnio.edad + 1 === despues.age) {
+    const vivo = puntajeEnVivo(despues);
+    if (conDelta(vivo.total)) {
+      deltas.push({ eje: 'puntaje', rotulo: 'Puntaje', antes: fotoAnio.puntaje, despues: vivo.total, delta: vivo.total - fotoAnio.puntaje, banda: vivo.actual?.nombre ?? null });
+    }
   }
   const escalon = escalonDelAnio(despues, anio);
   if (escalon && sube('carrera', escalon.antes.id, escalon.ahora.id)) {
@@ -389,7 +399,8 @@ export function tanCercaDeLaFinal({ perdioLaFinal = false, decisivo = false, pFi
   if (!perdioLaFinal || !decisivo || !Number.isFinite(pFinal)) return null;
   if (Number.isFinite(pSinJugada)) {
     const mueve = pFinal - pSinJugada;
-    const puntos = Math.max(1, Math.round(Math.abs(mueve) * PUNTOS));
+    // los puntos son la resta de los dos porcentajes que se muestran (nunca "8 puntos, de 51% a 44%")
+    const puntos = Math.max(1, Math.abs(pct(pFinal) - pct(pSinJugada)));
     if (mueve > MUEVE_LA_CHANCE) {
       return { rotulo: 'Tan cerca', texto: `Ganaste la jugada (+${puntos} de chance: ${pct(pFinal)}%)… y el mapa se fue igual.` };
     }
