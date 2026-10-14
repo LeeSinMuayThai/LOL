@@ -28,6 +28,8 @@ import { claveDe } from '../core/mundo.js';
 import { nombreVisibleDeLiga } from '../formatoUi.js';
 import { BALANCE } from '../../data/balance.js';
 import { crearNarracion } from '../narracion.js';
+import { tableroDelSwiss } from '../../core/internacional.js';
+import { crearTableroSwiss } from './swiss.js';
 import { anim, pct, ventanaTx, irseEn, tonosDeLados, carasDe, cabeceraTx, competicionDeEstado, TX_SUS, programarSuspenso, placaDecisiva, latirPlaca, entrarPlaca, cuadrosQuietos, apareceEn, contarEnCuadros } from './transmisionComun.js';
 
 const TXS = {
@@ -110,6 +112,11 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
   const pOpc = Object.fromEntries((pg.opciones ?? []).map((o) => [o.id, o]));
   const quietoSw = quieto();
   const vidaOMuerte = rec.v === SWISS.victoriasParaAvanzar - 1 && rec.d === SWISS.derrotasParaQuedarAfuera - 1;
+  // F1 (PLANUI §0.8): cada ronda tuya del Swiss frena; la que te deja en 3 victorias también cierra tu Swiss (ADENTRO)
+  const ganandoPasa = rec.v === SWISS.victoriasParaAvanzar - 1;
+  // F1: el tablero del Swiss (`components/swiss.js`): en el escritorio, la gráfica de Worlds sobre el video mientras
+  // elegís (se va cuando arranca el Bo1); en el celular, compacto, debajo de la predicción
+  const tableroSw = it.swiss && it.participantes ? tableroDelSwiss(it) : null;
   const semilla = `${estado.seed}-${anio}-${rival}`;
 
   // ---------- los tonos: la noche de Worlds (la página) y cada org (cada mitad del video) ----------
@@ -149,7 +156,7 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
   const vivoPill = el('p', { class: 'tx-sw-vivo' }, [el('i'), 'En vivo']);
   const controles = barraPlayer();
   const player = el('div', { class: 'tx-sw-player', 'data-ui': 'on' }, [
-    el('div', { class: 'tx-sw-graf' }, [vivoPill, logoComp(comp, { clase: 'tx-sw-agua' }), mc.nodo, caraA, caraB, juego]),
+    el('div', { class: 'tx-sw-graf', 'data-tablero': tableroSw && !celular() ? '' : null }, [vivoPill, logoComp(comp, { clase: 'tx-sw-agua' }), mc.nodo, caraA, caraB, tableroSw && !celular() ? el('div', { class: 'tx-sw-tablero' }, crearTableroSwiss(tableroSw)) : null, juego]),
     controles.nodo
   ]);
 
@@ -179,23 +186,14 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
   ]);
   // ---------- el riel EN VIVO (izquierda) y los paneles del canal (debajo de la info) ----------
   const riel = crearRiel({ semilla, comp, org, rival, sNos, sEllos, proxima, cruces: (it.partidoEnCurso?.cruces ?? []).filter((x) => ![x.a, x.b].includes(org)), record: it.swiss?.record ?? {} });
-  const tabla = Object.entries(it.swiss?.record ?? {}).reduce((g, [n, r]) => {
-    const k = `${r.v}–${r.d}`;
-    (g[k] ??= []).push(n);
-    return g;
-  }, {});
-  const filasTabla = Object.entries(tabla).sort(([a], [b]) => (Number(b.split('–')[0]) - Number(b.split('–')[1])) - (Number(a.split('–')[0]) - Number(a.split('–')[1])));
+  // F1: "la tabla del Swiss" de este panel la reemplaza el tablero (`components/swiss.js`), sobre el video
   // la ronda que se juega: al terminar el Bo1 recibe su V o su D
   const r5 = el('li', { 'data-res': 'vivo', title: `Ronda ${proxima}: ${rival}` }, [el('span', { text: `R${proxima}` }), logoOrg(rival, { clase: 'tx-cam-logo' }), el('b', { text: sEllos }), el('small', { text: 'en vivo' })]);
   const paneles = el('section', { class: 'tx-sw-paneles', 'aria-label': 'Paneles del canal' }, [
     el('div', { class: 'tx-pn' }, [
       el('p', { class: 'tx-pn-k', text: `Tu camino · ${sNos || org} ${rec.v}–${rec.d}` }),
       el('ol', { class: 'tx-pn-camino' }, [...rondas.map(pipCamino), r5])
-    ]),
-    filasTabla.length ? el('div', { class: 'tx-pn' }, [
-      el('p', { class: 'tx-pn-k', text: 'La tabla del Swiss' }),
-      el('ul', { class: 'tx-pn-tabla' }, filasTabla.map(([k, ns]) => el('li', {}, [el('b', { class: 'num', text: k }), el('span', { class: 'tx-pn-eqs' }, ns.map((n) => el('span', { class: 'tx-pn-eq', 'data-vos': n === org ? '' : null, title: n }, [logoOrg(n, { clase: 'tx-pn-logo' }), siglaDe(n)])))])))
-    ]) : null
+    ])
   ]);
 
   // ---------- la decisión: la tarjeta de predicción (encima del video si el player es ancho; si no, saliendo de abajo) ----------
@@ -241,7 +239,7 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
   });
 
   // en el celular, el video queda fijo arriba y lo demás corre debajo: la predicción, la info, la tira EN VIVO y el chat
-  const scrollCel = celular() ? el('div', { class: 'tx-sw-scroll' }, [tarjeta, info, riel.nodo, chat.nodo]) : null;
+  const scrollCel = celular() ? el('div', { class: 'tx-sw-scroll' }, [tarjeta, tableroSw ? crearTableroSwiss(tableroSw, { compacto: true }) : null, info, riel.nodo, chat.nodo]) : null;
   const sw = scrollCel
     ? el('div', { class: 'tx-sw' }, [player, scrollCel])
     : el('div', { class: 'tx-sw' }, [riel.nodo, el('div', { class: 'tx-sw-stream' }, [player, tarjeta, info, paneles]), el('div', { class: 'tx-sw-lateral' }, [chat.nodo])]);
@@ -441,8 +439,9 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     const sus = vidaOMuerte && !quietoSw;
     const tS = tJuego + TXS.susDesde;
     const tPost = sus ? tS + TX_SUS.dura : tJuego + TXS.juego;
-    // AFUERA solo si el Bo1 cierra tu Swiss: eliminado o adentro (el de vida o muerte); si no, la ronda sigue
-    const cierra = fuera || vidaOMuerte;
+    // AFUERA solo si el Bo1 cierra tu Swiss: eliminado o adentro (el de vida o muerte, o F1: la tercera victoria en
+    // cualquier ronda); si no, la ronda sigue
+    const cierra = fuera || vidaOMuerte || (gano && ganandoPasa);
     const tAfuera = tPost + TXS.post;
     const total = cierra ? tAfuera + TXS.dur : tPost + TXS.post;
     const asentarse = cierra ? tAfuera + TXS.asentarse : tPost + TXS.post;
@@ -560,7 +559,7 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     const dos = el('div', { class: 'tx-af-dos' }, [
       el('p', { 'data-elegida': '' }, [el('span', { text: op.label }), el('b', { class: 'num', text: pct(partido?.p) })]),
       Number.isFinite(pOtro) ? el('p', {}, [el('span', { text: otro.label }), el('b', { class: 'num', text: pct(pOtro) })]) : null,
-      el('small', { text: 'tu chance en ese Bo1: la decisión movió el número, el dado salió igual' })
+      el('small', { text: Number.isFinite(pOtro) ? 'tu chance en ese Bo1: la decisión movió el número, el dado salió igual' : 'tu chance en ese Bo1' })
     ]);
     const nums = cambios.length ? el('div', { class: 'tx-af-cambios' }, cambios.map((c) => {
       const [ico, et] = ETQ_CAMBIO[c.campo];

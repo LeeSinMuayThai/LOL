@@ -2114,6 +2114,11 @@ export const BALANCE = {
     // final (su plan de Fearless y su mapa decisivo): el 2-2, los cuartos y las semis frenan solo hasta 4 - 2.
     maxInterrupciones: 4,
     reservaParaLaFinal: 2,
+    // F1 (PLANUI §0.8): ¿frena el Swiss en CADA ronda tuya, no solo en el 2-2? Con `true`, cada partido tuyo es una
+    // parada de una sola opción ("A jugarlo", sin charla: la charla sigue siendo del 2-2) con el tablero del Swiss en
+    // pantalla. La tirada es la misma y en el mismo orden (la huella no se mueve) y esas paradas no gastan el tope de
+    // arriba (T9): el tope cuida el bracket. Con `false`, el Swiss se tira solo y frena solo en el 2-2 (el motor de K5-A).
+    frenaCadaRondaSwiss: true,
     // K5c-H: ¿cuenta tu jerarquía en el Mundial? Con `false`, tu rendimiento en el Swiss y en el bracket no lo corre el
     // factor de jerarquía (`core/fuerza.js:fuerzaDeMundial`), igual que al rival NPC, que vale el promedio de sus niveles.
     // `true` es NEUTRO (el motor de siempre). La previa lo dice cuando está en `false` (regla 12). Se lee en cada llamada.

@@ -5,7 +5,7 @@ import {
 } from './serie.js';
 import { probabilidadDeFechaMarcada, fuerzaDeFecha, textoPorQueImporta } from './temporada.js';
 import { minijuegoPorId } from './minijuegos.js';
-import { probabilidadDeCruceSwiss } from './internacional.js';
+import { probabilidadDeCruceSwiss, esVidaOMuerte } from './internacional.js';
 import { nombreVisibleDeLiga } from './ligas.js';
 
 // K2d (PLAN.md "K2d — la previa (pantalla)" y "K2d — decisiones de spec"): la
@@ -57,10 +57,14 @@ function previaDeSwiss(state, opciones) {
   const desglose = desgloseDeFuerza(state);
   const base = e.fuerzaPropia;
   const ajusteCharla = ajusteDeCharla(opciones.charla === true);
+  // F1 (PLANUI §0.8): desde que cada ronda del Swiss frena, la previa nombra tu récord; "vida o muerte" queda para el 2-2.
+  const t = state.internacional;
+  const r = t.swiss?.record?.[t.jugador] ?? { v: 0, d: 0 };
+  const decide = esVidaOMuerte(r);
   return armarPrevia({
     tipo: 'swiss',
-    titulo: `La previa · 2-2 vs ${e.rival}`,
-    subtitulo: 'Swiss del Mundial · el de vida o muerte',
+    titulo: `La previa · ${r.v}-${r.d} vs ${e.rival}`,
+    subtitulo: decide ? 'Swiss del Mundial · el de vida o muerte' : `Swiss del Mundial · ronda ${(t.swiss?.rondas?.length ?? 0) + 1}`,
     porQue: porQueDelMundial(state),
     propio: state.career.currentOrg,
     desglose,

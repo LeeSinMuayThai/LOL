@@ -23,7 +23,8 @@ export const id = 'internacional';
 //
 // - Si no clasificaste, el torneo entero sale de `core/internacional.js` por hash: cero tiradas, cero logs.
 // - Si clasificaste, tus partidos del Swiss se tiran solos (UNA tirada contra la p, K2b) salvo el 2-2, el de vida o
-//   muerte, que frena con la previa y la charla del coach. El bracket se juega como serie con las reglas de K4
+//   muerte, que frena con la previa y la charla del coach. F1 (PLANUI §0.8): con `mundial.frenaCadaRondaSwiss`, cada
+//   ronda tuya frena (una opción, sin charla) con el tablero del Swiss en pantalla. El bracket se juega como serie con las reglas de K4
 //   (`systems/serie.js`: plan de Fearless, mapa decisivo, charla). Las pausas de esas series vuelven por `resolver`
 //   de ESTE sistema (el cursor del pipeline es por id), que se las pasa a la serie.
 // - T9: el Mundial frena como mucho `mundial.maxInterrupciones` veces por split; lo que pasa el tope lo decide el
@@ -59,10 +60,49 @@ function clasificaste(state) {
 
 // --- El Swiss ---
 
+// F1 (PLANUI §0.8): lo que está en juego en tu ronda, con tu récord: "ganás y quedás 2-0; perdés y quedás 1-1", "3-0 y
+// pasás", "una más y te volvés". Los números salen de `mundial.victoriasParaAvanzar` / `derrotasParaQuedarAfuera`.
+function loQueSeJuega({ v, d }) {
+  const m = BALANCE.mundial;
+  const ganar = v + 1 >= m.victoriasParaAvanzar ? `ganás y estás en cuartos (${v + 1}-${d})` : `ganás y quedás ${v + 1}-${d}`;
+  const perder = d + 1 >= m.derrotasParaQuedarAfuera ? `perdés y te volvés a casa (${v}-${d + 1})` : `perdés y quedás ${v}-${d + 1}`;
+  const cara = v + 1 >= m.victoriasParaAvanzar && d + 1 >= m.derrotasParaQuedarAfuera ? 'vida o muerte'
+    : v + 1 >= m.victoriasParaAvanzar ? (d === 0 ? `${v + 1}-0 y pasás` : 'una más y estás en cuartos')
+      : d + 1 >= m.derrotasParaQuedarAfuera ? 'una más y te volvés'
+        : v + d === 0 ? 'arranca tu Mundial' : null;
+  return { cara, linea: `${ganar[0].toUpperCase()}${ganar.slice(1)}; ${perder}.` };
+}
+
+// F1: la ronda anterior, para que la parada siguiente diga que tu récord se movió.
+function vienesDe(t) {
+  const ultima = t.swiss.rondas[t.swiss.rondas.length - 1]?.find((p) => p.propio);
+  if (!ultima) {
+    return '';
+  }
+  const rival = ultima.a === t.jugador ? ultima.b : ultima.a;
+  return ultima.ganador === t.jugador ? `Venís de ganarle a ${rival}. ` : `Venís de perder con ${rival}. `;
+}
+
 function construirDecisionSwiss(state) {
-  const e = state.internacional.partidoEnCurso;
+  const t = state.internacional;
+  const e = t.partidoEnCurso;
+  const record = t.swiss.record[t.jugador];
+  const ronda = t.swiss.rondas.length + 1;
+  const vidaOMuerte = esVidaOMuerte(record);
+  const datos = { motivo: 'swiss', rival: e.rival, ronda, record: { ...record }, vidaOMuerte };
+  if (!vidaOMuerte) {
+    // F1: una ronda que no es el 2-2 frena con UNA opción y sin charla (la charla es del 2-2): la tirada es la de siempre.
+    const { cara, linea } = loQueSeJuega(record);
+    return {
+      tipo: 'opciones',
+      titulo: `Swiss del Mundial · ronda ${ronda} · ${record.v}-${record.d} vs ${e.rival}${cara ? `: ${cara}` : ''}`,
+      descripcion: `${vienesDe(t)}Al Bo1 contra ${e.rival} (${nombreVisibleDeLiga(e.ligaRival)}). ${linea}`,
+      opciones: [{ id: 'jugar', label: 'A jugarlo', descripcion: 'Bo1 de Swiss: la charla del coach se guarda para el 2-2 o el bracket.' }],
+      datos
+    };
+  }
   const conCharla = charlaDisponible(state);
-  const base = `Ganás y estás en cuartos; perdés y te volvés a casa. Es al Bo1 contra ${e.rival} (${nombreVisibleDeLiga(e.ligaRival)}).`;
+  const base = `${vienesDe(t)}Ganás y estás en cuartos; perdés y te volvés a casa. Es al Bo1 contra ${e.rival} (${nombreVisibleDeLiga(e.ligaRival)}).`;
   return {
     tipo: 'opciones',
     titulo: `Swiss del Mundial · 2-2 vs ${e.rival}: vida o muerte`,
@@ -75,7 +115,7 @@ function construirDecisionSwiss(state) {
         { id: 'sinCharla', label: 'Guardar la charla', descripcion: 'Salen así; la charla queda para cuartos, si llegan.' }
       ]
       : [{ id: 'sinCharla', label: 'A jugarlo', descripcion: 'La charla del coach ya se usó esta temporada.' }],
-    datos: { motivo: 'swiss', rival: e.rival }
+    datos
   };
 }
 
@@ -89,7 +129,9 @@ function logDePartidoSwiss(t, rival, gano, p) {
   );
 }
 
-// Tus partidos del Swiss hasta que se decide tu suerte (3 victorias o 3 derrotas). Frena solo el 2-2.
+// Tus partidos del Swiss hasta que se decide tu suerte (3 victorias o 3 derrotas). Frena el 2-2 y, con
+// `mundial.frenaCadaRondaSwiss` (F1), cada ronda tuya: la tirada se hace en `resolverSwiss`, con la misma p y en el mismo
+// orden que si se tirara acá.
 function avanzarSwiss(state, rng, logsAcum) {
   let st = state;
   const logs = [...logsAcum];
@@ -98,7 +140,7 @@ function avanzarSwiss(state, rng, logsAcum) {
     const cruces = emparejarRondaSwiss(t);
     const rival = participante(t, rivalEn(cruceDe(cruces, t.jugador), t.jugador));
     const fuerzaPropia = fuerzaDeMundial(st);
-    if (esVidaOMuerte(t.swiss.record[t.jugador])) {
+    if (BALANCE.mundial.frenaCadaRondaSwiss || esVidaOMuerte(t.swiss.record[t.jugador])) {
       const partidoEnCurso = { cruces, rival: rival.nombre, ligaRival: rival.liga, fuerzaRival: rival.fuerza, fuerzaPropia };
       const conPartido = { ...st, internacional: { ...t, partidoEnCurso } };
       return { state: conPartido, logs, decision: construirDecisionSwiss(conPartido) };
@@ -133,6 +175,13 @@ function resolverSwiss(state, decision, respuesta, rng) {
   const e = t.partidoEnCurso;
   const usada = respuesta.opcionId === 'charla' && charlaDisponible(state);
   let st = state;
+  // F1: la parada de una ronda que no es el 2-2 no gasta el presupuesto de interrupciones del split (`core/presupuesto.js`,
+  // el que `events.js` consulta antes de frenar): el pipeline la descontó al pausar y acá se devuelve. Sin esto, los
+  // eventos que vienen después del Mundial dejarían de frenar y la carrera cambiaría (la huella se movía).
+  const cupo = st.presupuesto;
+  if (decision.datos?.vidaOMuerte === false && cupo && cupo.gastadas > 0) {
+    st = { ...st, presupuesto: { ...cupo, gastadas: cupo.gastadas - 1 } };
+  }
   const logs = [];
   if (usada) {
     st = { ...st, career: { ...st.career, charlaUsadaEn: st.calendario.anio } };
@@ -231,6 +280,10 @@ function seguir(resultado, rng) {
   for (;;) {
     if (actual.decision) {
       const t = actual.state.internacional;
+      // F1: una ronda del Swiss que no es el 2-2 frena siempre y no gasta el tope (T9 cuida el bracket y la final).
+      if (actual.decision.datos?.motivo === 'swiss' && actual.decision.datos.vidaOMuerte === false) {
+        return actual;
+      }
       if (puedeFrenar(actual.state)) {
         return { ...actual, state: { ...actual.state, internacional: { ...t, interrupciones: t.interrupciones + 1 } } };
       }
@@ -282,10 +335,11 @@ export function resolver(state, decision, respuesta, rng) {
   return seguir(resolverCrudo(state, decision, respuesta, rng), rng);
 }
 
-// El 2-2 en automático gasta la charla si la hay (es eliminación directa); las pausas de la serie, las de K4-B.
+// El 2-2 en automático gasta la charla si la hay (es eliminación directa); una ronda del Swiss que no es el 2-2 tiene una
+// sola opción (F1: "A jugarlo"); las pausas de la serie, las de K4-B.
 export function resolverAuto(state, decision, rng) {
   if (decision.datos?.motivo === 'swiss') {
-    return { opcionId: decision.opciones.some((opcion) => opcion.id === 'charla') ? 'charla' : 'sinCharla' };
+    return { opcionId: decision.opciones.some((opcion) => opcion.id === 'charla') ? 'charla' : decision.opciones[0].id };
   }
   return resolverAutoSerie(state, decision, rng);
 }
