@@ -54,10 +54,13 @@ const T_MAPA = {
   vos: 120, companeros: 200, companeroPaso: 60,
   papelAtras: 120, papelAtrasDur: 820, // el papel se va atrás: escala, desenfoque y luz
   viaja: 2000, viajaDur: 800, funde: 0.55, cabSale: 0.4, restoSale: 0.5, // el viaje del mapa al escudo
-  papelSaleDur: 640
+  papelSaleDur: 640,
+  sosten: 350 // lo mínimo que el papel firmado se sostiene cuando lo recibe el fichaje (el mercado lo sostuvo 150)
 };
-// el papel firmado, detrás del mapa: cuánto se achica, se desenfoca (px) y se apaga
-const PAPEL_ATRAS = { escala: 0.9, blur: 5, luz: 0.45 };
+// el papel firmado, detrás del mapa: cuánto se achica y cuánta luz le queda
+const PAPEL_ATRAS = { escala: 0.9, luz: 0.4 };
+// la capa montada antes del papel: su opacidad mientras espera (se pinta, no se ve)
+const MONTADA_ALFA = 0.01;
 // el golpe sobre el escudo ya en su lugar
 const LOGO_GOLPE = { escala: 1.12, dur: 520 };
 // d. La firma (el walkout), en ms desde que arranca (W0, el golpe sobre el escudo): los tiempos de la vitrina, corridos
@@ -262,9 +265,11 @@ function laFirma(f, tono, { numero, valor }) {
 // `mundo`: el puente del ambiente; `sonido`: el del kit. `tono` (opcional): el de la org en la pantalla que firmó (el
 // mercado le da a cada org inventada su paleta en el orden de la grilla); si no, `tonoOrg`. Resuelve cuando el jugador
 // sigue.
-// `papel` (opcional, el mercado): el papel firmado al frente (`{ capa, caja, escala }`): el mapa cae encima, el papel se
-// va atrás y se esfuma mientras el mapa viaja al escudo. `saltado`: el jugador ya saltó (Espacio) en el papel: va al walkout.
-export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor = 0, tono: tonoDado = null, papel = null, saltado = false } = {}) {
+// `papel` (opcional, el mercado): la promesa del papel firmado al frente (`{ capa, caja, sombra, escala, saltado }`, o
+// null si no llegó): la capa se monta ya, casi invisible, y la escena arranca cuando el papel está firmado; el mapa cae
+// encima, el papel se va atrás y se esfuma mientras el mapa viaja al escudo. `saltado` (o el del papel): el jugador ya
+// saltó (Espacio): va al walkout.
+export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor = 0, tono: tonoDado = null, papel: papelDado = null, saltado = false } = {}) {
   if (!f || typeof document === 'undefined') return;
   // en rápido (o a 2×), el mapa y el viaje con la escala de la narración (nunca saltados); el walkout, a su tiempo
   const K = Number.isFinite(ctx?.escala) && ctx.escala > 0 ? Math.min(1, ctx.escala) : 1;
@@ -294,7 +299,8 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
       { tipo: 'lluvia', t: W + T_FL.lluvia - T_FL.golpe }
     ]
   });
-  raiz.append(fondo, m.nodo, d.haz, d.inunda, d.velo, ...d.ondas, confeti.nodo, d.bloque, d.lado);
+  // el jersey (sus filtros de tela: ~medio segundo de GPU la primera vez) entra después, en el sostén del papel firmado
+  raiz.append(fondo, m.nodo, d.haz, d.inunda, d.velo, ...d.ondas, confeti.nodo, d.bloque, ...(papelDado ? [] : [d.lado]));
   // lo de abajo no se alcanza con el teclado mientras la firma está arriba (los cuartos siguen: el diálogo la tapa y la pausa)
   const tapados = [...capa.children].filter((n) => !n.inert && n.tagName !== 'DIALOG');
   for (const n of tapados) n.inert = true;
@@ -311,6 +317,24 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
   for (const o of d.ondas) Object.assign(o.style, { left: `${Math.round(lx)}px`, top: `${Math.round(ly)}px` });
   d.inunda.style.setProperty('--fj-gx', `${Math.round(lx)}px`);
   d.inunda.style.setProperty('--fj-gy', `${Math.round(ly)}px`);
+  // montada antes del papel: casi invisible (pintada, para que el jersey se dibuje ahora) hasta que el papel se firmó
+  let papel = null;
+  if (papelDado) {
+    Object.assign(raiz.style, { opacity: String(MONTADA_ALFA), pointerEvents: 'none' });
+    papel = await papelDado;
+    if (papel && raiz.isConnected) {
+      // el sostén del papel firmado: el jersey se dibuja mientras la pantalla está quieta (al menos `sosten` ms)
+      raiz.append(d.lado);
+      await Promise.all([new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))), new Promise((r) => setTimeout(r, M(T_MAPA.sosten)))]);
+    }
+    Object.assign(raiz.style, { opacity: '', pointerEvents: '' });
+    if (!papel || !raiz.isConnected) {
+      d.jersey.destruir();
+      raiz.remove();
+      for (const n of tapados) n.inert = false;
+      return;
+    }
+  }
 
   // el mundo: la luz de la org (en el mapa a media presencia; en el golpe, entera, con el público)
   mundo?.cruzar?.(tono, paletaDe(tono, 0.6), T_MAPA.fondoDur);
@@ -343,8 +367,10 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
   if (golpeCaida != null) fx()?.pulso?.('golpe', golpeCaida);
   if (papel) {
     const s = papel.escala;
-    w(animar(papel.caja, [{ transform: `scale(${s})`, filter: 'blur(0px) brightness(1)' }, { transform: `scale(${s * PAPEL_ATRAS.escala})`, filter: `blur(${PAPEL_ATRAS.blur}px) brightness(${PAPEL_ATRAS.luz})` }], { delay: M(T_MAPA.papelAtras), dur: M(T_MAPA.papelAtrasDur), fill: 'forwards' }));
-    w(animar(papel.capa, [{ opacity: 1 }, { opacity: 0 }], { delay: M(T_MAPA.viaja), dur: M(T_MAPA.papelSaleDur), easing: 'linear', fill: 'forwards' }));
+    w(animar(papel.caja, [{ transform: `scale(${s})` }, { transform: `scale(${s * PAPEL_ATRAS.escala})` }], { delay: M(T_MAPA.papelAtras), dur: M(T_MAPA.papelAtrasDur), fill: 'forwards' }));
+    w(animar(papel.sombra, [{ opacity: 0 }, { opacity: 1 - PAPEL_ATRAS.luz }], { delay: M(T_MAPA.papelAtras), dur: M(T_MAPA.papelAtrasDur), easing: 'linear', fill: 'forwards' }));
+    // el papel se esfuma; el velo del mercado sigue hasta que el walkout tapa lo de abajo (fase 'firma', en W)
+    w(animar(papel.caja, [{ opacity: 1 }, { opacity: 0 }], { delay: M(T_MAPA.viaja), dur: M(T_MAPA.papelSaleDur), easing: 'linear', fill: 'forwards' }));
   }
   w(entrar(m.cab, M(T_MAPA.cab), 10));
   m.grieta.querySelectorAll('[pathLength]').forEach((p, k) => w(animar(p, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { delay: M(T_MAPA.carriles + k * T_MAPA.carrilPaso), dur: M(T_MAPA.carrilesDur) })));
@@ -520,7 +546,10 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
     for (const n of deLaFirma) n.style.visibility = 'hidden';
     // con el papel firmado, el mapa encima y el papel atrás (achicado, desenfocado y apagado); sin papel, el fondo
     fondo.style.opacity = papel ? '0' : '1';
-    if (papel) Object.assign(papel.caja.style, { transform: `scale(${papel.escala * PAPEL_ATRAS.escala})`, filter: `blur(${PAPEL_ATRAS.blur}px) brightness(${PAPEL_ATRAS.luz})` });
+    if (papel) {
+      papel.caja.style.transform = `scale(${papel.escala * PAPEL_ATRAS.escala})`;
+      papel.sombra.style.opacity = String(1 - PAPEL_ATRAS.luz);
+    }
     m.nodo.style.opacity = '1';
     fundirCuadro(raiz);
     await narracion.esperar(LECTURA_MAPA);
@@ -542,7 +571,7 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
   bt.iniciar();
   if (enCuadros) contarEnCuadros();
   // Espacio en el papel: directo al walkout
-  else if (saltado) saltar();
+  else if (saltado || papel?.saltado) saltar();
 
   try {
     await listo;
