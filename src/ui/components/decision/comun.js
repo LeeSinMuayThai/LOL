@@ -1,13 +1,12 @@
-// Lo que comparten la decisión de siempre (`components/decision.js`) y sus variantes de la previa (`?dc=`, PLANUI §0.4):
+// Lo que la decisión de siempre (las cartas, `decision/cartas.js`; PLANUI §0.4 y §0.5) lee y anima fuera de su piel:
 // leer la decisión del motor (las opciones, sus efectos por eje, la p, el riesgo, la planilla) y armar y animar la
 // tarjeta de "lo que pasó" (el resultado inmediato, con los chips GANASTE / TE COSTÓ y los números que ruedan). Es el
-// código que vivía adentro de `crearDecision`, movido sin cambiar lo que hace: las clases que arma (`.resultado`, `.res-*`,
+// código que vivía adentro del renderer viejo (`crearDecision`, borrado en P2), movido sin cambiar lo que hace: las clases que arma (`.resultado`, `.res-*`,
 // `.rn-*`, `.eje-chip`) tienen sus estilos en `estilos/decision.css` y `estilos/ejes.css`, globales.
 //
-// El contrato de una variante (`components/decision/<variante>.js`):
+// El contrato de la decisión (`components/decision/cartas.js`, lo llama `paradas/decision.js`):
 //   export function crear(contenedor, decision, opciones) → { nodo, titulo, variante, narrar(ctx), destruir() }
-// con las mismas `opciones` y el mismo retorno que `crearDecision` (ver su cabecera). Lo que una variante tiene que
-// respetar está en PLANUI §0.4 y en el brief de su worker.
+// `opciones`: { estado, previa, mundo, sonido, responder, arte (tu main, para la costura), limite, lateral, margen }.
 import { el, animar } from '../../fx/util.js';
 import { entrar, num, odometro } from '../../fx/movimiento.js';
 import { icono, glifoDeCampo, triangulos } from '../../fx/iconos.js';

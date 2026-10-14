@@ -109,7 +109,7 @@
   background: linear-gradient(180deg, var(--panel-opaco) 40%, color-mix(in srgb, var(--eje, var(--luz)) 9%, var(--panel-opaco)) 100%);
 }
 
-/* la ventana de arte */
+/* la ventana de arte (P2, PLANUI §0.5): el campeón que la opción nombra, el logo adonde lleva o el emblema de su eje */
 .cv-arte {
   position: relative; flex: none; height: var(--cv-arte, 160px); overflow: hidden;
   background: linear-gradient(160deg, color-mix(in srgb, var(--eje, var(--luz)) 45%, var(--bg-void)), var(--bg-void) 85%);
@@ -119,13 +119,6 @@
   opacity: 0; transform: scale(1.02); transition: opacity 400ms ease, transform 700ms var(--expo);
 }
 .cv-cargada .cv-arte-img { opacity: 1; }
-.cv-sin-arte .cv-arte-img { display: none; }
-.cv-arte-glifo {
-  position: absolute; inset: 0; display: grid; place-items: center; color: var(--eje, var(--luz)); opacity: 0.55;
-  transition: opacity 300ms ease;
-}
-.cv-arte-glifo svg { width: 42%; height: 42%; filter: drop-shadow(0 0 18px var(--eje, var(--luz))); }
-.cv-cargada .cv-arte-glifo { opacity: 0; }
 .cv-arte-tinte {
   position: absolute; inset: 0; mix-blend-mode: color; opacity: 0.32;
   background: linear-gradient(0deg, var(--eje, var(--luz)), transparent 75%);
@@ -136,7 +129,64 @@
     radial-gradient(ellipse 85% 75% at 50% 32%, transparent 45%, color-mix(in srgb, var(--bg-void) 70%, transparent) 100%),
     linear-gradient(180deg, transparent 52%, var(--panel-opaco) 100%);
 }
+
+/* el emblema del aumento (decision/emblema.js): todo en currentColor, que es el eje; las capas de atrás tenues */
+.cv-arte-emblema {
+  background:
+    radial-gradient(ellipse 60% 85% at 50% 48%, var(--eje-f, var(--luz-tenue)), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--eje, var(--luz)) 14%, var(--bg-void)), var(--bg-void) 92%);
+}
+.cv-arte-emblema .cv-arte-vineta {
+  background:
+    radial-gradient(ellipse 95% 90% at 50% 45%, transparent 55%, color-mix(in srgb, var(--bg-void) 60%, transparent) 100%),
+    linear-gradient(180deg, transparent 80%, var(--panel-opaco) 100%);
+}
+.cv-emb {
+  position: absolute; left: 0; top: 5%; width: 100%; height: 86%; overflow: visible;
+  color: var(--eje, var(--luz)); fill: none; stroke: currentColor; stroke-width: 1; stroke-linecap: round; stroke-linejoin: round;
+}
+.cv-emb .cv-emb-lleno, .cv-emb .ln-lleno { fill: currentColor; }
+.cv-emb .ln-lleno { stroke: none; }
+.cv-emb-fondo { fill: var(--bg-void); fill-opacity: 0.74; }
+.cv-emb-filo { opacity: 0.5; }
+.cv-emb-reflejo { stroke: var(--ink); opacity: 0.32; }
+.cv-emb-hueco { stroke: var(--bg-void); }
+.cv-emb-hueco-lleno { fill: var(--bg-void); }
+.cv-emb-luz { filter: drop-shadow(0 0 3px currentColor) drop-shadow(0 0 9px currentColor); }
+.cv-emb-glifo { filter: drop-shadow(0 0 2px currentColor) drop-shadow(0 0 8px color-mix(in srgb, currentColor 55%, transparent)); }
+.cv-emb-nucleo { transform-box: view-box; transform-origin: 50% 50%; transition: transform 520ms var(--expo); }
+.cv-emb-patron { transition: opacity 400ms ease; }
+.cv-mano[data-activa] .opcion.cv-carta.apuntada .cv-emb-nucleo { transform: scale(1.07); }
+.cv-cerrada .cv-arte, .cv-cerrada .cv-emb { --eje: var(--ink-mute); }
 .cv-cerrada .cv-arte { background: radial-gradient(ellipse at 50% 40%, var(--bg-raised), var(--bg-sunken) 75%); }
+
+/* la marca de agua de la mano (P2): el emblema del eje que domina, enorme y tenue, en la mitad derecha de las pantallas
+   anchas (fijo y detrás de todo, como la costura); en las angostas no hay mitad muerta y no va */
+.cv-fondo {
+  display: none; position: fixed; z-index: -1; pointer-events: none; right: 2vw; top: 8vh; width: 44vw; height: 56vh;
+  opacity: 0.13; mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, var(--bg-void) 40%, transparent 100%);
+}
+.cv-fondo .cv-emb { top: 0; height: 100%; }
+.cv-fondo .cv-emb-glifo { filter: none; }
+@media (min-width: 1100px) { .cv-fondo { display: block; } }
+.cv-raiz:has(.cv-resultado) .cv-fondo { opacity: 0.08; transition: opacity 600ms ease; }
+
+/* el logo adonde lleva la opción, grande, sobre el color de ese equipo o esa liga (--tono-*: fx/tono.js) */
+.cv-arte-logo {
+  display: grid; place-items: center;
+  background: radial-gradient(ellipse 70% 95% at 50% 42%, color-mix(in srgb, var(--tono-luz, var(--luz)) 46%, var(--bg-void)), var(--bg-void) 84%);
+}
+.cv-arte-luz {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(115deg, color-mix(in srgb, var(--tono-luz, var(--luz)) 10%, transparent) 0 2px, transparent 2px 15px);
+  mask-image: radial-gradient(ellipse 60% 80% at 50% 45%, var(--bg-void), transparent 85%);
+}
+.cv-arte-logo .cv-logo {
+  position: relative; z-index: 1; display: grid; place-items: center; width: 46%; height: 64%; margin-top: -8%;
+  filter: drop-shadow(0 10px 22px var(--sombra)) drop-shadow(0 0 28px color-mix(in srgb, var(--tono-luz, var(--luz)) 55%, transparent));
+}
+.cv-arte-logo .cv-logo img { width: 100%; height: 100%; object-fit: contain; }
+.cv-arte-logo .ln-tv-mono { font: 800 30px / 1 var(--f-display); font-stretch: var(--ancho-titulo); color: var(--ink); }
 
 /* el medallón del eje: el "ícono del aumento", en el borde entre el arte y el cuerpo */
 .cv-medallon {
@@ -153,7 +203,6 @@
   color: var(--eje, var(--luz));
 }
 .cv-medallon-in svg { width: 46%; height: 46%; filter: drop-shadow(0 0 6px var(--eje, var(--luz))); }
-.cv-cerrada .cv-medallon { --eje: var(--ink-mute); }
 
 /* el cuerpo */
 .cv-cuerpo {
@@ -328,6 +377,6 @@ html[data-textos='completos'] .cv-raiz .cv-desc { display: block; }
 /* --- movimiento reducido: cuadros fijos, nada gira ni late --- */
 @media (prefers-reduced-motion: reduce) {
   .cv-rara .cv-marco, .cv-gemas .on, .cv-mano[data-activa] .opcion.cv-carta.apuntada .cv-brillo { animation: none; }
-  .cv-raiz .opcion.cv-carta, .cv-arte-img, .cv-halo, .cv-brillo { transition-duration: 120ms; }
+  .cv-raiz .opcion.cv-carta, .cv-arte-img, .cv-halo, .cv-brillo, .cv-emb-nucleo, .cv-emb-patron { transition-duration: 120ms; }
 }
 html[data-reducido] .cv-rara .cv-marco, html[data-reducido] .cv-gemas .on, html[data-reducido] .cv-mano[data-activa] .opcion.cv-carta.apuntada .cv-brillo { animation: none; }

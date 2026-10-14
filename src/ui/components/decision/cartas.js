@@ -1,11 +1,16 @@
-// La decisión en la variante `cartas` de la previa (`?dc=cartas`, PLANUI §0.4, ola P1 D-A): las opciones son cartas de
-// aumento (Arena / TFT). Cada carta es un objeto: la ventana de arte con un campeón de tu pool, el medallón hexagonal del
-// eje que domina (el "ícono del aumento"), el label, los efectos como chips de eje, el riesgo como gemas, la p como un
-// medidor fino y la tecla al pie. El marco lleva el color del eje; si la opción tiene rareza, el borde es prismático.
+// La decisión de siempre (PLANUI §0.4 y §0.5, ola P2): las opciones son cartas de aumento (Arena / TFT). Cada carta es
+// un objeto: la ventana de arte, el label, los efectos como chips de eje, el riesgo como gemas, la p como un medidor fino
+// y la tecla al pie. El marco lleva el color del eje que domina; si la opción tiene rareza, el borde es prismático.
 //
-// El contrato es el de `crearDecision` (cabecera de `decision/comun.js`): las mismas opciones, el mismo retorno, la
-// misma costura, el mismo teclado. La referencia de comportamiento es `components/decision.js`; acá cambia la piel y la
-// coreografía:
+// El arte de la ventana (P2, §0.5: un campeón aparece solo cuando la pantalla habla de él), por prioridad:
+//   1. el campeón que la opción nombra (su label, su descripción o los textos de su previa: `campeonesNombrados`);
+//   2. el equipo o la liga adonde lleva la opción (la bisagra con destino: la liga de destino si te vas, tu org si te
+//      quedás): el logo grande sobre el color de ese equipo o esa liga;
+//   3. si no, el emblema del aumento de su eje (`decision/emblema.js`), con la placa hexagonal adentro.
+// En 1 y 2 el medallón del eje flota en el borde del arte; en 3 ya es parte del emblema.
+//
+// El contrato está en la cabecera de `decision/comun.js`: las mismas opciones, el mismo retorno, la costura, el teclado.
+// La // coreografía:
 //   entrar   las cartas se reparten desde abajo, de a una; el medallón hace pop y los chips caen en cascada;
 //   apuntar  la carta sube, crece y se inclina siguiendo el puntero; un brillo la cruza, un halo de su eje abajo, las
 //            otras se apagan y la prosa de la apuntada va en la banda de abajo (una por vez, sin saltos de alto);
@@ -21,8 +26,11 @@ import { el, animar, quieto, reducido, celular, EXPO, SALE, RESORTE, DUR } from 
 import { entrar, esperar, lineasConMascara, num } from '../../fx/movimiento.js';
 import { icono, glifoDeCampo } from '../../fx/iconos.js';
 import { urlCentrada } from '../../fx/arte.js';
+import { logoOrg, logoComp, competicionDe } from '../../fx/competicion.js';
+import { tonoDestino, tonoOrg, aplicarTono } from '../../fx/tono.js';
+import { emblema } from './emblema.js';
 import { quemar } from '../../fx/ceremonia.js';
-import { claveDe } from '../../core/mundo.js';
+import { campeonesNombrados } from '../../core/mundo.js';
 import { ejeDe } from '../../core/ejes.js';
 import { rotuloDeDecision } from '../../formatoUi.js';
 import { crearCostura, equiposDelMundo } from '../costura.js';
@@ -62,7 +70,7 @@ const GEMAS = { seguro: 1, incierto: 2, ruleta: 3, alto: 3 };
 // La perspectiva del giro de la carta a la tarjeta (px).
 const PERSPECTIVA_GIRO = 1200;
 
-export function crear(contenedor, decision, { estado, previa = null, mundo, sonido = null, responder, arte = null, limite = null, lateral = null, margen = () => 0 }) {
+export function crear(contenedor, decision, { estado, previa = null, mundo, sonido = null, responder, arte = null, marca = false, limite = null, lateral = null, margen = () => 0 }) {
   const lector = leerDecision(decision, { estado, previa });
   const { forma, esMatriz, disponibles, bloqueadas, lec, variante, previas, chipDePrevia, pDe, riesgoDe } = lector;
   const fx = () => mundo?.fx?.() ?? null;
@@ -90,31 +98,45 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
   });
   const cab = el('header', { class: 'cv-cab' }, [rotulo, titulo, planteo]);
 
-  // ------------------------------------------------------------------ el arte: los campeones de tu pool
-  const claves = (estado?.player?.championPool ?? []).map((c) => claveDe(c.name)).filter(Boolean);
-  if (!claves.length && arte) claves.push(arte);
+  // ------------------------------------------------------------------ el arte (por prioridad: ver la cabecera)
   const ejesMx = esMatriz ? lector.matriz.ejes : [];
   // el campo que domina la opción: en la planilla, el de la mejor ganancia; si no, el primer efecto que sube
   const dominante = (o) => (esMatriz ? lector.matriz.mejorGanancia(o) : (o.previa ?? []).find((p) => p.signo !== '-')?.campo ?? null);
-  const claveDeArte = (o, i, campo) => {
-    if (!claves.length) return null;
-    const k = esMatriz && campo ? Math.max(0, ejesMx.indexOf(campo)) : i;
-    return claves[k % claves.length];
-  };
-  function ventana(clave, campo) {
-    const nodo = el('span', { class: 'cv-arte', 'aria-hidden': 'true' }, [
-      el('span', { class: 'cv-arte-glifo' }, icono(campo ? glifoDeCampo(campo) : 'incierto')),
-      el('i', { class: 'cv-arte-tinte' }),
-      el('i', { class: 'cv-arte-vineta' })
-    ]);
-    if (!clave) {
-      nodo.classList.add('cv-sin-arte');
+  const textoDe = (o) => [o.label, o.descripcion, ...(o.previa ?? []).map((p) => p.texto)].filter(Boolean).join(' · ');
+  // adónde lleva la opción en la bisagra con destino: la liga de destino si te vas (o vas y volvés), tu org si te quedás
+  const caminoDe = (o) => (lec.destino ? lec.caminos.find((c) => c.id === o.id)?.camino ?? null : null);
+  function arteDe(o, campo) {
+    const campeon = campeonesNombrados(textoDe(o))[0];
+    if (campeon) return { tipo: 'campeon', clave: campeon };
+    const camino = caminoDe(o);
+    if (camino === 'ir' || camino === 'viaje') return { tipo: 'liga', liga: lec.destino.id };
+    if (camino === 'casa' && lec.casa.org) return { tipo: 'org', org: lec.casa.org };
+    if (camino === 'casa' && lec.casa.liga) return { tipo: 'liga', liga: lec.casa.liga };
+    return { tipo: 'emblema' };
+  }
+  const glifoDe = (campo) => (campo ? glifoDeCampo(campo) : null);
+  const emblemaDe = (campo, glifo = null) => emblema(ejeDe(campo), { glifo: glifo ?? glifoDe(campo) });
+  // `arte`: lo de `arteDe`, con el `campo` que domina (el color y el emblema) y, en las cerradas, el `glifo` (el candado)
+  function ventana(arte) {
+    const vineta = el('i', { class: 'cv-arte-vineta' });
+    if (arte.tipo === 'emblema') {
+      return el('span', { class: 'cv-arte cv-arte-emblema', 'aria-hidden': 'true' }, [emblemaDe(arte.campo, arte.glifo), vineta]);
+    }
+    if (arte.tipo === 'liga' || arte.tipo === 'org') {
+      const nodo = el('span', { class: `cv-arte cv-arte-logo cv-arte-${arte.tipo}`, 'aria-hidden': 'true' }, [
+        el('i', { class: 'cv-arte-luz' }),
+        arte.tipo === 'liga' ? logoComp(competicionDe({ ficha: { jugador: { liga: arte.liga } } }), { clase: 'cv-logo' }) : logoOrg(arte.org, { clase: 'cv-logo' }),
+        vineta
+      ]);
+      aplicarTono(nodo, arte.tipo === 'liga' ? tonoDestino(arte.liga) : tonoOrg(arte.org));
       return nodo;
     }
+    const nodo = el('span', { class: 'cv-arte cv-arte-campeon', 'aria-hidden': 'true' }, [el('i', { class: 'cv-arte-tinte' }), vineta]);
     const img = el('img', { class: 'cv-arte-img', alt: '', decoding: 'async', draggable: 'false' });
-    img.addEventListener('error', () => nodo.classList.add('cv-sin-arte'), { once: true });
+    // si el arte no carga, la carta no queda vacía: el emblema de su eje
+    img.addEventListener('error', () => img.replaceWith(emblemaDe(arte.campo)), { once: true });
     img.addEventListener('load', () => nodo.classList.add('cv-cargada'), { once: true });
-    img.src = urlCentrada(clave);
+    img.src = urlCentrada(arte.clave);
     nodo.prepend(img);
     return nodo;
   }
@@ -181,6 +203,7 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
     const campo = dominante(o);
     const eje = ejeDe(campo);
     const rara = o.rareza && o.rareza !== 'comun';
+    const arte = arteDe(o, campo);
     const cuerpo = el('span', { class: 'cv-cuerpo' }, [
       tags(o),
       el('span', { class: 'cv-label', text: o.label }),
@@ -189,11 +212,11 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
       planDe(o),
       el('span', { class: 'cv-pie' }, [gemas(o), pDe(o) != null ? medidorP(pDe(o)) : null])
     ]);
-    const b = el('button', { type: 'button', class: `opcion cv-carta${rara ? ' cv-rara' : ''}`, 'data-atajo': i < 4 ? String(i + 1) : null, 'data-id': o.id, 'data-eje': eje, 'aria-describedby': descId(i), style: estiloEje(eje) }, [
+    const b = el('button', { type: 'button', class: `opcion cv-carta${rara ? ' cv-rara' : ''}`, 'data-atajo': i < 4 ? String(i + 1) : null, 'data-id': o.id, 'data-eje': eje, 'data-arte': arte.tipo, 'aria-describedby': descId(i), style: estiloEje(eje) }, [
       el('span', { class: 'cv-marco', 'aria-hidden': 'true' }),
       el('span', { class: 'cv-cara' }, [
-        ventana(claveDeArte(o, i, campo), campo),
-        medallon(campo),
+        ventana({ ...arte, campo }),
+        arte.tipo === 'emblema' ? null : medallon(campo),
         cuerpo,
         el('span', { class: 'op-tecla cv-tecla', 'aria-hidden': 'true', text: String(i + 1) })
       ]),
@@ -211,8 +234,7 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
     const b = el('div', { class: 'opcion bloqueada cv-carta cv-cerrada', tabindex: '0', 'aria-disabled': 'true', 'data-gate': bq.gate ?? '' }, [
       el('span', { class: 'cv-marco', 'aria-hidden': 'true' }),
       el('span', { class: 'cv-cara' }, [
-        ventana(null, null),
-        medallon(null, 'candado'),
+        ventana({ tipo: 'emblema', campo: null, glifo: 'candado' }),
         el('span', { class: 'cv-cuerpo' }, [el('span', { class: 'cv-label', text: bq.label }), el('span', { class: 'cv-gate' }, [el('b', { text: 'Cerrada' }), bq.gate ? ` · ${bq.gate}` : ''])])
       ]),
       el('span', { class: 'solo-lectores', text: `Cerrada: ${bq.gate ?? ''}` })
@@ -223,6 +245,20 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
     ranuras.push(ranura);
     mano.append(ranura);
   });
+
+  // La marca de agua (P2, §0.5; `marca`: sin campeón detrás y sin costura): en las pantallas anchas la mitad derecha
+  // quedaba muerta. Va el emblema del eje que más domina la mano, enorme y tenue, detrás de todo (decision-cartas.css).
+  let fondo = null;
+  if (marca) {
+    const cuenta = new Map();
+    for (const o of disponibles) {
+      const c = dominante(o);
+      const e = ejeDe(c);
+      if (e) cuenta.set(e, { n: (cuenta.get(e)?.n ?? 0) + 1, campo: cuenta.get(e)?.campo ?? c });
+    }
+    const [ejeFondo, dato] = [...cuenta].reduce((a, b) => (b[1].n > a[1].n ? b : a), [null, { n: 0, campo: null }]);
+    if (ejeFondo) fondo = el('div', { class: 'cv-fondo', 'aria-hidden': 'true', 'data-eje': ejeFondo, style: estiloEje(ejeFondo) }, emblemaDe(dato.campo));
+  }
 
   // la leyenda de la planilla: el glifo, el nombre y el valor de hoy de cada eje
   let leyenda = null;
@@ -261,9 +297,13 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
         o.riesgoTexto ? el('li', { class: 'cv-insp-riesgo', 'data-riesgo': riesgoDe(o) }, [icono(RIESGO[o.riesgo] ?? 'incierto'), o.riesgoTexto]) : null,
         previas[o.id]?.texto ? el('li', { class: 'cv-insp-p' }, [icono('rendimiento'), previas[o.id].texto]) : null,
         o.propuesta ? el('li', { class: 'cv-insp-perfil' }, [icono('hype'), o.propuesta]) : null,
-        o.plan?.texto ? el('li', { class: 'cv-insp-plan' }, [icono('practica'), o.plan.texto]) : null
+        lineaDelPlan(o)
       ])
     );
+  }
+  // el plan que fija la opción (el cierre), tal cual lo escribe el motor (K4c-P)
+  function lineaDelPlan(opcion) {
+    return opcion.plan?.texto ? el('li', { class: 'cv-insp-plan' }, [icono('practica'), opcion.plan.texto]) : null;
   }
   function apuntar(i, mover = false, usuario = false) {
     const antes = apuntada;
@@ -368,6 +408,7 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
     if (lec.aviso) raiz.classList.add('dc-espera');
   }
 
+  if (fondo) raiz.prepend(fondo);
   contenedor.replaceChildren(raiz);
   apuntar(0);
   // La banda cambia de alto con la carta apuntada: se reserva el alto de la más alta, medido en un clon fuera del árbol
@@ -414,6 +455,8 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
         { opacity: 1, transform: 'none' }
       ], { delay: t, dur: T.carta, easing: RESORTE });
       animar(r.querySelector('.cv-medallon'), [{ transform: 'translateX(-50%) scale(0) rotate(-60deg)' }, { transform: 'translateX(-50%) scale(1.18) rotate(0deg)', offset: 0.6 }, { transform: 'translateX(-50%)' }], { delay: t + T.medallon, dur: T.medallonDur, easing: EXPO });
+      animar(r.querySelector('.cv-emb-nucleo'), [{ opacity: 0, transform: 'scale(0.55) rotate(-30deg)' }, { opacity: 1, transform: 'scale(1.1) rotate(0deg)', offset: 0.6 }, { transform: 'none' }], { delay: t + T.medallon, dur: T.medallonDur, easing: EXPO });
+      animar(r.querySelector('.cv-emb-patron'), [{ opacity: 0 }, { opacity: 1 }], { delay: t + T.medallon, dur: T.carta });
       r.querySelectorAll('.cv-chips .eje-chip, .cv-mx-fila, .cv-gemas, .cv-p, .cv-tag').forEach((g, k) => animar(g, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { delay: t + T.chips + k * T.chipPaso, dur: DUR.entra }));
       r.querySelectorAll('.cv-mx-riel i').forEach((b, k) => animar(b, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: t + T.chips + k * T.chipPaso, dur: T.carta }));
     });

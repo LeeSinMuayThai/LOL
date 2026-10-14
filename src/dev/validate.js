@@ -21020,7 +21020,7 @@ check('K4c-P (d) el dato y el arranque: los cierres pro traen un plan válido en
   if (!inicio.includes('textoDePlanInicial')) throw new Error('la pantalla de inicio no dice el primer plan');
 });
 
-check('K4c-P regla 15: cada opción del cierre dice el plan que fija, en cristiano y con la misma cuenta del motor, y components/decision.js la pinta sin calcular nada', () => {
+check('K4c-P regla 15: cada opción del cierre dice el plan que fija, en cristiano y con la misma cuenta del motor, y la carta (components/decision/cartas.js) la pinta sin calcular nada', () => {
   let opciones = 0;
   for (const paso of corridasK4cP().pasos.filter((p) => p.sistemaId === 'edadCierre')) {
     for (const opcion of paso.decision.opciones) {
@@ -21038,9 +21038,9 @@ check('K4c-P regla 15: cada opción del cierre dice el plan que fija, en cristia
     }
   }
   if (opciones < 100) throw new Error(`muestra corta: ${opciones} opciones de cierre`);
-  const fuente = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'decision.js'), 'utf8');
+  const fuente = fs.readFileSync(path.join(srcDir, 'ui', 'components', 'decision', 'cartas.js'), 'utf8');
   if (!fuente.includes('opcion.plan.texto') || /BALANCE|balance\.js|planes\.json/.test(fuente)) {
-    throw new Error('components/decision.js tiene que pintar opcion.plan.texto tal cual, sin leer BALANCE ni el dato');
+    throw new Error('components/decision/cartas.js tiene que pintar opcion.plan.texto tal cual, sin leer BALANCE ni el dato');
   }
 });
 

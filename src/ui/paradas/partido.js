@@ -5,7 +5,7 @@
 //     (`components/caraACara.js`);
 //   - la fecha marcada (`temporada`): el mismo cara a cara al Bo1, con la p grande;
 //   - el 2-2 del Swiss del Mundial: EL STREAM (`components/stream.js`);
-//   - cualquier otra parada de estos sistemas, la decisión de siempre (`components/decision.js`).
+//   - cualquier otra parada de estos sistemas, la decisión de siempre (las cartas, `components/decision/cartas.js`).
 // La familia declara el mundo de su pieza (la costura cara a cara) y devuelve la vista con `narrar` y `destruir`.
 import { marcarFoco } from '../escena.js';
 import { crearCaraACara } from '../components/caraACara.js';

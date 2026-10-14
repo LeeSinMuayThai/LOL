@@ -47,3 +47,21 @@ export function mundoBase(pieza, vista) {
   if (pieza === 'inicio') return { ...MUNDO_VACIO, encuadre: 'inicio', velo: 0.75 };
   return { ...MUNDO_VACIO, arte: campeonDeAhora(vista) };
 }
+
+// P2 (PLANUI §0.5): un campeón aparece solo cuando la pantalla habla de él. Los campeones que un texto nombra, como
+// claves de Data Dragon, en el orden en que aparecen y sin repetir. Cuenta el nombre del catálogo como palabra entera y
+// con la mayúscula exacta ("Lee Sin", "Kai'Sa", "Dr. Mundo"); "Vi" y "Karma" no cuentan: son palabras comunes del texto.
+const NO_NOMBRAN = new Set(['Vi', 'Karma']);
+const escapar = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const NOMBRES = new RegExp(
+  `(?<![\\p{L}\\p{N}'’])(${CAMPEONES.map((c) => c.name).filter((n) => !NO_NOMBRAN.has(n)).sort((a, b) => b.length - a.length).map(escapar).join('|')})(?![\\p{L}\\p{N}])`,
+  'gu'
+);
+export function campeonesNombrados(texto) {
+  const claves = [];
+  for (const m of String(texto ?? '').matchAll(NOMBRES)) {
+    const k = claveDe(m[1]);
+    if (k && !claves.includes(k)) claves.push(k);
+  }
+  return claves;
+}
