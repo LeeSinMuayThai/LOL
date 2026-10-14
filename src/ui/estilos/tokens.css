@@ -1082,3 +1082,29 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   /* el color de la opción de la predicción (cada opción lo cambia por el suyo) */
   --pr-c: var(--pr-0);
 }
+
+/* P1-hextech (PLANUI §0.4, la variante `?dc=hextech` de la decisión): el oro y el azul noche del cliente. El oro es el
+   del borde de un evento del cliente (no el --gold de los rangos), el azul es la noche de adentro del marco y el cian
+   del núcleo hextech. Las translúcidas, como #rrggbbaa. */
+:root {
+  --hx-oro: #c8aa6e;
+  --hx-oro-claro: #f0e6d2;
+  --hx-oro-hondo: #785a28;
+  --hx-oro-tenue: #c8aa6e2e;
+  --hx-oro-medio: #c8aa6e73;
+  --hx-oro-0: #c8aa6e00;
+  --hx-azul: #0ac8b9;
+  --hx-azul-tenue: #0ac8b933;
+  --hx-azul-0: #0ac8b900;
+  --hx-noche: #010a13;
+  --hx-noche-2: #091428;
+  --hx-noche-3: #0a1e32;
+  --hx-noche-panel: #010a13f2;
+  --hx-velo: #010a13d9;
+  --hx-velo-medio: #010a1380;
+  --hx-velo-0: #010a1300;
+  --hx-texto: #f0e6d2;
+  --hx-texto-dim: #a09b8c;
+  --hx-claro-0: #ffffff00;
+  --hx-claro-reflejo: #fff6e033;
+}
