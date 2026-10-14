@@ -1097,3 +1097,9 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   --tx-e-k: var(--ink);
   --tx-em-garra-fondo: #e0412b;
 }
+
+/* U3a-u3a-firma: el velo de la firma al frente (el mercado los pone con el tono de la org que firmaste) */
+:root {
+  --ms-frente-luz: var(--tono-luz);
+  --ms-frente-fondo: var(--tono-vacio);
+}
