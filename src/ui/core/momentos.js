@@ -131,6 +131,12 @@ export function resumenDelTramo({ despues, desde = 0, fotoAnio = null } = {}) {
   } catch {
     numero = null;
   }
+  // Sin la foto del primer split del año (se retomó a mitad de año), el "antes" del nivel es el nivel con que se jugó el
+  // primer split del año (`porSplit[].nivel`, el que registra el motor).
+  if (numero && !Number.isFinite(numero.antes) && numero.etiqueta === 'nivel') {
+    const primera = (registro.porSplit ?? []).find((f) => f.anio === anio && Number.isFinite(f.nivel));
+    if (primera) numero = { ...numero, antes: primera.nivel };
+  }
   return {
     indice: i,
     clave: `temporada:${anio}:${i}`,

@@ -33,7 +33,7 @@ import { iniciarDesafio } from '../core/desafio.js';
 import { interpretarSeed } from '../core/numeros.js';
 import { previaDeDecision } from '../core/previaDePartido.js';
 import { momentosDelTramo, resumenDelTramo } from './core/momentos.js';
-import { mostrarTitulo, mostrarResumen } from './fx/momento.js';
+import { mostrarTitulo, mostrarResumen, precalentarCopa } from './fx/momento.js';
 
 export function iniciar() {
   const shellEl = document.querySelector('.shell');
@@ -482,6 +482,7 @@ export function iniciar() {
       const opciones = () => ({ escala: reproductor.escalaDeEspera(), sonido: sonido.sonidoFx, controlar: (control) => reproductor.narrar(control) });
       for (const momento of momentosDelTramo({ registroAntes, despues: estado, desde })) {
         if (vistos.has(momento.clave)) continue;
+        precalentarCopa(momento);
         lista.push({
           indice: momento.indice,
           mostrar: () => {
@@ -703,6 +704,13 @@ export function iniciar() {
       // PLANUI §0.6: el tramo de "Mientras tanto" arranca con esta respuesta.
       pagina.tramo = logsAntes;
       store.escribir(pipeline.resolverDecision(antes, respuesta, rng).state);
+      // si la respuesta trajo un título, la copa empieza a compilar ya, mientras la parada cuenta su resultado
+      try {
+        const [titulo] = momentosDelTramo({ registroAntes, despues: store.leer(), desde: logsAntes });
+        if (titulo && !almacenamiento.leerMomentosVistos(antes.seed).includes(titulo.clave)) precalentarCopa(titulo);
+      } catch (error) {
+        console.error('No se pudo precalentar la copa:', error);
+      }
       const contados = await narrarRespuesta(vistaParada, { antes, despues: store.leer(), respuesta, rngAntes, logsAntes });
 
       // La parada se va sola: `reproducirLlamada` pone el relato. La página es la misma: los beats de la respuesta entran
