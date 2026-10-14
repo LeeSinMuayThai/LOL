@@ -942,7 +942,7 @@ const FORMAS_CONOCIDAS = {
   // Ola F (PLANUI §0.8): `registro.finales`, las finales domésticas jugadas (D106, `systems/serie.js`), y las carreras de muestra
   // se mueven con la llamada de tier 2 y la última fecha que frena (F2) y la carta del cierre (F4). Un guardado de la 15 carga
   // con `migrarDe15`, que arranca las finales vacías.
-  16: '3161319961f7'
+  16: 'f6a5c9b7e186'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -18832,6 +18832,11 @@ const TIPOS_DE_PAUSA_GUARDADO_K4 = [
 const SEEDS_GUARDADO_K4 = Array.from({ length: 30 }, (_, i) => 1 + i);
 const SPLITS_GUARDADO_K4 = 60;
 const SEEDS_GUARDADO_TOPE_K4 = 200;
+// Ola F (PLANUI §0.8): con las carreras de la ola F `criterio` casi no llega a la citación del servicio militar —2 de 218
+// coreanos en 1000 seeds (seeds 723 y 798), contra ~5% antes: gana el internacional que exime o a los 28 ya no está en
+// primera—. Esas tres pausas se buscan después solo entre las seeds coreanas, hasta este tope.
+const SEEDS_SERVICIO_TOPE_K4 = 1000;
+const PAUSAS_SERVICIO_K4 = ['servicioMilitar:servicio_te_vas', 'servicioMilitar:servicio_adentro', 'servicioMilitar:servicio_volver'];
 // Revisión de K5: las seeds fijas [10, 14] dejaron de llegar a la bifurcación con el corrimiento de la revisión (el lote
 // no cubría `mercado:fin_mercado`). Ahora se buscan, en orden, hasta ver la pausa `FIN_MERCADO_GUARDADO_MINIMO` veces, con
 // tope `SEEDS_FIN_MERCADO_TOPE_K5` seeds.
@@ -18964,6 +18969,11 @@ checkLento('K4 (revisión) guardado: en cada tipo de pausa, guardar y recargar (
   // por carrera de `criterio`) y los tres de `servicioMilitar` (las 30 carreras ya no llevaban a ningún coreano al servicio).
   for (let seed = SEEDS_GUARDADO_K4.length + 1; seed <= SEEDS_GUARDADO_TOPE_K4 && TIPOS_DE_PAUSA_GUARDADO_K4.some((tipo) => !vistos.has(tipo)); seed += 1) {
     recorrer([seed]);
+  }
+  for (let seed = SEEDS_GUARDADO_TOPE_K4 + 1; seed <= SEEDS_SERVICIO_TOPE_K4 && PAUSAS_SERVICIO_K4.some((tipo) => !vistos.has(tipo)); seed += 1) {
+    if (createInitialState(seed, mulberry32(seed)).mundo.regionIdOrigen === 'KR') {
+      recorrer([seed]);
+    }
   }
   const faltan = TIPOS_DE_PAUSA_GUARDADO_K4.filter((tipo) => !vistos.has(tipo));
   if (faltan.length > 0) {

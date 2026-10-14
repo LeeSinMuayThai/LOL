@@ -301,8 +301,8 @@ export function registrarInternacional(registro, entrada) {
 }
 
 // F3 (D106, PLANUI §0.8): la final doméstica que se jugó —la ganada también, para poder contar "3 de 5"—. `marcador` va
-// [el tuyo, el del rival]; `liga` es el id real. `registro.finales` NO está en `createInitialState` (agregarlo cambiaría la forma
-// del estado y obligaría a subir la VERSION del guardado): nace acá, con la primera final, y quien lo lee usa `?? []`.
+// [el tuyo, el del rival]; `liga` es el id real. `registro.finales` arranca en `[]` en `createInitialState` (guardado VERSION 16;
+// un guardado de la 15 lo completa con `migrarDe15`); el `?? []` de quien lo lee queda por los estados de prueba a mano.
 export function registrarFinal(registro, { anio, liga, org, rival, gano, marcador }) {
   return { ...registro, finales: [...(registro.finales ?? []), { anio, liga, org, rival, gano, marcador: [...marcador] }] };
 }

@@ -308,7 +308,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
         // (`registrarSplitEnTabla`, escrita por `systems/rendimiento.js`). De acá
         // sale el Golden Road (`esGoldenRoad`) y la curva fina de nivel. Solo crece
         // (regla 14); `[]` al arrancar, nunca null (trampa T4).
-        porSplit: []
+        porSplit: [],
+        // Ola F (D106, PLANUI §0.8): las finales domésticas jugadas, `{ anio, liga, org, rival, gano, marcador }`
+        // (`registrarFinal`, escrita por `systems/serie.js`). `[]` al arrancar (guardado VERSION 16, `migrarDe15`).
+        finales: []
       }
     },
     // La serie de playoffs en curso (fase 4). Objeto completo de ceros, nunca
