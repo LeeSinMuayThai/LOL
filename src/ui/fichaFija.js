@@ -12,7 +12,7 @@
 // (lo que la pantalla ya contó): mientras el relato cuenta un split, no cambia.
 //
 // Los datos salen de los helpers puros de `core/ficha.js` (sin rng). Cuando un número cambia entre una `vista` y la
-// siguiente (la misma carrera), rueda (`moverNumero`); cuando la vitrina suma un título, la copa nueva entra con el kit
+// siguiente (la misma carrera), rueda (`moverNumero`), en todas las velocidades; cuando la vitrina suma un título, la copa nueva entra con el kit
 // (`animar`: con movimiento reducido aparece quieta).
 import {
   nivelDelAnio, escaleraDeArraigo, escaleraDeJerarquia, escaleraDeHype, puntajeEnVivo, vitrinaDeTitulos, dineroGanado,
@@ -22,7 +22,7 @@ import { plata, faltan } from '../core/formato.js';
 import { moverNumero } from './core/delta.js';
 import { icono, triangulos } from './fx/iconos.js';
 import { num } from './fx/movimiento.js';
-import { animar as animarNodo, DUR, RESORTE } from './fx/util.js';
+import { animar as animarNodo, DUR, RESORTE, EXPO } from './fx/util.js';
 
 const LABEL_BANDA = { prospecto: 'Prospecto', titular: 'Competitivo', elite: 'Élite', clase_mundial: 'Clase mundial' };
 const LABEL_INTERNACIONAL = { sin_chance: 'sin chance', en_carpeta: 'en carpeta', clasificado: 'clasificado', jugando: 'jugándolo' };
@@ -32,6 +32,34 @@ const COPAS_EN_LA_TIRA = 6;
 // La copa nueva entra desde arriba y más grande, con el resorte del kit; si entran varias, en escalera.
 const COPA_DESDE = 'translateY(-12px) scale(1.9)';
 const COPA_PASO_MS = 120;
+// Cuando un número cambia entre una `vista` y la siguiente: rueda, la barra del arraigo se llena y el ▲▼ entra con un
+// pulso. En TODAS las velocidades (RÁPIDO con las duraciones cortas); con movimiento reducido, directo (lo resuelven
+// `moverNumero` y `animar` del kit). Las duraciones son tokens (`--fj-dur-*`, bloque W1-H de tokens.css).
+const PULSO_DESDE = 'scale(1.8)';
+const PULSO_RETARDO = 0.45; // el pulso entra cuando el número ya va rodando (fracción de su duración)
+
+function duracionDeToken(nombre) {
+  if (typeof document === 'undefined') return DUR.entra;
+  const ms = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(nombre));
+  return Number.isFinite(ms) && ms > 0 ? ms : DUR.entra;
+}
+
+function duraciones(rapido) {
+  return {
+    numero: duracionDeToken(rapido ? '--fj-dur-numero-rapido' : '--fj-dur-numero'),
+    barra: duracionDeToken(rapido ? '--fj-dur-barra-rapido' : '--fj-dur-barra'),
+    pulso: duracionDeToken(rapido ? '--fj-dur-pulso-rapido' : '--fj-dur-pulso')
+  };
+}
+
+// El ▲▼ (o el número, si el cambio no llega a flecha) entra con un pulso.
+function pulsar(caja, dur) {
+  const visible = (el) => el && el.getClientRects().length > 0;
+  const blanco = [caja.querySelector('.fj-delta'), caja.querySelector('.fj-num')].find(visible);
+  if (!blanco) return;
+  blanco.classList.add('fj-pulso');
+  animarNodo(blanco, [{ opacity: 0.25, transform: PULSO_DESDE }, { opacity: 1, transform: 'none' }], { dur: dur.pulso, delay: dur.numero * PULSO_RETARDO, easing: RESORTE });
+}
 
 function nodo(etiqueta, clase, texto = null) {
   const el = document.createElement(etiqueta);
@@ -128,6 +156,7 @@ function tiraArraigo(a) {
   const caja = item('fj-arraigo', 2, 'Arraigo', 'arraigo');
   caja.dataset.escalon = a.id;
   const escalon = nodo('b', 'fj-escalon', a.esMaxima ? `Leyenda de ${a.org}` : a.label);
+  caja.dataset.campo = 'arraigo';
   caja.append(escalon, barra(a.progreso));
   const prox = proximo(a.siguiente);
   if (prox) caja.append(prox);
@@ -156,6 +185,7 @@ function tiraCarrera(c) {
 function tiraBanda(clase, rotulo, ico, b) {
   const caja = item(clase, 4, rotulo, ico);
   caja.append(nodo('b', 'fj-num fj-chico', num(b.valor)), nodo('span', 'fj-escalon', b.label));
+  caja.dataset.campo = clase === 'fj-jer' ? 'jerarquia' : 'hype';
   const prox = proximo(b.siguiente);
   if (prox) caja.append(prox);
   const delta = deltaNodo(b.delta);
@@ -194,6 +224,7 @@ function tiraTitulos(v) {
 
 function tiraPlata(dinero) {
   const caja = item('fj-plata', 7, 'Ganado', null);
+  caja.dataset.campo = 'dinero';
   caja.append(nodo('b', 'fj-num fj-chico', `US${plata(dinero)}`));
   caja.title = `Ganaste US${plata(dinero)} en toda la carrera`;
   return caja;
@@ -293,7 +324,7 @@ function pintarHoja(hoja, d) {
 
 // --- La ficha ------------------------------------------------------------------------------------------------------------
 
-// `seccion`: el `<section class="ficha-fija">` que crea la franja. Devuelve `{ pintar(estado, { animar }) }`.
+// `seccion`: el `<section class="ficha-fija">` que crea la franja. Devuelve `{ pintar(estado, { rapido }) }`.
 export function crearFichaFija(seccion) {
   const tira = nodo('button', 'fj-tira');
   tira.type = 'button';
@@ -325,7 +356,8 @@ export function crearFichaFija(seccion) {
     if (!hoja.hidden && !seccion.contains(e.target)) abrir(false);
   });
 
-  function pintar(estado, { animar = true } = {}) {
+  // `rapido`: el reproductor va en RÁPIDO (las duraciones cortas). La ficha anima igual.
+  function pintar(estado, { rapido = false } = {}) {
     if (!hayFicha(estado)) {
       seccion.hidden = true;
       tira.replaceChildren();
@@ -342,6 +374,10 @@ export function crearFichaFija(seccion) {
       return;
     }
     const previo = antes?.seed === estado.seed ? antes : null;
+    // La misma `vista` repintada (el director repinta sin que nada cambie): no se toca el DOM, así no se corta lo que está
+    // rodando.
+    const firma = JSON.stringify(d);
+    if (previo && previo.firma === firma && !seccion.hidden) return;
     seccion.hidden = false;
     seccion.dataset.fase = d.amateur ? 'amateur' : 'pro';
 
@@ -367,8 +403,36 @@ export function crearFichaFija(seccion) {
     tira.setAttribute('aria-label', `Tu ficha: nivel ${d.nivel.valor}${d.arraigo ? `, ${d.arraigo.label} en ${d.arraigo.org}` : ''}${d.amateur ? '' : `, ${d.vitrina.total} títulos`}. Abrir el detalle`);
     tira.replaceChildren(...items, abre);
 
-    moverNumero(nivel.valor, previo?.nivel ?? null, d.nivel.valor, { formato: num, animar });
-    if (carrera.valor) moverNumero(carrera.valor, previo?.puntaje ?? null, d.carrera.total, { formato: num, animar });
+    const dur = duraciones(rapido);
+    const conPlata = (n) => `US${plata(n)}`;
+    const ahora = {
+      nivel: d.nivel.valor,
+      puntaje: d.carrera.total,
+      jerarquia: d.jerarquia ? Math.round(d.jerarquia.valor) : null,
+      hype: d.hype.valor,
+      dinero: d.dinero,
+      arraigo: d.arraigo ? { org: d.arraigo.org, valor: Math.round(d.arraigo.valor), paso: d.arraigo.paso, progreso: d.arraigo.progreso } : null
+    };
+    const mover = (caja, numero, campo, formato = num) => {
+      if (!caja || !numero) return;
+      const a = previo?.[campo] ?? null;
+      moverNumero(numero, a, ahora[campo], { formato, duracion: dur.numero, animar: true });
+      if (Number.isFinite(a) && a !== ahora[campo]) pulsar(caja, dur);
+    };
+    mover(nivel.caja, nivel.valor, 'nivel');
+    mover(carrera.caja, carrera.valor, 'puntaje');
+    for (const campo of ['jerarquia', 'hype', 'dinero']) {
+      const caja = tira.querySelector(`.fj-item[data-campo="${campo}"]`);
+      mover(caja, caja?.querySelector('.fj-num'), campo, campo === 'dinero' ? conPlata : num);
+    }
+    // El arraigo: la barra se llena desde donde estaba (si subiste de escalón, desde el piso del nuevo) y el ▲ pulsa.
+    const antesArraigo = previo?.arraigo?.org === ahora.arraigo?.org ? previo.arraigo : null;
+    if (arraigo && antesArraigo && antesArraigo.valor !== ahora.arraigo.valor) {
+      const desde = antesArraigo.paso === ahora.arraigo.paso ? antesArraigo.progreso : antesArraigo.paso < ahora.arraigo.paso ? 0 : 1;
+      const lleno = arraigo.querySelector('.fj-barra i');
+      animarNodo(lleno, [{ width: `${Math.round(desde * 100)}%` }, { width: lleno.style.width }], { dur: dur.barra, easing: EXPO });
+      pulsar(arraigo, dur);
+    }
 
     // La copa nueva entra a la vitrina (en la tira y en la hoja): los títulos con índice mayor al total que había.
     if (previo && d.vitrina.total > previo.titulos) {
@@ -380,7 +444,7 @@ export function crearFichaFija(seccion) {
     }
 
     pintarHoja(hoja, d);
-    antes = { seed: estado.seed, nivel: d.nivel.valor, puntaje: d.carrera.total, titulos: d.vitrina.total };
+    antes = { seed: estado.seed, ...ahora, titulos: d.vitrina.total, firma };
   }
 
   return { pintar };

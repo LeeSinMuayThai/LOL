@@ -1149,6 +1149,13 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   --fj-copa-circuito: #c98f5d;
   --fj-copa-vacia: #f4f6fb38;
   --fj-hoja-sombra: 0 18px 40px #000000a6;
+  /* cuando un número de la ficha cambia: rueda, la barra se llena y el ▲▼ pulsa; en RÁPIDO, más corto */
+  --fj-dur-numero: 900ms;
+  --fj-dur-numero-rapido: 500ms;
+  --fj-dur-barra: 800ms;
+  --fj-dur-barra-rapido: 450ms;
+  --fj-dur-pulso: 560ms;
+  --fj-dur-pulso-rapido: 380ms;
 }
 @media (max-width: 640px) {
   :root { --ficha-alto: 38px; }
