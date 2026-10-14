@@ -48,6 +48,53 @@ const SALIDA = 240;
 const PLACA = { letra: 0.42, min: 8 };
 const LETRA_CAE = 'translateY(-70%) scale(1.04, 1.24)';
 
+// PLANUI §0.6 (arreglo): la copa WebGL compila su shader al crearse (en Windows puede tardar más de 1 s) y hasta su primer
+// cuadro no se ve. `precalentarCopa` la crea apenas se sabe que viene el título (antes del relato del tramo) y
+// `mostrarTitulo` la adopta; si igual no llegó, el takeover espera su primer cuadro (hasta `CALENTAR_MAX` ms) con la capa
+// todavía transparente. Nunca se revela una copa sin dibujar ni una placa que flota sola.
+const CALENTAR_MAX = 2500;
+let calentada = null; // { clave, copa }
+// (una clave interna, nunca se pinta)
+const claveDeCopa = (m) => JSON.stringify([m.tipo, m.liga, m.nombre, m.org]);
+
+function crearCopaDe(momento) {
+  const mundial = momento.tipo === 'mundial';
+  const tono = mundial ? TONO_ORO : tonoOrg(momento.org);
+  const { material, perfil } = copaDe(compDe(momento.liga) ?? compDe(momento.nombre) ?? '');
+  return crearTrofeo(document.createElement('canvas'), {
+    material, perfil, tonos: mundial ? TONOS_DEF : { luz: tono.luz, contra: tono.contra, noche: tono.noche }
+  });
+}
+
+function soltarCalentada() {
+  try {
+    calentada?.copa?.destruir?.();
+  } catch { /* nada que soltar */ }
+  calentada = null;
+}
+
+export function precalentarCopa(momento) {
+  if (typeof document === 'undefined' || !momento) return;
+  const clave = claveDeCopa(momento);
+  if (calentada?.clave === clave) return;
+  soltarCalentada();
+  try {
+    calentada = { clave, copa: crearCopaDe(momento) };
+  } catch (error) {
+    console.error('No se pudo precalentar la copa:', error);
+  }
+}
+
+function tomarCopa(momento) {
+  if (calentada?.clave === claveDeCopa(momento)) {
+    const { copa } = calentada;
+    calentada = null;
+    return copa;
+  }
+  soltarCalentada();
+  return crearCopaDe(momento);
+}
+
 const sinEscala = (escala) => (Number.isFinite(escala) && escala > 0 ? escala : 1);
 const compDe = (liga) => {
   const k = String(liga ?? '').toLowerCase();
@@ -144,7 +191,6 @@ export function mostrarTitulo(momento, { escala = 1, sonido = null, controlar = 
   const E = (ms) => Math.round(ms * k);
   const mundial = momento.tipo === 'mundial';
   const tono = mundial ? TONO_ORO : tonoOrg(momento.org);
-  const comp = compDe(momento.liga) ?? compDe(momento.nombre);
   const nombre = mundial ? 'Mundial' : (momento.nombre ?? '');
   return montarCapa({
     clase: mundial ? 'mo-titulo mo-mundial' : 'mo-titulo',
@@ -154,10 +200,7 @@ export function mostrarTitulo(momento, { escala = 1, sonido = null, controlar = 
       aplicarTono(raiz, tono);
       const negro = el('div', { class: 'mo-negro', 'aria-hidden': 'true' });
       const golpe = el('div', { class: 'mo-golpe', 'aria-hidden': 'true' });
-      const { material, perfil } = copaDe(comp ?? '');
-      const copa = crearTrofeo(document.createElement('canvas'), {
-        material, perfil, tonos: mundial ? TONOS_DEF : { luz: tono.luz, contra: tono.contra, noche: tono.noche }
-      });
+      const copa = tomarCopa(momento);
       // la placa del pedestal, grabada con la competición y el año (se ubica sobre la que dibuja la copa)
       const placa = el('span', { class: 'mo-placa', 'aria-hidden': 'true', text: `${mundial ? 'Worlds' : nombre} ${momento.anio ?? ''}`.trim() });
       const sube = el('div', { class: 'mo-copa-sube' }, [copa.nodo, placa]);
@@ -192,7 +235,6 @@ export function mostrarTitulo(momento, { escala = 1, sonido = null, controlar = 
       raiz.prepend(negro, golpe, caja, confeti.nodo, bloque);
       copa.redimensionar?.();
       ubicarPlaca();
-      Promise.resolve(copa.listo).then(ubicarPlaca, () => {});
 
       // la copa: su reloj corre comprimido por `escala` hasta asentarse y después a velocidad normal (sigue girando)
       const corte = E(T.asentarse);
@@ -205,8 +247,13 @@ export function mostrarTitulo(momento, { escala = 1, sonido = null, controlar = 
         destruir: () => copa.destruir?.()
       });
       bt.agregar(confeti);
+      let arrancado = false;
+      let saltarAlArrancar = false;
+      let destruido = false;
+      let timerCalentar = null;
+      const arrancar = () => {
       copa.entrar?.(T.copa);
-      bt.waapi(animar(negro, [{ opacity: 0 }, { opacity: 0.96, offset: 0.4 }, { opacity: 0.92 }], { dur: E(T.apagonDur), easing: 'ease-out', fill: 'both' }));
+      bt.waapi(animar(negro, [{ opacity: 0 }, { opacity: 0.97, offset: 0.4 }, { opacity: 0.95 }], { dur: E(T.apagonDur), easing: 'ease-out', fill: 'both' }));
       const fogonazo = bt.destello(E(T.golpe));
       if (fogonazo != null) {
         bt.waapi(animar(golpe, [{ opacity: 0, transform: 'scale(0.6)' }, { opacity: 1, transform: 'scale(1)', offset: 0.2 }, { opacity: 0.32, transform: 'scale(1.25)' }], { delay: fogonazo, dur: E(T.golpeDur), easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' }));
@@ -225,8 +272,24 @@ export function mostrarTitulo(momento, { escala = 1, sonido = null, controlar = 
       const sonar = (ms, fn) => bt.esperar(ms).then((llego) => llego && fn());
       sonar(E(T.golpe), () => sonido?.golpe?.());
       sonar(E(T.confeti), () => sonido?.confeti?.());
-      const alAsentarse = bt.esperar(corte);
       bt.iniciar();
+      };
+      // la capa queda transparente (sin apagón ni bloque) hasta que la copa dibujó su primer cuadro
+      raiz.dataset.calentando = '';
+      const tope = new Promise((r) => {
+        timerCalentar = setTimeout(r, CALENTAR_MAX);
+      });
+      const alAsentarse = Promise.race([Promise.resolve(copa.listo), tope]).then(() => {
+        clearTimeout(timerCalentar);
+        if (destruido) return new Promise(() => {});
+        copa.redimensionar?.();
+        ubicarPlaca();
+        delete raiz.dataset.calentando;
+        arrancar();
+        arrancado = true;
+        if (saltarAlArrancar) bt.saltar();
+        return bt.esperar(corte);
+      });
       const observador = typeof ResizeObserver === 'function' ? new ResizeObserver(() => {
         copa.redimensionar?.();
         ubicarPlaca();
@@ -234,10 +297,15 @@ export function mostrarTitulo(momento, { escala = 1, sonido = null, controlar = 
       observador?.observe(caja);
       return {
         alAsentarse,
-        saltar: () => bt.saltar(),
+        saltar: () => {
+          if (arrancado) bt.saltar();
+          else saltarAlArrancar = true;
+        },
         pausar: () => bt.pausar(),
         reanudar: () => bt.reanudar(),
         destruir() {
+          destruido = true;
+          clearTimeout(timerCalentar);
           observador?.disconnect();
           bt.destruir();
         }
@@ -310,7 +378,9 @@ export function mostrarResumen(datos, { escala = 1, controlar = null } = {}) {
         }
         bloques.push(bloqueDe('En el mundo', [el('ul', { class: 'mo-r-mundo' }, filas)], 'mo-r-bloque--mundo'));
       }
-      const panel = el('div', { class: 'mo-r-panel' }, [cabeza, titular, vinetas, el('div', { class: 'mo-r-grilla' }, bloques), el('div', { class: 'mo-r-pie' }, [seguir])]);
+      // el cuerpo scrollea solo y el pie (Continuar) queda debajo, afuera del scroll: el botón nunca tapa una fila
+      const cuerpo = el('div', { class: 'mo-r-cuerpo' }, [cabeza, titular, vinetas, el('div', { class: 'mo-r-grilla' }, bloques)]);
+      const panel = el('div', { class: 'mo-r-panel' }, [cuerpo, el('div', { class: 'mo-r-pie' }, [seguir])]);
       raiz.prepend(el('div', { class: 'mo-negro mo-r-velo', 'aria-hidden': 'true' }), panel);
 
       const quieto = reducido();

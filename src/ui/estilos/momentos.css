@@ -60,10 +60,10 @@
 
 /* ================================================================================== el takeover (fx/momento.js) */
 .mo {
-  position: fixed; inset: 0; z-index: var(--mo-z); display: grid; place-items: center; overflow: hidden;
+  position: fixed; inset: 0; z-index: var(--mo-z, 200); display: grid; place-items: center; overflow: hidden;
   color: var(--ink); background: transparent; outline: none; cursor: pointer;
 }
-.mo-negro { position: absolute; inset: 0; background: var(--mo-negro); opacity: 0.92; }
+.mo-negro { position: absolute; inset: 0; background: var(--mo-negro); opacity: 0.95; }
 .mo-golpe {
   position: absolute; inset: -20%; opacity: 0.32; pointer-events: none;
   background: radial-gradient(ellipse 46% 42% at 50% 46%, var(--tono-luz, var(--gold)), transparent 70%);
@@ -71,6 +71,8 @@
 }
 .mo-mundial .mo-golpe { background: radial-gradient(ellipse 50% 46% at 50% 46%, var(--gold), transparent 72%); }
 .mo-confeti { z-index: 1; }
+/* la copa todavía compila su primer cuadro: la capa existe (toma el teclado) pero no se ve */
+.mo[data-calentando] > * { visibility: hidden; }
 
 /* el título: la copa a la izquierda y el bloque a la derecha; en el celular, la copa arriba */
 .mo-titulo { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(16px, 4vw, 64px); padding: 6vh 6vw 12vh; place-items: center; }
@@ -114,12 +116,15 @@
 
 /* ---- el resumen de la temporada ---- */
 .mo-resumen { cursor: default; padding: 0; }
-.mo-r-velo { opacity: 0.9; }
+.mo-r-velo { opacity: 0.97; }
 .mo-r-panel {
-  position: relative; z-index: 1; width: min(980px, 100vw); max-height: 100dvh; overflow-y: auto; overscroll-behavior: contain;
-  display: grid; gap: 20px; padding: clamp(24px, 5vh, 48px) clamp(16px, 4vw, 48px) 0;
+  position: relative; z-index: 1; width: min(1040px, 100vw); height: 100dvh; display: flex; flex-direction: column;
 }
-.mo-r-pie { position: sticky; bottom: 0; z-index: 2; display: grid; place-items: center; margin: -8px calc(-1 * clamp(16px, 4vw, 48px)) 0; padding: 28px 0 18px; background: linear-gradient(to bottom, transparent, var(--mo-negro) 42%); }
+.mo-r-cuerpo {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  display: grid; align-content: start; gap: 18px; padding: clamp(20px, 4vh, 40px) clamp(16px, 4vw, 48px) 20px;
+}
+.mo-r-pie { flex: none; display: grid; place-items: center; padding: 14px 0 max(18px, env(safe-area-inset-bottom)); box-shadow: inset 0 1px 0 var(--mo-filete); }
 .mo-resumen .mo-seguir { position: static; transform: none; }
 .mo-r-cabeza { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 14px; box-shadow: inset 0 -1px 0 var(--mo-filete); }
 .mo-r-marca { display: grid; gap: 8px; margin: 0; font: 600 var(--t-rotulo-g) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
@@ -135,7 +140,9 @@
 .mo-r-vinetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px 24px; margin: 0; padding: 0; list-style: none; font-size: 15px; line-height: 1.4; color: var(--ink-dim); }
 .mo-r-vinetas li { display: flex; gap: 10px; align-items: baseline; }
 .mo-r-vinetas .ln-ico { flex: none; color: var(--gold); transform: translateY(2px); }
-.mo-r-grilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.mo-r-grilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.mo-r-bloque--mundo { grid-column: 1 / -1; }
+.mo-r-bloque--mundo .mo-r-mundo { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); column-gap: 24px; }
 .mo-r-bloque { display: grid; align-content: start; gap: 10px; padding: 14px 16px; background: var(--mo-panel); border-radius: var(--r-panel); box-shadow: inset 0 0 0 1px var(--mo-filete); min-width: 0; }
 .mo-r-rotulo { margin: 0; font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
 .mo-r-splits, .mo-r-copas, .mo-r-mundo { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
@@ -158,8 +165,7 @@
 .mo-r-mundial b { color: var(--gold); }
 .mo-r-logo { width: 26px; height: 26px; }
 @media (max-width: 560px) {
-  .mo-r-panel { gap: 16px; padding: 22px 16px 0; }
-  .mo-r-pie { margin-inline: -16px; }
+  .mo-r-cuerpo { gap: 16px; padding: 20px 16px 16px; }
   .mo-r-vinetas, .mo-r-grilla { grid-template-columns: minmax(0, 1fr); }
   .mo-r-nota-valor { font-size: var(--t-num-m); }
 }
