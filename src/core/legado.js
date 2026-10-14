@@ -4,7 +4,8 @@ import { splitsJugadosEnTier, esBuenPapel, mundialesGanados, titulosDeFila, trof
 import { bandaDeArraigoFicha } from './ficha.js';
 import { aniosProDe } from './puntaje.js';
 import { desdePuntos, etiquetaDeRanked, servidorDeLaPartida } from './ranked.js';
-import { plural } from './formato.js';
+import { plural, deLaLiga } from './formato.js';
+import { nombreVisibleDeLiga } from './ligas.js';
 
 // El veredicto de la carrera (PLAN.md §10.2, CONCEPTO §9): NO se elige de una
 // lista, se COMPONE — una plantilla de arquetipo más un detalle real sacado del
@@ -365,22 +366,39 @@ export function dueloEterno(state) {
 }
 
 // Las finales que se escaparon: las del Mundial que llegaste a jugar y perdiste (`resultado: 'final'`), con el año, la
-// org y el rival de la final (del camino, K5-A). Las finales domésticas perdidas no quedan en el registro con su rival
-// ni su año (solo un texto en `career.hitos`): no se derivan.
+// org y el rival de la final (del camino, K5-A). F3 (D106, PLANUI §0.8): y las finales domésticas perdidas, que desde F3
+// quedan en `registro.finales` (un registro anterior no las trae: `?? []`). La tarjeta no se agranda: como mucho
+// `BALANCE.tarjeta.finalesEscapadas`, primero las del Mundial, después las de la liga más alta y las más recientes; salen
+// en orden de año. `etiqueta` es el rótulo de la línea ("Final del Mundial" / "Final de la CBLOL").
 export function finalesPerdidas(registro) {
-  return registro.internacionales
+  const delMundial = registro.internacionales
     .filter((intl) => intl.resultado === 'final')
     .map((intl) => {
       const final = (intl.camino ?? []).find((m) => m.etapa === 'final' && !m.gano) ?? null;
       return {
         anio: intl.anio,
         competicion: 'Mundial',
+        etiqueta: 'Final del Mundial',
         org: intl.org,
         // El campeón de un Mundial cuya final perdiste es quien te la ganó (registros sin camino de bracket).
         rival: final?.rival ?? intl.campeon ?? null,
         // [tuyo, suyo] (`caminoDelJugador`)
-        marcador: final?.marcador ?? null
+        marcador: final?.marcador ?? null,
+        tier: 0
       };
-    })
-    .sort((a, b) => a.anio - b.anio);
+    });
+  const domesticas = (registro.finales ?? [])
+    .filter((final) => !final.gano)
+    .map((final) => {
+      const nombre = nombreVisibleDeLiga(final.liga);
+      return {
+        anio: final.anio, competicion: nombre, etiqueta: `Final ${deLaLiga(nombre)}`, org: final.org, rival: final.rival,
+        marcador: final.marcador ?? null, tier: LIGAS.find((liga) => liga.id === final.liga)?.tier ?? 9
+      };
+    });
+  return [...delMundial, ...domesticas]
+    .sort((a, b) => a.tier - b.tier || b.anio - a.anio)
+    .slice(0, BALANCE.tarjeta.finalesEscapadas)
+    .sort((a, b) => a.anio - b.anio)
+    .map(({ tier, ...resto }) => ({ ...resto, mundial: tier === 0 }));
 }

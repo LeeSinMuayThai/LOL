@@ -91,18 +91,42 @@ function pesoDe(log) {
   return PESO.resto;
 }
 
+// F3 (PLANUI §0.8, punto 6): la decisión que tomó el jugador y su resultado. Es el mismo criterio que `eventoDe` (el de la
+// "Última hora" del diario): un log `event` con título "Nombre · Opción" y cuerpo. Las del perfil automático ("Como
+// hambriento…") vienen con `cronica` y NO son del jugador: no entran. Va aparte de `eventoDe` para no tocar el diario (F4).
+const LARGO_DE_ELECCION = 220;
+const ELECCIONES_DE_FRANJA = 2;
+const EJES_DE_ELECCION = 4;
+export function eleccionDelJugador(log) {
+  if (log?.type !== 'event' || log.cronica || !log.titulo || !log.cuerpo) return null;
+  const corte = log.titulo.indexOf(SEPARADOR_DE_OPCION);
+  if (corte < 0) return null;
+  const decision = log.titulo.slice(0, corte).trim();
+  const opcion = log.titulo.slice(corte + SEPARADOR_DE_OPCION.length).trim();
+  if (!decision || !opcion) return null;
+  // Los efectos del texto, sumados por eje (dos "Equipo" del mismo evento son un solo chip), de mayor a menor movimiento.
+  const ejes = typeof log.efectos === 'string' ? ejesSumados([{ efectos: log.efectos }]).slice(0, EJES_DE_ELECCION) : [];
+  return { decision, opcion, salio: recortarFrase(log.cuerpo, LARGO_DE_ELECCION), ejes };
+}
+
 // "Mientras tanto" (PLANUI §0.6, punto 3): lo narrativo del tramo `[desde, logs.length)` en una franja. `{ cuantas, ejes,
-// titulares }`: cuántas cosas pasaron (los beats narrativos), los ejes sumados y hasta `TITULARES_DE_FRANJA` titulares —
-// primero tus resultados y los eventos con elección, el mundo al final; dentro de cada peso, el más nuevo primero.
+// titulares, elecciones }`: cuántas cosas pasaron (los beats narrativos), los ejes sumados y hasta `TITULARES_DE_FRANJA`
+// titulares — primero tus resultados y los eventos con elección, el mundo al final; dentro de cada peso, el más nuevo
+// primero. F3 (§0.8, punto 6): `elecciones` son los resultados de lo que decidiste vos en el tramo (hasta
+// `ELECCIONES_DE_FRANJA`, la más nueva primero): van arriba y aparte, y no se repiten en los titulares.
 export function franjaDelTramo(logs, desde = 0) {
   const narrativos = (logs ?? []).slice(Math.max(0, desde)).filter((log) => formaBeat(log) && !log.tecnico);
+  const propias = narrativos.map((log) => ({ log, eleccion: eleccionDelJugador(log) })).filter((x) => x.eleccion);
+  const elecciones = propias.map((x) => x.eleccion).reverse().slice(0, ELECCIONES_DE_FRANJA);
+  const mostradas = new Set(propias.slice(-ELECCIONES_DE_FRANJA).map((x) => x.log));
   const titulares = narrativos
+    .filter((log) => !mostradas.has(log))
     .map((log, i) => ({ log, i, peso: pesoDe(log) }))
     .sort((a, b) => b.peso - a.peso || b.i - a.i)
     .slice(0, TITULARES_DE_FRANJA)
     .map(({ log }) => ({ type: log.type ?? null, texto: String(log.titulo ?? log.message ?? '').replace(/\s+/g, ' ').trim() }))
     .filter((t) => t.texto);
-  return { cuantas: narrativos.length, ejes: ejesSumados(narrativos).slice(0, EJES_DE_FRANJA), titulares };
+  return { cuantas: narrativos.length, ejes: ejesSumados(narrativos).slice(0, EJES_DE_FRANJA), titulares, elecciones };
 }
 
 // El resumen de la temporada (PLANUI §0.6, punto 2): `null` si el tramo no trae el log `edad` con su nota. `fotoAnio` es

@@ -65,6 +65,9 @@ function construirContexto(state) {
     anio,
     liga: ligaDeCarrera(state),
     internacionalEsteAnio: registro.internacionales.find((entrada) => entrada.anio === anio) ?? null,
+    // F3: los Mundiales de años anteriores (para el "primero" y la bajada de veterano) y la final doméstica perdida del año.
+    mundialesPrevios: registro.internacionales.filter((entrada) => entrada.anio < anio).length,
+    finalPerdidaEsteAnio: (registro.finales ?? []).find((final) => final.anio === anio && !final.gano) ?? null,
     tituloEsteAnio: registro.titulos.find((titulo) => titulo.anio === anio) ?? null,
     filaAbiertaEsteAnio: registro.porOrg.find((fila) => fila.desdeAnio === anio) ?? null,
     mainMuerto: TOKENS.mainMuerto(state),
@@ -175,6 +178,12 @@ const PUNTAJES = {
   // El techo del papel internacional; el puntaje real depende de hasta dónde llegaste (`PUNTAJES_PAPEL_INTERNACIONAL`).
   papel_internacional: 90,
   titulo_liga: 80,
+  // F3 (PLANUI §0.8 punto 7): lo que pasó en el año titula por encima de lo que NO pasó (`ausencia`) y del color (`main_muerto`,
+  // `debut`...), y por debajo de un título de liga y de un papel internacional desde cuartos (78). Si en el mismo año
+  // se pierde la final y se juega el primer Mundial, gana el Mundial: aparece antes en `CANDIDATOS` y el empate lo gana el primero.
+  primer_mundial: 77,
+  final_perdida: 77,
+  afuera_en_el_swiss: 76,
   ausencia: 75,
   main_muerto: 70,
   debut: 70,
@@ -227,7 +236,40 @@ function candidatoAusencia(state, ctx) {
   if (ctx.internacionalEsteAnio || (ctx.liga?.cuposInternacionales ?? 0) <= 0) {
     return null;
   }
-  return { titular: 'WORLDS, POR TWITCH', bajada: 'Worlds se jugó sin vos. La espina más grande de tu carrera.' };
+  // F3: "la espina más grande de tu carrera" es una bajada de veterano; quien nunca jugó un Mundial todavía no tiene espina.
+  const yaJugoUno = ctx.mundialesPrevios > 0;
+  return {
+    titular: 'WORLDS, POR TWITCH',
+    bajada: yaJugoUno ? 'Worlds se jugó sin vos. La espina más grande de tu carrera.' : 'Worlds se jugó sin vos. Todavía no es tu año.'
+  };
+}
+
+// F3 (D106, PLANUI §0.8): la final doméstica perdida del año. La bajada dice contra quién y cómo (marcador tuyo primero).
+function candidatoFinalPerdida(state, ctx) {
+  const final = ctx.finalPerdidaEsteAnio;
+  if (!final) {
+    return null;
+  }
+  return {
+    titular: 'SE ESCAPÓ LA FINAL',
+    bajada: `${final.marcador[1]}-${final.marcador[0]} contra ${final.rival} en la final ${deLaLiga(nombreVisibleDeLiga(final.liga))}.`
+  };
+}
+
+// F3: el primer Mundial de la carrera, aunque te vayas en el Swiss. Desde cuartos lo titula el papel internacional.
+function candidatoPrimerMundial(state, ctx) {
+  if (!ctx.internacionalEsteAnio || ctx.internacionalEsteAnio.resultado !== 'eliminado' || ctx.mundialesPrevios > 0) {
+    return null;
+  }
+  return { titular: 'TU PRIMER MUNDIAL', bajada: 'Te tocó irte en el Swiss, pero ya estuviste.' };
+}
+
+// F3: un Mundial que no es el primero y se acaba en el Swiss.
+function candidatoAfueraEnElSwiss(state, ctx) {
+  if (ctx.internacionalEsteAnio?.resultado !== 'eliminado' || ctx.mundialesPrevios === 0) {
+    return null;
+  }
+  return { titular: 'OTRA VEZ AFUERA EN EL SWISS', bajada: 'Worlds se te acabó en la primera fase.' };
 }
 
 // El titular es "EL PARCHE QUE TE MATÓ..." (un hecho puntual, pasado), no
@@ -305,6 +347,9 @@ const CANDIDATOS = [
   ['titulo_internacional', candidatoTituloInternacional],
   ['papel_internacional', candidatoPapelInternacional],
   ['titulo_liga', candidatoTituloLiga],
+  ['primer_mundial', candidatoPrimerMundial],
+  ['final_perdida', candidatoFinalPerdida],
+  ['afuera_en_el_swiss', candidatoAfueraEnElSwiss],
   ['ausencia', candidatoAusencia],
   ['debut', candidatoDebut],
   ['main_muerto', candidatoMainMuerto],

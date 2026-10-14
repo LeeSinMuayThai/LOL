@@ -277,7 +277,7 @@ function filaDeOrg(fila, arraigo, anioDeCierre, hitos) {
   return el;
 }
 
-// "Las que se escaparon": las finales del Mundial que jugaste y perdiste, con año, org y rival.
+// "Las que se escaparon": las finales que jugaste y perdiste (el Mundial y, desde F3, las de la liga), con año, org y rival.
 function bloqueEscapadas(finales) {
   const el = document.createElement('section');
   el.className = 'tarjeta-escapadas';
@@ -285,11 +285,13 @@ function bloqueEscapadas(finales) {
   for (const f of finales) {
     const marcador = f.marcador ? ` · ${f.marcador[0]}-${f.marcador[1]}` : '';
     const rival = f.rival ? ` vs ${f.rival}` : '';
-    el.appendChild(linea('tarjeta-escapada', `Final del ${f.competicion} ${f.anio}${rival}${marcador} · con ${f.org}`));
+    el.appendChild(linea('tarjeta-escapada', `${f.etiqueta ?? `Final del ${f.competicion}`} ${f.anio}${rival}${marcador} · con ${f.org}`));
   }
-  el.appendChild(linea('tarjeta-escapada-pie', finales.length === 1
-    ? 'A una serie de ser campeón del mundo.'
-    : `${finales.length} veces a una serie de ser campeón del mundo.`));
+  // F3: si alguna es de la liga, el pie ya no puede hablar solo del mundo.
+  const todasDelMundial = finales.every((f) => f.mundial !== false);
+  el.appendChild(linea('tarjeta-escapada-pie', todasDelMundial
+    ? (finales.length === 1 ? 'A una serie de ser campeón del mundo.' : `${finales.length} veces a una serie de ser campeón del mundo.`)
+    : (finales.length === 1 ? 'A una serie de la copa.' : `${finales.length} veces a una serie de la copa.`)));
   return el;
 }
 
