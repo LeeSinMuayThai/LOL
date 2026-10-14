@@ -21530,11 +21530,14 @@ function correrCarreraK5(seed, { splits = SPLITS_K5 } = {}) {
     let pDeLaPrevia = null;
     const antes = state.career.registro.internacionales.length;
     const resultado = avanzarSplitAutoK5(state, rng, (sistema, st, decision, r) => {
-      if (sistema.id === 'internacional') {
+      // F1 (PLANUI §0.8): las rondas del Swiss que no son el 2-2 frenan siempre, con una sola opción y sin gastar el tope
+      // T9 (cuida el bracket y la final): no cuentan como interrupción del Mundial, ni tienen la previa del 2-2.
+      const rondaDelSwiss = decision.datos?.motivo === 'swiss' && decision.datos.vidaOMuerte === false;
+      if (sistema.id === 'internacional' && !rondaDelSwiss) {
         pausasMundial += 1;
       }
       const respuesta = sistema.resolverAuto(st, decision, r);
-      if (decision.datos?.motivo === 'swiss') {
+      if (decision.datos?.motivo === 'swiss' && !rondaDelSwiss) {
         pDeLaPrevia = previaDeDecisionK5(st, decision).opciones.find((o) => o.id === respuesta.opcionId).p;
       }
       return respuesta;
