@@ -38,6 +38,8 @@
 | **P1 · previas** | La decisión en tres direcciones (cartas, champ select, hextech) y el stream en dos, para elegir en `lolero.lol/previa.html`; INST deja de apagar el movimiento; la serie equipo contra equipo (§0.4) | ✅ 2026-10-14: 5 workers Opus high + 1 revisor Sonnet ("OK con menores", arreglados); publicada. El usuario eligió cartas + predicción (§0.5) |
 | **P2** | La dirección elegida queda; se borran las otras y las perillas; las cartas sin campeones de decoración y el stream lleno (§0.5) | ✅ 2026-10-14: 2 workers Opus high + 1 revisor Sonnet (1 bloqueante, arreglado); publicada |
 | **U3a (adelantada)** | Lo que dijo el usuario jugando P2 (§0.6): la copa y el resumen de la temporada, "Mientras tanto" en rápido y la firma de una sola coreografía | ✅ 2026-10-14: 2 workers (Opus high + Opus xhigh) + scout + revisor Sonnet; publicada |
+| **W · ola W1** | "Que se sienta el avance" (§0.7): la ficha en todas las anchuras, el diario con "Última hora" y el ascenso, "tan cerca" y la vitrina, la tarjeta final con el duelo y el arraigo | 🔶 2026-10-14: escrita; 3 workers despachados |
+| **W · olas W2-W3** | La carta de pretemporada y ¿gloria o billetera? (motor chico, medido); después, la final sin tirada y la plata (§0.7) | ⬜ después de que el usuario juegue la W1 |
 | **U3** | El resto de los momentos (banners, ceremonias, primer contrato) + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
@@ -487,6 +489,138 @@ Después, un revisor Sonnet con GPU. Al final: merge, push, deploy y el enlace a
 - Muestras nuevas para probarlo, en `previa/generar.mjs`:
   - `final` (la final de playoffs que se gana);
   - `firma` (el mercado con una oferta de otro club).
+
+### 0.7 W · "que se sienta el avance": lo que tiene El Ídolo (2026-10-14, el usuario textual + una carrera jugada)
+
+> "el juego no se siente como el objetivo del inicio […] no hay que hacer grandes cambios de motor […] ese fue
+> nuestro problema por un montón de tiempo […] la season pasa muy rápido, no sentís un avance […] podés jugar varias
+> temporadas […] viendo qué es lo que hace que ese juego sea más divertido, la esencia. Compararlo con el nuestro,
+> que quizás no haya que hacer tantos cambios." · "fijate cuando termina el otro claude y ahí arranca"
+
+**Lo que se hizo.** El supervisor jugó en Chrome una carrera entera de El Ídolo (Potrero): 22 temporadas, de los 16 a
+los 38 años, clase Habilidoso, con decisiones de verdad. Hubo club chico, pase a un grande, Europa, pedido de salida,
+lealtad hasta ser Leyenda, traición al clásico rival y el jeque. Después un scout comparó con master `b7397c7`. El
+análisis completo está en `~/.claude/plans/mira-te-voy-a-scalable-liskov.md`.
+
+**Lo visto en El Ídolo:**
+- **Cada temporada son 2-4 clics:**
+  1. la carta de pretemporada ("el dado trajo tres mejoras, elegí una": +3 a un stat, rareza común, rara o icónica);
+  2. a veces, una decisión de ~30 palabras con el riesgo escrito ("⚠ Fútbol lotería");
+  3. cada 1-3 años, el mercado;
+  4. si llegás, la final;
+  5. el diario.
+  **Pasa más rápido que la nuestra, y sin embargo se siente avanzar.**
+- **La ficha fija, siempre igual:**
+  - la MEDIA (63 → 99) y los stats con ▲▼; las rojas recién a los 30;
+  - **el amor por club**: Uno más → Querido → Referente → Ídolo → Leyenda, con barra y "→ próximo N". En Leyenda:
+    "tenés tu estatua";
+  - la escalera de la selección;
+  - los partidos, goles y títulos;
+  - la plata;
+  - **la Gloria (el puntaje), que se mueve a la vista y bajó 140 mil al traicionar**;
+  - la vitrina que se llena;
+  - la trayectoria club por club.
+- **El mercado es LA decisión, y se lee de un vistazo.**
+  - Cada oferta muestra el sueldo, los años, "vas a jugar más o menos", "dejás X: −8 de idolatría" y "allá arrancás:
+    Querido (29) — tu fama te precede".
+  - Las etiquetas son BOMBAZO, RENOVACIÓN, A LA BAJA ("ya sos leyenda acá") y TRAICIÓN en rojo.
+  - Lo resume la pregunta "¿Gloria o billetera?".
+- **La consecuencia te persigue.** Fui Leyenda (96) en Marsella y me fui al PSG por 4× la plata:
+  - Marsella quedó "Querido 49 🐍" y el diario dijo "tu nombre es mala palabra";
+  - la carrera terminó titulada **"EL TRAIDOR DE PSG — Te quedaste a un paso de la eternidad"**.
+- **El diario de cada temporada:**
+  - un titular por lo más saliente ("EL RIVAL LE PASÓ EL TRAPO", "¡CAMPEONES!");
+  - tu club y tu puesto, y 5 números;
+  - **"Última hora", que cita tu decisión**;
+  - viñetas que te nombran;
+  - "¡AHORA SOS ÍDOLO!".
+- **El clímax es raro y está en tus manos.**
+  - La final se juega con un minijuego, sin tirada después.
+  - Ganar trae la copa grande, "Eterno" y la vitrina. Perder trae "TAN CERCA… leíste bien la jugada y se fue rozando el
+    palo".
+  - El Mundial es cada 4 años y se juega entero ("a esperar cuatro años").
+  - El primer título llegó en la temporada 7.
+- **El rival de toda la vida:** sale en los titulares, y al final aparece "EL DUELO ETERNO".
+- **La plata sirve:** compra staff (el declive llega más tarde) y lujos (estatus).
+- **El final:** figurita, apodo, club por club con su escalón y sus copas, finales perdidas, el duelo y compartir.
+- **Lo flojo** (no copiar):
+  - el power creep (99 a los 27);
+  - las finales demasiado seguidas (hasta 3 por temporada, los mismos 7 minijuegos);
+  - eventos de color sin peso.
+
+**La esencia.** El Ídolo **no tiene más sistemas que nosotros: tiene menos**. Lo que tiene es que sus ~5 números
+importantes:
+1. están siempre en pantalla;
+2. **se mueven cada temporada por algo que elegiste vos**;
+3. **tienen un próximo escalón con nombre**;
+4. **el juego te los cuenta de vuelta** (el diario, la copa, el apodo).
+
+De ahí sale "sentís un avance", no de cuánto dura la temporada. Y todas las mecánicas sirven a un tema (ser ídolo de un
+club: ¿gloria o billetera?).
+
+**Lolero contra eso** (master `f510c3d`, con U3a). **Casi todas las piezas ya existen; el problema es que no se ven o
+no se mueven a la vista.**
+
+| El Ídolo | Lolero hoy | Brecha |
+|---|---|---|
+| El amor por club con barra y "→ próximo" | **El arraigo, con los mismos escalones:** Uno más 0, Querido 25, Ídolo 60, Leyenda 88 (`balance.js:822-840`) | Escondido: solo en la placa "Vos" desde 1180 px (`acompanante.js:22`) y en la carta de renovación |
+| La escalera de la selección | El chip del cupo internacional: sin chance, en carpeta, clasificado (`core/ficha.js:153-182`) | Escondido en la placa |
+| La Gloria siempre a la vista | Puntaje y escalón con "te falta…" (`core/puntaje.js:49-57`) | Solo en la tarjeta final |
+| La carta de pretemporada | No existe. El cierre de año elige un plan que se aplica solo (`systems/edadCierre.js:55-86`); los stats suben por una curva oculta | **Falta el delta propio** |
+| El diario, siempre | ✅ U3a: el resumen se ve en todas las velocidades | Falta "Última hora" (no cita ninguna decisión, `temporadaResumen.js:469-478`), el ascenso de escalón y los deltas de arraigo, hype y puntaje |
+| La copa grande | ✅ U3a: el takeover del título con la copa 3D | Falta "tan cerca" en la final perdida, y la vitrina |
+| La final se gana jugando | El minijuego mueve la probabilidad y **después hay una tirada** (`serie.js:354-358`) | El mismo "un clic y perdiste" de §0.3 |
+| La oferta con −idolatría, "allá arrancás" y TRAICIÓN | Sueldo, años, jerarquía y plantel al frente; el arraigo en el panel de detalle (`components/mercado.js:564-606`, `:674-689`) | Lo que pesa no está al frente. **No hay traición** |
+| El duelo eterno al final | El archirrival corre su carrera y está en la placa y en el resumen | No está en la tarjeta final (`screens/tarjeta.js:238-300`) |
+| La plata sirve | `dineroTotalUSD` se acumula (`systems/roster.js:236-242`) | **Ninguna pantalla lo muestra** |
+
+La cadencia (~45 paradas por carrera, ~4 por año) **no es el problema**. Falta que el cierre del año entregue un delta.
+
+**El plan.** No se agregan eventos ni minijuegos, ni cambia la cantidad de paradas (D-A). El motor solo se toca en W4,
+W5 y W7.
+
+- **Ola W1, solo UI:**
+  - **W1 · La ficha.** La placa "Vos" pasa a todas las anchuras, celular incluido:
+    - el nivel con ▲▼ del año;
+    - **la escalera del arraigo con tu org** (barra, escalón, "→ Ídolo en 60");
+    - la jerarquía y el hype con su próximo escalón;
+    - el chip internacional;
+    - los títulos y una vitrina mini;
+    - el puntaje en vivo;
+    - la plata acumulada.
+  - **W2 · El diario** (sobre el resumen de U3a):
+    - "Última hora": la decisión más pesada del año y lo que pasó;
+    - el ascenso de escalón ("¡Ahora sos Ídolo de T1!");
+    - los deltas de arraigo, hype y puntaje.
+  - **W3 · "Tan cerca"** (sobre la copa de U3a): la final perdida cuenta qué tan cerca estuviste ("jugaste bien la
+    jugada… y no alcanzó"), y el trofeo ganado cae en la vitrina de W1.
+  - **W6 · El final cuenta la historia** (una parte de U3b): el duelo con el archirrival, el escalón de arraigo por
+    org, las finales perdidas, y el apodo con prioridad a la lealtad ("Leyenda de T1").
+- **Ola W2, motor chico y medido** (solo después de que el usuario juegue la W1):
+  - **W4 · La carta de pretemporada.** El cierre de año pasa a ser "elegí 1 de 3 mejoras": un +N permanente a un eje,
+    con rareza.
+    - Rangos en `balance.js` y el pozo en `data/`.
+    - La misma cantidad de paradas.
+    - Se mide contra D-D con `simulate.js`.
+  - **W5 · ¿Gloria o billetera?** La oferta muestra al frente:
+    - el sueldo y los años;
+    - los minutos (más, igual o menos);
+    - "dejás T1: −N";
+    - "allá arrancás: Querido".
+    Lleva las etiquetas RENOVACIÓN, A LA BAJA y **TRAICIÓN**. TRAICIÓN es ir al clásico de tu org (datos nuevos por
+    liga): castigo extra de arraigo, 🐍 en la trayectoria, una línea en el diario y el apodo.
+- **Ola W3, a decidir después de jugar:**
+  - **W7 · La final se gana jugando:** sin la tirada de `serie.js:358` tras ganar el minijuego, medido contra D-D.
+  - **W8 · La plata sirve:** staff que tuerce curvas existentes y lujos que dan hype (sistema nuevo).
+
+**Cómo se hace la ola W1.** Tres workers Opus high en worktrees desde master, con tope de ~70-90 llamadas, dueños de
+archivos disjuntos:
+- **H · la ficha** (W1);
+- **D · el diario y "tan cerca"** (W2+W3);
+- **T · la tarjeta final** (W6).
+
+Después, un revisor Sonnet con GPU para toda la ola, una ronda de arreglos al mismo worker, merge, push, deploy, y **el
+usuario juega en RÁPIDO**.
 
 ## 1. Por qué un tercer plan
 
