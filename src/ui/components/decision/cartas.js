@@ -523,7 +523,8 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
       [...fMano.children].forEach((r, k) => {
         if (k === i) {
           const dx = r1.left + r1.width / 2 - (r0.left + r0.width / 2);
-          const dy = r1.top + r1.height / 2 - (r0.top + r0.height / 2);
+          // la tarjeta gira desde su borde de arriba (`transform-origin` en la hoja): la carta llega ahí y nunca pisa el planteo
+          const dy = r1.top - r0.top;
           vivas.push(animar(r, [
             { transform: `perspective(${PERSPECTIVA_GIRO}px) translate(0, 0) rotateY(0deg)` },
             { transform: `perspective(${PERSPECTIVA_GIRO}px) translate(${dx}px, ${dy}px) rotateY(90deg)` }

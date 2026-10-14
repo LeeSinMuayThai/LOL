@@ -47,6 +47,7 @@
 
 /* --- la leyenda de la planilla --- */
 .cv-leyenda {
+  position: relative; z-index: 5;
   display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 18px; margin: 12px 0 0;
   font: 500 12px/1.2 var(--f-mono); color: var(--ink-dim);
 }
@@ -68,7 +69,7 @@
   position: relative; flex: 0 0 var(--cv-ancho, 260px); display: flex; min-width: 0;
 }
 .cv-raiz[data-forma='matriz'] .cv-ranura { --cv-arte: calc(var(--cv-ancho, 260px) * 0.34); }
-.cv-raiz[data-forma='matriz'] .cv-mano { padding-top: 26px; }
+.cv-raiz[data-forma='matriz'] .cv-mano { padding-top: 32px; }
 
 /* el halo del eje, abajo */
 .cv-halo {
@@ -289,7 +290,7 @@ html[data-textos='completos'] .cv-raiz .cv-desc { display: block; }
 /* --- "lo que pasó": el dorso de la carta --- */
 .cv-raiz .resultado.cv-resultado {
   position: relative; margin: 18px 0 22px; padding: 20px 24px 22px; border-radius: var(--cv-radio, 14px);
-  transform-origin: 50% 50%; backface-visibility: hidden;
+  transform-origin: 50% 0; backface-visibility: hidden;
   background: linear-gradient(180deg, color-mix(in srgb, var(--eje, var(--luz)) 12%, var(--panel-opaco)), var(--panel-opaco) 70%);
   box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--eje, var(--luz)) 70%, transparent), 0 26px 60px var(--sombra), 0 0 50px color-mix(in srgb, var(--eje, var(--luz)) 22%, transparent);
 }
@@ -297,7 +298,7 @@ html[data-textos='completos'] .cv-raiz .cv-desc { display: block; }
   top: 0; bottom: auto; left: 18px; right: 18px; width: auto; height: 3px; border-radius: 0 0 3px 3px;
   background: var(--eje, var(--luz)); box-shadow: 0 0 14px var(--eje, var(--luz));
 }
-.cv-dorso { --cv-med: 92px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; z-index: 2; }
+.cv-dorso { --cv-med: 92px; position: absolute; left: 50%; top: 120px; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; z-index: 2; }
 
 /* --- el celular: un carrusel con scroll-snap, la carta al 78% --- */
 @media (max-width: 640px) {
@@ -308,9 +309,19 @@ html[data-textos='completos'] .cv-raiz .cv-desc { display: block; }
     scrollbar-width: none; gap: 14px; padding: 22px calc((100% - 74vw) / 2) 28px;
   }
   .cv-mano::-webkit-scrollbar { display: none; }
-  .cv-ranura { --cv-ancho: 74vw; --cv-arte: calc(var(--cv-ancho, 260px) * 0.56); scroll-snap-align: center; }
-  .cv-raiz[data-forma='matriz'] .cv-ranura { --cv-arte: calc(var(--cv-ancho, 260px) * 0.36); }
-  .cv-inspector { grid-template-columns: minmax(0, 1fr); padding: 12px 14px; }
+  .cv-ranura { --cv-ancho: 74vw; --cv-arte: calc(var(--cv-ancho, 260px) * 0.4); scroll-snap-align: center; }
+  .cv-raiz[data-forma='matriz'] .cv-ranura { --cv-arte: calc(var(--cv-ancho, 260px) * 0.28); }
+  /* que todo entre arriba de la barra de cuartos: carta más baja, banda más compacta (el label ya está en la carta) */
+  .cv-cab { margin-bottom: 0; }
+  .cv-titulo { margin: 4px 0 6px; }
+  .cv-planteo { font-size: 13.5px; line-height: 1.4; }
+  .cv-mano { padding-top: 14px; padding-bottom: 16px; }
+  .cv-raiz .cv-carta .cv-cuerpo { padding-top: 30px; gap: 6px; }
+  .cv-raiz .cv-tecla { margin-bottom: 8px; }
+  .cv-inspector { grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 10px 14px; }
+  .cv-inspector .cv-insp-kicker { display: none; }
+  .cv-insp-texto { margin: 0; font-size: 13px; }
+  .cv-insp-lista li { font-size: 12px; }
   .cv-raiz .resultado.cv-resultado { padding: 16px 16px 18px; }
 }
 
