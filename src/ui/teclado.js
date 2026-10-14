@@ -15,6 +15,7 @@
 //     (el "Firmar" del mercado), la tecla solo le lleva el FOCO — con el scroll mínimo para verlo — y Enter hace el resto;
 //   - Esc nunca navega: cierra el desplegable "Avanzado" del inicio y nada más (en la final no hace nada: D87). Con un
 //     cuarto abierto, Esc es el nativo del `<dialog>`: lo cierra y el foco vuelve a la parada (V2-C);
+//   - L (PLANUI §0.6) → abre el cajón de "Mientras tanto" en una parada (decisión, partido o mercado);
 //   - V/T/E/M/C/R (V2-C) → abren Vos, Temporada, Equipo, Mundo, Carrera y Crónica (con uno abierto, cambian de pestaña):
 //     hacen clic en el botón de la barra de la franja (o en la pestaña del diálogo) que lleva esa letra en
 //     `aria-keyshortcuts`. Se apagan en el inicio y en el minijuego (`PIEZAS_SIN_CUARTOS`: los minijuegos son dueños de
@@ -30,6 +31,8 @@ const botonAyuda = document.getElementById('ayudaTeclas');
 const TECLA_AYUDA = '?';
 // La tecla de "¡Vamos!" en la previa de un minijuego (V3d, D94): ningún minijuego la usa.
 const TECLA_VAMOS = 'V';
+// La tecla del cajón de "Mientras tanto" (PLANUI §0.6): ninguna parada ni cuarto la usa.
+const TECLA_TRAMO = 'L';
 
 // Las piezas donde 1-6 eligen una opción (el mercado trae hasta seis ofertas).
 const PIEZAS_CON_ATAJOS = ['decision', 'partido', 'mercado'];
@@ -100,7 +103,9 @@ document.addEventListener('keydown', (evento) => {
   }
   const botonCuarto = botonDeCuarto(evento.key);
   if (botonCuarto) {
-    const apagada = evento.key === TECLA_AYUDA ? pieza === 'minijuego' : PIEZAS_SIN_CUARTOS.includes(pieza);
+    // con el cajón de "Mientras tanto" abierto los cuartos esperan (no se apila un diálogo sobre otro)
+    const apagada = (evento.key === TECLA_AYUDA ? pieza === 'minijuego' : PIEZAS_SIN_CUARTOS.includes(pieza))
+      || Boolean(document.querySelector('dialog.mt-cajon[open]'));
     if (!apagada && !evento.repeat) {
       evento.preventDefault();
       botonCuarto.click();
@@ -109,6 +114,17 @@ document.addEventListener('keydown', (evento) => {
   }
   // Con un cuarto abierto (`<dialog>` con `showModal()`), el diálogo es dueño del resto del teclado (Esc lo cierra solo).
   if (document.querySelector('dialog[open]')) return;
+
+  // PLANUI §0.6 (U3a): L abre el cajón de "Mientras tanto" sobre la parada (`components/feed.js`). Con el cajón abierto, L y
+  // Esc lo cierran: los escucha el cajón (un `<dialog>`, que ya cortó arriba).
+  if (evento.key.toUpperCase() === TECLA_TRAMO && PIEZAS_CON_ATAJOS.includes(pieza)) {
+    const franja = document.querySelector('#paradaAntes button.mt-franja');
+    if (franja && esVisible(franja)) {
+      evento.preventDefault();
+      if (!evento.repeat) franja.click();
+    }
+    return;
+  }
 
   if (evento.key === ' ' || evento.key === 'Enter') {
     if (focoEnAlgoInteractivo(activo)) return; // su acción nativa

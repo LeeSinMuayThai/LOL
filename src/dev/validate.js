@@ -8668,7 +8668,10 @@ check(NOMBRE_CHECK_REPRODUCIR_BEATS, () => {
 // espera nada, pero se mueve (PLANUI §0.4: sin movimiento es SOLO el movimiento reducido, y la narración de una parada corre entera a la escala
 // corta; antes INST era otro camino quieto y el jugador que iba rápido no veía ni una animación). Corre a nivel de módulo (`reproducirBeats` es async), con el `setTimeout` reemplazado por uno que registra
 // los milisegundos y sigue en el turno siguiente.
-const NOMBRE_CHECK_PAUSA_DEL_ANIO = 'V4: reproducirBeats sostiene la tarjeta "Cierre de …" ESPERA_CIERRE_ANIO_MS más que un beat y una página reabierta sin beats espera uno (D97), nunca en rápido; con movimiento reducido conserva el mismo pulso (PLANUI §0.3); rápido no espera pero anima y narra entero (PLANUI §0.4)';
+// PLANUI §0.6 (U3a): rápido ya no esconde el cierre del año. La tarjeta "Cierre de …" entra con el último beat y el resumen de la
+// temporada (un momento) la sostiene hasta Continuar, en TODAS las velocidades; el título entra tras el beat de su final. Los
+// momentos se prueban con un `mostrar` que no resuelve hasta que el check "aprieta Continuar": el reproductor no puede terminar antes.
+const NOMBRE_CHECK_PAUSA_DEL_ANIO = 'V4: reproducirBeats sostiene la tarjeta "Cierre de …" ESPERA_CIERRE_ANIO_MS más que un beat y una página reabierta sin beats espera uno (D97); en rápido el relato no espera, pero la tarjeta se pinta y el resumen de la temporada la sostiene hasta Continuar, y el título entra tras su beat, en todas las velocidades (PLANUI §0.6); con movimiento reducido conserva el mismo pulso (PLANUI §0.3); rápido no espera pero anima y narra entero (PLANUI §0.4)';
 let errorPausaDelAnio = null;
 if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_PAUSA_DEL_ANIO.toLowerCase().includes(texto))) {
   const previos = {
@@ -8726,6 +8729,59 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_PAUSA_DEL_ANIO.toLowe
     ];
     const mal = casos.filter(([, vistas, esperadas]) => JSON.stringify(vistas) !== JSON.stringify(esperadas))
       .map(([nombre, vistas, esperadas]) => `${nombre}: esperó ${JSON.stringify(vistas)} y tenía que esperar ${JSON.stringify(esperadas)}`);
+    // PLANUI §0.6: los momentos. `titulo` (indice 1) entra tras el beat 1 y su espera, antes del beat 2; `resumen` (alFinal) tras el
+    // último beat, con la tarjeta del año ya pintada y su espera cumplida; y `reproducirBeats` no termina hasta Continuar.
+    const turnos = async (hasta) => {
+      for (let i = 0; i < 500 && !hasta(); i += 1) await new Promise((r) => queueMicrotask(r));
+    };
+    const conMomentos = async (velocidad, reducido, nuevas) => {
+      poner(velocidad, reducido);
+      esperas.length = 0;
+      const logList = new ElementoFalso('div');
+      const vistos = [];
+      let continuar = null;
+      let termino = false;
+      const momentos = [
+        { indice: 1, mostrar: async () => { vistos.push({ momento: 'titulo', filas: logList.childNodes.length, esperas: [...esperas] }); } },
+        {
+          indice: 2,
+          alFinal: true,
+          mostrar: () => new Promise((resolver) => {
+            const ultimo = logList.childNodes[logList.childNodes.length - 1];
+            vistos.push({ momento: 'resumen', filas: logList.childNodes.length, esperas: [...esperas], tarjeta: Boolean(ultimo?.dataset?.firma) });
+            continuar = resolver;
+          })
+        }
+      ];
+      const corrida = reproductorModulo.reproducirBeats(logList, nuevas, { state: { logs: beats }, offset: beats.length - nuevas.length, pagina: { desde: 0, anterior: null, cierre: cierre(anio), cartel: null }, momentos })
+        .then(() => { termino = true; });
+      await turnos(() => continuar !== null);
+      const esperandoContinuar = continuar !== null && !termino;
+      continuar?.();
+      await corrida;
+      return { vistos, esperandoContinuar, termino, esperas: [...esperas] };
+    };
+    for (const [nombre, velocidad, reducido, esperadas] of [
+      ['1×', 'x1', false, [700, 700, 700 + ESPERA_ANIO]],
+      ['rápido', 'instantaneo', false, []],
+      ['1× con movimiento reducido', 'x1', true, [700, 700, 700 + ESPERA_ANIO]],
+      ['rápido con movimiento reducido', 'instantaneo', true, []]
+    ]) {
+      const r = await conMomentos(velocidad, reducido, beats);
+      const [titulo, resumen] = r.vistos;
+      const problemas = [];
+      if (JSON.stringify(r.esperas) !== JSON.stringify(esperadas)) problemas.push(`esperó ${JSON.stringify(r.esperas)} y tenía que esperar ${JSON.stringify(esperadas)}`);
+      if (titulo?.momento !== 'titulo' || titulo.filas !== 2 || JSON.stringify(titulo.esperas) !== JSON.stringify(esperadas.slice(0, 2))) problemas.push(`el título tenía que entrar tras el beat 1 y su espera: ${JSON.stringify(titulo)}`);
+      if (resumen?.momento !== 'resumen' || !resumen.tarjeta || resumen.filas !== beats.length + 1 || JSON.stringify(resumen.esperas) !== JSON.stringify(esperadas)) problemas.push(`el resumen tenía que entrar con la tarjeta del año pintada y su espera cumplida: ${JSON.stringify(resumen)}`);
+      if (!r.esperandoContinuar) problemas.push('reproducirBeats terminó sin esperar a Continuar');
+      if (!r.termino) problemas.push('reproducirBeats no terminó después de Continuar');
+      if (problemas.length > 0) mal.push(`con momentos a ${nombre}: ${problemas.join('; ')}`);
+    }
+    // La parada contó el tramo entero en el lugar (sin beats nuevos): los momentos entran igual, y esperan a Continuar.
+    const sinBeats = await conMomentos('instantaneo', false, []);
+    if (sinBeats.vistos.map((v) => v.momento).join() !== 'titulo,resumen' || !sinBeats.esperandoContinuar || !sinBeats.termino) {
+      mal.push(`rápido sin beats nuevos (la parada contó el tramo): los momentos tenían que entrar y esperar a Continuar: ${JSON.stringify(sinBeats)}`);
+    }
     // PLANUI §0.4: con una raíz de verdad (el `reducido()` de fx/util.js lee `data-reducido` y `matchMedia`), lo que cada velocidad dice del
     // movimiento. Rápido: el relato sin pulso, pero CON movimiento (los beats entran con su animación) y la narración 'normal' entera, con las
     // esperas a una escala corta (> 0, < la de 2×). El movimiento reducido manda sobre el movimiento a cualquier velocidad.
@@ -8774,6 +8830,78 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_PAUSA_DEL_ANIO.toLowe
 
 check(NOMBRE_CHECK_PAUSA_DEL_ANIO, () => {
   if (errorPausaDelAnio) throw errorPausaDelAnio;
+});
+
+// PLANUI §0.6 (U3a): los momentos salen de lo que el motor ya registra, sin tocarlo (`ui/core/momentos.js`). Con el motor real
+// (carreras con `avanzarSplitAuto`), split por split: un título que entra a `registro.titulos` da UN momento (el Mundial gana si
+// el mismo tramo trae los dos); un tramo sin título ni Mundial, ninguno; el resumen de la temporada aparece justo en los tramos
+// con el log `edad` de la nota. La muestra tiene que traer al menos un título y un resumen (si no, no probaría nada). Y
+// `momentosVistos` (almacenamiento.js) vive en el marcador `lolcs-vista` sin romperlo: lo anotado se lee, es de una seed.
+const NOMBRE_CHECK_MOMENTOS = 'U3a: un título que entra a registro.titulos da un momento (el Mundial, el dorado), sin título ninguno; el resumen de la temporada sale del log edad; momentosVistos vive en lolcs-vista (PLANUI §0.6)';
+let errorMomentos = null;
+if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_MOMENTOS.toLowerCase().includes(texto))) {
+  const previoStorage = globalThis.localStorage;
+  try {
+    const { momentosDelTramo, resumenDelTramo, franjaDelTramo } = await import('../ui/core/momentos.js');
+    const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
+    const SPLITS_TOPE = 90;
+    let titulos = 0;
+    let resumenes = 0;
+    const mal = [];
+    for (const seed of SEEDS) {
+      const rng = mulberry32(seed);
+      let estado = createInitialState(seed, rng);
+      for (let i = 0; i < SPLITS_TOPE && !estado.terminado; i += 1) {
+        const registroAntes = estado.career.registro;
+        const desde = estado.logs.length;
+        estado = avanzarSplitAuto(estado, rng).state;
+        const momentos = momentosDelTramo({ registroAntes, despues: estado, desde });
+        const nuevos = estado.career.registro.titulos.length - registroAntes.titulos.length;
+        const mundial = estado.logs.slice(desde).some((l) => l.type === 'internacional' && l.resultado === 'campeon');
+        const esperado = mundial ? 'mundial' : nuevos > 0 ? 'titulo' : null;
+        const visto = momentos.map((m) => m.tipo).join();
+        if (visto !== (esperado ?? '')) mal.push(`seed ${seed} split ${i}: ${nuevos} título(s) nuevo(s)${mundial ? ' y el Mundial' : ''} dieron [${visto}]`);
+        for (const m of momentos) {
+          if (!(m.indice >= desde && m.indice < estado.logs.length) || !m.clave || !m.nombre || !m.org) mal.push(`seed ${seed} split ${i}: momento mal formado ${JSON.stringify(m)}`);
+        }
+        if (nuevos > 0) titulos += 1;
+        const conNota = estado.logs.slice(desde).some((l) => l.type === 'edad' && Number.isFinite(l.nota));
+        const resumen = resumenDelTramo({ despues: estado, desde, fotoAnio: null });
+        if (Boolean(resumen) !== conNota) mal.push(`seed ${seed} split ${i}: el tramo ${conNota ? 'trae' : 'no trae'} la nota del año y el resumen ${resumen ? 'salió' : 'no salió'}`);
+        if (resumen) {
+          resumenes += 1;
+          if (!Number.isFinite(resumen.nota) || !resumen.titular || !Array.isArray(resumen.vinetas) || !Array.isArray(resumen.splits) || !Array.isArray(resumen.ejes)) mal.push(`seed ${seed} split ${i}: resumen incompleto ${JSON.stringify(resumen).slice(0, 200)}`);
+        }
+        const franja = franjaDelTramo(estado.logs, desde);
+        if (franja.titulares.length > 3 || franja.cuantas < franja.titulares.length) mal.push(`seed ${seed} split ${i}: franja ${JSON.stringify(franja).slice(0, 200)}`);
+      }
+    }
+    if (titulos === 0) mal.push(`la muestra (${SEEDS.length} carreras) no trajo ningún título: el check no probaría nada`);
+    if (resumenes === 0) mal.push('la muestra no trajo ningún resumen de la temporada');
+    // momentosVistos, con un localStorage en memoria
+    const memoria = new Map();
+    globalThis.localStorage = { getItem: (k) => (memoria.has(k) ? memoria.get(k) : null), setItem: (k, v) => memoria.set(k, String(v)), removeItem: (k) => memoria.delete(k) };
+    const alm = await import('../ui/almacenamiento.js');
+    alm.guardarVista({ seed: 7, inicioDePagina: 3, logs: 12 });
+    alm.anotarMomentoVisto(7, 'titulo:2031:LEC:40');
+    alm.anotarMomentoVisto(7, 'titulo:2031:LEC:40');
+    const marcador = alm.cargarVista();
+    if (JSON.stringify(alm.leerMomentosVistos(7)) !== JSON.stringify(['titulo:2031:LEC:40'])) mal.push(`momentosVistos: ${JSON.stringify(alm.leerMomentosVistos(7))}`);
+    if (marcador.inicioDePagina !== 3 || marcador.logs !== 12) mal.push(`anotar un momento rompió el marcador: ${JSON.stringify(marcador)}`);
+    if (alm.leerMomentosVistos(8).length !== 0) mal.push('momentosVistos de otra seed');
+    alm.borrarVista();
+    if (alm.leerMomentosVistos(7).length !== 0) mal.push('una carrera nueva (borrarVista) no borró momentosVistos');
+    if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
+  } catch (error) {
+    errorMomentos = error;
+  } finally {
+    if (previoStorage === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = previoStorage;
+  }
+}
+
+check(NOMBRE_CHECK_MOMENTOS, () => {
+  if (errorMomentos) throw errorMomentos;
 });
 
 // ============================================================================
