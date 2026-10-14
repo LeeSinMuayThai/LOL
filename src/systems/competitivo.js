@@ -103,8 +103,11 @@ function saltarATier2(state, logsPrevios, motivo = '') {
 // igual que cuando firmás sin equipo en la pretemporada.
 export const MOTIVO_LLAMADA = 'llamada_tier2';
 
+// Solo el split del medio (`regular`). En el de playoffs, el último del año, el contrato "hasta la pretemporada" vencía sin
+// jugarse un solo split: el mercado corre en el split siguiente y ya te agarra (medido: 204 de 511 llamadas caían ahí). Ese
+// split igual frena con el cierre del año.
 function saltoAMitadDeAnio(state) {
-  return calcularContexto(state).ventana !== 'pretemporada';
+  return calcularContexto(state).ventana === 'regular';
 }
 
 function clubQueTeLlama(state, liga) {
