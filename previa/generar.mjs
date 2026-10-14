@@ -109,6 +109,15 @@ function alParar(ctx) {
   }
   if (sistema.id === 'amateur' && motivo === 'plan_amateur' && nOpc === 4) ofrecer('plan', 1, ctx);
   if (sistema.id === 'edadCierre' && decision.opciones?.some((o) => o.plan)) ofrecer('cierre', state.phase === 'profesional' ? 2 : 1, ctx);
+  // F4 (PLANUI §0.8, punto 8): `cierre-receso`, la carta que mueve un número que ves. El cierre del tier 3 con "Usar el receso
+  // para apuntar más alto" (Mecánica y Macro suben, Consistencia baja): se contesta con esa opción (`eleccion`) y el diario
+  // del año muestra "Tu receso" con los números reales.
+  const apuntar = decision.opciones?.findIndex((o) => o.id === 'prepararte_para_algo_mejor') ?? -1;
+  if (sistema.id === 'edadCierre' && apuntar >= 0 && state.phase === 'profesional') {
+    ofrecer('cierre-receso', 1, ctx);
+    const m = muestras.get('cierre-receso');
+    if (m && m.seed === state.seed) m.eleccion = apuntar + 1;
+  }
   if (sistema.id === 'serie' && motivo === 'plan' && esBo5DeLiga(state) && !decision.datos?.replan) ofrecer('serie', (PRIORIDAD_RONDA[state.serie.ronda] ?? 0) + 1, ctx);
   // F1 (PLANUI §0.8): cada ronda del Swiss frena. `swiss` sigue siendo el 2-2 (el de vida o muerte, el de siempre);
   // `swiss-2-2` es el mismo; `swiss-ronda` una ronda que no lo es (mejor un 1-1, la del medio); `mundial-cuartos` el plan
@@ -125,7 +134,7 @@ function alParar(ctx) {
   if (sistema.id === 'internacional' && motivo === 'plan' && state.serie?.torneo === 'mundial' && state.serie.etapa === 'cuartos' && !decision.datos?.replan) ofrecer('mundial-cuartos', 1, ctx);
 }
 
-const QUIERO = ['evento', 'destino', 'plan', 'cierre', 'serie', 'swiss', 'swiss-2-2', 'swiss-ronda', 'mundial-cuartos', 'final', 'firma', 'final-perdida', 'mudanza', 'primer-club'];
+const QUIERO = ['evento', 'destino', 'plan', 'cierre', 'cierre-receso', 'serie', 'swiss', 'swiss-2-2', 'swiss-ronda', 'mundial-cuartos', 'final', 'firma', 'final-perdida', 'mudanza', 'primer-club'];
 for (let seed = 1; seed <= SEEDS && !QUIERO.every((n) => muestras.has(n) && (!['serie', 'swiss-ronda'].includes(n) || muestras.get(n).prioridad >= 3)); seed += 1) {
   jugarCarrera(seed, { alParar, responder, alCerrarSplit: ({ despues }) => confirmar(despues) });
 }

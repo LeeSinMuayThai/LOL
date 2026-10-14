@@ -358,6 +358,16 @@ export function mostrarResumen(datos, { escala = 1, controlar = null } = {}) {
         el('p', { class: 'mo-r-ultima-rotulo' }, [el('b', { text: 'Última hora' }), el('span', { text: uh.rotulo })]),
         el('p', { class: 'mo-r-ultima-texto' }, [el('strong', { text: uh.eleccion }), ...(uh.salio ? [' ', el('span', { text: uh.salio })] : [])])
       ]) : null;
+      // F4 (PLANUI §0.8, punto 8): "Tu receso", la carta que elegiste al cerrar el año y lo que movió, antes → después.
+      const rc = datos.receso;
+      const receso = rc ? el('section', { class: 'mo-r-receso' }, [
+        el('p', { class: 'mo-r-receso-rotulo' }, [el('b', { text: 'Tu receso' }), el('span', { text: rc.carta })]),
+        el('ul', { class: 'mo-r-receso-cambios' }, rc.cambios.map((c) => el('li', { class: c.delta < 0 ? 'baja' : '', 'data-stat': c.id }, [
+          el('span', { class: 'mo-r-receso-nombre', text: c.etiqueta }),
+          el('span', { class: 'mo-r-receso-num', text: `${num(c.antes)} → ${num(c.despues)}` }),
+          el('b', { class: 'mo-r-receso-delta', text: `${c.delta < 0 ? '▼' : '▲'} ${num(Math.abs(c.delta))}` })
+        ])))
+      ]) : null;
       const odos = [];
       const datoDe = ({ rotulo, antes, despues, delta, banda, texto = null, eje = null }) => {
         // las columnas del odómetro son decorado (aria-hidden): el valor real lo lee el lector de pantalla
@@ -414,7 +424,7 @@ export function mostrarResumen(datos, { escala = 1, controlar = null } = {}) {
       const mas = plegados.length ? el('details', { class: 'mo-r-mas' }, [el('summary', { text: 'Más del año' }), el('div', { class: 'mo-r-grilla' }, plegados)]) : null;
       // el cuerpo scrollea solo y el pie (Continuar) queda debajo, afuera del scroll: el botón nunca tapa una fila
       const grilla = bloques.length ? el('div', { class: 'mo-r-grilla' }, bloques) : null;
-      const piezas = [cabeza, titular, ascenso, ultima, numeros, vinetas, grilla, mas].filter(Boolean);
+      const piezas = [cabeza, titular, ascenso, ultima, numeros, receso, vinetas, grilla, mas].filter(Boolean);
       const cuerpo = el('div', { class: 'mo-r-cuerpo' }, piezas);
       const panel = el('div', { class: 'mo-r-panel' }, [cuerpo, el('div', { class: 'mo-r-pie' }, [seguir])]);
       raiz.prepend(el('div', { class: 'mo-negro mo-r-velo', 'aria-hidden': 'true' }), panel);

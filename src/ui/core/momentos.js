@@ -6,6 +6,7 @@
 // Un tramo trae como mucho UN takeover (§6.5): si el mismo tramo trae el Mundial y un título, va el Mundial.
 // Lo que dibuja cada momento es de `fx/momento.js`; lo que ya se vio lo anota `almacenamiento.js` (`momentosVistos`).
 import { efectosDeTexto } from '../components/chipsEje.js';
+import { etiquetaCampo } from '../../core/selectors.js';
 import { cierreDeSplit } from './escena.js';
 import { formaBeat } from '../../core/log.js';
 import { TODOS_LOS_EVENTOS } from '../../data/events/index.js';
@@ -185,6 +186,8 @@ export function resumenDelTramo({ despues, desde = 0, fotoAnio = null } = {}) {
     mundo,
     // W1-D (PLANUI §0.7, W2): el diario. La decisión del año, los escalones que subiste y cuánto se movió lo tuyo.
     ultimaHora: ultimaHoraDelAnio(logs.slice(inicio, i), registro, anio),
+    // F4 (PLANUI §0.8, punto 8): la carta del cierre que elegiste y lo que movió de verdad, antes → después.
+    receso: recesoDelAnio(logs.slice(inicio, i), despues),
     ...ascensosYDeltas(despues, anio, fotoAnio)
   };
 }
@@ -308,6 +311,43 @@ export function ultimaHoraDelAnio(logs, registro = {}, anio = null) {
     if (d && (!mejor || PESO_DE_DECISION[d.tipo] >= PESO_DE_DECISION[mejor.tipo])) mejor = d;
   });
   return mejor;
+}
+
+// --- F4 (PLANUI §0.8, punto 8): "Tu receso", la carta del cierre y lo que movió ---
+
+// Lo que una carta del cierre puede mover y se ve en una pantalla: los stats de juego, las barras de casa y la gente del
+// equipo. El resto (SoloQ, el pool, los flags) no es un número que la ficha muestre.
+const CAMPOS_DEL_RECESO = [
+  ...['mecanica', 'macro', 'laneo', 'teamfight', 'shotcalling', 'adaptabilidad', 'mentalidad', 'hype'].map((s) => ['stats', s]),
+  ['player', 'sleep'], ['player', 'studies'], ['player', 'familyTrust'],
+  ['career', 'jerarquia'], ['career', 'sinergia'], ['career', 'arraigo']
+].map(([base, clave]) => {
+  const ruta = base === 'stats' ? `player.stats.${clave}` : `${base}.${clave}`;
+  return { id: clave, ruta, etiqueta: etiquetaCampo(ruta) };
+});
+
+function valorActual(estado, ruta) {
+  return ruta.split('.').reduce((nodo, clave) => nodo?.[clave], estado);
+}
+
+// `{ carta, rotulo, cambios: [{ id, etiqueta, antes, despues, delta }] }` o `null`. `logs`: los del año (sin el resumen). La
+// carta es la que contestaste vos (la que resolvió tu perfil en la cola no es una elección: `eventoDe` la descarta). El
+// delta es el que aplicó el motor, leído del renglón de efectos del propio log (ya con el clamp y el techo de lesión), y el
+// "después" es el stat de ahora: el cierre corre al final del split, nada lo mueve después. Un stat que no se movió no sale.
+export function recesoDelAnio(logs, despues) {
+  const log = [...(logs ?? [])].reverse().find((l) => l && eventoDe(l)?.tipo === 'plan');
+  if (!log) return null;
+  const corte = log.titulo.indexOf(SEPARADOR_DE_OPCION);
+  const carta = log.titulo.slice(corte + SEPARADOR_DE_OPCION.length).trim();
+  const cambios = [];
+  for (const e of efectosDeTexto(log.efectos)) {
+    const campo = CAMPOS_DEL_RECESO.find((c) => c.etiqueta === e.etiqueta);
+    const ahora = campo && valorActual(despues, campo.ruta);
+    if (!campo || !e.cambio || !e.valor || e.sufijo || !Number.isFinite(ahora)) continue;
+    const delta = Math.round(e.valor);
+    cambios.push({ id: campo.id, etiqueta: campo.etiqueta, antes: Math.round(ahora) - delta, despues: Math.round(ahora), delta });
+  }
+  return cambios.length ? { carta, rotulo: eventoDe(log).rotulo, cambios } : null;
 }
 
 // --- El ascenso de escalón y los deltas del año ---
