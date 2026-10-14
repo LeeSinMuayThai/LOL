@@ -1071,3 +1071,24 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
 :root {
   --dur-fundido: 120ms;
 }
+
+/* P1-draft (PLANUI §0.4, la variante B de la decisión: el champ select de tu vida, estilos/decision-draft.css) */
+:root {
+  --dr-franja-alto: 90px;
+  --dr-arte-ancho: 108px;
+  --dr-bisel: 14px;
+  --dr-panel-arte-alto: 112px;
+  --dr-apagada: 0.34;
+  --dr-fondo: color-mix(in srgb, var(--bg-sunken) 88%, transparent);
+  --dr-fondo-lejos: color-mix(in srgb, var(--bg-surface) 62%, transparent);
+  --dr-fondo-apuntada: color-mix(in srgb, var(--bg-raised) 90%, transparent);
+  --dr-filo: color-mix(in srgb, var(--ink) 13%, transparent);
+  --dr-filo-tenue: color-mix(in srgb, var(--ink) 7%, transparent);
+  --dr-barrido: color-mix(in srgb, var(--luz-blanca) 72%, transparent);
+  --dr-panel-fondo: color-mix(in srgb, var(--bg-sunken) 92%, transparent);
+  --dr-sello-fondo: color-mix(in srgb, var(--ln-petroleo-hondo) 86%, transparent);
+  --dr-velo-cab: color-mix(in srgb, var(--bg-void) 55%, transparent);
+}
+@media (max-width: 640px) {
+  :root { --dr-franja-alto: 68px; --dr-arte-ancho: 68px; --dr-bisel: 10px; --dr-panel-arte-alto: 96px; }
+}
