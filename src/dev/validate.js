@@ -29150,6 +29150,63 @@ check('V3e (regla 15): la ficha dice el nivel de hoy (nunca "tier 3" ya en tier 
   }
 });
 
+// ==========================================================================================================================
+// W1-H (PLANUI §0.7): la ficha fija. Los helpers de `core/ficha.js` que la pintan dicen el mismo escalón que las bandas de
+// siempre, el próximo escalón con el número exacto en que se entra, y el puntaje en vivo no rompe a mitad de carrera.
+// ==========================================================================================================================
+const W1H_FICHA = await import('../core/ficha.js');
+check('W1-H: la ficha fija nombra el próximo escalón con su umbral real (arraigo, jerarquía, hype) y el puntaje en vivo no rompe', () => {
+  const F = W1H_FICHA;
+  const { hitos } = BALANCE.arraigo;
+  const problemas = [];
+  // El arraigo: cada hito es el umbral exacto del escalón de abajo; en Leyenda no hay próximo.
+  const base = { career: { currentOrg: 'Org de prueba', arraigo: 0, registro: { porOrg: [] } }, player: { splitCount: 0 }, flags: {} };
+  const pares = [[hitos.uno_mas, 'querido', hitos.querido], [hitos.querido - 1, 'querido', hitos.querido], [hitos.querido, 'idolo', hitos.idolo], [hitos.idolo, 'leyenda', hitos.leyenda]];
+  for (const [valor, proximo, umbral] of pares) {
+    const e = F.escaleraDeArraigo({ ...base, career: { ...base.career, arraigo: valor } });
+    if (e.siguiente?.id !== proximo || e.siguiente.umbral !== umbral) problemas.push(`arraigo ${valor}: próximo ${JSON.stringify(e.siguiente)}, esperaba ${proximo} en ${umbral}`);
+    if (!(e.progreso >= 0 && e.progreso <= 1)) problemas.push(`arraigo ${valor}: progreso ${e.progreso}`);
+  }
+  const leyenda = F.escaleraDeArraigo({ ...base, career: { ...base.career, arraigo: hitos.leyenda } });
+  if (leyenda.id !== 'leyenda' || leyenda.siguiente !== null) problemas.push(`arraigo ${hitos.leyenda}: ${leyenda.id}, próximo ${JSON.stringify(leyenda.siguiente)}`);
+  if (F.escaleraDeArraigo({ ...base, career: { ...base.career, currentOrg: null } }) !== null) problemas.push('sin org, el arraigo tiene que ser null');
+  // Jerarquía y hype: entrar al próximo escalón en su umbral cambia la banda (y uno menos, no).
+  const conMismaBanda = (fn, armar) => {
+    for (let valor = 0; valor < BALANCE.stats.max; valor += 1) {
+      const e = fn(armar(valor));
+      if (!e.siguiente) continue;
+      const adentro = fn(armar(e.siguiente.umbral));
+      const antes = fn(armar(e.siguiente.umbral - 1));
+      if (adentro.id !== e.siguiente.id || antes.id === e.siguiente.id) problemas.push(`${fn.name} ${valor}: el umbral ${e.siguiente.umbral} no es la entrada a ${e.siguiente.id}`);
+    }
+  };
+  conMismaBanda(F.escaleraDeJerarquia, (valor) => ({ ...base, career: { ...base.career, jerarquia: valor } }));
+  conMismaBanda(F.escaleraDeHype, (valor) => ({ ...base, player: { ...base.player, stats: { hype: valor } } }));
+  // El puntaje en vivo, el nivel del año y la vitrina sobre carreras jugadas, split a split.
+  let estados = 0;
+  let conTotal = 0;
+  for (const seed of [11, 23, 37]) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    for (let i = 0; i < 40 && !state.terminado; i += 1) {
+      state = avanzarSplitAuto(state, rng).state;
+      const vivo = F.puntajeEnVivo(state);
+      const nivel = F.nivelDelAnio(state);
+      const vitrina = F.vitrinaDeTitulos(state.career.registro);
+      estados += 1;
+      if (vivo.total !== null) conTotal += 1;
+      if (!vivo.actual) problemas.push(`seed ${seed}, split ${i}: el puntaje en vivo no tiene escalón`);
+      if (nivel.valor !== Math.round(F.nivelDelJugador(state))) problemas.push(`seed ${seed}, split ${i}: nivel ${nivel.valor}`);
+      const copas = vitrina.grupos.reduce((n, g) => n + g.titulos.length, 0);
+      if (copas !== (state.career.registro?.titulos?.length ?? 0) || vitrina.total !== copas) problemas.push(`seed ${seed}, split ${i}: la vitrina tiene ${copas} copas`);
+      if (F.dineroGanado(state.career.registro) !== (state.career.registro?.dineroTotalUSD ?? 0)) problemas.push(`seed ${seed}, split ${i}: la plata no es la del registro`);
+    }
+  }
+  console.log(`      ${estados} estados, ${conTotal} con puntaje en vivo`);
+  if (conTotal === 0) problemas.push('el puntaje en vivo no se pudo calcular en ningún estado');
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);
