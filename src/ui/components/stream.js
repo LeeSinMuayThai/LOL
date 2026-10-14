@@ -6,6 +6,15 @@
 // con su suspenso) y entra AFUERA (o ADENTRO) como un takeover con beats: la palabra cae letra por letra, la p de las dos
 // opciones ("la decisión movió el número, el dado salió igual") y lo que se movió. Lo decorativo (el chat, los
 // espectadores, la cámara) sale de `fx/azar.js` con la semilla de la carrera: nunca del rng del motor ni de `rngUi`.
+//
+// Las dos variantes de la previa (P1, PLANUI §0.4: "es muy difícil encontrar la poll"), por `?sw=`; sin perilla, el de
+// siempre (la decisión en el panel de la barra):
+// - `prediccion`: la predicción ES la decisión. Una tarjeta de predicción al estilo Twitch encima del video, con las
+//   opciones como botones (la chance del motor de cada una, en % y barra, y los puntos del chat, decorativos); al elegir,
+//   PREDICCIÓN CERRADA, el chat explota y sigue la narración. El chat queda al costado y su pie dice "modo espectador".
+// - `pausa`: pausa de transmisión. El video se apaga y se desatura, el cartel "Pausa · decisión del staff" y al centro el
+//   gráfico de transmisión con la pregunta y las opciones; al elegir, el gráfico se va con un barrido y el stream vuelve.
+// Lo grande del video son los EQUIPOS (la sigla con su escudo); tu campeón va como segunda línea ("tu campeón").
 import { el, svg, quieto, celular, EXPO } from '../fx/util.js';
 import { entrar, esperar, lineasConMascara, num, odometro } from '../fx/movimiento.js';
 import { animar } from '../fx/util.js';
@@ -15,12 +24,13 @@ import { victoriaDerrota } from '../fx/ceremonia.js';
 import { crearBeats } from '../fx/beats.js';
 import { tonoOrg, tonoCompeticion, separar, paletaDe } from '../fx/tono.js';
 import { logoOrg, logoComp, siglaDe, logosListos } from '../fx/competicion.js';
-import { cargarImagen, urlCentrada } from '../fx/arte.js';
+import { cargarImagen, urlCentrada, urlIcono } from '../fx/arte.js';
 import { azarFx } from '../fx/azar.js';
 import { claveDe } from '../core/mundo.js';
 import { nombreVisibleDeLiga } from '../formatoUi.js';
 import { BALANCE } from '../../data/balance.js';
 import { crearNarracion } from '../narracion.js';
+import { perilla } from '../previa/perillas.js';
 import { anim, pct, ventanaTx, irseEn, tonosDeLados, carasDe, cabeceraTx, competicionDeEstado, TX_SUS, programarSuspenso, placaDecisiva, latirPlaca, entrarPlaca, cuadrosQuietos, apareceEn, contarEnCuadros } from './transmisionComun.js';
 
 const TXS = {
@@ -56,6 +66,9 @@ const HYPE = { desde: 0.18, tension: 0.58, subida: 9000, apuntar: 0.08, elegir: 
 const ETQ_PRED = { charla: 'con la charla', sinCharla: 'guardando la charla' };
 const ETQ_CAMBIO = { 'career.arraigo': ['arraigo', 'Arraigo'], 'player.stats.hype': ['hype', 'Hype'], 'player.worlds': ['mundo', 'Mundiales'] };
 const STREAM = { calidades: ['1080p60'], esconder: 2600 };
+// las variantes (P1): los puntos que apuesta el chat en cada opción y cuántos votan (decorativos, de `fx/azar.js`); cuánto
+// queda la tarjeta cerrada antes de irse; la explosión del chat al elegir; los tiempos del barrido de la pausa
+const VARIANTE = { puntos: [180000, 2600000], votan: [1400, 9800], cerrada: 600, irse: 380, explota: 18, gapExplota: 32, barrido: 520, vuelve: 640 };
 const SWISS = BALANCE.mundial;
 
 // Los logs del Bo1 dentro de la respuesta: la charla (si la hubo), el partido del Swiss y, si te eliminó, el cierre.
@@ -120,14 +133,18 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     sub: `${rec.v}–${rec.d}${recRival ? ` contra ${recRival.v}–${recRival.d}` : ''}${vidaOMuerte ? ': el que pierde se vuelve a casa' : ''}`,
     tono: tComp
   }));
+  // tu lado: tu equipo en grande y, debajo, tu campeón (el rival del Bo1 no tiene pick en el motor: solo el tuyo)
+  const retratoCam = el('span', { class: 'tx-retrato', 'aria-hidden': 'true' });
+  if (camara) cargarImagen(urlIcono(camara)).then((img) => img && retratoCam.replaceChildren(Object.assign(img.cloneNode(), { alt: '' })));
   const caraA = el('div', { class: 'tx-sw-cara', 'data-lado': 'a', 'aria-hidden': 'true' }, [
-    el('p', { class: 'tx-cara-n', text: camaraN ?? org }),
-    el('p', { class: 'tx-cara-q' }, [logoOrg(org, { clase: 'tx-cara-logo' }), el('span', { text: `${handle} · ${sNos}` })])
+    el('p', { class: 'tx-cara-eq' }, [logoOrg(org, { clase: 'tx-cara-escudo' }), el('span', { class: 'tx-cara-n', text: sNos || org })]),
+    el('p', { class: 'tx-cara-q' }, [el('span', { text: `${handle} · ${org}` })]),
+    camaraN ? el('p', { class: 'tx-duelo tx-sw-duelo' }, [retratoCam, el('b', { class: 'tx-duelo-n', text: camaraN }), el('small', { class: 'tx-duelo-tuyo', text: 'tu campeón' })]) : null
   ]);
   const caraB = el('div', { class: 'tx-sw-cara', 'data-lado': 'b', 'aria-hidden': 'true' }, [
     logoOrg(rival, { clase: 'tx-sw-logo-b' }),
-    el('p', { class: 'tx-cara-n', text: rival }),
-    el('p', { class: 'tx-cara-q' }, [el('span', { text: delRival.liga ? `${nombreVisibleDeLiga(delRival.liga)}${recRival ? ` · ${recRival.v}–${recRival.d}` : ''}` : '' })])
+    el('p', { class: 'tx-cara-n', text: sEllos || rival }),
+    el('p', { class: 'tx-cara-q' }, [el('span', { text: [rival, delRival.liga ? nombreVisibleDeLiga(delRival.liga) : null, recRival ? `${recRival.v}–${recRival.d}` : null].filter(Boolean).join(' · ') })])
   ]);
   const juego = el('div', { class: 'tx-juego tx-sw-juego', 'aria-live': 'polite' });
   const vivoPill = el('p', { class: 'tx-sw-vivo' }, [el('i'), 'En vivo']);
@@ -172,14 +189,60 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
   ]);
 
   // ---------- la decisión: un panel de cliente al costado (nunca tapa el video) ----------
+  const variante = perilla('sw', ['prediccion', 'pausa']);
+  if (variante) raiz.dataset.sw = variante;
   const cab = cabeceraTx({ rotulo: [`${comp.nombre} ${anio}`, `Swiss · ronda ${proxima} · Bo1`], titulo: decision.titulo, descripcion: decision.descripcion, logo: logoComp(comp, { clase: 'rot-logo' }) });
   const ICONOS = { charla: 'charla', sinCharla: 'sinCharla' };
-  const filas = ops.map((o, i) => el('button', { class: 'opcion tx-sw-op', type: 'button', 'data-atajo': i < 4 ? String(i + 1) : null, 'data-id': o.id, 'aria-describedby': `tx-sw-desc-${i + 1}` }, [
-    el('span', { class: 'op-tecla', 'aria-hidden': 'true', text: String(i + 1) }), icono(ICONOS[o.id] ?? 'serie'), el('span', { class: 'op-label', text: o.label })
-  ]));
+  const pctDe = (o) => {
+    const po = pOpc[o.id];
+    return po && Number.isFinite(po.p) ? po.porcentaje ?? Math.round(po.p * 100) : null;
+  };
+  const azV = variante ? azarFx(`variante-${semilla}`) : null;
+  const tecla = (i) => el('span', { class: 'op-tecla', 'aria-hidden': 'true', text: String(i + 1) });
+  const filas = ops.map((o, i) => {
+    const base = { type: 'button', 'data-atajo': i < 4 ? String(i + 1) : null, 'data-id': o.id, 'aria-describedby': `tx-sw-desc-${i + 1}` };
+    const p = pctDe(o);
+    if (variante === 'prediccion') {
+      // la opción de la predicción: su color (el de Twitch), la chance del motor con ella y lo que apuesta el chat
+      return el('button', { ...base, class: 'opcion tx-pr-op', 'data-color': String(i % 4), style: { '--v': String((p ?? 0) / 100) } }, [
+        tecla(i),
+        el('span', { class: 'tx-pr-op-t' }, [el('span', { class: 'op-label', text: o.label }), el('small', { text: p != null ? 'tu chance de ganar el Bo1' : '' })]),
+        el('b', { class: 'num tx-pr-op-p', text: p != null ? `${p}%` : '—' }),
+        el('i', { class: 'tx-pr-op-barra', 'aria-hidden': 'true' }),
+        el('span', { class: 'tx-pr-op-puntos', 'aria-hidden': 'true' }, [icoPrediccion(), el('span', { text: num(azV.entero(VARIANTE.puntos[0], VARIANTE.puntos[1])) }), el('span', { class: 'tx-pr-op-votan', text: `${num(azV.entero(VARIANTE.votan[0], VARIANTE.votan[1]))} votan` })])
+      ]);
+    }
+    if (variante === 'pausa') {
+      return el('button', { ...base, class: 'opcion tx-pz-op' }, [
+        tecla(i), icono(ICONOS[o.id] ?? 'serie'),
+        el('span', { class: 'tx-pz-op-t' }, [el('span', { class: 'op-label', text: o.label }), el('small', { text: o.descripcion ?? '' })]),
+        p != null ? el('b', { class: 'num tx-pz-op-p', text: `${p}%` }) : el('span')
+      ]);
+    }
+    return el('button', { ...base, class: 'opcion tx-sw-op' }, [tecla(i), icono(ICONOS[o.id] ?? 'serie'), el('span', { class: 'op-label', text: o.label })]);
+  });
   const insp = el('p', { class: 'tx-sw-insp', 'aria-live': 'polite', text: 'Apuntá una opción: la predicción del stream se mueve con el número del motor.' });
   const ocultas = el('div', { class: 'solo-lectores' }, ops.map((o, i) => el('div', { id: `tx-sw-desc-${i + 1}`, text: `${o.descripcion ?? ''} ${pOpc[o.id]?.texto ?? ''}` })));
-  const panel = el('section', { class: 'tx-sw-decision panel', 'aria-label': decision.titulo }, [cab.nodo, el('div', { class: 'tx-sw-ops', id: 'decisionOptions', role: 'group', 'aria-label': 'Opciones' }, filas), insp, ocultas]);
+  const opsNodo = el('div', { class: variante === 'prediccion' ? 'tx-pr-ops' : variante === 'pausa' ? 'tx-pz-ops' : 'tx-sw-ops', id: 'decisionOptions', role: 'group', 'aria-label': 'Opciones' }, filas);
+  // sin perilla: el panel de cliente de siempre, al costado del video
+  const panel = variante ? null : el('section', { class: 'tx-sw-decision panel', 'aria-label': decision.titulo }, [cab.nodo, opsNodo, insp, ocultas]);
+  // `prediccion`: la tarjeta de predicción, encima del video
+  const prEstado = el('span', { class: 'tx-pr-estado', text: 'Elegí' });
+  const tarjeta = variante === 'prediccion' ? el('section', { class: 'tx-pr', 'aria-label': `Predicción: ${decision.titulo}` }, [
+    el('p', { class: 'tx-pr-cab' }, [el('i', { class: 'tx-pr-ico' }, icoPrediccion()), el('b', { class: 'tx-pr-k', text: 'Predicción' }), prEstado]),
+    cab.nodo, opsNodo, insp, ocultas
+  ]) : null;
+  // `pausa`: el velo y el cartel sobre el video, y el gráfico de transmisión al centro
+  const pzVelo = variante === 'pausa' ? el('i', { class: 'tx-pz-velo', 'aria-hidden': 'true' }) : null;
+  const pzCartel = variante === 'pausa' ? el('p', { class: 'tx-pz-cartel' }, [el('i', { class: 'tx-pz-barras', 'aria-hidden': 'true' }, [el('i'), el('i')]), el('b', { text: 'Pausa' }), el('span', { text: 'Decisión del staff' })]) : null;
+  const grafico = variante === 'pausa' ? el('section', { class: 'tx-pz', 'aria-label': `Pausa: ${decision.titulo}` }, [
+    el('p', { class: 'tx-pz-k' }, [logoComp(comp, { clase: 'rot-logo' }), el('b', { text: 'Pausa técnica' }), el('span', { text: `${sNos} pidió la pausa · el staff decide` })]),
+    cab.nodo, opsNodo, insp, ocultas
+  ]) : null;
+  // en el celular el video mide 390 x 219: la tarjeta va justo debajo, primera de la columna
+  const cx = celular() ? '0' : '-50%';
+  if (tarjeta && !celular()) player.append(tarjeta);
+  if (pzVelo) player.append(pzVelo, pzCartel);
 
   // la previa como predicción del stream: el número del motor, que se mueve al apuntar una opción
   const p0 = Number.isFinite(pg.p) ? Math.round(pg.p * 100) : Number.isFinite(pg.porcentaje) ? pg.porcentaje : 50;
@@ -210,6 +273,7 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
   const ultimo = rondas[rondas.length - 1];
   const chat = crearChatTx({
     semilla,
+    espectador: Boolean(variante),
     d: {
       org, sigla: sNos, rival, siglaRival: sEllos, handle, camara: camaraN ?? org, ligaRival: delRival.liga ? nombreVisibleDeLiga(delRival.liga) : '', ligaPropia: deVos.liga ? nombreVisibleDeLiga(deVos.liga) : '', rec,
       verdugo: ultimo ? (ultimo.ganador !== org ? (ultimo.a === org ? ultimo.b : ultimo.a) : null) : null,
@@ -219,10 +283,10 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
   });
 
   // en el celular, el video queda fijo arriba y lo demás corre debajo
-  const scrollCel = celular() ? el('div', { class: 'tx-sw-scroll' }, [panel, pred, info, chat.nodo, cruces]) : null;
+  const scrollCel = celular() ? el('div', { class: 'tx-sw-scroll' }, variante ? [tarjeta ?? grafico, info, chat.nodo, cruces] : [panel, pred, info, chat.nodo, cruces]) : null;
   const sw = scrollCel
     ? el('div', { class: 'tx-sw' }, [player, scrollCel])
-    : el('div', { class: 'tx-sw' }, [el('div', { class: 'tx-sw-stream' }, [player, info, cruces]), el('div', { class: 'tx-sw-lateral' }, [panel, pred, chat.nodo])]);
+    : el('div', { class: 'tx-sw' }, [el('div', { class: 'tx-sw-stream' }, [player, info, cruces]), el('div', { class: 'tx-sw-lateral' }, variante ? [chat.nodo] : [panel, pred, chat.nodo]), grafico]);
   raiz.append(sw);
   contenedor.replaceChildren(raiz);
 
@@ -327,11 +391,23 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     anim(caraB, [{ opacity: 0 }, { opacity: 1 }], { delay: dl(640), duration: 420 });
     anim(vom, [{ opacity: 0, transform: 'translateX(-16px)' }, { opacity: 1, transform: 'none' }], { delay: dl(700), duration: 360, easing: EXPO });
     camino.querySelectorAll('li').forEach((li, i) => anim(li, [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { delay: dl(760) + i * 60, duration: 260, easing: EXPO }));
-    anim(panel, [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }], { delay: dl(300), duration: 340, easing: EXPO });
-    entrar(cab.rotulo, dl(380), 8);
-    lineasConMascara(cab.titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: dl(420) + i * 70, dur: 420 }));
-    filas.forEach((f, i) => entrar(f, dl(560) + i * 60, 12));
-    entrar(pred, dl(640), 10);
+    if (panel) anim(panel, [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }], { delay: dl(300), duration: 340, easing: EXPO });
+    const tCab = variante ? 360 : 0;
+    if (tarjeta) {
+      // la tarjeta sube desde abajo del video, se abre de alto y las opciones entran con su barra
+      anim(tarjeta, [{ opacity: 0, transform: `translate(${cx}, 48px) scale(0.92)`, filter: 'blur(6px)' }, { opacity: 1, transform: `translate(${cx}, 0)`, filter: 'none' }], { delay: dl(620), duration: 560, easing: EXPO });
+      filas.forEach((f, i) => anim(f.querySelector('.tx-pr-op-barra'), [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: dl(1000) + i * 90, duration: 700, easing: EXPO }));
+    }
+    if (grafico) {
+      // la pausa: el video se apaga, cae el cartel y el gráfico se abre desde el centro
+      anim(pzVelo, [{ opacity: 0 }, { opacity: 1 }], { delay: dl(260), duration: 520 });
+      anim(pzCartel, [{ opacity: 0, transform: 'translate(-50%, -24px)' }, { opacity: 1, transform: 'translate(-50%, 0)' }], { delay: dl(420), duration: 420, easing: EXPO });
+      anim(grafico, [{ opacity: 0, clipPath: 'inset(48% 0 48% 0)' }, { opacity: 1, clipPath: 'inset(0 0 0 0)' }], { delay: dl(560), duration: 560, easing: EXPO });
+    }
+    entrar(cab.rotulo, dl(380 + tCab), 8);
+    lineasConMascara(cab.titulo).forEach((l, i) => animar(l, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { delay: dl(420 + tCab) + i * 70, dur: 420 }));
+    filas.forEach((f, i) => entrar(f, dl(560 + tCab) + i * 60, 12));
+    if (!variante) entrar(pred, dl(640), 10);
     entrar(info, dl(420), 10);
     entrar(cruces, dl(520), 10);
     chat.guion('antes');
@@ -365,6 +441,9 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
       f.setAttribute('aria-disabled', 'true');
     });
     insp.textContent = op.descripcion ?? '';
+    filas[i].dataset.elegida = '';
+    if (tarjeta) cerrarPrediccion(i);
+    if (grafico) reanudar();
     empujarHype(0, HYPE.elegir);
     fx()?.pulso?.('peligro');
     mundo?.aquietar?.(false);
@@ -378,6 +457,24 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
       apuntar(apuntada < 0 ? 0 : apuntada + (e.key === 'ArrowDown' ? 1 : -1), { mover: true });
     }
   });
+  // `prediccion`: PREDICCIÓN CERRADA, la opción elegida marcada, el chat explota y la tarjeta se va del video
+  function cerrarPrediccion(i) {
+    tarjeta.dataset.cerrada = '';
+    prEstado.textContent = 'Predicción cerrada';
+    chat.explotar(ops[i].id);
+    anim(prEstado, [{ transform: 'scale(1.4)', filter: 'brightness(1.8)' }, { transform: 'none', filter: 'none' }], { duration: 420, easing: EXPO });
+    if (quietoSw) anim(tarjeta, [{ opacity: 1 }, { opacity: 0, visibility: 'hidden' }], { delay: VARIANTE.cerrada, duration: 150, fill: 'forwards', forzar: true });
+    else anim(tarjeta, [{ opacity: 1, transform: `translate(${cx}, 0)` }, { opacity: 0, visibility: 'hidden', transform: `translate(${cx}, 60px) scale(0.94)` }], { delay: VARIANTE.cerrada, duration: VARIANTE.irse, easing: EXPO, fill: 'forwards' });
+  }
+  // `pausa`: el gráfico se va con un barrido, el velo se levanta y el stream vuelve
+  function reanudar() {
+    raiz.dataset.reanudado = '';
+    const d = quietoSw ? 150 : VARIANTE.barrido;
+    if (quietoSw) anim(grafico, [{ opacity: 1 }, { opacity: 0, visibility: 'hidden' }], { delay: 200, duration: d, fill: 'forwards', forzar: true });
+    else anim(grafico, [{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 0 0 100%)', visibility: 'hidden' }], { delay: 260, duration: d, easing: EXPO, fill: 'forwards' });
+    anim(pzVelo, [{ opacity: 1 }, { opacity: 0 }], { delay: 260, duration: quietoSw ? 150 : VARIANTE.vuelve, fill: 'forwards', forzar: true });
+    anim(pzCartel, [{ opacity: 1 }, { opacity: 0, visibility: 'hidden' }], { delay: 260, duration: quietoSw ? 150 : 320, fill: 'forwards', forzar: true });
+  }
 
   // ---------- narrar: el Bo1, el resultado y AFUERA (una secuencia de beats) ----------
   let beats = null;
@@ -499,15 +596,12 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
       b.esperar(tAfuera + TXS.golpe).then((ok) => ok && sonido?.golpe?.());
     }
 
-    // Espacio: los beats van a `asentarse`; con movimiento reducido, Espacio, Enter o un clic adelantan un cuadro; en INST,
-    // el cuadro final (el resultado o AFUERA) un instante a la vista
+    // Espacio: los beats van a `asentarse`; con movimiento reducido, Espacio, Enter o un clic adelantan un cuadro
     const narracion = crearNarracion(ctx, [raiz], { reloj: b });
     try {
       b.iniciar();
       if (narracion.modo === 'reducido' && enCuadros) {
         await contarEnCuadros(b, cuadros.sort((x, y) => x.t - y.t), narracion, { escenario: juego, vivo: () => raiz.isConnected });
-      } else if (narracion.modo === 'inst') {
-        await narracion.vistazo();
       } else if (!narracion.saltada) {
         await b.esperar(asentarse);
         await narracion.esperar(TXS.sostener);
@@ -703,7 +797,7 @@ const partesConEmotes = (texto) => String(texto).split(/(:[a-z]+:)/).filter(Bool
   return k && EMOTES[k] ? emote(k) : p;
 });
 
-function crearChatTx({ semilla, d }) {
+function crearChatTx({ semilla, d, espectador = false }) {
   const az = azarFx(`chat-${semilla}`);
   const NOMBRES = ['tito', 'nacho', 'lu', 'sofi', 'beto', 'gabi', 'duda', 'caio', 'rafa', 'mel', 'juanma', 'bia', 'teo', 'pipe', 'lara', 'vini', 'flor', 'gui', 'cami', 'tomi', 'pato', 'ana', 'leo', 'nina'];
   const COLAS = ['_br', '99', 'gg', '.mid', 'zinho', '777', '_lol', '', '2k', 'tv', '_ok', 'xd', '10'];
@@ -775,7 +869,9 @@ function crearChatTx({ semilla, d }) {
   const nodo = el('aside', { class: 'tx-chat', 'aria-label': 'Chat del stream' }, [
     el('header', { class: 'tx-chat-cab' }, [icono('chat'), el('b', { text: 'Chat del stream' }), modo]),
     pista,
-    el('footer', { class: 'tx-chat-pie' }, [el('span', { text: 'Mandá un mensaje' }), el('span', { class: 'tx-chat-em', 'aria-hidden': 'true' }, [emote('garra'), emote('fe'), emote('gg')]), el('kbd', { text: 'Enter' })])
+    espectador
+      ? el('footer', { class: 'tx-chat-pie', 'data-espectador': '' }, [el('i', { class: 'tx-chat-ojo', 'aria-hidden': 'true' }), el('span', { text: 'Modo espectador' })])
+      : el('footer', { class: 'tx-chat-pie' }, [el('span', { text: 'Mandá un mensaje' }), el('span', { class: 'tx-chat-em', 'aria-hidden': 'true' }, [emote('garra'), emote('fe'), emote('gg')]), el('kbd', { text: 'Enter' })])
   ]);
 
   let items = [];
@@ -850,5 +946,13 @@ function crearChatTx({ semilla, d }) {
     for (let i = 0; i < CHAT_TX.rafaga; i++) items.push(de(consejos[id], ahora + 40 + i * CHAT_TX.gapRafaga));
     render(ahora);
   }
-  return { nodo, guion, rafaga, destruir: () => animacion?.cancel() };
+  // al cerrar la predicción (P1): el chat explota con lo que se eligió y con el muro de aliento
+  function explotar(id) {
+    if (fase !== 'antes') return;
+    const ahora = quieto() ? Math.max(0, ...items.map((x) => x.t)) + 1 : reloj();
+    const muro = pared(true);
+    for (let i = 0; i < VARIANTE.explota; i++) items.push(de(i % 2 && consejos[id] ? consejos[id] : muro, ahora + 20 + i * VARIANTE.gapExplota));
+    render(ahora);
+  }
+  return { nodo, guion, rafaga, explotar, destruir: () => animacion?.cancel() };
 }

@@ -2,7 +2,7 @@
 // cabecera de una parada de partido, las ventanas de tiempo de los beats, la geometría de la costura y EL SUSPENSO del
 // mapa decisivo (el Bo5 a 2-2 y el Bo1 de vida o muerte del Swiss). Lo usan el cara a cara (`components/caraACara.js`)
 // y el stream del Swiss (`components/stream.js`). Importarlo no toca el DOM.
-import { el, animar, quieto, reducido, inst, EXPO, DUR } from '../fx/util.js';
+import { el, animar, quieto, reducido, EXPO, DUR } from '../fx/util.js';
 import { FUNDIDO_MS, fundirCuadro } from '../narracion.js';
 import { pintarCampeon } from '../fx/color.js';
 import { leerColor } from '../fx/util.js';
@@ -16,15 +16,15 @@ import { porcentaje } from '../../core/previaDePartido.js';
 
 // La p en porcentaje entero (la del motor: nunca 0 % ni 100 % si no lo es).
 export const pct = (p) => (Number.isFinite(p) ? `${porcentaje(p)}%` : '—');
-// Animar con la forma de la vitrina (`duration`) sobre el `animar` del kit (fill backwards: congelable, quieto en INST).
+// Animar con la forma de la vitrina (`duration`) sobre el `animar` del kit (fill backwards: congelable).
 // `forzar`: corre también con movimiento reducido (solo para opacidad y visibilidad: aparecer, nunca moverse).
 export const anim = (n, c, o = {}) => animar(n, c, { dur: o.duration ?? DUR.entra, delay: o.delay ?? 0, easing: o.easing ?? 'linear', fill: o.fill ?? 'backwards', forzar: o.forzar ?? false });
 
-// PLANUI §0.3 (la regla nueva del movimiento reducido): con movimiento reducido (y no INST) la narración se cuenta en
+// PLANUI §0.3 (la regla nueva del movimiento reducido): con movimiento reducido la narración se cuenta en
 // cuadros fijos: el reloj de los beats queda quieto y la pantalla lo lleva cuadro a cuadro con `congelar(t)`. Para eso
 // las ventanas de tiempo (lo que existe un rato: un mapa, una placa) y lo que aparece en un momento (VICTORIA, el pip)
 // existen también con movimiento reducido, como opacidad y visibilidad, sin desplazamientos.
-export const cuadrosQuietos = () => reducido() && !inst();
+export const cuadrosQuietos = () => reducido();
 
 // Una capa que existe solo en una ventana de tiempo (su estado natural es oculta: CSS). Corre también con movimiento
 // reducido (es aparecer, no moverse), con los fundidos cortos.
@@ -135,7 +135,7 @@ const tokensDe = (id) => ({ luz: `--comp-${id}-luz`, contra: `--comp-${id}-contr
 // EL SUSPENSO del mapa decisivo (PLANUI §4.10, T): ~3 s que se construyen antes de VICTORIA/DERROTA. La placa del
 // decisivo con la chance del motor; la costura (y las cartas con ella) tira de un lado al otro cada vez más rápido, la
 // luz va de un tono al otro, el público de lightsticks se enciende y el pulso se acelera; antes del golpe, un silencio.
-// Todo en el reloj de los beats y en el del ambiente; con INST o movimiento reducido no hay suspenso.
+// Todo en el reloj de los beats y en el del ambiente; con movimiento reducido no hay suspenso.
 // ======================================================================================================================
 export const TX_SUS = {
   dura: 3000,
@@ -279,5 +279,5 @@ export function entrarPlaca(b, pl, tS) {
   ]);
 }
 
-// ¿Hay suspenso? Nunca en INST ni con movimiento reducido.
+// ¿Hay suspenso? Nunca con movimiento reducido.
 export const conSuspenso = () => !quieto();
