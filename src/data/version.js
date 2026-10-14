@@ -184,9 +184,9 @@ export const VERSION_JUEGO = 'F';
 // K6d (el arreglo del retiro, sin cambio de huella: ninguna de las 40 seeds vuelve del retiro con la racha en rojo): volver del
 // retiro corta la racha de splits en rojo (`flags.splitsMentalBajo`, `systems/retiro.js`), que antes sobrevivía congelada al
 // tiempo afuera y podía quemarte en el primer split de vuelta.
-// F (la ola F, PLANUI §0.8, 275262637; corrimiento declarado — lo que eligió el usuario el 2026-10-14, "los 4 juntos"):
+// F (la ola F, PLANUI §0.8, 433142448; corrimiento declarado — lo que eligió el usuario el 2026-10-14, "los 4 juntos"):
 // `VERSION_JUEGO` pasa a 'F'. F2: el salto de tier 3 frena con la llamada de un tier 2 de tu región y el split con club que no
 // frenó frena en su última fecha; F4: el stat principal de cada carta del cierre siempre suma (seis ramas con piso 1). F1 (cada
 // ronda del Swiss frena, con una sola opción y sin gastar el presupuesto) y F3 (las finales al registro, los titulares) no mueven
 // la huella. Ninguna seed de K6d reproduce su carrera. Guardado VERSION 16.
-export const HUELLA_JUEGO = 275262637;
+export const HUELLA_JUEGO = 433142448;
