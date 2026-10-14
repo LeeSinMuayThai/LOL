@@ -34,6 +34,71 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-14 — PLANUI §0.7, ola W1: "que se sienta el avance" (la ficha, el diario, "tan cerca" y la tarjeta que cuenta la historia)
+
+El usuario, textual: el juego "no se siente como el objetivo del inicio… la season pasa muy rápido, no sentís un
+avance", y "no hay que hacer grandes cambios de motor… ese fue nuestro problema por un montón de tiempo". Pidió jugar
+El Ídolo (Potrero Fútbol) con ojo de diseñador y compararlo con Lolero.
+
+- **Lo jugado.** Una carrera entera de El Ídolo: 22 temporadas, de los 16 a los 38.
+  - Fue en la Carrera del Día, con la clase Habilidoso y el arquetipo "Volante con gol".
+  - Se tomaron decisiones de verdad: irse del club, cruzar a Europa, ser leal hasta Leyenda (96) en Marsella y al final
+    traicionar yéndose al PSG y al jeque.
+  - El final fue "EL TRAIDOR DE PSG — Te quedaste a un paso de la eternidad".
+- **Lo medido.** El Ídolo tiene *menos* sistemas que Lolero y temporadas *más cortas* (2-4 clics), y aun así se siente
+  avanzar. Lolero tiene ~45 paradas por carrera (~4 por año): la velocidad no es el problema.
+- **La esencia** (PLANUI §0.7):
+  - sus ~5 números importantes están siempre en pantalla;
+  - se mueven cada temporada por algo que elegiste;
+  - cada uno tiene un próximo escalón con nombre ("te faltan 5 para Leyenda");
+  - el juego te los cuenta de vuelta (el diario, la copa, el apodo final).
+- **Lolero contra eso.** Casi todas las piezas ya existían, pero no se veían o no se movían a la vista:
+  - el arraigo con los mismos escalones vivía solo en la placa "Vos" desde 1180 px;
+  - la plata (`dineroTotalUSD`) no la mostraba ninguna pantalla;
+  - el archirrival no estaba en la tarjeta final;
+  - el resumen del año pasaba en rápido (U3a lo arregló el mismo día).
+  De ahí el plan W (§0.7): la ola W1 es solo UI; las W2-W3 son motor chico y se miden después de que el usuario juegue.
+- **H · la ficha** (`ui/fichaFija.js`, helpers puros en `core/ficha.js`, pintada por `franja.js`):
+  - fija bajo la franja en todas las anchuras: el nivel con ▲▼ del año, el arraigo como escalera ("→ Querido 25"), el
+    puntaje de carrera en vivo, la jerarquía y el hype con su próximo escalón, el chip internacional, las copas y la plata;
+  - en celular es una tira que se abre en una hoja;
+  - anima en todas las velocidades (en rápido, más corto): el número rueda, la barra se llena y el ▲ entra con pulso.
+- **D · el diario y "tan cerca"** (`ui/core/momentos.js`, `fx/momento.js`, `components/caraACara.js`), sobre el
+  resumen de U3a:
+  - **"Última hora":** tu decisión más pesada del año, sacada de los logs (sin tocar el motor);
+  - el escalón que subiste ("«PASÓ POR EL CIRCUITO»");
+  - los números del año con su antes, con la misma fuente que la ficha (un número, una fuente);
+  - el delta del puntaje, desde la foto de la UI al arrancar el año;
+  - el diario tapa la pantalla de atrás.
+  - **"Tan cerca":** la final perdida en el mapa decisivo dice cuánto movió tu jugada la chance ("de 29% a 24%") y
+    espera Continuar en todas las velocidades.
+- **T · la tarjeta final** (`core/legado.js`, `screens/tarjeta.js`, `exportar.js`):
+  - el apodo por lealtad ("LEYENDA DE KARMINE CORP"). Desempata por lo que ganaste con la org: Mundiales, después
+    títulos, después el valor;
+  - el arraigo por org en la historia club por club;
+  - "Las que se escaparon" (las finales de Mundial perdidas);
+  - el duelo eterno con el archirrival.
+- **La revisión** (Sonnet, sobre las tres juntas) no encontró nada que bloquee y marcó 3 cosas para arreglar, más las
+  que yo había visto en las capturas. Se arreglaron en una ronda:
+  - la ficha y el diario daban dos "nivel del año" distintos (▲4 y ▲2);
+  - "tan cerca" se veía 1,2 s en rápido;
+  - la ficha no animaba en rápido;
+  - el hype decía "faltan 10" de 72 a 81;
+  - el ▲ de arraigo aparecía en el año de una org nueva;
+  - el apodo desempataba por valor.
+- **Deudas nuevas** (PLANUI): D106, las finales de liga perdidas no se guardan; D107, la decisión del año no queda en el
+  estado; D108, el puntaje del arranque del año vive solo en la UI.
+- **El costo.**
+  - H: Opus 5.5 · high, 86 + 26 llamadas.
+  - D: Opus 5.5 · high, 95 + 31.
+  - T: Opus 5.5 · high, 76 + 11.
+  - Revisor: Sonnet, 41.
+- **Verificación** (`w1-integracion`):
+  - `validate --rapido`: 388 OK, 0 FAIL; la huella del juego (K1) coincide con la de master;
+  - `simulate 1000`: exit 0, dos corridas idénticas;
+  - build: 3846 KB contra el techo de 3850 (quedan 4 KB: la ola W2 tiene que subirlo o bajar peso).
+  - El motor no se tocó: en `src/core/` cambiaron solo `ficha.js` y `legado.js` (lecturas puras).
+
 ### 2026-10-14 — PLANUI U3a (adelantada): la copa, el resumen de la temporada, "Mientras tanto" y la firma de punta a punta
 
 El usuario jugó P2 (PLANUI §0.6, textual) y pidió tres cosas:

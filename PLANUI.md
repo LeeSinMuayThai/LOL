@@ -38,7 +38,7 @@
 | **P1 · previas** | La decisión en tres direcciones (cartas, champ select, hextech) y el stream en dos, para elegir en `lolero.lol/previa.html`; INST deja de apagar el movimiento; la serie equipo contra equipo (§0.4) | ✅ 2026-10-14: 5 workers Opus high + 1 revisor Sonnet ("OK con menores", arreglados); publicada. El usuario eligió cartas + predicción (§0.5) |
 | **P2** | La dirección elegida queda; se borran las otras y las perillas; las cartas sin campeones de decoración y el stream lleno (§0.5) | ✅ 2026-10-14: 2 workers Opus high + 1 revisor Sonnet (1 bloqueante, arreglado); publicada |
 | **U3a (adelantada)** | Lo que dijo el usuario jugando P2 (§0.6): la copa y el resumen de la temporada, "Mientras tanto" en rápido y la firma de una sola coreografía | ✅ 2026-10-14: 2 workers (Opus high + Opus xhigh) + scout + revisor Sonnet; publicada |
-| **W · ola W1** | "Que se sienta el avance" (§0.7): la ficha en todas las anchuras, el diario con "Última hora" y el ascenso, "tan cerca" y la vitrina, la tarjeta final con el duelo y el arraigo | 🔶 2026-10-14: escrita; 3 workers despachados |
+| **W · ola W1** | "Que se sienta el avance" (§0.7): la ficha en todas las anchuras, el diario con "Última hora" y el ascenso, "tan cerca" y la vitrina, la tarjeta final con el duelo y el arraigo | ✅ 2026-10-14: 3 workers Opus high + revisor Sonnet (0 bloqueantes, 3 para arreglar, arreglados en una ronda); publicada. Falta que el usuario la juegue en RÁPIDO |
 | **W · olas W2-W3** | La carta de pretemporada y ¿gloria o billetera? (motor chico, medido); después, la final sin tirada y la plata (§0.7) | ⬜ después de que el usuario juegue la W1 |
 | **U3** | El resto de los momentos (banners, ceremonias, primer contrato) + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
@@ -2144,6 +2144,9 @@ Son del **motor**. Van a la etapa "arreglar el juego" que pidió el usuario (§0
 | D103 | **Las fechas de temporada no tienen pick por partido:** todas se juegan con el campeón del split (`systems/temporada.js:286-291`), sin Fearless ni variedad. El usuario lo nota como "el mismo campeón en todas las partidas" (§0.4) | ⬜ |
 | D104 | **El Swiss no tiene campeón:** sus logs no dicen con qué jugaste (`systems/internacional.js:82-89`). El stream muestra el campeón del split | ⬜ |
 | D105 | **El campeón del rival por mapa no se guarda en `serie.mapas[]`:** solo va en el log del mapa (`rivalJuega`, `systems/serie.js:396-397`). La post-serie y el retomar tienen que reconstruirlo del relato | ⬜ |
+| D106 | **Las finales de liga perdidas no se guardan en el registro:** solo quedan como texto en `career.hitos`. La tarjeta final cuenta solo las del Mundial (`finalesPerdidas`, `core/legado.js`), y el "tan cerca" de la final de liga no llega al final de la carrera. Es un dato del motor: año, liga, rival y marcador (§0.7, W6) | ⬜ |
+| D107 | **La decisión del año no queda en el estado:** la "Última hora" del diario la reconstruye de los logs del año, cruzando el título del evento con las banderas `bifurcacion` / `cierreDeEdad` de los datos (`ultimaHoraDelAnio`, `ui/core/momentos.js`). Funciona, pero se rompe si un título cambia; el motor debería guardar las decisiones del año (§0.7, W2) | ⬜ |
+| D108 | **El puntaje del arranque del año vive solo en la foto de la UI** (`fotoDeSplit`, `ui/core/escena.js`): en una partida retomada a mitad de año el diario no muestra el delta del puntaje. Si se quiere siempre, va `puntaje` en `CAMPOS_EDAD` (motor) (§0.7, W2) | ⬜ |
 
 ---
 
