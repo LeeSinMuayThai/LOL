@@ -5,9 +5,6 @@
 // almacén en memoria, sembrado con esa partida guardada: el juego abre en esa parada y la carrera guardada del
 // jugador, su velocidad y sus preferencias no se leen ni se escriben. Recargar vuelve a la muestra. Sin el parámetro, este
 // script no hace nada.
-//
-// Las perillas de las variantes (`?dc=`, `?sw=`) las leen sus pantallas desde la URL. No dependen de este modo: con la
-// carrera real también andan.
 (function () {
   var muestra = new URLSearchParams(location.search).get('previa');
   if (!muestra || !/^[a-z0-9-]+$/.test(muestra)) return;

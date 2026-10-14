@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />
-    <title>Lolero · Previas</title>
+    <title>Lolero · Muestras</title>
     <link rel="preload" href="./src/ui/estilos/fuentes/mona-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="./src/ui/estilos/tokens.css" />
     <link rel="stylesheet" href="./src/ui/estilos/base.css" />
@@ -28,59 +28,22 @@
       .pv-botones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 8px; }
       .pv-botones a { padding: 9px 13px; border-radius: 4px; background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--linea-fuerte); color: var(--ink); text-decoration: none; font: 600 14px / 1 var(--f-cuerpo); transition: background 140ms, box-shadow 140ms, transform 140ms; }
       .pv-botones a:hover, .pv-botones a:focus-visible { background: var(--bg-surface); box-shadow: inset 0 0 0 1px var(--acento, var(--luz-escenario)); transform: translateY(-1px); outline: none; }
-      .pv-hoy { --acento: var(--ink-mute); opacity: 0.85; }
-      .pv-nota { margin-top: 40px; padding: 18px 22px; border-radius: var(--r-panel); background: var(--panel-hondo); box-shadow: inset 0 0 0 1px var(--linea); color: var(--ink-dim); line-height: 1.55; }
-      .pv-nota code { font-family: var(--f-mono); color: var(--ink); }
-      .pv-nota a { color: var(--ink); }
     </style>
   </head>
   <body>
     <main class="pv">
-      <p class="pv-kicker">Lolero · previas para elegir</p>
-      <h1>Elegí cómo se juega</h1>
+      <p class="pv-kicker">Lolero · muestras</p>
+      <h1>Probá cada parada</h1>
       <p class="pv-bajada">Cada botón abre el juego en una partida de muestra, justo antes de esa parada. Tu carrera guardada no se toca: es una partida aparte que se borra al cerrar la pestaña. Apuntá las opciones, elegí una y mirá cómo se vuelve su resultado.</p>
 
       <h2>La decisión</h2>
       <p class="pv-sub">Los eventos, el plan del año, las ofertas de otra liga y el fin de temporada.</p>
       <div class="pv-grilla">
         <article class="pv-carta" data-fav style="--acento: var(--eje-soloq)">
-          <span class="pv-letra">A</span>
+          <span class="pv-letra">CARTAS</span>
           <h3>Cartas de aumento</h3>
-          <p>Como elegir aumentos en Arena: cada opción es una carta con arte y el color de lo que gana. Se inclina con el mouse; la elegida gira y se vuelve el resultado.</p>
+          <p>Cada opción es una carta con el emblema y el color de lo que gana; un campeón aparece solo si la opción habla de él. Se inclina con el mouse; la elegida gira y se vuelve el resultado.</p>
           <nav class="pv-botones" aria-label="Cartas de aumento">
-            <a href="./?previa=evento&amp;dc=cartas" target="_blank">Evento</a>
-            <a href="./?previa=plan&amp;dc=cartas" target="_blank">Plan del año</a>
-            <a href="./?previa=destino&amp;dc=cartas" target="_blank">Con destino</a>
-            <a href="./?previa=cierre&amp;dc=cartas" target="_blank">Fin de temporada</a>
-          </nav>
-        </article>
-        <article class="pv-carta" style="--acento: var(--luz-escenario)">
-          <span class="pv-letra">B</span>
-          <h3>Champ select</h3>
-          <p>La misma línea que el inicio: la pregunta como la fase del draft y las opciones como franjas de pick. Al elegir: BLOQUEAR, con el lock-in.</p>
-          <nav class="pv-botones" aria-label="Champ select">
-            <a href="./?previa=evento&amp;dc=draft" target="_blank">Evento</a>
-            <a href="./?previa=plan&amp;dc=draft" target="_blank">Plan del año</a>
-            <a href="./?previa=destino&amp;dc=draft" target="_blank">Con destino</a>
-            <a href="./?previa=cierre&amp;dc=draft" target="_blank">Fin de temporada</a>
-          </nav>
-        </article>
-        <article class="pv-carta" style="--acento: var(--luz-leyenda)">
-          <span class="pv-letra">C</span>
-          <h3>Cliente hextech</h3>
-          <p>Como un evento del cliente: una ilustración grande, el marco dorado y la chance en un anillo. Al elegir, el estallido del crafteo.</p>
-          <nav class="pv-botones" aria-label="Cliente hextech">
-            <a href="./?previa=evento&amp;dc=hextech" target="_blank">Evento</a>
-            <a href="./?previa=plan&amp;dc=hextech" target="_blank">Plan del año</a>
-            <a href="./?previa=destino&amp;dc=hextech" target="_blank">Con destino</a>
-            <a href="./?previa=cierre&amp;dc=hextech" target="_blank">Fin de temporada</a>
-          </nav>
-        </article>
-        <article class="pv-carta pv-hoy">
-          <span class="pv-letra">HOY</span>
-          <h3>La de ahora</h3>
-          <p>Para comparar: la decisión como está publicada hoy.</p>
-          <nav class="pv-botones" aria-label="La de ahora">
             <a href="./?previa=evento" target="_blank">Evento</a>
             <a href="./?previa=plan" target="_blank">Plan del año</a>
             <a href="./?previa=destino" target="_blank">Con destino</a>
@@ -89,46 +52,22 @@
         </article>
       </div>
 
-      <h2>El stream del Swiss</h2>
-      <p class="pv-sub">El 2-2 del Mundial: dónde está lo que tenés que elegir.</p>
+      <h2>El partido</h2>
+      <p class="pv-sub">El Swiss del Mundial y una serie de playoffs.</p>
       <div class="pv-grilla">
         <article class="pv-carta" style="--acento: var(--luz-mundial)">
-          <span class="pv-letra">1</span>
+          <span class="pv-letra">STREAM</span>
           <h3>La predicción es la decisión</h3>
-          <p>La encuesta sube encima del video, grande, con botones de verdad y el chat votando. El chat queda al costado.</p>
-          <nav class="pv-botones" aria-label="La predicción es la decisión"><a href="./?previa=swiss&amp;sw=prediccion" target="_blank">Abrir</a></nav>
+          <p>El 2-2 del Swiss en una transmisión llena: los otros cruces y los co-streams en vivo a la izquierda, la predicción encima del video y el chat al costado.</p>
+          <nav class="pv-botones" aria-label="El stream del Swiss"><a href="./?previa=swiss" target="_blank">Abrir</a></nav>
         </article>
-        <article class="pv-carta" style="--acento: var(--luz-mundial)">
-          <span class="pv-letra">2</span>
-          <h3>Pausa de transmisión</h3>
-          <p>El stream se oscurece y la decisión aparece al centro, como un gráfico de la transmisión.</p>
-          <nav class="pv-botones" aria-label="Pausa de transmisión"><a href="./?previa=swiss&amp;sw=pausa" target="_blank">Abrir</a></nav>
-        </article>
-        <article class="pv-carta pv-hoy">
-          <span class="pv-letra">HOY</span>
-          <h3>El de ahora</h3>
-          <p>Para comparar.</p>
-          <nav class="pv-botones" aria-label="El stream de ahora"><a href="./?previa=swiss" target="_blank">Abrir</a></nav>
-        </article>
-      </div>
-
-      <h2>Ya arreglado</h2>
-      <p class="pv-sub">Esto no se elige: ya está en el juego.</p>
-      <div class="pv-grilla">
         <article class="pv-carta" style="--acento: var(--luz-escenario)">
           <span class="pv-letra">SERIE</span>
           <h3>Tu equipo contra el rival</h3>
-          <p>La serie es equipo contra equipo, con sus logos; cada mapa trae su duelo de campeones (Fearless: ninguno se repite) y su fondo.</p>
+          <p>Equipo contra equipo, con sus logos; cada mapa trae su duelo de campeones (Fearless: ninguno se repite) y su fondo.</p>
           <nav class="pv-botones" aria-label="La serie"><a href="./?previa=serie" target="_blank">Abrir la final</a></nav>
         </article>
-        <article class="pv-carta" style="--acento: var(--up)">
-          <span class="pv-letra">MOVIMIENTO</span>
-          <h3>Siempre con animación</h3>
-          <p>La velocidad rápida ya no apaga las animaciones: el relato no te hace esperar, pero todo se mueve. El botón de arriba dice cuál tenés puesta.</p>
-        </article>
       </div>
-
-      <p class="pv-nota">¿Querés probar una con tu carrera de verdad? Agregá la letra a la dirección: <a href="./?dc=cartas"><code>lolero.lol/?dc=cartas</code></a>, <code>?dc=draft</code>, <code>?dc=hextech</code> o, en el Swiss, <code>?sw=prediccion</code> / <code>?sw=pausa</code>. Sin nada, el juego de siempre.</p>
     </main>
   </body>
 </html>

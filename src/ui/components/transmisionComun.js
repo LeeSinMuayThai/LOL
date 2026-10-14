@@ -9,7 +9,7 @@ import { leerColor } from '../fx/util.js';
 import { logoOrg } from '../fx/competicion.js';
 import { logoLiga } from '../fx/logos.js';
 import { COMPETICIONES } from '../fx/competicion.js';
-import { partirDescripcion } from './decision.js';
+import { partirDescripcion } from './decision/comun.js';
 import { primeraDe } from '../core/bisagra.js';
 import { nombreVisibleDeLiga } from '../formatoUi.js';
 import { porcentaje } from '../../core/previaDePartido.js';
