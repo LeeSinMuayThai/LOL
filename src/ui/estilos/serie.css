@@ -244,3 +244,12 @@
   .rl-mapa-res { font-size: 13px; letter-spacing: 0; }
   .rl-mapa--grande .rl-mapa-res { font-size: 19px; }
 }
+
+/* W1-D (PLANUI §0.7, W3): "tan cerca", la final perdida en el mapa que la definía (placa de cierre, components/caraACara.js) */
+.tx-cierre-cerca {
+  display: grid; justify-items: center; gap: 6px; max-width: min(620px, 92%); margin: 0; padding: 10px 16px;
+  text-align: center; border-radius: var(--r-panel); background: var(--tx-cerca-fondo);
+}
+.tx-cierre-cerca b { font: 900 clamp(22px, 2.6vw, 32px) / 1 var(--f-display); font-stretch: var(--ancho-titulo); text-transform: uppercase; color: var(--tx-cerca); }
+.tx-cierre-cerca span { font-size: 16px; line-height: 1.4; color: var(--ink); text-wrap: balance; }
+@media (max-width: 560px) { .tx-cierre-cerca span { font-size: 14px; } }

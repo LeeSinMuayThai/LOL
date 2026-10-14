@@ -1123,3 +1123,14 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   --mt-cajon-fondo: #0d0f15;
   --mt-cajon-sombra: -24px 0 60px rgba(0, 0, 0, 0.5);
 }
+
+/* W1-D (PLANUI §0.7, W2 y W3): el diario de la temporada (el escalón que subiste, la última hora) y "tan cerca". */
+:root {
+  --mo-ascenso-fondo: rgba(255, 210, 122, 0.08);
+  --mo-ascenso-filete: rgba(255, 210, 122, 0.38);
+  --mo-ascenso-brillo: rgba(255, 210, 122, 0.35);
+  --mo-ultima: #ff5468;
+  --mo-ultima-tinta: #0b0c10;
+  --tx-cerca: #ffd27a;
+  --tx-cerca-fondo: rgba(3, 4, 7, 0.72);
+}

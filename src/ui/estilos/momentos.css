@@ -151,13 +151,6 @@
 .mo-r-pos { font: 700 14px / 1 var(--f-display); font-variant-numeric: tabular-nums; }
 .mo-r-copas li { display: flex; align-items: center; gap: 10px; font-size: 16px; }
 .mo-r-copa { width: 22px; height: 22px; color: var(--gold); }
-.mo-r-num { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; margin: 0; }
-.mo-r-num-antes { font: 700 var(--t-num-s) / 1 var(--f-display); color: var(--ink-mute); font-variant-numeric: tabular-nums; }
-.mo-r-flecha { width: 16px; height: 16px; color: var(--ink-mute); }
-.mo-r-num-valor { font: 900 var(--t-num-m) / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; }
-.mo-r-num-delta { font: 700 15px / 1 var(--f-mono); color: var(--up); }
-.mo-r-num-delta.baja { color: var(--down); }
-.mo-r-num-texto { flex-basis: 100%; font-size: 14px; color: var(--ink-dim); }
 .mo-r-ejes { display: flex; flex-wrap: wrap; gap: 6px; }
 .mo-r-mundo li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
 .mo-r-mundo li > span:last-child { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
@@ -168,6 +161,52 @@
   .mo-r-cuerpo { gap: 16px; padding: 20px 16px 16px; }
   .mo-r-vinetas, .mo-r-grilla { grid-template-columns: minmax(0, 1fr); }
   .mo-r-nota-valor { font-size: var(--t-num-m); }
+}
+
+/* ---- W1-D: el diario (PLANUI §0.7, W2): el escalón, la última hora y los números del año ---- */
+.mo-r-ascenso {
+  display: grid; gap: 8px; padding: 14px 18px; border-radius: var(--r-panel);
+  background: var(--mo-ascenso-fondo); box-shadow: inset 0 0 0 1px var(--mo-ascenso-filete);
+}
+.mo-r-ascenso-rotulo { display: flex; align-items: center; gap: 8px; margin: 0; font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--gold); }
+.mo-r-ascenso-texto {
+  margin: 0; font: 900 clamp(26px, 3.4vw, 44px) / 0.95 var(--f-display); font-stretch: var(--ancho-titulo);
+  text-transform: uppercase; color: var(--gold); text-shadow: 0 0 28px var(--mo-ascenso-brillo); text-wrap: balance;
+}
+.mo-r-ascenso-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 0; padding: 0; list-style: none; }
+.mo-r-ascenso-chips li {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; font: 600 13px / 1.2 var(--f-cuerpo);
+  color: var(--ink); background: var(--mo-panel); box-shadow: inset 0 0 0 1px var(--mo-filete);
+}
+.mo-r-ascenso-chips .ln-ico { color: var(--gold); }
+.mo-r-ultima { display: grid; gap: 8px; padding: 2px 0 2px 14px; box-shadow: inset 3px 0 0 var(--mo-ultima); }
+.mo-r-ultima-rotulo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0; font: 600 var(--t-rotulo) / 1.2 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
+.mo-r-ultima-rotulo b { padding: 4px 7px 3px; border-radius: 3px; color: var(--mo-ultima-tinta); background: var(--mo-ultima); }
+.mo-r-ultima-texto { margin: 0; font-size: 16px; line-height: 1.45; color: var(--ink-dim); }
+.mo-r-ultima-texto strong { font-weight: 750; color: var(--ink); }
+.mo-r-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.mo-r-dato { display: grid; align-content: start; gap: 6px; padding: 12px 14px; min-width: 0; border-radius: var(--r-panel); background: var(--mo-panel); box-shadow: inset 0 0 0 1px var(--mo-filete); }
+.mo-r-dato-rotulo { font: 700 var(--t-rotulo) / 1.2 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mo-r-dato-fila { display: flex; align-items: baseline; gap: 10px; }
+.mo-r-dato-valor { font: 900 var(--t-num-m) / 0.95 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--ink); }
+.mo-r-dato-delta { font: 700 15px / 1 var(--f-mono); color: var(--up); white-space: nowrap; }
+.mo-r-dato-delta.baja { color: var(--down); }
+.mo-r-dato-delta.igual { color: var(--ink-mute); }
+.mo-r-dato-banda { font-size: 13px; line-height: 1.3; color: var(--ink-dim); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.mo-r-mas { display: grid; gap: 12px; }
+.mo-r-mas > summary {
+  cursor: pointer; width: max-content; font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase;
+  color: var(--ink-dim); padding: 8px 0; list-style-position: inside;
+}
+.mo-r-mas > summary:hover, .mo-r-mas > summary:focus-visible { color: var(--ink); }
+.mo-r-mas > summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+.mo-r-mas[open] > summary { margin-bottom: 12px; }
+@media (max-width: 560px) {
+  .mo-r-datos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mo-r-dato-valor { font-size: var(--t-num-s); }
+  .mo-r-ascenso { padding: 12px 14px; }
+  .mo-r-ascenso-texto { font-size: clamp(22px, 7vw, 30px); }
+  .mo-r-ultima-texto { font-size: 15px; }
 }
 
 /* movimiento reducido: los cuadros finales, sin transiciones (los pone fx/momento.js; el fundido corto es suyo) */
