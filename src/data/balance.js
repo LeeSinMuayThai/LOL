@@ -1091,7 +1091,18 @@ export const BALANCE = {
     // que la exigen (LEC/LPL: 18). La marca `espera_edad_minima` se prende con
     // esto en tier 2.
     nivelParaTier1: 62,
-    edadDebutTardio: 18
+    edadDebutTardio: 18,
+
+    // F2 (PLANUI §0.8, "el año muerto"): el salto de tier 3 a mitad de año ya no te deja agente libre hasta la pretemporada
+    // siguiente. En ese mismo split frena la llamada de un club de tier 2 de tu región con tu rol libre (`orgsQueTeFicharian`):
+    // firmás ahora o esperás la pretemporada. Los pesos son los del perfil automático (`resolverAuto`), los mismos 7 a 3 de
+    // la oferta del amateur ("X te quiere": firmar contra seguir grindeando).
+    llamadaTier2: {
+      // El contrato de la llamada es por lo que queda del año: vence en la pretemporada que viene (el mercado descuenta un año).
+      aniosContrato: 1,
+      pesoAutoFirmar: 7,
+      pesoAutoEsperar: 3
+    }
   },
 
   // Los planteles NPC (fase 9M, PLAN.md §9M.2). Valores puestos por criterio
@@ -1765,6 +1776,14 @@ export const BALANCE = {
   // cada rival) escupiendo una posición sin fechas ni tabla. Ahora es un
   // calendario real, con 2-3 fechas por split que el jugador juega de verdad.
   temporada: {
+    // F2 (PLANUI §0.8, "splits sin parada"): un split profesional con club de tier `paradaGarantizadaHastaTier` o mejor no
+    // pasa sin que el jugador frene. Si al llegar a la última fecha del split regular el split lleva menos de
+    // `paradasMinimasPorSplit` pausas (`state.presupuesto.gastadas`: el mercado, un evento, otra fecha), esa fecha se marca
+    // y frena aunque no decida nada, también en la cola de la carrera. Medido en f8503ce (1000 carreras enteras): el 22,6%
+    // de los splits con club de tier 1 o 2 no tenía ninguna parada (3.804 de 16.801), casi todos (3.496) porque ninguna
+    // fecha tenía motivo para marcarse.
+    paradasMinimasPorSplit: 1,
+    paradaGarantizadaHastaTier: 2,
     // K2b: el ruido de cada fecha se mudó a `partido.sigmaFecha` (lo lee solo
     // `ruidoEfectivo`, `core/partido.js`).
     //

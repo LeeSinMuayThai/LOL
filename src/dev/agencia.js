@@ -200,6 +200,8 @@ export const HORIZONTE_POR_TIPO = {
   'mercado:minijuego': 'carrera',
   'mercado:fin_mercado': 'carrera',
   'mercado:traspaso': 'carrera',
+  // F2 (PLANUI §0.8): la llamada de un club de tier 2 en el split del salto de tier 3: firmar ahora o esperar el mercado.
+  'competitivo:llamada_tier2': 'carrera',
   'edadCierre:x': 'carrera',
   'retiro:retiro_declive': 'carrera',
   'retiro:retiro_vuelta': 'carrera',

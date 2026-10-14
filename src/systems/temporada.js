@@ -15,7 +15,7 @@ import { jugarPartido, tirarPartido } from '../core/partido.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria, opcionesConPrevia } from './events.js';
 import { opcionDelPerfil } from '../core/perfil.js';
-import { frenaEnLaCola, hitoDelMomento, conFirmaDeLaCola, narradaEnLaCola } from '../core/cola.js';
+import { frenaEnLaCola, hitoDelMomento, conFirmaDeLaCola, narradaEnLaCola, enLaCola } from '../core/cola.js';
 import { registrarFecha, registrarSplitJugado } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
@@ -41,7 +41,10 @@ export const ETIQUETAS_MOTIVO = {
   define_clasificacion: ['Se define la clasificación', 'Partido bisagra', 'Todo o nada'],
   archirrival: ['El archirrival', 'Duelo de archirrivales', 'Cara a cara'],
   clasico: ['Clásico', 'El clásico', 'Viejo conocido'],
-  revancha: ['La revancha', 'Cuentas pendientes', 'El desquite']
+  revancha: ['La revancha', 'Cuentas pendientes', 'El desquite'],
+  // F2 (PLANUI §0.8): la última fecha del split regular, cuando el split no frenó en ninguna otra parte
+  // (`paradaGarantizada`). No define nada en la tabla: es el partido que se juega igual.
+  ultima_fecha: ['Última fecha', 'Cierre del split', 'La última del split']
 };
 
 export const FRASES_MOTIVO = {
@@ -72,6 +75,13 @@ export const FRASES_MOTIVO = {
     (r) => `Contra ${r}, con la eliminación todavía atragantada.`,
     (r) => `${r} enfrente. Hay cuentas pendientes de la última serie.`,
     (r) => `Toca ${r}, los que te sacaron de los playoffs pasados.`
+  ],
+  ultima_fecha: [
+    (r) => `Contra ${r}, la última fecha del split regular.`,
+    (r) => `${r} enfrente para cerrar el split.`,
+    (r) => `Última fecha, contra ${r}: la tabla ya casi no se mueve, pero se juega igual.`,
+    (r) => `Contra ${r}, el último partido antes del corte.`,
+    (r) => `${r} en la última del split. Nadie quiere cerrar con una derrota.`
   ]
 };
 
@@ -87,6 +97,35 @@ function etiquetaDeMotivo(motivo, semilla = '') {
 function fraseDeMotivo(motivo, rival, semilla = '') {
   const opciones = FRASES_MOTIVO[motivo] ?? FRASES_MOTIVO.clasico;
   return variante(opciones, `${motivo}|${rival}|${semilla}`)(rival);
+}
+
+// F2: la fecha de la parada garantizada lleva la marca `ultima_fecha` entre sus motivos (al lado de los de verdad, si los
+// tiene). `motivoPrincipal` no la conoce: el contenido del momento sale del motivo de verdad o, sin ninguno, del pool de
+// `parejo`. Es una marca y no un campo nuevo de la fecha para no cambiar la forma del estado (los guardados, D71).
+export const MARCA_PARADA_GARANTIZADA = 'ultima_fecha';
+const esParadaGarantizada = (fecha) => (fecha.motivos ?? []).includes(MARCA_PARADA_GARANTIZADA);
+
+// F2: el motivo con el que se NOMBRA la fecha: sin otro motivo, "la última fecha" (sin esto la frase caía en la del
+// clásico). Puro.
+function motivoDeTexto(fecha) {
+  const motivo = motivoPrincipal(fecha.motivos);
+  return esParadaGarantizada(fecha) && motivo === 'parejo' ? MARCA_PARADA_GARANTIZADA : motivo;
+}
+
+// F2 (PLANUI §0.8, "splits sin parada"): ¿este split necesita que su última fecha frene? Con club de tier
+// `temporada.paradaGarantizadaHastaTier` o mejor y con menos de `temporada.paradasMinimasPorSplit` pausas en lo que va del
+// split (`state.presupuesto.gastadas`, que `core/pipeline.js` cuenta en cada pausa: el mercado, un evento, otra fecha). Lo
+// que frene después de la temporada todavía no corrió, con una excepción que se sabe de antemano: el split de playoffs es el
+// que cierra el año, y ahí frena el cierre (`systems/edadCierre.js`, las tres cartas) salvo en la cola de la carrera, donde
+// puede narrarse. Medido en f8503ce: de 1.653 splits de playoffs con club, 26 pasaban sin parada; de 1.664 regulares, 868.
+// Sin esa excepción la fecha garantizada frenaba también en casi todos los splits de playoffs, delante del cierre: relleno.
+// Puro, sin `rng`.
+function necesitaParadaGarantizada(state) {
+  const t = BALANCE.temporada;
+  const frenaElCierre = calcularContexto(state).ventana === 'playoffs' && !enLaCola(state);
+  return !frenaElCierre
+    && (state.career.tier ?? Infinity) <= t.paradaGarantizadaHastaTier
+    && (state.presupuesto?.gastadas ?? 0) < t.paradasMinimasPorSplit;
 }
 
 // Fase 9R0a: un par (motivo, rival) recién marcado entra en cooldown para que
@@ -250,7 +289,7 @@ function construirDecisionMomento(state, evento, contexto, fecha, tipoDecision) 
       eventoId: evento.id,
       pAntesDeDecidir: probabilidadDeFechaMarcada(state),
       // K4-A: el rótulo del partido, para el subtítulo de la previa.
-      etiqueta: etiquetaDeMotivo(motivoPrincipal(fecha.motivos), state.player.splitCount)
+      etiqueta: etiquetaDeMotivo(motivoDeTexto(fecha), state.player.splitCount)
     }
   };
 }
@@ -258,7 +297,12 @@ function construirDecisionMomento(state, evento, contexto, fecha, tipoDecision) 
 function arrancarMomento(state, rng, logs, campeonElegido) {
   const fecha = { ...state.career.temporada.fechaEnCurso, campeonElegido };
   const stConCampeon = { ...state, career: { ...state.career, temporada: { ...state.career.temporada, fechaEnCurso: fecha } } };
-  const motivo = motivoPrincipal(fecha.motivos);
+  // F2: si el motivo no tiene contenido (la red de seguridad de abajo; medido en f8503ce: ~300 fechas marcadas en 1000 carreras
+  // pasaban sin momento) y el split todavía no frenó, el momento sale del pool de `parejo`, para que la fecha frene igual. La
+  // fecha conserva su motivo en el rótulo y la frase; solo el contenido es el genérico.
+  const motivoFecha = motivoPrincipal(fecha.motivos);
+  const sinContenido = candidatosDePartido(stConCampeon, motivoFecha, false).length === 0;
+  const motivo = sinContenido && necesitaParadaGarantizada(stConCampeon) ? 'parejo' : motivoFecha;
   const candidatos = candidatosDePartido(stConCampeon, motivo, false);
 
   if (candidatos.length === 0) {
@@ -275,7 +319,8 @@ function arrancarMomento(state, rng, logs, campeonElegido) {
   // K6b-C2 (la cola de verdad): en la cola, el momento frena solo si es un hito, si algo cambió o si su tipo tiene palanca
   // (`core/cola.js`). Si no, lo resuelve tu perfil (la opción de mejor encaje entre las vivas de ESTE contexto, K4-C), con
   // las mismas tiradas que después de la pausa (`resolver`), y queda una línea de crónica antes del partido.
-  if (!frenaEnLaCola(stConCampeon, 'momento', hitoDelMomento(stConCampeon)).frena) {
+  // F2: la fecha de la parada garantizada frena también en la cola (cuenta como hito): es la única del split.
+  if (!frenaEnLaCola(stConCampeon, 'momento', esParadaGarantizada(fecha) || hitoDelMomento(stConCampeon)).frena) {
     const perfil = stConCampeon.player.perfil;
     const opcionId = opcionDelPerfil(perfil, opcionesConPrevia(stConCampeon, evento, contexto)).id;
     const resuelto = resolverOpcion(stConCampeon, evento, opcionId, rng, { cronica: perfil.actual });
@@ -338,7 +383,7 @@ function resolverFechaMarcada(state, rng, logsAcum, pAntesDeDecidir = null) {
 
   const logs = [...logsAcum, crearLog(
     'temporada',
-    `${fraseDeMotivo(motivo, fecha.rival, state.player.splitCount)} ${gano ? 'Ganan.' : 'Pierden.'} `
+    `${fraseDeMotivo(motivoDeTexto(fecha), fecha.rival, state.player.splitCount)} ${gano ? 'Ganan.' : 'Pierden.'} `
     + `Quedan ${posicion}º de ${tablaTrasFecha.length}`
     + `${fecha.campeonElegido ? ` jugando ${fecha.campeonElegido.name}` : ''}.`,
     // K6a-M: la fecha jugada viaja en su log (`encabezadoDeResultado`, core/temporada.js): la tarjeta de resultado la
@@ -426,6 +471,15 @@ function continuarTemporada(state, rng, logsAcum) {
         || (principal !== 'parejo'
           && !parEnCooldown(st, principal, fecha.rival)
           && !defineClasificacionMasAdelante(st, liga, t));
+    }
+    // F2 (PLANUI §0.8): si el split no marcó ninguna fecha y todavía no frenó (`necesitaParadaGarantizada`), la última
+    // del calendario se marca con o sin motivo. Usa el cupo de `objetivoMarcadas` (sigue habiendo a lo sumo una fecha
+    // marcada por split, K4-A) y en baja por lesión no: es un partido que no jugás.
+    const paradaGarantizada = !marcar && !enBajaPorLesion && marcadasQueFaltan > 0
+      && t.indice === t.calendario.length - 1 && necesitaParadaGarantizada(st);
+    if (paradaGarantizada) {
+      motivos = [...motivosDeFecha(st, liga, fecha, t).filter((m) => m !== 'parejo'), MARCA_PARADA_GARANTIZADA];
+      marcar = true;
     }
     const principal = motivoPrincipal(motivos);
 

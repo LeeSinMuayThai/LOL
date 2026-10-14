@@ -132,9 +132,12 @@ function alParar(ctx) {
     }
   }
   if (sistema.id === 'internacional' && motivo === 'plan' && state.serie?.torneo === 'mundial' && state.serie.etapa === 'cuartos' && !decision.datos?.replan) ofrecer('mundial-cuartos', 1, ctx);
+  // F2 (PLANUI §0.8): la llamada de tier 2 en el split del salto, y la última fecha que frena porque el split no frenó.
+  if (sistema.id === 'competitivo' && motivo === 'llamada_tier2' && nOpc === 2) ofrecer('llamada', 1, ctx);
+  if (sistema.id === 'temporada' && (state.career.temporada?.fechaEnCurso?.motivos ?? []).includes('ultima_fecha')) ofrecer('ultima-fecha', 1, ctx);
 }
 
-const QUIERO = ['evento', 'destino', 'plan', 'cierre', 'cierre-receso', 'serie', 'swiss', 'swiss-2-2', 'swiss-ronda', 'mundial-cuartos', 'final', 'firma', 'final-perdida', 'mudanza', 'primer-club'];
+const QUIERO = ['evento', 'destino', 'plan', 'cierre', 'cierre-receso', 'serie', 'swiss', 'swiss-2-2', 'swiss-ronda', 'mundial-cuartos', 'final', 'firma', 'final-perdida', 'mudanza', 'primer-club', 'llamada', 'ultima-fecha'];
 for (let seed = 1; seed <= SEEDS && !QUIERO.every((n) => muestras.has(n) && (!['serie', 'swiss-ronda'].includes(n) || muestras.get(n).prioridad >= 3)); seed += 1) {
   jugarCarrera(seed, { alParar, responder, alCerrarSplit: ({ despues }) => confirmar(despues) });
 }
