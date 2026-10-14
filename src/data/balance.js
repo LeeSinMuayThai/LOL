@@ -1678,6 +1678,11 @@ export const BALANCE = {
   // 0-10 de cinco señales que ya existen en el motor — nunca inventa una
   // nueva. Los pesos de `pesos` (profesional) suman 1; cada componente entra
   // normalizado a 0-1 antes de ponderar.
+  // F3 (PLANUI §0.8): la tarjeta final no se agranda. "Las que se escaparon" lista como mucho estas finales perdidas (las del
+  // Mundial primero, después las de la liga más alta y las más recientes).
+  tarjeta: {
+    finalesEscapadas: 5
+  },
   temporadaResumen: {
     // Recalibrado (fase 11, medido en 400 carreras): con 0.30/0.20 la nota
     // correlacionaba r=0,896 con la posición — casi el techo de 0,9 del check

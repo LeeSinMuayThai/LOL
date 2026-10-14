@@ -300,6 +300,13 @@ export function registrarInternacional(registro, entrada) {
   return { ...registro, internacionales: [...registro.internacionales, entrada] };
 }
 
+// F3 (D106, PLANUI §0.8): la final doméstica que se jugó —la ganada también, para poder contar "3 de 5"—. `marcador` va
+// [el tuyo, el del rival]; `liga` es el id real. `registro.finales` NO está en `createInitialState` (agregarlo cambiaría la forma
+// del estado y obligaría a subir la VERSION del guardado): nace acá, con la primera final, y quien lo lee usa `?? []`.
+export function registrarFinal(registro, { anio, liga, org, rival, gano, marcador }) {
+  return { ...registro, finales: [...(registro.finales ?? []), { anio, liga, org, rival, gano, marcador: [...marcador] }] };
+}
+
 // K6b-U: los Mundiales ganados (resultado `campeon`): lo que cuenta como trofeo internacional. El rival del duelo
 // suma solo los suyos (`systems/rivales.js`); el jugador, igual.
 export function mundialesGanados(registro) {

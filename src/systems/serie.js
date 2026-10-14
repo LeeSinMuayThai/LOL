@@ -13,7 +13,7 @@ import {
 import { fuerzaDePartido } from '../core/fuerza.js';
 import { tirarPartido } from '../core/partido.js';
 import {
-  registrarMapa, registrarSerie, registrarTitulo, registrarPico, registrarArraigoEnFila
+  registrarMapa, registrarSerie, registrarFinal, registrarTitulo, registrarPico, registrarArraigoEnFila
 } from '../core/registro.js';
 import {
   elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego,
@@ -466,6 +466,19 @@ function concluirRonda(state, rng, logsAcum) {
       registro: registrarSerie(state.career.registro, gano)
     }
   };
+  // F3 (D106): la final doméstica queda en el registro, ganada o perdida (el Mundial es otro sistema). Sin `rng`.
+  if (state.serie.torneo !== 'mundial' && ronda === 'final') {
+    st = {
+      ...st,
+      career: {
+        ...st.career,
+        registro: registrarFinal(st.career.registro, {
+          anio: state.calendario.anio, liga: liga?.id ?? null, org: state.career.currentOrg,
+          rival: state.serie.rival.org, gano, marcador
+        })
+      }
+    };
+  }
   const logs = [...logsAcum];
   const datosPost = {
     postSerie: true,

@@ -35,6 +35,24 @@
   .mt-titular:nth-child(n + 3) { display: none; }
 }
 
+/* ---- F3 (PLANUI §0.8, punto 6): "Lo que elegiste", el resultado de tu decisión, arriba y aparte de la franja ---- */
+#paradaAntes:has(.mt-eleccion) { display: grid; gap: 10px; }
+.mt-eleccion {
+  display: grid; gap: 6px; margin: 0; padding: 16px 18px; border-radius: var(--r-panel);
+  background: var(--mt-fondo-hover); box-shadow: inset 3px 0 0 var(--luz-fuerte), inset 0 0 0 1px var(--mt-filete);
+}
+.mt-eleccion-rotulo { font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--luz-texto); }
+.mt-eleccion-titulo { margin: 0; font: 700 18px / 1.25 var(--f-cuerpo); color: var(--ink); }
+.mt-eleccion-opcion { margin: 0; font: 600 14px / 1.35 var(--f-cuerpo); color: var(--ink-dim); }
+.mt-eleccion-opcion::before { content: 'Elegiste: '; font-weight: 500; color: var(--ink-mute); }
+.mt-eleccion-salio { margin: 2px 0 0; font: 500 16px / 1.45 var(--f-cuerpo); color: var(--ink); }
+.mt-eleccion-ejes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+@media (max-width: 560px) {
+  .mt-eleccion { padding: 12px 14px; }
+  .mt-eleccion-titulo { font-size: 16px; }
+  .mt-eleccion-salio { font-size: 15px; }
+}
+
 /* ---- el cajón: un <dialog> modal a la derecha (abajo en el celular) con la página entera del tramo ---- */
 .mt-cajon {
   position: fixed; inset: 0 0 0 auto; width: min(620px, 100vw); max-width: 100vw; height: 100dvh; max-height: 100dvh;
