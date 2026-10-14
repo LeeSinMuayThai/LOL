@@ -11,10 +11,12 @@
 //     reposo: vos en el mercado (tu valor, cuántos te llaman, la más alta).
 //   - La comparación es la grilla de escudos (barras de sueldo y jerarquía) y el detalle va al inspector, con la
 //     negociación (pedir más, pedir cláusula); abajo, el representante y no firmar. FIRMAR es el BLOQUEAR del inicio.
-//   - LA FIRMA SOBRE EL CONTRATO (`narrar`, con la respuesta del motor): el contrato sube, la firma se traza y cae el
-//     sello (Firmado, Renovado o, si la org pide una prueba, A prueba). Si firmaste con un club nuevo, sigue el fichaje
-//     (`components/fichaje.js`): tu línea cae sobre el mapa y la firma con tu jersey y tu número. Con movimiento
-//     reducido, el contrato sellado es un cuadro fijo con su tiempo de lectura; en INST, su cuadro final un instante.
+//   - LA FIRMA AL FRENTE (`narrar`, con la respuesta del motor; PLANUI §0.6 punto 1): el papel de arriba de la pila se
+//     despega y viaja al centro, grande, sobre un velo; tu firma se traza en tu línea y cae el sello al pie (Firmado,
+//     Renovado o, si la org pide una prueba, A prueba). Si firmaste con un club nuevo, la escena sigue en el fichaje
+//     (`components/fichaje.js`): el mapa cae encima del papel, tu línea cae, y el mapa viaja y se vuelve el escudo del
+//     walkout. Si no, el papel vuelve a la pila sellado y la hoja sellada queda en el panel. En rápido, la misma secuencia
+//     con la escala de la narración; Espacio salta al walkout; con movimiento reducido, cuadros fijos.
 //   - Después de una prueba que salió (`paradas/minijuego.js`, PLANUI §0.3 punto 5), la misma hoja se firma suelta en el
 //     panel de la prueba (`narrarContratoFirmado`), con el tono y el valor con que el mercado mostró esa oferta
 //     (`firmaDeLaPrueba`); después, el fichaje.
@@ -117,6 +119,25 @@ const LLEGADA_PESO = { min: 0.7, max: 1.3 }; // el peso de cada salto entre día
 // Las cartas de la derecha: los giros y corrimientos de la pila, la caída, cómo sale una de la pila y queda al frente.
 const CARTA = { giro: 6, dx: 16, dy: 12, caida: 300, giroCaida: 10, frente: 60, sale: { x: 12, y: -40, giro: 7 }, alFrente: { x: 1, y: -2, giro: -1.2, escala: 1.03 }, mueve: 440, corte: 0.45 };
 const CARTA_SELLO = { r: 38 };
+// LA FIRMA AL FRENTE (PLANUI §0.6 punto 1), en ms desde FIRMAR a 1× (en rápido, por la escala de la narración):
+//   0-450 el papel se despega y viaja al centro (a `despega` ya se levantó), el velo baja y los otros papeles caen;
+//   450-1500 tu firma se traza; 1500-1800 cae el sello (el golpe, al 70 %); 1800-2300 se sostiene (después, el mapa cae
+//   encima: `fichaje.js`); sin fichaje, el papel vuelve a la pila en `vuelve`.
+const T_FRENTE = {
+  viaja: 450, despega: 0.34, velo: 380,
+  caen: 40, caenPaso: 45, caenDur: 520,
+  trazo: 470, trazoDur: 820, rubrica: 1290, rubricaDur: 210,
+  sello: 1500, selloDur: 300,
+  fin: 2300, vuelve: 460
+};
+// El papel al frente: su ancho (tope en px, fracción del ancho de la pantalla en escritorio y en el celular), el aire que
+// deja arriba y abajo (px), la pose del despegue (px, grados) y cómo caen los otros papeles (vh, grados).
+const PAPEL = {
+  ancho: 560, vw: 0.44, vwCelular: 0.9, aire: 40,
+  perspectiva: 1400, despegue: 0.55, levanta: 46, inclina: { x: 14, y: -10, z: 2.5 },
+  cae: { y: 70, giro: 16 },
+  firmaAire: 40, firmaMin: 420 // el ancho del dibujo de tu firma (unidades del viewBox de `firmaTrazada`)
+};
 const LETRA_MIN = 34;
 // Las paletas de las orgs inventadas, una distinta para cada una en el orden de la grilla (por hash, varias caían igual).
 const PALETAS_ORG = 4;
@@ -307,6 +328,16 @@ function ajustarLetra(nodo, min = LETRA_MIN) {
   nodo.style.fontSize = `${Math.max(min, Math.floor(base * (ancho / largo) * 0.98))}px`;
 }
 
+// El sello de una carta (la de la pila o el papel al frente): cae al pie con el golpe a los 70 % de `dur`, que llega en `t`.
+function sellarCarta(c, { w, t, texto, dur }) {
+  c.querySelector('.ms-carta-firmada')?.remove();
+  const f = el('span', { class: 'ms-carta-firmada', 'aria-hidden': 'true', text: texto });
+  c.querySelector('.ms-carta-pie')?.append(f);
+  c.classList.add('ms-carta-sellada');
+  w(animar(f, [{ opacity: 0, transform: 'rotate(-14deg) scale(2.4)', easing: 'cubic-bezier(.55,0,1,.45)' }, { opacity: 1, transform: 'rotate(-9deg) scale(.92)', offset: 0.7, easing: EXPO }, { opacity: 1, transform: 'rotate(-9deg)' }], { delay: Math.max(0, t - dur * 0.7), dur, easing: 'linear' }));
+  return f;
+}
+
 // ================================================================================================= la pila de cartas
 // Las ofertas como cartas formales: el membrete (la banda en la noche de la org, con su escudo), a quién va, los términos y
 // el sello. Caen sobre la pila en el orden en que llegan (la última, arriba); apuntar una org la saca de la pila y la pone
@@ -347,7 +378,13 @@ function pilaDeCartas({ ofertas, norm, tonos, yo, dias, orden, semilla }) {
           x.jer ? fila('Jerarquía', `${x.jer.hasta} de 100, proyectada`) : null,
           x.plantel ? fila('Plantel', `${x.plantel.puesto}.º de ${x.plantel.de} en ${nombreVisibleDeLiga(x.plantel.liga ?? o.liga)}`) : null
         ]),
-        el('footer', { class: 'ms-carta-pie' }, [el('div', { class: 'ms-carta-firma' }, [el('i'), el('span', { text: `Por ${o.org}` })]), el('span', { class: 'ms-carta-sello' }, anillo)])
+        el('footer', { class: 'ms-carta-pie' }, [
+          el('div', { class: 'ms-carta-firmas' }, [
+            el('div', { class: 'ms-carta-firma' }, [el('i'), el('span', { text: `Por ${o.org}` })]),
+            el('div', { class: 'ms-carta-firma ms-carta-vos' }, [el('i'), el('span', { text: `${yo.handle} · el jugador` })])
+          ]),
+          el('span', { class: 'ms-carta-sello' }, anillo)
+        ])
       ])
     ]);
   });
@@ -385,16 +422,14 @@ function pilaDeCartas({ ofertas, norm, tonos, yo, dias, orden, semilla }) {
     ], { delay: tCae[i], dur: D, easing: 'linear' })));
     w(animar(bandeja, [{ opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }], { delay: T_LL.heroe, dur: Math.max(DUR.larga, Math.min(...tToca) - T_LL.heroe), easing: 'linear', fill: 'none' }));
   }
-  // FIRMAR: la carta de la org elegida (al frente) recibe su sello con el golpe.
-  function firmar(i, { w, t, texto }) {
+  // FIRMAR: la carta de la org elegida (al frente) recibe su sello con el golpe, al pie (sobre el sello de la org, nunca
+  // sobre los términos). `dur`: lo que tarda en caer (el golpe, al 70 %).
+  function firmar(i, { w, t, texto, dur = T_FIRMAR.selloDur }) {
     const c = cartas[i];
-    if (!c) return;
-    c.querySelector('.ms-carta-firmada')?.remove();
-    const f = el('span', { class: 'ms-carta-firmada', 'aria-hidden': 'true', text: texto });
-    c.append(f);
-    w(animar(f, [{ opacity: 0, transform: 'rotate(-14deg) scale(2.4)', easing: 'cubic-bezier(.55,0,1,.45)' }, { opacity: 1, transform: 'rotate(-9deg) scale(.92)', offset: 0.7, easing: EXPO }, { opacity: 1, transform: 'rotate(-9deg)' }], { delay: t - T_FIRMAR.selloDur * 0.7, dur: T_FIRMAR.selloDur, easing: 'linear' }));
+    if (!c) return null;
+    return sellarCarta(c, { w, t, texto, dur });
   }
-  return { nodo, mostrar, llegada, firmar };
+  return { nodo, mostrar, llegada, firmar, carta: (i) => cartas[i] ?? null, cartas };
 }
 
 // ================================================================================================= la pantalla
@@ -944,8 +979,12 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     if (i == null || (!f && !prueba)) return 0;
     // la oferta pide prueba: su tono y tu valor quedan para la firma después de la prueba
     if (prueba && !f) pruebaPendiente = { seed: estado.seed, org: ofertas[i].org, tono: tonos[i], valor };
-    await narrarContrato(ctx, i, f, prueba);
-    if (f && !f.renovacion && raiz.isConnected) await narrarFichaje(ctx, f, { mundo, sonido, valor, tono: tonos[i] });
+    const papel = await narrarContrato(ctx, i, f, prueba);
+    try {
+      if (papel) await narrarFichaje(ctx, f, { mundo, sonido, valor, tono: tonos[i], papel, saltado: papel.saltado });
+    } finally {
+      papel?.soltar();
+    }
     return f ? f.hasta : 0;
   }
 
@@ -991,39 +1030,146 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     return 1;
   }
 
-  // La firma sobre el contrato: el contrato sube sobre la cabeza y la grilla, la firma se traza, cae el sello.
+  // LA FIRMA AL FRENTE (PLANUI §0.6 punto 1): el papel de arriba de la pila se despega y viaja al centro, grande, sobre un
+  // velo; tu firma se traza en su línea y cae el sello al pie. Con fichaje (un club nuevo), el papel queda al frente y el
+  // fichaje sigue la escena (el mapa cae encima): devuelve el papel montado. Sin fichaje (una renovación, una prueba), se
+  // sostiene firmado y vuelve a la pila; la hoja sellada queda en el panel, como antes, y el relato sigue.
   async function narrarContrato(ctx, i, f, prueba) {
     const o = ofertas[i];
     const x = norm[i];
     const tono = tonos[i];
     const sello = f ? (f.renovacion ? 'Renovado' : 'Firmado') : 'A prueba';
+    const conFichaje = Boolean(f && !f.renovacion);
     raiz.classList.add('ms-firmando');
     panel.style.setProperty('--ms-cierre', `${cierre.offsetHeight}px`);
     for (const n of [cab, grilla, inspector]) {
       n.setAttribute('inert', '');
       n.setAttribute('aria-hidden', 'true');
     }
+    // la hoja del panel: el registro sellado (lo lee el lector de pantalla; se ve cuando el papel vuelve o se va)
     const h = hojaDeContrato({
       org: o.org, liga: o.liga, tono, handle: yo.handle, ventana: yo.ventana, anio: yo.anio, anios: f?.anios ?? x.anios,
       sueldo: f?.salario ?? x.sueldo, tipo: x.tipo, clausula: f?.clausula ?? x.clausula, traspaso, sello,
       sigue: f ? (f.renovacion ? `Seguís en ${o.org}` : `Tu nuevo club: ${o.org}`) : `La prueba de ingreso en ${o.org}`,
       texto: prueba ? prueba.datos?.apuesta ?? prueba.descripcion ?? '' : f?.log?.message ?? ''
     });
+    h.nodo.style.opacity = '0';
     panel.append(h.nodo);
-    const bt = crearBeats({ duracion: T_FIRMAR.duracion, asentarse: T_FIRMAR.asentarse });
-    const narracion = crearNarracion(ctx, [raiz], { reloj: bt });
+
+    // ---- el papel: una copia de la carta de arriba, del tamaño de la carta, que se escala al frente (FLIP)
+    const carta = heroe.carta(i);
+    const k = Number.isFinite(ctx?.escala) && ctx.escala > 0 ? Math.min(1, ctx.escala) : 1;
+    const T = (ms) => Math.round(ms * k);
+    const medida = getComputedStyle(carta);
+    const ancho = parseFloat(medida.width) || 1;
+    const alto = parseFloat(medida.height) || 1;
+    const origen = carta.getBoundingClientRect();
+    const papel = carta.cloneNode(true);
+    for (const n of papel.querySelectorAll('[id]')) {
+      const nuevo = `${n.id}-frente`;
+      for (const u of papel.querySelectorAll(`[href="#${n.id}"]`)) u.setAttribute('href', `#${nuevo}`);
+      n.id = nuevo;
+    }
+    // el sello de la org se vuelve a armar desde su marcado: el texto en arco copiado de la pila (achicada con `zoom` en
+    // el celular) se dibujaba con la escala de la pila
+    for (const n of papel.querySelectorAll('.ms-carta-sello')) n.innerHTML = n.innerHTML;
+    papel.classList.remove('al-frente', 'ms-carta-sellada');
+    papel.classList.add('ms-papel');
+    papel.querySelector('.ms-carta-firmada')?.remove();
+    Object.assign(papel.style, { transform: 'none', zIndex: '', visibility: '', opacity: '' });
+    const firma = firmaTrazada(yo.handle, 'ms-papel-firma');
+    papel.querySelector('.ms-carta-vos')?.prepend(firma.nodo);
+    const caja = el('div', { class: 'ms-frente-papel', style: { width: `${ancho}px`, height: `${alto}px` } }, papel);
+    const velo = el('div', { class: 'ms-frente-velo', style: { '--ms-frente-fondo': `var(${tono.vacio})`, '--ms-frente-luz': `var(${tono.luz})` } });
+    const capa = el('div', { class: 'ms-frente', 'aria-hidden': 'true' }, [velo, caja]);
+    (document.querySelector('.shell') ?? document.body).append(capa);
+    // tu firma llena su línea: el ancho del dibujo, el del nombre (con un mínimo, para que la rúbrica no quede enorme)
+    try {
+      const largo = firma.texto.getComputedTextLength();
+      if (largo > 0) firma.nodo.setAttribute('viewBox', `0 0 ${Math.round(Math.max(largo + PAPEL.firmaAire, PAPEL.firmaMin))} 150`);
+    } catch {
+      /* sin medida, el dibujo de siempre */
+    }
+    // el centro de la pantalla visible (sin la barra de scroll): la capa se corre si su contenedor no la deja ahí
+    const vw = document.documentElement.clientWidth || innerWidth;
+    const vh = document.documentElement.clientHeight || innerHeight;
+    const enCapa = caja.getBoundingClientRect();
+    caja.style.left = `${Math.round(vw / 2 - (enCapa.left + enCapa.width / 2))}px`;
+    caja.style.top = `${Math.round(vh / 2 - (enCapa.top + enCapa.height / 2))}px`;
+    const destino = caja.getBoundingClientRect();
+    const escala = Math.min(Math.min(PAPEL.ancho, vw * (celular() ? PAPEL.vwCelular : PAPEL.vw)) / ancho, (vh - 2 * PAPEL.aire) / alto);
+    caja.style.transform = `scale(${escala.toFixed(4)})`;
+    carta.style.visibility = 'hidden';
+    const s0 = origen.height / alto;
+    const dx = Math.round(origen.left + origen.width / 2 - (destino.left + destino.width / 2));
+    const dy = Math.round(origen.top + origen.height / 2 - (destino.top + destino.height / 2));
+    const pose = (px, py, rx, ry, rz, s) => `translate(${px}px, ${py}px) perspective(${PAPEL.perspectiva}px) rotateX(${rx}deg) rotateY(${ry}deg) rotate(${rz}deg) scale(${s.toFixed(4)})`;
+    const enLaPila = pose(dx, dy, 0, 0, CARTA.alFrente.giro, s0);
+    const alFrente = pose(0, 0, 0, 0, 0, escala);
+
+    const bt = crearBeats({ duracion: T(T_FRENTE.fin), asentarse: T(T_FRENTE.fin) });
+    let saltado = false;
+    let narracion = null;
+    // Espacio en el papel salta al walkout (el fichaje arranca en su cuadro final); con movimiento reducido, adelanta
+    const reloj = { saltar: () => ((saltado = narracion?.modo !== 'reducido'), bt.saltar()), pausar: () => bt.pausar(), reanudar: () => bt.reanudar() };
+    narracion = crearNarracion(ctx, [raiz, capa], { reloj });
     const w = (a) => bt.waapi(a);
     try {
-      for (const n of [cab, grilla]) w(animar(n, [{ opacity: 1 }, { opacity: 0 }], { dur: T_FIRMAR.apaga, easing: 'linear' }));
-      w(animar(inspector, [{ opacity: 1, visibility: 'visible' }, { opacity: 0, visibility: 'visible' }], { dur: T_FIRMAR.apaga, easing: 'linear' }));
-      firmarHoja(bt, h, { fx, sonido });
-      heroe.firmar(i, { w, t: T_FIRMAR.golpe, texto: sello });
+      for (const n of [cab, grilla]) w(animar(n, [{ opacity: 1 }, { opacity: 0 }], { dur: T(T_FIRMAR.apaga), easing: 'linear' }));
+      w(animar(inspector, [{ opacity: 1, visibility: 'visible' }, { opacity: 0, visibility: 'visible' }], { dur: T(T_FIRMAR.apaga), easing: 'linear' }));
+      // 0-450: se despega (se levanta y se inclina), gira a plano y llega al centro; el velo baja; los otros papeles caen
+      w(animar(caja, [
+        { transform: enLaPila, easing: 'cubic-bezier(.3,0,.3,1)' },
+        { transform: pose(Math.round(dx * PAPEL.despegue), Math.round(dy * PAPEL.despegue) - PAPEL.levanta, PAPEL.inclina.x, PAPEL.inclina.y, PAPEL.inclina.z, (s0 + escala) / 2), offset: T_FRENTE.despega, easing: 'cubic-bezier(.2,.7,.2,1)' },
+        { transform: alFrente }
+      ], { dur: T(T_FRENTE.viaja), easing: 'linear' }));
+      w(animar(velo, [{ opacity: 0 }, { opacity: 1 }], { dur: T(T_FRENTE.velo), easing: 'linear' }));
+      heroe.cartas.filter((c) => c !== carta).forEach((c, n) => {
+        const base = c.style.transform;
+        c.style.opacity = '0';
+        w(animar(c, [{ opacity: 1, transform: base }, { opacity: 0, transform: `${base} translateY(${PAPEL.cae.y}vh) rotate(${(n % 2 ? 1 : -1) * PAPEL.cae.giro}deg)` }], { delay: T(T_FRENTE.caen + n * T_FRENTE.caenPaso), dur: T(T_FRENTE.caenDur), easing: 'cubic-bezier(.55,0,.9,.5)' }));
+      });
+      // 450-1500: tu firma se traza en tu línea
+      w(trazarFirma(firma, T(T_FRENTE.trazo), T(T_FRENTE.trazoDur)));
+      w(rubricar(firma, T(T_FRENTE.rubrica), T(T_FRENTE.rubricaDur)));
+      // 1500-1800: el sello cae al pie, con el golpe (el pulso, la onda, el papel que se sacude y el sonido)
+      const golpe = T(T_FRENTE.sello + T_FRENTE.selloDur * 0.7);
+      const marca = sellarCarta(papel, { w, t: golpe, texto: sello, dur: T(T_FRENTE.selloDur) });
+      const onda = el('i', { class: 'ms-papel-onda', 'aria-hidden': 'true' });
+      marca.append(onda);
+      w(animar(onda, [{ opacity: 0, transform: 'scale(1)' }, { opacity: 0.9, transform: 'scale(1)', offset: 0.02 }, { opacity: 0, transform: 'scale(2.4)' }], { delay: golpe, dur: T(T_FIRMAR.onda) }));
+      w(animar(caja, [{ translate: '0 0' }, { translate: '0 5px', offset: 0.18 }, { translate: '-3px -1px', offset: 0.42 }, { translate: '2px 1px', offset: 0.7 }, { translate: '0 0' }], { delay: golpe, dur: T(T_FIRMAR.sacude), easing: 'linear' }));
+      const td = bt.destello(golpe);
+      if (td != null) fx()?.pulso?.('logro', td);
+      bt.esperar(golpe).then((llego) => llego && sonido?.golpe?.());
+      // la carta de la pila (escondida mientras el papel está al frente) recibe el mismo sello: vuelve sellada
+      heroe.firmar(i, { w, t: golpe, texto: sello, dur: T(T_FRENTE.selloDur) });
       bt.iniciar();
-      // lo que se queda el contrato firmado si no sigue el fichaje (con el fichaje, la secuencia hasta asentarse)
-      await sostenerHoja(bt, narracion, h, !f || f.renovacion ? T_FIRMAR.sostener : 0);
+      // 1800-2300: se sostiene (con movimiento reducido, el cuadro fijo del papel firmado y su tiempo de lectura)
+      if (narracion.modo === 'reducido') {
+        fundirCuadro(capa);
+        await narracion.esperar(T_FIRMAR.lectura);
+      } else await bt.esperar(T(T_FRENTE.fin));
+      if (!conFichaje) await narracion.esperar(T_FIRMAR.sostener);
     } finally {
       narracion.fin();
     }
+    const soltar = () => {
+      capa.remove();
+      bt.destruir();
+      carta.style.visibility = '';
+      h.nodo.style.opacity = '';
+    };
+    if (conFichaje && raiz.isConnected) return { capa, caja, escala, saltado, soltar };
+    // sin fichaje: el papel vuelve a la pila (sellada) y la hoja sellada aparece en el panel
+    const vuelta = animar(caja, [{ transform: alFrente }, { transform: enLaPila }], { dur: T(T_FRENTE.vuelve), easing: 'cubic-bezier(.6,0,.3,1)', fill: 'forwards' });
+    animar(velo, [{ opacity: 1 }, { opacity: 0 }], { dur: T(T_FRENTE.vuelve), easing: 'linear', fill: 'forwards' });
+    if (vuelta) await vuelta.finished.catch(() => {});
+    soltar();
+    if (narracion.modo === 'reducido') fundirCuadro(h.nodo);
+    else animar(h.nodo, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { dur: DUR.larga });
+    h.res.focus({ preventScroll: true });
+    return null;
   }
 
   return {

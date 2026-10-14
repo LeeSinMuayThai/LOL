@@ -1,9 +1,9 @@
 // El fichaje (PLANUI §2, compuerta 2 del mercado, pasos c y d; U2b punto 2). Después de la firma sobre el contrato:
 //   c. TU LÍNEA CAE SOBRE EL MAPA: la Grieta con sus cinco líneas (el `plantel` de la vitrina) con el escudo de la org de
-//      marca en el piso. El glifo de tu rol cae desde arriba a tu lugar, toca con un golpe y aparecen tus compañeros: los
+//      marca en el piso, que cae desde arriba (sobre el papel firmado del mercado, si lo hay: PLANUI §0.6 punto 1). El glifo de tu rol cae desde arriba a tu lugar, toca con un golpe y aparecen tus compañeros: los
 //      de verdad si el motor ya los trajo al firmar (`career.companeros`), y si no "por anunciar" (D102);
-//   d. LA FIRMA (el walkout de la vitrina, `crearFirmaLinea` con op=linea): el apagón, el haz con la liga y tu rol, el
-//      golpe del logo de la org, tu handle gigante con la firma trazada, la bienvenida y los términos como placas. A la
+//   d. LA FIRMA (el walkout de la vitrina, `crearFirmaLinea` con op=linea): el mapa se achica y viaja al lugar del
+//      escudo de la org (FLIP), su escudo se funde en el logo y ahí cae el golpe, con el haz; tu handle gigante con la firma trazada, la bienvenida y los términos como placas. A la
 //      derecha, en lugar de un campeón, el jersey de la org de espaldas con tu handle y tu número, que ELEGÍS (1-99). El
 //      número es cosmético: vive en el marcador de la vista (`almacenamiento.js`), nunca en el state; la próxima firma
 //      lo propone de nuevo.
@@ -39,19 +39,30 @@ const TIPO_DE_CONTRATO = { renovacion: 'Renovación', import: 'Import', transfer
 const fmt1 = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 1 });
 const aniosTxt = (n) => `${n} ${n === 1 ? 'año' : 'años'}`;
 
-// c. El mapa (ms desde que abre la capa).
+// c. El mapa (ms desde que abre la capa, a 1×; PLANUI §0.6 punto 1: el mercado firmó el papel en los 2300 ms de antes).
+//   0-1000     el mapa cae desde arriba (encima del papel firmado, que se va atrás) y se dibujan las líneas;
+//   1000-2000  tu línea cae y se enciende; aparecen tus compañeros;
+//   2000-2800  el mapa se achica y viaja al lugar del escudo del walkout (FLIP): el escudo del mapa se funde en el logo.
 const T_MAPA = {
   fondoDur: 360,
-  mapa: 100, mapaDur: 560,
-  cab: 180,
-  carriles: 220, carrilesDur: 760,
-  pos: 560, posPaso: 70,
-  cae: 900, caeDur: 480, toca: 0.82, // la caída: acelera y toca a esta fracción, después se aplasta y vuelve
+  mapaDur: 1000, mapaToca: 0.68, mapaCae: 1.05, mapaGiro: -3, // la caída del mapa (desde 1,05 alturas de pantalla)
+  cab: 420,
+  carriles: 450, carrilesDur: 620, carrilPaso: 60,
+  pos: 620, posPaso: 70,
+  cae: 1000, caeDur: 480, toca: 0.82, // la caída: acelera y toca a esta fracción, después se aplasta y vuelve
   pingPaso: 150, pingDur: 900, pingEscala: 2.6,
-  vos: 120, companeros: 340, companeroPaso: 90,
-  sale: 2620, saleDur: 420
+  vos: 120, companeros: 200, companeroPaso: 60,
+  papelAtras: 120, papelAtrasDur: 820, // el papel se va atrás: escala, desenfoque y luz
+  viaja: 2000, viajaDur: 800, funde: 0.55, cabSale: 0.4, restoSale: 0.5, // el viaje del mapa al escudo
+  papelSaleDur: 640
 };
-// d. La firma, en ms desde que arranca (W0): los tiempos de la vitrina.
+// el papel firmado, detrás del mapa: cuánto se achica, se desenfoca (px) y se apaga
+const PAPEL_ATRAS = { escala: 0.9, blur: 5, luz: 0.45 };
+// el golpe sobre el escudo ya en su lugar
+const LOGO_GOLPE = { escala: 1.12, dur: 520 };
+// d. La firma (el walkout), en ms desde que arranca (W0, el golpe sobre el escudo): los tiempos de la vitrina, corridos
+// para que su golpe (T_FL.golpe) caiga en W0. Lo de antes del golpe en la vitrina (el apagón, la liga y el rol en el haz,
+// el logo que entra en el centro) ya lo contó el mapa.
 const W0 = 2800;
 const T_FL = {
   duracion: 4600, asentarse: 4300,
@@ -74,9 +85,6 @@ const T_FL = {
   halo: 2420, haloPeriodo: 3200, mecer: 2200, mecerPeriodo: 7000, brillo: 4400, brilloPeriodo: 5600,
   cierra: 220
 };
-// el logo entra en el centro del haz (fracción del alto de la pantalla) y crece ahí
-const LOGO_CENTRO = 0.46;
-const LOGO_ESCALA = 2.2;
 // movimiento reducido: el tiempo de lectura del cuadro del mapa (ms a velocidad x1), antes del de la bienvenida
 const LECTURA_MAPA = 2200;
 // el confeti de la bienvenida: "un poco" (en el celular, menos)
@@ -198,7 +206,7 @@ function escenaDelMapa(f, tono) {
   ]);
   const nodo = el('div', { class: 'fj-mapa-escena', 'aria-hidden': 'true' }, [cab, mapa]);
   aplicarTono(nodo, tono);
-  return { nodo, cab, mapa, grieta, posiciones, vos, estela, pings };
+  return { nodo, cab, mapa, marca, grieta, posiciones, vos, estela, pings };
 }
 
 // ------------------------------------------------------------------------------------------------- d. la firma
@@ -207,15 +215,10 @@ function laFirma(f, tono, { numero, valor }) {
   const { logoDeLaLiga, ligaYAnio } = laLigaDe(f);
   const rolEtiqueta = ROLES[f.rol]?.label ?? f.rol;
   const bienvenida = `${f.org} da la bienvenida a ${f.handle}`;
-  const negro = el('div', { class: 'fj-negro', 'aria-hidden': 'true' });
   const haz = el('div', { class: 'fj-haz', 'aria-hidden': 'true' });
   const inunda = el('div', { class: 'fj-inunda', 'aria-hidden': 'true' });
   const velo = el('div', { class: 'fj-velo', 'aria-hidden': 'true' });
   const ondas = [0, 1].map(() => el('i', { class: 'fj-onda', 'aria-hidden': 'true' }));
-  // en el haz: la liga y su región, y tu rol (decorativos: el rótulo los dice)
-  const introLiga = el('div', { class: 'fj-intro-liga' }, [logoDeLaLiga(120), el('b', { class: 'fj-region', text: lugar?.regionId ?? ligaYAnio }), el('span', { class: 'fj-region-k', text: ligaYAnio })]);
-  const introRol = el('div', { class: 'fj-intro-rol' }, [glifoRol(f.rol, 'ln-glifo-rol fj-glifo'), el('span', { text: rolEtiqueta })]);
-  const intro = el('div', { class: 'fj-intro', 'aria-hidden': 'true' }, [introLiga, introRol]);
   // el bloque: el rótulo, el logo, el handle con la firma, la bienvenida, las placas y el renglón del motor
   const kicker = el('p', { class: 'fj-k' }, [
     el('span', { class: 'fj-k-liga' }, [logoDeLaLiga(20), lugar?.regionId ? el('b', { text: lugar.regionId }) : null, el('span', { text: ligaYAnio })]),
@@ -250,7 +253,7 @@ function laFirma(f, tono, { numero, valor }) {
   ]);
   const seguir = el('button', { type: 'button', class: 'boton boton-pri fj-seguir' }, ['Seguir', el('kbd', { text: 'Enter' })]);
   const lado = el('aside', { class: 'fj-lado', 'aria-label': `Tu jersey de ${f.org}` }, [jersey.nodo, eleccion, seguir]);
-  return { negro, haz, inunda, velo, ondas, intro, introLiga, introRol, kicker, logo, halo, letras, brillo, firma, nombre, linea, placas, log, bloque, jersey, campo, menos, mas, eleccion, seguir, lado };
+  return { haz, inunda, velo, ondas, kicker, logo, halo, letras, brillo, firma, nombre, linea, placas, log, bloque, jersey, campo, menos, mas, eleccion, seguir, lado };
 }
 
 // ------------------------------------------------------------------------------------------------- la narración
@@ -259,8 +262,14 @@ function laFirma(f, tono, { numero, valor }) {
 // `mundo`: el puente del ambiente; `sonido`: el del kit. `tono` (opcional): el de la org en la pantalla que firmó (el
 // mercado le da a cada org inventada su paleta en el orden de la grilla); si no, `tonoOrg`. Resuelve cuando el jugador
 // sigue.
-export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor = 0, tono: tonoDado = null } = {}) {
+// `papel` (opcional, el mercado): el papel firmado al frente (`{ capa, caja, escala }`): el mapa cae encima, el papel se
+// va atrás y se esfuma mientras el mapa viaja al escudo. `saltado`: el jugador ya saltó (Espacio) en el papel: va al walkout.
+export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor = 0, tono: tonoDado = null, papel = null, saltado = false } = {}) {
   if (!f || typeof document === 'undefined') return;
+  // en rápido (o a 2×), el mapa y el viaje con la escala de la narración (nunca saltados); el walkout, a su tiempo
+  const K = Number.isFinite(ctx?.escala) && ctx.escala > 0 ? Math.min(1, ctx.escala) : 1;
+  const M = (ms) => Math.round(ms * K);
+  const W = M(W0);
   const tono = tonoDado ?? tonoOrg(f.org);
   let numero = numeroPropuesto(f.seed, f.handle);
   // movimiento reducido: los dos cuadros fijos (`cuadro`: 'mapa' mientras se lee el mapa, después 'firma')
@@ -277,26 +286,39 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
     colores: [tono.luz, tono.contra, '--luz-blanca'],
     semilla: `firma-${f.org}-${f.handle}`,
     cantidad: Math.round(CONFETI.cantidad * (celular() ? CONFETI.celular : 1)),
-    calma: { desde: W0 + T_FL.bienvenida, dur: CONFETI.calma, alfa: CONFETI.alfa, zonas: () => [d.bloque.getBoundingClientRect()] },
+    calma: { desde: W + T_FL.bienvenida - T_FL.golpe, dur: CONFETI.calma, alfa: CONFETI.alfa, zonas: () => [d.bloque.getBoundingClientRect()] },
     origenes: [
-      { tipo: 'canon', x: 0, y: 1.02, angulo: 24, t: W0 + T_FL.confeti },
-      { tipo: 'canon', x: 1, y: 1.02, angulo: -24, t: W0 + T_FL.confeti },
-      { tipo: 'cortina', t: W0 + T_FL.cortina },
-      { tipo: 'lluvia', t: W0 + T_FL.lluvia }
+      { tipo: 'canon', x: 0, y: 1.02, angulo: 24, t: W + T_FL.confeti - T_FL.golpe },
+      { tipo: 'canon', x: 1, y: 1.02, angulo: -24, t: W + T_FL.confeti - T_FL.golpe },
+      { tipo: 'cortina', t: W + T_FL.cortina - T_FL.golpe },
+      { tipo: 'lluvia', t: W + T_FL.lluvia - T_FL.golpe }
     ]
   });
-  raiz.append(fondo, m.nodo, d.negro, d.haz, d.inunda, d.velo, ...d.ondas, confeti.nodo, d.intro, d.bloque, d.lado);
+  raiz.append(fondo, m.nodo, d.haz, d.inunda, d.velo, ...d.ondas, confeti.nodo, d.bloque, d.lado);
   // lo de abajo no se alcanza con el teclado mientras la firma está arriba (los cuartos siguen: el diálogo la tapa y la pausa)
   const tapados = [...capa.children].filter((n) => !n.inert && n.tagName !== 'DIALOG');
   for (const n of tapados) n.inert = true;
   capa.append(raiz);
   ajustarLetra(d.nombre);
+  // las medidas, antes de cualquier animación: tu lugar en el mapa (la caída), el escudo del mapa y el del walkout (el viaje)
+  const rn = m.vos.nodo.getBoundingClientRect();
+  const rMapa = m.mapa.getBoundingClientRect();
+  const rMarca = (m.marca.firstElementChild ?? m.marca).getBoundingClientRect();
+  const rLogo = (d.logo.lastElementChild ?? d.logo).getBoundingClientRect();
+  const centro = (r) => [r.left + r.width / 2, r.top + r.height / 2];
+  const [lx, ly] = centro(rLogo);
+  // las ondas y la inundación del golpe salen del escudo, en su lugar
+  for (const o of d.ondas) Object.assign(o.style, { left: `${Math.round(lx)}px`, top: `${Math.round(ly)}px` });
+  d.inunda.style.setProperty('--fj-gx', `${Math.round(lx)}px`);
+  d.inunda.style.setProperty('--fj-gy', `${Math.round(ly)}px`);
 
   // el mundo: la luz de la org (en el mapa a media presencia; en el golpe, entera, con el público)
   mundo?.cruzar?.(tono, paletaDe(tono, 0.6), T_MAPA.fondoDur);
   const fx = () => mundo?.fx?.() ?? null;
 
-  const bt = crearBeats({ duracion: W0 + T_FL.duracion, asentarse: W0 + T_FL.asentarse });
+  // t(ms): un tiempo de la vitrina del walkout, corrido para que su golpe caiga en W
+  const t = (ms) => W + ms - T_FL.golpe;
+  const bt = crearBeats({ duracion: t(T_FL.duracion), asentarse: t(T_FL.asentarse) });
   const narracion = crearNarracion(ctx, [], { reloj: bt });
   const w = (a) => bt.waapi(a);
   const sonar = (t, fn) => bt.esperar(t).then((llego) => llego && fn());
@@ -304,80 +326,82 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
   let cerrar = () => {};
   const listo = new Promise((resolver) => (cerrar = resolver));
 
-  // ---- c. el mapa: el fondo baja la luz, la Grieta se dibuja, los lugares entran y tu línea cae
-  w(animar(fondo, [{ opacity: 0 }, { opacity: 1, offset: T_MAPA.fondoDur / (W0 + 400) }, { opacity: 1, offset: (W0 - 100) / (W0 + 400) }, { opacity: 0 }], { dur: W0 + 400, easing: 'linear', fill: 'none' }));
-  w(animar(m.nodo, [{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none', offset: T_MAPA.mapaDur / T_MAPA.sale }, { opacity: 1, transform: 'none', offset: 1 }], { delay: T_MAPA.mapa, dur: T_MAPA.sale - T_MAPA.mapa, easing: EXPO, fill: 'none' }));
-  w(animar(m.nodo, [{ opacity: 1, filter: 'blur(0px)' }, { opacity: 0, filter: 'blur(6px)', transform: 'scale(1.04)' }], { delay: T_MAPA.sale, dur: T_MAPA.saleDur, easing: 'ease-in', fill: 'none' }));
-  w(entrar(m.cab, T_MAPA.cab, 10));
-  m.grieta.querySelectorAll('[pathLength]').forEach((p, k) => w(animar(p, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { delay: T_MAPA.carriles + k * 60, dur: T_MAPA.carrilesDur })));
-  m.posiciones.forEach((p, k) => p !== m.vos.pos && w(animar(p, [{ opacity: 0, translate: '-50% -12px' }, { opacity: 1, translate: '-50% -22px' }], { delay: T_MAPA.pos + k * T_MAPA.posPaso, dur: 360 })));
-  const tToca = T_MAPA.cae + T_MAPA.caeDur * T_MAPA.toca;
+  // ---- c. el mapa: cae desde arriba (encima del papel firmado), las líneas se dibujan, los lugares entran y tu línea cae
+  // el fondo baja la luz (con el papel, recién cuando el papel se esfuma: hasta ahí lo apaga el velo del mercado)
+  const fondoDesde = papel ? M(T_MAPA.viaja) : 0;
+  const fondoTotal = W + 400;
+  const fondoLleno = Math.min(fondoDesde + (papel ? M(T_MAPA.viajaDur) / 2 : T_MAPA.fondoDur), W - 100);
+  w(animar(fondo, [{ opacity: 0 }, { opacity: 0, offset: fondoDesde / fondoTotal }, { opacity: 1, offset: Math.max(fondoDesde, fondoLleno) / fondoTotal }, { opacity: 1, offset: Math.max(fondoDesde, fondoLleno, W - 100) / fondoTotal }, { opacity: 0 }], { dur: fondoTotal, easing: 'linear', fill: 'none' }));
+  m.nodo.style.opacity = '1';
+  w(animar(m.nodo, [
+    { opacity: 0, transform: `translateY(${-T_MAPA.mapaCae * 100}vh) rotate(${T_MAPA.mapaGiro}deg)`, easing: 'cubic-bezier(.5,0,.85,.45)' },
+    { opacity: 1, transform: `translateY(${-T_MAPA.mapaCae * 60}vh) rotate(${T_MAPA.mapaGiro * 0.6}deg)`, offset: 0.2, easing: 'cubic-bezier(.5,0,.85,.45)' },
+    { opacity: 1, transform: 'translateY(1.5%) scale(1.02, .97)', offset: T_MAPA.mapaToca, easing: 'cubic-bezier(.2,.7,.3,1)' },
+    { opacity: 1, transform: 'none' }
+  ], { dur: M(T_MAPA.mapaDur), easing: 'linear' }));
+  const golpeCaida = bt.destello(M(T_MAPA.mapaDur * T_MAPA.mapaToca));
+  if (golpeCaida != null) fx()?.pulso?.('golpe', golpeCaida);
+  if (papel) {
+    const s = papel.escala;
+    w(animar(papel.caja, [{ transform: `scale(${s})`, filter: 'blur(0px) brightness(1)' }, { transform: `scale(${s * PAPEL_ATRAS.escala})`, filter: `blur(${PAPEL_ATRAS.blur}px) brightness(${PAPEL_ATRAS.luz})` }], { delay: M(T_MAPA.papelAtras), dur: M(T_MAPA.papelAtrasDur), fill: 'forwards' }));
+    w(animar(papel.capa, [{ opacity: 1 }, { opacity: 0 }], { delay: M(T_MAPA.viaja), dur: M(T_MAPA.papelSaleDur), easing: 'linear', fill: 'forwards' }));
+  }
+  w(entrar(m.cab, M(T_MAPA.cab), 10));
+  m.grieta.querySelectorAll('[pathLength]').forEach((p, k) => w(animar(p, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { delay: M(T_MAPA.carriles + k * T_MAPA.carrilPaso), dur: M(T_MAPA.carrilesDur) })));
+  m.posiciones.forEach((p, k) => p !== m.vos.pos && w(animar(p, [{ opacity: 0, translate: '-50% -12px' }, { opacity: 1, translate: '-50% -22px' }], { delay: M(T_MAPA.pos + k * T_MAPA.posPaso), dur: M(360) })));
+  const tToca = M(T_MAPA.cae + T_MAPA.caeDur * T_MAPA.toca);
   // la caída: desde arriba de la pantalla hasta tu lugar (medido), acelerando; toca, se aplasta y vuelve
-  const rn = m.vos.nodo.getBoundingClientRect();
   const alto = Math.round(rn.bottom + 60);
   w(animar(m.vos.nodo, [
     { opacity: 0, transform: `translateY(${-alto}px) scale(1.3)`, filter: 'blur(4px)', easing: 'cubic-bezier(.5,0,.9,.4)' },
     { opacity: 1, transform: `translateY(${Math.round(-alto * 0.9)}px) scale(1.25)`, filter: 'blur(3px)', offset: 0.08, easing: 'cubic-bezier(.5,0,.9,.4)' },
     { opacity: 1, transform: 'translateY(4%) scale(1.16, .82)', filter: 'blur(0px)', offset: T_MAPA.toca, easing: 'cubic-bezier(.2,.7,.3,1)' },
     { opacity: 1, transform: 'none', filter: 'blur(0px)' }
-  ], { delay: T_MAPA.cae, dur: T_MAPA.caeDur, easing: 'linear' }));
+  ], { delay: M(T_MAPA.cae), dur: M(T_MAPA.caeDur), easing: 'linear' }));
   m.estela.style.height = `${alto}px`;
-  w(animar(m.estela, [{ opacity: 0, transform: 'scaleY(.1)' }, { opacity: 1, transform: 'scaleY(1)', offset: 0.5 }, { opacity: 0.8, transform: 'scaleY(.6)', offset: T_MAPA.toca }, { opacity: 0, transform: 'scaleY(.02)' }], { delay: T_MAPA.cae, dur: T_MAPA.caeDur + 160, easing: 'linear', fill: 'none' }));
-  m.pings.forEach((p, k) => w(animar(p, [{ opacity: 0.95, transform: 'translate(-50%, -50%) scale(.4)' }, { opacity: 0, transform: `translate(-50%, -50%) scale(${T_MAPA.pingEscala})` }], { delay: tToca + k * T_MAPA.pingPaso, dur: T_MAPA.pingDur, easing: EXPO, fill: 'none' })));
-  w(animar(m.grieta.querySelector('.fj-pl-carril-vos'), [{ strokeWidth: 0.9, opacity: 1 }, { strokeWidth: 0.26, opacity: 0.8 }], { delay: tToca, dur: 700, fill: 'none' }));
-  w(entrar(m.vos.txt, tToca + T_MAPA.vos, 10));
-  m.posiciones.filter((p) => p !== m.vos.pos).forEach((p, k) => w(animar(p.querySelector('.fj-pl-quien'), [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { delay: tToca + T_MAPA.companeros + k * T_MAPA.companeroPaso, dur: 300 })));
+  w(animar(m.estela, [{ opacity: 0, transform: 'scaleY(.1)' }, { opacity: 1, transform: 'scaleY(1)', offset: 0.5 }, { opacity: 0.8, transform: 'scaleY(.6)', offset: T_MAPA.toca }, { opacity: 0, transform: 'scaleY(.02)' }], { delay: M(T_MAPA.cae), dur: M(T_MAPA.caeDur + 160), easing: 'linear', fill: 'none' }));
+  m.pings.forEach((p, k) => w(animar(p, [{ opacity: 0.95, transform: 'translate(-50%, -50%) scale(.4)' }, { opacity: 0, transform: `translate(-50%, -50%) scale(${T_MAPA.pingEscala})` }], { delay: tToca + M(k * T_MAPA.pingPaso), dur: M(T_MAPA.pingDur), easing: EXPO, fill: 'none' })));
+  w(animar(m.grieta.querySelector('.fj-pl-carril-vos'), [{ strokeWidth: 0.9, opacity: 1 }, { strokeWidth: 0.26, opacity: 0.8 }], { delay: tToca, dur: M(700), fill: 'none' }));
+  w(entrar(m.vos.txt, tToca + M(T_MAPA.vos), 10));
+  m.posiciones.filter((p) => p !== m.vos.pos).forEach((p, k) => w(animar(p.querySelector('.fj-pl-quien'), [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { delay: tToca + M(T_MAPA.companeros + k * T_MAPA.companeroPaso), dur: M(300) })));
   const golpeMapa = bt.destello(tToca);
   if (golpeMapa != null) fx()?.pulso?.('golpe', golpeMapa);
-  sonar(T_MAPA.cae, () => sonido?.ding?.());
+  sonar(M(T_MAPA.cae), () => sonido?.ding?.());
   sonar(tToca, () => sonido?.golpe?.());
 
-  // ---- d. la firma: el apagón, el haz que baja, la liga y tu rol, el golpe del logo, tu handle y el jersey
-  const t = (ms) => W0 + ms;
-  // con el apagón entero, lo de abajo (el mercado, la franja, los cuartos) se va: el walkout queda solo sobre el mundo
-  bt.esperar(t(0)).then(() => raiz.isConnected && !enCuadros && (raiz.dataset.fase = 'firma'));
-  w(animar(d.negro, [
-    { opacity: 0, clipPath: 'polygon(-40% 0, 140% 0, 140% 100%, -60% 100%)', easing: 'linear' },
-    { opacity: 1, clipPath: 'polygon(-40% 0, 140% 0, 140% 100%, -60% 100%)', offset: -T_FL.apaga / (T_FL.barre + T_FL.barreDur - T_FL.apaga), easing: 'linear' },
-    { opacity: 1, clipPath: 'polygon(-40% 0, 140% 0, 140% 100%, -60% 100%)', offset: (T_FL.barre - T_FL.apaga) / (T_FL.barre + T_FL.barreDur - T_FL.apaga), easing: 'cubic-bezier(.6,0,.3,1)' },
-    { opacity: 1, clipPath: 'polygon(140% 0, 140% 0, 140% 100%, 120% 100%)' }
-  ], { delay: t(T_FL.apaga), dur: T_FL.barre + T_FL.barreDur - T_FL.apaga, easing: 'linear', fill: 'none' }));
+  // ---- el viaje: el mapa se achica y va al lugar del escudo del walkout (FLIP contra el escudo ya montado, invisible); el
+  // escudo del mapa se enciende y se funde en el logo; lo demás del mapa se esfuma
+  if (!enCuadros) {
+    const [mx, my] = centro(rMapa);
+    const [kx, ky] = centro(rMarca);
+    const sM = rMarca.width > 0 ? rLogo.width / rMarca.width : 1;
+    const tx = Math.round(lx - mx - sM * (kx - mx));
+    const ty = Math.round(ly - my - sM * (ky - my));
+    const viaje = { delay: M(T_MAPA.viaja), dur: M(T_MAPA.viajaDur), fill: 'forwards' };
+    w(animar(m.mapa, [{ transform: 'none' }, { transform: `translate(${tx}px, ${ty}px) scale(${sM.toFixed(4)})` }], { ...viaje, easing: 'cubic-bezier(.65,0,.25,1)' }));
+    w(animar(m.cab, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-14px)', offset: T_MAPA.cabSale }, { opacity: 0, transform: 'translateY(-14px)' }], { ...viaje, easing: 'ease-in' }));
+    for (const n of [m.grieta, ...m.posiciones]) w(animar(n, [{ opacity: 1 }, { opacity: 0, offset: T_MAPA.restoSale }, { opacity: 0 }], { ...viaje, easing: 'linear' }));
+    w(animar(m.marca, [{ opacity: 0.16 }, { opacity: 1, offset: T_MAPA.funde }, { opacity: 0 }], { ...viaje, easing: 'linear' }));
+    w(animar(d.logo, [{ opacity: 0 }, { opacity: 0, offset: T_MAPA.funde }, { opacity: 1 }], { ...viaje, easing: 'linear', fill: 'backwards' }));
+  }
+  // con el escudo en su lugar, el mapa se va y lo de abajo también (el walkout queda solo sobre el mundo)
+  bt.esperar(W).then(() => {
+    if (!raiz.isConnected || enCuadros) return;
+    m.nodo.style.visibility = 'hidden';
+    raiz.dataset.fase = 'firma';
+  });
+
+  // ---- d. la firma: el golpe sobre el escudo, el haz, tu handle y el jersey
   w(animar(d.haz, [
     { opacity: 0, transform: 'translateX(-50%) scaleY(0)', easing: EXPO },
-    { opacity: 1, transform: 'translateX(-50%) scaleY(1)', offset: T_FL.hazDur / T_FL.golpe, easing: 'linear' },
-    { opacity: 1, transform: 'translateX(-50%) scaleY(1)', offset: 0.97, easing: 'ease-out' },
+    { opacity: 0.9, transform: 'translateX(-50%) scaleY(1)', offset: 0.3, easing: 'ease-out' },
     { opacity: 0.16, transform: 'translateX(-50%) scaleY(1)' }
-  ], { delay: t(T_FL.haz), dur: T_FL.golpe - T_FL.haz + 200, easing: 'linear' }));
+  ], { delay: t(T_FL.golpe), dur: T_FL.hazDur + T_FL.ligaDur, easing: 'linear' }));
   w(animar(d.velo, [{ opacity: 0 }, { opacity: 1 }], { delay: t(T_FL.barre), dur: T_FL.barreDur, easing: 'linear' }));
-  const sube = { opacity: 0, transform: 'translateY(-26vh) scale(.3)', filter: 'blur(6px)' };
-  const tramoLiga = T_FL.sube + T_FL.subeDur - T_FL.liga;
-  w(animar(d.introLiga, [
-    { opacity: 0, transform: 'scale(.82)', filter: 'blur(10px)', easing: EXPO },
-    { opacity: 1, transform: 'none', filter: 'blur(0px)', offset: T_FL.ligaDur / tramoLiga, easing: 'linear' },
-    { opacity: 1, transform: 'none', filter: 'blur(0px)', offset: (T_FL.sube - T_FL.liga) / tramoLiga, easing: 'cubic-bezier(.6,0,.4,1)' },
-    sube
-  ], { delay: t(T_FL.liga), dur: tramoLiga, easing: 'linear' }));
-  const tramoRol = T_FL.sube + T_FL.subeDur - T_FL.rol;
-  w(animar(d.introRol, [
-    { opacity: 0, transform: 'translateY(14px)', easing: EXPO },
-    { opacity: 1, transform: 'none', offset: T_FL.rolDur / tramoRol, easing: 'linear' },
-    { opacity: 1, transform: 'none', offset: (T_FL.sube - T_FL.rol) / tramoRol, easing: 'cubic-bezier(.6,0,.4,1)' },
-    sube
-  ], { delay: t(T_FL.rol), dur: tramoRol, easing: 'linear' }));
-  w(animar(d.introRol.querySelector('.fj-glifo'), [{ transform: 'perspective(400px) rotateY(-180deg)' }, { transform: 'perspective(400px) rotateY(360deg)' }], { delay: t(T_FL.giro), dur: T_FL.giroDur, easing: 'cubic-bezier(.3,.6,.25,1)' }));
   w(animar(d.kicker, [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { delay: t(T_FL.rotulo), dur: 360 }));
   d.kicker.querySelectorAll(':scope > span').forEach((x, k) => w(entrar(x, t(T_FL.rotulo) + 60 + k * 70, -6)));
-  // EL GOLPE: el logo entra en el centro del haz (su lugar final, medido) y viaja a su lugar
-  const r = d.logo.getBoundingClientRect();
-  const dx = Math.round(innerWidth / 2 - (r.left + r.width / 2));
-  const dy = Math.round(innerHeight * LOGO_CENTRO - (r.top + r.height / 2));
-  const enCentro = (k) => `translate(${dx}px, ${dy}px) scale(${k})`;
-  w(animar(d.logo, [
-    { opacity: 0, transform: enCentro(LOGO_ESCALA * 1.6), filter: 'blur(12px)', easing: 'cubic-bezier(.2,.9,.25,1)' },
-    { opacity: 1, transform: enCentro(LOGO_ESCALA), filter: 'blur(0px)', offset: T_FL.logoLlega, easing: 'linear' },
-    { opacity: 1, transform: enCentro(LOGO_ESCALA * 0.96), filter: 'blur(0px)', offset: T_FL.logoQueda, easing: 'cubic-bezier(.6,0,.2,1)' },
-    { opacity: 1, transform: 'none', filter: 'blur(0px)' }
-  ], { delay: t(T_FL.golpe), dur: T_FL.logoDur, easing: 'linear' }));
+  // EL GOLPE: el escudo, ya en su lugar, late
+  w(animar(d.logo, [{ transform: 'none' }, { transform: `scale(${LOGO_GOLPE.escala})`, offset: 0.18, easing: EXPO }, { transform: 'none' }], { delay: t(T_FL.golpe), dur: LOGO_GOLPE.dur, easing: 'linear' }));
   d.ondas.forEach((o, k) => w(animar(o, [{ opacity: 0, transform: 'translate(-50%, -50%) scale(.2)' }, { opacity: 0.95, transform: 'translate(-50%, -50%) scale(.24)', offset: 0.02 }, { opacity: 0, transform: 'translate(-50%, -50%) scale(4.6)' }], { delay: t(T_FL.golpe) + 60 + k * T_FL.ondaPaso, dur: T_FL.ondaDur - k * 120, easing: 'cubic-bezier(.15,.7,.3,1)' })));
   const golpe = bt.destello(t(T_FL.golpe));
   if (golpe != null) {
@@ -487,14 +511,16 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
     }
   };
   document.addEventListener('keydown', tecla);
-  bt.esperar(W0 + T_FL.asentarse).then(() => raiz.isConnected && !enCuadros && asentar());
+  bt.esperar(t(T_FL.asentarse)).then(() => raiz.isConnected && !enCuadros && asentar());
 
   // ---- movimiento reducido (PLANUI §0.3): dos cuadros fijos con su fundido corto, sin desplazamientos
   async function contarEnCuadros() {
     const deLaFirma = [d.velo, d.haz, confeti.nodo, d.bloque, d.lado];
     cuadro = 'mapa';
     for (const n of deLaFirma) n.style.visibility = 'hidden';
-    fondo.style.opacity = '1';
+    // con el papel firmado, el mapa encima y el papel atrás (achicado, desenfocado y apagado); sin papel, el fondo
+    fondo.style.opacity = papel ? '0' : '1';
+    if (papel) Object.assign(papel.caja.style, { transform: `scale(${papel.escala * PAPEL_ATRAS.escala})`, filter: `blur(${PAPEL_ATRAS.blur}px) brightness(${PAPEL_ATRAS.luz})` });
     m.nodo.style.opacity = '1';
     fundirCuadro(raiz);
     await narracion.esperar(LECTURA_MAPA);
@@ -502,6 +528,7 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
     cuadro = 'firma';
     fondo.style.opacity = '';
     m.nodo.style.opacity = '';
+    if (papel) papel.capa.style.visibility = 'hidden';
     for (const n of deLaFirma) n.style.visibility = '';
     raiz.dataset.fase = 'firma';
     enciende(0);
@@ -514,6 +541,8 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
   // reducido, los cuadros de abajo lo cuentan en dos pasos)
   bt.iniciar();
   if (enCuadros) contarEnCuadros();
+  // Espacio en el papel: directo al walkout
+  else if (saltado) saltar();
 
   try {
     await listo;
