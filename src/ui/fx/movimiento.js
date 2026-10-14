@@ -1,16 +1,16 @@
 // EL MOVIMIENTO del kit (PLANUI §5.7, §6.4, §9.2; portado de vitrina/fusion/js/util.js): revelar, escalonar, esperar con
 // el reloj de WAAPI, plegar lo que se va, el titulo que entra por linea y el odometro.
 //   - todo con WAAPI, para que congelar(t) de una captura congele (las animaciones se devuelven);
-//   - expo-out 180-320 ms y el orden luz -> rotulo -> titulo -> opciones (LINEA.md §1);
-//   - el camino quieto (INST o movimiento reducido): nada se anima, todo aparece en su estado final (el de CSS).
+//   - expo-out (DUR.entra, 380 ms desde PLANUI §0.4) y el orden luz -> rotulo -> titulo -> opciones (LINEA.md §1);
+//   - el camino quieto (movimiento reducido): nada se anima, todo aparece en su estado final (el de CSS).
 // El odometro (§6.4) esta montado sobre moverNumero de ui/core/delta.js: en el camino quieto, sin cambio o sin numeros,
 // es moverNumero el que deja el valor final (y nada se programa); si no, rueda cada digito en su columna.
 // Clases (estilos/fx.css): ln-odo*, ln-linea*, ln-palabra, ln-fantasma, ln-plegado. Importarlo no toca el DOM.
-import { el, animar, quieto, reducido, inst, EXPO, SALE, DUR } from './util.js';
+import { el, animar, quieto, reducido, EXPO, SALE, DUR, RECORRIDO } from './util.js';
 import { moverNumero } from '../core/delta.js';
 
 // ---------- revelar, salir, escalonar ----------
-export const revelar = (nodo, delay = 0, desde = 14, dur = DUR.entra) =>
+export const revelar = (nodo, delay = 0, desde = RECORRIDO, dur = DUR.entra) =>
   animar(nodo, [{ opacity: 0, transform: `translateY(${desde}px)` }, { opacity: 1, transform: 'none' }], { delay, dur });
 // (el nombre de la vitrina, para portar las pantallas sin renombrar)
 export const entrar = revelar;
@@ -18,13 +18,13 @@ export const salir = (nodo, delay = 0) =>
   animar(nodo, [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-6px)' }], { delay, dur: DUR.sale, easing: SALE, fill: 'forwards' });
 // Revela una lista en escalera: cada uno `paso` ms despues del anterior. Devuelve las animaciones (sin las nulas).
 export const PASO_ESCALERA = 40;
-export function escalonar(nodos, { delay = 0, paso = PASO_ESCALERA, desde = 14, dur = DUR.entra } = {}) {
+export function escalonar(nodos, { delay = 0, paso = PASO_ESCALERA, desde = RECORRIDO, dur = DUR.entra } = {}) {
   return [...(nodos ?? [])].map((n, i) => revelar(n, delay + i * paso, desde, dur)).filter(Boolean);
 }
 
 // Reloj de secuencias que respeta congelar(): una animacion vacia de WAAPI cuyo `finished` dispara lo que sigue.
 export function esperar(nodo, ms) {
-  if (!nodo || inst() || reducido() || ms <= 0) return Promise.resolve();
+  if (!nodo || reducido() || ms <= 0) return Promise.resolve();
   try {
     const a = nodo.animate([{ opacity: 1 }, { opacity: 1 }], { duration: ms });
     return a.finished.then(() => undefined, () => undefined);

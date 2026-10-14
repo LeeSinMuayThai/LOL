@@ -4,7 +4,7 @@
 // Por qué un envoltorio: `revelar` es síncrono y `app.js` depende de eso; `startViewTransition` difiere el cambio un
 // cuadro, su overlay se traga los clics, una segunda llamada rechaza `ready` con AbortError (ensucia la consola) y un
 // nombre de transición duplicado la aborta. Entonces:
-//   - sin `animar` (INST, la misma pieza, al retomar: lo decide `revelar`) o sin soporte, el cambio corre YA, síncrono,
+//   - sin `animar` (la misma pieza sin página nueva: lo decide `revelar`) o sin soporte, el cambio corre YA, síncrono,
 //     como siempre;
 //   - con movimiento reducido (PLANUI §0.3: nunca un corte seco) la transición es un fundido de opacidad corto
 //     (`html[data-transicion="fundido"]`, estilos/shell.css: nada se mueve ni cambia de tamaño, <= 150 ms);
@@ -21,6 +21,21 @@
 //     pantalla real queda a la vista y el clic siguiente cae sobre ella.
 
 import { reducido } from './util.js';
+
+// PLANUI §0.4 (P1): la franja de luz diagonal que cruza la transicion (estilos/shell.css `.fx-barrido`). El nodo vive
+// fuera de la pantalla y solo mientras corre la transicion; con movimiento reducido no se pone (el fundido no se mueve).
+function ponerBarrido() {
+  if (reducido()) return null;
+  try {
+    const n = document.createElement('div');
+    n.className = 'fx-barrido';
+    n.setAttribute('aria-hidden', 'true');
+    document.body.append(n);
+    return n;
+  } catch {
+    return null;
+  }
+}
 
 let pendiente = null; // { pasos: [{ actualizar, alTerminar }], transicion } — esperando su cuadro
 let actual = null; // la transición que está corriendo (para no borrar el atributo de otra)
@@ -123,6 +138,7 @@ export function transicionar(actualizar, { animar = false, alTerminar = null } =
   pendiente = cola;
   const raiz = document.documentElement;
   raiz.dataset.transicion = modoDeTransicion();
+  const barrido = ponerBarrido();
   let hechos = [];
   let transicion;
   try {
@@ -135,6 +151,7 @@ export function transicionar(actualizar, { animar = false, alTerminar = null } =
     console.warn('transicion: sin View Transition, el cambio va directo', error);
     if (pendiente === cola) pendiente = null;
     if (!actual) delete raiz.dataset.transicion;
+    barrido?.remove();
     const pasos = cola.pasos.splice(0);
     correrPasos(pasos);
     terminarPasos(pasos);
@@ -154,6 +171,7 @@ export function transicionar(actualizar, { animar = false, alTerminar = null } =
     if (!esAborto(error)) console.warn('transicion: la animación no arrancó', error);
   });
   const limpiar = () => {
+    barrido?.remove();
     if (actual === transicion) {
       actual = null;
       delete raiz.dataset.transicion;

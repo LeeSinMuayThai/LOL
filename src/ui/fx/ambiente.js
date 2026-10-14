@@ -26,7 +26,7 @@
 // Importarlo no toca el DOM.
 import { cargarImagen, urlCentrada } from './arte.js';
 import { crearAzar } from './azar.js';
-import { leerColor, reducido, inst, el, raizHtml } from './util.js';
+import { leerColor, reducido, el, raizHtml } from './util.js';
 import { ESTADO_PLENO, TIEMPOS, mezclarEstados } from './fondo.js';
 import { pintarCampeon } from './color.js';
 
@@ -64,8 +64,8 @@ export function pulsoEn(lista, t) {
   for (const p of lista) if (t >= p.t) s += p.k * Math.exp(-(t - p.t) / T_PULSO);
   return Math.min(PULSO_TOPE, s);
 }
-// el camino quieto: movimiento reducido o INST
-const quieto = () => reducido() || inst();
+// el camino quieto: el movimiento reducido (PLANUI §0.4: INST ya no lo es)
+const quieto = () => reducido();
 const FPS_MAX = 30;
 const ESCALA = 0.5; // la luz (bruma, haces, polvo), en escala de la pantalla
 const ESCALA_ARTE = 1; // el arte del campeon se compone a resolucion nativa (PLANUI §4.7: el fondo nitido)
@@ -269,7 +269,7 @@ function crearIntensidad() {
     return seg ? valorSeg(seg, t) : base;
   };
   function programar(hacia, t, dur) {
-    const e = { t, hacia, dur: inst() || reducido() ? 0 : Math.max(0, dur) };
+    const e = { t, hacia, dur: reducido() ? 0 : Math.max(0, dur) };
     const k = eventos.findIndex((x) => x.t > t);
     if (k < 0) eventos.push(e);
     else eventos.splice(k, 0, e);
@@ -1280,7 +1280,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     const img = key ? await cargarImagen(urlCentrada(key, opciones.meta)) : null;
     if (mio !== arte.token || !vivo) return;
     const resta = arte.t + arte.dur - reloj();
-    if (resta > 0 && congeladoEn == null && !inst() && !reducido()) {
+    if (resta > 0 && congeladoEn == null && !reducido()) {
       await new Promise((r) => setTimeout(r, resta + 20));
       if (mio !== arte.token || !vivo) return;
     }
@@ -1289,7 +1289,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     arte.on[slot] = img ? 1 : 0;
     arte.activa = slot;
     arte.dur = Math.max(1, dur);
-    arte.t = inst() || reducido() ? -1e9 : reloj() + retardo;
+    arte.t = reducido() ? -1e9 : reloj() + retardo;
     dibujar();
   }
   // El arte del lado B de la costura: lo que estaba se apaga (la mitad del cruce), entra la textura nueva y se enciende
@@ -1298,7 +1298,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     if (key === arteB.key) return arteB.carga;
     arteB.key = key;
     const mio = ++arteB.token;
-    const quieto = inst() || reducido();
+    const quieto = reducido();
     const mitad = Math.max(1, dur / 2);
     const ahora = presB(reloj());
     if (ahora > 0 && !quieto) Object.assign(arteB, { desde: ahora, hacia: 0, t: reloj(), dur: mitad });
@@ -1359,7 +1359,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
       const t = reloj() + Math.max(0, retardo);
       // (PLANUI §4.10, T) el suspenso: arranca en t; null lo apaga
       if (suspenso !== undefined) sus = quieto() ? null : leerSuspenso(suspenso, t);
-      const instantaneo = inst() || reducido() || corte;
+      const instantaneo = reducido() || corte;
       // el aura: apuntar un campeon lleva el mundo al estado `aura` de la politica; soltarlo, de vuelta a la base
       if (typeof apuntado === 'boolean') intensidad.programar(apuntado ? 'aura' : 'base', t, cruce ?? T_AURA);
       if (corte) intensidad.resolverYa(t);
@@ -1431,7 +1431,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
     // (PLANUI §4.9) cuantos cuadros dibujo el bucle (para medir los cuadros por segundo)
     cuadros: () => cuadros,
     quiebre(retardo = 0) {
-      if (reducido() || inst()) return;
+      if (reducido()) return;
       quiebreT = reloj() + retardo;
     },
     // La politica del mundo para esta pantalla (fondo.js).
@@ -1450,7 +1450,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
       intensidad.momento(reloj() + Math.max(0, retardo), Math.max(0, dura));
       if (!intensidad.politica.campeonDelMomento || !campeones.length) return;
       limpiarMapas();
-      if (inst() || reducido()) {
+      if (reducido()) {
         ponerArte(campeones[campeones.length - 1][1], { dur: T_CRUCE_MAPA });
         return;
       }
@@ -1473,7 +1473,7 @@ function crearAmbienteGL(contenedor, opciones, alPerder) {
       const { v } = calmaEn(t);
       const objetivo = si ? 1 : 0;
       if (calmaEventos[calmaEventos.length - 1].hacia === objetivo) return;
-      calmaEventos.push({ t, desde: inst() || reducido() ? objetivo : v, hacia: objetivo, base: tiempoLento(t) });
+      calmaEventos.push({ t, desde: reducido() ? objetivo : v, hacia: objetivo, base: tiempoLento(t) });
       sucio = true;
       if (calmaEventos.length > 32) calmaEventos = calmaEventos.slice(-16);
     },
@@ -1588,7 +1588,7 @@ function crearAmbienteCss(contenedor, opciones) {
     suaveCss = e.suave;
     raiz.style.setProperty('--lc-presencia', String(e.presencia));
     raiz.style.setProperty('--lc-desenfoque', `${Math.round(e.suave * DESENFOQUE_CSS)}px`);
-    raiz.style.setProperty('--lc-cruce', `${inst() || reducido() ? 0 : Math.round(dur)}ms`);
+    raiz.style.setProperty('--lc-cruce', `${reducido() ? 0 : Math.round(dur)}ms`);
     raiz.toggleAttribute('data-suave', e.suave > 0);
   }
 
@@ -1705,7 +1705,7 @@ function crearAmbienteCss(contenedor, opciones) {
   return {
     impl: 'css',
     ambiente({ era, animo, arte: key, encuadre, velo, apuntado, paleta, costura } = {}) {
-      raiz.toggleAttribute('data-quieto', inst() || reducido());
+      raiz.toggleAttribute('data-quieto', reducido());
       if (typeof apuntado === 'boolean') poner(apuntado ? 'aura' : 'base', T_AURA);
       if (paleta !== undefined) {
         ponerPaleta(paleta);
@@ -1770,7 +1770,7 @@ function crearAmbienteCss(contenedor, opciones) {
     intensidad: () => null,
     // los pulsos se superponen (composite 'add': uno nuevo no corta al anterior), con la misma regla de <= 3 por segundo
     pulso(tipo, retardo = 0) {
-      if (!(tipo in PULSOS) || reducido() || inst()) return;
+      if (!(tipo in PULSOS) || reducido()) return;
       const k = PULSOS[tipo];
       const ahora = performance.now();
       const u = ubicarPulso(pulsosCss, ahora + retardo, k, ahora);
@@ -1786,7 +1786,7 @@ function crearAmbienteCss(contenedor, opciones) {
       if (pulsosCss.length > MAX_PULSOS) pulsosCss = pulsosCss.slice(-MAX_PULSOS);
     },
     quiebre(retardo = 0) {
-      if (reducido() || inst()) return;
+      if (reducido()) return;
       raiz.animate([{ filter: 'saturate(0.1) brightness(0.55)', transform: 'translateX(-6px)' }, { filter: 'saturate(0.4) brightness(0.8)', transform: 'translateX(4px)', offset: 0.2 }, { filter: 'none', transform: 'none' }], { duration: 700, delay: retardo, easing: 'ease-out' });
     },
     reloj: () => performance.now() - t0,

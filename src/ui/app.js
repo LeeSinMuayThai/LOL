@@ -36,7 +36,6 @@ import { previaDeDecision } from '../core/previaDePartido.js';
 export function iniciar() {
   const shellEl = document.querySelector('.shell');
   const setupPanel = document.getElementById('setup');
-  const carreraPanel = document.getElementById('carrera');
   const handleInput = document.getElementById('handleInput');
   const rolGrid = document.getElementById('rolGrid');
   const campeonGrid = document.getElementById('campeonGrid');
@@ -134,16 +133,17 @@ export function iniciar() {
   // adelantaban el resultado).
   const vista = crearStore(null);
   // PLANUI U1: el director también es el único escritor de la luz (`ambiente`, el puente de `shell.js`) y decide las
-  // transiciones; sin reproductor todavía, o en INST, todo es síncrono. Con movimiento reducido la transición es un
-  // fundido corto (PLANUI §0.3: nunca un corte seco), lo resuelve `fx/transicion.js`.
-  const escena = crearEscena({ shell: shellEl, vista, ambiente, sinTransicion: () => !reproductor || reproductor.velocidadActual() === 'instantaneo' });
+  // transiciones; sin reproductor todavía todo es síncrono. En rápido también corren (PLANUI §0.4: el jugador que va rápido
+  // quiere ver movimiento). Con movimiento reducido la transición es un fundido corto (PLANUI §0.3: nunca un corte seco),
+  // lo resuelve `fx/transicion.js`.
+  const escena = crearEscena({ shell: shellEl, vista, ambiente, sinTransicion: () => !reproductor });
   vista.suscribir(pintarDesdeVista);
   // La página del relato (§V.5 "Una página por split"): `desde` es `inicioDePagina` (el `logs.length` de cuando se
   // llamó a `avanzarSplit`; NUNCA se mueve al resolver una decisión: al responder vuelve la misma página con los beats
   // nuevos abajo). `fotoInicio` es `fotoDeSplit` del estado de ese momento (con ella `cierreDeSplit` cuenta qué se
   // movió). `ultimoCierre`: el cierre del split anterior; `cierreVisto`: si su tarjeta se vio (se anota al reproducirla, con
   // la velocidad de ESE momento, o al reabrirla al retomar); `anterior`: ese mismo cierre si la página abre con la línea
-  // "Split anterior: …" (la tarjeta no llegó a verse: INST o movimiento reducido).
+  // "Split anterior: …" (la tarjeta no llegó a verse: el relato en rápido).
   // FASE V (V4): `cartel` es el encabezado de la página (la ventana y el año, `cartelDePagina`); `fotoAnio`, la foto del primer
   // split del año (el "antes" del número del año en la tarjeta "Cierre de …"); `cierreFrenado`, si el motor ya frenó en el
   // cierre de año de esta página (la parada de `edadCierre` ES ese momento: la tarjeta no lo repite, T9).
@@ -204,7 +204,7 @@ export function iniciar() {
         etiquetaRol: modulos.etiquetaRol,
         // El delta del número es el del split en curso: contra la foto de la página (la misma que usa la tarjeta de cierre).
         fotoDeLaPagina: () => pagina.fotoInicio,
-        // V4: el número se mueve al cambiar la `vista`, salvo en INST o con movimiento reducido (donde aparece ya en su valor final).
+        // V4: el número se mueve al cambiar la `vista`, salvo con movimiento reducido (donde aparece ya en su valor final).
         animar: () => !reproductor.sinEspera()
       });
       cuartos = crearCuartos({
@@ -248,10 +248,10 @@ export function iniciar() {
   // Una parada: el director pone la pieza de su familia (`familiaDeParada`) y la familia la pinta (`paradas/`). Reemplaza
   // a los `hidden` que `mostrarDecision` prendía y apagaba en cada panel: qué nodo se ve lo decide `data-pieza`.
   // PLANUI §6.3, ampliado en §0.3 (punto 4: no más cortes en frío): toda entrada a una parada tras el relato lleva
-  // transición (la decisión, el partido, el mercado y el minijuego); al retomar, no.
+  // transición (la decisión, el partido, el mercado y el minijuego); desde §0.4 también al retomar (el inicio -> la parada).
   function mostrarLaParada(estado, { retomar = false } = {}) {
     escena.revelar(estado, {
-      transicion: !retomar,
+      transicion: true,
       pintar: () => {
         // Antes de la parada: el último beat que el relato ya contó en esta página (todos los de `estado.logs` ya se
         // contaron: la parada entra recién cuando el reproductor termina) y la página, a un toque.
@@ -280,7 +280,7 @@ export function iniciar() {
           // El mundo de la parada (PLANUI §0.2): `mundo.declarar({ arte, tono, costura, ... })` y `mundo.fx()`.
           mundo: ambiente,
           sonido: sonido.sonidoFx,
-          // Sin espera entre beats (INST o movimiento reducido): la parada entra y cuenta en su cuadro final.
+          // Con movimiento reducido la parada entra y cuenta en sus cuadros fijos (PLANUI §0.4: en rápido ya no, se mueve).
           rapido: () => reproductor.sinEspera(),
           // Una entrada larga de la parada (la llegada de las ofertas del mercado) se registra como narración: Espacio la
           // saltea y un cuarto abierto la pausa (`{ saltar, pausar, reanudar }`; devuelve cómo soltarla).
@@ -488,8 +488,19 @@ export function iniciar() {
       pagina.cierreFrenado = true;
     }
     // K6a-U: mientras el feed reproduce, la parada no está y el aviso "Se está jugando el split…" sí (es de la pieza
-    // `relato`).
-    escena.revelar(estadoActual, { reproduciendo: true, transicion: trasElegir });
+    // `relato`). PLANUI §0.4 (fuera los cortes secos): una página nueva del relato sobre otra (un split que sigue a otro
+    // sin parada) entra con transición: la página vacía (con su cartel o la línea "Split anterior") se pinta adentro del
+    // cambio y los beats empiezan cuando el cambio ya está en el DOM.
+    const paginaNueva = !trasElegir && contados === 0 && logsAntes === pagina.desde && escena.pieza() === 'relato';
+    escena.revelar(estadoActual, {
+      reproduciendo: true,
+      transicion: trasElegir,
+      nuevaPagina: paginaNueva,
+      pintar: paginaNueva
+        ? () => ui.renderPagina(logList, estadoActual, { desde: pagina.desde, anterior: pagina.anterior, cartel: pagina.cartel, hasta: pagina.desde })
+        : null
+    });
+    if (paginaNueva) await escena.listo();
     const bisagra = estadoActual.pendiente?.decision?.datos?.evento?.bisagra ?? false;
     let cierre = null;
     if (!estadoActual.pendiente && !estadoActual.terminado) {
@@ -589,7 +600,8 @@ export function iniciar() {
     if (typeof vistaParada?.narrar !== 'function') return 0;
     const logs = despues.logs.slice(logsAntes);
     let inmediato;
-    // PLANUI §0.3: 'normal', 'reducido' (cuadros fijos con su tiempo de lectura) o 'inst' (el cuadro final, visible).
+    // PLANUI §0.3 y §0.4: 'normal' (en rápido también, con la escala corta) o 'reducido' (cuadros fijos con su tiempo de
+    // lectura).
     const modo = reproductor.modoDeMovimiento();
     const ctx = {
       antes,
@@ -597,7 +609,7 @@ export function iniciar() {
       respuesta,
       logs,
       modo,
-      rapido: modo === 'inst',
+      rapido: false,
       escala: reproductor.escalaDeEspera(),
       // Los números del resultado ruedan también en la placa "Vos" (devuelve los nodos que animó).
       rodarPlaca: (cambios, retardo) => acompanante?.rodar(cambios, retardo) ?? [],
@@ -678,14 +690,6 @@ export function iniciar() {
     seedAviso.textContent = desdeTexto
       ? `"${seedInput.value.trim()}" no es un número: la seed que queda es ${seed}. Con el mismo texto sale siempre la misma carrera.`
       : '';
-  }
-
-  // La entrada del escenario al arrancar o retomar una carrera. Qué se ve ya lo puso el director (`escena.revelar`):
-  // acá solo la animación.
-  function animarEntradaDelEscenario() {
-    carreraPanel.classList.remove('escenario-entrar');
-    void carreraPanel.offsetWidth;
-    carreraPanel.classList.add('escenario-entrar');
   }
 
   // El aviso de "tu guardado no se pudo recuperar" (K.7 riesgo 3: un guardado
@@ -776,8 +780,8 @@ export function iniciar() {
 
       // La ficha arranca con el estado inicial: el primer split se cuenta antes de moverla.
       pagina = paginaVacia();
-      escena.revelar(store.leer());
-      animarEntradaDelEscenario();
+      // PLANUI §0.4: el inicio -> la carrera con transición (antes, la clase `escenario-entrar`, que no tenía CSS).
+      escena.revelar(store.leer(), { transicion: true });
 
       // `avanzar()` es async desde la fase T3 (el reproductor pausa
       // entre beats): si no se espera acá, un error en el primer split
@@ -801,8 +805,9 @@ export function iniciar() {
   function volverAlInicio() {
     soltarParada();
     // La pieza `inicio` esconde el escenario de la carrera (antes, `hidden` en cada panel del riel derecho, en el marcador
-    // y en el escenario); la `vista` en `null` limpia la franja, el acompañante y la luz de estudio.
-    escena.revelar(null);
+    // y en el escenario); la `vista` en `null` limpia la franja, el acompañante y la luz de estudio. Con transición
+    // (PLANUI §0.4: fuera los cortes secos).
+    escena.revelar(null, { transicion: true });
     // Ya se borró en `reproducirLlamada` cuando `estado.terminado`
     // se puso en true — esto es la red de seguridad, no el borrado
     // principal. Refresca el botón por si el estado cambió mientras
@@ -822,15 +827,19 @@ export function iniciar() {
     document.documentElement.dataset.textos = textos;
     toggleTextos.setAttribute('aria-pressed', textos === 'completos' ? 'true' : 'false');
     toggleTextos.title = textos === 'completos' ? 'Textos completos (click para breves)' : 'Textos breves (click para completos)';
-    toggleVelocidad.textContent = reproductor.labelVelocidad();
-    toggleVelocidad.title = `Velocidad del reproductor: ${reproductor.labelVelocidad()} (click para cambiar)`;
+    // PLANUI §0.4: el botón dice el estado ("VEL" + "1×" / "2×" / "RÁPIDO"), no una acción.
+    const valorVelocidad = toggleVelocidad.querySelector('.franja-vel-valor') ?? toggleVelocidad;
+    valorVelocidad.textContent = reproductor.labelVelocidad();
+    toggleVelocidad.dataset.velocidad = reproductor.velocidadActual();
+    const tituloVelocidad = `Velocidad: ${reproductor.nombreVelocidad()} — clic para cambiar`;
+    toggleVelocidad.title = tituloVelocidad;
+    toggleVelocidad.setAttribute('aria-label', tituloVelocidad);
     const on = sonido.estaHabilitado();
     toggleSonido.replaceChildren(iconoSonido(on));
     toggleSonido.setAttribute('aria-pressed', on ? 'true' : 'false');
     toggleSonido.title = on ? 'Sonido activado (click para apagar)' : 'Sonido apagado (click para activar)';
-    // PLANUI U1: el kit de efectos va a su cuadro final con INST, como el reproductor. El movimiento reducido el kit lo lee
-    // solo (`fx/util.js reducido`): `data-inst` dice solo INST, así una narración distingue los dos (PLANUI §0.3).
-    ambiente.inst(reproductor.velocidadActual() === 'instantaneo');
+    // PLANUI §0.4: el kit ya no tiene un camino quieto para INST (`data-inst`): rápido se mueve; el movimiento reducido el
+    // kit lo lee solo (`fx/util.js reducido`).
   }
 
   // Fase T8 (P.2): retoma exactamente donde quedó — mismo `rng`/`rngUi`
@@ -883,10 +892,9 @@ export function iniciar() {
       if (estadoRetomado.pendiente) {
         ui.renderPagina(logList, estadoRetomado, paginaAlAbrir);
         mostrarLaParada(estadoRetomado, { retomar: true });
-        animarEntradaDelEscenario();
       } else {
-        escena.revelar(estadoRetomado);
-        animarEntradaDelEscenario();
+        // PLANUI §0.4: al retomar también hay transición (el inicio -> el relato).
+        escena.revelar(estadoRetomado, { transicion: true });
         if (reabreElCierre) {
           // D97: la tarjeta reabierta tiene su espera (la del último beat, y la del año si era "Cierre de …"): sin ella el
           // primer beat de la página que sigue la reemplazaba antes de que el navegador la pintara.
@@ -926,7 +934,7 @@ export function iniciar() {
           setup: setupPanel
         },
         modulos,
-        { alBloquear: () => comenzarCarrera(), mundo: ambiente, sonido: sonido.sonidoFx, rapido: () => reproductor.sinEspera() }
+        { alBloquear: () => comenzarCarrera(), mundo: ambiente, sonido: sonido.sonidoFx, rapido: () => reproductor.sinEspera() /* solo el movimiento reducido (§0.4) */ }
       );
       pantallaInicio.render(leerHistorial(almacenamientoLocal()));
       pantallaInicio.entrar();

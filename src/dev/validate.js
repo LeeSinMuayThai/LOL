@@ -8404,7 +8404,7 @@ check('crearDelta y moverNumero: el número va de antes a despues, termina en su
   // El camino quieto: el valor final de entrada y ni un cuadro programado.
   const quietos = {
     'movimiento reducido': correr(60, 71, { reducido: true }),
-    'animar: false (INST)': correr(60, 71, { animar: false }),
+    'animar: false (sin movimiento)': correr(60, 71, { animar: false }),
     'sin "antes" (carrera nueva, otro tipo de número)': correr(null, 71),
     'sin cambio': correr(71, 71),
     'sin requestAnimationFrame (Node)': correr(60, 71, { raf: null })
@@ -8664,15 +8664,16 @@ check(NOMBRE_CHECK_REPRODUCIR_BEATS, () => {
 
 // FASE V (V4): lo que `reproducirBeats` espera de verdad. Hasta acá el espejo de simulate.js (K0 espejos) solo comparaba el literal; esto prueba que el
 // reproductor real lo usa donde debe: la tarjeta "Cierre de …" (`pagina.cierre.anio`) sostiene `ESPERA_CIERRE_ANIO_MS` más que un beat, una sola vez y
-// en el último beat; una página reabierta sin beats (D97: retomar entre splits) espera lo de un beat para que la tarjeta se vea; y en INST o con
-// movimiento reducido no espera nada. Corre a nivel de módulo (`reproducirBeats` es async), con el `setTimeout` reemplazado por uno que registra
+// en el último beat; una página reabierta sin beats (D97: retomar entre splits) espera lo de un beat para que la tarjeta se vea; y en rápido no
+// espera nada, pero se mueve (PLANUI §0.4: sin movimiento es SOLO el movimiento reducido, y la narración de una parada corre entera a la escala
+// corta; antes INST era otro camino quieto y el jugador que iba rápido no veía ni una animación). Corre a nivel de módulo (`reproducirBeats` es async), con el `setTimeout` reemplazado por uno que registra
 // los milisegundos y sigue en el turno siguiente.
-const NOMBRE_CHECK_PAUSA_DEL_ANIO = 'V4: reproducirBeats sostiene la tarjeta "Cierre de …" ESPERA_CIERRE_ANIO_MS más que un beat y una página reabierta sin beats espera uno (D97), nunca en INST; con movimiento reducido conserva el mismo pulso (PLANUI §0.3)';
+const NOMBRE_CHECK_PAUSA_DEL_ANIO = 'V4: reproducirBeats sostiene la tarjeta "Cierre de …" ESPERA_CIERRE_ANIO_MS más que un beat y una página reabierta sin beats espera uno (D97), nunca en rápido; con movimiento reducido conserva el mismo pulso (PLANUI §0.3); rápido no espera pero anima y narra entero (PLANUI §0.4)';
 let errorPausaDelAnio = null;
 if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_PAUSA_DEL_ANIO.toLowerCase().includes(texto))) {
   const previos = {
     document: globalThis.document, window: globalThis.window, setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout,
-    velocidad: reproductorModulo.velocidadActual()
+    matchMedia: globalThis.matchMedia, velocidad: reproductorModulo.velocidadActual()
   };
   const esperas = [];
   // El espejo de simulate.js: se importa acá (más abajo el archivo lo desestructura con el resto del instrumento).
@@ -8717,14 +8718,35 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_PAUSA_DEL_ANIO.toLowe
       ['1× página reabierta sin beats (D97)', await correr('x1', false, [], cierre(null)), [700]],
       ['1× página reabierta sin beats con "Cierre de …"', await correr('x1', false, [], cierre(anio)), [700 + ESPERA_ANIO]],
       ['1× página sin beats ni cierre', await correr('x1', false, [], null), []],
-      ['INST con "Cierre de …"', await correr('instantaneo', false, beats, cierre(anio)), []],
-      ['INST página reabierta con "Cierre de …"', await correr('instantaneo', false, [], cierre(anio)), []],
+      ['rápido con "Cierre de …"', await correr('instantaneo', false, beats, cierre(anio)), []],
+      ['rápido página reabierta con "Cierre de …"', await correr('instantaneo', false, [], cierre(anio)), []],
       ['1× con movimiento reducido y "Cierre de …": el mismo pulso que sin él', await correr('x1', true, beats, cierre(anio)), [700, 700, 700 + ESPERA_ANIO]],
       ['1× con movimiento reducido, página reabierta', await correr('x1', true, [], cierre(anio)), [700 + ESPERA_ANIO]],
-      ['INST con movimiento reducido: INST manda', await correr('instantaneo', true, beats, cierre(anio)), []]
+      ['rápido con movimiento reducido: el relato tampoco espera', await correr('instantaneo', true, beats, cierre(anio)), []]
     ];
     const mal = casos.filter(([, vistas, esperadas]) => JSON.stringify(vistas) !== JSON.stringify(esperadas))
       .map(([nombre, vistas, esperadas]) => `${nombre}: esperó ${JSON.stringify(vistas)} y tenía que esperar ${JSON.stringify(esperadas)}`);
+    // PLANUI §0.4: con una raíz de verdad (el `reducido()` de fx/util.js lee `data-reducido` y `matchMedia`), lo que cada velocidad dice del
+    // movimiento. Rápido: el relato sin pulso, pero CON movimiento (los beats entran con su animación) y la narración 'normal' entera, con las
+    // esperas a una escala corta (> 0, < la de 2×). El movimiento reducido manda sobre el movimiento a cualquier velocidad.
+    const raizFalsa = { hasAttribute: () => false };
+    const leer = (velocidad, reducido) => {
+      poner(velocidad, reducido);
+      globalThis.document = { documentElement: raizFalsa };
+      globalThis.matchMedia = () => ({ matches: reducido });
+      const r = { sinPulso: reproductorModulo.sinPulso(), sinEspera: reproductorModulo.sinEspera(), modo: reproductorModulo.modoDeMovimiento(), escala: reproductorModulo.escalaDeEspera(), label: reproductorModulo.labelVelocidad() };
+      return r;
+    };
+    const rapido = leer('instantaneo', false);
+    const doble = leer('x2', false);
+    const rapidoReducido = leer('instantaneo', true);
+    const uno = leer('x1', false);
+    if (!rapido.sinPulso || rapido.sinEspera || rapido.modo !== 'normal' || !(rapido.escala > 0 && rapido.escala < doble.escala)) {
+      mal.push(`rápido tiene que no esperar entre beats pero moverse y narrar entero a una escala corta: ${JSON.stringify(rapido)} (2×: ${JSON.stringify(doble)})`);
+    }
+    if (rapido.label === 'INST' || !/R[ÁA]PIDO/.test(rapido.label)) mal.push(`el botón tiene que decir el estado ("RÁPIDO"), dice ${JSON.stringify(rapido.label)}`);
+    if (!rapidoReducido.sinEspera || rapidoReducido.modo !== 'reducido') mal.push(`con movimiento reducido no hay movimiento a ninguna velocidad: ${JSON.stringify(rapidoReducido)}`);
+    if (uno.sinPulso || uno.sinEspera || uno.modo !== 'normal' || uno.escala !== 1) mal.push(`1× sin movimiento reducido: ${JSON.stringify(uno)}`);
     if (mal.length > 0) {
       throw new Error(mal.join(' | '));
     }
@@ -8739,6 +8761,11 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_PAUSA_DEL_ANIO.toLowe
     }
     globalThis.setTimeout = previos.setTimeout;
     globalThis.clearTimeout = previos.clearTimeout;
+    if (previos.matchMedia === undefined) {
+      delete globalThis.matchMedia;
+    } else {
+      globalThis.matchMedia = previos.matchMedia;
+    }
     while (reproductorModulo.velocidadActual() !== previos.velocidad) {
       reproductorModulo.ciclarVelocidad();
     }

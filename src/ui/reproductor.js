@@ -16,13 +16,17 @@ const ESPERA_MS = { x1: 700, x2: 350, instantaneo: 0 };
 // FASE V (V4): el momento del cierre de año. Si el split cerró un año y el motor NO frenó en el cierre (`edadCierre` frena en
 // ~92% de los años de `criterio` y en ~73% de los de `malas`: medido en 100 carreras × 60 splits), la tarjeta "Cierre de 2031"
 // se sostiene este tiempo ADEMÁS de la espera de su beat. Una por año como máximo, nunca junto a la parada del motor (T9). No
-// suma clics: Espacio la salta como a un beat, y en INST o con movimiento reducido pasa sola. Es un espejo para `simulate.js`
+// suma clics: Espacio la salta como a un beat, y en rápido o con movimiento reducido pasa sola. Es un espejo para `simulate.js`
 // (`ESPERA_CIERRE_ANIO_MS`) y lo guarda el check "K0 espejos de la UI".
 const ESPERA_CIERRE_ANIO_MS = { x1: 2400, x2: 1200, instantaneo: 0 };
-// Compacto a propósito: comparte espacio en el topbar con el toggle de
-// sonido, que es un solo emoji. `title` (en index.html) lleva la palabra
-// completa para quien lo lea con lupa.
-const LABEL_VELOCIDAD = { x1: '1×', x2: '2×', instantaneo: 'INST' };
+// PLANUI §0.4 (P1, el movimiento): el botón dice el ESTADO, no una acción ("INST" se leía como "apretá para ir
+// instantáneo" y el jugador creía haberlo sacado). El valor guardado sigue siendo `instantaneo`, por compatibilidad con
+// las carreras y preferencias ya guardadas; en pantalla es "RÁPIDO". `NOMBRE_VELOCIDAD` es la palabra del `title`.
+const LABEL_VELOCIDAD = { x1: '1×', x2: '2×', instantaneo: 'RÁPIDO' };
+const NOMBRE_VELOCIDAD = { x1: 'normal (1×)', x2: 'doble (2×)', instantaneo: 'rápida' };
+// PLANUI §0.4: en rápido el relato no espera entre beats (`ESPERA_MS.instantaneo` = 0, el espejo de simulate.js), pero
+// las narraciones de las paradas corren su secuencia entera, con las esperas a esta escala de las de 1×.
+const ESCALA_RAPIDA = 0.35;
 
 let velocidad = leerVelocidad();
 
@@ -47,6 +51,11 @@ export function velocidadActual() {
 
 export function labelVelocidad() {
   return LABEL_VELOCIDAD[velocidad];
+}
+
+// La velocidad en palabras, para el `title` y el `aria-label` del botón ("Velocidad: rápida — clic para cambiar").
+export function nombreVelocidad() {
+  return NOMBRE_VELOCIDAD[velocidad];
 }
 
 export function ciclarVelocidad() {
@@ -97,7 +106,7 @@ function dormir(ms) {
 
 // FASE V (V2-C; PLAN.md §V.4): con un cuarto abierto el relato se pausa y al cerrarlo sigue. La espera de cada beat
 // termina, pero el beat siguiente (y lo que venga después del último: la parada, la `vista`) no entra hasta `reanudar`.
-// Sin espera entre beats (INST o movimiento reducido) la tanda entera es sincrónica: no hay nada que pausar.
+// Sin espera entre beats (rápido) la tanda entera es sincrónica: no hay nada que pausar.
 let pausado = false;
 let alReanudar = [];
 
@@ -120,43 +129,35 @@ function esperarLaPausa() {
   });
 }
 
-// La misma preferencia que ya apaga las animaciones en CSS (base.css):
-// acá se respeta también para el TIMING de JS — sin esto, el CSS no
-// animaría nada pero el reproductor igual pausaría 700ms entre líneas.
-function motionReducido() {
-  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-}
-
-// FASE V (V2-B): sin espera entre beats (INST o movimiento reducido), la tarjeta de cierre de un split no llega a verse:
-// el controlador lo pregunta al abrir la página siguiente, que entonces arranca con la línea "Split anterior: …".
-// PLANUI §0.3 (la regla nueva del movimiento reducido): esto es "sin movimiento ni números que ruedan" (los cuadros finales
-// van puestos); el PULSO entre beats del relato es otra pregunta, `sinPulso`.
+// PLANUI §0.4 (P1): "sin movimiento ni números que ruedan" (los cuadros finales van puestos) es SOLO el movimiento
+// reducido (la preferencia del sistema o `data-reducido`; `fx/util.js reducido`, que en Node, sin DOM, es verdadero).
+// Antes también lo era INST, y el jugador que iba rápido no veía ni una animación: en rápido todo se mueve, solo que el
+// relato no espera. El PULSO entre beats es otra pregunta, `sinPulso`.
 export function sinEspera() {
-  return velocidad === 'instantaneo' || motionReducido();
+  return reducido();
 }
 
-// PLANUI §0.3: el relato no espera entre beats solo en INST (la velocidad que eligió el jugador). Con movimiento reducido
-// (una preferencia del sistema operativo) el relato conserva el pulso de la velocidad elegida: los beats aparecen sin
-// desplazarse (la animación de entrada ya está apagada) pero cada uno tiene su tiempo de lectura.
+// FASE V (V2-B) y PLANUI §0.3: el relato no espera entre beats solo en rápido (la velocidad que eligió el jugador); ahí
+// la tarjeta de cierre de un split no llega a verse y el controlador lo pregunta al abrir la página siguiente, que
+// arranca con la línea "Split anterior: …". Con movimiento reducido (una preferencia del sistema operativo) el relato
+// conserva el pulso de la velocidad elegida: los beats aparecen sin desplazarse pero cada uno tiene su tiempo de lectura.
 export function sinPulso() {
   return velocidad === 'instantaneo';
 }
 
-// PLANUI §0.3 (la regla nueva del movimiento reducido): cómo cuenta una parada su resultado en el lugar. 'inst' es la
-// velocidad que eligió el jugador: la narración va a su cuadro final (visible y completo). 'reducido' es la preferencia
-// del sistema (o `data-reducido`): cuenta lo mismo sin desplazamientos, cada paso un cuadro fijo con un fundido corto y su
-// tiempo de lectura. 'normal': la secuencia entera. INST manda sobre el movimiento reducido (quien eligió ir rápido va
-// rápido). El relato (`sinPulso`, arriba) tampoco espera solo en INST: con movimiento reducido conserva el pulso entre beats.
+// PLANUI §0.3 y §0.4: cómo cuenta una parada su resultado en el lugar. 'reducido' es la preferencia del sistema (o
+// `data-reducido`): cuenta lo mismo sin desplazamientos, cada paso un cuadro fijo con un fundido corto y su tiempo de
+// lectura. 'normal': la secuencia entera, con las esperas a `escalaDeEspera()` (rápido también: el modo 'inst', que iba
+// al cuadro final, ya no existe).
 export function modoDeMovimiento() {
-  if (velocidad === 'instantaneo') return 'inst';
   return reducido() ? 'reducido' : 'normal';
 }
 
 // PLANUI §0.2: la escala de las esperas de una narración (la parada que cuenta su resultado en el lugar): 1 en x1, la
-// mitad en x2 (la misma proporción que el pulso del reproductor) y 0 en INST. Con movimiento reducido las esperas valen
-// (son el tiempo de lectura de cada cuadro, §0.3), a la escala de la velocidad.
+// mitad en x2 (la misma proporción que el pulso del reproductor) y `ESCALA_RAPIDA` en rápido (§0.4: la secuencia
+// entera, corta). Con movimiento reducido las esperas valen (son el tiempo de lectura de cada cuadro, §0.3).
 export function escalaDeEspera() {
-  return velocidad === 'instantaneo' ? 0 : ESPERA_MS[velocidad] / ESPERA_MS.x1;
+  return velocidad === 'instantaneo' ? ESCALA_RAPIDA : ESPERA_MS[velocidad] / ESPERA_MS.x1;
 }
 
 // En la página (cronológica, el beat nuevo abajo), el último renglón se trae a la vista: sin esto, un split largo se
@@ -215,7 +216,8 @@ export async function reproducirBeats(logList, nuevasEntradas, { registroAntes, 
   }
 
   const instantaneo = sinPulso();
-  // sin movimiento (INST o movimiento reducido): el beat aparece puesto, sin que ruede su número
+  // sin movimiento (movimiento reducido): el beat aparece puesto, sin que ruede su número; en rápido entra CON su
+  // animación aunque no haya espera (PLANUI §0.4)
   const animar = !sinEspera();
   const espera = instantaneo ? 0 : ESPERA_MS[velocidad];
   const esperaDelAnio = instantaneo ? 0 : ESPERA_CIERRE_ANIO_MS[velocidad];

@@ -107,16 +107,18 @@ export function crearEscena({ shell, vista, ambiente = AMBIENTE_NULO, sinTransic
   // `reproduciendo`, la pantalla ya contó `estado`: la `vista` pasa a ser `estado`. `pintar` (opcional) llena la pieza
   // nueva con la pieza ya visible y antes de mover el foco (una parada marca su `[data-foco]` al pintarse).
   // `transicion` (PLANUI §6.3 y §0.3): `true`, o la lista de piezas que entran con View Transition; la piden elegir ->
-  // resultado, toda entrada a una parada tras el relato y la final. Es síncrona igual en INST, sin soporte, en la misma
-  // pieza o al retomar (quien retoma no la pide); con movimiento reducido es un fundido corto (`fx/transicion.js`).
-  function revelar(estado, { reproduciendo = false, pintar = null, transicion = false } = {}) {
+  // resultado, toda entrada a una parada tras el relato y la final; desde §0.4 también entrar al juego, retomar y volver
+  // al inicio. Es síncrona sin soporte o en la misma pieza; con movimiento reducido es un fundido corto
+  // (`fx/transicion.js`). `nuevaPagina` (§0.4): una página nueva del relato sobre otra (la misma pieza) también la lleva;
+  // quien la pide pinta la página vacía en `pintar` y espera `listo()` antes de contar sus beats.
+  function revelar(estado, { reproduciendo = false, pintar = null, transicion = false, nuevaPagina = false } = {}) {
     const nueva = piezaDe(estado, { reproduciendo });
     const anterior = ultimaPedida;
     ultimaPedida = nueva;
     const pedida = transicion === true || (Array.isArray(transicion) && transicion.includes(nueva));
-    const animar = pedida && nueva !== anterior && !sinTransicion();
+    const animar = ((pedida && nueva !== anterior) || nuevaPagina) && !sinTransicion();
     const esParada = nueva !== 'relato' && nueva !== 'inicio' && nueva !== 'final';
-    transicionar(() => {
+    const t = transicionar(() => {
       shell.dataset.pieza = nueva;
       if (!reproduciendo) {
         vista.escribir(estado);
@@ -141,7 +143,15 @@ export function crearEscena({ shell, vista, ambiente = AMBIENTE_NULO, sinTransic
       }
       ambiente.pausa('minijuego', nueva === 'minijuego');
     }, { animar, alTerminar: esParada ? enfocarEncabezado : null });
+    // `updateCallbackDone` resuelve aunque la transición se saltee o se aborte (lo que importa es que el cambio ya está).
+    ultimoCambio = t ? t.updateCallbackDone.then(() => undefined, () => undefined) : Promise.resolve();
     return nueva;
+  }
+  let ultimoCambio = Promise.resolve();
+
+  // El último `revelar` ya está en el DOM (una transición difiere su cambio un cuadro).
+  function listo() {
+    return ultimoCambio;
   }
 
   // V2-C: al cerrar un cuarto el foco vuelve a la parada (a su encabezado, como cuando entró), no al botón que lo abrió:
@@ -158,7 +168,7 @@ export function crearEscena({ shell, vista, ambiente = AMBIENTE_NULO, sinTransic
     return true;
   }
 
-  return { revelar, pieza, enfocar };
+  return { revelar, pieza, enfocar, listo };
 }
 
 // Las dos marcas del contrato, para que las familias no las escriban cada una a su manera.

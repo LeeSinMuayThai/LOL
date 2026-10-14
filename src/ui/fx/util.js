@@ -6,9 +6,10 @@
 //
 // Los modos (los mismos atributos que la vitrina, en <html>):
 //   data-reducido  el movimiento reducido forzado (ademas de `prefers-reduced-motion`)
-//   data-inst      el reproductor en INST (lo pone api.inst(si) de fx/index.js)
 //   data-sin-webgl el ambiente y la copa van por su respaldo (CSS / SVG)
-// Con movimiento reducido o INST todo aparece en su cuadro final: "el camino quieto".
+// Con movimiento reducido todo aparece en su cuadro final: "el camino quieto". PLANUI §0.4 (P1): INST era otro camino
+// quieto (`data-inst`) y el jugador que iba rapido no veia ni una animacion; ahora rapido se mueve (el relato solo no
+// espera) y `data-inst` ya no se pone: `inst()` queda por compatibilidad y es siempre falso.
 
 export const raizHtml = () => (typeof document === 'undefined' ? null : document.documentElement);
 const consulta = (q) => typeof matchMedia === 'function' && matchMedia(q).matches;
@@ -17,9 +18,9 @@ export const reducido = () => {
   if (!r) return true;
   return r.hasAttribute('data-reducido') || consulta('(prefers-reduced-motion: reduce)');
 };
-export const inst = () => Boolean(raizHtml()?.hasAttribute('data-inst'));
-// el camino quieto: movimiento reducido o INST
-export const quieto = () => reducido() || inst();
+export const inst = () => false;
+// el camino quieto: solo el movimiento reducido (PLANUI §0.4)
+export const quieto = () => reducido();
 const ANCHO_CELULAR = 640;
 export const celular = () => consulta(`(max-width: ${ANCHO_CELULAR}px)`);
 
@@ -28,13 +29,16 @@ export const EXPO = 'cubic-bezier(0.16, 1, 0.3, 1)';
 export const SALE = 'cubic-bezier(0.7, 0, 0.84, 0)';
 export const RESORTE =
   'linear(0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.974 53.8%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1)';
-export const DUR = { entra: 280, sale: 160, larga: 420 };
+// PLANUI §0.4 (P1, 1x con mas cuerpo): las entradas comunes en 380 ms (eran 280) con recorrido de 20 px (RECORRIDO, era
+// 14 en movimiento.js); nada pasa de 700 ms.
+export const DUR = { entra: 380, sale: 160, larga: 420 };
+export const RECORRIDO = 20;
 
 // Anima con WAAPI. fill 'backwards' por defecto: al terminar la animacion desaparece de document.getAnimations()
 // y el elemento queda en su estado de CSS (asi congelar() de una tira no rebobina entradas ya terminadas).
-// Movimiento reducido o INST: no anima nada (el estado final ya es el de CSS). Un fallo devuelve null (degrada a nada).
+// Movimiento reducido: no anima nada (el estado final ya es el de CSS). Un fallo devuelve null (degrada a nada).
 export function animar(nodo, cuadros, { dur = DUR.entra, delay = 0, easing = EXPO, fill = 'backwards', forzar = false } = {}) {
-  if (!nodo || inst() || (reducido() && !forzar)) return null;
+  if (!nodo || (reducido() && !forzar)) return null;
   try {
     return nodo.animate(cuadros, { duration: dur, delay, easing, fill });
   } catch {

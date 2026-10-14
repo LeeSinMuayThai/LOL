@@ -27,7 +27,7 @@
 //   api.quiebre(retardo)     la luz que se quiebra un instante ("te leyeron")
 //   api.tono(tono, { paleta = true, k = 1 })  el segundo tono (tono.js) en <html> (--tono-*) y, si `paleta`, en el mundo
 //   api.aura                 el foco de campeon (aura.js): aura.pantalla(clave, { pegajosa }), aura.ir(clave), aura.alCambiar(fn)
-//   api.inst(si)             el reproductor entro o salio de INST: <html data-inst> (el camino quieto de todo el kit)
+//   api.inst()               PLANUI §0.4: INST ya no es un camino quieto; solo saca un <html data-inst> viejo (compatibilidad)
 //   api.reloj(), api.cuadros(), api.intensidad(), api.impl ('webgl' | 'css')
 import { crearAmbiente } from './ambiente.js';
 import { crearAura } from './aura.js';
@@ -94,7 +94,7 @@ export function montarFx(contenedor, opciones = {}) {
       aplicarTono(raizHtml(), tono ?? null);
       if (paleta) promesa(amb.ambiente({ paleta: paletaDe(tono, k) }));
     }),
-    inst: envolver((si) => raizHtml()?.toggleAttribute('data-inst', Boolean(si))),
+    inst: envolver(() => raizHtml()?.removeAttribute('data-inst')),
     reloj: envolver(() => amb.reloj(), 0),
     cuadros: envolver(() => amb.cuadros(), 0),
     intensidad: envolver(() => amb.intensidad(), null),
