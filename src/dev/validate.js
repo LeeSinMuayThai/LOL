@@ -29159,7 +29159,7 @@ const W1T = await import('../core/legado.js');
 const w1tFila = (org, arraigoMaximo, titulos = []) => ({ org, desdeAnio: 2030, hastaAnio: 2032, arraigoMaximo, titulos });
 const w1tRegistro = (porOrg, extra = {}) => ({ porOrg, titulos: [], internacionales: [], picos: { nivel: 80 }, ...extra });
 
-check('W1-T: el apodo sale de la lealtad (Leyenda > Ídolo, el valor más alto; Querido no da apodo)', () => {
+check('W1-T: el apodo sale de la lealtad (Leyenda > Ídolo; a igual escalón, Mundiales, títulos y recién el valor; Querido no da apodo)', () => {
   const { hitos } = BALANCE.arraigo;
   const mal = [];
   const nada = W1T.apodoDeLealtad(w1tRegistro([w1tFila('A', hitos.idolo - 1), w1tFila('B', hitos.querido)]));
@@ -29170,6 +29170,21 @@ check('W1-T: el apodo sale de la lealtad (Leyenda > Ídolo, el valor más alto; 
   if (leyenda?.texto !== 'Leyenda de B' || leyenda.id !== 'leyenda') mal.push(`dos Leyendas, gana la más alta (B): ${JSON.stringify(leyenda)}`);
   const empate = W1T.apodoDeLealtad(w1tRegistro([w1tFila('A', hitos.leyenda), w1tFila('B', hitos.leyenda, [{ nombre: 'LCK', anio: 2031 }])]));
   if (empate?.org !== 'B') mal.push(`a igual arraigo, la de más títulos (B): ${JSON.stringify(empate)}`);
+  // El desempate de la muestra: Leyenda de FURIA (100, títulos de liga) y de Karmine Corp (93, con el Mundial) → Karmine Corp.
+  // Un Mundial pesa más que cualquier cantidad de títulos de liga, y lo que ganaste pesa más que el valor de arraigo.
+  const ligas = [2030, 2031, 2032].map((anio) => ({ nombre: 'CBLOL', anio }));
+  const conMundial = W1T.apodoDeLealtad(w1tRegistro(
+    [w1tFila('FURIA', 100, ligas), w1tFila('Karmine Corp', hitos.leyenda + 5, [{ nombre: 'LEC', anio: 2031 }])],
+    { internacionales: [{ anio: 2031, org: 'Karmine Corp', resultado: 'campeon' }] }
+  ));
+  if (conMundial?.texto !== 'Leyenda de Karmine Corp') mal.push(`dos Leyendas: gana la del Mundial, no la de más arraigo: ${JSON.stringify(conMundial)}`);
+  const masLigas = W1T.apodoDeLealtad(w1tRegistro([w1tFila('A', 100), w1tFila('B', hitos.leyenda, ligas)]));
+  if (masLigas?.org !== 'B') mal.push(`dos Leyendas sin Mundial: gana la de más títulos de liga (B), no la de más arraigo: ${JSON.stringify(masLigas)}`);
+  const escalonPrimero = W1T.apodoDeLealtad(w1tRegistro(
+    [w1tFila('A', hitos.idolo, ligas), w1tFila('B', hitos.leyenda)],
+    { internacionales: [{ anio: 2031, org: 'A', resultado: 'campeon' }] }
+  ));
+  if (escalonPrimero?.texto !== 'Leyenda de B') mal.push(`el escalón va antes que los títulos (Leyenda de B): ${JSON.stringify(escalonPrimero)}`);
   const escalones = W1T.arraigoPorOrg(w1tRegistro([w1tFila('A', hitos.querido), w1tFila('B', hitos.leyenda)])).map((a) => a.id).join(',');
   if (escalones !== 'querido,leyenda') mal.push(`el escalón por org: ${escalones}`);
   if (mal.length) throw new Error(mal.join(' | '));

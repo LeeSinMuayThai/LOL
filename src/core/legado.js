@@ -302,17 +302,26 @@ export function arraigoPorOrg(registro) {
   return registro.porOrg.map((fila) => ({ org: fila.org, ...bandaDeArraigoFicha(Math.round(fila.arraigoMaximo ?? 0)) }));
 }
 
-// El apodo que sale de la lealtad (El Ídolo: "Leyenda de…"): la org donde más alto llegó el arraigo, si llegó a Ídolo o
-// a Leyenda. Si hay varias, gana el valor más alto; a igual valor, la de más títulos y después la primera. `null` si
-// en ninguna org pasaste de Querido.
+// El apodo que sale de la lealtad (El Ídolo: "Leyenda de…"): la org donde llegaste al escalón más alto, si fue Ídolo o
+// Leyenda. Si hay varias en ese escalón, gana la org donde más ganaste —primero los Mundiales (uno pesa más que
+// cualquier cantidad de títulos de liga), después los títulos de liga— y recién después el valor de arraigo; al final,
+// la primera. `null` si en ninguna org pasaste de Querido.
 const ESCALONES_CON_APODO = ['idolo', 'leyenda'];
+// El nombre con que `titulosDeFila` (core/registro.js) suma un Mundial ganado a la fila.
+const NOMBRE_DEL_MUNDIAL = 'Mundial';
 
 export function apodoDeLealtad(registro) {
   const candidatas = registro.porOrg
-    .map((fila, i) => ({ fila, i, banda: bandaDeArraigoFicha(Math.round(fila.arraigoMaximo ?? 0)) }))
+    .map((fila, i) => {
+      const titulos = titulosDeFila(fila, registro);
+      const mundiales = titulos.filter((t) => t.nombre === NOMBRE_DEL_MUNDIAL).length;
+      return { fila, i, mundiales, ligas: titulos.length - mundiales, banda: bandaDeArraigoFicha(Math.round(fila.arraigoMaximo ?? 0)) };
+    })
     .filter(({ banda }) => ESCALONES_CON_APODO.includes(banda.id))
-    .sort((a, b) => (b.banda.valor - a.banda.valor)
-      || (titulosDeFila(b.fila, registro).length - titulosDeFila(a.fila, registro).length)
+    .sort((a, b) => (ESCALONES_CON_APODO.indexOf(b.banda.id) - ESCALONES_CON_APODO.indexOf(a.banda.id))
+      || (b.mundiales - a.mundiales)
+      || (b.ligas - a.ligas)
+      || (b.banda.valor - a.banda.valor)
       || (a.i - b.i));
   if (candidatas.length === 0) {
     return null;
