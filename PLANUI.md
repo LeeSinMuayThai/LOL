@@ -34,7 +34,9 @@
 | **C1** | El usuario prueba luz, tipografía, ritmo y rendimiento en su máquina | ⬜ movida a después de U2 |
 | **U2 + U2c** | Las pantallas del norte (inicio + decisión; partido + mercado) + franja, cuartos y contenedor de minijuegos | ❌ 2026-10-11, hecha por fuera del plan y descartada el 2026-10-13 (§0.2): el inicio quedaba pintado encima de todas las piezas y las pantallas no seguían la vitrina. `src/ui` volvió al cierre de la ola 1 (`1a63b63`) |
 | **U2 rehecha** | La ola 2 portada de la vitrina con `op=linea` sobre tres contratos nuevos: el marco, el mundo de cada parada y narrar la respuesta en el lugar (§0.2) | 🔶 2026-10-13 |
-| **C1 (adelantada)** | Lo que dijo el usuario jugando lolero.lol: colores por eje, el relato con forma, sin cortes en frío, la firma tras la prueba, el mapa decisivo narrado y la regla del movimiento reducido (§0.3) | 🔶 2026-10-13: C1a/C1b/C1c + revisión + arreglos en `c1-integracion` (`06efb4f`); falta que el usuario lo juegue |
+| **C1 (adelantada)** | Lo que dijo el usuario jugando lolero.lol: colores por eje, el relato con forma, sin cortes en frío, la firma tras la prueba, el mapa decisivo narrado y la regla del movimiento reducido (§0.3) | ✅ 2026-10-13: mergeada y publicada (`c4f9e55`); el usuario la jugó (§0.4) |
+| **P1 · previas** | La decisión en tres direcciones (cartas, champ select, hextech) y el stream en dos, para elegir en `lolero.lol/previa.html`; INST deja de apagar el movimiento; la serie equipo contra equipo (§0.4) | 🔶 2026-10-13 |
+| **P2** | La dirección elegida queda; se borran las otras y las perillas; una ronda de pulido (§0.4) | ⬜ |
 | **U3** | Los momentos + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
@@ -233,6 +235,102 @@ Las tres en paralelo, cada una en su worktree desde `master`. `core/ejes.js` y l
 subfase. Después: un revisor con navegador (capturas de los seis puntos, a 1440 y a 390). Luego el usuario juega el
 build local (memoria: playtest antes de cerrar), y recién entonces el deploy. El motor no cambia: `HUELLA_JUEGO`
 79304237 y `huella.js` 1844448410 iguales.
+
+### 0.4 P: lo que dijo el usuario jugando C1 (2026-10-13, textual) y las previas
+
+> "siento que hicimos todo lo otro muy avanzado, pero la parte donde elegís las cosas es como full HTML, ¿me entendés?
+> Cero avanzado, cero profesional, que era lo que yo había pedido en el primer plan, tipo que sea algo totalmente
+> avanzado, increíble, eh, profesional […] Tipo, re sorprendente y esto es re simple. Yo las animaciones las tengo
+> activadas en Windows, pero aparte no tienen nada que ver porque esto es en Chrome. […] Y no veo ninguna animación.
+> Ahora, por ejemplo, jugando una serie, me aparecía Silas contra Loud. No entiendo el sentido que tiene, sobre ser Los,
+> que era el equipo en el que yo estaba firmado, contra Loud. Aparte me mostró el mismo campeón las tres partidas. […]
+> cuando es el coso del stream, en un partido que es el overlay, como que estás viendo un stream, es muy difícil
+> encontrar la poll, o sea, el chat, como que te perdés […] Hay varias cosas del juego que hay que solucionar y por eso
+> quiero tener la UI lista para poder solucionar lo otro."
+
+Sus respuestas en la misma sesión:
+- **La decisión:** elige "cartas tipo aumentos", pero *"me gustaría tener una preview de las 3 opciones, si podés
+  buildearla y subirla a una página y así elijo"* (cartas, champ select, hextech).
+- **El stream:** *"dame una preview"* (la predicción es la decisión / pausa de transmisión).
+- **INST:** *"yo saqué INST e igual no veo animaciones, checkealo"*.
+- **El costo:** *"que salgan re bien las previews, re avanzadas, profesionales y todo, pero intentá que no gasten 10
+  millones de tokens cada uno"*.
+- **El flujo:** *"pusheá todo siempre, o sea, se prueba en la página"*: cada entrega va a master, se pushea y se
+  publica en lolero.lol. El usuario no prueba en local.
+
+#### El diagnóstico (medido)
+
+- **Cero animación = INST.** En el Chrome del usuario, en lolero.lol: `lolcs-velocidad-reproductor = "instantaneo"`,
+  `<html data-inst>`, `prefers-reduced-motion: reduce` falso. INST apaga **todo**, no solo las esperas:
+  - `animar()` devuelve null (`fx/util.js:37`);
+  - las reglas `html[data-inst]` de siete hojas;
+  - sin View Transition (`app.js:139`, `escena.js:117`);
+  - la narración va al cuadro final (`reproductor.js:150`);
+  - la serie solo muestra la placa de cierre (`caraACara.js:397`).
+
+  El botón muestra el estado ("INST") y se lee como una acción: el usuario creía haberlo sacado.
+- **A 1× el movimiento se nota poco:**
+  - entradas de 280 ms y 12 px (`util.js:31`);
+  - cortes secos al continuar, al empezar y de relato a relato (`app.js:779, 885, 888`);
+  - `escenario-entrar` y `.eligiendo` sin CSS;
+  - el hover es un tinte de 140 ms.
+- **El rendimiento no es.** Con la GPU de la máquina del usuario (RTX 2060, Chromium con `--use-angle=d3d11`) el
+  juego anda a 240 fps. Con SwiftShader (como medían los revisores) da 0,4-3 fps: las capturas de movimiento de las
+  olas anteriores eran pases de diapositivas. Desde ahora el movimiento se mide con GPU.
+- **"Sylas contra LOUD":**
+  - el cara a cara pone en grande el nombre del campeón (`caraACara.js:158`, `text: n || org`), y LOS va chico;
+  - en las fechas el rival siempre es el org (`:115`).
+- **El mismo campeón tres veces.** El motor respeta Fearless y guarda el campeón de cada mapa
+  (`systems/serie.js:373-397`). Pero:
+  - en INST el mapa a mapa no se ve;
+  - el fondo es siempre el campeón del split (`core/mundo.js:20-39`);
+  - en el celular los nombres por mapa se ocultan (`transmision.css:202`).
+
+  Lo que es del motor va a la deuda (D103-D105).
+- **El stream:**
+  - la decisión es un panel chico arriba de la barra de 360 px (`stream.js:177-182`);
+  - la "predicción" parece votable y no lo es (`stream.js:186-207`);
+  - el pie del chat parece un campo de texto (`stream.js:778`).
+- **La decisión:**
+  - la vitrina nunca diseñó las decisiones comunes ni la planilla: son filas transparentes y una hoja de cálculo
+    sobre el campeón esfumado;
+  - §4.8 prometía "las decisiones comunes llevan C atenuado" y `op=linea` lo dejó caer.
+
+#### Cómo se hace
+
+**Paso 0 (Supervisor).** Primero estos documentos. Después la base compartida:
+- **El modo previa:** `?previa=<muestra>` cambia `localStorage` por un almacén en memoria sembrado con una muestra
+  (`src/ui/previa/almacen.js`, un script clásico antes del módulo). La carrera guardada del usuario no se toca.
+- **La página** `previa.html`.
+- **Las perillas** `?dc=cartas|draft|hextech` (la decisión) y `?sw=prediccion|pausa` (el stream). Sin perilla, el
+  juego de siempre.
+- **Las piezas puras** de `components/decision.js`, exportadas para las variantes.
+
+**Ola P1.** Cinco workers en paralelo, dueño por archivo:
+- **M · movimiento:**
+  - INST pasa a "Rápido": el relato no espera y las narraciones se aceleran, pero el movimiento nunca se apaga;
+  - el botón dice el estado sin ambigüedad;
+  - fuera los cortes secos;
+  - 1× con más cuerpo.
+- **D-A · cartas:** cartas de aumento (Arena/TFT) con el color del eje. Al apuntar, se inclinan siguiendo el mouse.
+  Al elegir, la carta gira y se vuelve el resultado.
+- **D-B · champ select:** la fase del draft. Las opciones son franjas de pick; al elegir, BLOQUEAR con el lock-in.
+- **D-C · hextech:** el evento del cliente, con su ilustración y el marco dorado. La chance va en un anillo y al
+  elegir hay un estallido de crafteo.
+- **P · partido:**
+  - la serie equipo contra equipo (logos), con el duelo de campeones por mapa y el fondo por mapa;
+  - los mapas, visibles en el celular;
+  - el stream con sus dos variantes.
+
+Después: un solo revisor con GPU, los arreglos al mismo worker, merge a master, push, deploy y el enlace
+`lolero.lol/previa.html` al usuario.
+
+**Ola P2.** Queda lo que el usuario elige. Se borran las otras variantes, las perillas y las reglas `[data-inst]`
+muertas, y hay una ronda de pulido con sus notas.
+
+**El costo** (pedido explícito). Workers Opus 5.5 · high (no xhigh), con tope duro de llamadas (70; partido 80). El
+brief trae los archivos a leer y la coreografía en ms. Sin validate completo, ≤ 12 capturas y una entrega de ≤ 10
+líneas. Meta: ~150-250K por worker; las olas anteriores, 400-540K.
 
 ## 1. Por qué un tercer plan
 
@@ -1749,7 +1847,13 @@ el visitante que no va a jugar 30 minutos.
 
 ## Deuda nueva (D102 en adelante)
 
-*(vacía: se llena con lo que se descubra midiendo)*
+Son del **motor**. Van a la etapa "arreglar el juego" que pidió el usuario (§0.4). Esta UI no las toca.
+
+| # | Qué | Estado |
+|---|---|---|
+| D103 | **Las fechas de temporada no tienen pick por partido:** todas se juegan con el campeón del split (`systems/temporada.js:286-291`), sin Fearless ni variedad. El usuario lo nota como "el mismo campeón en todas las partidas" (§0.4) | ⬜ |
+| D104 | **El Swiss no tiene campeón:** sus logs no dicen con qué jugaste (`systems/internacional.js:82-89`). El stream muestra el campeón del split | ⬜ |
+| D105 | **El campeón del rival por mapa no se guarda en `serie.mapas[]`:** solo va en el log del mapa (`rivalJuega`, `systems/serie.js:396-397`). La post-serie y el retomar tienen que reconstruirlo del relato | ⬜ |
 
 ---
 

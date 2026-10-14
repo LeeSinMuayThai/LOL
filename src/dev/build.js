@@ -39,6 +39,9 @@ const DIST = path.join(RAIZ, 'dist');
 // entero: la fuente `og-image.svg` es material de autoría, no algo que el
 // navegador necesite servido.
 const A_COPIAR = ['index.html', 'src/core', 'src/data', 'src/systems', 'src/ui', 'assets/og-image.png'];
+// La previa (PLANUI §0.4): la página que compara las variantes y las partidas guardadas que abre (`/?previa=<muestra>`).
+// No es el juego: se publica al lado y queda fuera del techo de peso (~1,4 MB de muestras que nadie descarga jugando).
+const A_COPIAR_PREVIA = ['previa.html', 'previa/muestras'];
 
 const SEEDS_DE_VERIFICACION = 12;
 const SPLITS_DE_VERIFICACION = 30;
@@ -175,6 +178,10 @@ function copiarFuentes() {
       throw new Error(`build: falta ${relativo}, que el navegador necesita`);
     }
     copiar(origen, path.join(DIST, relativo));
+  }
+  for (const relativo of A_COPIAR_PREVIA) {
+    const origen = path.join(RAIZ, relativo);
+    if (fs.existsSync(origen)) copiar(origen, path.join(DIST, relativo));
   }
 }
 
@@ -397,7 +404,7 @@ console.log('Build estático -> dist/\n');
 
 copiarFuentes();
 const { jsonInlineados, archivosReescritos } = inlinearJson();
-console.log(`  copiado        ${A_COPIAR.join(', ')}`);
+console.log(`  copiado        ${[...A_COPIAR, ...A_COPIAR_PREVIA].join(', ')}`);
 console.log(`  json inlineado ${jsonInlineados} archivos, ${archivosReescritos} módulos reescritos`);
 
 const { imports, problemas, conGuionBajo } = comprobarDist();
@@ -406,7 +413,10 @@ console.log(`  imports        ${imports} relativos, todos verificados con capita
 const { carreras, distintas } = await verificarQueElJuegoNoCambio();
 console.log(`  determinismo   ${carreras} carreras × ${SPLITS_DE_VERIFICACION} splits, src vs dist`);
 
-const pesoKB = pesoDe(DIST) / 1024;
+// la previa no cuenta (ver A_COPIAR_PREVIA)
+const pesoDePrevia = A_COPIAR_PREVIA.map((r) => path.join(DIST, r)).filter((p) => fs.existsSync(p))
+  .reduce((total, p) => total + (fs.statSync(p).isDirectory() ? pesoDe(p) : fs.statSync(p).size), 0);
+const pesoKB = (pesoDe(DIST) - pesoDePrevia) / 1024;
 
 const errores = [
   ...problemas,

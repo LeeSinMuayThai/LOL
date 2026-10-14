@@ -36,8 +36,9 @@ const mimeTypes = {
 // (`/.git::$INDEX_ALLOCATION/config`) — todos llegaban al mismo directorio. Lo
 // que no está en la lista (package.json, server.js, los .md, .git,
 // node_modules, dist/...) no sale nunca, exista o no (responde 404).
-const ARCHIVOS_PUBLICOS = ['index.html'];
-const CARPETAS_PUBLICAS = ['src', 'assets'];
+// `previa.html` y `previa/` (PLANUI §0.4): la página de las previas y sus partidas de muestra.
+const ARCHIVOS_PUBLICOS = ['index.html', 'previa.html'];
+const CARPETAS_PUBLICAS = ['src', 'assets', 'previa'];
 // Defensa en profundidad: aunque algún día `src/` tuviera uno adentro.
 const CARPETAS_PROHIBIDAS = ['.git', 'node_modules'];
 // Windows puede ignorar los puntos y espacios del final de un nombre según por

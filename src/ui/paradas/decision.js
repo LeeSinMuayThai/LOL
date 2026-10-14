@@ -5,8 +5,15 @@
 // de la parada: `narrar(ctx)` cuenta el resultado en el lugar y `destruir()` suelta la costura.
 import { marcarFoco } from '../escena.js';
 import { crearDecision } from '../components/decision.js';
+import * as cartas from '../components/decision/cartas.js';
+import * as draft from '../components/decision/draft.js';
+import * as hextech from '../components/decision/hextech.js';
+import { perilla } from '../previa/perillas.js';
 import { leerEvento, varianteDeCostura } from '../core/bisagra.js';
 import { mainDe } from '../core/mundo.js';
+
+// Las variantes de la previa (`?dc=`, PLANUI §0.4): el mismo contrato que `crearDecision`. Sin perilla, la de siempre.
+const VARIANTES = { cartas, draft, hextech };
 
 // `contenedor`: `#decision`. `ctx`: ver el contrato (`marco`: la línea "antes", la placa y el margen de la pantalla).
 export function mostrar(contenedor, decision, ctx) {
@@ -16,7 +23,8 @@ export function mostrar(contenedor, decision, ctx) {
   // El mundo, antes de pintar: la costura que prende la decisión cruza desde acá.
   const variante = varianteDeCostura(leerEvento(decision, estado));
   if (variante) mundo?.declarar?.({ escena: 'costura', arte: variante === 'liga' ? null : arte });
-  const vista = crearDecision(contenedor, decision, {
+  const crear = VARIANTES[perilla('dc', Object.keys(VARIANTES))]?.crear ?? crearDecision;
+  const vista = crear(contenedor, decision, {
     estado, previa, mundo, sonido, responder, arte,
     limite: marco.antes ?? null, lateral: marco.placa ?? null, margen: marco.margen ?? (() => 0)
   });
