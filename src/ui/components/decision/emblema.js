@@ -10,6 +10,7 @@
 // Puro respecto del motor: no lee el estado, solo dibuja.
 import { svg } from '../../fx/util.js';
 import { icono } from '../../fx/iconos.js';
+import { EJES } from '../../core/ejes.js';
 
 // El lienzo: 160 × 100 (la ventana de la carta es apaisada). El centro del emblema y el radio de la placa hexagonal.
 const ANCHO = 160;
@@ -151,21 +152,16 @@ const MOTIVOS = {
       ]
     };
   },
-  // el glifo de la stat sobre una retícula
+  // el glifo de la stat sobre una retícula: las stats más comunes dibujadas a mano; el resto, el glifo del kit con relieve
   juego(id, glifo) {
     const patron = [
       punto(CX, CY, 46, { opacity: 0.22 }),
       punto(CX, CY, 58, { opacity: 0.12, 'stroke-dasharray': '1 4' }),
-      camino(`M-60 ${CY}H${CX - 48}M${CX + 48} ${CY}H${ANCHO + 60}`, { opacity: 0.28 }),
-      camino(`M${CX} -40V${CY - 48}M${CX} ${CY + 48}V140`, { opacity: 0.28 })
+      camino(`M-60 ${CY}H${CX - 48}M${CX + 48} ${CY}H${ANCHO + 60}`, { opacity: 0.24 }),
+      camino(`M${CX} -40V${CY - 48}M${CX} ${CY + 48}V140`, { opacity: 0.24 })
     ];
-    for (let x = -56; x <= ANCHO + 56; x += 8) if (Math.abs(x - CX) > 50) patron.push(camino(`M${x} ${CY - (x % 24 === 0 ? 3 : 1.6)}V${CY + (x % 24 === 0 ? 3 : 1.6)}`, { opacity: 0.3 }));
-    // las esquinas de la mira, sobre la placa
-    const esquina = (sx, sy) => camino(`M${CX + sx * 30} ${CY + sy * 20}v${sy * 8}h${-sx * 8}`, { 'stroke-width': 1.6, opacity: 0.7 });
-    const lado = 16 * ESCALA_GLIFO;
-    const dibujo = icono(glifo || 'nivel');
-    const trazos = grupo({ transform: `translate(${f2(CX - lado / 2)} ${f2(CY - lado / 2)}) scale(${ESCALA_GLIFO})`, 'stroke-width': TRAZO_GLIFO }, [...dibujo.childNodes]);
-    return { patron, glifo: [esquina(1, 1), esquina(-1, 1), esquina(1, -1), esquina(-1, -1), trazos] };
+    const propio = STATS_DE_JUEGO[glifo];
+    return { patron, glifo: propio ? propio() : conRelieve(glifo || 'nivel') };
   },
   // un estallido de flashes y reflectores
   fama() {
@@ -190,27 +186,99 @@ const MOTIVOS = {
       ]
     };
   },
-  // cinco puntos en formación, unidos
-  equipo() {
+  // cinco puntos en formación, unidos; la formación es la de la stat (jerarquía, sinergia, arraigo)
+  equipo(id, glifo) {
     const patron = [];
     for (let y = -6; y <= ALTO + 6; y += 10) for (let x = -60 + ((y / 10) % 2 ? 5 : 0); x <= ANCHO + 60; x += 10) {
       if (Math.hypot(x - CX, y - CY) > 42) patron.push(punto(x, y, 0.7, { class: 'cv-emb-lleno', stroke: 'none', opacity: 0.28 }));
     }
+    const ficha = (x, y, r = 4.2) => [punto(x, y, r + 2.8, { 'stroke-width': 1.1, opacity: 0.5, class: 'cv-emb-hueco-lleno' }), punto(x, y, r, { class: 'cv-emb-lleno', stroke: 'none' })];
+    if (glifo === 'jerarquia') {
+      // el escalafón: tres escalones que suben, una ficha arriba de cada uno y el brillo en el más alto
+      const escalones = [[62, 62], [75, 52], [88, 40]];
+      return {
+        patron,
+        glifo: [
+          camino('M56 72H104', { 'stroke-width': 1.6, opacity: 0.6 }),
+          ...escalones.flatMap(([x, y], k) => [
+            svg('rect', { x, y, width: 10, height: 72 - y, rx: 1.2, class: 'cv-emb-lleno', 'fill-opacity': f2(0.25 + k * 0.25), 'stroke-width': 1.4 }),
+            ...ficha(x + 5, y - 7, 3.2)
+          ]),
+          camino('M67 55L80 45L93 33', { 'stroke-width': 1, opacity: 0.45, 'stroke-dasharray': '2 3' }),
+          destello(104, 24, 4.4)
+        ]
+      };
+    }
+    if (glifo === 'arraigo') {
+      // las raíces: el tronco baja desde la flecha y se abre en cuatro raíces, cada una con su ficha
+      const raices = [[60, 69], [71, 73], [89, 73], [100, 69]];
+      return {
+        patron,
+        glifo: [
+          camino('M73 34L80 27L87 34', { 'stroke-width': 2.6 }),
+          camino('M80 28V54', { 'stroke-width': 3 }),
+          ...raices.map(([x, y]) => camino(`M80 52C80 ${y - 8} ${f2((80 + x) / 2)} ${y - 4} ${x} ${y}`, { 'stroke-width': 2 })),
+          ...raices.flatMap(([x, y]) => ficha(x, y, 3)),
+          ...ficha(80, 52, 3.6)
+        ]
+      };
+    }
+    // la sinergia (y el equipo sin stat): el pentágono unido, con los dos anillos entrelazados al medio
     const pos = vertices(5, 21, -90, CX, CY + 1);
     const lazos = pos.map(([x, y], k) => {
       const [x2, y2] = pos[(k + 1) % 5];
       return camino(`M${x} ${y}L${x2} ${y2}`, { 'stroke-width': 2 });
     });
-    const cruces = pos.map(([x, y], k) => {
-      const [x2, y2] = pos[(k + 2) % 5];
-      return camino(`M${x} ${y}L${x2} ${y2}`, { 'stroke-width': 1, opacity: 0.35 });
-    });
     return {
       patron,
-      glifo: [...cruces, ...lazos, ...pos.flatMap(([x, y]) => [punto(x, y, 7, { 'stroke-width': 1.1, opacity: 0.5, class: 'cv-emb-hueco-lleno' }), punto(x, y, 4.2, { class: 'cv-emb-lleno', stroke: 'none' })])]
+      glifo: [...lazos, punto(CX - 4.5, CY + 1, 7, { 'stroke-width': 1.8 }), punto(CX + 4.5, CY + 1, 7, { 'stroke-width': 1.8 }), ...pos.flatMap(([x, y]) => ficha(x, y))]
     };
   }
 };
+
+// Las stats de juego dibujadas a mano (el glifo de `fx/iconos.js` es de 16 × 16: escalado se lee como clip-art).
+const STATS_DE_JUEGO = {
+  // dos flechas que se persiguen alrededor de una gema: cambiar de plan sin perder el centro
+  adaptabilidad: () => [
+    punto(CX, CY, 18, { 'stroke-width': 1, opacity: 0.3, 'stroke-dasharray': '1.5 3' }),
+    camino('M63.08 43.84A18 18 0 0 1 93.79 38.43', { 'stroke-width': 3.2 }),
+    poligono([[97.65, 43.03], [97.24, 35.54], [90.34, 41.32]], { class: 'cv-emb-lleno', 'stroke-width': 1, 'stroke-linejoin': 'round' }),
+    camino('M96.91 56.16A18 18 0 0 1 66.21 61.57', { 'stroke-width': 3.2 }),
+    poligono([[62.35, 56.97], [62.76, 64.46], [69.66, 58.68]], { class: 'cv-emb-lleno', 'stroke-width': 1, 'stroke-linejoin': 'round' }),
+    poligono([[80, 42], [87, 50], [80, 58], [73, 50]], { class: 'cv-emb-lleno', 'fill-opacity': 0.85, 'stroke-width': 1.2 }),
+    camino('M80 42.5V57.5M73.5 50L80 54.5L86.5 50', { class: 'cv-emb-hueco', 'stroke-width': 1 })
+  ],
+  // el mapa: la Grieta en rombo, el río en diagonal, las dos bases y los dos objetivos
+  macro: () => [
+    poligono([[80, 28], [102, 50], [80, 72], [58, 50]], { class: 'cv-emb-lleno', 'fill-opacity': 0.12, 'stroke-width': 2.4, 'stroke-linejoin': 'round' }),
+    camino('M65 50L80 35M80 65L95 50', { 'stroke-width': 1.2, opacity: 0.55 }),
+    camino('M68 62L92 38', { 'stroke-width': 3 }),
+    svg('rect', { x: 63, y: 59, width: 7, height: 7, rx: 1, class: 'cv-emb-lleno', stroke: 'none', transform: 'rotate(45 66.5 62.5)' }),
+    svg('rect', { x: 90, y: 34, width: 7, height: 7, rx: 1, class: 'cv-emb-lleno', stroke: 'none', transform: 'rotate(45 93.5 37.5)' }),
+    punto(74, 44, 2.6, { 'stroke-width': 1.4 }), punto(86, 56, 2.6, { 'stroke-width': 1.4 })
+  ],
+  // el cursor con el clic que se abre en ondas
+  mecanica: () => [
+    camino('M61 34A9 9 0 0 1 70 25', { 'stroke-width': 2, opacity: 0.8 }),
+    camino('M55 34A15 15 0 0 1 70 19', { 'stroke-width': 1.5, opacity: 0.45 }),
+    poligono([[70, 34], [70, 64], [77.5, 56.5], [82.5, 67], [87.5, 64.8], [82.5, 54.5], [93, 54.5]], { class: 'cv-emb-lleno', 'fill-opacity': 0.9, 'stroke-width': 1.6, 'stroke-linejoin': 'round' }),
+    destello(96, 30, 4)
+  ],
+  // la voz que llega: un punto y tres ondas que se abren
+  shotcalling: () => [
+    punto(67, 63, 4.4, { class: 'cv-emb-lleno', stroke: 'none' }),
+    camino('M67 52A11 11 0 0 1 78 63', { 'stroke-width': 3 }),
+    camino('M67 43A20 20 0 0 1 87 63', { 'stroke-width': 2.4, opacity: 0.8 }),
+    camino('M67 34A29 29 0 0 1 96 63', { 'stroke-width': 1.8, opacity: 0.55 })
+  ]
+};
+
+// El glifo del kit con relieve: un trazo ancho y tenue debajo (el grabado) y el trazo pleno encima.
+function conRelieve(glifo) {
+  const lado = 16 * ESCALA_GLIFO;
+  const capa = (a) => grupo({ transform: `translate(${f2(CX - lado / 2)} ${f2(CY - lado / 2)}) scale(${ESCALA_GLIFO})`, ...a }, [...icono(glifo).childNodes]);
+  return [capa({ 'stroke-width': TRAZO_GLIFO * 2.6, opacity: 0.22 }), capa({ 'stroke-width': TRAZO_GLIFO })];
+}
 
 // Sin eje (o una carta cerrada): la placa sola con el glifo del kit (el candado, lo incierto), sin patrón.
 function sinEje(glifo) {
@@ -222,9 +290,21 @@ function sinEje(glifo) {
   };
 }
 
+// La insignia del acento: el glifo del segundo eje en una gema chica sobre el canto de abajo a la derecha de la placa
+// (como el ícono secundario de un aumento). Es lo que distingue, a primera vista, dos cartas del mismo eje.
+const INSIGNIA = { x: 106, y: 70, r: 9.5, escala: 0.95 };
+function insignia(acento) {
+  const { x, y, r, escala } = INSIGNIA;
+  const lado = 16 * escala;
+  return grupo({ class: 'cv-emb-insignia', style: `color: var(--eje-${acento})` }, [
+    punto(x, y, r, { class: 'cv-emb-hueco-lleno', 'stroke-width': 1.6 }),
+    grupo({ transform: `translate(${f2(x - lado / 2)} ${f2(y - lado / 2)}) scale(${escala})`, 'stroke-width': 1.5 }, [...icono(EJES[acento]?.glifo ?? 'punto').childNodes])
+  ]);
+}
+
 // `eje`: el id del eje (`core/ejes.js`) o null. `glifo`: el glifo del kit para el eje `juego` (el de la stat:
 // `glifoDeCampo`) y para las cartas sin eje. Devuelve el <svg> (class `cv-emb`); el color lo pone el CSS con `--eje`.
-export function emblema(eje, { glifo = null } = {}) {
+export function emblema(eje, { glifo = null, variante = 0, acento = null } = {}) {
   serie += 1;
   const id = `cv-emb-${serie}`;
   const motivo = MOTIVOS[eje] ? MOTIVOS[eje](id, glifo) : sinEje(glifo);
@@ -237,20 +317,26 @@ export function emblema(eje, { glifo = null } = {}) {
     svg('stop', { offset: '0', 'stop-color': 'currentColor', 'stop-opacity': '0.34' }),
     svg('stop', { offset: '1', 'stop-color': 'currentColor', 'stop-opacity': '0.04' })
   ]);
-  const hexPlaca = vertices(6, R_PLACA);
-  const hexFilo = vertices(6, R_FILO);
+  // la variante gira la placa (punta arriba / lado arriba) y espeja el patrón: dos cartas del mismo eje en la misma
+  // mano no salen iguales; el acento pinta el filo y los remaches con el segundo eje de la opción
+  const fase = variante % 2 ? -60 : -90;
+  const hexPlaca = vertices(6, R_PLACA, fase);
+  const hexFilo = vertices(6, R_FILO, fase);
+  const filo = acento ? { style: `color: var(--eje-${acento})` } : {};
   return svg('svg', { class: 'cv-emb', viewBox: `0 0 ${ANCHO} ${ALTO}`, preserveAspectRatio: 'xMidYMid meet', 'aria-hidden': 'true', 'data-eje': eje ?? null }, [
     svg('defs', {}, [halo, placa]),
     svg('ellipse', { class: 'cv-emb-halo', cx: CX, cy: CY, rx: 96, ry: 70, fill: `url(#${id}-halo)`, stroke: 'none' }),
-    grupo({ class: 'cv-emb-patron' }, motivo.patron),
+    grupo({ class: 'cv-emb-patron', transform: variante % 2 ? `translate(${ANCHO} 0) scale(-1 1)` : null }, motivo.patron),
     grupo({ class: 'cv-emb-nucleo' }, [
-      poligono(hexFilo, { class: 'cv-emb-filo', 'stroke-width': 1 }),
+      poligono(hexFilo, { class: `cv-emb-filo${acento ? ' cv-emb-acento' : ''}`, 'stroke-width': acento ? 1.8 : 1, ...filo }),
+      variante >= 2 ? poligono(vertices(6, R_FILO + 4, fase), { class: 'cv-emb-filo', 'stroke-width': 0.8, ...filo }) : null,
       poligono(hexPlaca, { class: 'cv-emb-fondo', stroke: 'none' }),
       poligono(hexPlaca, { fill: `url(#${id}-placa)`, 'stroke-width': 2.2 }),
       // el reflejo de arriba: el filo de vidrio de la placa
       camino(`M${hexPlaca[5].join(' ')}L${hexPlaca[0].join(' ')}L${hexPlaca[1].join(' ')}`, { class: 'cv-emb-reflejo', transform: `translate(0 1.6) scale(0.94)`, 'transform-origin': `${CX} ${CY}`, 'stroke-width': 0.9 }),
-      ...hexFilo.map(([x, y]) => punto(x, y, 1.5, { class: 'cv-emb-lleno', stroke: 'none' })),
-      grupo({ class: 'cv-emb-glifo' }, motivo.glifo)
+      ...hexFilo.map(([x, y]) => punto(x, y, acento ? 2.1 : 1.5, { class: 'cv-emb-lleno', stroke: 'none', ...filo })),
+      grupo({ class: 'cv-emb-glifo' }, motivo.glifo),
+      acento ? insignia(acento) : null
     ])
   ]);
 }
