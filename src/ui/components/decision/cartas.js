@@ -10,8 +10,8 @@
 // En 1 y 2 el medallón del eje flota en el borde del arte; en 3 ya es parte del emblema.
 //
 // El contrato está en la cabecera de `decision/comun.js`: las mismas opciones, el mismo retorno, la costura, el teclado.
-// La // coreografía:
-//   entrar   las cartas se reparten desde abajo, de a una; el medallón hace pop y los chips caen en cascada;
+// La coreografía:
+//   entrar   las cartas se reparten desde abajo, de a una; el emblema (o el medallón) hace pop y los chips caen;
 //   apuntar  la carta sube, crece y se inclina siguiendo el puntero; un brillo la cruza, un halo de su eje abajo, las
 //            otras se apagan y la prosa de la apuntada va en la banda de abajo (una por vez, sin saltos de alto);
 //   elegir   la elegida destella y salta, las otras se queman (`quemar`, el de Fearless);
