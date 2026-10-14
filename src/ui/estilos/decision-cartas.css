@@ -135,7 +135,7 @@
     radial-gradient(ellipse 85% 75% at 50% 32%, transparent 45%, color-mix(in srgb, var(--bg-void) 70%, transparent) 100%),
     linear-gradient(180deg, transparent 52%, var(--panel-opaco) 100%);
 }
-.cv-cerrada .cv-arte { background: repeating-linear-gradient(135deg, var(--linea) 0 2px, transparent 2px 12px), var(--bg-sunken); }
+.cv-cerrada .cv-arte { background: radial-gradient(ellipse at 50% 40%, var(--bg-raised), var(--bg-sunken) 75%); }
 
 /* el medallón del eje: el "ícono del aumento", en el borde entre el arte y el cuerpo */
 .cv-medallon {
