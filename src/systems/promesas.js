@@ -2,7 +2,7 @@
 //
 // `career.promesas = [{ id, estado: 'abierta'|'cumplida'|'rota', texto, progreso, vence, ... }]`. Hay una abierta a la vez;
 // las resueltas quedan en la lista como historia. `texto` y `progreso` son strings listos para mostrar. El contenido de cada
-// promesa (quién la hace, cuándo puede abrirse, plazo, condición, pago y castigo como rangos) vive en
+// promesa (quién la hace, cuándo puede abrirse, plazo, condición y pago como rangos; la promesa rota no castiga) vive en
 // `data/events/promesas.json`; acá solo está la cuenta.
 //
 // Dónde corre: justo antes de `resumenAnio` en `ETAPAS_SPLIT`, con `escena` ya escrita: así el diario del año
@@ -18,7 +18,7 @@ import promesasData from '../data/events/promesas.json' with { type: 'json' };
 import { crearLog } from '../core/log.js';
 import { roll, chance, pick } from '../core/rng.js';
 import { clampStat } from '../core/numeros.js';
-import { entero } from '../core/formato.js';
+import { entero, faltan } from '../core/formato.js';
 import { puntosAbsolutos, puntosDelApice } from '../core/ranked.js';
 import { tierPorId } from '../data/ranked.js';
 import { BALANCE } from '../data/balance.js';
@@ -117,7 +117,7 @@ function evaluar(state, p, def) {
   }
   if (c.tipo === 'rank') {
     const falta = puntosDeTier(c.tier) - puntosAbsolutos(player.ranked);
-    return { cumplida: falta <= 0, rota: null, progreso: falta > 0 ? `te faltan ${entero(falta)} LP` : 'listo' };
+    return { cumplida: falta <= 0, rota: null, progreso: falta > 0 ? faltan(entero(falta), 'LP', 'LP') : 'listo' };
   }
   if (c.tipo === 'tier') {
     const ok = career.tier != null && career.tier <= c.tierMax;
@@ -130,7 +130,7 @@ function evaluar(state, p, def) {
   }
   if (c.tipo === 'arraigo') {
     const falta = c.valor - career.arraigo;
-    return { cumplida: falta <= 0, rota: null, progreso: falta > 0 ? `te faltan ${entero(Math.ceil(falta))} de arraigo` : 'listo' };
+    return { cumplida: falta <= 0, rota: null, progreso: falta > 0 ? faltan(entero(Math.ceil(falta)), 'punto de arraigo', 'puntos de arraigo') : 'listo' };
   }
   if (c.tipo === 'internacional') {
     const ok = career.registro.internacionales.length > p.base;
@@ -144,7 +144,7 @@ function conQuedan(progreso, quedan) {
   return `${progreso} · ${tiempo}`;
 }
 
-// --- Pago y castigo ---
+// --- Pago ---
 
 // Aplica un bloque `{ hype: [min, max], arraigo: [min, max] }` y devuelve el estado y las líneas "+9 hype".
 function aplicarEfectos(state, efectos, rng) {
@@ -193,7 +193,8 @@ export function aplicar(state, rng) {
         next = reemplazar(next, hecha);
         logs.push(logDe(rellenar(def.lineaCumple, varsDe(abierta, { tier: state.career.tier })), abierta, 'cumplida', pagado.resumen));
       } else if (veredicto.rota || vencida) {
-        const castigado = aplicarEfectos(next, def.castigo, rng);
+        // "Se paga, o se cuenta que no": una promesa rota no te saca nada (vos no la elegiste); queda el titular.
+        const castigado = { state: next, resumen: '' };
         next = castigado.state;
         const rota = { ...abierta, estado: 'rota', progreso: veredicto.rota ? veredicto.progreso : 'se pasó el plazo', resueltaEn: anio, resueltaSplit: state.player.splitCount };
         next = reemplazar(next, rota);

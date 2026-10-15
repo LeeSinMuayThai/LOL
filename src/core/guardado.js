@@ -265,12 +265,26 @@ export function migrarDe17(state) {
   );
   return {
     ...state,
-    flags: { ...(state.flags ?? {}), fichajeEtiquetado: state.flags?.fichajeEtiquetado ?? null },
+    flags: {
+      ...(state.flags ?? {}),
+      fichajeEtiquetado: state.flags?.fichajeEtiquetado ?? null,
+      // G4c y G-fix A: el último split (la edad de la última pregunta y el nivel con el que elegiste seguir) y la despedida pendiente.
+      ultimoSplitEdad: state.flags?.ultimoSplitEdad ?? null,
+      seguisNivel: state.flags?.seguisNivel ?? null,
+      despedidaPendiente: state.flags?.despedidaPendiente ?? null
+    },
     career: {
       ...state.career,
       arraigoPorOrg,
+      // G4c: el dorsal que elegiste en cada org y las despedidas del registro; G4b: las promesas.
+      dorsalPorOrg: state.career.dorsalPorOrg ?? {},
+      promesas: state.career.promesas ?? [],
       registro: registro
-        ? { ...registro, porOrg: filas.map((fila) => ({ ...fila, etiqueta: fila.etiqueta ?? null, traicionA: fila.traicionA ?? null })) }
+        ? {
+          ...registro,
+          despedidas: registro.despedidas ?? [],
+          porOrg: filas.map((fila) => ({ ...fila, etiqueta: fila.etiqueta ?? null, traicionA: fila.traicionA ?? null }))
+        }
         : registro
     }
   };
