@@ -156,7 +156,12 @@ const SPLITS_DE_VERIFICACION = 30;
 // fija y el diario de W1 (que ya dejaron el margen en 4 KB), el tablero del Swiss y el cuadro de 8 (`components/swiss.js`,
 // `mundial.js`), el bloque "Lo que elegiste", "Tu receso" y "Tu juego". Subido a 4000: ~100 KB (2,5%) de margen sobre el
 // peso medido.
-const PESO_MAXIMO_KB = 4000;
+//
+// Re-medido en la entrega 1 de la ola G (2026-10-15, `g-int`, PLANUI §0.9): 4038 KB contra 4000. No viaja nada de más (`previa/` ya
+// queda fuera de la cuenta y `dist/` no lleva capturas ni generadores): lo que creció es la pantalla nueva de las finales con las
+// manos (`components/finales.js`, `varaG1.js`, las mecánicas `laCorrida` y `laPizarra`, el camino y la mesa de la vara, el stream
+// del Swiss, `estilos/minijuegos.css` +205 líneas). Subido a 4140: ~100 KB (2,5%) de margen sobre el peso medido ese día.
+const PESO_MAXIMO_KB = 4140;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);

@@ -198,7 +198,11 @@ export function retirarsePorCamino(state, motivo) {
   // `splitsJugados = splitCount − splitsRetirado` se sigue cumpliendo. Sin vuelta, la tarjeta lo cuenta; con vuelta, se
   // compensa con el split del retiro que `relojAlVolver` suma dentro de `flags.splitsEnVentana`, que antes se descontaba
   // entero (la vuelta perdía un split pro: 15 de 87 vueltas de `azar` con Final2).
-  const temporadaJugada = state.phase === 'profesional' && state.career.splitPrimerContratoTier2 != null;
+  // G-fix2 (K5c-R, seed 20): "ya jugada" es la misma guarda con la que `temporada.js` salta el split (sin club o sin plantel). Si
+  // firmaste en la pretemporada y la bifurcación te retira antes de que el plantel del club abra, esa temporada no corrió y no
+  // hay split pro que acreditar (acreditarlo daba un tercio de año pro de más en `aniosProDe`).
+  const temporadaJugada = state.phase === 'profesional' && state.career.splitPrimerContratoTier2 != null
+    && Boolean(state.career.currentOrg) && state.career.companeros.length > 0;
   const conSplitPro = temporadaJugada
     ? {
       ...retirado,

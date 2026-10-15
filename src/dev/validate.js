@@ -10923,7 +10923,10 @@ check('K5c-R: los años pro no cuentan tier 3 ni los splits retirado (el marcado
     if (porOrg[0]?.tier === 3 && primeraFilaT2) {
       // Empezó en un equipo chico: el marcador es la firma en tier 2 (la fila de esa org abre el split siguiente), no `splitFichaje`.
       desdeTier3 += 1;
-      if (marca === null || marca <= state.splitFichaje || marca !== primeraFilaT2.desdeSplit - 1) {
+      // G-fix2: si te retiraste en el split de la firma (la bifurcación, antes de que abriera el plantel del club), la fila de ese club
+      // abre cuando volvés, no el split siguiente: la firma queda antes (seed 20: firma en el 16, retiro, vuelta, fila en el 18).
+      const filaAbreAlVolver = retirado > 0 ? marca <= primeraFilaT2.desdeSplit - 1 : marca === primeraFilaT2.desdeSplit - 1;
+      if (marca === null || marca <= state.splitFichaje || !filaAbreAlVolver) {
         problemas.push(`seed ${seed}: fichó en tier 3 en el split ${state.splitFichaje}, la primera fila de tier 2/1 abre en ${primeraFilaT2.desdeSplit} y el marcador es ${marca}`);
       }
     } else if (porOrg[0]?.tier <= 2) {
