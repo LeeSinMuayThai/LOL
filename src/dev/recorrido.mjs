@@ -1029,7 +1029,12 @@ for (let it = 0; it < 3000; it++) {
     if (i >= 0) {
       await page.locator('#mercadoGrid .mercado-card').nth(i).locator('.mercado-card-acciones button').first().click();
       if (!pro) { pro = true; await page.waitForTimeout(400); }
-    } else if (await page.locator('.ms-camino').count()) { L('    > CAMINO (mercado sin cartas)'); await page.locator('.ms-camino:not([disabled])').first().click(); }
+    } else if (await page.locator('.ms-camino').count()) {
+      const libres = await page.locator('.ms-camino:not([disabled])').count();
+      L(`    > CAMINO (mercado sin cartas, ${libres} habilitados)`);
+      if (libres) await page.locator('.ms-camino:not([disabled])').first().click({ timeout: 5000 });
+      else { if (!capturadas.has('camino-bloqueado')) { await captura('camino-bloqueado'); capturadas.add('camino-bloqueado'); } await page.waitForTimeout(1500); stuck++; }
+    }
     else if (esperarVisible) { L('    > ESPERAR'); await page.click('#mercadoEsperar'); }
     else { L('!! mercado sin botones'); await captura('mercado-vacio'); stuck += 3; }
     continue;
