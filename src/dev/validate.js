@@ -28090,8 +28090,9 @@ check('K6c la vara: la oferta, la previa de la prueba y la pantalla muestran la 
   if (pruebas.length < 10) throw new Error(`check vacío: ${pruebas.length} pruebas en el lote`);
   for (const { seed, decision, nivel } of pruebas) {
     const { datos } = decision;
-    // K6c (segunda pasada): la vara de tu nivel de ese momento contra el calibre del club.
-    const vara = varaDeLaPruebaK6C(nivel, datos.oferta.org.fuerza);
+    // K6c (segunda pasada): la vara de tu nivel de ese momento contra el calibre del club. Ola G (G3a): la prueba del equipo
+    // seguro de los 17 (`resolverEquipoSeguro`, `oferta.vara: 0`) firma siempre: su vara es 0 en el motor y en la pantalla.
+    const vara = datos.oferta.vara === 0 ? 0 : varaDeLaPruebaK6C(nivel, datos.oferta.org.fuerza);
     if (datos.vara !== vara) problemas.push(`seed ${seed}: la prueba trae vara ${datos.vara}, el motor usa ${vara}`);
     if (!String(datos.regla).includes(`La vara: ${vara}%`)) problemas.push(`seed ${seed}: la previa no dice la vara ("${datos.regla}")`);
     // K6c-fix: con la vara en 0 la apuesta no dice "necesitás 0%": dice que te firman aunque la prueba salga mal.
