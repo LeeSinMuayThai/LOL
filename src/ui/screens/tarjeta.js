@@ -3,7 +3,7 @@ import { descargarTarjeta, copiarTarjeta, copiarTexto } from '../exportar.js';
 import { miles, textoParaCompartir, linkDeEstado } from '../resultado.js';
 import { esBuenPapel } from '../../core/registro.js';
 import { goldenRoadsDeEstado, medallaDeGoldenRoad } from '../core/trayectoria.js';
-import { apodoDeLealtad, arraigoPorOrg, dueloEterno, finalesPerdidas } from '../../core/legado.js';
+import { apodoDeLealtad, arraigoPorOrg, dueloEterno, finalesPerdidas, monumento, premiosConNombre } from '../../core/legado.js';
 
 // La tarjeta de legado (fase 9R5b, PLAN.md §10.2/§10.3): la pantalla final.
 // TODA salida termina acá — la del mundialista con confeti y la del pibe al que
@@ -127,7 +127,7 @@ function filaDeDesglose(etiqueta, puntos, detalle, modificador = null) {
 function bloqueDesglose(puntaje, BALANCE) {
   const el = document.createElement('section');
   el.className = 'tarjeta-desglose';
-  el.appendChild(linea('tarjeta-historia-titulo', 'DE DÓNDE SALE EL NÚMERO'));
+  el.appendChild(linea('tarjeta-historia-titulo', 'DE DÓNDE SALE EL NÚMERO · TU TRAYECTORIA'));
   // Los componentes en cero se ven atenuados: también dicen algo (qué no
   // llegaste a tocar), pero no compiten con lo que sí sumó.
   for (const c of puntaje.componentes) {
@@ -138,7 +138,7 @@ function bloqueDesglose(puntaje, BALANCE) {
   const { factor, puntos, detalle } = puntaje.potencial;
   const { potencialMin, potencialMax } = BALANCE.mundo;
   const factorTexto = `×${factor.toFixed(2).replace('.', ',')}`;
-  el.appendChild(filaDeDesglose('Tu potencial, revelado', `${conSigno(puntos)} (${factorTexto})`,
+  el.appendChild(filaDeDesglose('Trayectoria: tu potencial', `${conSigno(puntos)} (${factorTexto})`,
     `${detalle} El potencial va de ${potencialMin} a ${potencialMax}.`, 'techo'));
   el.appendChild(filaDeDesglose('Total', miles(puntaje.total), null, 'total'));
   return el;
@@ -296,6 +296,36 @@ function bloqueEscapadas(finales) {
   return el;
 }
 
+// --- G4c · El palmarés (PLANUI §0.9) ---
+
+// El tipo de carta, según tu escalón más alto de arraigo (el mismo que el monumento): Leyenda, Ídolo, Querido o Uno más.
+const CARTA_DE = { leyenda: 'Carta de Leyenda', idolo: 'Carta de Ídolo', querido: 'Carta de Querido', uno_mas: 'Carta de Uno más' };
+
+function bloqueCarta(mon) {
+  const el = document.createElement('div');
+  el.className = `tarjeta-carta tarjeta-carta--${mon.escalon}`;
+  el.append(linea('tarjeta-carta-tipo', CARTA_DE[mon.escalon] ?? 'Carta de la carrera'));
+  if (mon.org) {
+    el.appendChild(linea('tarjeta-carta-org', `Tu escalón más alto: ${mon.etiqueta ?? mon.escalon} en ${mon.org}`));
+  }
+  return el;
+}
+
+// Los premios con nombre, sacados del registro: cada uno con el nombre y la línea que lo cuenta.
+function bloquePremios(premios) {
+  const el = document.createElement('section');
+  el.className = 'tarjeta-premios';
+  el.setAttribute('aria-label', 'Premios con nombre');
+  el.appendChild(linea('tarjeta-historia-titulo', 'LO QUE SE RECUERDA'));
+  for (const p of premios) {
+    const item = document.createElement('div');
+    item.className = `tarjeta-premio tarjeta-premio--${p.id}`;
+    item.append(linea('tarjeta-premio-nombre', p.nombre), linea('tarjeta-premio-linea', p.linea));
+    el.appendChild(item);
+  }
+  return el;
+}
+
 const VEREDICTO_DUELO = {
   vos: (d) => (d.porTrofeos ? 'Lo ganaste vos.' : 'Lo ganaste vos: mismos trofeos, pero llegaste más alto.'),
   el: (d) => (d.porTrofeos ? `Se lo llevó ${d.handle}.` : `Se lo llevó ${d.handle}: mismos trofeos, pero llegó más alto.`),
@@ -357,6 +387,12 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
 
   // W1: si los fans te hicieron Ídolo o Leyenda en algún lado, ese es el titular; el veredicto pasa a ser la bajada.
   const registro = state.career?.registro ?? null;
+  // G4c: el tipo de carta, según tu escalón más alto (el mismo del monumento), pegado a la identidad.
+  if (registro) {
+    const mon = monumento(state);
+    container.dataset.carta = mon.escalon ?? 'uno_mas';
+    container.appendChild(bloqueCarta(mon));
+  }
   const apodo = registro ? apodoDeLealtad(registro) : null;
   if (apodo) {
     container.appendChild(bloqueApodo(apodo, t.veredicto));
@@ -368,12 +404,15 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
     if (goldenRoads.length > 0) {
       container.appendChild(bloqueMedalla(goldenRoads));
     }
-    container.appendChild(bloqueDesglose(t.puntaje, modulos.BALANCE));
-    container.appendChild(bloqueLeyenda(state, t.puntaje, modulos));
   }
 
   if (!apodo) {
     container.appendChild(linea('tarjeta-veredicto', t.veredicto));
+  }
+
+  const premios = premiosConNombre(state);
+  if (premios.length > 0) {
+    container.appendChild(bloquePremios(premios));
   }
 
   const totales = t.totales;
@@ -413,9 +452,18 @@ export function renderTarjeta(container, state, modulos, extras = {}) {
     container.appendChild(bloqueDuelo(duelo, state.player.name));
   }
 
+  if (t.puntaje) {
+    container.appendChild(bloqueLeyenda(state, t.puntaje, modulos));
+  }
+
   const internacionales = state.career?.registro?.internacionales ?? t.internacionales ?? [];
   if (internacionales.length > 0) {
     container.appendChild(bloqueInternacionales(internacionales));
+  }
+
+  // "De dónde sale el número" baja al final: el palmarés va primero, la cuenta después.
+  if (t.puntaje) {
+    container.appendChild(bloqueDesglose(t.puntaje, modulos.BALANCE));
   }
 
   container.appendChild(crearAcciones(state, modulos));

@@ -549,3 +549,88 @@ details.tarjeta-internacionales > summary { cursor: pointer; font-size: var(--fs
 }
 .tarjeta-duelo--vos .tarjeta-duelo-veredicto { color: var(--gold); }
 .tarjeta-duelo--el .tarjeta-duelo-veredicto { color: var(--down); }
+
+/* --- G4c · El palmarés: el tipo de carta, los premios con nombre y el monumento ------------------------------------- */
+.tarjeta-carta { margin: var(--s-3) 0 0; }
+.tarjeta-carta-tipo {
+  display: inline-block;
+  padding: var(--s-1) var(--s-3);
+  border: 1px solid var(--ink-dim);
+  border-radius: var(--r-pill, 999px);
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.tarjeta-carta--leyenda .tarjeta-carta-tipo { color: var(--gold); border-color: var(--gold); }
+.tarjeta-carta--idolo .tarjeta-carta-tipo { color: var(--live); border-color: var(--live); }
+.tarjeta-carta-org { margin-top: var(--s-1); font-size: var(--fs-2); color: var(--ink-dim); overflow-wrap: anywhere; }
+
+.tarjeta-premios { margin-top: var(--s-5); text-align: left; }
+.tarjeta-premio {
+  padding: var(--s-2) 0 var(--s-2) var(--s-3);
+  border-left: 2px solid var(--gold);
+  overflow-wrap: anywhere;
+}
+.tarjeta-premio + .tarjeta-premio { margin-top: var(--s-2); }
+.tarjeta-premio-nombre {
+  font-family: var(--font-display);
+  font-size: var(--fs-4);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.tarjeta-premio-linea { margin-top: var(--s-1); font-size: var(--fs-2); color: var(--ink-dim); }
+
+.monumento {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  min-height: 60vh;
+  padding: var(--s-6) var(--s-4);
+  text-align: center;
+}
+.monumento-k {
+  font-family: var(--font-display);
+  font-size: var(--fs-1);
+  font-weight: 700;
+  letter-spacing: var(--track-cartel);
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.monumento-titulo {
+  font-family: var(--font-display);
+  font-size: var(--fs-8);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  text-transform: uppercase;
+  color: var(--gold);
+  text-shadow: var(--tj-apodo-sombra);
+  overflow-wrap: anywhere;
+}
+.monumento--bandera .monumento-titulo { color: var(--live); text-shadow: none; }
+.monumento-dorsal {
+  font-family: var(--font-display);
+  font-size: calc(var(--fs-8) * 2);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+}
+.monumento-org { font-size: var(--fs-4); color: var(--ink); overflow-wrap: anywhere; }
+.monumento-apodo {
+  font-family: var(--font-display);
+  font-size: var(--fs-5);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  overflow-wrap: anywhere;
+}
+.monumento-seguir { margin-top: var(--s-4); }
+@media (max-width: 639px) {
+  .monumento-titulo { font-size: var(--fs-7); }
+  .monumento-dorsal { font-size: calc(var(--fs-7) * 2); }
+}
