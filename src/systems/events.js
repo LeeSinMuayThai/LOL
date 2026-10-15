@@ -422,10 +422,11 @@ export function elegirOutcome(state, opcion, rng) {
 // estado POSTERIOR (es lo que quedo despues de aplicar los efectos).
 // K4-C: con `cronica` (el id del perfil que decidió) el evento se cuenta en UNA línea de crónica: el texto del
 // evento, la opción que tomó tu perfil y lo que pasó. El texto no se pierde: pasa a ser la historia.
-export function resolverOpcion(state, evento, opcionId, rng, { cronica = null } = {}) {
+// D118: `outcome` fuerza el outcome (el Bo1 que frena: lo decide el minijuego, no la tirada).
+export function resolverOpcion(state, evento, opcionId, rng, { cronica = null, outcome: outcomeForzado = null } = {}) {
   const vivas = opcionesVivas(state, evento);
   const opcion = vivas.find((option) => option.id === opcionId) ?? vivas[0] ?? evento.options[0];
-  const outcome = elegirOutcome(state, opcion, rng);
+  const outcome = outcomeForzado ?? elegirOutcome(state, opcion, rng);
 
   const nombre = resolverTexto(evento.title, state);
   const titulo = `${nombre} · ${resolverTexto(opcion.label, state)}`;

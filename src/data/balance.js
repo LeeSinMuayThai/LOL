@@ -2390,6 +2390,15 @@ export const BALANCE = {
     // La charla del coach en un mapa con minijuego baja la vara esto (la UI la conoce antes de jugar: se elige en la
     // misma pausa). En Node, el bot pasa con la p de siempre con la charla en la fuerza (`serie.plan.empujeCharla`).
     charlaBajaVara: 0.08,
+    // D122: la charla vale al menos una unidad de la regla visible. En las mecánicas que se cuentan de a una (`conteo`) y en
+    // las de errores (`erroresTope`, el tope de la pizarra: el mismo que `ui/components/minijuegos/laPizarra.js`), la vara
+    // vive en una grilla de 1/total: la charla la baja hasta el escalón de abajo ("3 de 4" → "2 de 4"), nunca menos que
+    // `charlaBajaVara` (que queda para las mecánicas continuas, donde ya mueve los ms o el radio).
+    erroresTope: { la_pizarra: 8 },
+    // D118: el Bo1 que frena en la temporada regular. Antes del minijuego se elige cómo encararlo: 🎲 ARRIESGADO (la opción
+    // del momento con más varianza; la vara sube esto) o 🧊 SEGURO (la de menos; la vara baja esto). La vara base sale de
+    // la p de la fecha con el ajuste medio del momento (`varaDeRonda`), con el techo humano de la mecánica.
+    bo1: { arriesgadoSubeVara: 0.1, seguroBajaVara: 0.1 },
     // El bot (Node): su resultado es uniforme alrededor de la vara efectiva, con un ancho tal que P(casi) = pCasiBot
     // (ancho = margenCasi / pCasiBot). Así P(paso) = la p del mapa por construcción, y lo que mueve la vara (el
     // escenario, el desempate) mueve su p en vara / ancho.

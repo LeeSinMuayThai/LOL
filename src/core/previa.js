@@ -85,6 +85,8 @@ export function payoffNormalizado(outcome) {
 // base de catálogo): la previa tiene que respetar `modificadores`, no
 // mostrar lo mismo sin importar tus stats. Magnitud/signo son cualitativos
 // (regla invariable 7: los efectos son rangos, nunca un número mostrado).
+// D118: la excepción es el Bo1 que frena (`textoDeRangos`): ahí el outcome no se sortea, lo decide el minijuego, y "si
+// sale" / "si no sale" muestran el rango entero de cada efecto (la regla de F4: el número seguro a la vista).
 export function previaDeOpcion(opcion, pesos) {
   const pesoTotal = pesos.reduce((suma, peso) => suma + peso, 0);
   if (pesoTotal <= 0) {
@@ -142,6 +144,21 @@ export function riesgoDeOpcion(opcion, pesos) {
   if (desvio < p33) return 'seguro';
   if (desvio < p66) return 'incierto';
   return 'ruleta';
+}
+
+// D118: los efectos de un outcome con su rango, para "si sale" / "si no sale" del Bo1 que frena: "Mecánica +1 a +3 ·
+// Mentalidad −3 a −1". Sin el ajuste del partido (en el Bo1 lo decide el minijuego) ni lo que no es una magnitud.
+const firmado = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '0');
+
+export function textoDeRangos(effects) {
+  return effects
+    .filter((effect) => effect.type !== 'partido' && familiaDeEfecto(effect) !== null)
+    .map((effect) => {
+      const unidad = UNIDAD_DE_FAMILIA[familiaDeEfecto(effect)] ?? '';
+      const rango = effect.min === effect.max ? firmado(effect.min) : `${firmado(effect.min)} a ${firmado(effect.max)}`;
+      return `${etiquetaCampo(effect.path)} ${rango}${unidad}`;
+    })
+    .join(' · ');
 }
 
 const SIMBOLO_OPERADOR = { lt: '<', lte: '≤', gt: '>', gte: '≥', eq: '=', neq: '≠' };
