@@ -3,7 +3,7 @@ import { crearLog } from '../core/log.js';
 import { calcularContexto } from '../core/contexto.js';
 import { BALANCE } from '../data/balance.js';
 import {
-  elegirEvento, decisionDesdeEvento, resolverOpcion, opcionDelPerfilPara,
+  elegirEvento, decisionDesdeEvento, resolverOpcion, opcionesVivas, conParadaDeEvento,
   resolver as resolverEvento, resolverAuto as resolverAutoEvento
 } from './events.js';
 import { armarRosterAlVolver } from './roster.js';
@@ -219,11 +219,13 @@ function eventoDeVentana(state, rng) {
   if (!evento) {
     return vueltaOSuRepeticion(state, []);
   }
-  if (evento.bifurcacion) {
+  // G2a (PLANUI §0.9): todo evento con dos opciones o más frena (los candidatos de `elegirEvento` ya las tienen); el de una
+  // sola se aplica tal cual. Tu perfil ya no decide por vos.
+  if (opcionesVivas(state, evento).length >= 2) {
     const decision = decisionDesdeEvento(state, evento, { franja: 'normal', slot: 1 });
-    return { state, logs: [], decision: { ...decision, datos: { ...decision.datos, motivo: 'evento_ventana' } } };
+    return { state: conParadaDeEvento(state), logs: [], decision: { ...decision, datos: { ...decision.datos, motivo: 'evento_ventana' } } };
   }
-  const resuelto = resolverOpcion(state, evento, opcionDelPerfilPara(state, evento), rng, { cronica: state.player.perfil.actual });
+  const resuelto = resolverOpcion(state, evento, opcionesVivas(state, evento)[0]?.id ?? evento.options[0].id, rng);
   return vueltaOSuRepeticion(resuelto.state, resuelto.logs);
 }
 
@@ -419,7 +421,11 @@ export function resolver(state, decision, respuesta, rng) {
 
   if (motivo === 'evento_ventana') {
     const resuelto = resolverEvento(state, decision, respuesta, rng);
-    // K6b-C: después de una bifurcación de la ventana, algo cambió: la vuelta se pregunta siempre.
+    // K6b-C: después de una bifurcación de la ventana, algo cambió: la vuelta se pregunta siempre. G2a: después de un
+    // evento que no es bifurcación (antes lo resolvía tu perfil), la vuelta sigue su regla de siempre.
+    if (!decision.datos.evento.bifurcacion) {
+      return vueltaOSuRepeticion(resuelto.state, resuelto.logs);
+    }
     return { state: resuelto.state, logs: resuelto.logs, decision: decisionVuelta(resuelto.state) };
   }
 

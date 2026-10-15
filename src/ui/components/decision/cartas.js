@@ -70,6 +70,19 @@ const GEMAS = { seguro: 1, incierto: 2, ruleta: 3, alto: 3 };
 // La perspectiva del giro de la carta a la tarjeta (px).
 const PERSPECTIVA_GIRO = 1200;
 
+// G2a (PLANUI §0.9): el rótulo de la carta de un evento, con el formato de El Ídolo: GOLPE DURO (la categoría), DECISIÓN
+// DIFÍCIL (una bifurcación de carrera) o PASAN COSAS (el resto). Solo los eventos del split (y los de la ventana del retiro);
+// el cierre de año, el momento de un partido y las paradas de sistema conservan el suyo.
+const primeraOracion = (texto) => String(texto).match(/^.*?[.!?…](?=\s|$)/)?.[0] ?? String(texto);
+
+function rotuloDeEvento(decision) {
+  const evento = decision?.datos?.evento;
+  const motivo = decision?.datos?.motivo;
+  if (!evento || decision.franja === 'cierre' || (motivo && motivo !== 'evento_ventana')) return null;
+  if (evento.categoria === 'golpe_duro') return 'Golpe duro';
+  return evento.bifurcacion ? 'Decisión difícil' : 'Pasan cosas';
+}
+
 export function crear(contenedor, decision, { estado, previa = null, mundo, sonido = null, responder, arte = null, marca = false, limite = null, lateral = null, margen = () => 0 }) {
   const lector = leerDecision(decision, { estado, previa });
   const { forma, esMatriz, disponibles, bloqueadas, lec, variante, previas, chipDePrevia, pDe, riesgoDe } = lector;
@@ -79,7 +92,7 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
   const raiz = el('section', { class: 'parada parada-decision cv-raiz', 'data-forma': forma, 'data-bisagra': lec.bisagra ? '' : null, 'data-costura': variante });
   const col = el('div', { class: 'cv-col' });
   const rotuloCat = rotuloDeDecision(decision, estado);
-  const rotuloTexto = el('span', { class: 'cv-rotulo-txt', text: esMatriz ? 'El plan del año' : rotuloCat.label });
+  const rotuloTexto = el('span', { class: 'cv-rotulo-txt', text: esMatriz ? 'El plan del año' : rotuloDeEvento(decision) ?? rotuloCat.label });
   const rotulo = el('p', { class: 'cv-rotulo' }, [
     el('i', { class: 'cv-rotulo-luz' }),
     rotuloTexto,
@@ -167,6 +180,22 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
       o.propuesta ? el('span', { class: 'cv-tag cv-tag-perfil', text: 'Tu perfil' }) : null
     ]) : null;
   };
+  // G2a (la carta de El Ídolo): el número seguro de la opción (el piso de su efecto principal, regla de F4) y el riesgo en
+  // palabras (⚠: el `aviso` del dato o el peor resultado de su distribución, con su chance). Los arma el motor.
+  const seguroDe = (o) => {
+    const s = o.seguro;
+    if (!s || !Number.isFinite(s.valor)) return null;
+    const nombre = lector.nombreDeEje(s.campo);
+    return el('span', { class: 'cv-seguro', 'data-signo': s.valor > 0 ? 'sube' : s.valor < 0 ? 'baja' : 'cero', style: estiloEje(ejeDe(s.campo)), title: `${s.etiqueta}: ${s.valor > 0 ? 'lo mínimo que te llevás' : 'lo peor que te puede dejar'}` }, [
+      icono(glifoDeCampo(s.campo)),
+      el('b', { text: `${conSigno(s.valor)}${s.unidad ? ` ${s.unidad}` : ''}` }),
+      el('span', { text: `${nombre} ${s.valor > 0 ? 'seguro' : 'de piso'}` })
+    ]);
+  };
+  const avisoDe = (o) => (o.aviso?.texto ? el('span', { class: 'cv-aviso' }, [
+    el('b', { 'aria-hidden': 'true', text: '⚠' }),
+    el('span', { text: o.aviso.pct != null ? `${o.aviso.pct}%: ${o.aviso.texto}` : o.aviso.texto })
+  ]) : null);
   const planDe = (o) => (o.plan?.texto ? el('span', { class: 'cv-plan' }, [icono('practica'), el('span', { text: o.plan.titulo ?? o.plan.texto })]) : null);
   // la planilla: una fila por eje (el glifo, la barra en su color con la escala de la columna, el número)
   function barras(o) {
@@ -217,8 +246,12 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
     const cuerpo = el('span', { class: 'cv-cuerpo' }, [
       tags(o),
       el('span', { class: 'cv-label', text: o.label }),
+      // G2a: la línea de pista (la primera oración) se ve siempre; la descripción entera, en textos completos
+      !esMatriz && o.descripcion ? el('span', { class: 'cv-pista', 'aria-hidden': 'true', text: primeraOracion(o.descripcion) }) : null,
       o.descripcion ? el('span', { class: 'cv-desc', text: o.descripcion }) : null,
+      esMatriz ? null : seguroDe(o),
       esMatriz ? barras(o) : (o.previa ?? []).length ? el('span', { class: 'eje-chips cv-chips' }, o.previa.map(chipDePrevia)) : null,
+      esMatriz ? null : avisoDe(o),
       planDe(o),
       el('span', { class: 'cv-pie' }, [gemas(o), pDe(o) != null ? medidorP(pDe(o)) : null])
     ]);

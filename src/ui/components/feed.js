@@ -24,7 +24,7 @@ import { icono, triangulos } from '../fx/iconos.js';
 import { chipsDeTexto, chipEje, leerRango, rangoAntes, numeroConSigno, LP_POR_DIVISION } from './chipsEje.js';
 import { crearCampeonTile } from './campeonTile.js';
 import METAS from '../../data/metas.json' with { type: 'json' };
-import { LABEL_BANDA, GLIFO_DE_VINETA, franjaDelTramo } from '../core/momentos.js';
+import { LABEL_BANDA, GLIFO_DE_VINETA, franjaDelTramo, eleccionDelJugador } from '../core/momentos.js';
 
 // El reveal del Top 20 al cierre de temporada (fase 9Wc). El log `top_mundial`
 // que trae la lista entera (`entry.top20`) deja de ser una línea: se abre en
@@ -908,12 +908,13 @@ export function animarEfectos(nodo, { animar = true } = {}) {
 // `animar` (V4): lo que entra por primera vez se mueve (el número de la tarjeta de cierre, los efectos de un beat). El
 // reproductor lo apaga en INST; con movimiento reducido cada número aparece ya en su valor final. Lo que ya estaba pintado se
 // reconstruye quieto, y los renglones sintéticos (cartel, línea anterior, tarjeta) solo si cambió su contenido.
-export function renderPagina(contenedor, state, { desde = 0, hasta = state.logs.length, anterior = null, cierre = null, cartel = null, animar = false } = {}) {
+// G2a: `soloElMundo` (el cajón de "Mientras tanto") deja afuera los beats de lo que elegiste vos (`eleccionDelJugador`).
+export function renderPagina(contenedor, state, { desde = 0, hasta = state.logs.length, anterior = null, cierre = null, cartel = null, animar = false, soloElMundo = false } = {}) {
   const inicio = Math.max(0, Math.min(desde, hasta));
   const items = [
     ...(cartel ? [{ sintetico: 'cartel', cartel }] : []),
     ...(anterior ? [{ sintetico: 'anterior', cierre: anterior }] : []),
-    ...agruparBeats(state.logs.slice(inicio, hasta), inicio),
+    ...agruparBeats(state.logs.slice(inicio, hasta), inicio).filter((beat) => !soloElMundo || !eleccionDelJugador(beat.narrativa)),
     ...(cierre ? [{ sintetico: 'cierre', cierre }] : [])
   ];
   const firmaDe = (item) => (item.sintetico === 'cartel' ? JSON.stringify(item.cartel) : JSON.stringify(item.cierre));
@@ -1078,7 +1079,7 @@ function abrirCajon(state, desde, cuantas, boton) {
   cabeza.append(titulo, cuenta, cerrar);
   const pagina = document.createElement('div');
   pagina.className = 'log-list relato-pagina mt-pagina';
-  renderPagina(pagina, state, { desde });
+  renderPagina(pagina, state, { desde, soloElMundo: true });
   dialogo.append(cabeza, pagina);
   dialogo.addEventListener('keydown', (e) => {
     if ((e.key === 'l' || e.key === 'L') && !e.ctrlKey && !e.metaKey && !e.altKey) {

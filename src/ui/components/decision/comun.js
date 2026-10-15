@@ -170,6 +170,8 @@ export function leerDecision(decision, { estado, previa = null }) {
     o.descripcion,
     (o.previa ?? []).map((p) => p.texto).join('. '),
     o.riesgoTexto ? `Riesgo: ${o.riesgoTexto}` : '',
+    o.seguro && Number.isFinite(o.seguro.valor) ? `${o.seguro.valor > 0 ? 'Seguro' : 'De piso'}: ${o.seguro.etiqueta} ${conSigno(o.seguro.valor)}${o.seguro.unidad ? ` ${o.seguro.unidad}` : ''}` : '',
+    o.aviso?.texto ? `Ojo: ${o.aviso.pct != null ? `${o.aviso.pct}% de las veces, ` : ''}${o.aviso.texto}` : '',
     o.propuesta ?? '',
     o.plan?.texto ?? '',
     previas[o.id]?.texto ?? ''

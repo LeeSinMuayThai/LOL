@@ -29447,6 +29447,43 @@ check(NOMBRE_CHECK_W1D, () => {
   if (errorW1D) throw errorW1D;
 });
 
+// G2a (PLANUI §0.9, "el perfil no decide nada"): la promesa. Ningún evento con 2 opciones o más se resuelve por el perfil
+// adentro del motor: siempre devuelve una decisión, o no se sortea. El contador está en el único camino por el que el
+// motor resuelve con tu perfil (`resolverOpcion` con `cronica` deja `porPerfil` y `opcionesVivas` en su log). Además, el
+// split frena por evento a lo sumo `BALANCE.eventos.paradasPorSplit` veces, en el amateur y en el pro.
+check('G2a: ningún evento con 2+ opciones lo resuelve el perfil (frena o no se sortea, tope por split)', () => {
+  const mal = [];
+  const paradas = { amateur: 0, profesional: 0 };
+  let porPerfil = 0;
+  for (let seed = 7701; seed <= 7730; seed += 1) {
+    const rng = mulberry32(seed);
+    let estado = createInitialState(seed, rng);
+    const porSplit = new Map();
+    const responder = (sistema, st, decision, r) => {
+      if (sistema.id === 'eventos' && decision.datos?.evento) {
+        porSplit.set(st.player.splitCount, (porSplit.get(st.player.splitCount) ?? 0) + 1);
+        paradas[st.phase === 'profesional' ? 'profesional' : 'amateur'] += 1;
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < 60 && !estado.terminado; i += 1) {
+      estado = avanzarSplitAuto(estado, rng, responder).state;
+    }
+    for (const log of estado.logs) {
+      if (log.porPerfil && log.opcionesVivas >= 2) {
+        porPerfil += 1;
+        if (mal.length < 4) mal.push(`seed ${seed}: "${log.titulo}" lo resolvió el perfil con ${log.opcionesVivas} opciones`);
+      }
+    }
+    for (const [split, n] of porSplit) {
+      if (n > BALANCE.eventos.paradasPorSplit) mal.push(`seed ${seed}, split ${split}: ${n} paradas de evento (tope ${BALANCE.eventos.paradasPorSplit})`);
+    }
+  }
+  console.log(`      paradas de evento: ${paradas.amateur} amateur, ${paradas.profesional} pro; resueltos por el perfil: ${porPerfil}`);
+  if (paradas.amateur === 0 || paradas.profesional === 0) mal.push(`muestra vacía: ${JSON.stringify(paradas)}`);
+  if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);

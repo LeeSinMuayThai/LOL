@@ -6,7 +6,8 @@
 // - algo cambió desde la última vez que ese tipo frenó en la cola: el club, el tier, una lesión o el declive
 //   (`firmaDeLaCola` contra `flags.colaFirmas[tipo]`);
 // - su tipo tiene palanca: la medida con `agencia.js` (`BALANCE.cola.palancaMedidaPct`) llega al umbral.
-// Si no, lo resuelve tu perfil (como cualquier evento que no frena, K4-C) y se narra en una línea. Fuera de la cola no
+// G2a (PLANUI §0.9, "el perfil no decide nada"): lo que no frena ya no lo resuelve tu perfil: no pasa. Y fuera de los hitos
+// la cola frena a lo sumo `BALANCE.cola.paradasPorAnio` veces por año calendario (`flags.colaAnio`). Fuera de la cola no
 // cambia nada. Todo esto es puro y sin `rng`: decide SI se frena, no cambia ninguna tirada.
 import { BALANCE } from '../data/balance.js';
 import { calcularContexto } from './contexto.js';
@@ -72,14 +73,24 @@ export function hitoDelMomento(state) {
   return esUltimoAnio(state.age + 1) ? 'ultimo anio' : null;
 }
 
+// G2a: las paradas de la cola que frenaron en el año calendario de `state` (las cuenta `conFirmaDeLaCola`).
+export function paradasDeLaColaEnElAnio(state) {
+  const registro = state.flags.colaAnio;
+  return registro && registro.anio === state.calendario.anio ? registro.paradas : 0;
+}
+
 // ¿Frena esta parada de la cola? `hito` es el de `hitoDelCierre`/`hitoDelMomento` (o `null`). Devuelve
-// `{ frena, motivo }`: `motivo` es por qué frena ('fuera de la cola', 'hito', 'cambio', 'palanca') o `null`.
+// `{ frena, motivo }`: `motivo` es por qué frena ('fuera de la cola', 'hito', 'cambio', 'palanca') o por qué no
+// ('tope': el año ya gastó su parada) o `null`. Lo que no frena no pasa (G2a).
 export function frenaEnLaCola(state, tipo, hito) {
   if (!enLaCola(state)) {
     return { frena: true, motivo: 'fuera de la cola' };
   }
   if (hito) {
     return { frena: true, motivo: 'hito' };
+  }
+  if (paradasDeLaColaEnElAnio(state) >= BALANCE.cola.paradasPorAnio) {
+    return { frena: false, motivo: 'tope' };
   }
   if ((state.flags.colaFirmas?.[tipo] ?? null) !== firmaDeLaCola(state)) {
     return { frena: true, motivo: 'cambio' };
@@ -90,19 +101,19 @@ export function frenaEnLaCola(state, tipo, hito) {
   return { frena: false, motivo: null };
 }
 
-// La foto se guarda cada vez que ese tipo frena en la cola (fuera de la cola no se toca: la cola arranca de cero).
+// La foto se guarda cada vez que ese tipo frena en la cola (fuera de la cola no se toca: la cola arranca de cero), y la
+// parada cuenta para el tope del año (G2a).
 export function conFirmaDeLaCola(state, tipo) {
   if (!enLaCola(state)) {
     return state;
   }
+  const anio = state.calendario.anio;
   return {
     ...state,
-    flags: { ...state.flags, colaFirmas: { ...(state.flags.colaFirmas ?? {}), [tipo]: firmaDeLaCola(state) } }
+    flags: {
+      ...state.flags,
+      colaFirmas: { ...(state.flags.colaFirmas ?? {}), [tipo]: firmaDeLaCola(state) },
+      colaAnio: { anio, paradas: paradasDeLaColaEnElAnio(state) + 1 }
+    }
   };
-}
-
-// La línea de crónica de una parada de la cola que no frenó (la que escribe `resolverOpcion` con `cronica`) lleva `cola: tipo`,
-// para que el instrumento y los checks la cuenten sin adivinar por el título. `opcionId` es la opción que tomó tu perfil.
-export function narradaEnLaCola(logs, tipo, opcionId) {
-  return logs.map((log) => (log.cronica ? { ...log, cola: tipo, opcionId } : log));
 }

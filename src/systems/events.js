@@ -10,7 +10,7 @@ import { conPermanencia, conTechoDeLesion } from '../core/curvas.js';
 import { crearLog, adjuntar } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
 import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
-import { previaDeOpcion, riesgoDeOpcion, gateDeOpcion, textoDeRiesgo } from '../core/previa.js';
+import { previaDeOpcion, riesgoDeOpcion, gateDeOpcion, textoDeRiesgo, payoffNormalizado } from '../core/previa.js';
 import { rarezaDeOpcionEvento } from '../core/rareza.js';
 import { opcionDelPerfil, afinidadDeOpcion, derivarPerfil, nombreDePerfil } from '../core/perfil.js';
 import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego } from '../core/minijuegos.js';
@@ -323,6 +323,44 @@ export function elegirEvento(state, rng, { excluirId, filtro = () => true } = {}
   return weightedPick(disponibles, (event) => pesoConMemoria(state, event), rng);
 }
 
+// G2a (PLANUI §0.9): el escalón de un candidato para la única parada de evento del split. Con varios candidatos gana el
+// escalón más alto, sin tirada: la continuación de una cadena (un evento que lee una bandera que dejó otro, `flags.*` en
+// sus `conditions`) > el golpe duro > la bifurcación > el resto. Adentro del escalón, el sorteo de siempre.
+export function escalonDeEvento(evento) {
+  if (evento.conditions.some((condicion) => String(condicion.field ?? '').startsWith('flags.'))) {
+    return 3;
+  }
+  if (evento.categoria === 'golpe_duro') {
+    return 2;
+  }
+  return evento.bifurcacion ? 1 : 0;
+}
+
+export function elegirEventoDelSplit(state, rng, { excluirId } = {}) {
+  const disponibles = candidatos(state).filter((event) => event.id !== excluirId);
+  if (disponibles.length === 0) {
+    return null;
+  }
+  const escalon = Math.max(...disponibles.map(escalonDeEvento));
+  return weightedPick(disponibles.filter((event) => escalonDeEvento(event) === escalon), (event) => pesoConMemoria(state, event), rng);
+}
+
+// G2a: ¿le queda al split su parada de evento? El tope (`BALANCE.eventos.paradasPorSplit`) vale en el amateur y en el pro;
+// en el pro, además, el cupo de interrupciones del split (fase 9Rf). Puro, sin `rng`.
+export function quedaParadaDeEvento(state) {
+  const usadas = state.presupuesto?.eventos ?? 0;
+  if (usadas >= BALANCE.eventos.paradasPorSplit) {
+    return false;
+  }
+  return state.phase !== 'profesional' || hayPresupuesto(state);
+}
+
+// G2a: el evento que frena gasta la parada del split (`presupuesto.eventos`, que `systems/presupuesto.js` vuelve a cero).
+export function conParadaDeEvento(state) {
+  const p = state.presupuesto ?? { total: BALANCE.partida.maxDecisionesPorSplit, gastadas: 0, eventos: 0 };
+  return { ...state, presupuesto: { ...p, eventos: (p.eventos ?? 0) + 1 } };
+}
+
 export function elegirEventoCierre(state, rng) {
   const contexto = calcularContexto(state);
   const disponibles = TODOS_LOS_EVENTOS.filter(
@@ -410,8 +448,11 @@ export function resolverOpcion(state, evento, opcionId, rng, { cronica = null } 
     const perfilNombre = nombreDePerfil(cronica);
     return {
       state: registrarEventoVisto(nextState, evento),
+      // G2a: `porPerfil` y `opcionesVivas` son el contador de la promesa ("ningún evento con 2 opciones o más se resuelve por
+      // el perfil adentro del motor"): toda resolución por el perfil pasa por acá.
       logs: [crearLog('event', `${nombre}: ${descripcion ? `${descripcion} ` : ''}Como ${perfilNombre.toLowerCase()}: ${opcionTexto}. ${cuerpo} (${efectos})`, {
-        cronica: true, titulo: nombre, descripcion, opcion: opcionTexto, perfil: perfilNombre, cuerpo, efectos
+        cronica: true, titulo: nombre, descripcion, opcion: opcionTexto, perfil: perfilNombre, cuerpo, efectos,
+        porPerfil: true, opcionesVivas: vivas.length
       }), ...logsDeEfectos]
     };
   }
@@ -436,9 +477,60 @@ export function opcionesConPrevia(state, evento, contexto = calcularContexto(sta
   });
 }
 
-// K4-C: la opción que elige tu perfil para un evento que no es bifurcación (`core/perfil.js`).
+// K4-C: la opción que elegiría tu perfil (`core/perfil.js`). G2a: ya no decide adentro del motor; es la sugerencia "TU
+// PERFIL" de la tarjeta y la elección del bot en Node (`resolverAuto`).
 export function opcionDelPerfilPara(state, evento) {
   return opcionDelPerfil(state.player.perfil, opcionesConPrevia(state, evento)).id;
+}
+
+// G2a (la carta de El Ídolo, regla de F4): el número seguro de una opción. El efecto principal es el de la fila de previa
+// más pesada (cada familia en su escala, `payoffNormalizado`); su piso es lo mínimo que puede dar entre todos los
+// outcomes (el que no lo trae, 0). `{ campo, etiqueta, valor, unidad }`, o `null` si la opción no mueve ningún número.
+const FAMILIAS_CON_NUMERO = new Set(['stat', 'ladder']);
+export function seguroDeOpcion(opcion, pesos) {
+  const pesoTotal = pesos.reduce((suma, peso) => suma + peso, 0);
+  if (pesoTotal <= 0) {
+    return null;
+  }
+  const medias = new Map();
+  opcion.outcomes.forEach((outcome, indice) => {
+    for (const effect of outcome.effects) {
+      if (!FAMILIAS_CON_NUMERO.has(effect.type)) continue;
+      const alta = BALANCE.eventos.magnitudBandas[effect.type]?.p66 || 1;
+      medias.set(effect.path, (medias.get(effect.path) ?? 0) + ((effect.min + effect.max) / 2 / alta) * pesos[indice]);
+    }
+  });
+  if (medias.size === 0) {
+    return null;
+  }
+  const [campo] = [...medias.entries()].reduce((mejor, entrada) => (Math.abs(entrada[1]) > Math.abs(mejor[1]) ? entrada : mejor));
+  const piso = Math.min(...opcion.outcomes.map((outcome) => {
+    const efectos = outcome.effects.filter((effect) => effect.path === campo && FAMILIAS_CON_NUMERO.has(effect.type));
+    return efectos.length ? efectos.reduce((suma, effect) => suma + Math.min(effect.min, effect.max), 0) : 0;
+  }));
+  const ladder = opcion.outcomes.some((outcome) => outcome.effects.some((effect) => effect.path === campo && effect.type === 'ladder'));
+  return { campo, etiqueta: etiquetaCampo(campo), valor: piso, unidad: ladder ? 'LP' : '' };
+}
+
+// G2a: el riesgo en palabras (⚠). El `aviso` del dato si la opción lo trae; si no, el peor resultado de su distribución
+// (el de menor `payoffNormalizado`) cuando de verdad te saca algo, con su chance. `{ texto, pct }` o `null`.
+export function avisoDeOpcion(state, opcion, pesos) {
+  if (opcion.aviso) {
+    return { texto: resolverTexto(opcion.aviso, state), pct: null };
+  }
+  const pesoTotal = pesos.reduce((suma, peso) => suma + peso, 0);
+  if (pesoTotal <= 0 || opcion.outcomes.length < 2) {
+    return null;
+  }
+  const indice = opcion.outcomes.reduce((peor, outcome, i) => (payoffNormalizado(outcome) < payoffNormalizado(opcion.outcomes[peor]) ? i : peor), 0);
+  const peor = opcion.outcomes[indice];
+  const pierde = peor.effects.some((effect) => FAMILIAS_CON_NUMERO.has(effect.type) && Math.max(effect.min, effect.max) < 0);
+  if (!pierde || pesos[indice] <= 0) {
+    return null;
+  }
+  const texto = resolverTexto(peor.texto, state);
+  const primera = texto.match(/^.*?[.!?…](?=\s|$)/)?.[0] ?? texto;
+  return { texto: primera, pct: Math.round((pesos[indice] / pesoTotal) * 100) };
 }
 
 // Toda decision, venga de un evento o de un sistema, se presenta igual: titulo,
@@ -448,6 +540,8 @@ export function opcionDelPerfilPara(state, evento) {
 export function decisionDesdeEvento(state, evento, { franja, slot }) {
   const titulo = resolverTexto(evento.title, state);
   const contexto = calcularContexto(state);
+  // G2a: la opción que elegiría tu perfil, para el chip "TU PERFIL" (puro, sin `rng`). Solo si hay algo que elegir.
+  const idDelPerfil = state.player?.perfil && opcionesVivas(state, evento, contexto).length >= 2 ? opcionDelPerfilPara(state, evento) : null;
 
   return {
     tipo: 'opciones',
@@ -469,6 +563,10 @@ export function decisionDesdeEvento(state, evento, { franja, slot }) {
         riesgo: riesgoDeOpcion(option, pesos),
         // K6a-A: lo que la píldora muestra (la clave `riesgo` sigue igual para el perfil y el estilo).
         riesgoTexto: textoDeRiesgo(option, riesgoDeOpcion(option, pesos)),
+        // G2a: el número seguro, el riesgo en palabras y la sugerencia de tu perfil (nunca una decisión).
+        seguro: seguroDeOpcion(option, pesos),
+        aviso: avisoDeOpcion(state, option, pesos),
+        ...(option.id === idDelPerfil ? { propuesta: `Es lo que elegiría tu perfil (${nombreDePerfil(state.player.perfil.actual)}). Decidís vos.` } : {}),
         ...(BALANCE.rareza.eventosDeMejora.includes(evento.id)
           ? { rareza: rarezaDeOpcionEvento(option, pesos) }
           : {})
@@ -501,16 +599,14 @@ export function elegirOpcionAutomatica(state, decision, rng) {
 }
 
 export function aplicar(state, rng) {
-  // Fase 9Rf: en fase profesional el evento de ambiente compite por el
-  // presupuesto de interrupción del split. Si ya se gastó (una fecha marcada,
-  // el mercado, un cierre de edad), el split no frena además por color.
-  // Early return SIN tocar rng (regla de proceso 10): el split ya tiene sus
-  // líneas de los otros sistemas, así que no queda mudo.
-  if (state.phase === 'profesional' && !hayPresupuesto(state)) {
+  // G2a: el split que ya gastó su parada de evento (o, en el pro, su cupo de interrupciones: una fecha marcada, el
+  // mercado, un cierre de edad) no sortea evento: lo que no entra no pasa. Early return SIN tocar rng (regla de proceso
+  // 10): el split ya tiene sus líneas de los otros sistemas, así que no queda mudo.
+  if (!quedaParadaDeEvento(state)) {
     return { state, logs: [] };
   }
 
-  const evento = elegirEvento(state, rng);
+  const evento = elegirEventoDelSplit(state, rng);
 
   if (!evento) {
     return {
@@ -522,20 +618,20 @@ export function aplicar(state, rng) {
   return presentarOResolver(state, evento, 1, rng);
 }
 
-// K4-C: solo frena una bifurcación de carrera (`bifurcacion: true` en el dato). El resto lo resuelve tu perfil
-// en el momento —la opción de mejor encaje, y su outcome con la tirada de siempre (regla 8)— y queda una línea de
-// crónica en el feed. Después, igual que antes, puede amontonarse un segundo evento.
+// G2a (PLANUI §0.9, "el perfil no decide nada"): todo evento con dos opciones vivas o más frena —tenga o no `bifurcacion`
+// en el dato— y gasta la parada de evento del split. El de una sola opción no frena: se aplica tal cual (no hay nada que
+// elegir) y se cuenta como cualquier evento. El perfil ya no elige adentro del motor: queda como sugerencia en la tarjeta.
 export function presentarOResolver(state, evento, slot, rng) {
-  if (evento.bifurcacion) {
+  const vivas = opcionesVivas(state, evento);
+  if (vivas.length >= 2) {
     return {
       // K5c (revisión): un import de tier 1 que se te presenta vuelve a cero la presión de tier 2, lo aceptes o no.
-      state: conImportDeTier1Presentado(state, evento),
+      state: conParadaDeEvento(conImportDeTier1Presentado(state, evento)),
       logs: [],
       decision: decisionDesdeEvento(state, evento, { franja: 'normal', slot })
     };
   }
-  const opcionId = opcionDelPerfilPara(state, evento);
-  const { state: nextState, logs } = resolverOpcion(state, evento, opcionId, rng, { cronica: state.player.perfil.actual });
+  const { state: nextState, logs } = resolverOpcion(state, evento, vivas[0]?.id ?? evento.options[0].id, rng);
   return encadenar(nextState, logs, evento, slot, rng);
 }
 
@@ -614,9 +710,13 @@ function encadenar(nextState, logs, evento, slot, rng) {
   // de la fase 9Rf gatea el PRIMER evento (arriba, en `aplicar`); si ese
   // pasó, este segundo lo sigue gobernando `probSegundaDecisionPorTipo` como
   // en la fase 2 — el presupuesto no lo pisa.
+  // G2a: el segundo evento se pliega al tope de paradas del split: si ya no entra, ni se tira (cero `rng`).
+  if (slot !== 1 || !quedaParadaDeEvento(nextState)) {
+    return { state: nextState, logs };
+  }
   const probabilidad = BALANCE.edad.probSegundaDecisionPorTipo[tipoDeSplit(nextState)];
-  if (slot === 1 && chance(probabilidad, rng)) {
-    const segundoEvento = elegirEvento(nextState, rng, { excluirId: evento.id });
+  if (chance(probabilidad, rng)) {
+    const segundoEvento = elegirEventoDelSplit(nextState, rng, { excluirId: evento.id });
     if (segundoEvento) {
       const segundo = presentarOResolver(nextState, segundoEvento, 2, rng);
       return { ...segundo, logs: [...logs, ...segundo.logs] };
@@ -633,5 +733,10 @@ export function resolverAuto(state, decision, rng) {
     const valor = state.player.stats[decision.datos.statRelevante] ?? 50;
     return { resultado: clamp(gauss(valor / 100, entrada.spread, rng), 0, 1) };
   }
-  return elegirOpcionAutomatica(state, decision, rng);
+  // G2a: el bot es un jugador con tu perfil (`opcionDelPerfil`): elige lo mismo que antes elegía el motor por vos, así el
+  // modelo no cambia salvo por el tope. La bifurcación, que ya frenaba, se sigue contestando como siempre (sus pesos).
+  if (decision.datos.evento.bifurcacion) {
+    return elegirOpcionAutomatica(state, decision, rng);
+  }
+  return { opcionId: opcionDelPerfilPara(state, decision.datos.evento) };
 }

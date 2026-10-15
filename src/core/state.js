@@ -66,7 +66,8 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
     // Fase 9Rf: el cupo de interrupciones del split. `systems/presupuesto.js`
     // lo fija al arrancar cada split; `core/pipeline.js` descuenta una por
     // pausa. Objeto completo desde el arranque, nunca null (trampa T4).
-    presupuesto: { total: BALANCE.partida.maxDecisionesPorSplit, gastadas: 0 },
+    // G2a: `eventos`, la parada de evento del split (`BALANCE.eventos.paradasPorSplit`).
+    presupuesto: { total: BALANCE.partida.maxDecisionesPorSplit, gastadas: 0, eventos: 0 },
     // Cache de "dónde estás parado". La fuente de verdad es calcularContexto();
     // esto existe para la UI, los logs y para no recalcularlo en cada filtro.
     contexto: null,
@@ -494,6 +495,8 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // una fecha marcada), la foto (`firmaDeLaCola`, `core/cola.js`) de la última vez que frenó en la cola. Mientras la
       // foto no cambie y no haya un hito ni palanca, esa parada la resuelve tu perfil y se narra. `null` = no frenó todavía.
       colaFirmas: { cierre: null, momento: null },
+      // G2a: las paradas de la cola del año calendario (`core/cola.js`, tope `BALANCE.cola.paradasPorAnio`).
+      colaAnio: null,
       // Fase 9: "llamar al representante" (PLAN.md §9.6) rebaraja la mano de
       // ofertas una única vez en toda la carrera.
       llamadaRepresentante: false,

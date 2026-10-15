@@ -103,6 +103,9 @@ export const BALANCE = {
     // 1 = "nunca dos veces en el mismo split". No se retunea acá (regla 2): el
     // ajuste fino de los cooldown del catálogo es 9Rg.
     cooldownMinimoSplits: 1,
+    // G2a (PLANUI §0.9, "el perfil no decide nada"): todo evento con dos opciones o más frena, y el split frena por
+    // evento a lo sumo estas veces, en el amateur y en el pro. Lo que no entra no se sortea (`systems/events.js`).
+    paradasPorSplit: 1,
 
     // Fase 12d (PLAN.md §12.3, `core/previa.js`): terciles medidos con una
     // sonda de una sola vez sobre los 1416 efectos reales del catálogo,
@@ -670,6 +673,7 @@ export const BALANCE = {
     // segun cuanto cambio el contexto en lo que va del split (fase 2, regla:
     // novedad = densidad; ver core/presupuesto.js). Un split denso casi
     // siempre pide una segunda decision; uno comprimido casi nunca.
+    // G2a: se pliega al tope `eventos.paradasPorSplit`: si el split ya gastó su parada de evento, ni se tira.
     probSegundaDecisionPorTipo: { denso: 0.85, normal: 0.4, comprimido: 0.12 }
   },
 
@@ -1562,7 +1566,10 @@ export const BALANCE = {
     palancaMedidaPct: {
       cierre: 3.3,
       momento: 95
-    }
+    },
+    // G2a (PLANUI §0.9): la cola ya no resuelve por el perfil. Una parada que no frena no pasa, y fuera de los hitos frenan a
+    // lo sumo estas por año calendario (`core/cola.js`).
+    paradasPorAnio: 1
   },
 
   // Fase 9R5a: la carrera termina. Fase 10a la reescribe (PLAN.md §10.1):
