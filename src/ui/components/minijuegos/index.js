@@ -11,6 +11,10 @@ import { montar as montarDodge } from './dodge.js';
 import { montar as montarLaVision } from './laVision.js';
 import { montar as montarElKite } from './elKite.js';
 import { montar as montarElTeleport } from './elTeleport.js';
+// G1 (PLANUI §0.9, "Variedad"): las dos mecánicas universales, de cualquier rol (mid y support tenían solo 4 de mapa).
+// El dato (`data/minijuegos.json`) lo registra el motor; si todavía no está, la parada igual las monta (`components/varaG1.js`).
+import { montar as montarLaCorrida } from './laCorrida.js';
+import { montar as montarLaPizarra } from './laPizarra.js';
 
 // Los 10 minijuegos (5 de la fase 4, migrados de index.html en la fase T6; (PLAN.md §8.5 los
 // dejó sin mover a propósito "porque la fase 12 les cambia la
@@ -28,8 +32,15 @@ export const MONTAR_MINIJUEGO = {
   dodge: montarDodge,
   la_vision: montarLaVision,
   el_kite: montarElKite,
-  el_teleport: montarElTeleport
+  el_teleport: montarElTeleport,
+  la_corrida: montarLaCorrida,
+  la_pizarra: montarLaPizarra
 };
+
+// La mecánica de un id; si el registro no la tiene, la corrida (universal), así una parada nunca queda sin juego.
+export function montadorDe(id) {
+  return MONTAR_MINIJUEGO[id] ?? montarLaCorrida;
+}
 
 // Fase 9R0b: el motor recibía el `resultado` 0-1 y seguía de largo, así que
 // el jugador nunca sabía si había clavado el minijuego. La traducción de ese
@@ -41,6 +52,7 @@ import { minijuegoPorId, lecturaDeVentana } from "../../../core/minijuegos.js";
 
 export { veredictoDeMinijuego } from "../../../core/minijuegos.js";
 export { marcarHit, marcarMiss } from './comun.js';
+export * as g1 from '../varaG1.js';
 
 // La apuesta, antes de jugar (fase 9R4d). Hasta acá entrabas al minijuego sin
 // saber qué te estabas jugando y lo descubrías al terminar, en el beat de
@@ -91,7 +103,8 @@ export function crearApuesta(decision, state, { resto = '' } = {}) {
   if (lectura) {
     cabecera.appendChild(el('span', 'minijuego-apuesta-kicker', `SE JUEGA ${(NOMBRE_STAT[lectura.stat] ?? lectura.stat).toUpperCase()}`));
   }
-  if (decision.datos.ronda) {
+  // G1: con `g1` la dificultad la dice la vara (la mesa de la parada); la etiqueta por ronda de antes ya no es verdad
+  if (decision.datos.ronda && !decision.datos.g1) {
     const rondaLabel = decision.datos.ronda === 'internacional' ? 'INTERNACIONAL' : (decision.datos.ronda === 'final' ? 'FINAL' : 'SEMIS');
     const difLabel = decision.datos.ronda === 'internacional' ? 'DIFICULTAD MÁXIMA' : (decision.datos.ronda === 'final' ? 'DIFICULTAD ELEVADA' : 'DIFICULTAD ESTÁNDAR');
     cabecera.appendChild(el('span', 'minijuego-apuesta-ronda', `${rondaLabel} · ${difLabel}`));

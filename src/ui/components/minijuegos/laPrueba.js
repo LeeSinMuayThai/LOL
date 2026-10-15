@@ -1,7 +1,14 @@
 // La Prueba (fase 4). Migrado de index.html en la fase T6 — ver
 // `robarBaron.js` para el porqué del `rngUi` como parámetro.
-export function montar(container, state, onDone, rngUi) {
-  const total = 5;
+import { dificultadDe, ventanaPorStat } from './comun.js';
+
+// G1 (PLANUI §0.9, "Variedad"): cuánto queda cada blanco lo abre `mecanica` (antes, 900 ms para todos).
+export const BLANCOS = 5;
+const VIDA_BLANCO_MS = [720, 1100];
+
+export function montar(container, state, onDone, rngUi, datos = null) {
+  const vidaBlanco = ventanaPorStat(state.player.stats.mecanica, VIDA_BLANCO_MS[0], VIDA_BLANCO_MS[1], dificultadDe(state, datos));
+  const total = BLANCOS;
   let aciertos = 0;
   let ronda = 0;
 
@@ -26,7 +33,7 @@ export function montar(container, state, onDone, rngUi) {
     const vencido = setTimeout(() => {
       blanco.remove();
       siguiente();
-    }, 900);
+    }, vidaBlanco);
 
     blanco.addEventListener('click', () => {
       clearTimeout(vencido);

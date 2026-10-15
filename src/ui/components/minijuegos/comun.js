@@ -28,6 +28,18 @@ export function factorDificultadRonda(ronda) {
   return BALANCE.serie.dificultadMinijuegoPorRonda[ronda] ?? 1.0;
 }
 
+// G1 (PLANUI §0.9, contrato de G1): con `datos.g1` la dificultad de la ronda la pone el motor. `factorEscalada` (≤ 1)
+// multiplica la ventana o el tiempo, así que acá entra como su inverso (la misma forma que `factorDificultadRonda`:
+// `ventanaPorStat` divide por la dificultad). El VOD del Profesional, activado en esta ronda (`datos.poderActivo`), la
+// hace más lenta: `efecto.velocidad` (0,75 = todo al 75%). Sin `g1`, la dificultad por ronda de siempre.
+export function dificultadDe(state, datos) {
+  const g1 = datos?.g1;
+  if (!g1) return factorDificultadRonda(state?.serie?.ronda);
+  const factor = g1.factorEscalada > 0 ? g1.factorEscalada : 1;
+  const vod = datos.poderActivo && g1.poder?.id === 'vod' ? g1.poder.efecto?.velocidad : null;
+  return (vod > 0 ? vod : 1) / factor;
+}
+
 // Cuánto amortigua `factorDificultadRonda` el efecto final sobre un timing
 // (caída de last hit, velocidad de robarBaron): sin esto, el salto de 1.4x
 // en el internacional se sentiría desproporcionado contra el 1.2x de la final.
@@ -46,14 +58,16 @@ export function ventanaPorStat(valor, minimo, maximo, dificultad = 1.0) {
   return Math.max(piso, base / (dificultad > 0 ? dificultad : 1.0));
 }
 
+// `detalle` (G1): lo que la mecánica sabe de la jugada para el "tan cerca" de después (la zona y dónde frenaste, los ms
+// de la llamada). Opcional: la parada lo lee si viene.
 export function unaSolaVez(onDone) {
   let usado = false;
-  return (resultado) => {
+  return (resultado, detalle) => {
     if (usado) {
       return;
     }
     usado = true;
-    onDone(Math.max(0, Math.min(1, resultado)));
+    onDone(Math.max(0, Math.min(1, resultado)), detalle);
   };
 }
 

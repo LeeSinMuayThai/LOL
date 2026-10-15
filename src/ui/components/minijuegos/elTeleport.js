@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, escuchaTeclado, motionReducido, factorDificultadRonda } from './comun.js';
+import { unaSolaVez, ventanaPorStat, escuchaTeclado, motionReducido, dificultadDe } from './comun.js';
 
 // "El teleport" (fase 9R4c). Es de timing como el Barón, pero al revés: el TP
 // tarda en canalizar, así que hay que apretar ANTES de que la pelea esté en la
@@ -9,11 +9,15 @@ import { unaSolaVez, ventanaPorStat, escuchaTeclado, motionReducido, factorDific
 // escalón, con el número a la vista. Se pierde la animación, no la decisión.
 
 const PASOS = 20;
+// Lo que la escala de distancia suma a la media zona (a esa distancia del centro, el resultado es 0). La lee `components/varaG1.js`.
+export const MARGEN_DISTANCIA = 14;
+// El ancho de la zona, entre estos topes según `macro` (`ventanaPorStat`).
+export const ANCHO_ZONA = [12, 26];
 
-export function montar(container, state, onDone, rngUi) {
+export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);
-  const dificultad = factorDificultadRonda(state.serie?.ronda);
-  const ancho = ventanaPorStat(state.player.stats.macro, 12, 26, dificultad);
+  const dificultad = dificultadDe(state, datos);
+  const ancho = ventanaPorStat(state.player.stats.macro, ANCHO_ZONA[0], ANCHO_ZONA[1], dificultad);
   const reducido = motionReducido();
   const canalizacion = 18; // lo que el TP tarda, en la misma escala 0-100
   const centro = 30 + rngUi() * 45;
@@ -55,7 +59,7 @@ export function montar(container, state, onDone, rngUi) {
     pintar();
   }
 
-  function cerrar(resultado) {
+  function cerrar(resultado, detalle = { tipo: 'tarde' }) {
     if (!vivo) {
       return;
     }
@@ -63,7 +67,7 @@ export function montar(container, state, onDone, rngUi) {
     clearInterval(reloj);
     soltarTeclado();
     boton.disabled = true;
-    terminar(resultado);
+    terminar(resultado, detalle);
   }
 
   function tirarTp() {
@@ -73,7 +77,8 @@ export function montar(container, state, onDone, rngUi) {
     // Llegás donde va a estar el reloj cuando termine la canalización.
     const llegada = posicion + canalizacion;
     const distancia = Math.abs(llegada - centro);
-    cerrar(Math.max(0, 1 - distancia / (ancho / 2 + 14)));
+    const escala = ancho / 2 + MARGEN_DISTANCIA;
+    cerrar(Math.max(0, 1 - distancia / escala), { tipo: 'distancia', pos: llegada, centro, escala });
   }
 
   boton.addEventListener('click', tirarTp);

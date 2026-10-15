@@ -254,3 +254,202 @@ html[data-reducido] .minijuego-espera-boton::after { animation: none; }
   .minijuego-charla-opcion { gap: 10px; font-size: 14px; }
   .minijuego-charla-p { font-size: 16px; }
 }
+
+/* ==========================================================================
+   G1 (PLANUI §0.9): LA FINAL CON LAS MANOS. El camino del torneo y la tira de
+   mapas (lo que hace que una final se sienta final: el oro de la copa, el
+   marcador grande, el mapa que se juega latiendo), la mesa (la vara, el poder,
+   DESEMPATE o REVANCHA, la charla, el premio) y el veredicto con su sello.
+   Beats de 300-700 ms, sin bloquear; nada se anima con motion reducido.
+   ========================================================================== */
+[data-g1] { --mj-luz: var(--gold); }
+.g1-camino {
+  position: relative; display: grid; gap: 10px; margin: -4px 0 4px; padding: 14px 16px 12px; border-radius: var(--r-control); overflow: hidden;
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--gold) 13%, transparent), transparent 46%),
+    radial-gradient(80% 140% at 100% 0%, color-mix(in srgb, var(--gold) 9%, transparent), transparent 60%), var(--panel-hondo);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 32%, var(--linea)), inset 0 2px 0 var(--gold);
+  animation: g1-entra 460ms var(--expo) both;
+}
+@keyframes g1-entra { from { opacity: 0; transform: translateY(-8px); } }
+.g1-torneo { margin: 0; font: 700 var(--t-rotulo) / 1.2 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--gold); }
+.g1-etapas { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.g1-etapas li {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px; border-radius: var(--r-chip);
+  font: 700 11px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-mute);
+  box-shadow: inset 0 0 0 1px var(--linea); animation: g1-pip 380ms var(--expo) both; animation-delay: calc(var(--i, 0) * 70ms);
+}
+.g1-etapas li[data-estado="ganada"] { color: var(--up); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--up) 45%, transparent); }
+.g1-etapas li[data-estado="perdida"] { color: var(--down); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--down) 45%, transparent); }
+.g1-etapas li[data-estado="actual"] { color: var(--oscuro-total); background: var(--gold); box-shadow: 0 0 22px -4px color-mix(in srgb, var(--gold) 70%, transparent); }
+.g1-etapas i { font-style: normal; }
+@keyframes g1-pip { from { opacity: 0; transform: translateY(5px) scale(0.96); } }
+
+.g1-serie { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
+.g1-marcador { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.g1-equipo { display: inline-flex; align-items: center; gap: 7px; min-width: 0; font: 800 14px / 1 var(--f-display); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); }
+.g1-equipo--ellos { flex-direction: row-reverse; color: var(--ink-dim); }
+.g1-logo { width: 26px; height: 26px; flex: none; }
+.g1-goles {
+  display: inline-grid; place-items: center; min-width: 40px; height: 44px; padding: 0 6px; border-radius: 8px;
+  font: 900 34px / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--ink);
+  background: var(--oscuro-total); box-shadow: inset 0 0 0 1px var(--linea-fuerte);
+}
+.g1-goles[data-lado="nos"] { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 55%, transparent), inset 0 -2px 0 var(--gold); }
+.g1-goles[data-suma] { animation: g1-suma 560ms var(--expo); }
+@keyframes g1-suma { 0% { transform: scale(1); } 30% { transform: scale(1.22); color: var(--gold); } 100% { transform: scale(1); } }
+.g1-guion { font: 900 22px / 1 var(--f-display); font-style: normal; color: var(--ink-mute); }
+.g1-mapas { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.g1-mapas li {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 6px;
+  font: 700 11px / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute);
+  background: color-mix(in srgb, var(--oscuro-total) 60%, transparent); box-shadow: inset 0 0 0 1px var(--linea);
+  animation: g1-pip 380ms var(--expo) both; animation-delay: calc(120ms + var(--i, 0) * 60ms);
+}
+.g1-mapas i { font-style: normal; font-size: 13px; }
+.g1-mapas li[data-res="W"] { color: var(--up); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--up) 50%, transparent), inset 0 -2px 0 var(--up); }
+.g1-mapas li[data-res="L"] { color: var(--down); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--down) 50%, transparent), inset 0 -2px 0 var(--down); }
+.g1-mapas li[data-res="casi"] { color: var(--gold); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 50%, transparent); }
+.g1-mapas li[data-res="actual"] {
+  color: var(--ink); background: color-mix(in srgb, var(--gold) 18%, var(--panel-hondo));
+  box-shadow: inset 0 0 0 1px var(--gold), 0 0 18px -4px color-mix(in srgb, var(--gold) 70%, transparent);
+  animation: g1-pip 380ms var(--expo) both, g1-late 1600ms ease-in-out 700ms infinite;
+}
+@keyframes g1-late { 50% { box-shadow: inset 0 0 0 1px var(--gold), 0 0 26px -2px color-mix(in srgb, var(--gold) 85%, transparent); } }
+.g1-momento {
+  justify-self: start; margin: 0; padding: 5px 10px; border-radius: var(--r-chip);
+  font: 800 12px / 1.2 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, transparent); animation: g1-pip 420ms var(--expo) 380ms both;
+}
+.g1-momento[data-tono="peligro"] { color: var(--down); background: color-mix(in srgb, var(--down) 13%, transparent); }
+
+.g1-swiss { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.g1-swiss-record { font: 900 38px / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--ink); }
+.g1-swiss-pips { display: inline-flex; align-items: center; gap: 5px; }
+.g1-swiss-pips i { width: 16px; height: 16px; border-radius: 4px; box-shadow: inset 0 0 0 1.5px var(--linea-fuerte); animation: g1-pip 360ms var(--expo) both; animation-delay: calc(var(--i, 0) * 60ms); }
+.g1-swiss-pips i[data-tipo="v"][data-llena] { background: var(--up); box-shadow: 0 0 10px -2px var(--up); }
+.g1-swiss-pips i[data-tipo="d"][data-llena] { background: var(--down); box-shadow: 0 0 10px -2px var(--down); }
+.g1-swiss-sep { width: 1px; height: 18px; margin: 0 4px; background: var(--linea-fuerte); }
+.g1-swiss small { font: 600 11px / 1.3 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-mute); }
+/* con el reloj corriendo, el camino se achica a la tira (sigue a la vista: el marcador no se esconde) */
+[data-g1][data-fase="juego"] .g1-camino { padding: 8px 14px; gap: 6px; }
+[data-g1][data-fase="juego"] .g1-camino :is(.g1-etapas, .g1-momento, .g1-swiss small) { display: none; }
+
+/* ---------- la mesa: la vara, los chips, el premio ---------- */
+.g1-mesa { display: grid; gap: 10px; animation: g1-entra 420ms var(--expo) 160ms both; }
+.g1-regla {
+  display: grid; gap: 4px; padding: 12px 16px; border-radius: var(--r-control);
+  background: var(--panel-hondo); box-shadow: inset 3px 0 0 var(--gold), inset 0 0 0 1px var(--linea);
+}
+.g1-regla-k { font: 700 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--gold); }
+.g1-regla-texto { margin: 0; font: 800 clamp(18px, 2.2vw, 22px) / 1.2 var(--f-display); color: var(--ink); }
+.g1-regla-antes { font-size: 13px; color: var(--ink-mute); }
+.g1-regla-antes[hidden] { display: none; }
+.g1-regla-stat { font: 500 11px / 1.3 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); }
+.g1-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.g1-chip {
+  display: inline-grid; align-content: center; gap: 2px; min-height: 40px; padding: 7px 12px; border-radius: var(--r-control);
+  background: var(--panel-hondo); box-shadow: inset 0 0 0 1px var(--linea); color: var(--ink); font-size: 13px; line-height: 1.3; text-align: left;
+}
+.g1-chip b { font-weight: 800; }
+.g1-chip small { color: var(--ink-dim); font-size: 12px; max-width: 46ch; }
+.g1-poder-k { font: 700 10px / 1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mute); }
+button.g1-poder {
+  all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: inline-grid; align-content: center; gap: 2px; min-height: 40px; padding: 7px 12px 7px 40px;
+  border-radius: var(--r-control); background: var(--panel-hondo); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 45%, var(--linea)); color: var(--ink); font-size: 13px; line-height: 1.3;
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 120ms ease;
+}
+button.g1-poder::before { content: '✦'; position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 17px; color: var(--gold); transition: transform 300ms var(--expo); }
+button.g1-poder:hover { background: color-mix(in srgb, var(--gold) 8%, var(--panel-hondo)); }
+button.g1-poder:active { transform: scale(0.98); }
+button.g1-poder:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+button.g1-poder[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--gold) 20%, var(--panel-hondo));
+  box-shadow: inset 0 0 0 2px var(--gold), 0 0 24px -6px color-mix(in srgb, var(--gold) 80%, transparent);
+}
+button.g1-poder[aria-pressed="true"]::before { transform: translateY(-50%) rotate(180deg) scale(1.15); }
+button.g1-poder[aria-pressed="true"] .g1-poder-k { color: var(--gold); }
+button.g1-poder:disabled { cursor: default; }
+.g1-poder[data-usado] { opacity: 0.55; }
+.g1-rotulo { min-height: 0; padding: 8px 12px; font: 800 12px / 1 var(--f-mono); letter-spacing: 0.16em; text-transform: uppercase; }
+.g1-rotulo[data-tipo="desempate"] { color: var(--gold); box-shadow: inset 0 0 0 1.5px var(--gold); }
+.g1-rotulo[data-tipo="revancha"] { color: var(--down); box-shadow: inset 0 0 0 1.5px var(--down); }
+.g1-charla[data-vacia] { opacity: 0.6; }
+.g1-premio { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; padding: 10px 14px; border-radius: var(--r-control); background: var(--panel-hondo); box-shadow: inset 0 0 0 1px var(--linea); font-size: 13px; }
+.g1-premio span { font: 700 10px / 1.6 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mute); }
+/* jugando: la vara queda (se juega contra ella); los chips se pliegan al poder activo */
+.g1-mesa[data-jugando] .g1-regla { padding: 8px 14px; }
+.g1-mesa[data-jugando] :is(.g1-charla, .g1-premio, .g1-regla-stat, button.g1-poder[aria-pressed="false"], div.g1-poder) { display: none; }
+.g1-mesa[data-jugando] button.g1-poder small { display: none; }
+[data-g1][data-fase="resultado"] .g1-mesa { display: none; }
+
+/* ---------- el veredicto: el sello ---------- */
+.g1-veredicto { gap: 10px; }
+.g1-veredicto-sello {
+  padding: 8px 20px 6px; border-radius: 6px; font: 900 clamp(30px, 5vw, 44px) / 1 var(--f-display); font-stretch: var(--ancho-momento);
+  letter-spacing: 0.08em; color: var(--mj-res); box-shadow: inset 0 0 0 3px var(--mj-res);
+  transform: rotate(-3deg); animation: g1-sello 520ms cubic-bezier(.2, 1.4, .4, 1) both;
+}
+@keyframes g1-sello { 0% { opacity: 0; transform: rotate(-3deg) scale(1.7); } 60% { opacity: 1; } 100% { transform: rotate(-3deg) scale(1); } }
+.g1-cerca { font: 700 13px / 1.4 var(--f-mono); letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--ink); animation: g1-pip 380ms var(--expo) 420ms both; }
+
+/* ---------- la corrida y la pizarra ---------- */
+.mj-corrida-pips { display: flex; justify-content: center; gap: 8px; margin: 0 0 12px; }
+.mj-corrida-pips i { width: 28px; height: 6px; border-radius: 3px; background: var(--linea-fuerte); transition: background-color 200ms ease; }
+.mj-corrida-pips i[data-estado="actual"] { background: var(--gold); }
+.mj-corrida-pips i[data-estado="bien"] { background: var(--up); }
+.mj-corrida-pips i[data-estado="mal"] { background: var(--down); }
+.mj-corrida-barra { height: 40px; }
+.mj-corrida-barra .minijuego-zona[data-resultado="bien"] { background: color-mix(in srgb, var(--up) 70%, transparent); }
+.mj-corrida-barra .minijuego-zona[data-resultado="mal"] { background: color-mix(in srgb, var(--down) 45%, transparent); box-shadow: inset 0 0 0 1px var(--down); }
+.mj-pizarra { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+.mj-pizarra-carta {
+  all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: grid; place-items: center; min-height: 64px; padding: 8px; border-radius: 8px;
+  text-align: center; font: 700 13px / 1.2 var(--f-cuerpo); color: var(--ink); background: var(--panel-claro); box-shadow: inset 0 0 0 1px var(--linea-fuerte);
+  transition: transform 220ms var(--expo), background-color 160ms ease, box-shadow 160ms ease;
+}
+.mj-pizarra-carta:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.mj-pizarra-carta > span { grid-area: 1 / 1; }
+.mj-pizarra-dorso { font: 800 15px / 1 var(--f-mono); color: var(--ink-mute); }
+.mj-pizarra-carta:is([data-estado="vista"], [data-estado="abierta"], [data-estado="par"], [data-estado="error"]) .mj-pizarra-dorso,
+.mj-pizarra-carta[data-estado="tapada"] .mj-pizarra-cara { visibility: hidden; }
+.mj-pizarra-carta[data-estado="tapada"] { background: radial-gradient(90% 90% at 50% 0%, color-mix(in srgb, var(--gold) 14%, transparent), transparent 70%), var(--panel-hondo); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 30%, var(--linea)); }
+.mj-pizarra-carta[data-estado="tapada"]:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 1px var(--gold); }
+.mj-pizarra-carta[data-estado="abierta"] { box-shadow: inset 0 0 0 2px var(--gold); }
+.mj-pizarra-carta[data-estado="par"] { cursor: default; color: var(--up); box-shadow: inset 0 0 0 2px var(--up); background: color-mix(in srgb, var(--up) 12%, var(--panel-hondo)); }
+.mj-pizarra-carta[data-estado="error"] { color: var(--down); box-shadow: inset 0 0 0 2px var(--down); animation: mj-sacudon 260ms ease-out; }
+
+/* ---------- el sello del Bo1 con riesgo (en la opción del cara a cara) ---------- */
+.g1-sello-riesgo { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-left: 10px; vertical-align: middle; }
+.g1-sello-riesgo b { padding: 3px 7px; border-radius: 4px; font: 800 10px / 1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; }
+.g1-sello-riesgo[data-riesgo="arriesgado"] b { color: var(--warn); box-shadow: inset 0 0 0 1px var(--warn); }
+.g1-sello-riesgo[data-riesgo="seguro"] b { color: var(--up); box-shadow: inset 0 0 0 1px var(--up); }
+.g1-sello-riesgo small { font: 500 12px / 1.3 var(--f-cuerpo); color: var(--ink-dim); text-transform: none; letter-spacing: 0; }
+
+/* ---------- el stream del Swiss: la ronda se juega en la tarjeta ----------
+   La tarjeta con juego va en una sola columna y en el flujo, debajo del video: así no tapa el tablero del Swiss (la de
+   predicción, sin juego, sigue flotando sobre el video en el escritorio). */
+.tx-pr[data-g1] { grid-template-columns: minmax(0, 1fr); }
+.tx-pr[data-g1] > * { grid-column: 1 / -1; grid-row: auto; }
+@container tx-col (min-width: 1000px) {
+  .tx-sw-stream > .tx-pr[data-g1] { position: relative; left: auto; top: auto; translate: none; width: min(100%, 760px); margin: -48px auto 0; }
+}
+.tx-sw-campeon b { color: var(--ink); }
+.tx-pr .g1-juego { display: grid; gap: 10px; margin-top: 8px; }
+.tx-pr:is([data-fase="juego"], [data-fase="resultado"]) .g1-apuesta { display: none; }
+.tx-pr .g1-juego .minijuego-widget { margin-top: 0; }
+.tx-pr .g1-juego-titulo { margin: 0; font: 800 15px / 1.25 var(--f-display); color: var(--ink); }
+
+@media (max-width: 640px) {
+  .g1-camino { padding: 12px; }
+  .g1-goles { min-width: 34px; height: 38px; font-size: 28px; }
+  .g1-equipo .g1-sigla { font-size: 12px; }
+  .g1-mapas li { height: 28px; padding: 0 9px; font-size: 11px; }
+  .g1-mapa-palabra { display: none; }
+  .mj-pizarra { gap: 6px; }
+  .mj-pizarra-carta { min-height: 56px; font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.g1-camino, .g1-mesa, .g1-etapas li, .g1-mapas li, .g1-momento, .g1-swiss-pips i, .g1-goles, .g1-veredicto-sello, .g1-cerca, .mj-pizarra-carta) { animation: none !important; }
+}
+html[data-reducido] :is(.g1-camino, .g1-mesa, .g1-etapas li, .g1-mapas li, .g1-momento, .g1-swiss-pips i, .g1-goles, .g1-veredicto-sello, .g1-cerca, .mj-pizarra-carta) { animation: none !important; }

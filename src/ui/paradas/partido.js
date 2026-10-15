@@ -33,7 +33,8 @@ export function mostrar(contenedor, decision, ctx) {
   const previa = pintarPrevia(decision, estado);
   const internacional = estado.pendiente?.sistemaId === 'internacional';
   const vista = pieza === 'stream'
-    ? crearStream(contenedor, decision, { estado, previa, mundo, sonido, responder })
+    // (el stream recibe el ctx entero: la ronda del Swiss con minijuego le pasa el RNG de la interfaz a su widget)
+    ? crearStream(contenedor, decision, { ...ctx, estado, previa, mundo, sonido, responder })
     : crearCaraACara(contenedor, decision, { estado, previa, mundo, sonido, responder, modo: pieza === 'fecha' ? 'fecha' : 'serie', internacional });
   // F1 (PLANUI §0.8): en cuartos, semis y final del Mundial, el cuadro de 8 con tu camino, arriba del cara a cara
   const cuadro = pieza === 'serie' && estado.serie?.torneo === 'mundial' ? cuadroDelMundial(estado.internacional, estado.serie.etapa) : null;

@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, marcadorDeRondas, relojDeMinijuego, factorDificultadRonda } from './comun.js';
+import { unaSolaVez, ventanaPorStat, marcadorDeRondas, relojDeMinijuego, dificultadDe } from './comun.js';
 
 // "La visión" (fase 9R4c). Se apagan tres zonas del mapa por un momento y hay
 // que decir cuáles quedaron a oscuras para wardearlas. No es puntería ni
@@ -10,11 +10,11 @@ const ZONAS = [
   'Río de arriba', 'Foso del Barón', 'Tribush azul',
   'Río de abajo', 'Foso del Dragón', 'Tribush rojo'
 ];
-const A_OSCURAS = 3;
+export const A_OSCURAS = 3;
 
-export function montar(container, state, onDone, rngUi) {
+export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);
-  const dificultad = factorDificultadRonda(state.serie?.ronda);
+  const dificultad = dificultadDe(state, datos);
   const msVisible = ventanaPorStat(state.player.stats.macro, 900, 2000, dificultad);
 
   // Barajado determinista con `rngUi` (Fisher-Yates): las tres zonas oscuras

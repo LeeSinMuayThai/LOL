@@ -1,4 +1,4 @@
-import { motionReducido, unaSolaVez, ventanaPorStat, factorDificultadRonda, AMORTIGUACION_DIFICULTAD } from './comun.js';
+import { motionReducido, unaSolaVez, ventanaPorStat, dificultadDe, AMORTIGUACION_DIFICULTAD } from './comun.js';
 
 // Robar Baron (fase 4). Migrado de index.html en la fase T6 —
 // PLAN.md §8.5 lo dejó sin mover a propósito "porque la fase 12 le cambia
@@ -17,10 +17,13 @@ import { motionReducido, unaSolaVez, ventanaPorStat, factorDificultadRonda, AMOR
 // decisión — antes el CSS apagaba sus propias animaciones y esta, dibujada por
 // JS, seguía corriendo igual.
 const PASOS = 20;
+// A qué distancia del centro de la zona el resultado llega a 0 (en la escala 0-100 de la barra). La usa `components/varaG1.js` para
+// decir la vara en unidades de la barra.
+export const ESCALA_DISTANCIA = 45;
 
-export function montar(container, state, onDone, rngUi) {
+export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);
-  const dificultad = factorDificultadRonda(state.serie?.ronda);
+  const dificultad = dificultadDe(state, datos);
   const anchoZona = ventanaPorStat(state.player.stats.mecanica, 14, 32, dificultad);
   const centroZona = 25 + rngUi() * 50;
   const reducido = motionReducido();
@@ -75,6 +78,6 @@ export function montar(container, state, onDone, rngUi) {
     activo = false;
     clearInterval(reloj);
     const distancia = Math.abs(pos - centroZona);
-    terminar(Math.max(0, 1 - distancia / 45));
+    terminar(Math.max(0, 1 - distancia / ESCALA_DISTANCIA), { tipo: 'distancia', pos, centro: centroZona, escala: ESCALA_DISTANCIA });
   }, { once: true });
 }
