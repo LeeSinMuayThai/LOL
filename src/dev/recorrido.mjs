@@ -161,7 +161,7 @@ async function completarElDraft() {
   await page.locator('#regionGrid > *').nth(REGION).click();
   await page.locator('#perfilGrid > *').nth(PERFIL).click();
   await page.locator('#rolGrid > *').nth(ROL).click();
-  for (let i = 0; i < 3; i++) await page.locator('#campeonGrid .campeon-tile:not(.campeon-tile--elegido)').first().click();
+  for (let i = 0; i < 3; i++) await page.locator('#campeonGrid .in-cs-retrato[aria-pressed="false"]').first().click();
   await page.waitForSelector('#run:not([disabled])');
 }
 let webglDisponible = null;
@@ -296,15 +296,28 @@ async function jugarMinijuegoBien() {
       // "Cannot read properties of null" por minijuego (1600 ms / 15 ms), que el recorrido se anotaba como errores del juego.
       if (q('.minijuego-resultado')) return;
       if (!tipo) {
-        if (q('.minijuego-campo')) tipo = 'la_prueba'; else if (q('.minijuego-ola')) tipo = 'last_hit'; else if (q('.minijuego-teclas')) tipo = 'el_combo';
+        if (q('.mj-pizarra-carta')) tipo = 'la_pizarra'; else if (q('.minijuego-campo')) tipo = 'la_prueba'; else if (q('.minijuego-ola')) tipo = 'last_hit'; else if (q('.minijuego-teclas')) tipo = 'el_combo';
         else if (q('.minijuego-metronomo')) tipo = 'el_kite'; else if (q('.minijuego-carriles')) tipo = 'dodge'; else if (q('.minijuego-zonas')) tipo = 'la_vision';
         else if (q('.minijuego-slider')) tipo = 'rueda_de_prensa'; else if (q('.minijuego-barra') && /TP/.test(W.innerText)) tipo = 'el_teleport';
         else if (q('.minijuego-barra')) tipo = 'robar_baron'; else if (/señal|AHORA/i.test(W.innerText)) tipo = 'la_llamada';
+        if (tipo === 'la_pizarra') {
+          // La pizarra: se memoriza la cara de cada carta mientras estan vistas y despues se arma cada par.
+          const cs = [...W.querySelectorAll('.mj-pizarra-carta')]; const por = {};
+          cs.forEach((c, i) => { const k = c.querySelector('.mj-pizarra-cara')?.textContent ?? ''; (por[k] ||= []).push(i); });
+          memo = Object.values(por).flatMap((ix) => ix);
+        }
         if (tipo === 'el_combo') memo = [...W.querySelectorAll('.minijuego-tecla')].map((c) => c.textContent);
         if (tipo === 'la_vision') memo = [...W.querySelectorAll('.minijuego-zona-btn')].map((b) => b.dataset.estado === 'oscura');
         return;
       }
       const ahora = Date.now();
+      if (tipo === 'la_pizarra') {
+        const cs = [...W.querySelectorAll('.mj-pizarra-carta')];
+        if (cs.some((c) => c.dataset.estado === 'error' || c.dataset.estado === 'vista')) return;
+        if (ahora - jugadoEn < 150) return;
+        const i = memo.find((x) => cs[x] && cs[x].dataset.estado === 'tapada');
+        if (i !== undefined) { cs[i].click(); jugadoEn = ahora; }
+      }
       if (tipo === 'la_prueba') { const b = q('.minijuego-blanco'); if (b) { if (!b.dataset.visto) b.dataset.visto = ahora; else if (ahora - b.dataset.visto > 280) b.click(); } }
       if (tipo === 'last_hit') { const m = q('.minijuego-minion:not([disabled])'); if (m && m.dataset.zona === 'ejecucion') m.click(); }
       if (tipo === 'el_combo') { const bs = [...W.querySelectorAll('.minijuego-tecla-btn:not([disabled])')]; if (bs.length && memo.length) { const k = memo.shift(); bs.find((b) => b.textContent === k)?.click(); } }
@@ -852,6 +865,23 @@ else await captura('inicio', { completa: true });
 // V2-C (h): en el inicio, con el draft completo, las letras de los cuartos no abren nada.
 if (MODO === 'recorrido') await probarLetrasInertes('Inicio', Object.values(LETRAS_DE_CUARTOS));
 await page.click('#run');
+// Los momentos (fx/momento.js: el trofeo, el monumento, los cierres de año) frenan en TODAS las velocidades hasta Continuar:
+// un poller los aprieta y los anota (tipo 'momento: <titulo>') para que el recorrido no los cuente como pantalla trabada.
+const momentos = {};
+const pollerMomentos = setInterval(async () => {
+  try {
+    const t = await page.evaluate(() => {
+      const b = [...document.querySelectorAll('button')].find((e) => e.id !== 'continuarBtn' && (e.classList.contains('mo-seguir') || (/^(seguir|continuar)/i.test(e.innerText.trim()) && e.querySelector('kbd'))) && e.checkVisibility({ checkVisibilityCSS: true }) && !e.disabled);
+      if (!b) return null;
+      const raiz = b.closest('[class*=momento], .mo, dialog, section, div') ?? b.parentElement;
+      const txt = (raiz?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 90);
+      b.click();
+      return txt || '(sin texto)';
+    });
+    if (await page.locator('.fj-seguir:visible').count()) { await page.click('.fj-seguir', { timeout: 1500 }).catch(() => {}); momentos['fichaje (Seguir)'] = (momentos['fichaje (Seguir)'] || 0) + 1; L('>> FICHAJE Seguir (poller)'); }
+    if (t) { momentos[t] = (momentos[t] || 0) + 1; L(`>> MOMENTO Continuar: ${t}`); if (Object.keys(momentos).length <= 8 && momentos[t] === 1) await captura('momento'); }
+  } catch { /* la pagina se esta recargando */ }
+}, 400);
 
 const filas = [];
 const visitadas = {};
@@ -894,7 +924,14 @@ for (let it = 0; it < 3000; it++) {
   const topbar = (snap.match(/^TOPBAR: (.*)$/m) || [])[1] || '';
   const edad = edadDe(snap);
   if (snap !== lastSnap) { L(`\n===== STEP ${step} (it ${it}) =====\n${snap}`); lastSnap = snap; stuck = 0; } else stuck++;
-  if (stuck > 6) { L('!! ESTADO TRABADO'); await captura('trabado'); break; }
+  // El fichaje (la firma con el jersey): el primer Seguir salta la animacion y el segundo confirma el numero. Clic real, no `.click()`.
+  if (await page.locator('.fj-seguir:visible').count()) {
+    await page.click('.fj-seguir', { timeout: 3000 }).catch(() => {});
+    momentos['fichaje (Seguir)'] = (momentos['fichaje (Seguir)'] || 0) + 1; L('>> FICHAJE Seguir');
+    await page.waitForTimeout(500); stuck = 0; continue;
+  }
+  if (stuck > 6) { L('!! ESTADO TRABADO');
+    L('   pieza=' + pieza + ' cruda=' + (await piezaCruda(page)) + ' botones visibles: ' + JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('button')].filter((b) => b.checkVisibility({ checkVisibilityCSS: true })).map((b) => (b.id || b.className) + ':' + b.innerText.trim().slice(0, 20)).slice(0, 25))) + ' t=' + (Date.now() - t0) / 1000); await captura('trabado'); break; }
 
   if (pieza === 'tarjeta') {
     await page.waitForTimeout(800);
@@ -911,6 +948,9 @@ for (let it = 0; it < 3000; it++) {
   }
 
   if (pieza === 'minijuego') {
+    // Entre el minijuego y lo que sigue hay momentos (el fichaje, ~4 s hasta su Seguir) donde `data-pieza` sigue en minijuego
+    // sin nada adentro: se espera sin contarlo como parada, y solo es trabada si dura (~10 s).
+    if (!(await page.innerText('#minijuegoTitle').catch(() => '')).trim()) { await page.waitForTimeout(700); stuck -= 0.8; continue; /* el snapshot ya sumo 1: neto +0.2 por espera de 700 ms, ~20 s hasta 'trabado' */ }
     paradas++; step++;
     const tit = await page.innerText('#minijuegoTitle').catch(() => '');
     const ap = await page.innerText('#minijuego').catch(() => '');
@@ -973,7 +1013,8 @@ for (let it = 0; it < 3000; it++) {
         await probarUnoEnElMercado();
       } else { await captura('mercado', { completa: true }); capturadas.add('mercado'); }
     }
-    const cartas = await page.$$eval('#mercadoGrid .mercado-card', (cs) => cs.map((c) => c.innerText.replace(/\n+/g, ' | ')));
+    const SEL_CARTA = (await page.locator('.ms-op').count()) ? '.ms-op' : '#mercadoGrid .mercado-card';
+    const cartas = await page.$$eval(SEL_CARTA,(cs) => cs.map((c) => c.innerText.replace(/\n+/g, ' | ')));
     const fichaTop = (snap.match(/^FICHA: ([\s\S]{0,400})/m) || [])[1] || '';
     const tierActual = tierDe(fichaTop) ?? (pro ? 2 : null);
     const esperarVisible = await page.evaluate(() => { const e = document.querySelector('#mercadoEsperar'); return !!e && !e.hidden; });
@@ -987,9 +1028,30 @@ for (let it = 0; it < 3000; it++) {
     }
     L(`[${step}] ${topbar} | MERCADO (${cartas.length} cartas): ` + cartas.map((c, q) => `\n    ${q === i ? '>>' : '  '} [${sc[q].s.toFixed(0)}] ${c.slice(0, 260)}`).join(''));
     if (i >= 0) {
-      await page.locator('#mercadoGrid .mercado-card').nth(i).locator('.mercado-card-acciones button').first().click();
+      if (SEL_CARTA === '.ms-op') {
+        if (await page.locator('.ms-op').nth(i).isDisabled()) {
+          // ya respondida (la transición después de firmar) o trabada: se espera con captura, como el camino bloqueado
+          const libresOp = await page.locator('.ms-op:not([disabled])').count();
+          L('    > CARTA ELEGIDA DESHABILITADA (' + libresOp + ' cartas habilitadas)');
+          if (!capturadas.has('cartas-bloqueadas')) { await captura('cartas-bloqueadas'); capturadas.add('cartas-bloqueadas'); }
+          const firmarYa = page.locator('.ln-bloquear:not([disabled])').first();
+          if (await firmarYa.count()) await firmarYa.click({ timeout: 5000 }); else { await page.waitForTimeout(1500); stuck++; }
+          continue;
+        }
+        await page.locator('.ms-op').nth(i).click();
+        await page.waitForTimeout(500);
+        const firmar = page.locator('.ln-bloquear:not([disabled])').first();
+        if (await firmar.count()) await firmar.click({ timeout: 5000 }); else await page.keyboard.press('Enter');
+      } else await page.locator('#mercadoGrid .mercado-card').nth(i).locator('.mercado-card-acciones button').first().click();
       if (!pro) { pro = true; await page.waitForTimeout(400); }
-    } else if (esperarVisible) { L('    > ESPERAR'); await page.click('#mercadoEsperar'); }
+    } else if (await page.locator('.ms-camino').count()) {
+      const libres = await page.locator('.ms-camino:not([disabled])').count();
+      L(`    > CAMINO (mercado sin cartas, ${libres} habilitados)`);
+      if (libres) await page.locator('.ms-camino:not([disabled])').first().click({ timeout: 5000 });
+      else { if (!capturadas.has('camino-bloqueado')) { await captura('camino-bloqueado'); capturadas.add('camino-bloqueado'); } await page.waitForTimeout(1500); stuck++; }
+    }
+    else if (esperarVisible) { L('    > ESPERAR'); await page.click('#mercadoEsperar'); }
+    else if (await page.locator('.ms-otra:not([disabled])').count()) { L('    > ESPERAR (ms-otra)'); await page.locator('.ms-otra:not([disabled])').last().click(); }
     else { L('!! mercado sin botones'); await captura('mercado-vacio'); stuck += 3; }
     continue;
   }
@@ -997,10 +1059,11 @@ for (let it = 0; it < 3000; it++) {
   // V2-B: el partido (fecha marcada, plan de Fearless, decisivo, Swiss) es su propia pieza, con el mismo panel `#decision`.
   if (pieza === 'decision' || pieza === 'partido') {
     paradas++; step++;
-    const sel = '#decisionOptions .option-btn:not([disabled])';
+    const sel = '#decisionOptions .option-btn:not([disabled]), #decisionOptions button.opcion:not([disabled])';
     const opts = await leerOpciones(sel);
     const t = await page.innerText('#decisionTitle').catch(() => '');
-    if (!opts.length) { L('!! decision sin opciones'); await captura('decision-sin-opciones'); stuck += 3; continue; }
+    // El resultado de una carta (el dorso "Lo que pasó") se narra solo, sin opciones: se espera, y solo es trabada si dura (~10 s).
+    if (!opts.length) { L('.. decision sin opciones (narrando el resultado?)'); if (!stuck) await captura('decision-sin-opciones'); await page.waitForTimeout(700); stuck -= 0.8; continue; /* el snapshot ya sumo 1: neto +0.2 por espera de 700 ms, ~20 s hasta 'trabado' */ }
     const serieViva = await page.evaluate(() => { const e = document.querySelector('#serieContexto'); return !!e && e.checkVisibility({ checkVisibilityCSS: true }); });
     // V3b: la fecha marcada (pieza `partido` con una decision que no es plan de serie ni Swiss) es su propio tipo; antes caia en 'decision'.
     let tipoP = tipoDeParada('decision', t, opts, { topbar });
@@ -1018,6 +1081,7 @@ for (let it = 0; it < 3000; it++) {
     const descTxt = await page.innerText('#decisionDesc').catch(() => '');
     const perfilPick = (descTxt.match(/Tu perfil iba a ir por "([^"]+)"/) || [])[1];
     if (!MALA && /EL PLAN DEL AÑO/i.test(t)) { const j = opts.findIndex((o) => /IRÍA POR ESTA/i.test(o.full)); if (j >= 0) idx = j; }
+    if (!MALA && opts.some((o) => o.perfil)) idx = opts.findIndex((o) => o.perfil);
     if (!MALA && perfilPick) { const j = opts.findIndex((o) => o.titulo.toLowerCase().includes(perfilPick.toLowerCase())); if (j >= 0) idx = j; }
     if (!MALA && !pro) { const j = opts.findIndex((o) => /contestarle|venderte bien/i.test(o.titulo)); if (j >= 0) idx = j; }
     {
@@ -1103,4 +1167,5 @@ if (MODO === 'recorrido') {
   console.log(`  vamos: ${filas.filter((f) => f.vamos).map((f) => `${f.tipo}=${f.vamos.entra ? 'entra' : 'NO entra'}(${f.vamos.bottom}/${f.vamos.piso})`).join(' ') || 'sin medir'}`);
   console.log(`  numerosVisibles: ${filas.map((f) => `${f.tipo}=${f.numerosVisibles}`).join(' ')}`);
 }
+clearInterval(pollerMomentos); L('MOMENTOS: ' + JSON.stringify(momentos)); console.log('momentos=' + JSON.stringify(momentos));
 await browser.close();
