@@ -28027,7 +28027,7 @@ function pausaDeLaPruebaK6C(seed) {
 let loteK6C = null;
 function loteDeK6C() {
   if (loteK6C !== null) return loteK6C;
-  const lote = { planes: [], ofertas: [], pruebas: [], semanas: [], cronicasConPlan: 0 };
+  const lote = { planes: [], anios: [], ofertas: [], pruebas: [], semanas: [], cronicasConPlan: 0 };
   for (let seed = 1; seed <= SEEDS_K6C; seed += 1) {
     const rng = mulberry32K6C(seed);
     let st = estadoInicialK6C(seed, rng);
@@ -28054,7 +28054,13 @@ function loteDeK6C() {
       const anio = st.flags.anioAmateur;
       // La semana se vive en `amateur`, antes de que `edadCierre` sume el año: su edad es la de antes del split.
       const edad = st.age;
+      // G2b: el plan del año ya no es una pausa, lo arma el perfil al arrancar el año: el estado de justo antes (con el que lo
+      // armó) y la rutina que quedó en `flags.anioAmateur` son lo que se puede medir.
+      const inicioDeAnio = !anio || anio.edad !== st.age ? st : null;
       st = avanzarSplitAutoK6C(st, rng, responder).state;
+      if (inicioDeAnio && st.flags.anioAmateur?.edad === edad) {
+        lote.anios.push({ seed, edad, antes: inicioDeAnio, rutinaId: st.flags.anioAmateur.rutinaId });
+      }
       for (const log of st.logs.slice(antes)) {
         if (log.titulo === 'La semana') {
           lote.semanas.push({ seed, edad, plan: log.plan ?? null, cronica: Boolean(log.cronica), rutinaDelAnio: st.flags.anioAmateur?.rutinaId ?? anio?.rutinaId ?? null });
@@ -28145,39 +28151,21 @@ check(`K6c el mismo club no vuelve a ofrecer en la misma ventana (el año del pl
   if (conDos < ANIOS_CON_DOS_OFERTAS_MINIMO_K6C) throw new Error(`check vacío: ${conDos} años con dos ofertas o más (hacen falta ${ANIOS_CON_DOS_OFERTAS_MINIMO_K6C})`);
 });
 
-check('K6c vos elegís el plan de cada año: cada año del amateur arranca frenando con el resumen y el plan; las semanas siguen el plan elegido; el riesgo evitable sigue frenando', () => {
+check('K6c el perfil arma el plan de cada año: cada año del amateur arranca con su rutina y sin pausa (G2b: ya no es una decisión); las semanas siguen ese plan; el riesgo evitable sigue frenando', () => {
   const problemas = [];
-  const { planes, semanas } = loteDeK6C();
-  // (a) Un plan por año, con el resumen del año anterior y los números de cada opción.
+  const { planes, anios, semanas } = loteDeK6C();
+  // (a) G2b: ninguna pausa de plan (la decisión del año es la carta del cierre); cada año tiene su rutina, una por año.
+  if (planes.length > 0) problemas.push(`${planes.length} pausa(s) de plan_amateur (seed ${planes[0].seed}, ${planes[0].edad} años): el plan ya no se elige`);
   const vistos = new Set();
-  for (const { seed, edad, decision, anioPrevio } of planes) {
+  for (const { seed, edad, rutinaId } of anios) {
     const clave = `${seed}|${edad}`;
     if (vistos.has(clave)) problemas.push(`seed ${seed}: dos planes a los ${edad}`);
     vistos.add(clave);
-    if (anioPrevio) {
-      const resumen = new RegExp(`Tu año de los ${anioPrevio.edad}: arrancaste en .+ y lo cerraste en .+\\. Scouts: .+\\. Ofertas: .+\\.`);
-      if (!resumen.test(decision.descripcion)) problemas.push(`seed ${seed}, ${edad}: el plan no trae el resumen del año ("${decision.descripcion.slice(0, 140)}")`);
-    }
-    const marcadas = decision.opciones.filter((opcion) => opcion.propuesta);
-    if (marcadas.length !== 1 || marcadas[0].id !== decision.datos.propuesta || !/iría por/.test(marcadas[0].propuesta)) {
-      problemas.push(`seed ${seed}, ${edad}: la propuesta del perfil no va marcada en una sola opción`);
-    }
-    const sinNumeros = decision.opciones.filter((opcion) => !(opcion.previa ?? []).some((fila) => /~[+-]\d/.test(fila.texto ?? '')) || !/\d+%/.test(opcion.riesgoTexto ?? ''));
-    if (sinNumeros.length > 0) problemas.push(`seed ${seed}, ${edad}: opciones sin lo que dan o lo que arriesgan en números (${sinNumeros.map((o) => o.label).join(', ')})`);
+    if (!RUTINAS_K6C.amateur.some((rutina) => rutina.id === rutinaId)) problemas.push(`seed ${seed}, ${edad}: el plan del año es "${rutinaId}", que no es una rutina del amateur`);
   }
-  // Cada año del amateur que vivió alguna semana tuvo su plan.
-  const anios = new Set(planes.map((p) => `${p.seed}|${p.edad}`));
-  const edadesPorSeed = new Map();
-  for (const p of planes) edadesPorSeed.set(p.seed, [...(edadesPorSeed.get(p.seed) ?? []), p.edad]);
-  for (const [seed, edades] of edadesPorSeed) {
-    const ordenadas = [...edades].sort((a, b) => a - b);
-    for (let i = 1; i < ordenadas.length; i += 1) {
-      if (ordenadas[i] !== ordenadas[i - 1] + 1) problemas.push(`seed ${seed}: un año del amateur sin plan entre los ${ordenadas[i - 1]} y los ${ordenadas[i]}`);
-    }
-  }
-  const sinPlan = semanas.filter((semana) => !anios.has(`${semana.seed}|${semana.edad}`));
-  if (sinPlan.length > 0) problemas.push(`${sinPlan.length} semana(s) de un año que arrancó sin frenar por el plan (seed ${sinPlan[0].seed}, ${sinPlan[0].edad} años)`);
-  if (anios.size < SEEDS_K6C) problemas.push(`check vacío: ${anios.size} años con plan en ${SEEDS_K6C} carreras`);
+  const sinPlan = semanas.filter((semana) => !vistos.has(`${semana.seed}|${semana.edad}`));
+  if (sinPlan.length > 0) problemas.push(`${sinPlan.length} semana(s) de un año sin plan (seed ${sinPlan[0].seed}, ${sinPlan[0].edad} años)`);
+  if (vistos.size < SEEDS_K6C) problemas.push(`check vacío: ${vistos.size} años con plan en ${SEEDS_K6C} carreras`);
   // (b) Las semanas sin parada siguen el plan elegido: su línea nombra la rutina del plan del año, nunca la del perfil.
   const conPlan = semanas.filter((semana) => semana.plan !== null);
   const titulo = (id) => RUTINAS_K6C.amateur.find((rutina) => rutina.id === id)?.titulo;
@@ -28292,43 +28280,42 @@ check('K6c la vara depende del nivel: contra el mismo club, el que lo supera por
 // `resolverAuto`) no muestra un riesgo evitable (en casa, `planRiesgoEvitable` o más sobre el plan más seguro; o deuda de sueño
 // con otro plan sin ella) si alguna opción está libre; si ninguna, es la menos riesgosa. Cuando la del perfil lo mostraba, la
 // carta lo dice y nombra un plan que de verdad lo muestra (regla 15). Rojo con la propuesta que ignora el riesgo.
-check('K6c-fix la propuesta del perfil no te quema: la propuesta del plan del año (la que acepta el automático) no muestra un riesgo evitable, y si la del perfil lo mostraba la carta lo dice', () => {
-  const problemas = [];
-  const { planes } = loteDeK6C();
-  const evitable = (opcion, opciones) => {
-    const minimo = Math.min(...opciones.map((otra) => otra.riesgoCasa));
-    // Tercera pasada: la deuda cuenta solo si el plan arma el riesgo de lesión o burnout en el año (`semanaRiesgoFisico`).
-    return opcion.riesgoCasa - minimo >= BALANCE_K6C.amateur.planRiesgoEvitable
-      || (opcion.semanaRiesgoFisico !== null && opciones.some((otra) => otra.semanaRiesgoFisico === null));
-  };
-  let cambiadas = 0;
-  for (const { seed, edad, decision } of planes) {
-    const donde = `seed ${seed}, ${edad} años`;
-    const { opciones } = decision;
-    const propuesta = opciones.find((opcion) => opcion.id === decision.datos.propuesta);
-    if (!propuesta) { problemas.push(`${donde}: la propuesta no es una opción de la carta`); continue; }
-    const libres = opciones.filter((opcion) => !evitable(opcion, opciones));
-    if (libres.length > 0 && evitable(propuesta, opciones)) {
-      problemas.push(`${donde}: la propuesta "${propuesta.label}" muestra un riesgo evitable (en casa ${propuesta.riesgoCasa.toFixed(2)}, riesgo físico ${propuesta.semanaRiesgoFisico}) y "${libres[0].label}" no`);
-    }
-    if (resolverAutoAmateurK6C({}, decision).opcionId !== propuesta.id) problemas.push(`${donde}: el automático no acepta la propuesta`);
-    const cambio = /iría por "([^"]+)", pero arriesga/.exec(decision.descripcion);
-    if (cambio) {
-      cambiadas += 1;
-      const delPerfil = opciones.find((opcion) => opcion.label === cambio[1] || opcion.titulo === cambio[1]);
-      if (!delPerfil) problemas.push(`${donde}: la carta dice que tu perfil iría por "${cambio[1]}", que no es una opción`);
-      else if (!evitable(delPerfil, opciones)) problemas.push(`${donde}: la carta dice que "${cambio[1]}" arriesga, y no muestra un riesgo evitable`);
-      if (!/lo más parecido/.test(propuesta.propuesta ?? '')) problemas.push(`${donde}: la opción propuesta no dice que es lo más parecido sin el riesgo`);
-    }
-  }
-  if (cambiadas < PROPUESTAS_CAMBIADAS_MINIMO_K6C) problemas.push(`check vacío: ${cambiadas} cartas con la propuesta del perfil cambiada por riesgo (hacen falta ${PROPUESTAS_CAMBIADAS_MINIMO_K6C})`);
-  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
-});
-
 // K6c-fix, tercera pasada: la deuda de sueño que no llega al riesgo físico (las cuentas de `salud.js` y `atributos.js`) es un costo
 // del plan, no un riesgo evitable: no cambia la propuesta. `riesgoDelPlan` dice la semana en que el plan lo arma, y la carta la
 // muestra. Rojo con "cualquier deuda es evitable" (la segunda pasada: el automático no se lesionaba nunca).
-const { riesgoEvitableDelPlan: riesgoEvitableK6C, riesgoDelPlan: riesgoDelPlanFisicoK6C } = await import('../systems/amateur.js');
+const amateurK6CFix = await import('../systems/amateur.js');
+const { riesgoEvitableDelPlan: riesgoEvitableK6C, riesgoDelPlan: riesgoDelPlanFisicoK6C } = amateurK6CFix;
+// G2b: el plan del año ya no es una carta, lo arma el perfil con la misma propuesta que antes aceptaba el automático. Lo que queda
+// de "la propuesta del perfil no te quema": con el estado en el que se armó, la rutina que quedó no muestra un riesgo evitable si
+// alguna rutina del amateur está libre (la regla de `riesgoEvitableDelPlan`, con las cuentas de `riesgoDelPlan`). Rojo con la
+// propuesta que ignora el riesgo.
+check('K6c-fix el plan que arma el perfil no te quema: la propuesta sobre el estado de cada año de las carreras no muestra un riesgo evitable si otra rutina ofrecida está libre', () => {
+  const problemas = [];
+  const { anios } = loteDeK6C();
+  const { opcionesDeSemana: opcionesK6C, propuestaDelPlan: propuestaK6C } = amateurK6CFix;
+  const rutinas = RUTINAS_K6C.amateur;
+  const TAMANIO = 3;
+  let conRiesgoEvitable = 0;
+  for (const { seed, edad, antes } of anios) {
+    // El sorteo real del año no se conoce desde afuera: se prueban todas las ventanas de TAMANIO rutinas seguidas (y todas juntas).
+    const conjuntos = [rutinas, ...rutinas.map((_, i) => [0, 1, 2].map((k) => rutinas[(i + k) % rutinas.length]))];
+    for (const ofrecidas of conjuntos) {
+      const opciones = opcionesK6C(antes, ofrecidas);
+      const { propuesta } = propuestaK6C(antes, opciones);
+      const riesgos = opciones.map((opcion) => ({ id: opcion.rutina.id, ...riesgoDelPlanFisicoK6C(antes, opcion.rutina) }));
+      const elegida = riesgos.find((riesgo) => riesgo.id === propuesta.rutina.id);
+      const libres = riesgos.filter((riesgo) => riesgoEvitableK6C(riesgo, riesgos) === null);
+      if (libres.length < riesgos.length) conRiesgoEvitable += 1;
+      if (libres.length > 0 && riesgoEvitableK6C(elegida, riesgos) !== null) {
+        problemas.push(`seed ${seed}, ${edad} años: la propuesta "${elegida.id}" muestra un riesgo evitable (en casa ${elegida.casa.toFixed(2)}, físico ${elegida.semanaRiesgoFisico}) y "${libres[0].id}" no`);
+      }
+    }
+  }
+  if (anios.length < SEEDS_K6C || TAMANIO !== 3) problemas.push(`check vacío: ${anios.length} años con plan`);
+  if (conRiesgoEvitable < PROPUESTAS_CAMBIADAS_MINIMO_K6C) problemas.push(`check vacío: ${conRiesgoEvitable} conjuntos de rutinas con un riesgo evitable para esquivar (hacen falta ${PROPUESTAS_CAMBIADAS_MINIMO_K6C})`);
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
 check('K6c-fix la deuda que no llega al riesgo físico no cambia la propuesta; la que lo arma en el año sí, y riesgoDelPlan dice la semana con las cuentas de salud.js', () => {
   const problemas = [];
   const sinNada = { casa: 0.1, semanaDeuda: null, semanaRiesgoFisico: null };
