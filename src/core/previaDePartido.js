@@ -57,7 +57,9 @@ function previaDeSwiss(state, opciones) {
   const e = state.internacional.partidoEnCurso;
   const desglose = desgloseDeFuerza(state);
   const base = e.fuerzaPropia;
-  const ajusteCharla = ajusteDeCharla(opciones.charla === true);
+  // G1: con minijuego (`opciones.minijuego`), el Bo1 no se tira y la charla baja la vara en vez de mover la fuerza.
+  const conMinijuego = Boolean(opciones.minijuego);
+  const ajusteCharla = conMinijuego ? 0 : ajusteDeCharla(opciones.charla === true);
   // F1 (PLANUI §0.8): desde que cada ronda del Swiss frena, la previa nombra tu récord; "vida o muerte" queda para el 2-2.
   const t = state.internacional;
   const r = t.swiss?.record?.[t.jugador] ?? { v: 0, d: 0 };
@@ -75,7 +77,7 @@ function previaDeSwiss(state, opciones) {
     rival: { nombre: `${e.rival} (${nombreVisibleDeLiga(e.ligaRival)})`, fuerza: e.fuerzaRival },
     p: probabilidadDeCruceSwiss(state, base, e.fuerzaRival, ajusteCharla),
     campeon: desglose.campeon,
-    nota: null
+    nota: conMinijuego ? notaDeLaVara(opciones, probabilidadDeCruceSwiss(state, base, e.fuerzaRival)) : null
   });
 }
 
@@ -118,6 +120,13 @@ function previaDeFecha(state, opciones) {
   });
 }
 
+// G1: la regla de la vara en palabras, la misma que juzga el motor (la vara de la decisión si viene, si no la de la p).
+function notaDeLaVara(opciones, p) {
+  const vara = Number.isFinite(opciones.vara) ? opciones.vara : varaDeMapa(p);
+  const baja = opciones.charla === true ? BALANCE.g1.charlaBajaVara : 0;
+  return `No se tira: lo decide el minijuego. ${reglaDeLaVara(Math.max(0, vara - baja))}`;
+}
+
 function previaDeMapa(state, opciones) {
   const { serie } = state;
   const entradaExtra = opciones.entradaExtra ?? null;
@@ -133,14 +142,8 @@ function previaDeMapa(state, opciones) {
   const ajusteCharla = conMinijuego ? 0 : ajusteDeCharla(opciones.charla === true);
   const ajuste = ajustePlan + ajusteCharla;
   const p = probabilidadDeMapa(state, base, ajuste);
-  const ajusteMini = 0;
 
-  let nota = null;
-  if (conMinijuego) {
-    const vara = Number.isFinite(opciones.vara) ? opciones.vara : varaDeMapa(p);
-    const baja = opciones.charla === true ? BALANCE.g1.charlaBajaVara : 0;
-    nota = `El mapa no se tira: lo decide el minijuego. ${reglaDeLaVara(Math.max(0, vara - baja))}`;
-  }
+  const nota = conMinijuego ? notaDeLaVara(opciones, p) : null;
 
   return armarPrevia({
     tipo: 'mapa',
@@ -149,7 +152,7 @@ function previaDeMapa(state, opciones) {
     porQue: porQueDelMundial(state),
     propio: state.career.currentOrg,
     desglose,
-    extras: { minijuego: base * ajusteMini, plan: base * ajustePlan, charla: base * ajusteCharla },
+    extras: { minijuego: 0, plan: base * ajustePlan, charla: base * ajusteCharla },
     fuerzaBase: base,
     fuerzaFinal: fuerzaFinalDeMapa(base, ajuste),
     rival: { nombre: serie.rival.org, fuerza: fuerzaRivalDeMapa(state), campeon: serie.rivalJuega ?? null },

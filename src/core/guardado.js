@@ -74,7 +74,7 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // (ola G, G1, PLANUI §0.9: `career.clase`, la clase del arranque; `career.charlaSegundaUsadaEn`, la segunda charla del
 // vestuario; `career.torneoG1`, el torneo en curso con minijuegos de mapa; y la decisión de minijuego con `datos.g1`). Un
 // guardado de la 16 carga con `migrarDe16`: la clase es el perfil con el que arrancó la carrera (el de la seed o el elegido no
-// quedó guardado: se toma el perfil de hoy, `career.perfil.actual`), sin la inclinación de stats (esa ya no se puede dar al
+// quedó guardado: se toma el perfil de hoy, `player.perfil.actual`), sin la inclinación de stats (esa ya no se puede dar al
 // arranque); el torneo, sin empezar. Una pausa pendiente de antes de G1 se resuelve con la tirada de siempre.
 export const VERSION = 17;
 const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16];
@@ -232,7 +232,7 @@ export function migrarDe16(state) {
     ...state,
     career: {
       ...state.career,
-      clase: state.career.clase ?? state.career.perfil?.actual ?? null,
+      clase: state.career.clase ?? state.player?.perfil?.actual ?? null,
       charlaSegundaUsadaEn: state.career.charlaSegundaUsadaEn ?? null,
       torneoG1: state.career.torneoG1 ?? null
     }

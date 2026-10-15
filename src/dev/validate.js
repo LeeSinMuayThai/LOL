@@ -29447,6 +29447,54 @@ check(NOMBRE_CHECK_W1D, () => {
   if (errorW1D) throw errorW1D;
 });
 
+// --- G1 (PLANUI §0.9, "Las finales se juegan con las manos"): la promesa -------------------------------------------------
+// Un mapa con minijuego (toda final, el que puede cerrar cuartos o semis, cada Bo1 del Swiss) no tira: lo decide
+// `resultado >= vara`. El jugador de prueba contesta alternando justo en la vara (tiene que ganar) y lejos debajo, sin
+// casi (tiene que perder; la revancha del Hambriento lo repite y ahí contesta en la vara). Un motor que tirara después del
+// minijuego, o que corriera la p con él, rompe la igualdad en la mitad de los mapas.
+const SEEDS_G1 = 80;
+const SPLITS_G1 = 30;
+const DEBAJO_DEL_CASI_G1 = 0.05;
+const MUESTRA_MAPAS_G1 = 20;
+const MUESTRA_SWISS_G1 = 5;
+
+check('G1: un mapa con minijuego nunca tira: el resultado del mapa es resultado >= vara (series, finales y Swiss)', () => {
+  const mal = [];
+  let mapas = 0;
+  let swiss = 0;
+  let enLaVara = 0;
+  for (let seed = 1; seed <= SEEDS_G1; seed += 1) {
+    const rng = mulberry32(seed);
+    let estado = createInitialState(seed, rng);
+    let vuelta = 0;
+    const responder = (sistema, st, decision, rngLocal) => {
+      if (!decision.datos?.g1) return sistema.resolverAuto(st, decision, rngLocal);
+      vuelta += 1;
+      const { vara, margenCasi } = decision.datos.g1;
+      const resultado = vuelta % 2 === 0 ? vara : Math.max(0, vara - margenCasi - DEBAJO_DEL_CASI_G1);
+      return { resultado, charla: false, poder: false };
+    };
+    for (let i = 0; i < SPLITS_G1 && !estado.terminado; i += 1) {
+      estado = avanzarSplitAuto(estado, rng, responder).state;
+    }
+    for (const log of estado.logs) {
+      const mini = log.minijuego;
+      if (!mini || typeof mini !== 'object' || (log.resultado !== 'W' && log.resultado !== 'L')) continue;
+      if (log.etapa === 'swiss') swiss += 1;
+      else mapas += 1;
+      if (mini.resultado === mini.vara) enLaVara += 1;
+      if ((mini.resultado >= mini.vara) !== (log.resultado === 'W')) {
+        mal.push(`seed ${seed}: sacó ${mini.resultado} con la vara en ${mini.vara} y el mapa fue ${log.resultado} (${log.message})`);
+      }
+    }
+  }
+  if (mapas < MUESTRA_MAPAS_G1 || swiss < MUESTRA_SWISS_G1 || enLaVara === 0) {
+    mal.push(`muestra chica: ${mapas} mapas de serie, ${swiss} Bo1 del Swiss, ${enLaVara} justo en la vara`);
+  }
+  console.log(`      ${mapas} mapas de serie y ${swiss} Bo1 del Swiss decididos por el minijuego (${enLaVara} justo en la vara)`);
+  if (mal.length > 0) throw new Error(mal.slice(0, 4).join(' | '));
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);
