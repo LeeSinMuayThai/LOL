@@ -1723,7 +1723,10 @@ export function pausaDeFinalJugada(state, final, logs) {
   if (!entrada) {
     return null;
   }
-  const textos = textoDeMinijuego(entrada, state);
+  // Fuera de una liga, el `{liga}` del dato es el torneo de la final.
+  const crudos = textoDeMinijuego(entrada, state);
+  const textos = Object.fromEntries(Object.entries(crudos)
+    .map(([clave, texto]) => [clave, typeof texto === 'string' ? texto.replaceAll('{liga}', final.nombreTorneo) : texto]));
   const torneo = {
     ...torneoG1(state, claveDeTorneo(state, final.tipo)),
     escalon: final.mapas.length,

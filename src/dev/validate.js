@@ -28033,7 +28033,8 @@ function loteDeK6C() {
         lote.ofertas.push({ seed, anio: s.flags.anioAmateur?.edad ?? null, org: decision.datos.org.nombre, decision, nivel: nivelDelJugadorK6C(s) });
         return { opcionId: 'firmar' };
       }
-      if (sistema.id === 'amateur' && motivo === 'minijuego') {
+      // G-fix-copa: la final de la copa también es un minijuego del amateur (`datos.finalJugada`), pero no es la prueba.
+      if (sistema.id === 'amateur' && motivo === 'minijuego' && !decision.datos.finalJugada) {
         lote.pruebas.push({ seed, decision, nivel: nivelDelJugadorK6C(s) });
         return { resultado: 0 };
       }

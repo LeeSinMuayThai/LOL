@@ -200,6 +200,8 @@ export const HORIZONTE_POR_TIPO = {
   'amateur:copa_amateur': 'carrera',
   'amateur:x': 'carrera',
   'amateur:minijuego': 'carrera',
+  // G-fix-copa: un mapa de la final de tier 3 (la copa del torneo chico de la región).
+  'rendimiento:minijuego': 'carrera',
   'mercado:oferta': 'carrera',
   'mercado:minijuego': 'carrera',
   'mercado:fin_mercado': 'carrera',
