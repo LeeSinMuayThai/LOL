@@ -196,6 +196,9 @@ function sinFirmar(state) {
 
 function contextoDelUltimoSplit(state, causa) {
   if (causa === 'sinFirmar') {
+    if (probasteCon(state)) {
+      return `A los ${state.age} ${probasteCon(state)}, y seguís sin club. En la próxima ventana firmás con alguien, o cerrás la carrera acá.`;
+    }
     return `A los ${state.age} le dijiste que no a todo el mercado. En la próxima ventana firmás con alguien, o cerrás la carrera acá.`;
   }
   if (causa === 'edad') {
@@ -665,7 +668,9 @@ export function resolver(state, decision, respuesta, rng) {
       : `El mercado te venía diciendo que no: ${enBaja}.`;
     const motivo = {
       declive: motivoDeclive,
-      sinFirmar: `Le dijiste que no a todo el mercado y la colgaste a los ${state.age}, con la frente alta.`,
+      sinFirmar: probaste
+        ? `${probaste[0].toUpperCase()}${probaste.slice(1)}: la colgaste a los ${state.age}, con la frente alta.`
+        : `Le dijiste que no a todo el mercado y la colgaste a los ${state.age}, con la frente alta.`,
       edad: `La colgaste a los ${state.age}, con la frente alta, antes de que el declive hablara por vos.`
     }[causa] ?? motivoDeclive;
     // G4c: colgarla es ir al último partido; la carrera se cierra después (`cerrarDespedida`).
