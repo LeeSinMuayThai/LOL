@@ -21,6 +21,7 @@ import {
   varaDeMapa, techoDeVara, juzgarMinijuego, factorEscalada, reglaDeLaVara, anchoDelBot, resultadoDelBot, claseDe, poderDeLaRonda,
   claveDeTorneo, torneoG1, minijuegoDelTorneo, elegirMinijuego
 } from '../core/minijuegos.js';
+import { bajaDeCharla } from '../core/minijuegos.js';
 import { BALANCE } from '../data/balance.js';
 import { nombreVisibleDeLiga, nombreVisibleDeLigaOZona } from '../core/ligas.js';
 import { datosDePrensa } from '../core/prensa.js';
@@ -388,7 +389,8 @@ function pausaDeMapa(state, jugada, rng, logsAcum, repeticion = null) {
     entradaExtra: jugada.entradaExtra,
     ajustePlan: jugada.ajustePlan,
     // K4-B: la charla del coach se elige en la misma pausa, antes del minijuego. G1: baja la vara `charlaBajaVara`.
-    charla: { disponible: conCharla, bajaVara: BALANCE.g1.charlaBajaVara },
+    // D122: y vale al menos una unidad de la regla visible ("3 de 4" → "2 de 4"), `bajaDeCharla`.
+    charla: { disponible: conCharla, bajaVara: bajaDeCharla(entrada.id, vara, g1.poder?.efecto?.bajaVara ?? 0) },
     charlaEnElMapa,
     // Lo que la vara ya bajó por un poder en una ronda anterior de este mismo mapa (el bot lo cuenta).
     ajusteBot: repeticion?.ajusteBot ?? 0

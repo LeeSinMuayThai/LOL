@@ -22,6 +22,7 @@ import {
   claveDeTorneo, torneoG1, minijuegoDelTorneo, registrarMinijuegoVisto, textoDeMinijuego, juzgarMinijuego,
   veredictoDeMinijuego, reglaDeLaVara, factorDificultadPorRonda
 } from '../core/minijuegos.js';
+import { bajaDeCharla } from '../core/minijuegos.js';
 import { BALANCE } from '../data/balance.js';
 import { nombreVisibleDeLiga, nombreVisibleDeLigaOZona } from '../core/ligas.js';
 
@@ -163,7 +164,8 @@ function construirParadaSwiss(state, repeticion = null) {
         regla: textos.regla,
         reglaVara: reglaDeLaVara(vara),
         p,
-        charla: { disponible: conCharla, bajaVara: BALANCE.g1.charlaBajaVara },
+        // D122: la charla vale al menos una unidad de la regla visible (`bajaDeCharla`).
+        charla: { disponible: conCharla, bajaVara: bajaDeCharla(entrada.id, vara, g1.poder?.efecto?.bajaVara ?? 0) },
         charlaEnElMapa,
         ajusteBot: repeticion?.ajusteBot ?? 0,
         g1

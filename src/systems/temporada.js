@@ -13,7 +13,13 @@ import {
 import { nivelDeCompaneros, rendimientoBase, rendimientoDePartido, fuerzaDePartido } from '../core/fuerza.js';
 import { jugarPartido, tirarPartido } from '../core/partido.js';
 import { nivelDelJugador } from '../core/ficha.js';
-import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria } from './events.js';
+import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMemoria, pesoEfectivo, opcionDelPerfilPara } from './events.js';
+import { devolverCupo } from './serie.js';
+import {
+  elegirMinijuego, registrarMinijuegoVisto, textoDeMinijuego, minijuegoPorId, juzgarMinijuego, resultadoDelBot,
+  factorDificultadPorRonda, factorEscalada, reglaDeLaVara, varaDeMapa, techoDeVara
+} from '../core/minijuegos.js';
+import { textoDeRangos } from '../core/previa.js';
 import { frenaEnLaCola, hitoDelMomento, conFirmaDeLaCola, enLaCola } from '../core/cola.js';
 import { registrarFecha, registrarSplitJugado } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
@@ -293,6 +299,170 @@ function construirDecisionMomento(state, evento, contexto, fecha, tipoDecision) 
   };
 }
 
+// --- D118 (PLANUI §0.9, G1): el Bo1 que frena se juega con las manos ---
+//
+// Primero elegís cómo lo encarás, con el premio a la vista: 🎲 ARRIESGADO (la opción del momento con más varianza en el
+// partido; la vara más alta) o 🧊 SEGURO (la de menos; la vara más baja). Después se juega el minijuego, sin tirada: el
+// resultado de la fecha es su `paso`. Los efectos del dato se reparten en "si sale" (el outcome de la opción que más
+// empujaba el partido) y "si no sale" (el que más lo hundía), como rangos y a la vista (`textoDeRangos`).
+// En Node el bot elige por perfil y pasa con la p de la fecha corrida por el ajuste MEDIO del momento (lo que hoy movía
+// la p, en promedio): la tasa de victorias de la fecha no se mueve por construcción.
+const MOMENTO_MECANICA_BO1 = 'mapa_decisivo';
+export const MOMENTO_PARADA_BO1 = 'fecha_bo1';
+const ROTULO_RIESGO = { arriesgado: '🎲 Arriesgado', seguro: '🧊 Seguro' };
+
+const ajusteDeOutcome = (outcome) => outcome.effects
+  .filter((effect) => effect.type === 'partido')
+  .reduce((suma, effect) => suma + (effect.min + effect.max) / 2, 0);
+
+function ajusteMedioDelMomento(state, opciones) {
+  const pesoOpciones = opciones.reduce((suma, opcion) => suma + opcion.weight, 0);
+  if (pesoOpciones <= 0) return 0;
+  return opciones.reduce((suma, opcion) => {
+    const pesos = opcion.outcomes.map((outcome) => pesoEfectivo(state, outcome));
+    const total = pesos.reduce((a, b) => a + b, 0);
+    const media = total > 0 ? opcion.outcomes.reduce((a, outcome, i) => a + ajusteDeOutcome(outcome) * pesos[i], 0) / total : 0;
+    return suma + (opcion.weight / pesoOpciones) * media;
+  }, 0);
+}
+
+// `{ arriesgado, seguro }`: cada uno `{ opcion, si, no }` (`si`/`no`: índices de outcome). El arriesgado es la opción con más
+// distancia entre su mejor y su peor partido (a igual distancia, la de mejor techo); el seguro, la de menos entre las otras
+// (a igual distancia, la de mejor piso).
+export function encaresDelMomento(opciones) {
+  const conExtremos = opciones.map((opcion) => {
+    const ajustes = opcion.outcomes.map(ajusteDeOutcome);
+    const max = Math.max(...ajustes);
+    const min = Math.min(...ajustes);
+    return { opcion, max, min, si: ajustes.indexOf(max), no: ajustes.lastIndexOf(min) };
+  });
+  const abierta = (e) => e.max - e.min;
+  const arriesgado = conExtremos.reduce((a, e) => (abierta(e) > abierta(a) || (abierta(e) === abierta(a) && e.max > a.max) ? e : a));
+  const seguro = conExtremos.filter((e) => e !== arriesgado)
+    .reduce((a, e) => (abierta(e) < abierta(a) || (abierta(e) === abierta(a) && e.min > a.min) ? e : a));
+  return { arriesgado, seguro };
+}
+
+const enPuntos = (vara) => Math.round(vara * BALANCE.stats.max) / BALANCE.stats.max;
+
+// La vara de cada encare, desde la de la p del bot, con el techo humano de la mecánica.
+export function varasDelBo1(pBot, minijuego) {
+  const base = Math.min(techoDeVara(minijuego), enPuntos(varaDeMapa(pBot)));
+  const { arriesgadoSubeVara, seguroBajaVara } = BALANCE.g1.bo1;
+  return {
+    arriesgado: Math.min(techoDeVara(minijuego), enPuntos(base + arriesgadoSubeVara)),
+    seguro: Math.max(0, enPuntos(base - seguroBajaVara))
+  };
+}
+
+function premioDelEncare(opcion, encare) {
+  const si = textoDeRangos(opcion.outcomes[encare.si].effects);
+  const no = textoDeRangos(opcion.outcomes[encare.no].effects);
+  return { si: si ? `ganan · ${si}` : 'ganan', no: no ? `pierden · ${no}` : 'pierden' };
+}
+
+// La parada de la elección. `null` si el rol no tiene mecánica de mapa (no pasa: hay universales): queda el momento.
+function construirDecisionBo1(state, evento, contexto, fecha, decisionDelMomento) {
+  const entrada = elegirMinijuego(state, MOMENTO_MECANICA_BO1);
+  if (!entrada) return null;
+  const vivas = opcionesVivas(state, evento, contexto);
+  const pBot = probabilidadDeFechaMarcada(state, { ajustePartido: ajusteMedioDelMomento(state, vivas) });
+  const varas = varasDelBo1(pBot, entrada.id);
+  const encares = encaresDelMomento(vivas);
+  const porOpcion = {};
+  const opciones = ['arriesgado', 'seguro'].map((riesgo) => {
+    const encare = encares[riesgo];
+    const premio = premioDelEncare(encare.opcion, encare);
+    porOpcion[encare.opcion.id] = { riesgo, vara: varas[riesgo], si: encare.si, no: encare.no, premio };
+    return {
+      id: encare.opcion.id,
+      label: resolverTexto(encare.opcion.label, state),
+      descripcion: `${resolverTexto(encare.opcion.descripcion, state)} Si sale: ${premio.si}. Si no: ${premio.no}.`,
+      g1: { riesgo, premio: `Si sale: ${premio.si} · si no: ${premio.no}` }
+    };
+  });
+  return {
+    ...decisionDelMomento,
+    descripcion: `${decisionDelMomento.descripcion} Elegí cómo lo encarás: no se tira, lo decide el minijuego.`,
+    opciones,
+    datos: { ...decisionDelMomento.datos, bo1: { minijuego: entrada.id, pBot, porOpcion } }
+  };
+}
+
+// El minijuego del encare elegido (la segunda pausa, la del contrato de G1: `datos.g1` con la vara y el premio).
+function pausaDelBo1(state, decision, opcionId) {
+  const { bo1, eventoId, pAntesDeDecidir, etiqueta } = decision.datos;
+  const elegida = bo1.porOpcion[opcionId] ? opcionId : Object.keys(bo1.porOpcion)[0];
+  const encare = bo1.porOpcion[elegida];
+  const entrada = minijuegoPorId(bo1.minijuego);
+  const textos = textoDeMinijuego(entrada, state);
+  const fecha = state.career.temporada.fechaEnCurso;
+  const g1 = {
+    vara: encare.vara,
+    margenCasi: BALANCE.g1.margenCasi,
+    escalon: 0,
+    factorEscalada: factorEscalada(0),
+    camino: { torneo: `${etiqueta ?? 'Temporada regular'} · vs ${fecha.rival}`, bo: 1, etapas: [] },
+    poder: null,
+    desempate: false,
+    revancha: false,
+    desempateDisponible: false,
+    premio: { si: encare.premio.si, no: encare.premio.no }
+  };
+  return {
+    state: { ...state, flags: { ...state.flags, minijuegosRecientes: registrarMinijuegoVisto(state, entrada.id) } },
+    logs: [],
+    decision: {
+      tipo: 'opciones',
+      presentacion: 'minijuego',
+      titulo: `${ROTULO_RIESGO[encare.riesgo]} · ${textos.titulo}`,
+      descripcion: textos.descripcion,
+      opciones: [],
+      datos: {
+        motivo: 'bo1',
+        momento: MOMENTO_PARADA_BO1,
+        eventoId,
+        opcionId: elegida,
+        riesgo: encare.riesgo,
+        si: encare.si,
+        no: encare.no,
+        rival: fecha.rival,
+        etiqueta,
+        minijuego: entrada.id,
+        ronda: null,
+        dificultad: factorDificultadPorRonda(null),
+        statRelevante: entrada.statRelevante,
+        apuesta: textos.apuesta,
+        regla: textos.regla,
+        reglaVara: reglaDeLaVara(encare.vara),
+        p: bo1.pBot,
+        pBot: bo1.pBot,
+        pAntesDeDecidir,
+        g1
+      }
+    }
+  };
+}
+
+// El minijuego jugado: el juicio contra la vara decide la fecha (sin tirada) y el outcome ("si sale" o "si no sale").
+function resolverBo1(state, decision, respuesta, rng) {
+  const d = decision.datos;
+  const juicio = juzgarMinijuego(respuesta.resultado ?? 0, d.g1.vara, d.g1.margenCasi);
+  const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === d.eventoId);
+  const opcion = evento.options.find((candidata) => candidata.id === d.opcionId);
+  const outcome = opcion.outcomes[juicio.paso ? d.si : d.no];
+  const sinPartido = { ...outcome, effects: outcome.effects.filter((effect) => effect.type !== 'partido') };
+  const { state: tras, logs } = resolverOpcion(devolverCupo(state), evento, d.opcionId, rng, { outcome: sinPartido });
+  const max = BALANCE.stats.max;
+  const juicioTexto = juicio.paso ? 'salió' : juicio.casi ? 'casi' : 'no salió';
+  const linea = crearLog(
+    'temporada',
+    `${ROTULO_RIESGO[d.riesgo]}: ${juicioTexto} (sacaste ${Math.round(juicio.resultado * max)}; la vara era ${Math.round(d.g1.vara * max)}).`,
+    { minijuego: d.minijuego, vara: d.g1.vara, resultado: juicio.resultado, paso: juicio.paso, casi: juicio.casi, riesgo: d.riesgo, bo1: true }
+  );
+  return resolverFechaMarcada(tras, rng, [linea, ...logs], d.pAntesDeDecidir, { gano: juicio.paso, p: d.pBot });
+}
+
 function arrancarMomento(state, rng, logs, campeonElegido) {
   const fecha = { ...state.career.temporada.fechaEnCurso, campeonElegido };
   const stConCampeon = { ...state, career: { ...state.career, temporada: { ...state.career.temporada, fechaEnCurso: fecha } } };
@@ -321,7 +491,9 @@ function arrancarMomento(state, rng, logs, campeonElegido) {
   if (!frenaEnLaCola(stConCampeon, 'momento', esParadaGarantizada(fecha) || hitoDelMomento(stConCampeon)).frena) {
     return resolverFechaMarcada(stConCampeon, rng, logs, decision.datos.pAntesDeDecidir);
   }
-  return { state: conFirmaDeLaCola(stConCampeon, 'momento'), logs, decision };
+  // D118: el Bo1 que frena se juega con las manos (la elección del encare y, después, el minijuego).
+  const bo1 = construirDecisionBo1(stConCampeon, evento, contexto, fecha, decision);
+  return { state: conFirmaDeLaCola(stConCampeon, 'momento'), logs, decision: bo1 ?? decision };
 }
 
 // K4-A: sin draft. La fecha marcada frena UNA vez —la previa y el momento— y se
@@ -332,7 +504,7 @@ function arrancarFechaMarcada(state, rng, logs) {
 
 // --- Resolver el resultado de la fecha marcada y seguir el calendario ---
 
-function resolverFechaMarcada(state, rng, logsAcum, pAntesDeDecidir = null) {
+function resolverFechaMarcada(state, rng, logsAcum, pAntesDeDecidir = null, decidido = null) {
   const t = state.career.temporada;
   const fecha = t.fechaEnCurso;
   const motivo = motivoPrincipal(fecha.motivos);
@@ -344,7 +516,8 @@ function resolverFechaMarcada(state, rng, logsAcum, pAntesDeDecidir = null) {
   // K3: `state` es el de DESPUÉS del momento (con su `ajustePartido` y su
   // mentalidad); la de antes es la que guardó la pausa. Sin momento (la red de
   // seguridad de `arrancarMomento`) nada la movió: es la misma tirada.
-  const partido = tirarPartido(probabilidadDeFechaMarcada(state), rng);
+  // D118: el Bo1 que frena llega `decidido` (`{ gano, p }`, el `paso` del minijuego): sin tirada.
+  const partido = decidido ?? tirarPartido(probabilidadDeFechaMarcada(state), rng);
   const { gano } = partido;
   const ajustePartido = t.ajustePartido ?? 0;
   const pSinMomento = pAntesDeDecidir ?? partido.p;
@@ -550,6 +723,13 @@ export function resolver(state, decision, respuesta, rng) {
   // Solo hay 'momento': el draft de la fecha desapareció (K4-A) y la reacción
   // postpartido dejó de ser una decisión (fase 9Re, se resuelve sola en
   // `resolverFechaMarcada`).
+  // D118: el Bo1 que frena: la elección del encare abre el minijuego; el minijuego decide la fecha.
+  if (decision.datos.motivo === 'bo1') {
+    return resolverBo1(state, decision, respuesta, rng);
+  }
+  if (decision.datos.bo1) {
+    return pausaDelBo1(state, decision, respuesta.opcionId);
+  }
   const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === decision.datos.eventoId);
   const { state: nextState, logs } = resolverOpcion(state, evento, respuesta.opcionId, rng);
 
@@ -557,6 +737,15 @@ export function resolver(state, decision, respuesta, rng) {
 }
 
 export function resolverAuto(state, decision, rng) {
+  // D118: el bot pasa con la p de la fecha (con el ajuste medio del momento) y elige el encare por perfil.
+  if (decision.datos.motivo === 'bo1') {
+    return { resultado: resultadoDelBot(rng(), decision.datos.g1.vara, decision.datos.pBot) };
+  }
+  if (decision.datos.bo1) {
+    const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === decision.datos.eventoId);
+    const ids = decision.opciones.map((opcion) => opcion.id);
+    return { opcionId: opcionDelPerfilPara(state, { ...evento, options: evento.options.filter((o) => ids.includes(o.id)) }) };
+  }
   const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === decision.datos.eventoId);
   const opcion = weightedPick(opcionesVivas(state, evento), (candidata) => candidata.weight, rng);
   return { opcionId: opcion.id };

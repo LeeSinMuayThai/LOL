@@ -216,9 +216,8 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
           const baja = opcion.charla ? (decision.datos.charla.bajaVara ?? 0) : 0;
           const regla = G1.reglaDeVara(decision.datos.minijuego, G1.varaEfectiva(g1, poderActivo, baja), estadoActual, decision.datos);
           const enFrase = regla.charAt(0).toLowerCase() + regla.slice(1);
-          // con pocos pasos (3 de 4) bajar la vara no siempre mueve el número: se dice igual, sin prometer de más
-          const igual = opcion.charla && regla === G1.reglaDeVara(decision.datos.minijuego, G1.varaEfectiva(g1, poderActivo, 0), estadoActual, decision.datos);
-          efecto.textContent = opcion.charla ? `la charla baja la vara${igual ? ' un poco, y acá el número no cambia' : ''}: ${enFrase}` : `sin la charla: ${enFrase}`;
+          // D122: la charla vale al menos una unidad de la regla (el motor la calcula así, `bajaDeCharla`): "con la charla: 2 de 4"
+          efecto.textContent = opcion.charla ? `con la charla: ${enFrase}` : `sin la charla: ${enFrase}`;
         };
         pintar();
         textosDeLaCharla.push(pintar);

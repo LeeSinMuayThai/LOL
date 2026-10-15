@@ -4,7 +4,7 @@ import {
   fuerzaRivalDeMapa, ajusteDeCharla, proyeccionDelPlan, conPlan, estadoDelProximoMapa
 } from './serie.js';
 import { probabilidadDeFechaMarcada, fuerzaDeFecha, textoPorQueImporta } from './temporada.js';
-import { minijuegoPorId, varaDeMapa, reglaDeLaVara } from './minijuegos.js';
+import { minijuegoPorId, varaDeMapa, reglaDeLaVara, bajaDeCharla } from './minijuegos.js';
 import { BALANCE } from '../data/balance.js';
 import { probabilidadDeCruceSwiss, esVidaOMuerte } from './internacional.js';
 import { nombreVisibleDeLiga } from './ligas.js';
@@ -131,7 +131,7 @@ function notaDeLaVara(opciones, p) {
 // frenadas en la zona", `components/varaG1.js`), con la misma cuenta que juzga el motor.
 function varaDeLaPrevia(opciones, p) {
   const vara = Number.isFinite(opciones.vara) ? opciones.vara : varaDeMapa(p);
-  const baja = opciones.charla === true ? BALANCE.g1.charlaBajaVara : 0;
+  const baja = opciones.charla === true ? (opciones.bajaCharla ?? bajaDeCharla(opciones.minijuego, vara)) : 0;
   return { valor: Math.max(0, vara - baja), minijuego: opciones.minijuego };
 }
 
@@ -246,7 +246,7 @@ export function previaDeDecision(state, decision, { resultadoMinijuego, charla =
   const datos = decision?.datos ?? {};
   if (datos.motivo === 'swiss' && state.internacional?.partidoEnCurso && datos.g1) {
     // G1: el Bo1 del Swiss con minijuego no tiene opciones: una previa, con la regla de la vara.
-    return previaDePartido(state, { tipo: 'swiss', minijuego: datos.minijuego, vara: datos.g1.vara, charla });
+    return previaDePartido(state, { tipo: 'swiss', minijuego: datos.minijuego, vara: datos.g1.vara, charla, bajaCharla: datos.charla?.bajaVara });
   }
   if (datos.motivo === 'swiss' && state.internacional?.partidoEnCurso) {
     const porOpcion = decision.opciones.map((opcion) => ({
@@ -280,6 +280,8 @@ export function previaDeDecision(state, decision, { resultadoMinijuego, charla =
         charla: charla === true && datos.charla?.disponible === true,
         minijuego: datos.minijuego,
         vara: datos.g1?.vara,
+        // D122: lo que baja la charla lo calcula el motor (`bajaDeCharla`, con el poder de la ronda); la previa lo lee de ahí
+        bajaCharla: datos.charla?.bajaVara,
         resultado: resultadoMinijuego
       });
     }

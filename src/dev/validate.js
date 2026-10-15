@@ -31,6 +31,7 @@ import { planDeSemana as planDeSemanaH10 } from '../systems/amateur.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { CATEGORIAS_EVENTO } from '../data/categorias.js';
 import { mulberry32, sample } from '../core/rng.js';
+import { unidadesDeLaRegla } from '../core/minijuegos.js';
 import { createInitialState } from '../core/state.js';
 import {
   avanzarSplit, avanzarSplitAuto, resolverDecision, ETAPAS_SPLIT, pronosticoDeOxidoEnVivo, splitCountDeLaProximaCorrida
@@ -17277,7 +17278,8 @@ function cosechaDePreviasK2d() {
       const fecha = st.career.temporada?.activa ? st.career.temporada.fechaEnCurso : null;
       // K4-A: la fecha marcada ya no tiene draft; su única pausa es el momento.
       if (fecha && 'campeonElegido' in fecha && c.fechas.length < CASOS_K2D * 2) {
-        c.fechas.push(caso);
+        // G1c (D118): la fecha que frena ya no tira (la decide el minijuego, check G1c): acá quedan solo las que tiran.
+        if (!caso.decision.datos?.bo1 && caso.decision.datos?.motivo !== 'bo1') c.fechas.push(caso);
       }
     }
     return respuesta;
@@ -17288,7 +17290,8 @@ function cosechaDePreviasK2d() {
   for (let seed = 1; seed <= SEEDS_MAX_K2D && !llena(); seed += 1) {
     correrCarreraSimulate(seed, 60, espia);
   }
-  if (c.fechas.length < CASOS_K2D || c.minijuegos.length < 10) {
+  // G1c (D118): las fechas que frenan se juegan con el minijuego (sin tirada): ya no hay piso de fechas en la cosecha.
+  if (c.minijuegos.length < 10) {
     throw new Error(`cosecha vacía: ${c.fechas.length} fechas marcadas, ${c.drafts.length} drafts de mapa y ${c.minijuegos.length} minijuegos de mapa`);
   }
   cosechasK2d.set(clave, c);
@@ -17398,7 +17401,8 @@ checkK2d('K2d previa 1: la p de la previa es exactamente la que el motor tira (=
   // Todo momento del catálogo trae un efecto `partido`: en carreras reales casi ninguna fecha marcada llega sin
   // ajuste. La p de antes del momento (la que muestra la previa) se compara igual en todas, contra `pSinMomento`.
   // Ola G: los mapas sin minijuego (el decisivo de K4-B) ya no se exigen (ver `cosechaDePreviasK2d`).
-  if (fechasNeutras + fechasConMomento < 20 || mapasConMinijuego < 10) {
+  // G1c (D118): toda fecha que frena se juega con el minijuego (sin tirada, check G1c): el piso de fechas ya no aplica.
+  if (mapasConMinijuego < 10) {
     throw new Error(`check vacío: ${fechasNeutras} fechas sin ajuste, ${fechasConMomento} con ajuste, ${mapasSinMinijuego} mapas sin minijuego, ${mapasConMinijuego} con minijuego`);
   }
 });
@@ -29632,6 +29636,59 @@ check('G4c: toda carrera que termina por decisión o por edad pasa por el últim
   }
   console.log(`      ${elegidos} retiros por decisión o por edad, ${minijuegos} últimos partidos jugados; monumentos: ${[...tipos].map((t) => t ?? 'ninguno').join(', ')}`);
   if (elegidos === 0 || minijuegos < elegidos) mal.push(`muestra corta: ${elegidos} retiros, ${minijuegos} últimos partidos`);
+  if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
+});
+
+// G1c (D118 y D122, PLANUI §0.9): la promesa de la pieza. El Bo1 que frena en la temporada regular no tiene tirada: la
+// fecha sale del `paso` del minijuego (se responde justo en la vara o un punto abajo, y el resultado tiene que seguirlo); y
+// la charla del coach baja la regla visible al menos una unidad en las mecánicas que se cuentan (`unidadesDeLaRegla`).
+check('G1c el Bo1 que frena no tiene tirada (lo decide el paso del minijuego) y la charla baja la regla al menos una unidad', () => {
+  const necesariosG1c = (vara, total) => { let k = 0; while (k <= total && k / total < vara) k += 1; return k; };
+  const mal = [];
+  const cuenta = { encares: 0, bo1: 0, ganados: 0, charlas: 0 };
+  for (let seed = 1; seed <= 30; seed += 1) {
+    const rng = mulberry32(9100 + seed);
+    let estado = createInitialState(9100 + seed, rng);
+    let esperado = null;
+    const responder = (sistema, st, decision, r) => {
+      const datos = decision.datos ?? {};
+      if (sistema.id === 'temporada' && datos.bo1) {
+        cuenta.encares += 1;
+        const riesgos = decision.opciones.map((o) => o.g1?.riesgo).sort().join(',');
+        if (riesgos !== 'arriesgado,seguro') mal.push(`seed ${seed}: el encare trae ${riesgos}`);
+      }
+      if (sistema.id === 'temporada' && datos.motivo === 'bo1') {
+        cuenta.bo1 += 1;
+        const gana = cuenta.bo1 % 2 === 0;
+        esperado = gana;
+        return { resultado: gana ? datos.g1.vara : Math.max(0, datos.g1.vara - 1 / BALANCE.stats.max) };
+      }
+      if (datos.g1 && datos.charla?.disponible) {
+        const total = unidadesDeLaRegla(datos.minijuego);
+        if (total) {
+          cuenta.charlas += 1;
+          const antes = necesariosG1c(datos.g1.vara, total);
+          const despues = necesariosG1c(datos.g1.vara - datos.charla.bajaVara, total);
+          if (antes > 0 && despues > antes - 1) mal.push(`seed ${seed}: ${datos.minijuego} con la charla pide ${despues} de ${total} (sin ella, ${antes})`);
+        }
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < 30 && estado.phase !== 'retirado'; i += 1) {
+      const { state, logs } = avanzarSplitAuto(estado, rng, responder);
+      if (esperado !== null) {
+        const linea = logs.find((l) => l.type === 'temporada' && / (Ganan|Pierden)\. Quedan /.test(l.message ?? ''));
+        const texto = linea ? linea.message : '';
+        if (!linea) mal.push(`seed ${seed}: el Bo1 no dejó su línea de resultado`);
+        else if (texto.includes(' Ganan. ') !== esperado) mal.push(`seed ${seed}: el minijuego ${esperado ? 'pasó' : 'no pasó'} y la fecha dice "${texto}"`);
+        if (esperado) cuenta.ganados += 1;
+        esperado = null;
+      }
+      estado = state;
+    }
+  }
+  console.log(`      ${JSON.stringify(cuenta)}`);
+  if (cuenta.bo1 < 10 || cuenta.ganados === 0 || cuenta.charlas === 0) mal.push(`muestra vacía: ${JSON.stringify(cuenta)}`);
   if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
 });
 

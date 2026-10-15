@@ -228,6 +228,28 @@ export function juzgarMinijuego(resultado, varaEfectiva, margenCasi = BALANCE.g1
   return { paso, casi: !paso && r >= varaEfectiva - margenCasi, resultado: r, vara: varaEfectiva };
 }
 
+// D122: cuánto baja la vara la charla del coach en el minijuego `id` con esta `vara`: al menos una unidad de la regla
+// visible. Con una grilla de 1/total (`g1.conteo`, `g1.erroresTope`), el escalón de abajo del que pide hoy: "necesitás 3 de
+// 4" pasa a "2 de 4" (y "2 errores como mucho" a 3). Sin grilla (la llamada, el Barón, el TP), `charlaBajaVara`. Si el
+// poder de la ronda puede bajarla (`bajaPoder`, el escenario), vale una unidad también desde ahí: el máximo de las dos.
+export function unidadesDeLaRegla(id) {
+  return BALANCE.g1.conteo[id] ?? BALANCE.g1.erroresTope[id] ?? null;
+}
+
+function unaUnidadDesde(total, vara) {
+  let n = 0;
+  while (n <= total && n / total < vara) n += 1;
+  // `EPSILON_PUNTOS` de más: la resta de la UI y del motor (vara − baja) no puede caer un pelo arriba del escalón
+  return n <= 0 ? 0 : vara - (n - 1) / total + EPSILON_PUNTOS;
+}
+
+export function bajaDeCharla(id, vara, bajaPoder = 0) {
+  const base = BALANCE.g1.charlaBajaVara;
+  const total = unidadesDeLaRegla(id);
+  if (!total) return base;
+  return Math.max(base, unaUnidadDesde(total, vara), bajaPoder > 0 ? unaUnidadDesde(total, vara - bajaPoder) : 0);
+}
+
 // Lo que la UI multiplica por la ventana o el tiempo en la ronda `escalon` del torneo (0 = la primera), con piso.
 export function factorEscalada(escalon) {
   const { escaladaPorEscalon, escaladaMinima } = BALANCE.g1;
