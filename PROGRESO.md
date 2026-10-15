@@ -34,6 +34,15 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-15 — Ola G, entrega 2, G4a: el diario se acuerda (D114, D116)
+
+- `core/temporadaResumen.js`: cada titular tiene 3 redacciones y la que sale rota con el año, así que el mismo tipo en dos años seguidos nunca repite el texto. Prioridad escrita en `PRIORIDAD_DE_TITULARES`.
+- Titulares nuevos: golpe duro (lesión grave, PC confiscada, la familia que te frena), copa amateur (ya no sale como "CAMPEONES DE LIGA"), primera firma, TRAICIÓN y VOLVISTE A CASA (leen `etiqueta` de la fila de `registro.porOrg`, defensivo: sin ella no sale), y "EL RIVAL TE PASÓ EL TRAPO".
+- "El parche te dejó sin X" solo el año del parche. El banner "¡Sos una estrella!" no sale sin equipo (`ui/core/momentos.js`).
+- `registro.temporadas[]` guarda `marcas` (PC confiscada, confianza de la familia) para detectar el golpe contra el cierre anterior.
+- Check nuevo (uno): 200 carreras, ningún titular se repite dos años seguidos ni contradice el estado. `simulate.js 200`: dos corridas idénticas y sin diferencias contra la base de `1b52224`.
+- Afuera (de G2c, son eventos): "el día que dejaste tu país" sin haber emigrado (D117) y "ni un scout te escribió" tras "tres personas preguntan por vos".
+
 ### 2026-10-15 — Ola G, entrega 1: "el control" (las finales con las manos, el perfil que no decide, siempre en un equipo)
 
 PLANUI §0.9, entrega 1, con el método WF-001:

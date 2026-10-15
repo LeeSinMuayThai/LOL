@@ -57,6 +57,28 @@ function archirrivalGanoEsteAnio(archirrival) {
   return historial[historial.length - 1].titulos > historial[historial.length - 2].titulos;
 }
 
+// G4a: el golpe del año, si hubo. `pcConfiscada` y la confianza de la familia no guardan "cuándo": se leen contra las marcas
+// del cierre anterior (`entrada.marcas`, que `systems/resumenAnio.js` persiste), igual que `mainMuerto`. La lesión grave
+// guarda su split: este año es lo que cae dentro de los últimos `splitsPorEdad`.
+function marcasDelCierre(state) {
+  return { pcConfiscada: (state.flags.pcConfiscada ?? 0) > 0, familyTrust: state.player.familyTrust };
+}
+
+function golpeDelAnio(state, anioAnterior) {
+  const lesion = state.flags.lesionGraveSplit;
+  if (lesion != null && lesion >= state.player.splitCount - BALANCE.edad.splitsPorEdad) {
+    return 'lesion';
+  }
+  const antes = anioAnterior?.marcas;
+  if (marcasDelCierre(state).pcConfiscada && !antes?.pcConfiscada) {
+    return 'pc';
+  }
+  if (antes && antes.familyTrust - state.player.familyTrust >= BALANCE.temporadaResumen.umbralGolpeFamilia) {
+    return 'familia';
+  }
+  return null;
+}
+
 function construirContexto(state) {
   const anio = state.calendario.anio;
   const registro = state.career.registro;
@@ -69,7 +91,11 @@ function construirContexto(state) {
     swissPrevio: registro.internacionales.some((entrada) => entrada.anio < anio && entrada.resultado === 'eliminado'),
     mundialesPrevios: registro.internacionales.filter((entrada) => entrada.anio < anio).length,
     finalPerdidaEsteAnio: (registro.finales ?? []).find((final) => final.anio === anio && !final.gano) ?? null,
-    tituloEsteAnio: registro.titulos.find((titulo) => titulo.anio === anio) ?? null,
+    // La copa amateur también entra en `registro.titulos` (`tier: 'amateur'`): no es un título de liga, tiene su titular.
+    tituloEsteAnio: registro.titulos.find((titulo) => titulo.anio === anio && titulo.tier !== 'amateur') ?? null,
+    copaAmateurEsteAnio: registro.titulos.find((titulo) => titulo.anio === anio && titulo.tier === 'amateur') ?? null,
+    primeraFirma: registro.porOrg.length === 1,
+    golpe: golpeDelAnio(state, temporadas[temporadas.length - 1] ?? null),
     filaAbiertaEsteAnio: registro.porOrg.find((fila) => fila.desdeAnio === anio) ?? null,
     mainMuerto: TOKENS.mainMuerto(state),
     rendimientoEsteAnio: rendimientoPropioMedio(state) * BALANCE.stats.max,
@@ -173,19 +199,32 @@ export function bandaDeNota(nota) {
 // no jugaste (`ausencia`, 75) titula por encima de una temporada regular
 // sólida (`eliminacion`, 50). Se evalúan todos los candidatos elegibles y
 // gana el de mayor puntaje; `estable` es el piso que siempre está disponible.
+//
+// G4a (PLANUI §0.9, D114): cada titular tiene al menos tres redacciones y la que sale rota con el año (`redaccion`), así
+// que el mismo tipo en dos años seguidos nunca repite el texto. Y la prioridad, escrita (`PRIORIDAD_DE_TITULARES`, derivada
+// de `PUNTAJES`, de mayor a menor): lo que te pasó (título, golpe, traición, vuelta a casa, el rival que te gana) le gana a
+// lo genérico (la sequía, la transferencia, la eliminación, el año parejo).
 
 const PUNTAJES = {
   titulo_internacional: 100,
   // El techo del papel internacional; el puntaje real depende de hasta dónde llegaste (`PUNTAJES_PAPEL_INTERNACIONAL`).
   papel_internacional: 90,
   titulo_liga: 80,
+  // G4a: los hechos de la vida del jugador. Un golpe duro y una traición pesan lo que un título de liga menos uno; la copa
+  // amateur es el título del que todavía no tiene liga.
+  golpe_duro: 79,
+  traicion: 79,
+  copa_amateur: 79,
+  volve_a_casa: 78,
   // F3 (PLANUI §0.8 punto 7): lo que pasó en el año titula por encima de lo que NO pasó (`ausencia`) y del color (`main_muerto`,
   // `debut`...), y por debajo de un título de liga y de un papel internacional desde cuartos (78). Si en el mismo año
   // se pierde la final y se juega el primer Mundial, gana el Mundial: aparece antes en `CANDIDATOS` y el empate lo gana el primero.
   primer_mundial: 77,
   final_perdida: 77,
   afuera_en_el_swiss: 76,
+  rival_trapo: 76,
   ausencia: 75,
+  primera_firma: 72,
   main_muerto: 70,
   debut: 70,
   sequia: 65,
@@ -196,6 +235,14 @@ const PUNTAJES = {
   estable: 10
 };
 
+export const PRIORIDAD_DE_TITULARES = Object.entries(PUNTAJES).sort((a, b) => b[1] - a[1]).map(([tipo]) => tipo);
+
+// La redacción que toca este año: rota de a una por año, con un corrimiento por tipo para que no salgan todas a la par.
+function redaccion(ctx, tipo, lista) {
+  const corrimiento = [...tipo].reduce((suma, letra) => suma + letra.charCodeAt(0), 0);
+  return lista[(ctx.anio + corrimiento) % lista.length];
+}
+
 // K4c (revisión): el titular dice lo que pasó. Campeón del mundo solo si ganaste; cuartos, semis y final (y el "buen
 // papel" de los registros viejos, que no guardó hasta dónde llegaste) son su propio tipo, con su propia racha: no es un
 // título del mundo que se repite.
@@ -203,31 +250,123 @@ const PUNTAJES = {
 // de un título de liga (80); unos cuartos, por debajo: ganar tu liga es más historia que caer en cuartos.
 const PUNTAJES_PAPEL_INTERNACIONAL = { final: 90, semis: 82, cuartos: 78, buen_papel: 78 };
 
+// Cada redacción dice hasta dónde llegaste (el check de K4c lo exige).
 const TITULARES_DE_PAPEL_INTERNACIONAL = {
-  cuartos: 'CUARTOS DE FINAL EN WORLDS',
-  semis: 'SEMIFINALISTAS EN WORLDS',
-  final: 'SUBCAMPEONES DEL MUNDO',
-  buen_papel: 'BUEN PAPEL EN WORLDS'
+  cuartos: ['CUARTOS DE FINAL EN WORLDS', 'LLEGASTE A CUARTOS EN WORLDS', 'CUARTOS DE FINAL: WORLDS SE CORTÓ ACÁ'],
+  semis: ['SEMIFINALISTAS EN WORLDS', 'SEMIS DE WORLDS: A UN PASO DE LA FINAL', 'WORLDS TE LLEVÓ HASTA LAS SEMIS'],
+  final: ['SUBCAMPEONES DEL MUNDO', 'SUBCAMPEONES EN WORLDS: A UN SUSPIRO', 'FINAL DE WORLDS: TE QUEDASTE A UN PASO'],
+  buen_papel: ['BUEN PAPEL EN WORLDS', 'WORLDS: SE HABLÓ DE VOS', 'WORLDS TE DEJÓ PARADO']
 };
 
 function candidatoTituloInternacional(state, ctx) {
   if (ctx.internacionalEsteAnio?.resultado !== 'campeon') {
     return null;
   }
-  return { titular: 'CAMPEONES DEL MUNDO', bajada: null };
+  return { titular: redaccion(ctx, 'titulo_internacional', ['CAMPEONES DEL MUNDO', '¡CAMPEONES DEL MUNDO!', 'CAMPEONES DEL MUNDO: LA COPA ES TUYA']), bajada: null };
 }
 
 function candidatoPapelInternacional(state, ctx) {
   const resultado = ctx.internacionalEsteAnio?.resultado;
-  const titular = TITULARES_DE_PAPEL_INTERNACIONAL[resultado];
-  return titular ? { titular, bajada: null, puntaje: PUNTAJES_PAPEL_INTERNACIONAL[resultado] } : null;
+  const lista = TITULARES_DE_PAPEL_INTERNACIONAL[resultado];
+  return lista ? { titular: redaccion(ctx, resultado, lista), bajada: null, puntaje: PUNTAJES_PAPEL_INTERNACIONAL[resultado] } : null;
 }
 
 function candidatoTituloLiga(state, ctx) {
   if (!ctx.tituloEsteAnio) {
     return null;
   }
-  return { titular: `CAMPEONES ${deLaLiga(ctx.tituloEsteAnio.nombre).toUpperCase()}`, bajada: null };
+  const liga = deLaLiga(ctx.tituloEsteAnio.nombre).toUpperCase();
+  return { titular: redaccion(ctx, 'titulo_liga', [`CAMPEONES ${liga}`, `TÍTULO ${liga}`, `LA COPA ${liga} SE QUEDA CON VOS`]), bajada: null };
+}
+
+// G4a: la copa amateur del año (`registro.titulos` con `tier: 'amateur'`): el título del que todavía no juega una liga.
+function candidatoCopaAmateur(state, ctx) {
+  const copa = ctx.copaAmateurEsteAnio;
+  if (!copa) {
+    return null;
+  }
+  const nombre = String(copa.nombre).toUpperCase();
+  return {
+    titular: redaccion(ctx, 'copa_amateur', [`CAMPEÓN DE ${nombre}`, `LEVANTASTE LA COPA: ${nombre}`, `${nombre}: LA COPA ES TUYA`]),
+    bajada: 'La copa va a la vitrina y el server no habla de otra cosa.'
+  };
+}
+
+// G4a: golpe duro. Lo que dejó marca en el año: la lesión grave, la PC confiscada o la familia que te frenó.
+const TITULARES_DE_GOLPE = {
+  lesion: {
+    titulares: ['EL CUERPO DIJO BASTA', 'UN AÑO CON LA LESIÓN ENCIMA', 'LA LESIÓN TE PARÓ EL AÑO'],
+    bajada: 'Una lesión grave te sacó del ritmo. Volver cuesta más que caerse.'
+  },
+  pc: {
+    titulares: ['SIN PC, SIN SOLOQ', 'TE SACARON LA COMPU', 'EL AÑO QUE TE CONFISCARON LA PC'],
+    bajada: 'Sin máquina no hay ladder. Hubo que arreglárselas como se pudo.'
+  },
+  familia: {
+    titulares: ['EN CASA SE PUSO FEA LA COSA', 'LA FAMILIA TE PISÓ EL FRENO', 'EL AÑO DE LAS DISCUSIONES EN LA MESA'],
+    bajada: 'La confianza en casa se resintió. Jugar así pesa distinto.'
+  }
+};
+
+function candidatoGolpeDuro(state, ctx) {
+  const golpe = TITULARES_DE_GOLPE[ctx.golpe];
+  if (!golpe) {
+    return null;
+  }
+  return { titular: redaccion(ctx, `golpe_${ctx.golpe}`, golpe.titulares), bajada: golpe.bajada };
+}
+
+// G4a: la fila de `registro.porOrg` que se abrió este año lleva `etiqueta` (G3c). Sin ella (ramas viejas, guardados
+// anteriores), no sale ningún titular de mercado.
+function candidatoTraicion(state, ctx) {
+  const fila = ctx.filaAbiertaEsteAnio;
+  if (fila?.etiqueta !== 'TRAICION') {
+    return null;
+  }
+  const org = String(fila.org).toUpperCase();
+  const rival = fila.traicionA ?? 'tu club de siempre';
+  return {
+    titular: redaccion(ctx, 'traicion', ['TRAICIÓN', 'TE PASASTE AL ENEMIGO', `DE ${String(fila.traicionA ?? 'TU CLUB').toUpperCase()} A ${org}: NO SE PERDONA`]),
+    bajada: `Dejaste a ${rival} para firmar con ${fila.org}. Los hinchas no te lo van a olvidar.`
+  };
+}
+
+function candidatoVolveACasa(state, ctx) {
+  const fila = ctx.filaAbiertaEsteAnio;
+  if (fila?.etiqueta !== 'VOLVE_A_CASA') {
+    return null;
+  }
+  const org = String(fila.org).toUpperCase();
+  return {
+    titular: redaccion(ctx, 'volve_a_casa', ['VOLVISTE A CASA', `DE VUELTA EN ${org}`, `${org} TE RECIBE DE NUEVO`]),
+    bajada: `${fila.org} te abrió la puerta otra vez.`
+  };
+}
+
+// G4a: la primera firma de la carrera: el contrato que se recuerda.
+function candidatoPrimeraFirma(state, ctx) {
+  const fila = ctx.filaAbiertaEsteAnio;
+  if (!fila || !ctx.primeraFirma) {
+    return null;
+  }
+  const org = String(fila.org).toUpperCase();
+  return {
+    titular: redaccion(ctx, 'primera_firma', [`FIRMASTE POR ${org}`, `TU PRIMER CONTRATO: ${org}`, `YA SOS DE ${org}`]),
+    bajada: 'El primer contrato no se olvida.'
+  };
+}
+
+// G4a: el duelo eterno se lleva el titular el año que te gana: el rival levantó un trofeo este año y va adelante.
+function candidatoRivalTrapo(state, ctx) {
+  const archirrival = state.mundo.archirrival;
+  if (!ctx.rivalGanoEsteAnio || !archirrival || archirrival.duelo.suyos <= archirrival.duelo.tuyos) {
+    return null;
+  }
+  const { suyos, tuyos } = archirrival.duelo;
+  return {
+    titular: redaccion(ctx, 'rival_trapo', ['EL RIVAL TE PASÓ EL TRAPO', `${String(archirrival.handle).toUpperCase()} TE PASÓ EL TRAPO`, 'TE ESTÁN GANANDO EL DUELO']),
+    bajada: `${archirrival.handle} sumó otro trofeo: ${suyos} contra tus ${tuyos}.`
+  };
 }
 
 // Worlds existe todos los años (`mundo.escenaAnual`, fase 9M-lite): la
@@ -240,7 +379,7 @@ function candidatoAusencia(state, ctx) {
   // F3: "la espina más grande de tu carrera" es una bajada de veterano; quien nunca jugó un Mundial todavía no tiene espina.
   const yaJugoUno = ctx.mundialesPrevios > 0;
   return {
-    titular: 'WORLDS, POR TWITCH',
+    titular: redaccion(ctx, 'ausencia', ['WORLDS, POR TWITCH', 'WORLDS SE MIRÓ DESDE EL SOFÁ', 'WORLDS SIN VOS EN EL ESCENARIO']),
     bajada: yaJugoUno ? 'Worlds se jugó sin vos. La espina más grande de tu carrera.' : 'Worlds se jugó sin vos. Todavía no es tu año.'
   };
 }
@@ -252,7 +391,7 @@ function candidatoFinalPerdida(state, ctx) {
     return null;
   }
   return {
-    titular: 'SE ESCAPÓ LA FINAL',
+    titular: redaccion(ctx, 'final_perdida', ['SE ESCAPÓ LA FINAL', 'LA FINAL SE TE FUE DE LAS MANOS', 'FINAL PERDIDA: A UN PASO DE LA COPA']),
     bajada: `${final.marcador[1]}-${final.marcador[0]} contra ${final.rival} en la final ${deLaLiga(nombreVisibleDeLiga(final.liga))}.`
   };
 }
@@ -262,7 +401,10 @@ function candidatoPrimerMundial(state, ctx) {
   if (!ctx.internacionalEsteAnio || ctx.internacionalEsteAnio.resultado !== 'eliminado' || ctx.mundialesPrevios > 0) {
     return null;
   }
-  return { titular: 'TU PRIMER MUNDIAL', bajada: 'Te tocó irte en el Swiss, pero ya estuviste.' };
+  return {
+    titular: redaccion(ctx, 'primer_mundial', ['TU PRIMER MUNDIAL', 'DEBUT EN WORLDS', 'PISASTE WORLDS POR PRIMERA VEZ']),
+    bajada: 'Te tocó irte en el Swiss, pero ya estuviste.'
+  };
 }
 
 // F3: un Mundial que no es el primero y se acaba en el Swiss. El "otra vez" exige un Swiss previo con eliminación: si los
@@ -271,7 +413,10 @@ function candidatoAfueraEnElSwiss(state, ctx) {
   if (ctx.internacionalEsteAnio?.resultado !== 'eliminado' || ctx.mundialesPrevios === 0) {
     return null;
   }
-  return { titular: ctx.swissPrevio ? 'OTRA VEZ AFUERA EN EL SWISS' : 'AFUERA EN EL SWISS', bajada: 'Worlds se te acabó en la primera fase.' };
+  const lista = ctx.swissPrevio
+    ? ['OTRA VEZ AFUERA EN EL SWISS', 'OTRA VEZ SE TE CORTÓ EN EL SWISS', 'EL SWISS TE GANÓ DE NUEVO']
+    : ['AFUERA EN EL SWISS', 'SE ACABÓ EN EL SWISS', 'WORLDS TE QUEDÓ GRANDE: AFUERA EN EL SWISS'];
+  return { titular: redaccion(ctx, 'afuera_en_el_swiss', lista), bajada: 'Worlds se te acabó en la primera fase.' };
 }
 
 // El titular es "EL PARCHE QUE TE MATÓ..." (un hecho puntual, pasado), no
@@ -284,7 +429,8 @@ function candidatoMainMuerto(state, ctx) {
   if (!ctx.mainMuerto || ctx.anioAnterior?.mainMuerto) {
     return null;
   }
-  return { titular: `EL PARCHE QUE TE MATÓ EL ${ctx.mainMuerto.toUpperCase()}`, bajada: null };
+  const main = ctx.mainMuerto.toUpperCase();
+  return { titular: redaccion(ctx, 'main_muerto', [`EL PARCHE QUE TE MATÓ EL ${main}`, `ADIÓS ${main}: EL PARCHE SE LO LLEVÓ`, `SIN ${main} POR CULPA DEL PARCHE`]), bajada: null };
 }
 
 function candidatoDebut(state, ctx) {
@@ -298,7 +444,8 @@ function candidatoDebut(state, ctx) {
   if (splitAscensoTier1 === null || splitAscensoTier1 < state.player.splitCount - BALANCE.edad.splitsPorEdad) {
     return null;
   }
-  return { titular: `EL PIBE DE LA ${ctx.liga ? nombreVisibleDeLiga(ctx.liga.id).toUpperCase() : 'LIGA'}`, bajada: null };
+  const liga = ctx.liga ? nombreVisibleDeLiga(ctx.liga.id).toUpperCase() : 'LIGA';
+  return { titular: redaccion(ctx, 'debut', [`EL PIBE DE LA ${liga}`, `DEBUT EN LA ${liga}`, `LLEGASTE A LA ${liga}`]), bajada: null };
 }
 
 function candidatoSequia(state, ctx) {
@@ -309,29 +456,36 @@ function candidatoSequia(state, ctx) {
   if (ctx.rendimientoEsteAnio > BALANCE.temporadaResumen.umbralSequiaRendimiento || state.phase === 'amateur') {
     return null;
   }
-  return { titular: '¿Y EL SHOTCALLING?', bajada: 'Año seco: las llamadas no salieron.' };
+  return {
+    titular: redaccion(ctx, 'sequia', ['¿Y EL SHOTCALLING?', 'LAS CALLS NO ENTRARON', 'UN AÑO PARA OLVIDAR EN LAS CALLS']),
+    bajada: 'Año seco: las llamadas no salieron.'
+  };
 }
 
 function candidatoRival(state, ctx) {
   if (!ctx.rivalGanoEsteAnio) {
     return null;
   }
-  return { titular: `${state.mundo.archirrival.org.toUpperCase()} LEVANTÓ LA COPA`, bajada: null };
+  const org = state.mundo.archirrival.org.toUpperCase();
+  return { titular: redaccion(ctx, 'rival', [`${org} LEVANTÓ LA COPA`, `LA COPA SE FUE PARA ${org}`, `${org} SE QUEDÓ CON EL TROFEO`]), bajada: null };
 }
 
 function candidatoCaida(state, ctx) {
   if (ctx.deltaNivel > -BALANCE.temporadaResumen.umbralCaida) {
     return null;
   }
-  return { titular: 'EL AÑO QUE SE TE CAYÓ LA MANO', bajada: null };
+  return { titular: redaccion(ctx, 'caida', ['EL AÑO QUE SE TE CAYÓ LA MANO', 'SE TE BAJÓ EL NIVEL', 'LA MANO YA NO ES LA DE ANTES']), bajada: null };
 }
 
 function candidatoTransferencia(state, ctx) {
   if (!ctx.filaAbiertaEsteAnio) {
     return null;
   }
-  const region = state.mundo.ligas.find((liga) => liga.id === ctx.filaAbiertaEsteAnio.liga)?.region;
-  return { titular: region ? `TE FUISTE A ${region.toUpperCase()}` : 'CAMBIO DE AIRES', bajada: null };
+  const region = state.mundo.ligas.find((liga) => liga.id === ctx.filaAbiertaEsteAnio.liga)?.region?.toUpperCase();
+  const lista = region
+    ? [`TE FUISTE A ${region}`, `NUEVO AIRE EN ${region}`, `HICISTE LAS VALIJAS PARA ${region}`]
+    : ['CAMBIO DE AIRES', 'NUEVO CLUB, NUEVA HISTORIA', 'OTRA CAMISETA'];
+  return { titular: redaccion(ctx, 'transferencia', lista), bajada: null };
 }
 
 function candidatoEliminacion(state, ctx) {
@@ -339,7 +493,9 @@ function candidatoEliminacion(state, ctx) {
     return null;
   }
   const otraVez = (ctx.anioAnterior?.tipoBase ?? ctx.anioAnterior?.tipo) === 'eliminacion' ? ', OTRA VEZ' : '';
-  return { titular: `AFUERA DE PLAYOFFS DE ${nombreVisibleDeLiga(ctx.liga.id).toUpperCase()}${otraVez}`, bajada: null };
+  const liga = nombreVisibleDeLiga(ctx.liga.id).toUpperCase();
+  const lista = [`AFUERA DE PLAYOFFS DE ${liga}`, `SE TE CORTÓ EN PLAYOFFS DE ${liga}`, `PLAYOFFS DE ${liga}: HASTA ACÁ LLEGASTE`];
+  return { titular: `${redaccion(ctx, 'eliminacion', lista)}${otraVez}`, bajada: null };
 }
 
 // Orden de desempate en caso de puntaje igual (`debut`/`main_muerto` y
@@ -349,10 +505,16 @@ const CANDIDATOS = [
   ['titulo_internacional', candidatoTituloInternacional],
   ['papel_internacional', candidatoPapelInternacional],
   ['titulo_liga', candidatoTituloLiga],
+  ['golpe_duro', candidatoGolpeDuro],
+  ['traicion', candidatoTraicion],
+  ['copa_amateur', candidatoCopaAmateur],
+  ['volve_a_casa', candidatoVolveACasa],
   ['primer_mundial', candidatoPrimerMundial],
   ['final_perdida', candidatoFinalPerdida],
   ['afuera_en_el_swiss', candidatoAfueraEnElSwiss],
+  ['rival_trapo', candidatoRivalTrapo],
   ['ausencia', candidatoAusencia],
+  ['primera_firma', candidatoPrimeraFirma],
   ['debut', candidatoDebut],
   ['main_muerto', candidatoMainMuerto],
   ['sequia', candidatoSequia],
@@ -386,7 +548,7 @@ const PREFIJOS_RACHA = ['', 'OTRA VEZ — ', 'Y SIGUE — ', 'SIN FRENO — '];
 export function titularDelAnio(state) {
   const ctx = construirContexto(state);
   let tipoBase = 'estable';
-  let elegido = { titular: 'UN AÑO MÁS EN LA GRIETA', bajada: null };
+  let elegido = { titular: redaccion(ctx, 'estable', ['UN AÑO MÁS EN LA GRIETA', 'OTRA TEMPORADA DE SCRIMS Y TABLA', 'UN AÑO SIN SOBRESALTOS']), bajada: null };
   let puntaje = PUNTAJES.estable;
   for (const [candidatoTipo, fn] of CANDIDATOS) {
     if (PUNTAJES[candidatoTipo] <= puntaje) {
@@ -412,7 +574,8 @@ export function titularDelAnio(state) {
   // para que el año siguiente pueda seguir contando la racha y saber si
   // `main_muerto` ya estaba prendido (el corte por transición de arriba).
   return {
-    tipo, tipoBase, titular: `${prefijo}${elegido.titular}`, bajada: elegido.bajada, mainMuerto: Boolean(ctx.mainMuerto)
+    tipo, tipoBase, titular: `${prefijo}${elegido.titular}`, bajada: elegido.bajada, mainMuerto: Boolean(ctx.mainMuerto),
+    marcas: marcasDelCierre(state)
   };
 }
 
@@ -476,7 +639,8 @@ function vinetaArchirrival(state) {
 }
 
 function vinetaMeta(state, ctx) {
-  if (ctx.mainMuerto) {
+  // G4a (D114): "te dejó sin X" es lo que pasó el año del parche; el año siguiente la marca sigue prendida pero ya no es noticia.
+  if (ctx.mainMuerto && !ctx.anioAnterior?.mainMuerto) {
     return { icono: '🎯', texto: `El parche te dejó sin ${ctx.mainMuerto} — el meta te lo mató.` };
   }
   const c = BALANCE.contexto;

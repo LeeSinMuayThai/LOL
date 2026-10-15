@@ -427,7 +427,8 @@ export function ascensosYDeltas(despues, anio, fotoAnio = null) {
   const hype = escaleraDeHype(despues);
   if (conDelta(hype.valor) && conDelta(hype.delta)) {
     deltas.push({ eje: 'hype', rotulo: 'Hype', antes: hype.valor - hype.delta, despues: hype.valor, delta: hype.delta, banda: hype.label });
-    if (hype.delta > 0 && sube('hype', bandaHype(hype.valor - hype.delta).id, hype.id)) {
+    // G4a (D116): sin equipo no hay "¡Sos una estrella!" que anunciar (la ficha de ese jugador dice "El que no llegó").
+    if (despues.career?.currentOrg && hype.delta > 0 && sube('hype', bandaHype(hype.valor - hype.delta).id, hype.id)) {
       ascensos.push({ eje: 'hype', id: hype.id, label: hype.label, rotulo: 'Tu hype', texto: `¡${TEXTO_DE_HYPE[hype.id] ?? `Ya sos ${hype.label}`}!`, chip: TEXTO_DE_HYPE[hype.id] ?? `Ya sos ${hype.label}` });
     }
   }
