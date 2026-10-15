@@ -2037,7 +2037,7 @@ checkLento('Ninguna oferta del mercado viola edad mínima, cupo de imports ni ma
           // re-chequea con `forzada` (salta asiento/presupuesto/banda, no las
           // reglas duras).
           if (oferta.tag !== 'renovacion' && liga) {
-            if (!ofertaPosible(st, oferta.org, st.player.role, { forzada: Boolean(oferta.forzadaFranquicia) }).posible) {
+            if (!ofertaPosible(st, oferta.org, st.player.role, { forzada: Boolean(oferta.forzadaFranquicia) || oferta.aLaBaja === true }).posible) {
               throw new Error(`seed ${seed}: el mercado ofreció ${oferta.org} pero ofertaPosible() dice que no`);
             }
           }
@@ -5669,12 +5669,12 @@ checkLento('El mapa 5 es el mapa 5: el cupo del desempate no se gasta en otro la
     const rng = mulberry32(seed);
     let state = createInitialState(seed, rng);
     const responder = (sistema, st, decision, r) => {
-      if (decision.datos?.momento === 'mapa_decisivo') {
+      // G-fix-copa: la final de la copa amateur es UN minijuego sin serie (`serie.activa` falso, marcador 0-0): no es un mapa 5.
+      if (decision.datos?.momento === 'mapa_decisivo' && st.serie.activa) {
         vistos += 1;
-        if (!esMapaDeDesempate(st.serie.marcador, st.serie.formato)) {
-          throw new Error(`seed ${seed}: pausa de desempate con marcador ${st.serie.marcador.join('-')}`);
-        }
-        if (!['semis', 'final', 'internacional'].includes(st.serie.ronda)) {
+        // G1a / G-fix-vara: toda ronda de eliminación se juega con las manos, mapa por mapa (cada mapa abre su minijuego, también
+        // el 0-0): ya no es "solo el último mapa". Lo que queda protegido es la ronda (abajo) y el esMapaDeDesempate de arriba.
+        if (!['cuartos', 'semis', 'final', 'internacional'].includes(st.serie.ronda)) {
           throw new Error(`seed ${seed}: pausa de desempate en ${st.serie.ronda}`);
         }
       }
@@ -6073,7 +6073,8 @@ checkLento('Ningún minijuego puede setear terminado', () => {
         // continuación y puede cerrar la carrera por burnout en ese mismo
         // split. Eso no es el minijuego seteando `terminado` (lo que este
         // check persigue): es la barra de mentalidad tocando cero.
-        if (eraMinijuego && state.terminado && state.finAnticipado !== 'burnout') {
+        // G4c: "El último partido" (la despedida) cierra la carrera A PROPÓSITO desde su minijuego (`finAnticipado: 'retiro_elegido'`).
+        if (eraMinijuego && state.terminado && state.finAnticipado !== 'burnout' && state.finAnticipado !== 'retiro_elegido') {
           throw new Error(`seed ${seed}: el minijuego "${minijuegoId}" dejó terminado=true`);
         }
       }
@@ -6098,6 +6099,12 @@ checkLento('La tabla de temporada cierra y respeta el calendario', () => {
       // sigue siendo la foto del split anterior, con OTRO equipo. Compararla
       // contra el currentOrg de HOY compararía peras con manzanas.
       if (state.phase !== 'profesional' || !state.career.currentOrg || state.career.companeros.length === 0 || t.tabla.length === 0) {
+        continue;
+      }
+      // G3c: el split del salto (te ganás el ascenso, quedás libre y firmás) se juega sin temporada --temporada.js corre con
+      // los companeros vacíos y salta--, y el plantel nuevo se arma después de ella: al cierre el estado ya tiene
+      // companeros pero `career.temporada` sigue siendo la foto del equipo anterior (su `filaPropia.org` no es el de hoy).
+      if (t.filaPropia?.org !== state.career.currentOrg) {
         continue;
       }
 
@@ -15588,6 +15595,10 @@ checkLento('K1 D76: cada split jugado se cuenta una vez en la org y el tier dond
 
       // Títulos e internacionales nuevos: la liga y el tier del split en que se ganaron.
       for (const titulo of registro.titulos.slice(antes.career.registro.titulos.length)) {
+        // G3a: la copa amateur (tier 'amateur') es de la etapa sin club: no tiene liga ni tier de carrera que cruzar.
+        if (titulo.tier === 'amateur') {
+          continue;
+        }
         if (titulo.liga !== career.liga || titulo.tier !== career.tier) {
           throw new Error(`${donde}: título ${titulo.nombre} con liga ${titulo.liga} y tier ${titulo.tier}, jugando en ${career.liga} (tier ${career.tier})`);
         }

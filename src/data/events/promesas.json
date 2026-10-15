@@ -13,7 +13,7 @@
   },
   {
     "id": "primer_contrato",
-    "quien": "El manager de tu equipo amateur",
+    "quien": "Un scout que te viene siguiendo en la ladder",
     "abre": { "fases": ["amateur"], "edadMin": 16, "edadMax": 18, "sinTier": true },
     "plazoAnios": 2,
     "condicion": { "tipo": "tier", "tierMax": 2 },
