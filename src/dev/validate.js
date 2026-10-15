@@ -8180,9 +8180,12 @@ checkLento('Fase 11: la viñeta 6 del resumen siempre nombra algo del año que v
   }
 });
 
-checkLento('Fase 11: `ausencia` titula en al menos 30% de las carreras que pasan de 15 splits (§11.3)', () => {
+// G-fix C2: la ausencia de Worlds ya no es el 30% de los titulares (se repetía hasta 3 años con "OTRA VEZ"): titula solo si el
+// año no tuvo nada más (puntaje debajo de cualquier hecho tuyo) y nunca dos años seguidos.
+checkLento('Fase 11: `ausencia` (Worlds sin vos) nunca titula dos años seguidos, y el título de liga nunca repite el texto en apariciones seguidas (§11.3, G-fix C2)', () => {
   let elegibles = 0;
   let conAusencia = 0;
+  const mal = [];
   const N = 400;
   for (let seed = 1; seed <= N; seed += 1) {
     const state = correrCarrera(seed, 60);
@@ -8197,13 +8200,27 @@ checkLento('Fase 11: `ausencia` titula en al menos 30% de las carreras que pasan
     if (resumenes.some((r) => r.tipoBase === 'ausencia')) {
       conAusencia += 1;
     }
+    for (let i = 1; i < resumenes.length; i += 1) {
+      if (resumenes[i].tipoBase === 'ausencia' && resumenes[i - 1].tipoBase === 'ausencia') {
+        mal.push(`seed ${seed}: ausencia dos años seguidos (${resumenes[i].message})`);
+      }
+    }
+    const titulosDeLiga = resumenes.filter((r) => r.tipoBase === 'titulo_liga').map((r) => r.message.replace(/^(OTRA VEZ|Y SIGUE|SIN FRENO) — /, ''));
+    for (let i = 1; i < titulosDeLiga.length; i += 1) {
+      if (titulosDeLiga[i] === titulosDeLiga[i - 1]) {
+        mal.push(`seed ${seed}: el título de liga repite el titular "${titulosDeLiga[i]}"`);
+      }
+    }
   }
   if (elegibles < 30) {
     throw new Error(`solo ${elegibles} carreras pasaron de 15 splits en ${N} seeds — muestra insuficiente`);
   }
+  if (mal.length > 0) {
+    throw new Error(mal.slice(0, 4).join(' | '));
+  }
   const fraccion = conAusencia / elegibles;
-  if (fraccion < 0.3) {
-    throw new Error(`"ausencia" tituló en el ${(fraccion * 100).toFixed(1)}% de las carreras elegibles — el mínimo es 30%`);
+  if (fraccion > 0.3) {
+    throw new Error(`"ausencia" tituló en el ${(fraccion * 100).toFixed(1)}% de las carreras elegibles: pasó a ser un titular que le gana a los hechos`);
   }
 });
 
