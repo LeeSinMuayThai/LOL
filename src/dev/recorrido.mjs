@@ -871,7 +871,7 @@ const momentos = {};
 const pollerMomentos = setInterval(async () => {
   try {
     const t = await page.evaluate(() => {
-      const b = [...document.querySelectorAll('.mo-seguir')].find((e) => e.checkVisibility({ checkVisibilityCSS: true }) && !e.disabled);
+      const b = [...document.querySelectorAll('button')].find((e) => e.id !== 'continuarBtn' && (e.classList.contains('mo-seguir') || (/^(seguir|continuar)/i.test(e.innerText.trim()) && e.querySelector('kbd'))) && e.checkVisibility({ checkVisibilityCSS: true }) && !e.disabled);
       if (!b) return null;
       const raiz = b.closest('[class*=momento], .mo, dialog, section, div') ?? b.parentElement;
       const txt = (raiz?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 90);
