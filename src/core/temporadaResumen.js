@@ -9,7 +9,7 @@ import { TOKENS } from './plantillas.js';
 import { esBuenPapel } from './registro.js';
 import { nombreVisibleDeLiga } from './ligas.js';
 import { etiquetaDeRanked, servidorDeLaPartida } from './ranked.js';
-import { plural, deLaLiga } from './formato.js';
+import { plural, deLaLiga, contraeArticulo } from './formato.js';
 
 // El resumen anual (fase 11, PLAN.md §11.1): nota, titular y viñetas del año
 // que cierra. Puro y sin RNG — `systems/resumenAnio.js` es el único que lo
@@ -109,6 +109,7 @@ function construirContexto(state) {
   const temporadas = registro.temporadas;
   return {
     anio,
+    temporadas,
     liga: ligaDeCarrera(state),
     internacionalEsteAnio: registro.internacionales.find((entrada) => entrada.anio === anio) ?? null,
     // F3: los Mundiales de años anteriores (para el "primero" y la bajada de veterano) y la final doméstica perdida del año.
@@ -222,8 +223,7 @@ export function bandaDeNota(nota) {
 // --- 11.1: `titularDelAnio` ---
 //
 // Puntaje por peso emocional, no por magnitud (PLAN.md §11.1): un torneo que
-// no jugaste (`ausencia`, 75) titula por encima de una temporada regular
-// sólida (`eliminacion`, 50). Se evalúan todos los candidatos elegibles y
+// no jugaste (`ausencia`) titula solo si el año no tuvo nada más (G-fix C2: antes pesaba 75 y era el 30% de los titulares). Se evalúan todos los candidatos elegibles y
 // gana el de mayor puntaje; `estable` es el piso que siempre está disponible.
 //
 // G4a (PLANUI §0.9, D114): cada titular tiene al menos tres redacciones y la que sale rota con el año (`redaccion`), así
@@ -255,7 +255,6 @@ const PUNTAJES = {
   final_perdida: 77,
   afuera_en_el_swiss: 76,
   rival_trapo: 76,
-  ausencia: 75,
   primera_firma: 72,
   main_muerto: 70,
   debut: 70,
@@ -264,15 +263,22 @@ const PUNTAJES = {
   caida: 60,
   transferencia: 55,
   eliminacion: 50,
+  // G-fix C2: no ver Worlds es titular SOLO si no pasó nada más en el año: va debajo de cualquier hecho tuyo (carta, firma,
+  // título, rival, promesa, golpe, sequía, transferencia, eliminación) y apenas arriba del año parejo. Y nunca dos años seguidos.
+  ausencia: 12,
   estable: 10
 };
 
 export const PRIORIDAD_DE_TITULARES = Object.entries(PUNTAJES).sort((a, b) => b[1] - a[1]).map(([tipo]) => tipo);
 
-// La redacción que toca este año: rota de a una por año, con un corrimiento por tipo para que no salgan todas a la par.
+// La redacción que toca este año: rota de a una POR APARICIÓN del tipo (G-fix C2: por año, el título de liga volvía a salir
+// igual a los tres años), con un corrimiento por tipo para que no salgan todas a la par. Dos apariciones seguidas del mismo
+// tipo nunca repiten el texto. Una clave que no es un tipo (la del papel internacional: cuartos, semis...) rota por año.
 function redaccion(ctx, tipo, lista) {
   const corrimiento = [...tipo].reduce((suma, letra) => suma + letra.charCodeAt(0), 0);
-  return lista[(ctx.anio + corrimiento) % lista.length];
+  const esTipo = Object.hasOwn(PUNTAJES, tipo);
+  const vez = esTipo ? ctx.temporadas.filter((t) => (t.tipoBase ?? t.tipo) === tipo).length : ctx.anio;
+  return lista[(vez + corrimiento) % lista.length];
 }
 
 // K4c (revisión): el titular dice lo que pasó. Campeón del mundo solo si ganaste; cuartos, semis y final (y el "buen
@@ -319,7 +325,7 @@ function candidatoCopaAmateur(state, ctx) {
   }
   const nombre = String(copa.nombre).toUpperCase();
   return {
-    titular: redaccion(ctx, 'copa_amateur', [`CAMPEÓN DE ${nombre}`, `LEVANTASTE LA COPA: ${nombre}`, `${nombre}: LA COPA ES TUYA`]),
+    titular: redaccion(ctx, 'copa_amateur', [contraeArticulo(`CAMPEÓN DE ${nombre}`), `LEVANTASTE LA COPA: ${nombre}`, `${nombre}: LA COPA ES TUYA`]),
     bajada: 'La copa va a la vitrina y el server no habla de otra cosa.'
   };
 }
@@ -442,6 +448,10 @@ function candidatoRivalTrapo(state, ctx) {
 // estar no es una historia, es lo normal.
 function candidatoAusencia(state, ctx) {
   if (ctx.internacionalEsteAnio || (ctx.liga?.cuposInternacionales ?? 0) <= 0) {
+    return null;
+  }
+  // Nunca dos años seguidos: el año después de una ausencia que fue titular, no se vuelve a titular con la misma ausencia.
+  if ((ctx.anioAnterior?.tipoBase ?? ctx.anioAnterior?.tipo) === 'ausencia') {
     return null;
   }
   // F3: "la espina más grande de tu carrera" es una bajada de veterano; quien nunca jugó un Mundial todavía no tiene espina.

@@ -1301,7 +1301,8 @@ export const BALANCE = {
     // respetan, el asiento y el presupuesto no), del más fuerte que no te supera hacia abajo.
     ofertasMinimas: 3,
     // G3c (PLANUI §0.9), el mercado como dilema. El arraigo se guarda por org al irte (`career.arraigoPorOrg`); si volvés,
-    // arrancás con lo guardado menos `costoSalidaArraigo` (la gente perdona, pero no del todo).
+    // arrancás con lo guardado menos `costoSalidaArraigo` (la gente perdona, pero no del todo), con piso en Querido
+    // (`arraigo.hitos.querido`) si te fuiste siendo Querido o más: volver a casa es que te quieren.
     costoSalidaArraigo: 15,
     // TRAICIÓN: firmar con el clásico de tu org (`data/clasicos.json`). Se cobra del arraigo que dejás guardado con la org que
     // traicionás (te cierra la vuelta a casa), no del de llegada.

@@ -31,13 +31,13 @@
     "condicion": { "tipo": "titulo" },
     "texto": "Un título con {org} en {plazoAnios} años",
     "pago": { "arraigo": [8, 14], "hype": [4, 8] },
-    "lineaAbre": "{quien} de {org}: \"Dame un título en {plazoAnios} años y esta camiseta es tuya.\"",
+    "lineaAbre": "{quien} de {org}: \"Dame un título en {plazoAnios} años y este jersey es tuyo.\"",
     "lineaCumple": "Le diste el título a {org}, como dijiste. Ahora sí te creen todo.",
     "lineaRompe": "El título con {org} no llegó en los {plazoAnios} años. En el vestuario no se dice nada, pero se nota."
   },
   {
     "id": "idolo_de_la_casa",
-    "quien": "La hinchada de la org",
+    "quien": "Los fans de la org",
     "abre": { "fases": ["profesional"], "conOrg": true, "arraigoMin": 25, "arraigoMax": 59 },
     "plazoAnios": 3,
     "condicion": { "tipo": "arraigo", "valor": 60 },

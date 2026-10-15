@@ -8180,9 +8180,12 @@ checkLento('Fase 11: la viñeta 6 del resumen siempre nombra algo del año que v
   }
 });
 
-checkLento('Fase 11: `ausencia` titula en al menos 30% de las carreras que pasan de 15 splits (§11.3)', () => {
+// G-fix C2: la ausencia de Worlds ya no es el 30% de los titulares (se repetía hasta 3 años con "OTRA VEZ"): titula solo si el
+// año no tuvo nada más (puntaje debajo de cualquier hecho tuyo) y nunca dos años seguidos.
+checkLento('Fase 11: `ausencia` (Worlds sin vos) nunca titula dos años seguidos, y el título de liga nunca repite el texto en apariciones seguidas (§11.3, G-fix C2)', () => {
   let elegibles = 0;
   let conAusencia = 0;
+  const mal = [];
   const N = 400;
   for (let seed = 1; seed <= N; seed += 1) {
     const state = correrCarrera(seed, 60);
@@ -8197,13 +8200,27 @@ checkLento('Fase 11: `ausencia` titula en al menos 30% de las carreras que pasan
     if (resumenes.some((r) => r.tipoBase === 'ausencia')) {
       conAusencia += 1;
     }
+    for (let i = 1; i < resumenes.length; i += 1) {
+      if (resumenes[i].tipoBase === 'ausencia' && resumenes[i - 1].tipoBase === 'ausencia') {
+        mal.push(`seed ${seed}: ausencia dos años seguidos (${resumenes[i].message})`);
+      }
+    }
+    const titulosDeLiga = resumenes.filter((r) => r.tipoBase === 'titulo_liga').map((r) => r.message.replace(/^(OTRA VEZ|Y SIGUE|SIN FRENO) — /, ''));
+    for (let i = 1; i < titulosDeLiga.length; i += 1) {
+      if (titulosDeLiga[i] === titulosDeLiga[i - 1]) {
+        mal.push(`seed ${seed}: el título de liga repite el titular "${titulosDeLiga[i]}"`);
+      }
+    }
   }
   if (elegibles < 30) {
     throw new Error(`solo ${elegibles} carreras pasaron de 15 splits en ${N} seeds — muestra insuficiente`);
   }
+  if (mal.length > 0) {
+    throw new Error(mal.slice(0, 4).join(' | '));
+  }
   const fraccion = conAusencia / elegibles;
-  if (fraccion < 0.3) {
-    throw new Error(`"ausencia" tituló en el ${(fraccion * 100).toFixed(1)}% de las carreras elegibles — el mínimo es 30%`);
+  if (fraccion > 0.3) {
+    throw new Error(`"ausencia" tituló en el ${(fraccion * 100).toFixed(1)}% de las carreras elegibles: pasó a ser un titular que le gana a los hechos`);
   }
 });
 
@@ -29514,6 +29531,10 @@ check('G2b una carta por año: una sola decisión de carta por año jugado, 3 ca
 // G3c (PLANUI §0.9), la promesa del mercado como dilema: TRAICIÓN sale solo en ofertas del clásico de tu org actual
 // (`data/clasicos.json`); VOLVÉ A CASA arranca con lo guardado menos la salida (`mercado.costoSalidaArraigo`), y la fila nueva
 // del registro lleva la etiqueta de la firma; el sueldo nunca supera el "hasta" del asiento (D112). Carreras enteras.
+// Volvés con lo guardado menos la salida; si te fuiste Querido o más, con piso en Querido (volver a casa es que te quieren).
+const esperadoAlVolver = (guardado) => (guardado >= BALANCE.arraigo.hitos.querido
+  ? Math.max(BALANCE.arraigo.hitos.querido, guardado - BALANCE.mercado.costoSalidaArraigo)
+  : Math.max(0, guardado - BALANCE.mercado.costoSalidaArraigo));
 check('G3c el mercado como dilema: TRAICIÓN solo del clásico, VOLVÉ A CASA con lo guardado menos la salida, sueldo ≤ "hasta"', () => {
   const mal = [];
   const cuenta = { ofertas: 0, conHasta: 0, traicion: 0, volve: 0, firmasVolve: 0, filasEtiquetadas: 0 };
@@ -29539,7 +29560,7 @@ check('G3c el mercado como dilema: TRAICIÓN solo del clásico, VOLVÉ A CASA co
           if (etiquetas.includes('VOLVE_A_CASA')) {
             cuenta.volve += 1;
             const guardado = st.career.arraigoPorOrg[o.org];
-            const esperado = guardado == null ? null : Math.max(0, guardado - BALANCE.mercado.costoSalidaArraigo);
+            const esperado = guardado == null ? null : esperadoAlVolver(guardado);
             if (esperado !== null && o.frente.arraigoArranca.valor !== esperado) {
               mal.push(`seed ${seed}: VOLVÉ A CASA a ${o.org} arranca con ${o.frente.arraigoArranca.valor}, guardado ${guardado}`);
             }
@@ -29556,7 +29577,7 @@ check('G3c el mercado como dilema: TRAICIÓN solo del clásico, VOLVÉ A CASA co
         cuenta.firmasVolve += 1;
         const org = estado.career.contrato.org;
         const guardado = antes.career.arraigoPorOrg[org];
-        const esperado = guardado == null ? null : Math.max(0, guardado - BALANCE.mercado.costoSalidaArraigo);
+        const esperado = guardado == null ? null : esperadoAlVolver(guardado);
         if (esperado !== null && firma.arraigo !== esperado) mal.push(`seed ${seed}: volvés a ${org} con ${firma.arraigo}, guardado ${guardado}`);
       }
       const filas = estado.career.registro.porOrg;
