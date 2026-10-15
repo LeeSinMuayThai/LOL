@@ -36,6 +36,8 @@ import { reglaDeVara } from './components/varaG1.js';
 import { momentosDelTramo, resumenDelTramo } from './core/momentos.js';
 import { mostrarTitulo, mostrarResumen, precalentarCopa } from './fx/momento.js';
 import { fichajeDelRelato, fichajeYaNarrado, narrarFichaje } from './components/fichaje.js';
+import { renderMonumento } from './components/monumento.js';
+import { fijarDorsal } from '../core/legado.js';
 
 export function iniciar() {
   const shellEl = document.querySelector('.shell');
@@ -330,13 +332,27 @@ export function iniciar() {
     return lineaDelHistorial;
   }
 
+  // G4c: la firma confirma el número de camiseta; se guarda en el estado (`career.dorsalPorOrg`) como el resto. `reproducirLlamada`
+  // guarda `store.leer()` al terminar el relato, así que el dorsal viaja con ese guardado.
+  function fijarDorsalDeLaFirma(numero, org) {
+    try {
+      store.escribir(fijarDorsal(store.leer(), numero, org));
+    } catch (error) {
+      console.error('No se pudo fijar el dorsal:', error);
+    }
+  }
+
   // La final: la pieza `final` muestra la tarjeta y "Nueva carrera" (y nada del relato ni de las paradas).
   function mostrarFinal(state) {
     escena.revelar(state, {
       transicion: true,
       pintar: () => {
         if (state.terminado && state.tarjeta) {
-          ui.renderTarjeta(tarjetaPanel, state, modulos, { lineaHistorial: registrarEnHistorial(state) });
+          const verTarjeta = () => ui.renderTarjeta(tarjetaPanel, state, modulos, { lineaHistorial: registrarEnHistorial(state) });
+          // G4c: antes de la tarjeta, un beat con el monumento (si tu escalón de arraigo lo merece).
+          if (!renderMonumento(tarjetaPanel, state, verTarjeta)) {
+            verTarjeta();
+          }
         }
       }
     });
@@ -494,7 +510,7 @@ export function iniciar() {
           indice: firma.indice,
           mostrar: () => {
             almacenamiento.anotarMomentoVisto(estado.seed, claveFirma);
-            return narrarFichaje({ modo: reproductor.modoDeMovimiento(), escala: reproductor.escalaDeEspera(), controlar: (control) => reproductor.narrar(control) }, firma.f, { mundo: ambiente, sonido: sonido.sonidoFx });
+            return narrarFichaje({ modo: reproductor.modoDeMovimiento(), escala: reproductor.escalaDeEspera(), controlar: (control) => reproductor.narrar(control), alFijarDorsal: fijarDorsalDeLaFirma }, firma.f, { mundo: ambiente, sonido: sonido.sonidoFx });
           }
         });
       }
@@ -616,7 +632,8 @@ export function iniciar() {
       almacenamiento.borrarCarreraGuardada();
       almacenamiento.borrarVista();
     } else {
-      almacenamiento.guardarCarrera(estadoActual, rng, rngUi);
+      // `store.leer()`, no `estadoActual`: la firma del relato pudo fijar el dorsal (G4c) y el guardado tiene que llevarlo.
+      almacenamiento.guardarCarrera(store.leer(), rng, rngUi);
       almacenamiento.guardarVista(marcadorDeVista(estadoActual));
     }
 
@@ -698,7 +715,9 @@ export function iniciar() {
       },
       hasta: () => cambiosHasta(antes, despues),
       // Espacio la saltea y un cuarto abierto la pausa (`reproductor.narrar`): la parada pasa `{ saltar, pausar, reanudar }`.
-      controlar: (control) => reproductor.narrar(control)
+      controlar: (control) => reproductor.narrar(control),
+      // G4c: la firma que cuenta la parada (mercado, prueba) guarda el número que confirmaste.
+      alFijarDorsal: fijarDorsalDeLaFirma
     };
     try {
       const n = await vistaParada.narrar(ctx);

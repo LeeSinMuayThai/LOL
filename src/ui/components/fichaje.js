@@ -585,6 +585,8 @@ export async function narrarFichaje(ctx, f, { mundo = null, sonido = null, valor
   function seguirYa() {
     if (!asentado) return saltar();
     guardarNumeroJersey(f.seed, numero);
+    // G4c: el número que confirmaste es el que retiran si sos Leyenda; el motor lo guarda en `career.dorsalPorOrg` (lo fija `app.js`).
+    ctx?.alFijarDorsal?.(numero, f.org);
     cerrar();
   }
   d.seguir.addEventListener('click', seguirYa);

@@ -73,7 +73,8 @@ const PERSPECTIVA_GIRO = 1200;
 // G2a (PLANUI §0.9): el rótulo de la carta de un evento, con el formato de El Ídolo: GOLPE DURO (la categoría), DECISIÓN
 // DIFÍCIL (una bifurcación de carrera) o PASAN COSAS (el resto). Solo los eventos del split (y los de la ventana del retiro);
 // el cierre de año, el momento de un partido y las paradas de sistema conservan el suyo.
-const primeraOracion = (texto) => String(texto).match(/^.*?[.!?…](?=\s|$)/)?.[0] ?? String(texto);
+// G4c: unos puntos suspensivos seguidos de minúscula no cierran la frase ("Podés terminar en el banco… o eterno.").
+const primeraOracion = (texto) => String(texto).match(/^.*?(?:[.!?]|…(?![\s]+[a-záéíóúñ]))(?=\s|$)/)?.[0] ?? String(texto);
 
 function rotuloDeEvento(decision) {
   const evento = decision?.datos?.evento;
