@@ -75,7 +75,7 @@
     "options": [
       {
         "id": "recortar_y_afilar",
-        "label": "Recortar el pool y afilar los mejores",
+        "label": "Recortar el pool y afilar",
         "descripcion": "Sacás al que menos jugás y le metés esas horas al que más te representa.",
         "weight": 5,
         "outcomes": [
@@ -138,6 +138,7 @@
         "id": "forzar_mientras_dure",
         "label": "Forzar picks arriesgados mientras dura",
         "descripcion": "Sacás ventaja del momento aunque implique estirar la cuerda más de lo cómodo.",
+        "aviso": "Si forzás de más, el desgaste te pasa factura",
         "weight": 5,
         "outcomes": [
           {
@@ -220,8 +221,9 @@
       },
       {
         "id": "aguantar_con_lo_tuyo",
-        "label": "Aguantar con lo tuyo: el meta rota",
+        "label": "Aguantar con lo tuyo",
         "descripcion": "Te plantás en lo que sabés jugar y esperás a que el parche te dé la razón.",
+        "aviso": "Si el meta no rota, cada partida cuesta más cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -265,8 +267,9 @@
     "options": [
       {
         "id": "soltar_al_main",
-        "label": "Soltar a {main} y rearmar el pool",
+        "label": "Soltar a {main} y rearmar",
         "descripcion": "Lo sacás de la rotación del todo y le metés esas horas a uno que el parche sí banca. Duele, pero el pool queda limpio.",
+        "aviso": "Soltar al main duele: te cuesta cabeza",
         "weight": 3,
         "outcomes": [
           {
@@ -293,6 +296,7 @@
         "id": "buscar_reemplazo",
         "label": "Buscar un reemplazo ahora",
         "descripcion": "Aceptás que el ciclo de tu main terminó, al menos por este parche, y arrancás de cero con otro.",
+        "aviso": "El reemplazo entra crudo y te cuesta cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -317,6 +321,7 @@
         "id": "apostar_que_vuelve",
         "label": "Apostar a que el meta vuelve",
         "descripcion": "Le seguís metiendo horas a tu main de siempre. O el parche te da la razón, o perdiste el tiempo remando contra todo.",
+        "aviso": "Si el meta no vuelve, perdiste el tiempo",
         "weight": 5,
         "outcomes": [
           {
@@ -363,6 +368,7 @@
         "id": "buscar_reemplazo",
         "label": "Buscar un reemplazo ahora",
         "descripcion": "Aceptás que el ciclo de tu main terminó, al menos por este parche, y arrancás de cero con otro.",
+        "aviso": "El reemplazo entra crudo y te cuesta cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -387,6 +393,7 @@
         "id": "apostar_que_vuelve",
         "label": "Apostar a que el meta vuelve",
         "descripcion": "Le seguís metiendo horas a tu main de siempre. O el parche te da la razón, o perdiste el tiempo remando contra todo.",
+        "aviso": "Si el meta no vuelve, perdiste el tiempo",
         "weight": 5,
         "outcomes": [
           {
@@ -431,8 +438,9 @@
     "options": [
       {
         "id": "practicarlo_a_fondo",
-        "label": "Practicarlo a fondo antes del próximo partido",
+        "label": "Practicarlo a fondo antes del partido",
         "descripcion": "Le metés todas las horas disponibles al campeón nuevo. Si sale bien, sos de los primeros en dominarlo; si no llegás a tiempo, vas a la partida con algo a medio cocinar.",
+        "aviso": "Si no llegás a tiempo, jugás con un campeón crudo",
         "weight": 5,
         "outcomes": [
           {
@@ -456,7 +464,7 @@
       },
       {
         "id": "pulir_lo_de_ahora",
-        "label": "Pulir lo de ahora y aprenderlo después",
+        "label": "Pulir lo tuyo y aprenderlo después",
         "descripcion": "Dejás pasar la novedad. Seguís rindiendo con lo que ya dominás, mientras el resto de la región se pelea por entender al nuevo.",
         "weight": 5,
         "outcomes": [
@@ -500,8 +508,9 @@
     "options": [
       {
         "id": "practicarlo_a_fondo",
-        "label": "Practicarlo a fondo antes de la próxima seguidilla",
+        "label": "Practicarlo a fondo ya",
         "descripcion": "Le metés todas las horas disponibles al campeón nuevo. Si sale bien, sos de los primeros en dominarlo; si no llegás a tiempo, vas a rankeds con algo a medio cocinar.",
+        "aviso": "Si no llegás a tiempo, rankeás con un campeón crudo",
         "weight": 5,
         "outcomes": [
           {
@@ -525,7 +534,7 @@
       },
       {
         "id": "pulir_lo_de_ahora",
-        "label": "Pulir lo de ahora y aprenderlo después",
+        "label": "Pulir lo tuyo y aprenderlo después",
         "descripcion": "Dejás pasar la novedad. Seguís rindiendo con lo que ya dominás, mientras el resto del servidor se pelea por entender al nuevo.",
         "weight": 5,
         "outcomes": [
@@ -564,7 +573,7 @@
     "options": [
       {
         "id": "cumplir_la_cuota",
-        "label": "Cumplir la cuota y abrir el pool",
+        "label": "Cumplir la cuota y abrir pool",
         "descripcion": "Sumás campeones aunque sea a costa de la maestría en los que ya dominás. Es lo que las academias esperan ver.",
         "weight": 5,
         "outcomes": [
@@ -590,6 +599,7 @@
         "id": "especializarte_igual",
         "label": "Ignorar la cuota y especializarte",
         "descripcion": "Le apostás a la profundidad por sobre lo que piden las academias. Puede que rindas mejor; también puede que no te miren igual.",
+        "aviso": "Si miden por planilla, las academias te descartan",
         "weight": 5,
         "outcomes": [
           {
@@ -631,7 +641,7 @@
     "options": [
       {
         "id": "pulir_tu_bandera",
-        "label": "Pulir al que ya es tu bandera",
+        "label": "Pulir a tu bandera",
         "descripcion": "Vas a lo seguro: más horas al que mejor conocés, pase lo que pase con el parche.",
         "weight": 5,
         "outcomes": [
@@ -653,7 +663,7 @@
       },
       {
         "id": "meterle_al_del_regimen",
-        "label": "Meterle horas a uno nuevo que pide el régimen",
+        "label": "Sumar el que pide el régimen",
         "descripcion": "Cambiás la comodidad por vigencia. Entra con maestría baja, pero es la única forma de que tu pool no quede clavado en lo que elegiste a los 15.",
         "weight": 5,
         "outcomes": [
@@ -757,6 +767,7 @@
         "id": "abrazar_el_one_trick",
         "label": "Ir all-in con ese campeón",
         "descripcion": "Todas tus horas a uno solo. Vas a jugarlo mejor que casi nadie, y el día que lo baneen o lo nerfeen no vas a tener a dónde ir.",
+        "aviso": "Si lo nerfean, quedás desnudo sin pool",
         "weight": 5,
         "outcomes": [
           {
@@ -784,7 +795,7 @@
       },
       {
         "id": "resistir_la_tentacion",
-        "label": "Resistir y seguir construyendo pool",
+        "label": "Resistir y seguir ampliando el pool",
         "descripcion": "Lo jugás, pero no dejás de sumar otras opciones. Subís más lento que los one-trick, con una base que no depende de un solo parche.",
         "weight": 5,
         "outcomes": [
@@ -827,6 +838,7 @@
         "id": "aprenderlo_para_el_plan",
         "label": "Aprenderlo para el plan del equipo",
         "descripcion": "Le metés horas a algo que solo sirve en scrims y oficial. En la ladder vas a perder puntos jugando un campeón que solo no rinde.",
+        "aviso": "Perdés LP en soloQ y el rival puede banearlo",
         "weight": 5,
         "outcomes": [
           {
@@ -851,8 +863,9 @@
       },
       {
         "id": "decir_que_no_te_convence",
-        "label": "Decirle al coach que no te cierra",
+        "label": "Decirle al coach que no",
         "descripcion": "Le planteás que preferís ir a playoffs con algo que dominás de verdad. Defendés tu criterio y te arriesgás a que el plan salga igual sin vos cómodo.",
+        "aviso": "Si el coach insiste, queda la duda y baja la sinergia",
         "weight": 5,
         "outcomes": [
           {

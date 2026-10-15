@@ -101,7 +101,7 @@
     "options": [
       {
         "id": "disfrutarlo_sin_condiciones",
-        "label": "Disfrutarlo por lo que es, sin pedirle más",
+        "label": "Disfrutarlo sin pedirle más",
         "descripcion": "No necesitás que abra ninguna puerta para que valga la pena. Jugar frente a tu gente, en tu país, ya es suficiente esta vez.",
         "weight": 5,
         "outcomes": [
@@ -124,7 +124,7 @@
       },
       {
         "id": "usarlo_como_contenido",
-        "label": "Usar el momento para reforzar tu marca personal en la región",
+        "label": "Usarlo para tu marca regional",
         "descripcion": "Le sacás el jugo en redes: la vuelta a casa, la final, la conexión con la escena que te vio empezar. Es capital simbólico que no todos tienen.",
         "weight": 5,
         "outcomes": [

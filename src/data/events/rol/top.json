@@ -482,8 +482,9 @@
     "options": [
       {
         "id": "ajustar_el_estilo",
-        "label": "Jugar seguro y pedir ayuda a tu jungla",
+        "label": "Jugar seguro, pedir ayuda a jungla",
         "descripcion": "Cedés algo de farm, jugás cerca de torre y trackeás al jungla rival vos mismo. Menos ventaja de línea, muchas menos muertes regaladas.",
+        "aviso": "Si jugás muy atrás, igual te pasan por arriba y perdés LP",
         "weight": 5,
         "outcomes": [
           {
@@ -508,8 +509,9 @@
       },
       {
         "id": "seguir_forzando",
-        "label": "Seguir jugando parado y ganar la línea igual",
+        "label": "Seguir parado y ganar la línea",
         "descripcion": "No te achicás: seguís peleando cada trade asumiendo que a veces te va a costar la vida. Si aguantás la varianza, subís rápido.",
+        "aviso": "Si los ganks te agarran, regalás kills y LP",
         "weight": 5,
         "outcomes": [
           {

@@ -476,8 +476,9 @@
     "options": [
       {
         "id": "carrilear_el_mapa",
-        "label": "Tomar el mando del equipo aleatorio",
+        "label": "Tomar el mando del equipo random",
         "descripcion": "Marcás objetivos, pingueás timings, ordenás a cuatro desconocidos como si fueran tu equipo. Si te hacen caso, ganás; si no, perdés igual pero con la conciencia limpia.",
+        "aviso": "Si nadie te sigue, perdés igual y te tiltás",
         "weight": 5,
         "outcomes": [
           {
@@ -500,8 +501,9 @@
       },
       {
         "id": "jugar_lo_tuyo_support",
-        "label": "Jugar tu partido perfecto y soltar el resto",
+        "label": "Jugar lo tuyo, soltar el resto",
         "descripcion": "Te concentrás solo en lo que controlás: visión impecable, roams limpios, cero muertes tontas. Lo que hagan los otros cuatro no es tu problema.",
+        "aviso": "Si el equipo pierde igual, perdés LP de todos modos",
         "weight": 5,
         "outcomes": [
           {

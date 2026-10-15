@@ -40,6 +40,7 @@
         "id": "aceptar_el_import",
         "label": "Aceptar y armar la mudanza",
         "descripcion": "Cambiás de liga, de idioma y de rutina: la mudanza se firma en la próxima pretemporada. Ganás plata y vitrina; perdés el piso conocido.",
+        "aviso": "Mudanza, idioma y soledad: pegan en arraigo y cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -147,6 +148,7 @@
         "id": "quedarte_en_la_lck",
         "label": "Quedarte en la LCK",
         "descripcion": "Seguís en la liga más dura, con tu gente al lado.",
+        "aviso": "Si un compatriota agarra el cupo, perdés hype",
         "weight": 5,
         "outcomes": [
           {
@@ -217,6 +219,7 @@
         "id": "negociar_con_el_club",
         "label": "Usar la oferta para renegociar acá",
         "descripcion": "Mostrás el número y esperás que el club se mueva. Si no se mueve, tenés la puerta abierta; si se ofende, también.",
+        "aviso": "Si no les gusta la oferta, perdés sinergia con el club",
         "weight": 5,
         "outcomes": [
           {
@@ -607,6 +610,7 @@
         "id": "ir_a_corea",
         "label": "Ir a Corea a jugártela",
         "descripcion": "Techo altísimo de nivel; idioma, comida y distancia en contra. Te mudás en la próxima pretemporada.",
+        "aviso": "Idioma, comida y distancia te pegan fuerte",
         "weight": 5,
         "outcomes": [
           {
@@ -726,7 +730,7 @@
       },
       {
         "id": "bootcamp_de_tres_meses",
-        "label": "Pedir primero un bootcamp de tres meses",
+        "label": "Pedir primero un bootcamp",
         "descripcion": "Probás el sistema antes de mudarte.",
         "weight": 5,
         "outcomes": [
@@ -1215,8 +1219,9 @@
     "options": [
       {
         "id": "aceptar_el_swap",
-        "label": "Aceptar y meterte de lleno en la línea nueva",
+        "label": "Aceptar y jugar la línea nueva",
         "descripcion": "Pasás a jugar la línea nueva de titular, con un pool que arranca de cero. Si sale bien, valés más; si sale mal, te desarmás.",
+        "aviso": "Si sale mal, perdés mecánica y jerarquía",
         "weight": 5,
         "outcomes": [
           {
@@ -1328,8 +1333,9 @@
       },
       {
         "id": "aceptar_solo_en_scrims",
-        "label": "Aceptar solo para scrims, nunca en oficial",
+        "label": "Aceptar solo para scrims",
         "descripcion": "Ayudás sin jugártela: sirve para el equipo, no te saca de tu puesto.",
+        "aviso": "Si el coach lo siente a medias, perdés jerarquía",
         "weight": 5,
         "outcomes": [
           {
@@ -1398,8 +1404,9 @@
       },
       {
         "id": "negarte",
-        "label": "Decir que tu línea es tu línea",
+        "label": "Plantarte en tu línea",
         "descripcion": "Te plantás: sos lo que sos y eso es lo que sabés hacer mejor.",
+        "aviso": "Si el coach se ofende, perdés sinergia y lugar",
         "weight": 5,
         "outcomes": [
           {
@@ -1501,6 +1508,7 @@
         "id": "infiltrarte_y_jugar",
         "label": "Infiltrarte y jugar la serie",
         "descripcion": "Sin dolor por 72 horas. Después veremos.",
+        "aviso": "Si la infiltración sale mal, perdés mecánica en plena serie",
         "weight": 5,
         "outcomes": [
           {
@@ -1572,6 +1580,7 @@
         "id": "parar_y_bajarte_de_la_serie",
         "label": "Bajarte de la serie y cuidarte",
         "descripcion": "Dejás el lugar al suplente y te curás de verdad.",
+        "aviso": "Si el suplente brilla, perdés jerarquía y hype",
         "weight": 5,
         "outcomes": [
           {
@@ -1651,8 +1660,9 @@
       },
       {
         "id": "jugar_con_vendaje_y_menos_scrims",
-        "label": "Jugar sin infiltrar, con vendaje y menos scrims",
+        "label": "Vendaje y menos scrims, sin infiltrar",
         "descripcion": "Un punto medio: jugás, pero cuidando la muñeca todo lo que se pueda.",
+        "aviso": "Si el dolor aprieta, rendís peor justo en la serie",
         "weight": 5,
         "outcomes": [
           {
@@ -3105,8 +3115,9 @@
     "options": [
       {
         "id": "llevarlo_al_draft",
-        "label": "Llevar esa mirada al draft y al shotcalling",
+        "label": "Llevarlo al draft y al shotcalling",
         "descripcion": "Usás lo aprendido para decidir mejor.",
+        "aviso": "Si te pasás de rosca, el equipo se confunde",
         "weight": 5,
         "perfil": "profesional",
         "outcomes": [
@@ -3176,8 +3187,9 @@
       },
       {
         "id": "volver_a_lo_tuyo",
-        "label": "Volver a lo tuyo y dejar el swap como anécdota",
+        "label": "Volver a lo tuyo",
         "descripcion": "Volvés a tu línea de siempre y a tu pool, con el óxido de los splits sin jugarlo.",
+        "aviso": "Si tu línea te recibe fría, perdés ritmo y jerarquía",
         "weight": 5,
         "perfil": "hambriento",
         "outcomes": [

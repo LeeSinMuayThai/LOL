@@ -81,6 +81,7 @@
         "id": "meterle_mas_horas_al_stream",
         "label": "Meterle más horas al stream",
         "descripcion": "Subís la frecuencia y la plata sube con ella. Cada hora en vivo es una hora que no scrimeás.",
+        "aviso": "Si el coach se entera, te hace elegir entre stream y scrims",
         "weight": 5,
         "outcomes": [
           {
@@ -397,6 +398,7 @@
         "id": "agarrar_la_plata",
         "label": "Firmar y cobrar",
         "descripcion": "Plata que te cambia la vida por unos posteos. Si la plataforma revienta, tu cara queda pegada al escándalo para siempre.",
+        "aviso": "Si la plataforma revienta, tu cara queda en el escándalo",
         "weight": 5,
         "outcomes": [
           {
@@ -425,6 +427,7 @@
         "id": "rechazarlo_por_las_dudas",
         "label": "Rechazarlo",
         "descripcion": "Dejás pasar el mejor cheque de tu carrera hasta ahora. Dormís tranquilo y te preguntás, cada tanto, qué habrías hecho con esa plata.",
+        "aviso": "Si nunca revienta, te quedás sin el mejor cheque",
         "weight": 5,
         "outcomes": [
           {

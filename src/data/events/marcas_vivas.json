@@ -522,6 +522,7 @@
         "id": "estudiar_la_semana",
         "label": "Cerrar el ranked y estudiar",
         "descripcion": "Perdés la mejor ventana de LP del año. Comprás meses de paz y el derecho a seguir jugando.",
+        "aviso": "Perdés la mejor ventana de LP de la semana",
         "weight": 5,
         "outcomes": [
           {
@@ -549,8 +550,9 @@
       },
       {
         "id": "jugarte_la_ventana",
-        "label": "Aprovechar la racha y arriesgar la materia",
+        "label": "Racha ahora, materia a la suerte",
         "descripcion": "Es el elo más alto de tu vida al alcance de la mano. Si zafás de la materia igual, ganaste todo.",
+        "aviso": "Si desaprobás, se cae la confianza en casa",
         "weight": 5,
         "outcomes": [
           {

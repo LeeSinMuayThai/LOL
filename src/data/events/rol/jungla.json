@@ -144,6 +144,7 @@
         "id": "invadir_de_arranque",
         "label": "Invadir de arranque",
         "descripcion": "Buscás el golpe grande desde el minuto uno. Si conecta, arrancás con ventaja limpia; si no, empezás la partida ya abajo de recursos.",
+        "aviso": "Si te esperan, arrancás sin buffs ni smite",
         "weight": 5,
         "outcomes": [
           {
@@ -167,6 +168,7 @@
         "id": "farmear_tu_lado",
         "label": "Farmear tu propio lado y esperar",
         "descripcion": "Jugás seguro: tu jungla, tu ritmo, sin exponerte al minuto dos. Menos varianza, y el resto del mapa se define sin que vos empujes nada.",
+        "aviso": "Si jugás muy seguro, llegás sin ventaja y perdés LP",
         "weight": 5,
         "outcomes": [
           {
@@ -404,8 +406,9 @@
     "options": [
       {
         "id": "jugar_el_50_50",
-        "label": "Ir al objetivo y disputar el smite",
+        "label": "Ir al objetivo y disputar smite",
         "descripcion": "Te la jugás al duelo de smite aunque el equipo no esté para cubrirte. Si lo ganás, el partido gira; si lo perdés, regalaste el objetivo y probablemente tu vida.",
+        "aviso": "Si perdés el smite, regalás el objetivo y LP",
         "weight": 5,
         "outcomes": [
           {
@@ -427,8 +430,9 @@
       },
       {
         "id": "cederlo_y_jugar_mapa",
-        "label": "Ceder el objetivo y jugar en otro lado",
+        "label": "Ceder el objetivo y jugar mapa",
         "descripcion": "Renunciás al duelo y buscás compensar con presión en los carriles o una torre del otro lado del mapa. Más seguro, y le regalás un recurso al rival.",
+        "aviso": "Si cedés de más, el alma te cuesta LP",
         "weight": 5,
         "outcomes": [
           {

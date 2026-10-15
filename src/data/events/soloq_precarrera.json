@@ -20,6 +20,7 @@
         "id": "responder_dms",
         "label": "Contestarle y venderte bien",
         "descripcion": "Le pasás tu op.gg, le contás tu horario, le decís que estás listo. Te vas a exponer, y si después bajás de nivel lo va a ver.",
+        "aviso": "Si bajás de nivel después, el scout lo ve",
         "weight": 6,
         "outcomes": [
           {
@@ -81,8 +82,9 @@
     "options": [
       {
         "id": "priorizar_el_ranked",
-        "label": "Decirles la verdad: el ranked va primero",
+        "label": "Decirles la verdad: primero el ranked",
         "descripcion": "Se lo bancás de frente. Vas a perder crédito en casa, pero deja de haber una mentira que sostener.",
+        "aviso": "Si sale mal, la confianza en casa se cae fuerte",
         "weight": 5,
         "outcomes": [
           {
@@ -145,6 +147,7 @@
         "id": "motear_hasta_la_madrugada",
         "label": "Estirarla hasta que se corte",
         "descripcion": "Mientras siga ganando, sigo. Es la forma más rápida de subir y la más rápida de fundirte.",
+        "aviso": "Si la racha se estira, terminás fundido de la cabeza",
         "weight": 6,
         "outcomes": [
           {
@@ -215,6 +218,7 @@
         "id": "entrar_a_los_inhouse",
         "label": "Meterte a los lobbies",
         "descripcion": "Dejás de farmear LP tres noches por semana. A cambio, jugás contra gente que castiga los errores que en soloQ te dejan pasar.",
+        "aviso": "Los primeros lobbies te comen vivo y perdés LP",
         "weight": 6,
         "outcomes": [
           {
@@ -282,6 +286,7 @@
         "id": "ir_a_matarlo",
         "label": "Ir a buscarlo a la línea",
         "descripcion": "Es la vara real. Si le aguantás el carril tenés algo que contar; si te revienta, lo va a ver todo el lobby.",
+        "aviso": "Si te revienta, lo ve todo el lobby",
         "weight": 6,
         "outcomes": [
           {
@@ -355,6 +360,7 @@
         "id": "surfear_la_ola",
         "label": "Aprovechar el envión",
         "descripcion": "Streameás todos los días esta semana, contestás los DMs, te mostrás. La ventana de que se acuerden de tu nombre es corta.",
+        "aviso": "Si te colgás del hype, te quemás la cabeza",
         "weight": 5,
         "outcomes": [
           {
@@ -380,7 +386,7 @@
       },
       {
         "id": "dejarlo_pasar",
-        "label": "No darle bola y seguir jugando",
+        "label": "No darle bola y seguir",
         "descripcion": "Un clip no es una carrera. Si te ponés a mirar métricas de views dejás de mirar el minimapa.",
         "weight": 5,
         "outcomes": [
@@ -498,6 +504,7 @@
         "id": "seguir_el_cronograma",
         "label": "Bancarte la rutina completa",
         "descripcion": "Cuatro semanas de disciplina de jugador profesional sin ser jugador profesional. El colegio y todo lo demás pasan a segundo plano.",
+        "aviso": "El colegio se resiente: los estudios caen",
         "weight": 6,
         "outcomes": [
           {
@@ -568,6 +575,7 @@
         "id": "sumarte_al_proyecto",
         "label": "Entrar y jugarte el torneo",
         "descripcion": "Tu primera experiencia de equipo de verdad: horarios, roles, un IGL que te grita. Vas a aprender un montón y a bajar de la ladder.",
+        "aviso": "Bajás de la ladder mientras armás el equipo",
         "weight": 6,
         "outcomes": [
           {
@@ -595,7 +603,7 @@
       },
       {
         "id": "quedarte_solo",
-        "label": "Decir que no y seguir tu camino",
+        "label": "Decir que no y seguir",
         "descripcion": "Los rosters amateur sin estructura se disuelven a la primera derrota. Vos ya estás en el radar solo.",
         "weight": 4,
         "outcomes": [
@@ -706,7 +714,7 @@
     "options": [
       {
         "id": "subirla_en_serio",
-        "label": "Escalarla hasta arriba lo más rápido posible",
+        "label": "Escalarla lo más rápido posible",
         "descripcion": "Sin escudos ni ansiedad, a ver cuántas ganás seguidas. Es un test de nivel real, y también un montón de horas repetidas.",
         "weight": 5,
         "outcomes": [
@@ -780,8 +788,9 @@
     "options": [
       {
         "id": "jugar_para_el_highlight",
-        "label": "Ir a buscar la jugada para la cámara",
+        "label": "Buscar la jugada de cámara",
         "descripcion": "Sabés que hay coaches mirando. Una jugada grande en cámara vale más que tres partidas sólidas que nadie ve.",
+        "aviso": "Si te sale temprano, jugás tenso el resto",
         "weight": 5,
         "outcomes": [
           {
@@ -998,6 +1007,7 @@
         "id": "estudiar_para_pasar",
         "label": "Ponerte y aprobar",
         "descripcion": "Dos semanas de estudiar de verdad. Perdés práctica, pero cerrás un frente y les sacás el argumento.",
+        "aviso": "Perdés práctica y LP estas dos semanas",
         "weight": 5,
         "outcomes": [
           {
@@ -1025,8 +1035,9 @@
       },
       {
         "id": "priorizar_el_ranked_en_el_examen",
-        "label": "Ir con lo puesto y priorizar el ranked",
+        "label": "Ir con lo puesto y rankear",
         "descripcion": "Estudiás lo mínimo y seguís jugando. Si pasás, ganaste tiempo; si repetís, es un año que igual ibas a usar para esto.",
+        "aviso": "Si repetís, en casa es un golpe duro",
         "weight": 5,
         "outcomes": [
           {

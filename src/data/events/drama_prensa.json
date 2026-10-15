@@ -19,6 +19,7 @@
         "id": "meterse_en_el_conflicto",
         "label": "Meterte y poner la cara",
         "descripcion": "Alguien tiene que hablar. Ganás peso en la casa si sale bien, y quedás pegado si sale mal.",
+        "aviso": "Si hacés de mensajero entre dos lados, te quemás",
         "weight": 5,
         "outcomes": [
           {
@@ -43,6 +44,7 @@
         "id": "mantenerse_al_margen",
         "label": "No meterte y jugar tus scrims",
         "descripcion": "No es tu quilombo. Te ahorrás el desgaste, pero el grupo registra quién se hizo el distraído.",
+        "aviso": "Si se estira, las scrims son un velorio",
         "weight": 5,
         "outcomes": [
           {
@@ -219,6 +221,7 @@
         "id": "alimentar_el_rumor",
         "label": "Dejar que corra",
         "descripcion": "No lo desmentís. El mercado empieza a mirarte y adentro del club se dan cuenta de que lo estás usando.",
+        "aviso": "Si se te va de las manos, te dan por vendido y te pega",
         "weight": 5,
         "outcomes": [
           {
@@ -283,8 +286,9 @@
     "options": [
       {
         "id": "salir_a_aclarar",
-        "label": "Salir a aclarar con la cabeza fría",
+        "label": "Aclarar con la cabeza fría",
         "descripcion": "Un comunicado corto, sin excusas: estabas caliente, no era la forma. Cierra el tema o le da otra vuelta, según cómo caiga.",
+        "aviso": "Si la aclaración arma otro hilo, te desgasta",
         "weight": 5,
         "outcomes": [
           {
@@ -308,6 +312,7 @@
         "id": "no_decir_nada_mas",
         "label": "No decir una palabra más",
         "descripcion": "Ni aclaración ni disculpa. Aguantás el chubasco callado y esperás que el ciclo de noticias siga de largo.",
+        "aviso": "Si lo leen como soberbia, el club te obliga a salir a hablar",
         "weight": 5,
         "outcomes": [
           {

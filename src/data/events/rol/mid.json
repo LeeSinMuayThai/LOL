@@ -414,6 +414,7 @@
         "id": "aceptar_el_duelo",
         "label": "Entrar al duelo y ganarlo",
         "descripcion": "Aceptás el 1v1: cada onda, cada all-in, jugás para romperlo a él. Si le ganás la línea con contundencia, el resto del mapa suele seguir.",
+        "aviso": "Si el duelo te absorbe, perdés el mapa y LP",
         "weight": 5,
         "outcomes": [
           {
@@ -435,8 +436,9 @@
       },
       {
         "id": "ignorar_el_pique",
-        "label": "Ignorar el pique y jugar el mapa",
+        "label": "Ignorar el pique y jugar mapa",
         "descripcion": "Muteás el chat, jugás la línea a no perder y ponés la cabeza en objetivos y roams. Menos catártico, más LP.",
+        "aviso": "Si jugás a no perder, tu jungla se queja y perdés LP",
         "weight": 5,
         "outcomes": [
           {

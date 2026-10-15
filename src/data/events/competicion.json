@@ -220,8 +220,9 @@
     "options": [
       {
         "id": "bajarle_el_peso",
-        "label": "Bajarle el peso en la charla del día siguiente",
+        "label": "Bajarle el peso al otro día",
         "descripcion": "Le decís al grupo que una derrota no borra las jornadas anteriores. Ordena la cabeza colectiva, aunque suene a minimizar lo que pasó.",
+        "aviso": "Si suena a minimizar, el grupo te lo nota",
         "weight": 5,
         "outcomes": [
           {
@@ -244,6 +245,7 @@
         "id": "analizarla_en_frio",
         "label": "Analizarla en frío, sin filtro",
         "descripcion": "Revisás el VOD completo buscando qué falló de verdad. Más incómodo en el momento, y con mejor información para la próxima.",
+        "aviso": "Si el análisis se estira, el grupo sale golpeado",
         "weight": 5,
         "outcomes": [
           {

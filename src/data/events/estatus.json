@@ -343,8 +343,9 @@
     "options": [
       {
         "id": "competirle_de_frente",
-        "label": "Competirle cada scrim como si fuera el último",
+        "label": "Competirle cada scrim al máximo",
         "descripcion": "Subís tu propia exigencia para no darle un centímetro. Te puede devolver tu mejor nivel, o quemarte antes de que llegue la decisión.",
+        "aviso": "Si te obsesionás, jugás tenso y perdés jerarquía",
         "weight": 5,
         "outcomes": [
           {
@@ -372,6 +373,7 @@
         "id": "adoptar_al_rookie",
         "label": "Ponerte por encima y formarlo vos",
         "descripcion": "Le enseñás lo que sabés en vez de esconderlo. Si algún día te reemplaza, que sea con tu sello. Cede ventaja a corto plazo, suma peso a largo.",
+        "aviso": "Si el pibe te pasa por arriba, te pega en la cabeza",
         "weight": 5,
         "outcomes": [
           {

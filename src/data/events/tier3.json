@@ -15,8 +15,9 @@
     "options": [
       {
         "id": "reclamarlo_formalmente",
-        "label": "Reclamarlo por escrito, con el resto del roster",
+        "label": "Reclamar por escrito con el roster",
         "descripcion": "Juntás a tus compañeros y mandan un mensaje conjunto pidiendo una fecha concreta. Es incómodo, pero un reclamo de a uno se ignora más fácil que uno de cinco.",
+        "aviso": "Si cae en saco roto, se tensa con el manager",
         "weight": 5,
         "outcomes": [
           {
@@ -77,8 +78,9 @@
     "options": [
       {
         "id": "cuestionarlo_directo",
-        "label": "Plantarte y cuestionar la decisión en la cara",
+        "label": "Cuestionarlo en la cara",
         "descripcion": "Le decís, sin vueltas, por qué pensás que se equivoca. Es jugado —discutís con quien te paga— pero te sacás la duda de encima.",
+        "aviso": "Si se lo toma a mal, se resiente el grupo",
         "weight": 3,
         "outcomes": [
           {
@@ -99,7 +101,7 @@
       },
       {
         "id": "dejarlo_pasar",
-        "label": "Dejarlo pasar y jugar con lo que hay",
+        "label": "Dejarlo pasar y jugar",
         "descripcion": "No es tu batalla. Elegís guardarte el desacuerdo y enfocarte en lo único que controlás de verdad: tu propio nivel en la Grieta.",
         "weight": 4,
         "outcomes": [
@@ -121,8 +123,9 @@
       },
       {
         "id": "presion_colectiva",
-        "label": "Hablarlo primero con el resto del roster",
+        "label": "Hablarlo primero con el roster",
         "descripcion": "Antes de ir directo al dueño-coach, sondeás si tus compañeros piensan lo mismo. Si el reclamo llega en grupo, pesa distinto que si lo llevás solo.",
+        "aviso": "Si nadie te banca, quedás solo y más tenso",
         "weight": 3,
         "outcomes": [
           {
@@ -161,7 +164,7 @@
     "options": [
       {
         "id": "hacer_comunidad_con_lo_que_hay",
-        "label": "Sacarle el jugo a la convivencia forzada",
+        "label": "Sacarle jugo a la convivencia",
         "descripcion": "En vez de quejarte por el espacio, usás la cercanía obligada para construir algo con el grupo: cocinar juntos, ver VODs en la única tele.",
         "weight": 5,
         "outcomes": [
@@ -183,8 +186,9 @@
       },
       {
         "id": "buscar_tu_espacio_afuera",
-        "label": "Buscar un lugar propio para dormir bien",
+        "label": "Buscar un lugar propio",
         "descripcion": "Pagás de tu bolsillo una pieza cerca, aunque eso implique menos horas compartidas con el grupo y algo de plata que no vas a recuperar.",
+        "aviso": "Si te vas, te perdés la dinámica del grupo",
         "weight": 5,
         "outcomes": [
           {
@@ -222,8 +226,9 @@
     "options": [
       {
         "id": "buscar_equipo_por_tu_cuenta",
-        "label": "Mover contactos por tu cuenta, por las dudas",
+        "label": "Mover contactos por tu cuenta",
         "descripcion": "Sin decírselo al equipo, empezás a tantear otras posibilidades. Si el proyecto se corta, no querés quedarte sin nada de un día para el otro.",
+        "aviso": "Si se enteran, se rompe la confianza del grupo",
         "weight": 5,
         "outcomes": [
           {
@@ -244,8 +249,9 @@
       },
       {
         "id": "quedarte_fiel_al_proyecto",
-        "label": "Quedarte y remar con el equipo hasta que se defina",
+        "label": "Quedarte y remar con el equipo",
         "descripcion": "Decidís no buscar nada afuera todavía. Si el proyecto se cae, se cae con vos adentro hasta el final, no mirando para otro lado.",
+        "aviso": "Si el proyecto se cae, te agarra sin plan B",
         "weight": 5,
         "outcomes": [
           {
@@ -283,7 +289,7 @@
     "options": [
       {
         "id": "jugar_para_la_vidriera",
-        "label": "Jugar para lucirte vos, más que para ganar la scrim",
+        "label": "Jugar para lucirte, no para ganar",
         "descripcion": "Priorizás las jugadas que se ven bien y muestran tu techo individual, aunque eso signifique arriesgar el resultado del equipo.",
         "weight": 3,
         "outcomes": [
@@ -305,7 +311,7 @@
       },
       {
         "id": "jugar_para_el_equipo",
-        "label": "Jugar exactamente como jugarías cualquier scrim",
+        "label": "Jugar como en cualquier scrim",
         "descripcion": "No cambiás nada de tu forma de jugar por quién está mirando. Confiás en que el nivel real, sin actuación, es lo que más impresiona.",
         "weight": 4,
         "outcomes": [
@@ -328,7 +334,7 @@
       },
       {
         "id": "usarlo_para_hacer_contactos",
-        "label": "Aprovechar el post-scrim para hablar con su staff",
+        "label": "Hablar con su staff post-scrim",
         "descripcion": "Más allá de cómo te salga el juego, te asegurás de cruzar unas palabras con el coach o el manager de la academia cuando termine.",
         "weight": 3,
         "outcomes": [
@@ -368,8 +374,9 @@
     "options": [
       {
         "id": "jugar_a_lo_seguro",
-        "label": "Jugar a lo seguro, sin arriesgar tu imagen",
+        "label": "Jugar seguro, sin arriesgar imagen",
         "descripcion": "Elegís las jugadas más conservadoras. Preferís no arruinarte frente a los scouts con un error visible antes que ir por un lucimiento arriesgado.",
+        "aviso": "Si jugás tan seguro, pasás invisible",
         "weight": 2,
         "outcomes": [
           {
@@ -390,8 +397,9 @@
       },
       {
         "id": "arriesgar_por_el_highlight",
-        "label": "Ir por la jugada que quede en el resumen del torneo",
+        "label": "Ir por la jugada del resumen",
         "descripcion": "Buscás el momento que se comparta en redes, aunque signifique jugadas de alto riesgo que pueden salir mal en cualquier momento.",
+        "aviso": "Si el riesgo no sale, el error queda a la vista",
         "weight": 3,
         "outcomes": [
           {
@@ -412,7 +420,7 @@
       },
       {
         "id": "priorizar_el_resultado_del_equipo",
-        "label": "Priorizar que el equipo avance, por sobre lucirte",
+        "label": "Que avance el equipo, no vos",
         "descripcion": "Tomás las decisiones que más ayudan a ganar la serie, aunque eso implique un rol más discreto y menos vistoso para vos individualmente.",
         "weight": 3,
         "outcomes": [
@@ -435,7 +443,7 @@
       },
       {
         "id": "trabajar_a_los_scouts_presentes",
-        "label": "Usar los tiempos muertos para hablar con los scouts presentes",
+        "label": "Charlar con los scouts presentes",
         "descripcion": "Entre partidas, te acercás a presentarte con la gente que sabés que está de scouting. No todo pasa en la pantalla.",
         "weight": 2,
         "outcomes": [
@@ -473,7 +481,7 @@
     "options": [
       {
         "id": "comprar_tu_propio_equipo",
-        "label": "Comprar tu propio periférico, de tu bolsillo",
+        "label": "Comprarte vos el periférico",
         "descripcion": "No esperás a que el equipo lo resuelva. Con lo poco que cobrás, invertís en un mouse y un teclado que respondan como corresponde.",
         "weight": 5,
         "outcomes": [
@@ -495,8 +503,9 @@
       },
       {
         "id": "aguantar_con_lo_que_hay",
-        "label": "Aguantar con el mouse que falla, por ahora",
+        "label": "Aguantar con el mouse que falla",
         "descripcion": "No es el momento de gastar en periféricos. Preferís bancarte el click perdido ocasional antes que sumar un gasto que no está en tus planes.",
+        "aviso": "Si falla en la scrim, te cuesta una jugada clave",
         "weight": 5,
         "outcomes": [
           {
@@ -533,7 +542,7 @@
     "options": [
       {
         "id": "participar_a_fondo",
-        "label": "Meterte de lleno, entender que es parte del trabajo",
+        "label": "Meterte de lleno en el stream",
         "descripcion": "Si de eso sale tu sueldo, le ponés ganas de verdad: contestás preguntas, mostrás algo de tu juego, generás onda con el chat.",
         "weight": 5,
         "outcomes": [
@@ -556,7 +565,7 @@
       },
       {
         "id": "aparecer_lo_minimo",
-        "label": "Aparecer lo justo y volver a lo tuyo",
+        "label": "Aparecer lo justo y volver",
         "descripcion": "Le hacés el favor —diez minutos, un saludo— pero dejás claro, sin decirlo en voz alta, que tu prioridad es entrenar, no entretener.",
         "weight": 5,
         "outcomes": [
@@ -594,8 +603,9 @@
     "options": [
       {
         "id": "pedir_un_plazo_concreto",
-        "label": "Pedirle al dueño un plazo concreto, por escrito",
+        "label": "Pedir un plazo concreto por escrito",
         "descripcion": "Le pedís algo más que palabras: una fecha, un compromiso que puedas señalar si no se cumple.",
+        "aviso": "Si se ofende, se resiente el arraigo",
         "weight": 4,
         "outcomes": [
           {
@@ -616,8 +626,9 @@
       },
       {
         "id": "seguir_confiando",
-        "label": "Seguir confiando en el proyecto un tiempo más",
+        "label": "Seguir confiando un tiempo más",
         "descripcion": "Decidís darle el beneficio de la duda. Armar algo de cero lleva tiempo, y no querés ser vos el que se va justo antes de que las cosas mejoren.",
+        "aviso": "Si el discurso no cambia, la confianza se te gasta",
         "weight": 3,
         "outcomes": [
           {
@@ -638,8 +649,9 @@
       },
       {
         "id": "empezar_a_mirar_otras_puertas",
-        "label": "Empezar a mirar otras puertas, sin cortar esta",
+        "label": "Mirar otras puertas sin cortar esta",
         "descripcion": "No renunciás ni armás drama, pero dejás de esperar sentado: tanteás si hay otro proyecto de tier 3 con planes más sólidos.",
+        "aviso": "Si el dueño se entera, se rompe la sinergia",
         "weight": 3,
         "outcomes": [
           {

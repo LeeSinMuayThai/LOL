@@ -155,6 +155,7 @@
         "id": "aceptar_el_cambio",
         "label": "Adaptarte a lo que pide",
         "descripcion": "Reaprendés a jugar tu propia línea. Te hace más completo y por unos meses vas a rendir peor que antes.",
+        "aviso": "Unos meses rendís peor mientras reaprendés la línea",
         "weight": 6,
         "outcomes": [
           {
@@ -177,8 +178,9 @@
       },
       {
         "id": "resistirse_y_plantarse",
-        "label": "Plantarte: te ficharon por lo que hacés",
+        "label": "Plantarte en tu estilo",
         "descripcion": "Defendés tu juego. Si tenías razón, ganás peso; si no, te ganaste un problema con el que decide quién juega.",
+        "aviso": "Si el coach no cede, te quedás con un problema en el staff",
         "weight": 4,
         "outcomes": [
           {

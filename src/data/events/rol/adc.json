@@ -412,6 +412,7 @@
         "id": "una_mas_cansado",
         "label": "Jugar una más aunque estés fundido",
         "descripcion": "Te la jugás a que el hambre le gane al cansancio. Si tu mecánica aguanta despierta, cerrás el objetivo esta noche.",
+        "aviso": "A las cuatro no hay reflejos: perdés LP y cabeza",
         "weight": 5,
         "outcomes": [
           {
