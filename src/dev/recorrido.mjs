@@ -296,15 +296,28 @@ async function jugarMinijuegoBien() {
       // "Cannot read properties of null" por minijuego (1600 ms / 15 ms), que el recorrido se anotaba como errores del juego.
       if (q('.minijuego-resultado')) return;
       if (!tipo) {
-        if (q('.minijuego-campo')) tipo = 'la_prueba'; else if (q('.minijuego-ola')) tipo = 'last_hit'; else if (q('.minijuego-teclas')) tipo = 'el_combo';
+        if (q('.mj-pizarra-carta')) tipo = 'la_pizarra'; else if (q('.minijuego-campo')) tipo = 'la_prueba'; else if (q('.minijuego-ola')) tipo = 'last_hit'; else if (q('.minijuego-teclas')) tipo = 'el_combo';
         else if (q('.minijuego-metronomo')) tipo = 'el_kite'; else if (q('.minijuego-carriles')) tipo = 'dodge'; else if (q('.minijuego-zonas')) tipo = 'la_vision';
         else if (q('.minijuego-slider')) tipo = 'rueda_de_prensa'; else if (q('.minijuego-barra') && /TP/.test(W.innerText)) tipo = 'el_teleport';
         else if (q('.minijuego-barra')) tipo = 'robar_baron'; else if (/señal|AHORA/i.test(W.innerText)) tipo = 'la_llamada';
+        if (tipo === 'la_pizarra') {
+          // La pizarra: se memoriza la cara de cada carta mientras estan vistas y despues se arma cada par.
+          const cs = [...W.querySelectorAll('.mj-pizarra-carta')]; const por = {};
+          cs.forEach((c, i) => { const k = c.querySelector('.mj-pizarra-cara')?.textContent ?? ''; (por[k] ||= []).push(i); });
+          memo = Object.values(por).flatMap((ix) => ix);
+        }
         if (tipo === 'el_combo') memo = [...W.querySelectorAll('.minijuego-tecla')].map((c) => c.textContent);
         if (tipo === 'la_vision') memo = [...W.querySelectorAll('.minijuego-zona-btn')].map((b) => b.dataset.estado === 'oscura');
         return;
       }
       const ahora = Date.now();
+      if (tipo === 'la_pizarra') {
+        const cs = [...W.querySelectorAll('.mj-pizarra-carta')];
+        if (cs.some((c) => c.dataset.estado === 'error' || c.dataset.estado === 'vista')) return;
+        if (ahora - jugadoEn < 150) return;
+        const i = memo.find((x) => cs[x] && cs[x].dataset.estado === 'tapada');
+        if (i !== undefined) { cs[i].click(); jugadoEn = ahora; }
+      }
       if (tipo === 'la_prueba') { const b = q('.minijuego-blanco'); if (b) { if (!b.dataset.visto) b.dataset.visto = ahora; else if (ahora - b.dataset.visto > 280) b.click(); } }
       if (tipo === 'last_hit') { const m = q('.minijuego-minion:not([disabled])'); if (m && m.dataset.zona === 'ejecucion') m.click(); }
       if (tipo === 'el_combo') { const bs = [...W.querySelectorAll('.minijuego-tecla-btn:not([disabled])')]; if (bs.length && memo.length) { const k = memo.shift(); bs.find((b) => b.textContent === k)?.click(); } }
@@ -852,6 +865,22 @@ else await captura('inicio', { completa: true });
 // V2-C (h): en el inicio, con el draft completo, las letras de los cuartos no abren nada.
 if (MODO === 'recorrido') await probarLetrasInertes('Inicio', Object.values(LETRAS_DE_CUARTOS));
 await page.click('#run');
+// Los momentos (fx/momento.js: el trofeo, el monumento, los cierres de año) frenan en TODAS las velocidades hasta Continuar:
+// un poller los aprieta y los anota (tipo 'momento: <titulo>') para que el recorrido no los cuente como pantalla trabada.
+const momentos = {};
+const pollerMomentos = setInterval(async () => {
+  try {
+    const t = await page.evaluate(() => {
+      const b = [...document.querySelectorAll('.mo-seguir')].find((e) => e.checkVisibility({ checkVisibilityCSS: true }) && !e.disabled);
+      if (!b) return null;
+      const raiz = b.closest('[class*=momento], .mo, dialog, section, div') ?? b.parentElement;
+      const txt = (raiz?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 90);
+      b.click();
+      return txt || '(sin texto)';
+    });
+    if (t) { momentos[t] = (momentos[t] || 0) + 1; L(`>> MOMENTO Continuar: ${t}`); if (Object.keys(momentos).length <= 8 && momentos[t] === 1) await captura('momento'); }
+  } catch { /* la pagina se esta recargando */ }
+}, 400);
 
 const filas = [];
 const visitadas = {};
@@ -1105,4 +1134,5 @@ if (MODO === 'recorrido') {
   console.log(`  vamos: ${filas.filter((f) => f.vamos).map((f) => `${f.tipo}=${f.vamos.entra ? 'entra' : 'NO entra'}(${f.vamos.bottom}/${f.vamos.piso})`).join(' ') || 'sin medir'}`);
   console.log(`  numerosVisibles: ${filas.map((f) => `${f.tipo}=${f.numerosVisibles}`).join(' ')}`);
 }
+clearInterval(pollerMomentos); L('MOMENTOS: ' + JSON.stringify(momentos)); console.log('momentos=' + JSON.stringify(momentos));
 await browser.close();
