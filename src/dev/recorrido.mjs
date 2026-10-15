@@ -923,7 +923,14 @@ for (let it = 0; it < 3000; it++) {
   const topbar = (snap.match(/^TOPBAR: (.*)$/m) || [])[1] || '';
   const edad = edadDe(snap);
   if (snap !== lastSnap) { L(`\n===== STEP ${step} (it ${it}) =====\n${snap}`); lastSnap = snap; stuck = 0; } else stuck++;
-  if (stuck > 6) { L('!! ESTADO TRABADO'); await captura('trabado'); break; }
+  // El fichaje (la firma con el jersey): el primer Seguir salta la animacion y el segundo confirma el numero. Clic real, no `.click()`.
+  if (await page.locator('.fj-seguir:visible').count()) {
+    await page.click('.fj-seguir', { timeout: 3000 }).catch(() => {});
+    momentos['fichaje (Seguir)'] = (momentos['fichaje (Seguir)'] || 0) + 1; L('>> FICHAJE Seguir');
+    await page.waitForTimeout(500); stuck = 0; continue;
+  }
+  if (stuck > 6) { L('!! ESTADO TRABADO');
+    L('   pieza=' + pieza + ' cruda=' + (await piezaCruda(page)) + ' botones visibles: ' + JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('button')].filter((b) => b.checkVisibility({ checkVisibilityCSS: true })).map((b) => (b.id || b.className) + ':' + b.innerText.trim().slice(0, 20)).slice(0, 25))) + ' t=' + (Date.now() - t0) / 1000); await captura('trabado'); break; }
 
   if (pieza === 'tarjeta') {
     await page.waitForTimeout(800);
