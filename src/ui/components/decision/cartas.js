@@ -109,7 +109,10 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
     btnMas.setAttribute('aria-expanded', String(abrir));
     btnMas.textContent = abrir ? 'menos' : 'más';
   });
-  const cab = el('header', { class: 'cv-cab' }, [rotulo, titulo, planteo]);
+  // G2b (una carta por año): el color de tu situación (la soloQ sin equipo, el bootcamp, la gaming house de tu org). Lo arma el
+  // motor (`systems/edadCierre.js:situacionDeLaCarta`).
+  const situacion = decision.situacion?.texto ? el('p', { class: 'cv-situacion', 'data-situacion': decision.situacion.id, text: decision.situacion.texto }) : null;
+  const cab = el('header', { class: 'cv-cab' }, [rotulo, titulo, situacion, planteo]);
 
   // ------------------------------------------------------------------ el arte (por prioridad: ver la cabecera)
   const ejesMx = esMatriz ? lector.matriz.ejes : [];
@@ -192,6 +195,16 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
       el('span', { text: `${nombre} ${s.valor > 0 ? 'seguro' : 'de piso'}` })
     ]);
   };
+  // G2b (una carta por año): el costo a la vista, otro stat de la ficha que la carta seguro te baja ("−2 Cabeza").
+  const costoDe = (o) => {
+    const c = o.costo;
+    if (!c || !Number.isFinite(c.valor) || c.valor >= 0) return null;
+    return el('span', { class: 'cv-seguro cv-costo', 'data-signo': 'baja', style: estiloEje(ejeDe(c.campo)), title: `${c.etiqueta}: lo que seguro te cuesta (puede ser más)` }, [
+      icono(glifoDeCampo(c.campo)),
+      el('b', { text: conSigno(c.valor) }),
+      el('span', { text: `${lector.nombreDeEje(c.campo)} de costo` })
+    ]);
+  };
   const avisoDe = (o) => (o.aviso?.texto ? el('span', { class: 'cv-aviso' }, [
     el('b', { 'aria-hidden': 'true', text: '⚠' }),
     el('span', { text: o.aviso.pct != null ? `${o.aviso.pct}%: ${o.aviso.texto}` : o.aviso.texto })
@@ -250,6 +263,7 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
       !esMatriz && o.descripcion ? el('span', { class: 'cv-pista', 'aria-hidden': 'true', text: primeraOracion(o.descripcion) }) : null,
       o.descripcion ? el('span', { class: 'cv-desc', text: o.descripcion }) : null,
       esMatriz ? null : seguroDe(o),
+      esMatriz ? null : costoDe(o),
       esMatriz ? barras(o) : (o.previa ?? []).length ? el('span', { class: 'eje-chips cv-chips' }, o.previa.map(chipDePrevia)) : null,
       esMatriz ? null : avisoDe(o),
       planDe(o),

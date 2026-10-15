@@ -29425,6 +29425,59 @@ check('G3ab siempre en un equipo: desde los 17 nunca más de una pretemporada si
   if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
 });
 
+// G2b (PLANUI §0.9, "una carta por año"): la promesa de la pieza. Cada año jugado (no el del retiro) tiene exactamente una
+// decisión de carta (la del cierre), con tres cartas; la rutina del amateur ya no se elige (ningún `plan_amateur`); cada
+// carta declara su número seguro en uno de los cinco stats de la ficha (`carta.stats`), y resolverla, en cualquiera de sus
+// outcomes, sube ese stat al menos eso.
+check('G2b una carta por año: una sola decisión de carta por año jugado, 3 cartas, y el número seguro se cumple', () => {
+  const CAMPOS = new Set(BALANCE.carta.stats.map((stat) => `player.stats.${stat}`));
+  const mal = [];
+  let cartas = 0;
+  let anios = 0;
+  for (let seed = 1; seed <= 10; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const primera = state.age;
+    const porEdad = new Map();
+    const responder = (sistema, s, decision, r) => {
+      if (decision.datos?.motivo === 'plan_amateur') mal.push(`seed ${seed}: el plan del amateur volvió a ser una decisión`);
+      if (sistema.id === 'edadCierre') {
+        porEdad.set(s.age, (porEdad.get(s.age) ?? 0) + 1);
+        cartas += 1;
+        if (decision.opciones.length !== 3) mal.push(`seed ${seed} a los ${s.age}: ${decision.opciones.length} cartas`);
+        decision.opciones.forEach((opcion, i) => {
+          const seguro = opcion.seguro;
+          if (!seguro || !CAMPOS.has(seguro.campo) || !(seguro.valor >= 0)) {
+            mal.push(`seed ${seed} a los ${s.age}: "${opcion.id}" no declara un número seguro de la ficha (${seguro?.campo})`);
+            return;
+          }
+          const stat = seguro.campo.split('.').pop();
+          for (let tirada = 1; tirada <= 4; tirada += 1) {
+            const res = sistema.resolver(s, decision, { opcionId: opcion.id }, mulberry32(seed * 1000 + s.age * 10 + i * 4 + tirada));
+            const delta = res.state.player.stats[stat] - s.player.stats[stat];
+            if (delta + 1e-9 < seguro.valor) mal.push(`seed ${seed} a los ${s.age}: "${opcion.id}" mostró +${seguro.valor} ${stat} y dio ${delta.toFixed(2)}`);
+          }
+        });
+      }
+      return sistema.resolverAuto(s, decision, r);
+    };
+    const retirado = new Set();
+    for (let i = 0; i < 80 && !state.terminado; i += 1) {
+      const antes = state;
+      state = avanzarSplitAuto(state, rng, responder).state;
+      if (antes.phase === 'retirado' || state.phase === 'retirado') retirado.add(state.age);
+    }
+    for (let edad = primera + 1; edad <= state.age; edad += 1) {
+      if (retirado.has(edad)) continue;
+      anios += 1;
+      const n = porEdad.get(edad) ?? 0;
+      if (n !== 1) mal.push(`seed ${seed}: ${n} decisiones de carta a los ${edad}`);
+    }
+  }
+  console.log(`      ${cartas} cartas en ${anios} años jugados (10 carreras)`);
+  if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);
