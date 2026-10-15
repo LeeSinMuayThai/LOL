@@ -409,8 +409,8 @@ export function finalesPerdidas(registro) {
 // que la pantalla de la firma (`ui/components/fichaje.js`) llama con el número que eligió el jugador.
 
 const ORDEN_DE_ESCALONES = ['uno_mas', 'querido', 'idolo', 'leyenda'];
-// Leyenda: retiran tu camiseta; Ídolo: cuelgan tu bandera. Abajo de eso, no hay monumento.
-const TIPO_DE_MONUMENTO = { leyenda: 'camiseta', idolo: 'bandera' };
+// Leyenda: retiran tu jersey; Ídolo: cuelgan tu bandera. Abajo de eso, no hay monumento.
+const TIPO_DE_MONUMENTO = { leyenda: 'jersey', idolo: 'bandera' };
 const APODO_DE_ESCALON = { leyenda: 'LA LEYENDA DE', idolo: 'EL HÉROE DE', querido: 'EL QUERIDO DE' };
 
 // El monumento: la org de tu escalón más alto de arraigo (el pico de cada fila, `arraigoMaximo`). Entre Ídolo y Leyenda
@@ -462,8 +462,8 @@ export function premiosConNombre(state) {
   const traicion = filas.find((fila) => fila.etiqueta === 'TRAICION');
   if (traicion) {
     premio('cruzaste_la_vereda', 'Cruzaste la vereda', traicion.traicionA
-      ? `De ${traicion.traicionA} a ${traicion.org}, el clásico de toda la vida. Hay hinchas que todavía no te lo perdonan.`
-      : `Te fuiste al clásico: ${traicion.org}. Hay hinchas que todavía no te lo perdonan.`);
+      ? `De ${traicion.traicionA} a ${traicion.org}, el clásico de toda la vida. Hay fans que todavía no te lo perdonan.`
+      : `Te fuiste al clásico: ${traicion.org}. Hay fans que todavía no te lo perdonan.`);
   }
 
   const regiones = [];
@@ -481,7 +481,7 @@ export function premiosConNombre(state) {
     .filter((fila) => (fila.splitsPorTier?.[1] ?? 0) + (fila.splitsPorTier?.[2] ?? 0) > 0)
     .map((fila) => fila.org))];
   if (orgsPro.length === 1) {
-    premio('leal_hasta_el_final', 'Leal hasta el final', `Toda tu carrera pro con la camiseta de ${orgsPro[0]}.`);
+    premio('leal_hasta_el_final', 'Leal hasta el final', `Toda tu carrera pro con el jersey de ${orgsPro[0]}.`);
   }
 
   const mundiales = mundialesGanados(registro).length;

@@ -29593,7 +29593,7 @@ check('G3c el mercado como dilema: TRAICIÓN solo del clásico, VOLVÉ A CASA co
 // Toda carrera que termina por decisión o por edad (`retiro_elegido`: el último split, la línea Faker, el mercado, una
 // bifurcación) pasa por el último partido —un mapa con minijuego del contrato G1 (`datos.g1`, `finalJugada.tipo:
 // 'despedida'`)— y queda en `registro.despedidas`, con la edad del retiro que cerró la carrera. Y el monumento sale del
-// escalón más alto de arraigo de `registro.porOrg`: Leyenda → camiseta, Ídolo → bandera, abajo nada.
+// escalón más alto de arraigo de `registro.porOrg`: Leyenda → jersey, Ídolo → bandera, abajo nada.
 const SEEDS_G4C = 40;
 const SPLITS_G4C = 120;
 
@@ -29626,7 +29626,7 @@ check('G4c: toda carrera que termina por decisión o por edad pasa por el últim
     const tope = Math.max(...filas.map((f) => escalones.indexOf(bandaDeArraigoK6AU(Math.round(f.arraigoMaximo ?? 0)).id)));
     const m = monumentoG4c(estado);
     tipos.add(m.tipo);
-    const esperado = { leyenda: 'camiseta', idolo: 'bandera' }[escalones[tope]] ?? null;
+    const esperado = { leyenda: 'jersey', idolo: 'bandera' }[escalones[tope]] ?? null;
     if (m.escalon !== escalones[tope] || m.tipo !== esperado) {
       mal.push(`seed ${seed}: monumento ${m.escalon}/${m.tipo} con el escalón más alto en ${escalones[tope]}`);
     }

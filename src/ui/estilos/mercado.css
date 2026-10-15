@@ -151,7 +151,7 @@
 .ms-op-tag { position: absolute; right: 8px; top: 12px; z-index: 4; font: 700 9px / 1 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); }
 .ms-op-tag[data-etq='bombazo'], .ms-op-tag[data-etq='casa'] { color: var(--warn); }
 .ms-op-tag[data-etq='traicion'] { color: var(--danger); }
-.ms-op-tag[data-etq='casa'] { color: var(--ok, #5ad19a); }
+.ms-op-tag[data-etq='casa'] { color: var(--ok); }
 .ms-op-cresta { position: relative; z-index: 3; display: grid; place-items: center; width: 58px; height: 58px; }
 .ms-op-cresta::before {
   content: ''; position: absolute; inset: -12px; border-radius: 50%; pointer-events: none;
@@ -639,14 +639,14 @@ html[data-reducido] .fj-pl-grieta [pathLength] { stroke-dashoffset: 0; }
 
 /* G3c-ui: las etiquetas de la oferta (grandes, la primera manda el color) y los cuatro ejes del frente */
 .ms-etqs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0; }
-.ms-etq { --ms-etq: var(--tono-acento, var(--luz-texto)); --ms-etq-tinta: var(--org-tinta, #0b0d12); display: inline-flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; padding: 6px 12px; border-radius: 4px; font: 800 13px / 1.1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ms-etq); background: color-mix(in srgb, var(--ms-etq) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ms-etq) 55%, transparent); }
+.ms-etq { --ms-etq: var(--tono-acento, var(--luz-texto)); --ms-etq-tinta: var(--org-tinta); display: inline-flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; padding: 6px 12px; border-radius: 4px; font: 800 13px / 1.1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ms-etq); background: color-mix(in srgb, var(--ms-etq) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ms-etq) 55%, transparent); }
 .ms-etq b { font-weight: 800; }
 .ms-etq i { font: 600 11px / 1.1 var(--f-cuerpo); font-style: normal; letter-spacing: 0.02em; text-transform: none; }
 .ms-etq[data-primera='si'] { color: var(--ms-etq-tinta); background: var(--ms-etq); box-shadow: 0 0 22px color-mix(in srgb, var(--ms-etq) 38%, transparent); }
-.ms-etq[data-etq='bombazo'] { --ms-etq: var(--warn); --ms-etq-tinta: #1b1200; }
-.ms-etq[data-etq='traicion'] { --ms-etq: var(--danger); --ms-etq-tinta: #1d0509; }
-.ms-etq[data-etq='casa'] { --ms-etq: var(--ok, #5ad19a); --ms-etq-tinta: #04180e; }
-.ms-etq[data-etq='a_la_baja'] { --ms-etq: var(--ink-dim); --ms-etq-tinta: var(--ink-inversa, #0b0d12); }
+.ms-etq[data-etq='bombazo'] { --ms-etq: var(--warn); --ms-etq-tinta: var(--ms-etq-tinta-bombazo); }
+.ms-etq[data-etq='traicion'] { --ms-etq: var(--danger); --ms-etq-tinta: var(--ms-etq-tinta-traicion); }
+.ms-etq[data-etq='casa'] { --ms-etq: var(--ok); --ms-etq-tinta: var(--ms-etq-tinta-casa); }
+.ms-etq[data-etq='a_la_baja'] { --ms-etq: var(--ink-dim); --ms-etq-tinta: var(--ink-inversa); }
 .ms-aura-etqs { margin-bottom: 2px; }
 .ms-ejes { display: grid; gap: 4px; margin: 8px 0 0; padding: 0; list-style: none; }
 .ms-eje { display: grid; grid-template-columns: 22px 64px minmax(0, 1fr); align-items: baseline; gap: 0 8px; font-size: 13px; line-height: 1.35; color: var(--ink); }
@@ -654,14 +654,14 @@ html[data-reducido] .fj-pl-grieta [pathLength] { stroke-dashoffset: 0; }
 .ms-eje-k { font: 600 10px / 1.3 var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); }
 .ms-eje-t { min-width: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
 .ms-eje[data-tono='mal'] .ms-eje-t { color: var(--danger); }
-.ms-eje[data-tono='bien'] .ms-eje-t { color: var(--ok, #5ad19a); }
+.ms-eje[data-tono='bien'] .ms-eje-t { color: var(--ok); }
 .ms-carta-etqs { margin: -4px 0 -2px; }
 .ms-carta-etqs .ms-etq { padding: 4px 9px; font-size: 11px; }
 .ms-carta-ejes { margin: 2px 0 0; gap: 2px; }
 .ms-carta-ejes .ms-eje { color: var(--ms-tinta-papel); font-size: 12px; }
 .ms-carta-ejes .ms-eje-k { color: var(--ms-tinta-papel-suave); }
-.ms-carta-ejes .ms-eje[data-tono='mal'] .ms-eje-t { color: #b3202f; }
-.ms-carta-ejes .ms-eje[data-tono='bien'] .ms-eje-t { color: #1b7a4a; }
+.ms-carta-ejes .ms-eje[data-tono='mal'] .ms-eje-t { color: var(--ms-papel-mal); }
+.ms-carta-ejes .ms-eje[data-tono='bien'] .ms-eje-t { color: var(--ms-papel-bien); }
 @media (max-width: 640px) {
   .ms-etq { font-size: 12px; padding: 5px 10px; letter-spacing: 0.1em; }
   .ms-eje { grid-template-columns: 20px 54px minmax(0, 1fr); font-size: 12.5px; }

@@ -359,7 +359,7 @@ function candidatoTraicion(state, ctx) {
   const rival = fila.traicionA ?? 'tu club de siempre';
   return {
     titular: redaccion(ctx, 'traicion', ['TRAICIÓN', 'TE PASASTE AL ENEMIGO', `DE ${String(fila.traicionA ?? 'TU CLUB').toUpperCase()} A ${org}: NO SE PERDONA`]),
-    bajada: `Dejaste a ${rival} para firmar con ${fila.org}. Los hinchas no te lo van a olvidar.`
+    bajada: `Dejaste a ${rival} para firmar con ${fila.org}. Los fans no te lo van a olvidar.`
   };
 }
 
@@ -552,7 +552,7 @@ function candidatoTransferencia(state, ctx) {
   const region = state.mundo.ligas.find((liga) => liga.id === ctx.filaAbiertaEsteAnio.liga)?.region?.toUpperCase();
   const lista = region
     ? [`TE FUISTE A ${region}`, `NUEVO AIRE EN ${region}`, `HICISTE LAS VALIJAS PARA ${region}`]
-    : ['CAMBIO DE AIRES', 'NUEVO CLUB, NUEVA HISTORIA', 'OTRA CAMISETA'];
+    : ['CAMBIO DE AIRES', 'NUEVO CLUB, NUEVA HISTORIA', 'OTRO JERSEY'];
   return { titular: redaccion(ctx, 'transferencia', lista), bajada: null };
 }
 

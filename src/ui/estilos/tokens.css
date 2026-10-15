@@ -831,6 +831,16 @@ html[data-comp='lcp'] { --luz-texto: #f7cbb4; --luz-suave: #f5a26f38; --luz-tenu
   --ms-papel-canto: #cfc6b4;
   --ms-tinta-papel: #1b1d25;
   --ms-tinta-papel-suave: #474a55;
+  --ms-papel-mal: #b3202f;                /* el eje que cuesta / el que suma, sobre el papel de la carta */
+  --ms-papel-bien: #1b7a4a;
+  /* G3c-ui: las etiquetas de la oferta. --ms-etq / --ms-etq-tinta son los valores base; cada etiqueta los pisa */
+  --ok: #5ad19a;
+  --ink-inversa: #0b0d12;
+  --ms-etq: var(--ink-dim);
+  --ms-etq-tinta: var(--org-tinta);
+  --ms-etq-tinta-bombazo: #1b1200;
+  --ms-etq-tinta-traicion: #1d0509;
+  --ms-etq-tinta-casa: #04180e;
   --ms-carta-alto: 500px;
 }
 /* ===== fin §4.10 E ===== */
