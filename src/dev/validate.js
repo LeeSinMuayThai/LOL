@@ -29085,7 +29085,7 @@ check('W1-H: la ficha fija nombra el próximo escalón con su umbral real (arrai
 //   que traer firmas, planes del cierre y ascensos (si no, no probaría nada).
 // - "Tan cerca": la chance "sin la jugada" que recalcula la placa de cierre (`probabilidadDeMapa` con el plan y la charla)
 //   es la del motor: con el minijuego en 0,5 da la p con la que se tiró el mapa, y la jugada mueve la p hacia su lado.
-const NOMBRE_CHECK_W1D = 'W1-D: el diario cita la decisión del año, da los mismos deltas que la ficha (y el del puntaje contra la foto del año) y anuncia solo escalones que subieron; "tan cerca" recalcula la chance sin la jugada igual que el motor (PLANUI §0.7)';
+const NOMBRE_CHECK_W1D = 'W1-D: el diario cita la decisión del año (la firma, la bifurcación o el evento que frenó), da los mismos deltas que la ficha (y el del puntaje contra la foto del año) y anuncia solo escalones que subieron; "tan cerca" de una final con minijuego dice lo que faltó en sus unidades, con la cuenta del veredicto (PLANUI §0.9)';
 let errorW1D = null;
 if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_W1D.toLowerCase().includes(texto))) {
   try {
@@ -29149,13 +29149,23 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_W1D.toLowerCase().inc
         ahoraPrevio = esc?.ahora.id ?? ahoraPrevio;
       }
     }
-    if (resumenes === 0 || !tipos.firma || !tipos.plan || Object.keys(ejes).length === 0 || puntajes === 0) mal.push(`muestra vacía: ${resumenes} resúmenes, ${JSON.stringify(tipos)}, ascensos ${JSON.stringify(ejes)}, ${puntajes} deltas del puntaje`);
+    // G2a: todo evento con 2+ opciones frena, así que el plan del cierre ya no gana nunca la última hora (pesa menos que el evento que
+    // contestaste): lo que tiene que aparecer es la firma, la bifurcación y el evento.
+    if (resumenes === 0 || !tipos.firma || !tipos.bifurcacion || !tipos.evento || Object.keys(ejes).length === 0 || puntajes === 0) mal.push(`muestra vacía: ${resumenes} resúmenes, ${JSON.stringify(tipos)}, ascensos ${JSON.stringify(ejes)}, ${puntajes} deltas del puntaje`);
 
-    // Ola G (G1): se fue la mitad de "tan cerca" que recalculaba la chance sin la jugada contra la p tirada: el mapa decisivo de
-    // una final ya no se tira, lo decide el minijuego contra la vara (el "tan cerca" de G1 es el CASI del veredicto, con la
-    // cuenta del motor, `juzgarMinijuego`). La placa de cierre (`tanCercaDeLaFinal`, ui/core/momentos.js) todavía habla de
-    // chance: la arregla la UI. Queda la guarda de que no sale fuera de una final perdida en el decisivo.
-    if (tanCercaDeLaFinal({ perdioLaFinal: false, decisivo: true, pFinal: 0.5 }) || tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: false, pFinal: 0.5 })) {
+    // Ola G (G1): un mapa con minijuego se decide por la vara y no se tira, así que la placa de una final perdida dice lo que
+    // faltó en las unidades del minijuego (con la misma cuenta que el veredicto de la parada, `varaG1.tanCerca`), no la chance.
+    // "Tan cerca" si fue el CASI, "Lo que faltó" si no; y no sale fuera de una final perdida en el mapa decisivo.
+    const { tanCerca } = await import('../ui/components/varaG1.js');
+    const estadoCerca = createInitialState(1, mulberry32(1));
+    const juicioCasi = { paso: false, casi: true, vara: 0.75, clave: 'casi' };
+    const faltante = tanCerca('la_corrida', 0.5, { tipo: 'zona', entro: false, zona: [41, 58], frenaste: 61 }, juicioCasi, estadoCerca, {});
+    const casi = tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: true, pFinal: 0.5, faltante, casi: true });
+    const lejos = tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: true, pFinal: 0.5, faltante, casi: false });
+    if (casi?.rotulo !== 'Tan cerca' || lejos?.rotulo === 'Tan cerca' || casi.texto !== faltante || !/faltó 1\./.test(faltante) || !/41-58, frenaste en 61/.test(faltante) || /chance|%/.test(casi.texto)) {
+      mal.push(`la placa de una final con minijuego no dice lo que faltó en sus unidades: ${JSON.stringify({ casi, lejos })}`);
+    }
+    if (tanCercaDeLaFinal({ perdioLaFinal: false, decisivo: true, pFinal: 0.5, faltante }) || tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: false, pFinal: 0.5, faltante })) {
       mal.push('"tan cerca" salió fuera de una final perdida en el mapa decisivo');
     }
     console.log(`      ${resumenes} resúmenes (${puntajes} con el delta del puntaje), última hora ${JSON.stringify(tipos)}, ascensos ${JSON.stringify(ejes)}`);

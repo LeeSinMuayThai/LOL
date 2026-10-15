@@ -453,27 +453,17 @@ export function ascensosYDeltas(despues, anio, fotoAnio = null) {
 
 // --- "Tan cerca" (W3): la final que se perdió en el mapa que la definía ---
 
-// Por debajo de esto la jugada no movió la chance (ni para un lado ni para el otro).
-const MUEVE_LA_CHANCE = 0.005;
 const PUNTOS = 100;
 const pct = (p) => Math.round(p * PUNTOS);
 
-// `{ rotulo, texto }` o `null`. Solo para una final perdida en el mapa decisivo. `pFinal`: la chance con la que se tiró el
-// mapa (el log del mapa); `pSinJugada`: la que tenía ese mapa sin el minijuego (`null` si no hubo minijuego). Honesto: si
-// ganaste la jugada y el mapa se fue en la tirada, lo dice; si la perdiste, dice cuánto te movió la chance.
-export function tanCercaDeLaFinal({ perdioLaFinal = false, decisivo = false, pFinal = null, pSinJugada = null } = {}) {
-  if (!perdioLaFinal || !decisivo || !Number.isFinite(pFinal)) return null;
-  if (Number.isFinite(pSinJugada)) {
-    const mueve = pFinal - pSinJugada;
-    // los puntos son la resta de los dos porcentajes que se muestran (nunca "8 puntos, de 51% a 44%")
-    const puntos = Math.max(1, Math.abs(pct(pFinal) - pct(pSinJugada)));
-    if (mueve > MUEVE_LA_CHANCE) {
-      return { rotulo: 'Tan cerca', texto: `Ganaste la jugada (+${puntos} de chance: ${pct(pFinal)}%)… y el mapa se fue igual.` };
-    }
-    if (mueve < -MUEVE_LA_CHANCE) {
-      return { rotulo: 'Tan cerca', texto: `La jugada no salió: te costó ${cuantos(puntos, 'punto', 'puntos')} de chance (de ${pct(pSinJugada)}% a ${pct(pFinal)}%) y el mapa se fue.` };
-    }
-    return { rotulo: 'Tan cerca', texto: `La jugada salió pareja: con ${pct(pFinal)}% de chance, el mapa se fue.` };
-  }
+// `{ rotulo, texto }` o `null`. Solo para una final perdida en el mapa decisivo. G1 (PLANUI §0.9): un mapa con minijuego se
+// decide por la vara, no por la chance. Entonces la placa dice lo que faltó en las unidades del minijuego (`faltante`, la
+// misma cuenta que el veredicto de la parada: `varaG1.tanCerca`): "Tan cerca" si fue el CASI, "Lo que faltó" si no. Solo un
+// mapa que se tiró (sin minijuego) habla de la chance con la que se tiró (`pFinal`).
+export function tanCercaDeLaFinal({ perdioLaFinal = false, decisivo = false, pFinal = null, faltante = null, casi = false } = {}) {
+  if (!perdioLaFinal || !decisivo) return null;
+  if (typeof faltante === 'string' && faltante) return { rotulo: casi ? 'Tan cerca' : 'Lo que faltó', texto: faltante };
+  if (!Number.isFinite(pFinal)) return null;
   return { rotulo: 'Tan cerca', texto: `Se definió en el último mapa: tenían ${pct(pFinal)}% de chance y no alcanzó.` };
 }
+

@@ -38,7 +38,7 @@ import {
   cuadrosQuietos, apareceEn, contarEnCuadros
 } from './transmisionComun.js';
 import { tanCercaDeLaFinal } from '../core/momentos.js';
-import { probabilidadDeMapa, ajusteDeCharla } from '../../core/serie.js';
+import { tanCerca } from './varaG1.js';
 import { selloDeRiesgo } from './finales.js';
 
 const TX = {
@@ -691,20 +691,24 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     // W1-D (PLANUI §0.7, W3): la final que se perdió en el mapa que la definía dice qué tan cerca estuvo
     const esFinal = se.ronda === 'final' || (se.torneo === 'mundial' && se.etapa === 'final');
     const cerca = finLog && !gano && esFinal
-      ? tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: esDecisivo(ultimoMp, formato), pFinal: ultimoMp?.p, pSinJugada: pSinLaJugada(ultimoMp) })
+      ? tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: esDecisivo(ultimoMp, formato), pFinal: ultimoMp?.p, ...faltanteDelMapa(ultimoMp) })
       : null;
     esperaCerca = Boolean(cerca);
     placaCierre(b, { a, b: bb, t0, titular, texto, cerca, gana: sigue ? null : gano, sub: `${sNos} ${a ?? ''}–${bb ?? ''} ${sEllos}${sigue ? ' · la serie sigue' : ''}`, rotulo: `${comp.rotulo} · ${ronda} · Bo${formato}` });
   }
-  // La chance que tenía el mapa decisivo sin el minijuego (el plan y la charla, la misma cuenta que `systems/serie.js`), para
-  // decir si la jugada lo movió a favor o en contra. `null` si el decisivo no se jugó como minijuego.
-  function pSinLaJugada(l) {
+  // G1: el mapa decisivo con minijuego lo decidió la vara, así que la placa dice lo que faltó en las unidades del minijuego, con
+  // la misma cuenta que el veredicto de la parada (`varaG1.tanCerca`): la vara efectiva y lo que sacaste vienen en el log del
+  // mapa (`l.minijuego`). `{}` si el mapa se tiró (sin minijuego).
+  function faltanteDelMapa(l) {
     const d = decision.datos ?? {};
-    if (!soloNarrar || !d.conMinijuego || !Number.isFinite(d.fuerzaPropia)) return null;
+    const m = l?.minijuego;
+    if (!soloNarrar || !d.minijuego || !m || !Number.isFinite(m.vara) || !Number.isFinite(m.resultado)) return {};
+    const casi = m.resultado >= m.vara - (d.g1?.margenCasi ?? 0);
+    const juicio = { paso: false, casi, vara: m.vara, clave: casi ? 'casi' : 'no' };
     try {
-      return probabilidadDeMapa(estado, d.fuerzaPropia, (d.ajustePlan ?? 0) + ajusteDeCharla(Boolean(l?.charla)));
+      return { faltante: tanCerca(d.minijuego, m.resultado, d.detalleG1 ?? null, juicio, estado, d), casi };
     } catch {
-      return null;
+      return {};
     }
   }
   function placaCierre(b, { a, b: bb, t0, titular, texto, cerca = null, gana, sub: subT, rotulo: rot }) {
@@ -818,14 +822,14 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
 // minijuego (`datos.momento === 'mapa_decisivo'`, con `campeonElegido` y `fuerzaPropia`); `estado`: el de la parada (antes
 // de la respuesta: los mapas ya jugados, el marcador, los quemados); `pMapa`: la chance con la que se tiró el mapa.
 // Devuelve la vista: { titulo, mundo, narrar(ctx), destruir() }; `narrar` cuenta el mapa y el cierre con `ctx.logs`.
-export function crearCaraACaraDeNarracion(contenedor, decision, { estado, previa = null, mundo = null, sonido = null, internacional = false, pMapa = null }) {
+export function crearCaraACaraDeNarracion(contenedor, decision, { estado, previa = null, mundo = null, sonido = null, internacional = false, pMapa = null, detalle = null }) {
   const datos = decision?.datos ?? {};
   const narrable = {
     titulo: decision?.titulo ?? 'El mapa decisivo',
     descripcion: '',
     opciones: [],
-    // `conMinijuego` y `ajustePlan` (W1-D): con ellos la placa de cierre sabe cuánto movió la jugada la chance del mapa
-    datos: { motivo: 'decisivo', campeonElegido: datos.campeonElegido ?? null, fuerzaPropia: datos.fuerzaPropia ?? null, ajustePlan: datos.ajustePlan ?? null, conMinijuego: datos.motivo === 'minijuego' }
+    // G1: con el minijuego, la `g1` y el detalle de la jugada (dónde frenaste), la placa de cierre dice lo que faltó
+    datos: { motivo: 'decisivo', campeonElegido: datos.campeonElegido ?? null, minijuego: datos.minijuego ?? null, g1: datos.g1 ?? null, detalleG1: detalle }
   };
   return crearCaraACara(contenedor, narrable, { estado, previa, mundo, sonido, responder: () => {}, modo: 'serie', internacional, soloNarrar: true, pMapa });
 }

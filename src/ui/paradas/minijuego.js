@@ -75,13 +75,15 @@ export function mostrar(contenedor, decision, ctx) {
   // reemplaza: la foto de la transición los lleva)
   for (const n of contenedor.querySelectorAll(':scope > .mj-transmision, :scope > .mj-firma, :scope > .g1-camino, :scope > .g1-mesa')) n.remove();
   const previa = pintarPrevia(decision, estado);
-  montarParada(contenedor, decision, { estado, rngUi, responder, renderPrevia: pintarPrevia });
+  // G1: el detalle de la jugada (dónde frenaste, a cuánto caíste) para la placa de cierre del mapa decisivo
+  const registro = { detalle: null };
+  montarParada(contenedor, decision, { estado, rngUi, responder, renderPrevia: pintarPrevia, registro });
   marcarFoco(contenedor.querySelector('#minijuegoTitle'));
   let transmision = null;
   return {
     async narrar(ctxNarracion) {
       if (decision.datos?.momento === 'mapa_decisivo') {
-        const r = await narrarElDecisivo(contenedor, decision, { estado, previa, mundo, sonido, pintarPrevia }, ctxNarracion);
+        const r = await narrarElDecisivo(contenedor, decision, { estado, previa, mundo, sonido, pintarPrevia, detalle: registro.detalle }, ctxNarracion);
         transmision = r.vista;
         return r.contados;
       }
@@ -114,7 +116,7 @@ export function mostrar(contenedor, decision, ctx) {
 // (las cartas, el suspenso, VICTORIA o DERROTA, los pips) y la placa de cierre con los logs de la respuesta. La capa se
 // queda a la vista hasta que el relato la reemplaza (la foto de la transición la lleva). Devuelve la vista y cuántos
 // logs contó.
-async function narrarElDecisivo(contenedor, decision, { estado, previa, mundo, sonido, pintarPrevia }, ctx) {
+async function narrarElDecisivo(contenedor, decision, { estado, previa, mundo, sonido, pintarPrevia, detalle = null }, ctx) {
   const mapa = (ctx.logs ?? []).find((l) => l?.mapa);
   if (!mapa || !contenedor.isConnected) return { vista: null, contados: 0 };
   const antes = ctx.antes ?? estado;
@@ -126,7 +128,8 @@ async function narrarElDecisivo(contenedor, decision, { estado, previa, mundo, s
     mundo,
     sonido,
     internacional: antes?.pendiente?.sistemaId === 'internacional',
-    pMapa: mapa.p
+    pMapa: mapa.p,
+    detalle
   });
   // la previa del minijuego se va (la chance del mapa está en la transmisión) y el panel le deja el lugar
   pintarPrevia(null, estado);
@@ -145,7 +148,7 @@ async function narrarElDecisivo(contenedor, decision, { estado, previa, mundo, s
 // desempate o la revancha y la charla. El veredicto dice PASÓ / CASI / NO SALIÓ con la misma cuenta que el motor
 // (`components/varaG1.js`) y el "tan cerca". La respuesta suma `poder` (contrato de G1).
 // `nodos` (el stream la reusa): { titulo, desc, apuesta, widget }; por defecto, los del panel `#minijuego`.
-export function montarParada(contenedor, decision, { estado, rngUi, responder, renderPrevia, nodos = null, conCamino = true }) {
+export function montarParada(contenedor, decision, { estado, rngUi, responder, renderPrevia, nodos = null, conCamino = true, registro = null }) {
   const estadoActual = estado;
   const minijuegoTitle = nodos?.titulo ?? contenedor.querySelector('#minijuegoTitle');
   const minijuegoDesc = nodos?.desc ?? contenedor.querySelector('#minijuegoDesc');
@@ -277,6 +280,7 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
         return;
       }
       resuelto = true;
+      if (registro) registro.detalle = detalle ?? null;
       contenedor.dataset.fase = 'resultado';
       if (g1) {
         const respuesta = { resultado, ...(decision.datos.charla?.disponible ? { charla } : {}), ...(g1.poder ? { poder: poderActivo } : {}) };
