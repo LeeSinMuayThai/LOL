@@ -60,7 +60,9 @@ function arraigoDeLlegada(state, org) {
   }
   const guardado = state.career.arraigoPorOrg?.[org];
   if (guardado != null) {
-    return Math.round(clampStat(guardado - BALANCE.mercado.costoSalidaArraigo));
+    const conSalida = Math.round(clampStat(guardado - BALANCE.mercado.costoSalidaArraigo));
+    // Volver a casa es que te quieren: si te fuiste Querido o más, volvés Querido (la salida no te baja del escalón).
+    return guardado >= BALANCE.arraigo.hitos.querido ? Math.max(conSalida, BALANCE.arraigo.hitos.querido) : conSalida;
   }
   return Math.round(arraigoInicial(state.player.stats.hype));
 }

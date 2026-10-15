@@ -29514,6 +29514,10 @@ check('G2b una carta por año: una sola decisión de carta por año jugado, 3 ca
 // G3c (PLANUI §0.9), la promesa del mercado como dilema: TRAICIÓN sale solo en ofertas del clásico de tu org actual
 // (`data/clasicos.json`); VOLVÉ A CASA arranca con lo guardado menos la salida (`mercado.costoSalidaArraigo`), y la fila nueva
 // del registro lleva la etiqueta de la firma; el sueldo nunca supera el "hasta" del asiento (D112). Carreras enteras.
+// Volvés con lo guardado menos la salida; si te fuiste Querido o más, con piso en Querido (volver a casa es que te quieren).
+const esperadoAlVolver = (guardado) => (guardado >= BALANCE.arraigo.hitos.querido
+  ? Math.max(BALANCE.arraigo.hitos.querido, guardado - BALANCE.mercado.costoSalidaArraigo)
+  : Math.max(0, guardado - BALANCE.mercado.costoSalidaArraigo));
 check('G3c el mercado como dilema: TRAICIÓN solo del clásico, VOLVÉ A CASA con lo guardado menos la salida, sueldo ≤ "hasta"', () => {
   const mal = [];
   const cuenta = { ofertas: 0, conHasta: 0, traicion: 0, volve: 0, firmasVolve: 0, filasEtiquetadas: 0 };
@@ -29539,7 +29543,7 @@ check('G3c el mercado como dilema: TRAICIÓN solo del clásico, VOLVÉ A CASA co
           if (etiquetas.includes('VOLVE_A_CASA')) {
             cuenta.volve += 1;
             const guardado = st.career.arraigoPorOrg[o.org];
-            const esperado = guardado == null ? null : Math.max(0, guardado - BALANCE.mercado.costoSalidaArraigo);
+            const esperado = guardado == null ? null : esperadoAlVolver(guardado);
             if (esperado !== null && o.frente.arraigoArranca.valor !== esperado) {
               mal.push(`seed ${seed}: VOLVÉ A CASA a ${o.org} arranca con ${o.frente.arraigoArranca.valor}, guardado ${guardado}`);
             }
@@ -29556,7 +29560,7 @@ check('G3c el mercado como dilema: TRAICIÓN solo del clásico, VOLVÉ A CASA co
         cuenta.firmasVolve += 1;
         const org = estado.career.contrato.org;
         const guardado = antes.career.arraigoPorOrg[org];
-        const esperado = guardado == null ? null : Math.max(0, guardado - BALANCE.mercado.costoSalidaArraigo);
+        const esperado = guardado == null ? null : esperadoAlVolver(guardado);
         if (esperado !== null && firma.arraigo !== esperado) mal.push(`seed ${seed}: volvés a ${org} con ${firma.arraigo}, guardado ${guardado}`);
       }
       const filas = estado.career.registro.porOrg;
