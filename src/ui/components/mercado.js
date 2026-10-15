@@ -104,7 +104,7 @@ export function ejesDeOferta(oferta) {
   const a = f.arraigoArranca;
   const renueva = (f.etiquetas ?? []).includes('RENOVACION');
   const arraigo = renueva
-    ? `Sos ${a.escalon} (${a.valor}/100)${a.faltan != null ? `: te faltan ${a.faltan} para ${a.proximo}` : ''}`
+    ? `Sos ${a.escalon} (${a.valor}/100)${a.faltan != null ? `: ${faltanTexto(a.faltan, 'punto', 'puntos')} para ${a.proximo}` : ''}`
     : `Allá arrancás ${a.escalon} (${a.valor}/100)${a.faltan != null ? ` · ${a.faltan} para ${a.proximo}` : ''}`;
   return [
     { clave: 'plata', ico: '\u{1F4B0}', k: 'Plata', texto: `USD ${num(f.sueldo)} / año${f.hasta ? ` · hasta USD ${num(f.hasta)}` : ''}`, tono: 'neutro' },

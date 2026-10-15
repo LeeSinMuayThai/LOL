@@ -186,6 +186,8 @@ export const HORIZONTE_POR_TIPO = {
   'internacional:decisivo': 'serie',
   'internacional:minijuego': 'serie',
   'temporada:momento': 'partido',
+  // G1c: el Bo1 de la fecha marcada que frena la temporada (un solo partido: su horizonte es ese partido).
+  'temporada:bo1': 'partido',
   'eventos:x': 'split',
   'eventos:minijuego': 'split',
   'amateur:reparto': 'split',
@@ -212,6 +214,9 @@ export const HORIZONTE_POR_TIPO = {
   'retiro:retiro_declive': 'carrera',
   'retiro:retiro_vuelta': 'carrera',
   'retiro:evento_ventana': 'carrera',
+  // G4c: el último partido de la carrera (la decisión y su minijuego): lo que se juega es cómo se cierra la carrera.
+  'retiro:ultimo_partido': 'carrera',
+  'retiro:minijuego': 'carrera',
   'salud:lesion_grave': 'carrera',
   // K6d-B: la parada del pro con la mentalidad en rojo: lo que se juega es el burnout, el final de la carrera.
   'burnout:burnout_pro': 'carrera',

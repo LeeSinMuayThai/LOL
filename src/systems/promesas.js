@@ -18,7 +18,7 @@ import promesasData from '../data/events/promesas.json' with { type: 'json' };
 import { crearLog } from '../core/log.js';
 import { roll, chance, pick } from '../core/rng.js';
 import { clampStat } from '../core/numeros.js';
-import { entero } from '../core/formato.js';
+import { entero, faltan } from '../core/formato.js';
 import { puntosAbsolutos, puntosDelApice } from '../core/ranked.js';
 import { tierPorId } from '../data/ranked.js';
 import { BALANCE } from '../data/balance.js';
@@ -117,7 +117,7 @@ function evaluar(state, p, def) {
   }
   if (c.tipo === 'rank') {
     const falta = puntosDeTier(c.tier) - puntosAbsolutos(player.ranked);
-    return { cumplida: falta <= 0, rota: null, progreso: falta > 0 ? `te faltan ${entero(falta)} LP` : 'listo' };
+    return { cumplida: falta <= 0, rota: null, progreso: falta > 0 ? faltan(entero(falta), 'LP', 'LP') : 'listo' };
   }
   if (c.tipo === 'tier') {
     const ok = career.tier != null && career.tier <= c.tierMax;
@@ -130,7 +130,7 @@ function evaluar(state, p, def) {
   }
   if (c.tipo === 'arraigo') {
     const falta = c.valor - career.arraigo;
-    return { cumplida: falta <= 0, rota: null, progreso: falta > 0 ? `te faltan ${entero(Math.ceil(falta))} de arraigo` : 'listo' };
+    return { cumplida: falta <= 0, rota: null, progreso: falta > 0 ? faltan(entero(Math.ceil(falta)), 'punto de arraigo', 'puntos de arraigo') : 'listo' };
   }
   if (c.tipo === 'internacional') {
     const ok = career.registro.internacionales.length > p.base;

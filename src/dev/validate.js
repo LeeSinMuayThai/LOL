@@ -12641,7 +12641,7 @@ check('K4c-H horizonte: el mapa tipo -> horizonte es el de PLAN.md y cubre todos
   // El mapa del PLAN (K4c, decisiones del paso 2, 1), escrito a mano: lo que NO esté acá tiene que ser `carrera`.
   const ESPERADO = {
     serie: ['serie:plan', 'serie:decisivo', 'serie:minijuego', 'internacional:swiss', 'internacional:plan', 'internacional:decisivo', 'internacional:minijuego'],
-    partido: ['temporada:momento'],
+    partido: ['temporada:momento', 'temporada:bo1'],
     split: ['eventos:x', 'eventos:minijuego', 'amateur:reparto', 'amateur:nocturno']
   };
   const enElPlan = new Map(Object.entries(ESPERADO).flatMap(([horizonte, tipos]) => tipos.map((tipo) => [tipo, horizonte])));

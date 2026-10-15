@@ -279,17 +279,17 @@ function crearFilaDeJuego() {
   const celdas = new Map();
   const timers = new Map();
 
-  function celda(s) {
-    let c = celdas.get(s.id);
+  function celdaDe(stat) {
+    let c = celdas.get(stat.id);
     if (!c) {
       c = nodo('li', 'fj-stat');
-      c.dataset.stat = s.id;
-      const rot = nodo('span', 'fj-stat-rot', s.corto);
+      c.dataset.stat = stat.id;
+      const rot = nodo('span', 'fj-stat-rot', stat.corto);
       const valor = nodo('b', 'fj-stat-valor');
       const flash = nodo('span', 'fj-stat-flash');
       flash.setAttribute('aria-live', 'polite');
       c.append(rot, valor, flash);
-      celdas.set(s.id, c);
+      celdas.set(stat.id, c);
       lista.insertBefore(c, promesa);
     }
     return c;
@@ -298,24 +298,24 @@ function crearFilaDeJuego() {
   // `antes`: { [id]: valor } que el jugador vio en la vista anterior (o null: sin flecha). Devuelve el mapa de ahora.
   function pintar(juego, antes, promesaAbierta, dur) {
     const ahora = {};
-    for (const s of juego) {
-      const c = celda(s);
+    for (const stat of juego) {
+      const c = celdaDe(stat);
       const valor = c.querySelector('.fj-stat-valor');
       const flash = c.querySelector('.fj-stat-flash');
-      ahora[s.id] = s.valor;
-      c.title = `${s.rotulo} ${s.valor}${s.delta ? `, ${s.delta > 0 ? '+' : ''}${s.delta} en el año` : ''}`;
-      const a = antes?.[s.id];
-      if (Number.isFinite(a) && a !== s.valor) {
-        moverNumero(valor, a, s.valor, { formato: num, duracion: dur.numero, animar: true });
-        const d = s.valor - a;
+      ahora[stat.id] = stat.valor;
+      c.title = `${stat.rotulo} ${stat.valor}${stat.delta ? `, ${stat.delta > 0 ? '+' : ''}${stat.delta} en el año` : ''}`;
+      const a = antes?.[stat.id];
+      if (Number.isFinite(a) && a !== stat.valor) {
+        moverNumero(valor, a, stat.valor, { formato: num, duracion: dur.numero, animar: true });
+        const d = stat.valor - a;
         flash.replaceChildren(triangulos('baja', d > 0 ? '+' : '-'), document.createTextNode(String(Math.abs(d))));
         flash.dataset.signo = d > 0 ? 'sube' : 'baja';
-        flash.setAttribute('aria-label', `${s.rotulo} ${d > 0 ? 'subió' : 'bajó'} ${Math.abs(d)}`);
+        flash.setAttribute('aria-label', `${stat.rotulo} ${d > 0 ? 'subió' : 'bajó'} ${Math.abs(d)}`);
         animarNodo(flash, [{ opacity: 0.25, transform: PULSO_DESDE }, { opacity: 1, transform: 'none' }], { dur: dur.pulso, easing: RESORTE });
-        clearTimeout(timers.get(s.id));
-        timers.set(s.id, setTimeout(() => { flash.replaceChildren(); delete flash.dataset.signo; flash.removeAttribute('aria-label'); }, FLASH_MS));
+        clearTimeout(timers.get(stat.id));
+        timers.set(stat.id, setTimeout(() => { flash.replaceChildren(); delete flash.dataset.signo; flash.removeAttribute('aria-label'); }, FLASH_MS));
       } else if (!valor.textContent || !Number.isFinite(a)) {
-        valor.textContent = num(s.valor);
+        valor.textContent = num(stat.valor);
       }
     }
     // G4b: la promesa abierta, un chip.
