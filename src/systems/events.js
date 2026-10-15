@@ -493,7 +493,10 @@ export function opcionDelPerfilPara(state, evento) {
 // más pesada (cada familia en su escala, `payoffNormalizado`); su piso es lo mínimo que puede dar entre todos los
 // outcomes (el que no lo trae, 0). `{ campo, etiqueta, valor, unidad }`, o `null` si la opción no mueve ningún número.
 const FAMILIAS_CON_NUMERO = new Set(['stat', 'ladder']);
-export function seguroDeOpcion(opcion, pesos) {
+//
+// G-fix-copa: con el `state`, el número no promete más de lo que deja el clamp del efecto: min(efecto, tope − actual)
+// (y, en un efecto negativo, max(efecto, piso − actual)). Con los estudios en 98, "+8" se muestra como lo que rinde.
+export function seguroDeOpcion(opcion, pesos, state = null) {
   const pesoTotal = pesos.reduce((suma, peso) => suma + peso, 0);
   if (pesoTotal <= 0) {
     return null;
@@ -512,7 +515,10 @@ export function seguroDeOpcion(opcion, pesos) {
   const [campo] = [...medias.entries()].reduce((mejor, entrada) => (Math.abs(entrada[1]) > Math.abs(mejor[1]) ? entrada : mejor));
   const piso = Math.min(...opcion.outcomes.map((outcome) => {
     const efectos = outcome.effects.filter((effect) => effect.path === campo && FAMILIAS_CON_NUMERO.has(effect.type));
-    return efectos.length ? efectos.reduce((suma, effect) => suma + Math.min(effect.min, effect.max), 0) : 0;
+    const suma = efectos.reduce((total, effect) => total + Math.min(effect.min, effect.max), 0);
+    const tope = efectos.find((effect) => effect.clamp)?.clamp;
+    const actual = state && tope ? getPath(state, campo) : null;
+    return typeof actual === 'number' ? Math.min(tope[1] - actual, Math.max(tope[0] - actual, suma)) : suma;
   }));
   const ladder = opcion.outcomes.some((outcome) => outcome.effects.some((effect) => effect.path === campo && effect.type === 'ladder'));
   return { campo, etiqueta: etiquetaCampo(campo), valor: piso, unidad: ladder ? 'LP' : '' };
@@ -570,7 +576,7 @@ export function decisionDesdeEvento(state, evento, { franja, slot }) {
         // K6a-A: lo que la píldora muestra (la clave `riesgo` sigue igual para el perfil y el estilo).
         riesgoTexto: textoDeRiesgo(option, riesgoDeOpcion(option, pesos)),
         // G2a: el número seguro, el riesgo en palabras y la sugerencia de tu perfil (nunca una decisión).
-        seguro: seguroDeOpcion(option, pesos),
+        seguro: seguroDeOpcion(option, pesos, state),
         aviso: avisoDeOpcion(state, option, pesos),
         ...(option.id === idDelPerfil ? { propuesta: `Es lo que elegiría tu perfil (${nombreDePerfil(state.player.perfil.actual)}). Decidís vos.` } : {}),
         ...(BALANCE.rareza.eventosDeMejora.includes(evento.id)

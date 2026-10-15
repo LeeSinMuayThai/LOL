@@ -29310,6 +29310,51 @@ check('G3ab siempre en un equipo: desde los 17 nunca más de una pretemporada si
   }
   console.log(`      ${manos} manos de mercado, ${splits17} splits desde los 17`);
   if (manos < 20) mal.push(`solo ${manos} manos de mercado en la muestra`);
+
+  // G-fix-copa: el jugador que no quiere firmar. Contesta 'esperar' a toda mano (la redirección de `sinEsperar` lo hace
+  // firmar a la segunda) y, en las seeds pares, a la mano sin "esperar" le pide más a todos hasta que se levantan de la
+  // mesa (la ruptura forzada a 1): el corte también firma, con el piso a la baja. Sin cualquiera de las dos, queda libre
+  // más de una pretemporada.
+  const ruptura = { min: BALANCE.mercado.rupturaNegociacionMin, max: BALANCE.mercado.rupturaNegociacionMax };
+  BALANCE.mercado.rupturaNegociacionMin = 1;
+  BALANCE.mercado.rupturaNegociacionMax = 1;
+  let esperas = 0;
+  let cortes = 0;
+  try {
+    for (let seed = 1; seed <= 8; seed += 1) {
+      const rng = mulberry32(seed);
+      let estado = createInitialState(seed, rng);
+      let racha = 0;
+      const responder = (sistema, st, decision, r) => {
+        if (sistema.id === 'mercado' && decision.presentacion === 'mercado' && decision.datos?.motivo === 'oferta') {
+          if (decision.datos.sinEsperar && seed % 2 === 0 && decision.opciones.length > 0) {
+            if (decision.opciones.length === 1) cortes += 1;
+            return { negociar: 'pedirMas', opcionId: decision.opciones[0].id };
+          }
+          esperas += 1;
+          return { negociar: 'esperar' };
+        }
+        return sistema.resolverAuto(st, decision, r);
+      };
+      for (let i = 0; i < 80 && !estado.terminado; i += 1) {
+        const edad = estado.age;
+        estado = avanzarSplitAuto(estado, rng, responder).state;
+        if (edad < BALANCE.amateur.edadEquipoSeguro || estado.terminado || estado.phase === 'retirado') {
+          continue;
+        }
+        racha = estado.career.currentOrg ? 0 : racha + 1;
+        if (racha > porAnio) {
+          mal.push(`el que no quiere firmar, seed ${seed}: ${racha} splits seguidos sin club a los ${estado.age}`);
+          break;
+        }
+      }
+    }
+  } finally {
+    BALANCE.mercado.rupturaNegociacionMin = ruptura.min;
+    BALANCE.mercado.rupturaNegociacionMax = ruptura.max;
+  }
+  console.log(`      el que no quiere firmar: ${esperas} esperas, ${cortes} cortes de toda la mesa`);
+  if (esperas === 0 || cortes === 0) mal.push(`muestra vacía del que no quiere firmar: ${esperas} esperas, ${cortes} cortes`);
   if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
 });
 

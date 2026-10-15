@@ -11,15 +11,22 @@ import { resolverTexto } from '../core/plantillas.js';
 import { RUTINAS, ofrecerRutinas, rutinaPorId, elegirRutinaAutomatica } from '../core/rutinas.js';
 import { opcionDesdeRutina, descripcionDeSorteo, EJE_AMATEUR } from '../core/rareza.js';
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
-import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto } from '../core/minijuegos.js';
+import {
+  elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, juzgarMinijuego, resultadoDelBot, reglaDeLaVara,
+  factorDificultadPorRonda, torneoG1, claveDeTorneo
+} from '../core/minijuegos.js';
+import { armarG1, caminoDeSerie, varaDeRonda, devolverCupo, poderActivado } from './serie.js';
 import { conMarcasDeRutina } from '../core/curvas.js';
 import { nombreVisibleDeLiga } from '../core/ligas.js';
 import { opcionDelPerfil, nombreDePerfil, pisoSoloQDePerfil } from '../core/perfil.js';
 import { etiquetaCampo } from '../core/selectors.js';
 import { nivelDelJugador } from '../core/ficha.js';
+import { probabilidadDePartido } from '../core/partido.js';
+import { registrarTitulo } from '../core/registro.js';
+import { ROLES } from '../data/roles.js';
 import { riesgoDeBurnoutAlCierre, textoDelCierre, porcentajeDeBurnout, opcionQueNoQuema } from './atributos.js';
 import { conCierresAvisados } from './burnout.js';
-import { decisionDesdeEvento, resolverOpcion, elegirOpcionAutomatica } from './events.js';
+import { decisionDesdeEvento, resolverOpcion, elegirOpcionAutomatica, conParadaDeEvento } from './events.js';
 import GOLPES_AMATEUR from '../data/events/amateur_golpes.json' with { type: 'json' };
 
 export const id = 'amateur';
@@ -904,7 +911,8 @@ function aplicarReparto(state, reparto, extra, rng, { cronica = null, plan = fal
 function golpeDeCasa(state, eventoId) {
   const evento = GOLPES_AMATEUR.find((candidato) => candidato.id === eventoId);
   const decision = decisionDesdeEvento(state, evento, { franja: 'normal', slot: 1 });
-  return { state, logs: [], decision: { ...decision, datos: { ...decision.datos, golpeAmateur: true } } };
+  // G-fix-copa: el golpe es una parada de evento y entra en el tope del split (`eventos.paradasPorSplit`).
+  return { state: conParadaDeEvento(state), logs: [], decision: { ...decision, datos: { ...decision.datos, golpeAmateur: true } } };
 }
 
 function evaluarRiesgoFamiliar(state, rng) {
@@ -1565,10 +1573,11 @@ function resolverEquipoSeguro(state, decision, opcionId) {
 
 // --- G3a: la copa amateur del año ---
 //
-// Una por año antes de los 17, en el último split del año: el torneo del instituto, la Clash, el LAN. Hito más parada simple:
-// elegís cómo la encarás (más premio o más chance) y la final se tira con la p que dice la carta. Si la ganás, la copa queda en
-// la vitrina (`registro.titulos` con `tier: 'amateur'`, que no cuenta como título de tier 1 ni de tier 2).
-// Pendiente (reportado): la final como serie de `systems/serie.js`, cuando la serie acepte un torneo sin liga.
+// Una por año antes de los 17, en el último split del año: el torneo del instituto, la Clash, el LAN. Elegís cómo la
+// encarás y la final se juega con las manos (G-fix-copa, PLANUI §0.9): un Bo1 con minijuego, la decisión del contrato G1
+// (`datos.g1`). Al frente sube la vara y da más premio; segura la baja y da menos. Decide `resultado >= vara`; el bot pasa
+// con la p de la carta (`resultadoDelBot`). Si la ganás, la copa queda en la vitrina (`registro.titulos` con
+// `tier: 'amateur'`, que no cuenta como título de liga).
 
 // Quién levantó la copa con vos (la vitrina y el momento del título nombran un equipo).
 const TEXTO_EQUIPO_DE_LA_COPA = 'tu quinteto del server';
@@ -1587,6 +1596,10 @@ function nombreDeCopa(state) {
   return copas[state.age % copas.length];
 }
 
+function conMayuscula(texto) {
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 export function probabilidadDeCopa(state, plan) {
   const a = BALANCE.amateur;
   const base = a.copaPBase + (nivelDelJugador(state) - a.copaNivelRival) * a.copaPPendiente;
@@ -1594,25 +1607,43 @@ export function probabilidadDeCopa(state, plan) {
   return clamp(base + ajuste, a.copaPMin, a.copaPMax);
 }
 
+// La vara de la final según el plan: la de la p de la carta (`varaDeRonda`, la misma tabla que los mapas de G1).
+export function varaDeCopa(state, plan) {
+  return varaDeRonda(probabilidadDeCopa(state, plan));
+}
+
+function puntosDeVara(vara) {
+  return Math.round(vara * BALANCE.stats.max);
+}
+
+function premioDeCopa(plan) {
+  const a = BALANCE.amateur;
+  const no = `Duele (mentalidad ${a.copaMentalidadDerrotaMin} a ${a.copaMentalidadDerrotaMax}).`;
+  return plan === 'arriesgado'
+    ? { si: `La copa y todo el server hablando de vos (hype +${a.copaHypeArriesgadoMin} a +${a.copaHypeArriesgadoMax}).`, no }
+    : { si: `La copa, con menos ruido (hype +${a.copaHypeSeguroMin} a +${a.copaHypeSeguroMax}).`, no };
+}
+
 function decisionDeCopa(state) {
   const a = BALANCE.amateur;
   const copa = nombreDeCopa(state);
-  const pArriesgado = probabilidadDeCopa(state, 'arriesgado');
-  const pSeguro = probabilidadDeCopa(state, 'seguro');
+  const varaArriesgado = puntosDeVara(varaDeCopa(state, 'arriesgado'));
+  const varaSeguro = puntosDeVara(varaDeCopa(state, 'seguro'));
+  const max = BALANCE.stats.max;
   return decisionDeOpciones(
     `La final de ${copa}`,
-    `Llegaste a la final de ${copa} con tu dúo y tres pibes del server. Tu nivel ${entero(nivelDelJugador(state))} contra un rival de ${a.copaNivelRival}: se juega esta noche.`,
+    `Llegaste a la final de ${copa} con tu dúo y tres pibes del server. Tu nivel ${entero(nivelDelJugador(state))} contra un rival de ${a.copaNivelRival}: se juega esta noche, un solo mapa, y lo jugás vos.`,
     [
       {
         id: 'arriesgado',
         label: 'Jugarla al frente',
-        descripcion: `${porcentaje(pArriesgado)} de ganarla. Si sale, todo el server habla de vos (hype +${a.copaHypeArriesgadoMin} a +${a.copaHypeArriesgadoMax}).`,
+        descripcion: `🎲 Necesitás ${varaArriesgado} de ${max} en el minijuego. Si sale, todo el server habla de vos (hype +${a.copaHypeArriesgadoMin} a +${a.copaHypeArriesgadoMax}).`,
         pesoAuto: 1
       },
       {
         id: 'seguro',
         label: 'Jugarla segura',
-        descripcion: `${porcentaje(pSeguro)} de ganarla. Si sale, la copa es tuya igual, con menos ruido (hype +${a.copaHypeSeguroMin} a +${a.copaHypeSeguroMax}).`,
+        descripcion: `🧊 Necesitás ${varaSeguro} de ${max} en el minijuego. Si sale, la copa es tuya igual, con menos ruido (hype +${a.copaHypeSeguroMin} a +${a.copaHypeSeguroMax}).`,
         pesoAuto: 1
       }
     ],
@@ -1621,36 +1652,218 @@ function decisionDeCopa(state) {
   );
 }
 
+// El plan elegido arma la final: un Bo1 con minijuego, con su vara y su premio a la vista.
 function resolverCopa(state, decision, opcionId, rng) {
-  const a = BALANCE.amateur;
   const plan = opcionId === 'arriesgado' ? 'arriesgado' : 'seguro';
   const { copa } = decision.datos;
   const p = probabilidadDeCopa(state, plan);
   const conCopa = { ...state, flags: { ...state.flags, copaAmateur: state.age } };
-  if (!chance(p, rng)) {
+  const final = {
+    tipo: 'copa_amateur',
+    nombreTorneo: `${conMayuscula(copa)} ${state.calendario.anio}`,
+    copa,
+    plan,
+    rival: null,
+    bo: BALANCE.amateur.copaBo,
+    marcador: [0, 0],
+    mapas: [],
+    p,
+    vara: varaDeRonda(p),
+    poderUsado: false,
+    premio: premioDeCopa(plan)
+  };
+  // Sin mecánica para el momento (hoy no pasa: hay universales), el bot juega el mapa.
+  return pausaDeFinalJugada(conCopa, final, [])
+    ?? cerrarCopa(conCopa, final, resultadoDelBot(rng(), final.vara, p) >= final.vara, rng);
+}
+
+function cerrarCopa(state, final, gano, rng, logsPrevios = []) {
+  const a = BALANCE.amateur;
+  const { copa, plan } = final;
+  if (!gano) {
     const golpe = roll(a.copaMentalidadDerrotaMin, a.copaMentalidadDerrotaMax, rng);
     const perdida = {
-      ...conCopa,
-      player: { ...conCopa.player, stats: { ...conCopa.player.stats, mentalidad: clampStat(conCopa.player.stats.mentalidad + golpe) } }
+      ...state,
+      player: { ...state.player, stats: { ...state.player.stats, mentalidad: clampStat(state.player.stats.mentalidad + golpe) } }
     };
     const sigue = continuarElSplit(perdida, rng);
-    return { ...sigue, logs: [crearLog('amateur', `Perdiste la final de ${copa} (tenías ${porcentaje(p)}). Duele más de lo que pensabas (mentalidad ${deltaCorto(golpe)}).`), ...sigue.logs] };
+    return { ...sigue, logs: [...logsPrevios, crearLog('amateur', `Perdiste la final de ${copa}. Duele más de lo que pensabas (mentalidad ${deltaCorto(golpe)}).`), ...sigue.logs] };
   }
   const hype = plan === 'arriesgado'
     ? roll(a.copaHypeArriesgadoMin, a.copaHypeArriesgadoMax, rng)
     : roll(a.copaHypeSeguroMin, a.copaHypeSeguroMax, rng);
-  const registro = conCopa.career.registro;
-  const titulo = { nombre: copa.charAt(0).toUpperCase() + copa.slice(1), anio: conCopa.calendario.anio, org: TEXTO_EQUIPO_DE_LA_COPA, liga: null, tier: 'amateur' };
+  const registro = state.career.registro;
+  const titulo = { nombre: conMayuscula(copa), anio: state.calendario.anio, org: TEXTO_EQUIPO_DE_LA_COPA, liga: null, tier: 'amateur' };
   const ganada = {
-    ...conCopa,
-    player: { ...conCopa.player, stats: { ...conCopa.player.stats, hype: clampStat(conCopa.player.stats.hype + hype) } },
-    career: { ...conCopa.career, registro: { ...registro, titulos: [...registro.titulos, titulo] } }
+    ...state,
+    player: { ...state.player, stats: { ...state.player.stats, hype: clampStat(state.player.stats.hype + hype) } },
+    career: { ...state.career, registro: { ...registro, titulos: [...registro.titulos, titulo] } }
   };
   const sigue = continuarElSplit(ganada, rng);
   return {
     ...sigue,
-    logs: [crearLog('amateur', `¡Campeón de ${copa} a los ${state.age}! La copa va a la vitrina y el server no habla de otra cosa (hype ${deltaCorto(hype)}).`, { titular: true, copaAmateur: titulo }), ...sigue.logs]
+    logs: [...logsPrevios, crearLog('amateur', `¡Campeón de ${copa} a los ${state.age}! La copa va a la vitrina y el server no habla de otra cosa (hype ${deltaCorto(hype)}).`, { titular: true, copaAmateur: titulo }), ...sigue.logs]
   };
+}
+
+// --- G-fix-copa: la final que se juega con las manos (la copa amateur y la final de tier 3) ---
+//
+// Una final fuera de la serie de playoffs (`systems/serie.js` arma la suya): un Bo1 o un Bo3 de mapas con minijuego,
+// cada uno una decisión del contrato G1 (`datos.g1`, con `armarG1` y `caminoDeSerie`). `datos.finalJugada` lleva la
+// final: el tipo, el nombre, el formato, el marcador, la tira de mapas, la p del mapa (la del bot) y la vara. Sin
+// desempate (es de los playoffs); el poder de tu clase vale si se activa (el VOD o el escenario).
+const MOMENTO_FINAL = 'mapa_decisivo';
+
+function poderDeLaFinal(poder) {
+  return poder && (poder.id === 'vod' || poder.id === 'escenario') ? poder : null;
+}
+
+export function pausaDeFinalJugada(state, final, logs) {
+  const entrada = elegirMinijuego(state, MOMENTO_FINAL);
+  if (!entrada) {
+    return null;
+  }
+  const textos = textoDeMinijuego(entrada, state);
+  const torneo = {
+    ...torneoG1(state, claveDeTorneo(state, final.tipo)),
+    escalon: final.mapas.length,
+    desempateUsado: true,
+    poderUsado: final.poderUsado
+  };
+  const serie = {
+    formato: final.bo, mapas: final.mapas, marcador: final.marcador, ronda: 'final', torneo: final.tipo, nombreTorneo: final.nombreTorneo
+  };
+  const camino = caminoDeSerie({ ...state, serie }, { inicio: 'final' });
+  const armado = armarG1(state, torneo, { vara: final.vara, esFinal: true, conCharla: false, camino, premio: final.premio });
+  const g1 = { ...armado, poder: poderDeLaFinal(armado.poder), desempateDisponible: false };
+  const rival = final.rival ? ` contra ${final.rival.nombre}` : '';
+  return {
+    state: { ...state, flags: { ...state.flags, minijuegosRecientes: registrarMinijuegoVisto(state, entrada.id) } },
+    logs,
+    decision: {
+      tipo: 'opciones',
+      presentacion: 'minijuego',
+      titulo: textos.titulo,
+      descripcion: `${final.nombreTorneo}: la final${rival}, mapa ${final.mapas.length + 1}. ${textos.descripcion}`,
+      opciones: [],
+      datos: {
+        motivo: 'minijuego',
+        minijuego: entrada.id,
+        momento: MOMENTO_FINAL,
+        ronda: 'final',
+        dificultad: factorDificultadPorRonda('final'),
+        statRelevante: entrada.statRelevante,
+        apuesta: textos.apuesta,
+        regla: textos.regla,
+        reglaVara: reglaDeLaVara(final.vara),
+        p: final.p,
+        finalJugada: final,
+        g1
+      }
+    }
+  };
+}
+
+// Un mapa de la final, jugado: el juicio contra la vara (menos el poder, si lo activaste). Si la final sigue, la pausa
+// del mapa que viene; si terminó, `{ state, logs, gano }` para que quien la armó la cierre. La pausa no gasta el cupo
+// de interrupciones del split (`devolverCupo`, como los mapas de la serie).
+export function jugarMapaDeFinal(state, decision, respuesta) {
+  const { g1, finalJugada: final } = decision.datos;
+  const poderUsado = poderActivado(g1, respuesta);
+  const bajaPoder = poderUsado ? (g1.poder.efecto.bajaVara ?? 0) : 0;
+  const juicio = juzgarMinijuego(respuesta.resultado ?? 0, g1.vara - bajaPoder, g1.margenCasi);
+  const max = BALANCE.stats.max;
+  const marcador = juicio.paso ? [final.marcador[0] + 1, final.marcador[1]] : [final.marcador[0], final.marcador[1] + 1];
+  const numero = final.mapas.length + 1;
+  const mapas = [...final.mapas, { numero, resultado: juicio.paso ? 'W' : 'L' }];
+  const st = devolverCupo(state);
+  const logs = [crearLog('serie', `Mapa ${numero} de la final: sacaste ${Math.round(juicio.resultado * max)} y la vara era ${Math.round(juicio.vara * max)}. ${juicio.paso ? 'Lo ganaste' : 'Lo perdiste'} (${marcador[0]}-${marcador[1]}).`, {
+    minijuego: decision.datos.minijuego, vara: juicio.vara, resultado: juicio.resultado, paso: juicio.paso, casi: juicio.casi
+  })];
+  const necesarias = Math.ceil(final.bo / 2);
+  if (marcador[0] < necesarias && marcador[1] < necesarias) {
+    const pausa = pausaDeFinalJugada(st, { ...final, marcador, mapas, poderUsado: final.poderUsado || poderUsado }, logs);
+    if (pausa) {
+      return pausa;
+    }
+  }
+  return { state: st, logs, gano: marcador[0] > marcador[1] };
+}
+
+// El bot (Node): pasa cada mapa con la p de la final (`resultadoDelBot`), sin poder.
+export function respuestaAutoDeFinal(decision, rng) {
+  const { g1, finalJugada: final } = decision.datos;
+  return { resultado: resultadoDelBot(rng(), g1.vara, final.p) };
+}
+
+// La final de tier 3 (G-fix-copa): la arma `systems/rendimiento.js` al cierre de la temporada con `core/tier3.js#finalDeTier3`.
+// La p del mapa es la de un partido contra el otro finalista (`probabilidadDePartido`, tipo 'mapa'); la vara, la suya.
+export function pausaDeFinalDeTier3(state, finalT3, nombreLiga) {
+  const p = probabilidadDePartido(state, finalT3.fuerzaPropia, finalT3.rival.fuerza, 'mapa');
+  const final = {
+    tipo: 'final_tier3',
+    nombreTorneo: conMayuscula(nombreLiga),
+    nombreLiga,
+    rival: finalT3.rival,
+    bo: BALANCE.tier3.boFinal,
+    marcador: [0, 0],
+    mapas: [],
+    p,
+    vara: varaDeRonda(p),
+    poderUsado: false,
+    premio: null
+  };
+  return pausaDeFinalJugada(state, final, []);
+}
+
+export function resolverMapaDeFinalDeTier3(state, decision, respuesta, rng) {
+  const jugado = jugarMapaDeFinal(state, decision, respuesta);
+  if (jugado.decision) {
+    return jugado;
+  }
+  const final = decision.datos.finalJugada;
+  if (!jugado.gano) {
+    return { state: jugado.state, logs: [...jugado.logs, crearLog('rendimiento', `Perdieron la final de ${final.nombreLiga} contra ${final.rival.nombre}. Quedan segundos.`)] };
+  }
+  const st = jugado.state;
+  const a = BALANCE.arraigo;
+  const titulos = st.career.titulos + 1;
+  const registro = registrarTitulo(st.career.registro, {
+    nombre: final.nombreLiga, anio: st.calendario.anio, org: st.career.currentOrg, liga: null, tier: 3
+  });
+  const titulo = registro.titulos[registro.titulos.length - 1];
+  // Lo que el título le daba al 1.º cuando era directo (`rendimiento.js`): el hype y la mentalidad del título en lugar de
+  // los del podio, que la tabla ya le dio a los dos finalistas.
+  const r = BALANCE.rendimiento;
+  const hype = (r.hypePorTitulo - r.hypePorPodio) * ROLES[st.player.role].visibilidad;
+  const mentalidad = r.mentalidadPorTitulo - r.mentalidadPorPodio;
+  const ganado = {
+    ...st,
+    player: {
+      ...st.player,
+      titles: titulos,
+      stats: { ...st.player.stats, hype: clampStat(st.player.stats.hype + hype), mentalidad: clampStat(st.player.stats.mentalidad + mentalidad) }
+    },
+    career: {
+      ...st.career,
+      titulos,
+      registro,
+      arraigo: Math.round(clampStat(st.career.arraigo + roll(a.porTituloMin, a.porTituloMax, rng))),
+      hitos: [...st.career.hitos, `Campeón de ${final.nombreLiga} a los ${st.age}`]
+    }
+  };
+  return {
+    state: ganado,
+    logs: [...jugado.logs, crearLog('rendimiento', `¡Campeones de ${final.nombreLiga}! Le ganaron la final a ${final.rival.nombre} y la copa es tuya también.`, { titular: true, tituloTier3: titulo })]
+  };
+}
+
+function resolverMapaDeCopa(state, decision, respuesta, rng) {
+  const jugado = jugarMapaDeFinal(state, decision, respuesta);
+  if (jugado.decision) {
+    return jugado;
+  }
+  return cerrarCopa(jugado.state, decision.datos.finalJugada, jugado.gano, rng, jugado.logs);
 }
 
 // --- Contrato del sistema ---
@@ -1692,6 +1905,10 @@ export function resolver(state, decision, respuesta, rng) {
   }
   if (decision.datos.motivo === 'copa_amateur') {
     return resolverCopa(state, decision, respuesta.opcionId, rng);
+  }
+  // G-fix-copa: un mapa de la final de la copa (minijuego con `datos.g1`), antes que la prueba del club.
+  if (decision.datos.finalJugada) {
+    return resolverMapaDeCopa(state, decision, respuesta, rng);
   }
 
   if (decision.datos.motivo === 'reparto') {
@@ -1751,6 +1968,9 @@ export function resolverAuto(state, decision, rng) {
   // K6c: el plan del año, sin elegir: la propuesta de tu perfil (la opción marcada). Sin `rng`.
   if (decision.datos.motivo === 'plan_amateur') {
     return { opcionId: decision.datos.propuesta };
+  }
+  if (decision.datos.finalJugada) {
+    return respuestaAutoDeFinal(decision, rng);
   }
   if (decision.datos.motivo === 'minijuego') {
     // Regla 5 de 4.6: el motor no implementa el minijuego, lo simula con
