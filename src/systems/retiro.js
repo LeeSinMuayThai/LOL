@@ -215,8 +215,8 @@ function decisionDeclive(state, causa = 'declive') {
     titulo: 'El último split',
     descripcion: `${contextoDelUltimoSplit(state, causa)} ¿La colgás ahora o vas por un año más?`,
     opciones: [
-      { id: 'retirarse', label: 'Colgarla con la frente alta', descripcion: `Cerrás la carrera con un último partido de despedida.${puedeVolver ? ' La puerta queda entreabierta, si el cuerpo y las ganas dan.' : ''}` },
-      { id: 'seguir', label: 'Un año más ⚠', descripcion: 'Podés terminar en el banco… o eterno.' }
+      { id: 'seguir', label: 'Un año más ⚠', descripcion: 'Podés terminar en el banco… o eterno.' },
+      { id: 'retirarse', label: 'Colgarla con la frente alta', descripcion: `Cerrás la carrera con un último partido de despedida.${puedeVolver ? ' La puerta queda entreabierta, si el cuerpo y las ganas dan.' : ''}` }
     ],
     datos: {
       motivo: 'retiro_declive', causa, firma: firmaDelSeguis(state), edad: state.age,
@@ -578,6 +578,16 @@ function ultimoSplitSinAviso(state) {
     return { state, logs: [], decision: decisionDeclive(state, 'sinFirmar') };
   }
   if (declivVisible(state) && state.flags.ultimoSplitEdad !== state.age) {
+    // Sin cambios desde que elegiste seguir (mismo club, tier y estado, y el nivel no cayó `caidaDeNivel` más): no se
+    // pregunta de nuevo. Se narra una vez en el año y seguís.
+    const { seguisFirma, seguisNivel } = state.flags;
+    if (seguisFirma != null && seguisFirma === firmaDelSeguis(state)
+      && nivelDelJugador(state) > (seguisNivel ?? -Infinity) - BALANCE.retiro.ultimoSplit.caidaDeNivel) {
+      return {
+        state: { ...state, flags: { ...state.flags, ultimoSplitEdad: state.age } },
+        logs: [crearLog('retiro', `A los ${state.age} el declive sigue ahí, pero nada cambió desde que elegiste seguir: un año más.`)]
+      };
+    }
     return { state, logs: [], decision: decisionDeclive(state, 'edad') };
   }
   return { state, logs: [] };
@@ -638,7 +648,8 @@ export function resolver(state, decision, respuesta, rng) {
           ...seguido,
           flags: {
             ...seguido.flags,
-            seguisFirma: causa === 'declive' ? (decision.datos.firma ?? null) : seguido.flags.seguisFirma,
+            seguisFirma: causa === 'sinFirmar' ? seguido.flags.seguisFirma : (decision.datos.firma ?? null),
+            seguisNivel: causa === 'sinFirmar' ? seguido.flags.seguisNivel : (decision.datos.nivel ?? null),
             ultimoSplitEdad: decision.datos.edad ?? state.age
           }
         },
