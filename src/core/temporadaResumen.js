@@ -9,7 +9,7 @@ import { TOKENS } from './plantillas.js';
 import { esBuenPapel } from './registro.js';
 import { nombreVisibleDeLiga } from './ligas.js';
 import { etiquetaDeRanked, servidorDeLaPartida } from './ranked.js';
-import { plural, deLaLiga } from './formato.js';
+import { plural, deLaLiga, contraeArticulo } from './formato.js';
 
 // El resumen anual (fase 11, PLAN.md §11.1): nota, titular y viñetas del año
 // que cierra. Puro y sin RNG — `systems/resumenAnio.js` es el único que lo
@@ -319,7 +319,7 @@ function candidatoCopaAmateur(state, ctx) {
   }
   const nombre = String(copa.nombre).toUpperCase();
   return {
-    titular: redaccion(ctx, 'copa_amateur', [`CAMPEÓN DE ${nombre}`, `LEVANTASTE LA COPA: ${nombre}`, `${nombre}: LA COPA ES TUYA`]),
+    titular: redaccion(ctx, 'copa_amateur', [contraeArticulo(`CAMPEÓN DE ${nombre}`), `LEVANTASTE LA COPA: ${nombre}`, `${nombre}: LA COPA ES TUYA`]),
     bajada: 'La copa va a la vitrina y el server no habla de otra cosa.'
   };
 }

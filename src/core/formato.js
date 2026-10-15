@@ -71,6 +71,15 @@ export function plural(cantidad, singular, pluralTexto) {
   return Number(cantidad) === 1 ? singular : pluralTexto;
 }
 
+// "de el torneo" -> "del torneo", "a el LAN" -> "al LAN": el nombre de una copa trae su artículo ("el torneo del instituto") y al
+// pegarlo después de "de"/"a" tiene que contraerse. Va sobre el texto ya armado; no toca nada más.
+export function contraeArticulo(texto) {
+  return String(texto).replace(/(^|[^\p{L}])(de|a) el(?=\s)/giu, (_todo, antes, palabra) => {
+    const contraida = `${palabra}l`;
+    return `${antes}${palabra === palabra.toUpperCase() ? contraida.toUpperCase() : contraida.toLowerCase()}`;
+  });
+}
+
 // "de la LCK" / "del Circuito Desafiante" / "de un torneo chico de la región": el artículo depende del nombre de la liga
 // (los nombres de liga son siglas femeninas por "la liga", salvo estos que arrancan con un sustantivo masculino).
 const PRIMERAS_PALABRAS_MASCULINAS = ['circuito', 'torneo', 'campeonato'];

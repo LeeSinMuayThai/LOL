@@ -1,7 +1,7 @@
 import { gauss, roll, chance, weightedPick } from '../core/rng.js';
 import { BALANCE } from '../data/balance.js';
 import { crearLog } from '../core/log.js';
-import { deltaCorto, entero, lista } from '../core/formato.js';
+import { deltaCorto, entero, lista, contraeArticulo } from '../core/formato.js';
 import { clamp, clampStat } from '../core/numeros.js';
 import { veredictoDeLaPrueba, varaDeLaPrueba } from '../core/serie.js';
 import { aplicarLPAlEstado, etiquetaDeRanked, servidorDeLaPartida, rangoAproximado, esApice, bandaDeLadder } from '../core/ranked.js';
@@ -1632,8 +1632,8 @@ function decisionDeCopa(state) {
   const varaSeguro = puntosDeVara(varaDeCopa(state, 'seguro'));
   const max = BALANCE.stats.max;
   return decisionDeOpciones(
-    `La final de ${copa}`,
-    `Llegaste a la final de ${copa} con tu dúo y tres pibes del server. Tu nivel ${entero(nivelDelJugador(state))} contra un rival de ${a.copaNivelRival}: se juega esta noche, un solo mapa, y lo jugás vos.`,
+    contraeArticulo(`La final de ${copa}`),
+    contraeArticulo(`Llegaste a la final de ${copa} con tu dúo y tres pibes del server. Tu nivel ${entero(nivelDelJugador(state))} contra un rival de ${a.copaNivelRival}: se juega esta noche, un solo mapa, y lo jugás vos.`),
     [
       {
         id: 'arriesgado',
@@ -1688,7 +1688,7 @@ function cerrarCopa(state, final, gano, rng, logsPrevios = []) {
       player: { ...state.player, stats: { ...state.player.stats, mentalidad: clampStat(state.player.stats.mentalidad + golpe) } }
     };
     const sigue = continuarElSplit(perdida, rng);
-    return { ...sigue, logs: [...logsPrevios, crearLog('amateur', `Perdiste la final de ${copa}. Duele más de lo que pensabas (mentalidad ${deltaCorto(golpe)}).`), ...sigue.logs] };
+    return { ...sigue, logs: [...logsPrevios, crearLog('amateur', contraeArticulo(`Perdiste la final de ${copa}. Duele más de lo que pensabas (mentalidad ${deltaCorto(golpe)}).`)), ...sigue.logs] };
   }
   const hype = plan === 'arriesgado'
     ? roll(a.copaHypeArriesgadoMin, a.copaHypeArriesgadoMax, rng)
@@ -1703,7 +1703,7 @@ function cerrarCopa(state, final, gano, rng, logsPrevios = []) {
   const sigue = continuarElSplit(ganada, rng);
   return {
     ...sigue,
-    logs: [...logsPrevios, crearLog('amateur', `¡Campeón de ${copa} a los ${state.age}! La copa va a la vitrina y el server no habla de otra cosa (hype ${deltaCorto(hype)}).`, { titular: true, copaAmateur: titulo }), ...sigue.logs]
+    logs: [...logsPrevios, crearLog('amateur', contraeArticulo(`¡Campeón de ${copa} a los ${state.age}! La copa va a la vitrina y el server no habla de otra cosa (hype ${deltaCorto(hype)}).`), { titular: true, copaAmateur: titulo }), ...sigue.logs]
   };
 }
 
@@ -1729,7 +1729,7 @@ export function pausaDeFinalJugada(state, final, logs) {
   // Fuera de una liga, el `{liga}` del dato es el torneo de la final.
   const crudos = textoDeMinijuego(entrada, state);
   const textos = Object.fromEntries(Object.entries(crudos)
-    .map(([clave, texto]) => [clave, typeof texto === 'string' ? texto.replaceAll('{liga}', final.nombreTorneo) : texto]));
+    .map(([clave, texto]) => [clave, typeof texto === 'string' ? contraeArticulo(texto.replaceAll('{liga}', final.nombreTorneo)) : texto]));
   const torneo = {
     ...torneoG1(state, claveDeTorneo(state, final.tipo)),
     escalon: final.mapas.length,
@@ -1750,7 +1750,7 @@ export function pausaDeFinalJugada(state, final, logs) {
       tipo: 'opciones',
       presentacion: 'minijuego',
       titulo: textos.titulo,
-      descripcion: `${final.nombreTorneo}: la final${rival}, mapa ${final.mapas.length + 1}. ${textos.descripcion}`,
+      descripcion: contraeArticulo(`${final.nombreTorneo}: la final${rival}, mapa ${final.mapas.length + 1}. ${textos.descripcion}`),
       opciones: [],
       datos: {
         motivo: 'minijuego',
@@ -1863,7 +1863,7 @@ export function resolverMapaDeFinalDeTier3(state, decision, respuesta, rng) {
       titulos,
       registro,
       arraigo: Math.round(clampStat(st.career.arraigo + roll(a.porTituloMin, a.porTituloMax, rng))),
-      hitos: [...st.career.hitos, `Campeón de ${final.nombreLiga} a los ${st.age}`]
+      hitos: [...st.career.hitos, contraeArticulo(`Campeón de ${final.nombreLiga} a los ${st.age}`)]
     }
   };
   return {
