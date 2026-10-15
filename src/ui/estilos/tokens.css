@@ -1142,7 +1142,10 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
    ========================================================================== */
 :root {
   --franja-linea: 52px;
-  --ficha-alto: 40px;
+  /* G2b-ficha: la ficha son dos filas, la tira (`--ficha-tira`) y los cinco stats que mueven las cartas (`--ficha-juego`) */
+  --ficha-tira: 40px;
+  --ficha-juego: 30px;
+  --ficha-alto: calc(var(--ficha-tira) + var(--ficha-juego));
   /* las copas de la vitrina, por tier: primera en oro, la de desarrollo en plata, el circuito chico en bronce */
   --fj-copa-primera: var(--gold);
   --fj-copa-desarrollo: #cfd8e8;
@@ -1158,7 +1161,7 @@ html[data-comp='lcp'] { --tono-luz: var(--tono-lcp-luz); --tono-contra: var(--to
   --fj-dur-pulso-rapido: 380ms;
 }
 @media (max-width: 640px) {
-  :root { --ficha-alto: 38px; }
+  :root { --ficha-tira: 38px; --ficha-juego: 32px; }
 }
 :root:has(.shell:not([data-pieza="inicio"]) > .ficha-fija:not([hidden])) {
   --franja-alto: calc(var(--franja-linea) + var(--ficha-alto));

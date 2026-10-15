@@ -16,7 +16,7 @@
 // (`animar`: con movimiento reducido aparece quieta).
 import {
   nivelDelAnio, escaleraDeArraigo, escaleraDeJerarquia, escaleraDeHype, puntajeEnVivo, vitrinaDeTitulos, dineroGanado,
-  estadoInternacional, statsDeJuego
+  estadoInternacional, statsQueMuevenLasCartas, promesaAbierta, ROTULO_DE_BANDA
 } from '../core/ficha.js';
 import { plata, faltan } from '../core/formato.js';
 import { moverNumero } from './core/delta.js';
@@ -24,7 +24,9 @@ import { icono, triangulos } from './fx/iconos.js';
 import { num } from './fx/movimiento.js';
 import { animar as animarNodo, DUR, RESORTE, EXPO } from './fx/util.js';
 
-const LABEL_BANDA = { prospecto: 'Prospecto', titular: 'Competitivo', elite: 'Élite', clase_mundial: 'Clase mundial' };
+const LABEL_BANDA = ROTULO_DE_BANDA;
+// G2b-ficha: cuánto vive el ▲▼ "en el acto" de un stat que acaba de cambiar.
+const FLASH_MS = 2600;
 const LABEL_INTERNACIONAL = { sin_chance: 'sin chance', en_carpeta: 'en carpeta', clasificado: 'clasificado', jugando: 'jugándolo' };
 const LABEL_TIER = { 1: 'De primera', 2: 'De la liga de desarrollo', 3: 'Del circuito chico' };
 // Las copas que entran en la tira; el resto se cuenta en el número (la hoja las muestra todas).
@@ -112,7 +114,8 @@ export function datosDeLaFicha(estado) {
   return {
     amateur,
     nivel: nivelDelAnio(estado),
-    juego: statsDeJuego(estado),
+    juego: statsQueMuevenLasCartas(estado),
+    promesa: promesaAbierta(estado),
     arraigo: escaleraDeArraigo(estado),
     carrera: puntajeEnVivo(estado),
     jerarquia: escaleraDeJerarquia(estado),
@@ -264,23 +267,67 @@ function escalones(a) {
   return lista;
 }
 
-// F4 (PLANUI §0.8, punto 8): "TU JUEGO", los seis stats que mueven las cartas del cierre, cada uno con su valor y su ▲▼ del año
-// (la misma foto que el nivel). Va solo en la hoja: la tira ya está llena.
-function bloqueJuego(stats) {
-  const caja = nodo('div', 'fj-juego');
-  caja.append(nodo('span', 'fj-rot fj-juego-rot', 'Tu juego'));
-  const grilla = nodo('ul', 'fj-juego-stats');
-  for (const s of stats) {
-    const celda = nodo('li', 'fj-stat');
-    celda.dataset.stat = s.id;
-    celda.title = `${s.rotulo} ${s.valor}${s.delta ? `, ${s.delta > 0 ? '+' : ''}${s.delta} en el año` : ''}`;
-    celda.append(nodo('span', 'fj-stat-rot', s.corto), nodo('b', 'fj-stat-valor', num(s.valor)));
-    const delta = deltaNodo(s.delta);
-    if (delta) celda.append(delta);
-    grilla.append(celda);
+// G2b-ficha (PLANUI §0.9): los cinco stats que mueven las cartas (Mecánica, Macro, Laneo, Calls, Cabeza), SIEMPRE a la vista, a
+// todo ancho, en su propia fila bajo la tira. Se crea una vez y se actualiza en el lugar: así el ▲▼ "en el acto" (el cambio contra
+// el valor que el jugador ya vio) vive un par de segundos aunque la tira se repinte por otra cosa.
+function crearFilaDeJuego() {
+  const lista = nodo('ul', 'fj-juego-fija');
+  lista.setAttribute('aria-label', 'Tu juego');
+  const promesa = nodo('li', 'fj-promesa');
+  promesa.hidden = true;
+  lista.append(promesa);
+  const celdas = new Map();
+  const timers = new Map();
+
+  function celda(s) {
+    let c = celdas.get(s.id);
+    if (!c) {
+      c = nodo('li', 'fj-stat');
+      c.dataset.stat = s.id;
+      const rot = nodo('span', 'fj-stat-rot', s.corto);
+      const valor = nodo('b', 'fj-stat-valor');
+      const flash = nodo('span', 'fj-stat-flash');
+      flash.setAttribute('aria-live', 'polite');
+      c.append(rot, valor, flash);
+      celdas.set(s.id, c);
+      lista.insertBefore(c, promesa);
+    }
+    return c;
   }
-  caja.append(grilla);
-  return caja;
+
+  // `antes`: { [id]: valor } que el jugador vio en la vista anterior (o null: sin flecha). Devuelve el mapa de ahora.
+  function pintar(juego, antes, promesaAbierta, dur) {
+    const ahora = {};
+    for (const s of juego) {
+      const c = celda(s);
+      const valor = c.querySelector('.fj-stat-valor');
+      const flash = c.querySelector('.fj-stat-flash');
+      ahora[s.id] = s.valor;
+      c.title = `${s.rotulo} ${s.valor}${s.delta ? `, ${s.delta > 0 ? '+' : ''}${s.delta} en el año` : ''}`;
+      const a = antes?.[s.id];
+      if (Number.isFinite(a) && a !== s.valor) {
+        moverNumero(valor, a, s.valor, { formato: num, duracion: dur.numero, animar: true });
+        const d = s.valor - a;
+        flash.replaceChildren(triangulos('baja', d > 0 ? '+' : '-'), document.createTextNode(String(Math.abs(d))));
+        flash.dataset.signo = d > 0 ? 'sube' : 'baja';
+        flash.setAttribute('aria-label', `${s.rotulo} ${d > 0 ? 'subió' : 'bajó'} ${Math.abs(d)}`);
+        animarNodo(flash, [{ opacity: 0.25, transform: PULSO_DESDE }, { opacity: 1, transform: 'none' }], { dur: dur.pulso, easing: RESORTE });
+        clearTimeout(timers.get(s.id));
+        timers.set(s.id, setTimeout(() => { flash.replaceChildren(); delete flash.dataset.signo; flash.removeAttribute('aria-label'); }, FLASH_MS));
+      } else if (!valor.textContent || !Number.isFinite(a)) {
+        valor.textContent = num(s.valor);
+      }
+    }
+    // G4b: la promesa abierta, un chip.
+    promesa.hidden = !promesaAbierta;
+    promesa.replaceChildren();
+    if (promesaAbierta) {
+      promesa.append(nodo('b', 'fj-promesa-texto', promesaAbierta.texto), nodo('span', 'fj-promesa-prog', promesaAbierta.progreso));
+      promesa.title = `${promesaAbierta.texto} ${promesaAbierta.progreso}`.trim();
+    }
+    return ahora;
+  }
+  return { lista, pintar };
 }
 
 function pintarHoja(hoja, d) {
@@ -288,7 +335,7 @@ function pintarHoja(hoja, d) {
   const nivel = fila('Nivel', 'nivel', num(d.nivel.valor), [LABEL_BANDA[d.nivel.banda] ?? '', deltaNodo(d.nivel.delta, 'en el año')]);
   nivel.dataset.banda = d.nivel.banda;
   filas.push(nivel);
-  if (d.juego?.length) filas.push(bloqueJuego(d.juego));
+  if (d.promesa) filas.push(fila('Promesa', null, '', [nodo('b', 'fj-fuerte', `${d.promesa.texto} `), d.promesa.progreso]));
   if (d.arraigo) {
     const a = d.arraigo;
     const texto = a.esMaxima
@@ -357,7 +404,8 @@ export function crearFichaFija(seccion) {
   hoja.hidden = true;
   hoja.setAttribute('role', 'region');
   hoja.setAttribute('aria-label', 'Tu ficha completa');
-  seccion.append(tira, hoja);
+  const juegoFijo = crearFilaDeJuego();
+  seccion.append(tira, juegoFijo.lista, hoja);
 
   // Lo que la ficha mostraba en la `vista` anterior de la MISMA carrera: desde ahí ruedan los números y se sabe qué copa
   // es nueva.
@@ -464,8 +512,9 @@ export function crearFichaFija(seccion) {
       });
     }
 
+    const juego = juegoFijo.pintar(d.juego, previo?.juego ?? null, d.promesa, dur);
     pintarHoja(hoja, d);
-    antes = { seed: estado.seed, ...ahora, titulos: d.vitrina.total, firma };
+    antes = { seed: estado.seed, ...ahora, juego, titulos: d.vitrina.total, firma };
   }
 
   return { pintar };

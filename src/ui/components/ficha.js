@@ -24,7 +24,7 @@ const NOMBRE_DE_LIGA = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga.nom
 // tienen referente" — así que ningún número sale acá sin banda, sin flecha,
 // o sin comparación (regla de proceso 13).
 
-const LABEL_NIVEL = { prospecto: 'Prospecto', titular: 'Competitivo', elite: 'Élite', clase_mundial: 'Clase mundial' };
+const LABEL_NIVEL = { prospecto: 'Prospecto', titular: 'Competitivo', elite: 'Alto nivel', clase_mundial: 'Élite' };
 const LABEL_INTERNACIONAL = {
   sin_chance: 'Internacional: sin chance',
   en_carpeta: 'Internacional: en carpeta',

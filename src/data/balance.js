@@ -871,7 +871,9 @@ export const BALANCE = {
   // (core/ficha.js, `nivelDelJugador`). No se retunea la formula, solo se
   // expone.
   ficha: {
-    nivelBandas: { prospecto: 45, titular: 62, elite: 78 },
+    // D113: "Élite" es lo que el mercado trata como élite (`mercado.elite.umbralNivel`, 80): la banda de arriba (> 80) se llama Élite
+    // y la de 63-80, "Alto nivel". Los ids (`elite`, `clase_mundial`) son los de siempre: solo cambió el borde y el rótulo.
+    nivelBandas: { prospecto: 45, titular: 62, elite: 80 },
     // Un delta de stat menor a esto no dibuja flecha en la ficha: una deriva
     // de 0,4 no es una noticia.
     umbralFlecha: 1,
@@ -1383,7 +1385,7 @@ export const BALANCE = {
     //  - `f(nivel) = clamp((nivel − umbralNivel) / anchoNivel, 0, 1)`: 0 por debajo del umbral de élite, sube en
     //    línea recta y vale 1 desde `umbralNivel + anchoNivel`. Lineal a propósito: una perilla de forma menos para
     //    el barrido, y la élite "a medias" pesa a medias. El umbral arranca dos puntos arriba del borde de
-    //    `ficha.nivelBandas.elite` (78, desde donde la ficha dice "clase mundial").
+    //    `ficha.nivelBandas.elite` (80, desde donde la ficha dice "Élite"; D113).
     //  - `pesoFuerzaOrden` (k): USD de orden de la mano por punto de `org.fuerza` con f = 1. El orden de la mano es
     //    `presupuesto + nudge de región + k · f(nivel) · org.fuerza`: con k > 0 los clubes fuertes van primero.
     //  - `rebajaMerito` y `rebajaDisputa`: puntos que se le perdonan a la élite, con f = 1, en los dos márgenes del asiento,
