@@ -16,7 +16,9 @@ import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { BALANCE } from '../data/balance.js';
 import { conPermanencia } from '../core/curvas.js';
 import { probabilidadDePartido, ruidoEfectivo } from '../core/partido.js';
-import { ESTRATEGIAS, NOMBRES_ESTRATEGIA, esDecisionDeMinijuego, efectosDeCarreraDeOpcion } from './estrategias.js';
+import {
+  ESTRATEGIAS, NOMBRES_ESTRATEGIA, esDecisionDeMinijuego, esDecisionDeMinijuegoG1, efectosDeCarreraDeOpcion
+} from './estrategias.js';
 import { verificarSplitJugadoSinFila } from './guards.js';
 import { formaBeat } from '../core/log.js';
 
@@ -31,6 +33,9 @@ export const DURACION_BEAT_MS = 700;
 // Cuánto espera la UI después de que el jugador termina un minijuego, antes de seguir:
 // src/ui/app.js (línea 174, `setTimeout(() => responder({ resultado }), 1600)`). Mismo aviso de espejo.
 export const ESPERA_MINIJUEGO_MS = 1600;
+// Ola G (G1): en un mapa con minijuego (una final o el Swiss, `datos.g1`) el veredicto queda a la vista más tiempo:
+// `LECTURA_VEREDICTO_G1_MS` en src/ui/paradas/minijuego.js. Mismo aviso de espejo.
+export const ESPERA_VEREDICTO_G1_MS = 2300;
 
 // FASE V (V4): cuánto sostiene la UI la tarjeta "Cierre de 2031" de un año que cerró SIN parada del motor, además de la espera
 // de su beat: `ESPERA_CIERRE_ANIO_MS.x1` en src/ui/reproductor.js. Una por año como máximo y nunca en un año en que `edadCierre`
@@ -269,6 +274,8 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
     seed,
     decisionesPorTipo: {},
     minijuegosCount: 0,
+    // G1: de esos, los mapas con minijuego (`datos.g1`): la UI los sostiene `ESPERA_VEREDICTO_G1_MS` y no 1600.
+    minijuegosG1Count: 0,
     splitsProRitmo: [],
     splitsProData: [],
     temporadasData: [],
@@ -369,6 +376,7 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
 
     if (esDecisionDeMinijuego(decision)) {
       observacion.minijuegosCount += 1;
+      observacion.minijuegosG1Count += esDecisionDeMinijuegoG1(decision) ? 1 : 0;
       const mecanica = decision.datos?.minijuego;
       if (mecanica) {
         observacion.minijuegosPorMecanica[mecanica] = (observacion.minijuegosPorMecanica[mecanica] ?? 0) + 1;
@@ -614,12 +622,14 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
   observacion.tiempoMaquinaMin = (logsConBeat * DURACION_BEAT_MS) / MS_POR_MINUTO;
 
   // `tiempoReproductorMin`: lo que mide el reproductor — los beats reales de cada tanda (`contarBeats`) ×
-  // 700 ms, más 1.600 ms por cada minijuego jugado, más 2.400 ms por cada año que cerró sin parada del motor (V4). Tampoco es lo que tarda una persona: no incluye leer
+  // 700 ms, más 1.600 ms por cada minijuego jugado (2.300 si es un mapa con minijuego de G1), más 2.400 ms por cada año que cerró sin parada del motor (V4). Tampoco es lo que tarda una persona: no incluye leer
   // y decidir. NO es comparable con los 17,4 min de AUDITORIA.md, que salieron de un Chromium real
   // (`play.mjs`: esperas de 120 ms por decisión, 1.800 ms por minijuego, la interacción del bot adentro del
   // minijuego y la latencia de Playwright) — esos tiempos no están acá.
   observacion.tiempoReproductorMin = (
-    observacion.beatsReproductor * DURACION_BEAT_MS + observacion.minijuegosCount * ESPERA_MINIJUEGO_MS
+    observacion.beatsReproductor * DURACION_BEAT_MS
+    + (observacion.minijuegosCount - observacion.minijuegosG1Count) * ESPERA_MINIJUEGO_MS
+    + observacion.minijuegosG1Count * ESPERA_VEREDICTO_G1_MS
     + observacion.cierresSinParada * ESPERA_CIERRE_ANIO_MS
   ) / MS_POR_MINUTO;
 

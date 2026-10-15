@@ -326,8 +326,14 @@ export function elegirEvento(state, rng, { excluirId, filtro = () => true } = {}
 // G2a (PLANUI §0.9): el escalón de un candidato para la única parada de evento del split. Con varios candidatos gana el
 // escalón más alto, sin tirada: la continuación de una cadena (un evento que lee una bandera que dejó otro, `flags.*` en
 // sus `conditions`) > el golpe duro > la bifurcación > el resto. Adentro del escalón, el sorteo de siempre.
+// G-int: continuación es pedir que la bandera YA tenga un valor (`eq` con algo que no es null ni false). Una guarda de
+// "todavía no" (`eq null`, `neq "cubrio"`) es la de un evento que ABRE un camino, no la de uno que lo sigue: antes contaba
+// como cadena y esas aperturas le ganaban siempre a las demás bifurcaciones (el camino "conflicto" no se abría nunca: 0
+// de 200 carreras, 52 en la base).
+const esContinuacion = (condicion) => String(condicion.field ?? '').startsWith('flags.')
+  && condicion.op === 'eq' && condicion.value !== null && condicion.value !== false;
 export function escalonDeEvento(evento) {
-  if (evento.conditions.some((condicion) => String(condicion.field ?? '').startsWith('flags.'))) {
+  if (evento.conditions.some(esContinuacion)) {
     return 3;
   }
   if (evento.categoria === 'golpe_duro') {

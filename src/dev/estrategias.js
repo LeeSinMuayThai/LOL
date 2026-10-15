@@ -209,6 +209,11 @@ export function esDecisionConRiesgoDeBurnout(decision) {
   return (decision.opciones ?? []).some((opcion) => Number.isFinite(opcion.riesgoBurnout));
 }
 
+// Ola G (G1): un minijuego de mapa de una final o del Swiss (trae `datos.g1`, el contrato de la vara).
+export function esDecisionDeMinijuegoG1(decision) {
+  return Boolean(decision.datos?.g1);
+}
+
 export function esDecisionDeMinijuego(decision) {
   return decision.presentacion === 'minijuego' || decision.datos?.motivo === 'minijuego';
 }
@@ -453,6 +458,11 @@ function responderCriterio(sistema, state, decision, rng) {
   }
   if (esDecisionConRiesgoDeBurnout(decision)) {
     return { opcionId: opcionQueNoQuema(decision) };
+  }
+  if (esDecisionDeMinijuegoG1(decision)) {
+    // Ola G (G1): un mapa con minijuego se decide por la vara. Con 0,85 fijo `criterio` ganaba casi todos y sus bandas se
+    // movían por el bot, no por el juego: contesta fiel a la p del mapa, como el bot del motor (`resultadoDelBot`).
+    return sistema.resolverAuto(state, decision, rng);
   }
   if (esDecisionDeMinijuego(decision)) {
     return { resultado: RESULTADO_MINIJUEGO_BIEN, ...charlaEnMinijuego(state, decision, false) };

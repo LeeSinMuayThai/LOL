@@ -75,7 +75,8 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // vestuario; `career.torneoG1`, el torneo en curso con minijuegos de mapa; y la decisión de minijuego con `datos.g1`). Un
 // guardado de la 16 carga con `migrarDe16`: la clase es el perfil con el que arrancó la carrera (el de la seed o el elegido no
 // quedó guardado: se toma el perfil de hoy, `player.perfil.actual`), sin la inclinación de stats (esa ya no se puede dar al
-// arranque); el torneo, sin empezar. Una pausa pendiente de antes de G1 se resuelve con la tirada de siempre.
+// arranque); el torneo, sin empezar. G2a y G3ab suman `presupuesto.eventos` (0), `flags.colaAnio` (null),
+// `flags.copaAmateur` (null) y `flags.rechazoMercado` (false). Una pausa pendiente de antes de G1 se resuelve con la tirada de siempre.
 export const VERSION = 17;
 const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16];
 
@@ -228,8 +229,18 @@ export function migrarDe16(state) {
   if (!state.career) {
     return state;
   }
+  const flags = state.flags ?? {};
   return {
     ...state,
+    // G2a: la parada de evento del split arranca sin gastar; la cola del año, sin año.
+    presupuesto: state.presupuesto ? { ...state.presupuesto, eventos: state.presupuesto.eventos ?? 0 } : state.presupuesto,
+    // G3ab: la copa amateur sin jugar; la ventana anterior no se cerró sin firma.
+    flags: {
+      ...flags,
+      colaAnio: flags.colaAnio ?? null,
+      copaAmateur: flags.copaAmateur ?? null,
+      rechazoMercado: flags.rechazoMercado ?? false
+    },
     career: {
       ...state.career,
       clase: state.career.clase ?? state.player?.perfil?.actual ?? null,

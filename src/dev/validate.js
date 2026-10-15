@@ -93,8 +93,9 @@ import LIGAS from '../data/leagues.json' with { type: 'json' };
 import CAMPEONES from '../data/champions.json' with { type: 'json' };
 import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
 import {
-  elegirMinijuego, minijuegosPara, veredictoDeMinijuego, textoDeMinijuego, lecturaDeVentana, minijuegoPorId
+  elegirMinijuego, minijuegosPara, veredictoDeMinijuego, textoDeMinijuego, lecturaDeVentana, minijuegoPorId, reglaDeLaVara
 } from '../core/minijuegos.js';
+import { varaDeRonda as varaDeRondaG1 } from '../systems/serie.js';
 import { esMapaDeDesempate } from '../core/serie.js';
 import { previaDePartido, previaDeDecision, textoDeProbabilidadJugada } from '../core/previaDePartido.js';
 import { esSerieDeEliminacion, esSerieSinNadaEnJuego as esSerieSinNadaEnJuegoK6aM, esCierreDeTemporada as esCierreK6aM } from '../core/serie.js';
@@ -173,13 +174,6 @@ function check(nombre, fn) {
     return;
   }
   correrUnCheck(nombre, fn);
-}
-
-// G3b (PLANUI §0.9): la bifurcación del mercado ("El mercado ya habló" / "Primera no llama") ya no existe: el piso de ofertas
-// siempre trae mano y el retiro llega por el cuerpo o la edad. Sus checks quedan escritos (vuelven si la bifurcación vuelve con
-// el último split de G4c) y se saltean; la promesa nueva la cuida "G3ab siempre en un equipo".
-function checkSinBifurcacion(nombre) {
-  console.log(`SKIP  ${nombre} (G3b: la bifurcación del mercado ya no existe)`);
 }
 
 function checkLento(nombre, fn) {
@@ -10442,7 +10436,7 @@ const {
 const { puntajeDeCarrera: puntajeDeCarreraAgencia } = await import('../core/puntaje.js');
 const {
   correrLote, correrCarrera: correrCarreraSimulate, correrSinRuido, calcularFavoritoBo5, bloqueBo5Motor, contarBeats,
-  clasificarSplit, PARAMETROS_RUIDO, DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS, ESPERA_CIERRE_ANIO_MS, DELTAS_FAVORITO_BO5,
+  clasificarSplit, PARAMETROS_RUIDO, DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS, ESPERA_VEREDICTO_G1_MS, ESPERA_CIERRE_ANIO_MS, DELTAS_FAVORITO_BO5,
   UMBRAL_R2_ESTRUCTURAL, decidirRuidoPuro,
   promedio, mediana: medianaSim, medianaInferior, percentil, desvioMuestral, pearson, varianza, regresionLineal2Regresores,
   META_K2_R_MISMA_LIGA, META_K2_R2_SIN_RUIDO, META_K2_BO5_FAVORITO_CLARO_PCT, META_K3_MENTALIDAD_MEDIANA,
@@ -10574,98 +10568,11 @@ function idsCrudosK5C(texto, ligas) {
   return problemas;
 }
 
-checkSinBifurcacion('K5-C: con el umbral prendido, un jugador por debajo de su liga pasa N pretemporadas sin oferta de su tier y recién ahí frena "bajás o te retirás"', () => {
-  const carreras = muestraK5C(UMBRAL_K5C);
-  const forks = carreras.flatMap((c) => c.forks);
-  const problemas = [];
-  for (const fork of forks) {
-    if (fork.cuenta < UMBRAL_K5C) {
-      problemas.push(`seed ${fork.seed} split ${fork.split}: frenó con ${fork.cuenta} pretemporadas sin oferta de su tier (umbral ${UMBRAL_K5C})`);
-    }
-    if (fork.tiersOfertas.some((tier) => tier <= fork.tier)) {
-      problemas.push(`seed ${fork.seed} split ${fork.split}: frenó con una oferta de su tier en la mano (${fork.tiersOfertas})`);
-    }
-    const seguir = fork.tiersOfertas.length > 0 ? 'bajar' : 'esperar';
-    if (fork.opciones.length !== 2 || fork.opciones[0] !== seguir || fork.opciones[1] !== 'retirarse') {
-      problemas.push(`seed ${fork.seed} split ${fork.split}: opciones ${fork.opciones} (se esperaba ${seguir} y retirarse)`);
-    }
-    if (fork.edad >= BALANCE.retiro.edadRetiroForzoso) {
-      problemas.push(`seed ${fork.seed}: frenó a los ${fork.edad}, pasada la línea`);
-    }
-  }
-  // La cuenta: una mano con una oferta de tu tier la deja en 0; una sin ninguna la tiene en 1 o más; y con la cuenta en
-  // el umbral nunca se ve la mano de siempre sin pasar antes por la bifurcación (salvo después de elegir bajar).
-  for (const carrera of carreras) {
-    for (const mano of carrera.manos) {
-      if (mano.enTier && mano.cuenta !== 0) {
-        problemas.push(`seed ${carrera.state.seed} split ${mano.split}: mano con oferta de su tier y cuenta ${mano.cuenta}`);
-      }
-      if (!mano.enTier && mano.cuenta < 1) {
-        problemas.push(`seed ${carrera.state.seed} split ${mano.split}: mano sin oferta de su tier y cuenta 0`);
-      }
-      if (mano.cuenta >= UMBRAL_K5C && !carrera.forks.some((f) => f.split === mano.split && f.respuesta === 'bajar')) {
-        problemas.push(`seed ${carrera.state.seed} split ${mano.split}: cuenta ${mano.cuenta} y la mano de siempre, sin bifurcación`);
-      }
-    }
-  }
-  if (forks.length === 0) {
-    problemas.push('ninguna bifurcación en la muestra degradada: el check no mide nada');
-  }
-  const neutras = muestraK5C(99).flatMap((c) => c.forks).length;
-  if (neutras !== 0) {
-    problemas.push(`con el umbral neutro (99) frenó ${neutras} veces: tiene que reproducir hoy`);
-  }
-  if (problemas.length > 0) {
-    throw new Error(`${problemas.length} problema(s) en ${forks.length} bifurcaciones: ${problemas.slice(0, 5).join(' · ')}`);
-  }
-});
+// G3b (ola G): borrado "K5-C: con el umbral prendido, un jugador por debajo de su liga pasa N pretemporadas sin of": la bifurcación del mercado ya no existe;
+// la reemplaza "G3ab siempre en un equipo" (el piso de ofertas). El check sigue en git: `git show c45f351:src/dev/validate.js`.
 
-checkSinBifurcacion('K5-C: el retiro por mercado deja su motivo (log, estado y tarjeta) y la bifurcación no muestra ids crudos', () => {
-  const retirarse = (sistema, st, decision, rng) => (decision.datos?.motivo === 'fin_mercado'
-    ? { opcionId: 'retirarse' }
-    : sistema.resolverAuto(st, decision, rng));
-  const carreras = muestraK5C(UMBRAL_K5C, 'retirarse', retirarse);
-  const problemas = [];
-  let retiros = 0;
-  for (const carrera of carreras) {
-    for (const paso of carrera.pasos) {
-      for (const fork of paso.forksNuevos) {
-        for (const texto of fork.textos) {
-          const crudos = idsCrudosK5C(texto, fork.ligas);
-          if (crudos.length > 0) {
-            problemas.push(`seed ${fork.seed}: "${texto}" (${crudos.join(', ')})`);
-          }
-        }
-        if (fork.respuesta !== 'retirarse') {
-          continue;
-        }
-        retiros += 1;
-        if (paso.phase !== 'retirado' || paso.motivoRetiro !== fork.motivoRetiro) {
-          problemas.push(`seed ${fork.seed}: eligió retirarse y quedó phase ${paso.phase}, motivo ${paso.motivoRetiro}`);
-        }
-        if (!paso.logs.some((log) => log.type === 'retiro' && log.message.includes(fork.motivoRetiro))) {
-          problemas.push(`seed ${fork.seed}: el log del retiro no dice el motivo`);
-        }
-      }
-    }
-    const { state } = carrera;
-    if (state.terminado && state.tarjeta && (state.tarjeta.motivo ?? null) !== (state.motivoRetiro ?? null)) {
-      problemas.push(`seed ${state.seed}: la tarjeta dice "${state.tarjeta.motivo}" y el estado "${state.motivoRetiro}"`);
-    }
-    if (state.motivoRetiro != null) {
-      const crudos = idsCrudosK5C(state.motivoRetiro, state.mundo.ligas);
-      if (crudos.length > 0) {
-        problemas.push(`seed ${state.seed}: motivo "${state.motivoRetiro}" (${crudos.join(', ')})`);
-      }
-    }
-  }
-  if (retiros === 0) {
-    problemas.push('ningún retiro por la bifurcación en la muestra: el check no mide nada');
-  }
-  if (problemas.length > 0) {
-    throw new Error(`${problemas.length} problema(s) en ${retiros} retiros por mercado: ${problemas.slice(0, 5).join(' · ')}`);
-  }
-});
+// G3b (ola G): borrado "K5-C: el retiro por mercado deja su motivo (log, estado y tarjeta) y la bifurcación no mue": la bifurcación del mercado ya no existe;
+// la reemplaza "G3ab siempre en un equipo" (el piso de ofertas). El check sigue en git: `git show c45f351:src/dev/validate.js`.
 
 check('K5-C: la línea de los 34 sigue existiendo (con el umbral prendido y con el neutro) y deja su motivo', () => {
   const problemas = [];
@@ -10749,52 +10656,11 @@ function buscarK5C(condicion, { responderBase = responderPorDefectoK5C, factores
   });
 }
 
-checkSinBifurcacion('K5-C: "bajás" lleva a la mano de ofertas de más abajo, firmás un tier abajo y la cuenta vuelve a cero', () => {
-  const [carrera] = buscarK5C((fork) => fork.opciones[0] === 'bajar' && fork.respuesta === 'bajar', { tope: SEEDS_BUSQUEDA_BAJAR_K5C });
-  if (!carrera) {
-    throw new Error(`ninguna bifurcación con "bajar" contestada en ${SEEDS_BUSQUEDA_BAJAR_K5C} seeds degradadas`);
-  }
-  const fork = carrera.forks.find((f) => f.respuesta === 'bajar');
-  const mano = carrera.manos.find((m) => m.split === fork.split);
-  const paso = carrera.pasos.find((p) => p.forksNuevos.includes(fork));
-  const problemas = [];
-  if (!mano || mano.orgs.join('|') !== fork.ofertas.join('|')) {
-    problemas.push(`después de "bajar" la mano no es la de la bifurcación (${mano?.orgs} contra ${fork.ofertas})`);
-  }
-  if (!paso || paso.tier <= fork.tier || paso.cuenta !== 0) {
-    problemas.push(`al cerrar el split: tier ${paso?.tier} (antes ${fork.tier}), cuenta ${paso?.cuenta}`);
-  }
-  if (problemas.length > 0) {
-    throw new Error(`seed ${fork.seed}: ${problemas.join(' · ')}`);
-  }
-});
+// G3b (ola G): borrado "K5-C: "bajás" lleva a la mano de ofertas de más abajo, firmás un tier abajo y la cuenta vu": la bifurcación del mercado ya no existe;
+// la reemplaza "G3ab siempre en un equipo" (el piso de ofertas). El check sigue en git: `git show c45f351:src/dev/validate.js`.
 
-checkSinBifurcacion('K5-C: los bots contestan la bifurcación del mercado con una opción válida y su regla', () => {
-  const problemas = [];
-  const reglas = {
-    criterio: (fork) => (fork.edad >= BALANCE.retiro.edadAutoAceptaVeredicto ? 'retirarse' : fork.opciones[0]),
-    malas: (fork) => (fork.edad >= BALANCE.retiro.edadAutoAceptaVeredicto ? fork.opciones[0] : 'retirarse'),
-    azar: null
-  };
-  for (const [bot, regla] of Object.entries(reglas)) {
-    // K4c (plan anual): con el stream del plan, `malas` no llegaba a la bifurcación en las 150 seeds de siempre; la búsqueda
-    // se estira al doble (corta en cuanto junta 3).
-    const forks = buscarK5C(() => true, { responderBase: ESTRATEGIAS_K0[bot], minimo: 3, tope: 2 * SEEDS_BUSQUEDA_K5C }).flatMap((c) => c.forks);
-    if (forks.length === 0) {
-      problemas.push(`${bot}: ninguna bifurcación en la muestra`);
-    }
-    for (const fork of forks) {
-      if (!fork.opciones.includes(fork.respuesta)) {
-        problemas.push(`${bot}, seed ${fork.seed}: contestó "${fork.respuesta}" (opciones ${fork.opciones})`);
-      } else if (regla && regla(fork) !== fork.respuesta) {
-        problemas.push(`${bot}, seed ${fork.seed}: a los ${fork.edad} contestó "${fork.respuesta}", su regla dice "${regla(fork)}"`);
-      }
-    }
-  }
-  if (problemas.length > 0) {
-    throw new Error(problemas.slice(0, 5).join(' · '));
-  }
-});
+// G3b (ola G): borrado "K5-C: los bots contestan la bifurcación del mercado con una opción válida y su regla": la bifurcación del mercado ya no existe;
+// la reemplaza "G3ab siempre en un equipo" (el piso de ofertas). El check sigue en git: `git show c45f351:src/dev/validate.js`.
 
 // --- K5c-R: la presión de tier 2 (PLAN.md K5c, "decisiones de spec de la estructura") ---
 //
@@ -10919,74 +10785,8 @@ const retirarseK5CR = (sistema, st, decision, rng) => {
   return sistema.resolverAuto(st, decision, rng);
 };
 
-checkSinBifurcacion('K5c-R: con las perillas prendidas, el que se queda en tier 2 sin ofertas de tier 1 recibe la bifurcación, y su motivo llega al log, al estado y a la tarjeta', () => {
-  const carreras = muestraK5CR('retirarse', PERILLAS_K5CR, { degradar: true, responderBase: retirarseK5CR });
-  const problemas = [];
-  let forks = 0;
-  let retiros = 0;
-  let tarjetas = 0;
-  for (const carrera of carreras) {
-    for (const paso of carrera.pasos) {
-      for (const fork of paso.decisiones.filter((d) => d.variante === 'presion_tier2')) {
-        forks += 1;
-        const donde = `seed ${carrera.seed} split ${fork.split}`;
-        if (fork.tier !== 2 || fork.cuenta < PERILLAS_K5CR.splitsSinOfertaTier1 || fork.tiersFork.includes(1)) {
-          problemas.push(`${donde}: frenó en tier ${fork.tier} con cuenta ${fork.cuenta} y ofertas de tier ${fork.tiersFork}`);
-        }
-        const seguir = fork.tiersFork.length > 0 ? 'seguir' : 'esperar';
-        if (fork.opciones.join('|') !== `${seguir}|retirarse`) {
-          problemas.push(`${donde}: opciones ${fork.opciones} (se esperaba ${seguir} y retirarse)`);
-        }
-        // K5c (revisión, regla 7): el tiempo está escrito a mano (`TIEMPO_A_MANO_K5CR`), no armado con `aniosEnPalabras` del motor.
-        const esperado = `Tenés ${fork.edad} años, llevás ${TIEMPO_A_MANO_K5CR[fork.cuenta]} en ${fork.ligaVisible ?? `tier ${fork.tier}`} `
-          + 'y ninguna org de primera te llamó.';
-        if (fork.motivoFork !== esperado) {
-          problemas.push(`${donde}: motivo "${fork.motivoFork}" (se esperaba "${esperado}")`);
-        }
-        for (const texto of fork.textos) {
-          const crudos = idsCrudosK5C(texto, fork.ligas);
-          if (crudos.length > 0) {
-            problemas.push(`${donde}: "${texto}" (${crudos.join(', ')})`);
-          }
-        }
-        if (fork.respuesta !== 'retirarse') {
-          continue;
-        }
-        retiros += 1;
-        if (paso.despues.phase !== 'retirado' || paso.despues.motivoRetiro !== fork.motivoFork) {
-          problemas.push(`${donde}: eligió retirarse y quedó phase ${paso.despues.phase}, motivo "${paso.despues.motivoRetiro}"`);
-        }
-        if (!paso.logs.some((log) => log.message.includes(fork.motivoFork))) {
-          problemas.push(`${donde}: el log del retiro no dice el motivo`);
-        }
-      }
-    }
-    const { state } = carrera;
-    if (String(state.motivoRetiro ?? '').startsWith('Tenés ')) {
-      if (!state.terminado || !state.tarjeta || state.tarjeta.motivo !== state.motivoRetiro) {
-        problemas.push(`seed ${carrera.seed}: terminado ${state.terminado}, la tarjeta dice "${state.tarjeta?.motivo}" y el estado "${state.motivoRetiro}"`);
-      } else {
-        tarjetas += 1;
-      }
-    }
-  }
-  if (forks === 0 || retiros === 0 || tarjetas === 0) {
-    problemas.push(`el check no mide nada: ${forks} bifurcaciones, ${retiros} retiros y ${tarjetas} tarjetas con el motivo de la presión`);
-  }
-  // Con las perillas neutras, la misma muestra degradada no frena nunca por la presión: reproduce hoy.
-  // F2 (PLANUI §0.8): "neutras" eran las del repo (`{}`), pero desde K5c paso 3 (Final2) las del repo están prendidas (20 años,
-  // 4 splits) y el 0 solo valía por la muestra. Con la llamada de tier 2 las carreras cambian de camino y en las seeds 2 y 15 la
-  // presión frena bien (cuenta 6 desde los 20, en tier 2 con club, sin ofertas de tier 1; las llamadas fueron a los 17 y 18 y no
-  // suman). Lo que este renglón protege es la perilla apagada: se apaga explícita (99, "nunca dispara").
-  const neutras = muestraK5CR('neutras', { edadDesde: 99, splitsSinOfertaTier1: 99 }, { degradar: true, responderBase: retirarseK5CR })
-    .flatMap((c) => c.pasos.flatMap((p) => p.decisiones)).filter((d) => d.variante === 'presion_tier2').length;
-  if (neutras !== 0) {
-    problemas.push(`con las perillas neutras frenó ${neutras} veces por la presión de tier 2`);
-  }
-  if (problemas.length > 0) {
-    throw new Error(`${problemas.length} problema(s) en ${forks} bifurcaciones: ${problemas.slice(0, 5).join(' · ')}`);
-  }
-});
+// G3b (ola G): borrado "K5c-R: con las perillas prendidas, el que se queda en tier 2 sin ofertas de tier 1 recibe ": la bifurcación del mercado ya no existe;
+// la reemplaza "G3ab siempre en un equipo" (el piso de ofertas). El check sigue en git: `git show c45f351:src/dev/validate.js`.
 
 check('K5c-R: la cuenta de la presión sube todos los splits jugados en tier 2 (con contrato también) y solo la vuelve a cero una oferta de tier 1', () => {
   // Sin umbral (99): la cuenta corre y nunca frena, así se ven las manos con y sin tier 1 de carreras normales.
@@ -11062,41 +10862,8 @@ check('K5c-R: la cuenta de la presión sube todos los splits jugados en tier 2 (
   }
 });
 
-checkSinBifurcacion('K5c-R: los bots contestan la bifurcación de la presión con la regla de edad de K5-C, y elegir seguir vuelve a cero la cuenta', () => {
-  const problemas = [];
-  const reglas = {
-    criterio: (fork) => (fork.edad >= BALANCE.retiro.edadAutoAceptaVeredicto ? 'retirarse' : fork.opciones[0]),
-    malas: (fork) => (fork.edad >= BALANCE.retiro.edadAutoAceptaVeredicto ? fork.opciones[0] : 'retirarse')
-  };
-  for (const [bot, regla] of Object.entries(reglas)) {
-    const carreras = muestraK5CR(`bot-${bot}`, PERILLAS_K5CR, { degradar: true, responderBase: ESTRATEGIAS_K0[bot] });
-    let forks = 0;
-    let siguen = 0;
-    for (const carrera of carreras) {
-      for (const paso of carrera.pasos) {
-        for (const fork of paso.decisiones.filter((d) => d.variante === 'presion_tier2')) {
-          forks += 1;
-          if (regla(fork) !== fork.respuesta) {
-            problemas.push(`${bot}, seed ${carrera.seed}: a los ${fork.edad} contestó "${fork.respuesta}", la regla dice "${regla(fork)}"`);
-          }
-          if (fork.respuesta === fork.opciones[0]) {
-            siguen += 1;
-            // Siguió: la cuenta volvió a 0 en el mercado y el split jugado en tier 2 la deja en 1 (en 0 si se fue de tier 2).
-            if (paso.despues.cuenta > 1) {
-              problemas.push(`${bot}, seed ${carrera.seed} split ${fork.split}: siguió y la cuenta cerró el split en ${paso.despues.cuenta}`);
-            }
-          }
-        }
-      }
-    }
-    if (forks === 0 || (bot === 'criterio' && siguen === 0)) {
-      problemas.push(`${bot}: ${forks} bifurcaciones de la presión y ${siguen} en que siguió, en la muestra`);
-    }
-  }
-  if (problemas.length > 0) {
-    throw new Error(problemas.slice(0, 5).join(' · '));
-  }
-});
+// G3b (ola G): borrado "K5c-R: los bots contestan la bifurcación de la presión con la regla de edad de K5-C, y ele": la bifurcación del mercado ya no existe;
+// la reemplaza "G3ab siempre en un equipo" (el piso de ofertas). El check sigue en git: `git show c45f351:src/dev/validate.js`.
 
 // Regla 17, qué protege: que los años pro se cuenten desde el primer contrato de tier 2 o tier 1 y no desde tier 3, igual en el
 // puntaje (`aniosProDe`), en la caja "Años pro" de la tarjeta y en la longevidad del instrumento (`bloqueLongevidad`). Desde K5c-R.
@@ -13774,6 +13541,11 @@ check('K0 espejos de la UI: DURACION_BEAT_MS, ESPERA_MINIJUEGO_MS y ESPERA_CIERR
   if (minijuego !== ESPERA_MINIJUEGO_MS) {
     throw new Error(`ESPERA_MINIJUEGO_MS = ${ESPERA_MINIJUEGO_MS} en simulate.js, paradas/minijuego.js espera ${minijuego} ms tras el minijuego`);
   }
+  // Ola G (G1): el veredicto de un mapa con minijuego. paradas/minijuego.js: `const LECTURA_VEREDICTO_G1_MS = 2300;`
+  const veredictoG1 = extraer(leer('ui/paradas/minijuego.js'), /const\s+LECTURA_VEREDICTO_G1_MS\s*=\s*(\d+)/g, 'LECTURA_VEREDICTO_G1_MS de paradas/minijuego.js');
+  if (veredictoG1 !== ESPERA_VEREDICTO_G1_MS) {
+    throw new Error(`ESPERA_VEREDICTO_G1_MS = ${ESPERA_VEREDICTO_G1_MS} en simulate.js, paradas/minijuego.js sostiene ${veredictoG1} ms el veredicto de G1`);
+  }
   // FASE V (V4): la pausa del cierre de año. reproductor.js: `const ESPERA_CIERRE_ANIO_MS = { x1: 2400, x2: 1200, instantaneo: 0 }`.
   const cierreDeAnio = extraer(leer('ui/reproductor.js'), /const\s+ESPERA_CIERRE_ANIO_MS\s*=\s*\{[^}]*\bx1\s*:\s*(\d+)/g, 'ESPERA_CIERRE_ANIO_MS.x1 de reproductor.js');
   if (cierreDeAnio !== ESPERA_CIERRE_ANIO_MS) {
@@ -14108,6 +13880,7 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
     let st = createInitialState(seed, rng);
     let beats = 0;
     let minijuegos = 0;
+    let minijuegosG1 = 0;
     // FASE V (V4): los años que cerraron sin parada de `edadCierre` (cada uno suma `ESPERA_CIERRE_ANIO_MS` al reproductor).
     let cierresSinParada = 0;
     const splitsPro = [];
@@ -14132,6 +13905,7 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
         frenoElCierre = frenoElCierre || sistemaId === 'edadCierre';
         if (decision.presentacion === 'minijuego' || decision.datos?.motivo === 'minijuego') {
           minijuegos += 1;
+          minijuegosG1 += decision.datos?.g1 ? 1 : 0;
         }
         desde = st.logs.length;
         st = resolverDecision(st, sistemaPorId(sistemaId).resolverAuto(st, decision, rng), rng).state;
@@ -14206,7 +13980,8 @@ checkLento('K0 observación: beats del reproductor, minijuegos y tipo de split c
     if (observacion.cierresSinParada !== cierresSinParada) {
       throw new Error(`seed ${seed}: cierresSinParada ${observacion.cierresSinParada}, la emulación cuenta ${cierresSinParada}`);
     }
-    const tiempoReproductor = (beats * DURACION_BEAT_MS + minijuegos * ESPERA_MINIJUEGO_MS + cierresSinParada * ESPERA_CIERRE_ANIO_MS) / 60000;
+    const tiempoReproductor = (beats * DURACION_BEAT_MS + (minijuegos - minijuegosG1) * ESPERA_MINIJUEGO_MS
+      + minijuegosG1 * ESPERA_VEREDICTO_G1_MS + cierresSinParada * ESPERA_CIERRE_ANIO_MS) / 60000;
     if (Math.abs(observacion.tiempoReproductorMin - tiempoReproductor) > 1e-9) {
       throw new Error(`seed ${seed}: tiempoReproductorMin ${observacion.tiempoReproductorMin} != ${tiempoReproductor}`);
     }
@@ -14886,7 +14661,10 @@ const DELEGACION_COMUN_K0 = {
 // Las rutinas (`amateur:reparto`; la práctica ya no frena desde K4c): `criterio` usa la que elige el propio sistema (`responderCriterio` delega
 // de entrada); `malas` sí elige una (la más agresiva), así que a ella no se le permite.
 const DELEGACION_RUTINAS_K0 = {
-  'amateur:reparto': 'rutina: `criterio` usa la que elige el sistema'
+  'amateur:reparto': 'rutina: `criterio` usa la que elige el sistema',
+  // Ola G (G1): el minijuego de un mapa con vara lo contesta el bot del motor (`resultadoDelBot`, fiel a la p del mapa).
+  'serie:minijuego': 'mapa con minijuego (G1): `criterio` contesta fiel a la p, como el bot del motor',
+  'internacional:swiss': 'Bo1 del Swiss con minijuego (G1): `criterio` contesta fiel a la p, como el bot del motor'
 };
 
 checkLento('K0 criterio y malas: solo delegan en resolverAuto los tipos de decisión declarados (criterio usa la previa en todos los demás)', () => {
@@ -17499,12 +17277,13 @@ function cosechaDePreviasK2d() {
     }
     return respuesta;
   };
-  const llena = () => c.fechas.length >= CASOS_K2D * 2
-    && c.drafts.length >= CASOS_K2D && c.minijuegos.length >= CASOS_K2D;
+  // Ola G (G1): la pausa del mapa decisivo sin minijuego (`serie:decisivo`) ya no aparece: todo mapa que puede cerrar una
+  // serie de playoff lo decide un minijuego (`mapaConMinijuego`). Los drafts se juntan si salen, pero ya no se exigen.
+  const llena = () => c.fechas.length >= CASOS_K2D * 2 && c.minijuegos.length >= CASOS_K2D;
   for (let seed = 1; seed <= SEEDS_MAX_K2D && !llena(); seed += 1) {
     correrCarreraSimulate(seed, 60, espia);
   }
-  if (c.fechas.length < CASOS_K2D || c.drafts.length < 10 || c.minijuegos.length < 10) {
+  if (c.fechas.length < CASOS_K2D || c.minijuegos.length < 10) {
     throw new Error(`cosecha vacía: ${c.fechas.length} fechas marcadas, ${c.drafts.length} drafts de mapa y ${c.minijuegos.length} minijuegos de mapa`);
   }
   cosechasK2d.set(clave, c);
@@ -17585,63 +17364,62 @@ checkK2d('K2d previa 1: la p de la previa es exactamente la que el motor tira (=
     const log = res.logs.find(esLogDeMapaK2d);
     if (!log || log.p !== directa.p) problemas.push(`draft ${i}: previa ${directa.p}, tirada ${log?.p}`);
   });
+  // Ola G (G1): un mapa con minijuego no se tira. La regla vieja ("la p de la previa es la que se tira, con el minijuego
+  // neutro") la reemplaza esta: la vara sale de la p que muestra la previa (`varaDeRonda`), la previa la dice en palabras
+  // (`reglaDeLaVara`) y el motor juzga contra esa misma vara: llegar a ella gana el mapa, 0 no lo gana.
   minijuegos.forEach(({ sistema, st, decision }, i) => {
+    const { g1 } = decision.datos;
+    if (!g1) {
+      problemas.push(`minijuego ${i}: un mapa con minijuego sin el contrato de la vara (datos.g1)`);
+      return;
+    }
     const previa = previaDeDecision(st, decision);
-    const res = sistema.resolver(st, decision, { resultado: 0.5 }, mulberry32(34000 + i));
-    const log = res.logs.find(esLogDeMapaK2d);
     mapasConMinijuego += 1;
-    if (!previa || !log || log.p !== previa.p) problemas.push(`minijuego ${i} (neutro): previa ${previa?.p}, tirada ${log?.p}`);
+    if (!previa?.nota?.includes(reglaDeLaVara(g1.vara))) problemas.push(`minijuego ${i}: la previa no dice la vara ${g1.vara}: "${previa?.nota}"`);
+    if (!g1.desempate && !g1.revancha && varaDeRondaG1(previa.p) !== g1.vara) {
+      problemas.push(`minijuego ${i}: la previa muestra p = ${previa.p} (vara ${varaDeRondaG1(previa.p)}), el motor juzga contra ${g1.vara}`);
+    }
+    const gana = sistema.resolver(st, decision, { resultado: g1.vara }, mulberry32(34000 + i)).logs.find(esLogDeMapaK2d);
+    if (gana?.resultado !== 'W') problemas.push(`minijuego ${i}: llegó a la vara ${g1.vara} y el mapa salió ${gana?.resultado}`);
+    const pierde = sistema.resolver(st, decision, { resultado: 0 }, mulberry32(34000 + i));
+    const logPierde = pierde.logs.find(esLogDeMapaK2d);
+    if (logPierde ? logPierde.resultado !== 'L' : !pierde.decision?.datos?.g1) {
+      problemas.push(`minijuego ${i}: con 0 contra la vara ${g1.vara} el mapa salió ${logPierde?.resultado}`);
+    }
   });
   fallarSiK2d(problemas);
   // Todo momento del catálogo trae un efecto `partido`: en carreras reales casi ninguna fecha marcada llega sin
   // ajuste. La p de antes del momento (la que muestra la previa) se compara igual en todas, contra `pSinMomento`.
-  if (fechasNeutras + fechasConMomento < 20 || mapasSinMinijuego < 5 || mapasConMinijuego < 10) {
+  // Ola G: los mapas sin minijuego (el decisivo de K4-B) ya no se exigen (ver `cosechaDePreviasK2d`).
+  if (fechasNeutras + fechasConMomento < 20 || mapasConMinijuego < 10) {
     throw new Error(`check vacío: ${fechasNeutras} fechas sin ajuste, ${fechasConMomento} con ajuste, ${mapasSinMinijuego} mapas sin minijuego, ${mapasConMinijuego} con minijuego`);
   }
 });
 
-checkK2d('K2d previa 2: la p final que muestra el mapa después del minijuego es exactamente la tirada (===), y el minijuego la mueve', () => {
+// Ola G (G1): la regla vieja de este check ("la p final que muestra el mapa después del minijuego es la tirada, y el minijuego
+// la mueve") desapareció: el minijuego ya no mueve la p, decide el mapa contra la vara (lo cuida el check de la promesa de G1
+// y K2d previa 1). Lo que queda de K4 (revisión) es la charla: en un mapa con minijuego baja la vara que dice la pantalla, y el
+// motor juzga con esa misma vara (una charla aplicada dos veces, o ninguna, en uno de los dos lados lo pone en rojo).
+checkK2d('K2d previa 2: la charla del coach en un mapa con minijuego baja la vara que dice la pantalla, y el motor juzga con esa misma vara', () => {
   const { minijuegos } = cosechaDePreviasK2d();
   const problemas = [];
-  let movidas = 0;
-  minijuegos.forEach(({ sistema, st, decision }, i) => {
-    const antes = previaDeDecision(st, decision);
-    for (const resultado of [0.1, 0.85]) {
-      const final = previaDeDecision(st, decision, { resultadoMinijuego: resultado });
-      const res = sistema.resolver(st, decision, { resultado }, mulberry32(35000 + i));
-      const log = res.logs.find(esLogDeMapaK2d);
-      if (!final || !log || log.p !== final.p) {
-        problemas.push(`minijuego ${i} (resultado ${resultado}): la pantalla muestra ${final?.p}, se tiró ${log?.p}`);
-      }
-      if (final && antes && final.p !== antes.p) movidas += 1;
-    }
-  });
-  // K4 (revisión): con la charla del coach elegida en la misma pausa (K4-B) la pantalla muestra la p con la charla y el
-  // minijuego, y el motor tira con esa misma p — una charla aplicada dos veces (o ninguna) en cualquiera de los dos lados
-  // rompe el ===. Solo en las pausas que la ofrecen y con la charla todavía sin usar esta temporada.
   let conCharla = 0;
   minijuegos.forEach(({ sistema, st, decision }, i) => {
-    if (decision.datos.charla?.disponible !== true || !charlaDisponible(st)) return;
-    for (const resultado of [0.1, 0.85]) {
-      const sinElla = previaDeDecision(st, decision, { resultadoMinijuego: resultado });
-      const final = previaDeDecision(st, decision, { resultadoMinijuego: resultado, charla: true });
-      const res = sistema.resolver(st, decision, { resultado, charla: true }, mulberry32(35500 + i));
-      const log = res.logs.find(esLogDeMapaK2d);
-      if (!final || !log || log.p !== final.p) {
-        problemas.push(`minijuego ${i} con charla (resultado ${resultado}): la pantalla muestra ${final?.p}, se tiró ${log?.p}`);
-      }
-      if (!final || !sinElla || final.p === sinElla.p) {
-        problemas.push(`minijuego ${i} con charla (resultado ${resultado}): la charla no mueve la p que muestra la pantalla`);
-      }
-      conCharla += 1;
+    const { g1 } = decision.datos;
+    if (!g1 || decision.datos.charla?.disponible !== true || !charlaDisponible(st)) return;
+    const vara = Math.max(0, g1.vara - decision.datos.charla.bajaVara);
+    const sinElla = previaDeDecision(st, decision);
+    const final = previaDeDecision(st, decision, { charla: true });
+    if (!final?.nota?.includes(reglaDeLaVara(vara)) || final.nota === sinElla?.nota) {
+      problemas.push(`minijuego ${i} con charla: la pantalla no baja la vara a ${vara}: "${final?.nota}"`);
     }
+    const log = sistema.resolver(st, decision, { resultado: vara, charla: true }, mulberry32(35500 + i)).logs.find(esLogDeMapaK2d);
+    if (log?.resultado !== 'W') problemas.push(`minijuego ${i} con charla: llegó a la vara con charla ${vara} y el mapa salió ${log?.resultado}`);
+    conCharla += 1;
   });
   fallarSiK2d(problemas);
-  if (movidas < minijuegos.length) {
-    throw new Error(`el minijuego movió la p en solo ${movidas} de ${minijuegos.length * 2} casos`);
-  }
   if (conCharla < 4) {
-    throw new Error(`check vacío: solo ${conCharla} casos de minijuego decisivo con la charla disponible`);
+    throw new Error(`check vacío: solo ${conCharla} mapas con minijuego con la charla disponible`);
   }
 });
 
