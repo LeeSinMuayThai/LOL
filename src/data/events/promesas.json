@@ -1,0 +1,67 @@
+[
+  {
+    "id": "prodigio_master",
+    "quien": "Tu ex coach de la soloQ",
+    "abre": { "fases": ["amateur"], "edadMin": 16, "edadMax": 17, "rankMinTier": "diamond", "rankMaxTier": "diamond" },
+    "plazoAnios": 1,
+    "condicion": { "tipo": "rank", "tier": "master" },
+    "texto": "Máster antes de los {edadLimite}",
+    "pago": { "hype": [8, 14] },
+    "castigo": { "hype": [-4, -1] },
+    "lineaAbre": "{quien} te lo tira: \"Si llegás a Máster antes de los {edadLimite}, te vienen a buscar de tier 2.\"",
+    "lineaCumple": "Máster antes de los {edadLimite}: cumpliste. Los scouts de tier 2 ya tienen tu nombre anotado.",
+    "lineaRompe": "Se pasó el plazo y no llegaste a Máster. La promesa de {quien} se la llevó el aire."
+  },
+  {
+    "id": "primer_contrato",
+    "quien": "El manager de tu equipo amateur",
+    "abre": { "fases": ["amateur"], "edadMin": 16, "edadMax": 18, "sinTier": true },
+    "plazoAnios": 2,
+    "condicion": { "tipo": "tier", "tierMax": 2 },
+    "texto": "Firmar en un equipo de tier 2 o más antes de los {edadLimite}",
+    "pago": { "hype": [5, 10] },
+    "castigo": { "hype": [-3, -1] },
+    "lineaAbre": "{quien} te promete: \"Si firmás en tier 2 o más arriba antes de los {edadLimite}, esta es la historia que cuentan.\"",
+    "lineaCumple": "Firmaste en tier {tier} antes de los {edadLimite}: el salto que te habían prometido.",
+    "lineaRompe": "Pasaron los dos años y seguís sin contrato de tier 2 o más. {quien} ya no lo menciona."
+  },
+  {
+    "id": "titulo_con_club",
+    "quien": "El DT",
+    "abre": { "fases": ["profesional"], "conOrg": true, "tierMax": 2, "arraigoMin": 10 },
+    "plazoAnios": 3,
+    "condicion": { "tipo": "titulo" },
+    "texto": "Un título con {org} en {plazoAnios} años",
+    "pago": { "arraigo": [8, 14], "hype": [4, 8] },
+    "castigo": { "arraigo": [-6, -2] },
+    "lineaAbre": "{quien} de {org}: \"Dame un título en {plazoAnios} años y esta camiseta es tuya.\"",
+    "lineaCumple": "Le diste el título a {org}, como dijiste. Ahora sí te creen todo.",
+    "lineaRompe": "El título con {org} no llegó en los {plazoAnios} años. En el vestuario no se dice nada, pero se nota."
+  },
+  {
+    "id": "idolo_de_la_casa",
+    "quien": "La hinchada de la org",
+    "abre": { "fases": ["profesional"], "conOrg": true, "arraigoMin": 25, "arraigoMax": 59 },
+    "plazoAnios": 3,
+    "condicion": { "tipo": "arraigo", "valor": 60 },
+    "texto": "Ser Ídolo en {org} en {plazoAnios} años",
+    "pago": { "hype": [4, 8], "arraigo": [3, 6] },
+    "castigo": { "hype": [-2, -1] },
+    "lineaAbre": "{quien} de {org} te canta: \"Quedate y sos Ídolo en {plazoAnios} años.\"",
+    "lineaCumple": "Ya sos Ídolo en {org}: la tribuna lo canta con tu nombre.",
+    "lineaRompe": "No llegaste a Ídolo en {org}."
+  },
+  {
+    "id": "mundial_de_debut",
+    "quien": "Tu agente",
+    "abre": { "fases": ["profesional"], "tierMax": 1, "sinInternacional": true },
+    "plazoAnios": 3,
+    "condicion": { "tipo": "internacional" },
+    "texto": "Jugar un Mundial en {plazoAnios} años",
+    "pago": { "hype": [6, 12], "arraigo": [2, 5] },
+    "castigo": { "hype": [-3, -1] },
+    "lineaAbre": "{quien} te asegura: \"En {plazoAnios} años te veo en un Mundial. Es cuestión de no aflojar.\"",
+    "lineaCumple": "Pisaste un Mundial, como te prometió {quien}. Quedó en los registros.",
+    "lineaRompe": "El Mundial no llegó en los {plazoAnios} años. {quien} cambió de tema."
+  }
+]

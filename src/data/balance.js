@@ -1608,6 +1608,15 @@ export const BALANCE = {
     tierGamingHouse: 1
   },
 
+  // G4b (PLANUI §0.9, "promesas que se pagan"): alguien del entorno te promete algo con plazo (`data/events/promesas.json`, el
+  // contenido de cada promesa: quién, cuándo puede abrirse, plazo, condición y pago como rangos). Hay una abierta a la vez.
+  promesas: {
+    // Solo se abre en el cierre de año. De las promesas elegibles ese cierre, sale una con esta chance.
+    chanceAbrir: 0.55,
+    // Años que pasan entre que una promesa se resuelve y puede abrirse la siguiente.
+    enfriamientoAnios: 1
+  },
+
   // K6b-C2 (PLAN.md §K6b, "la cola de verdad"; D-B en la cola). Desde los `edadDesde` años o desde el aviso de declive
   // (`etapa === 'declive'`, `core/contexto.js`), lo que llegue primero, el cierre de año y el momento de una fecha marcada
   // frenan solo si es un hito, si algo cambió (el club, el tier, una lesión o el declive) o si su tipo tiene palanca. Si no,
@@ -1804,6 +1813,8 @@ export const BALANCE = {
     // casi la misma señal cuantizada distinto, así que juntas pesaban 0,50 de
     // una sola cosa. Se corre peso hacia `rendimientoPropio` (tiene ruido
     // propio, split a split) y `jerarquiaArraigo` (no depende de la tabla).
+    // G4b: cuántos años después de irte de una org cuenta que ese equipo gane la liga "sin vos" (el titular de la consecuencia).
+    exEquipoAnios: 2,
     pesos: {
       posicion: 0.20,
       playoffs: 0.15,

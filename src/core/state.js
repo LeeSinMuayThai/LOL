@@ -196,6 +196,8 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // G4c (PLANUI §0.9): el número de camiseta que elegiste al firmar con cada org (`core/legado.js#fijarDorsal`). Si llegás
       // a Leyenda ahí, es el que retiran (`monumento`).
       dorsalPorOrg: {},
+      // G4b: las promesas del entorno (`systems/promesas.js`): [{ id, estado: 'abierta'|'cumplida'|'rota', texto, progreso, vence }].
+      promesas: [],
       sinergia: 0,
       // Ventana móvil de "cómo te fue" (0-100 por split). Alimenta el momentum
       // del contexto: es lo que distingue una racha de un slump.

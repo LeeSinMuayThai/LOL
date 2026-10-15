@@ -89,6 +89,9 @@ export const ETAPAS_SPLIT = [
   // `topMundial` (mundo.escenaAnual ya esta fresca) y antes de `plantel`,
   // que envejece el mundo y podria moverlo de org para el año que viene.
   await import('./rivales.js'),
+  // G4b: las promesas que se pagan. Justo antes de `resumenAnio`, con `escena` ya escrita: el diario del año cuenta la que se
+  // resolvió. Solo gasta `rng` al abrir o al pagar (`systems/promesas.js`).
+  await import('./promesas.js'),
   // Fase 11 (§11.1): el resumen anual (nota, titular, viñetas). Justo
   // despues de `rivales` —necesita `mundo.archirrival` ya actualizado este
   // año— y antes de `plantel`, por la misma razon que `rivales`.

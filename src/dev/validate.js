@@ -29236,6 +29236,43 @@ checkLento('G4a: en 200 carreras ningún titular del diario se repite dos años 
   }
 });
 
+// --- G4b (PLANUI §0.9, "promesas que se pagan") ------------------------------------------------------------------------
+// Toda promesa abierta termina cumplida (y pagó: la línea del pago salió) o rota (y se contó: la línea salió, o el retiro la
+// cerró): ninguna queda abierta cuando la carrera termina.
+checkLento('G4b: en 100 carreras toda promesa termina cumplida (con su línea de pago) o rota (contada), y ninguna queda abierta al retiro', () => {
+  const SEEDS = 100;
+  const SPLITS_TOPE = 120;
+  const vistas = { cumplida: 0, rota: 0 };
+  for (let i = 0; i < SEEDS; i += 1) {
+    const seed = 9000 + i;
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const lineas = new Set();
+    for (let s = 0; s < SPLITS_TOPE && !state.terminado; s += 1) {
+      const paso = avanzarSplitAuto(state, rng);
+      state = paso.state;
+      for (const log of paso.logs) {
+        if (log.type === 'promesa') lineas.add(`${log.promesaId}:${log.estado}`);
+      }
+    }
+    const promesas = state.career.promesas;
+    if (state.terminado && promesas.some((p) => p.estado === 'abierta')) {
+      throw new Error(`seed ${seed}: la carrera terminó con una promesa abierta`);
+    }
+    for (const p of promesas) {
+      if (p.estado === 'abierta') continue;
+      vistas[p.estado] += 1;
+      const cerradaPorElRetiro = p.estado === 'rota' && p.progreso === 'la carrera se terminó antes';
+      if (!cerradaPorElRetiro && !lineas.has(`${p.id}:${p.estado}`)) {
+        throw new Error(`seed ${seed}: la promesa ${p.id} quedó ${p.estado} sin su línea en el feed`);
+      }
+    }
+  }
+  if (vistas.cumplida < 1 || vistas.rota < 1) {
+    throw new Error(`la muestra no alcanza: ${vistas.cumplida} cumplidas y ${vistas.rota} rotas en ${SEEDS} carreras`);
+  }
+});
+
 // --- G1 (PLANUI §0.9, "Las finales se juegan con las manos"): la promesa -------------------------------------------------
 // Un mapa con minijuego (toda final, el que puede cerrar cuartos o semis, cada Bo1 del Swiss) no tira: lo decide
 // `resultado >= vara`. El jugador de prueba contesta alternando justo en la vara (tiene que ganar) y lejos debajo, sin
