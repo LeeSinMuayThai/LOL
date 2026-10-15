@@ -70,9 +70,14 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // así que esos años no pueden dar Golden Road (aceptado, PLAN.md §V.6); uno de la 13 o de antes pasa además por las de antes · 16 (ola F,
 // PLANUI §0.8: `career.registro.finales`, las finales domésticas jugadas `{ anio, liga, org, rival, gano, marcador }` — D106 —, y las
 // paradas nuevas del Mundial y de la llamada de tier 2, que viajan en la decisión pendiente). Un guardado de la 15 carga con `migrarDe15`,
-// que arranca las finales vacías: las ya jugadas no quedaron guardadas; uno de la 14 o de antes pasa además por las de antes.
-export const VERSION = 16;
-const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15];
+// que arranca las finales vacías: las ya jugadas no quedaron guardadas; uno de la 14 o de antes pasa además por las de antes · 17
+// (ola G, G1, PLANUI §0.9: `career.clase`, la clase del arranque; `career.charlaSegundaUsadaEn`, la segunda charla del
+// vestuario; `career.torneoG1`, el torneo en curso con minijuegos de mapa; y la decisión de minijuego con `datos.g1`). Un
+// guardado de la 16 carga con `migrarDe16`: la clase es el perfil con el que arrancó la carrera (el de la seed o el elegido no
+// quedó guardado: se toma el perfil de hoy, `career.perfil.actual`), sin la inclinación de stats (esa ya no se puede dar al
+// arranque); el torneo, sin empezar. Una pausa pendiente de antes de G1 se resuelve con la tirada de siempre.
+export const VERSION = 17;
+const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16];
 
 // El marcador de los años pro, reconstruido de lo que la 11 sí guardaba. La fila del registro de la org del primer contrato de tier
 // 2 o 1 la abre `roster.js` el split siguiente al de la firma, así que la firma fue en su `desdeSplit` - 1. Sin esa fila todavía
@@ -219,25 +224,43 @@ export function migrarDe15(state) {
   };
 }
 
+export function migrarDe16(state) {
+  if (!state.career) {
+    return state;
+  }
+  return {
+    ...state,
+    career: {
+      ...state.career,
+      clase: state.career.clase ?? state.career.perfil?.actual ?? null,
+      charlaSegundaUsadaEn: state.career.charlaSegundaUsadaEn ?? null,
+      torneoG1: state.career.torneoG1 ?? null
+    }
+  };
+}
+
 // De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10` … `migrarDe15`; cada versión
 // siguiente, por las que le faltan).
 function migrar(version, state) {
   if (version === 10) {
-    return migrarDe15(migrarDe14(migrarDe13(migrarDe12(migrarDe11(migrarDe10(state))))));
+    return migrarDe16(migrarDe15(migrarDe14(migrarDe13(migrarDe12(migrarDe11(migrarDe10(state)))))));
   }
   if (version === 11) {
-    return migrarDe15(migrarDe14(migrarDe13(migrarDe12(migrarDe11(state)))));
+    return migrarDe16(migrarDe15(migrarDe14(migrarDe13(migrarDe12(migrarDe11(state))))));
   }
   if (version === 12) {
-    return migrarDe15(migrarDe14(migrarDe13(migrarDe12(state))));
+    return migrarDe16(migrarDe15(migrarDe14(migrarDe13(migrarDe12(state)))));
   }
   if (version === 13) {
-    return migrarDe15(migrarDe14(migrarDe13(state)));
+    return migrarDe16(migrarDe15(migrarDe14(migrarDe13(state))));
   }
   if (version === 14) {
-    return migrarDe15(migrarDe14(state));
+    return migrarDe16(migrarDe15(migrarDe14(state)));
   }
-  return version === 15 ? migrarDe15(state) : state;
+  if (version === 15) {
+    return migrarDe16(migrarDe15(state));
+  }
+  return version === 16 ? migrarDe16(state) : state;
 }
 
 export function serializar(state, rng, rngUi) {

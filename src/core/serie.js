@@ -4,6 +4,7 @@ import { campeonesDisponibles, entradaDePool } from './pool.js';
 import { fuerzaDePartido, jerarquiaNoCuentaEn } from './fuerza.js';
 import { probabilidadDePartido } from './partido.js';
 import { BALANCE } from '../data/balance.js';
+import { claseDe } from './minijuegos.js';
 
 // La mecánica de la serie de playoffs (fase 4): Bo5 con Fearless draft, jugada
 // mapa a mapa. Todo lo que vive acá es puro (salvo lo que recibe `rng` por
@@ -195,8 +196,35 @@ export function cantadaDeLaSerie(state) {
 }
 
 // La charla del coach: un comodín por temporada (el año del calendario), que se ofrece en el mapa decisivo.
+// G1: la clase Leal (poder `vestuario`) tiene dos por temporada: la segunda se anota en `charlaSegundaUsadaEn`.
 export function charlaDisponible(state) {
-  return state.career.charlaUsadaEn !== state.calendario.anio;
+  const anio = state.calendario.anio;
+  if (state.career.charlaUsadaEn !== anio) {
+    return true;
+  }
+  return claseDe(state)?.poder?.id === 'vestuario' && state.career.charlaSegundaUsadaEn !== anio;
+}
+
+// G1: gastar una charla de la temporada (la primera, o la segunda del vestuario). La usan la serie y el Swiss.
+export function conCharlaGastada(state) {
+  const anio = state.calendario.anio;
+  const campo = state.career.charlaUsadaEn !== anio ? 'charlaUsadaEn' : 'charlaSegundaUsadaEn';
+  return { ...state, career: { ...state.career, [campo]: anio } };
+}
+
+// G1 (PLANUI §0.9): qué mapa de una serie se juega con minijuego (y se decide por él, sin tirada). Toda final, en cada
+// mapa (la doméstica de cualquier tier, las copas amateur y la final del Mundial); cuartos y semis —domésticos y del
+// bracket—, cada mapa que puede cerrar la serie: el que está a un mapa de ganarla o de perderla. Una serie sin nada en
+// juego no tiene. Reemplaza a `serie.rondasConMinijuegoDecisivo`.
+export function mapaConMinijuego(serie) {
+  if (serie.sinNadaEnJuego || !esSerieDeEliminacion(serie)) {
+    return false;
+  }
+  if (esFinalDeSerie(serie)) {
+    return true;
+  }
+  const punto = necesitaGanarPara(serie.formato) - 1;
+  return serie.marcador[0] === punto || serie.marcador[1] === punto;
 }
 
 // El rival quema el campeón de este mapa: entra a los quemados y es el que juega en tu línea en este mapa.

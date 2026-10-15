@@ -2,7 +2,9 @@ import { crearLog } from '../core/log.js';
 import { roll } from '../core/rng.js';
 import { clampStat } from '../core/numeros.js';
 import { ligaDeCarrera } from '../core/competicion.js';
-import { esCierreDeTemporada, calificaAInternacional, charlaDisponible, ajusteDeCharla } from '../core/serie.js';
+import {
+  esCierreDeTemporada, calificaAInternacional, charlaDisponible, ajusteDeCharla, conCharlaGastada
+} from '../core/serie.js';
 import { fuerzaDeMundial, TEXTO_JERARQUIA_MUNDIAL } from '../core/fuerza.js';
 import { tirarPartido } from '../core/partido.js';
 import { registrarInternacional, registrarPico, registrarArraigoEnFila } from '../core/registro.js';
@@ -11,7 +13,15 @@ import {
   probabilidadDeCruceSwiss, sembrarBracket, crucesDeEtapa, jugarEtapaBracket, etapaSiguiente, resolverResto,
   resultadoDelJugador, caminoDelJugador, recordDelJugador, resumenDelMundial
 } from '../core/internacional.js';
-import { arrancarSerieDelMundial, resolver as resolverSerie, resolverAuto as resolverAutoSerie } from './serie.js';
+import {
+  arrancarSerieDelMundial, resolver as resolverSerie, resolverAuto as resolverAutoSerie,
+  armarG1, etapasDelMundial, varaDeRonda, devolverCupo, torneoTrasRonda, repeticionTrasDerrota, LINEA_REPETICION,
+  poderActivado, poderDelBot, respuestaDelBot
+} from './serie.js';
+import {
+  claveDeTorneo, torneoG1, minijuegoDelTorneo, registrarMinijuegoVisto, textoDeMinijuego, juzgarMinijuego,
+  veredictoDeMinijuego, reglaDeLaVara, factorDificultadPorRonda
+} from '../core/minijuegos.js';
 import { BALANCE } from '../data/balance.js';
 import { nombreVisibleDeLiga, nombreVisibleDeLigaOZona } from '../core/ligas.js';
 
@@ -85,6 +95,82 @@ function vienesDe(t) {
   return ultima.ganador === t.jugador ? `Venís de ganarle a ${rival}. ` : `Venís de perder con ${rival}. `;
 }
 
+// G1 (PLANUI §0.9): cada Bo1 tuyo del Swiss es un minijuego y lo decide el minijuego, sin tirada. En el 2-2 se suma la
+// charla del coach, como antes. La mecánica es la del torneo (una para todo el Mundial) y cada ronda sube un escalón.
+// `repeticion` arma el desempate o la revancha del mismo Bo1. Sin mecánica para el rol (hoy no pasa), la parada de F1.
+const MOMENTO_SWISS = 'mapa_decisivo';
+
+function construirParadaSwiss(state, repeticion = null) {
+  const t = state.internacional;
+  const e = t.partidoEnCurso;
+  const record = t.swiss.record[t.jugador];
+  const previo = torneoG1(state, claveDeTorneo(state, 'mundial'));
+  const torneo = repeticion?.torneo ?? { ...previo, inicio: previo.inicio ?? 'swiss' };
+  const { entrada, nueva } = minijuegoDelTorneo(state, torneo, MOMENTO_SWISS);
+  if (!entrada) {
+    return { state, decision: construirDecisionSwiss(state) };
+  }
+  const ronda = t.swiss.rondas.length + 1;
+  const vidaOMuerte = esVidaOMuerte(record);
+  const p = probabilidadDeCruceSwiss(state, e.fuerzaPropia, e.fuerzaRival);
+  const vara = varaDeRonda(p, repeticion ? repeticion.varaAnterior : null);
+  const charlaEnElMapa = repeticion?.charlaEnElMapa ?? false;
+  const conCharla = vidaOMuerte && !charlaEnElMapa && charlaDisponible(state);
+  const torneoConMecanica = { ...torneo, minijuego: entrada.id };
+  const st = {
+    ...state,
+    career: { ...state.career, torneoG1: torneoConMecanica },
+    flags: nueva ? { ...state.flags, minijuegosRecientes: registrarMinijuegoVisto(state, entrada.id) } : state.flags
+  };
+  const camino = {
+    torneo: `Worlds ${t.anio}`,
+    etapas: etapasDelMundial('swiss'),
+    mapas: [{ numero: 1, resultado: null }],
+    marcador: [0, 0],
+    bo: 1,
+    swiss: { victorias: record.v, derrotas: record.d }
+  };
+  const g1 = armarG1(st, torneoConMecanica, {
+    vara, esFinal: false, conCharla, camino,
+    desempate: repeticion?.tipo === 'desempate', revancha: repeticion?.tipo === 'revancha'
+  });
+  // El nombre de la mecánica es el del Mundial (`nombresPorCompeticion.internacional`).
+  const textos = textoDeMinijuego(entrada, { ...st, serie: { ...(st.serie ?? {}), ronda: 'internacional' } });
+  const { cara, linea } = vidaOMuerte
+    ? { cara: 'vida o muerte', linea: 'Ganás y estás en cuartos; perdés y te volvés a casa.' }
+    : loQueSeJuega(record);
+  return {
+    state: st,
+    decision: {
+      tipo: 'opciones',
+      presentacion: 'minijuego',
+      titulo: `Swiss del Mundial · ronda ${ronda} · ${record.v}-${record.d} vs ${e.rival}: ${cara}`,
+      descripcion: `${linea} Bo1 contra ${e.rival} (${nombreVisibleDeLiga(e.ligaRival)}). ${vienesDe(t)}${textos.descripcion}`.trim(),
+      opciones: [],
+      datos: {
+        motivo: 'swiss',
+        rival: e.rival,
+        ronda,
+        record: { ...record },
+        vidaOMuerte,
+        minijuego: entrada.id,
+        tituloMinijuego: textos.titulo,
+        momento: MOMENTO_SWISS,
+        dificultad: factorDificultadPorRonda('internacional'),
+        statRelevante: entrada.statRelevante,
+        apuesta: textos.apuesta,
+        regla: textos.regla,
+        reglaVara: reglaDeLaVara(vara),
+        p,
+        charla: { disponible: conCharla, bajaVara: BALANCE.g1.charlaBajaVara },
+        charlaEnElMapa,
+        ajusteBot: repeticion?.ajusteBot ?? 0,
+        g1
+      }
+    }
+  };
+}
+
 function construirDecisionSwiss(state) {
   const t = state.internacional;
   const e = t.partidoEnCurso;
@@ -122,13 +208,14 @@ function construirDecisionSwiss(state) {
   };
 }
 
-function logDePartidoSwiss(t, rival, gano, p) {
+function logDePartidoSwiss(t, rival, gano, p, minijuego = null) {
   const r = t.swiss.record[t.jugador];
   const ronda = t.swiss.rondas.length;
   return crearLog(
     'internacional',
     `Swiss, ronda ${ronda}: ${gano ? 'le ganaste a' : 'perdiste con'} ${rival.nombre} (${nombreVisibleDeLiga(rival.liga)}). Vas ${r.v}-${r.d}.`,
-    { torneo: 'mundial', etapa: 'swiss', ronda, rival: rival.nombre, resultado: gano ? 'W' : 'L', p }
+    // G1: `minijuego` ({ vara, resultado }) si el Bo1 lo decidió el minijuego, no una tirada.
+    { torneo: 'mundial', etapa: 'swiss', ronda, rival: rival.nombre, resultado: gano ? 'W' : 'L', p, ...(minijuego ? { minijuego } : {}) }
   );
 }
 
@@ -145,8 +232,8 @@ function avanzarSwiss(state, rng, logsAcum) {
     const fuerzaPropia = fuerzaDeMundial(st);
     if (BALANCE.mundial.frenaCadaRondaSwiss || esVidaOMuerte(t.swiss.record[t.jugador])) {
       const partidoEnCurso = { cruces, rival: rival.nombre, ligaRival: rival.liga, fuerzaRival: rival.fuerza, fuerzaPropia };
-      const conPartido = { ...st, internacional: { ...t, partidoEnCurso } };
-      return { state: conPartido, logs, decision: construirDecisionSwiss(conPartido) };
+      const parada = construirParadaSwiss({ ...st, internacional: { ...t, partidoEnCurso } });
+      return { state: parada.state, logs, decision: parada.decision };
     }
     const { gano, p } = tirarPartido(probabilidadDeCruceSwiss(st, fuerzaPropia, rival.fuerza), rng);
     st = { ...st, internacional: jugarRondaSwiss(t, cruces, { gano, p }) };
@@ -173,7 +260,59 @@ function trasSwiss(state, rng, logs) {
   ]);
 }
 
+// G1: el Bo1 del Swiss jugado con las manos: el juicio contra la vara decide el partido (o da el desempate o la revancha).
+function resolverSwissG1(state, decision, respuesta, rng) {
+  const { g1 } = decision.datos;
+  const t = state.internacional;
+  const e = t.partidoEnCurso;
+  // Una pausa de minijuego no gasta el cupo del split (F1 ya lo hacía con las rondas que no son el 2-2).
+  let st = devolverCupo(state);
+  const usada = respuesta.charla === true && decision.datos.charla?.disponible === true && charlaDisponible(st);
+  const poderUsado = poderActivado(g1, respuesta);
+  const bajaPoder = poderUsado ? (g1.poder.efecto.bajaVara ?? 0) : 0;
+  const varaEfectiva = g1.vara - bajaPoder - (usada ? decision.datos.charla.bajaVara : 0);
+  const juicio = juzgarMinijuego(respuesta.resultado ?? 0, varaEfectiva, g1.margenCasi);
+  const logs = [];
+  if (usada) {
+    st = conCharlaGastada(st);
+    logs.push(crearLog('internacional', 'El coach junta a todos antes del 2-2: la charla de la temporada se usa acá.'));
+  }
+  const clave = claveDeTorneo(state, 'mundial');
+  const jugado = torneoTrasRonda(torneoG1(state, clave), { poderUsado, desempate: g1.desempate });
+  const max = BALANCE.stats.max;
+  const sacaste = Math.round(juicio.resultado * max);
+  const varaPts = Math.round(varaEfectiva * max);
+  const veredicto = veredictoDeMinijuego(decision.datos.minijuego, juicio.resultado, state, { nivel: juicio.paso ? 'bien' : 'mal' }).detalle;
+  logs.push(crearLog('internacional', `${veredicto} (sacaste ${sacaste}; la vara era ${varaPts}).`.trim(), {
+    minijuego: decision.datos.minijuego, vara: varaEfectiva, resultado: juicio.resultado, paso: juicio.paso, casi: juicio.casi
+  }));
+  const conTorneo = (s0, torneo) => ({ ...s0, career: { ...s0.career, torneoG1: torneo } });
+  if (!juicio.paso) {
+    const repite = repeticionTrasDerrota(state, jugado, juicio.casi);
+    if (repite) {
+      logs.push(crearLog('internacional', LINEA_REPETICION[repite.tipo](sacaste, varaPts)));
+      const parada = construirParadaSwiss(conTorneo(st, repite.torneo), {
+        tipo: repite.tipo,
+        torneo: repite.torneo,
+        varaAnterior: varaEfectiva,
+        charlaEnElMapa: usada || decision.datos.charlaEnElMapa === true,
+        ajusteBot: (decision.datos.ajusteBot ?? 0) + bajaPoder
+      });
+      return { state: parada.state, logs, decision: parada.decision };
+    }
+  }
+  const gano = juicio.paso;
+  const p = decision.datos.p;
+  st = { ...conTorneo(st, jugado), internacional: jugarRondaSwiss({ ...t, partidoEnCurso: null }, e.cruces, { gano, p }) };
+  logs.push(logDePartidoSwiss(st.internacional, participante(t, e.rival), gano, p, { vara: varaEfectiva, resultado: juicio.resultado }));
+  return avanzarSwiss(st, rng, logs);
+}
+
 function resolverSwiss(state, decision, respuesta, rng) {
+  if (decision.datos?.g1) {
+    return resolverSwissG1(state, decision, respuesta, rng);
+  }
+  // Un guardado de la 16 con la parada de antes de G1 pendiente: la tirada de siempre.
   const t = state.internacional;
   const e = t.partidoEnCurso;
   const usada = respuesta.opcionId === 'charla' && charlaDisponible(state);
@@ -187,7 +326,7 @@ function resolverSwiss(state, decision, respuesta, rng) {
   }
   const logs = [];
   if (usada) {
-    st = { ...st, career: { ...st.career, charlaUsadaEn: st.calendario.anio } };
+    st = conCharlaGastada(st);
     logs.push(crearLog('internacional', 'El coach junta a todos antes del 2-2: la charla de la temporada se usa acá.'));
   }
   const { gano, p } = tirarPartido(probabilidadDeCruceSwiss(st, e.fuerzaPropia, e.fuerzaRival, ajusteDeCharla(usada)), rng);
@@ -284,7 +423,10 @@ function seguir(resultado, rng) {
     if (actual.decision) {
       const t = actual.state.internacional;
       // F1: una ronda del Swiss que no es el 2-2 frena siempre y no gasta el tope (T9 cuida el bracket y la final).
-      if (actual.decision.datos?.motivo === 'swiss' && actual.decision.datos.vidaOMuerte === false) {
+      // G1: un minijuego de mapa (el Swiss, el que cierra una serie del bracket, cada mapa de la final) tampoco: se
+      // juega con las manos, no lo decide el coach.
+      if (actual.decision.datos?.g1
+        || (actual.decision.datos?.motivo === 'swiss' && actual.decision.datos.vidaOMuerte === false)) {
         return actual;
       }
       if (puedeFrenar(actual.state)) {
@@ -341,8 +483,26 @@ export function resolver(state, decision, respuesta, rng) {
 // El 2-2 en automático gasta la charla si la hay (es eliminación directa); una ronda del Swiss que no es el 2-2 tiene una
 // sola opción (F1: "A jugarlo"); las pausas de la serie, las de K4-B.
 export function resolverAuto(state, decision, rng) {
+  if (decision.datos?.motivo === 'swiss' && decision.datos.g1) {
+    return respuestaAutoSwiss(state, decision, rng);
+  }
   if (decision.datos?.motivo === 'swiss') {
     return { opcionId: decision.opciones.some((opcion) => opcion.id === 'charla') ? 'charla' : decision.opciones[0].id };
   }
   return resolverAutoSerie(state, decision, rng);
+}
+
+// G1: el bot en un Bo1 del Swiss. Pasa con la p que la base tiraba (la del cruce, con la charla en el 2-2, que la base
+// gastaba siempre): las tasas del Mundial no se mueven por construcción.
+function respuestaAutoSwiss(state, decision, rng) {
+  const { g1 } = decision.datos;
+  const e = state.internacional.partidoEnCurso;
+  const charla = decision.datos.charla?.disponible === true;
+  const conCharla = charla || decision.datos.charlaEnElMapa === true;
+  const pMapa = probabilidadDeCruceSwiss(state, e.fuerzaPropia, e.fuerzaRival, ajusteDeCharla(conCharla));
+  const usaPoder = poderDelBot(g1);
+  const resultado = respuestaDelBot(g1, rng, {
+    pMapa, bajaCharla: charla ? decision.datos.charla.bajaVara : 0, usaPoder, ajusteBot: decision.datos.ajusteBot ?? 0
+  });
+  return { resultado, charla, poder: usaPoder };
 }

@@ -1,10 +1,11 @@
 import { desgloseDeFuerza, jerarquiaNoCuentaEn, TEXTO_JERARQUIA_MUNDIAL } from './fuerza.js';
 import {
-  estadoDelMapa, probabilidadDeMapa, fuerzaFinalDeMapa, ajusteDeMinijuegoDeMapa, etiquetaDeRonda,
+  estadoDelMapa, probabilidadDeMapa, fuerzaFinalDeMapa, etiquetaDeRonda,
   fuerzaRivalDeMapa, ajusteDeCharla, proyeccionDelPlan, conPlan, estadoDelProximoMapa
 } from './serie.js';
 import { probabilidadDeFechaMarcada, fuerzaDeFecha, textoPorQueImporta } from './temporada.js';
-import { minijuegoPorId } from './minijuegos.js';
+import { minijuegoPorId, varaDeMapa, reglaDeLaVara } from './minijuegos.js';
+import { BALANCE } from '../data/balance.js';
 import { probabilidadDeCruceSwiss, esVidaOMuerte } from './internacional.js';
 import { nombreVisibleDeLiga } from './ligas.js';
 
@@ -123,19 +124,22 @@ function previaDeMapa(state, opciones) {
   const desglose = desgloseDeFuerza(estadoDelMapa(state, opciones.campeon, entradaExtra));
   const base = desglose.total;
 
+  // G1 (PLANUI §0.9): un mapa con minijuego no se tira: lo decide el minijuego contra la vara, que sale de esta p
+  // (`varaDeMapa`). La previa muestra la p del mapa y la regla en palabras, la misma que juzga el motor. La charla del
+  // coach, en un mapa con minijuego, baja la vara (no mueve la fuerza).
   const entrada = opciones.minijuego ? minijuegoPorId(opciones.minijuego) : null;
-  const jugado = Boolean(entrada) && Number.isFinite(opciones.resultado);
-  const ajusteMini = jugado ? ajusteDeMinijuegoDeMapa(state, entrada, opciones.resultado) : 0;
+  const conMinijuego = Boolean(entrada) && entrada.efecto?.tipo === 'mapa';
   const ajustePlan = opciones.ajustePlan ?? 0;
-  const ajusteCharla = ajusteDeCharla(opciones.charla === true);
-  const ajuste = ajustePlan + ajusteCharla + ajusteMini;
+  const ajusteCharla = conMinijuego ? 0 : ajusteDeCharla(opciones.charla === true);
+  const ajuste = ajustePlan + ajusteCharla;
   const p = probabilidadDeMapa(state, base, ajuste);
+  const ajusteMini = 0;
 
   let nota = null;
-  if (entrada && !jugado) {
-    nota = 'El minijuego la mueve: si te sale bien, sube; si te sale mal, baja.';
-  } else if (jugado) {
-    nota = `Antes del minijuego: ${porcentaje(probabilidadDeMapa(state, base, ajuste - ajusteMini))}%. Con esta se juega el mapa.`;
+  if (conMinijuego) {
+    const vara = Number.isFinite(opciones.vara) ? opciones.vara : varaDeMapa(p);
+    const baja = opciones.charla === true ? BALANCE.g1.charlaBajaVara : 0;
+    nota = `El mapa no se tira: lo decide el minijuego. ${reglaDeLaVara(Math.max(0, vara - baja))}`;
   }
 
   return armarPrevia({
