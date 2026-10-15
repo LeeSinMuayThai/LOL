@@ -942,7 +942,10 @@ const FORMAS_CONOCIDAS = {
   // Ola F (PLANUI §0.8): `registro.finales`, las finales domésticas jugadas (D106, `systems/serie.js`), y las carreras de muestra
   // se mueven con la llamada de tier 2 y la última fecha que frena (F2) y la carta del cierre (F4). Un guardado de la 15 carga
   // con `migrarDe15`, que arranca las finales vacías.
-  16: 'f6a5c9b7e186'
+  16: 'f6a5c9b7e186',
+  // G1a (ola G, PLANUI §0.9): career.clase, career.charlaSegundaUsadaEn, career.torneoG1. El supervisor la vuelve a
+  // registrar al integrar la entrega 1 (G2a y G3ab suman campos).
+  17: '7d10dbd669fa'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -21554,13 +21557,17 @@ function correrCarreraK5(seed, { splits = SPLITS_K5 } = {}) {
     const resultado = avanzarSplitAutoK5(state, rng, (sistema, st, decision, r) => {
       // F1 (PLANUI §0.8): las rondas del Swiss que no son el 2-2 frenan siempre, con una sola opción y sin gastar el tope
       // T9 (cuida el bracket y la final): no cuentan como interrupción del Mundial, ni tienen la previa del 2-2.
-      const rondaDelSwiss = decision.datos?.motivo === 'swiss' && decision.datos.vidaOMuerte === false;
+      // G1 (PLANUI §0.9): un minijuego de mapa (`datos.g1`: cada Bo1 del Swiss, los mapas del bracket que pueden cerrar la
+      // serie, cada mapa de la final) tampoco gasta el tope; el 2-2 no se tira: su p es la de la decisión, la que pone la vara.
+      const rondaDelSwiss = (decision.datos?.motivo === 'swiss' && decision.datos.vidaOMuerte === false) || Boolean(decision.datos?.g1);
       if (sistema.id === 'internacional' && !rondaDelSwiss) {
         pausasMundial += 1;
       }
       const respuesta = sistema.resolverAuto(st, decision, r);
-      if (decision.datos?.motivo === 'swiss' && !rondaDelSwiss) {
-        pDeLaPrevia = previaDeDecisionK5(st, decision).opciones.find((o) => o.id === respuesta.opcionId).p;
+      if (decision.datos?.motivo === 'swiss' && decision.datos.vidaOMuerte === true) {
+        pDeLaPrevia = decision.datos.g1
+          ? decision.datos.p
+          : previaDeDecisionK5(st, decision).opciones.find((o) => o.id === respuesta.opcionId).p;
       }
       return respuesta;
     });
@@ -24919,7 +24926,8 @@ check('K4c-F 4: de las series en las que no frenaste, un renglón por serie (los
         }
       } else if (log.cantada) {
         seriesCantadas += 1;
-        const malos = mapas.filter((mapa) => formaBeatK4cf(mapa) !== (mapa.mapa === log.formato));
+        // G1: un mapa que decidió el minijuego frenó (es beat), como el decisivo.
+        const malos = mapas.filter((mapa) => formaBeatK4cf(mapa) !== (mapa.mapa === log.formato || typeof mapa.minijuego === 'object'));
         if (malos.length > 0) {
           throw new Error(`seed ${seed}, log ${i}: serie cantada con ${malos.length} mapa(s) mal comprimidos (solo el decisivo es beat)`);
         }

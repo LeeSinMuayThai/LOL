@@ -234,6 +234,10 @@ function armarPrevia({ tipo, titulo, subtitulo = null, porQue = null, propio, de
 // minijuego que se acaba de jugar.
 export function previaDeDecision(state, decision, { resultadoMinijuego, charla = false } = {}) {
   const datos = decision?.datos ?? {};
+  if (datos.motivo === 'swiss' && state.internacional?.partidoEnCurso && datos.g1) {
+    // G1: el Bo1 del Swiss con minijuego no tiene opciones: una previa, con la regla de la vara.
+    return previaDePartido(state, { tipo: 'swiss', minijuego: datos.minijuego, vara: datos.g1.vara, charla });
+  }
   if (datos.motivo === 'swiss' && state.internacional?.partidoEnCurso) {
     const porOpcion = decision.opciones.map((opcion) => ({
       id: opcion.id,
@@ -265,6 +269,7 @@ export function previaDeDecision(state, decision, { resultadoMinijuego, charla =
         ...delMapa,
         charla: charla === true && datos.charla?.disponible === true,
         minijuego: datos.minijuego,
+        vara: datos.g1?.vara,
         resultado: resultadoMinijuego
       });
     }
