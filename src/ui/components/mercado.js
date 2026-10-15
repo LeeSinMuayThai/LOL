@@ -1231,7 +1231,12 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
       if (narracion.modo === 'reducido') {
         fundirCuadro(capa);
         await narracion.esperar(T_FIRMAR.lectura);
-      } else await bt.esperar(T(conFichaje ? T_FRENTE.entrega : T_FRENTE.fin));
+      } else {
+        // G-fix G: la espera del papel se mide con el reloj de la narración (timers, que corren aunque la pestaña esté en
+        // segundo plano y se pausan con un cuarto), no con el del bucle de cuadros (`bt.esperar`: solo avanza con requestAnimationFrame,
+        // y una pestaña oculta o con cuadros frenados dejaba el papel congelado sin que nada lo soltara). Espacio sigue salteándola.
+        await narracion.esperar(conFichaje ? T_FRENTE.entrega : T_FRENTE.fin);
+      }
       if (!conFichaje) await narracion.esperar(T_FIRMAR.sostener);
     } finally {
       narracion.fin();
