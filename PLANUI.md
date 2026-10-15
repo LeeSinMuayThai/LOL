@@ -2634,6 +2634,7 @@ Son del **motor**. Van a la etapa "arreglar el juego" que pidió el usuario (§0
 | D129 | **`src/dev/recorrido.mjs` está roto contra el draft de hoy:** espera `#campeonGrid`/`#regionGrid` y la UI usa `.in-cs-rol`/`.in-cs-retrato`. La revisión de la entrega 2 no pudo recorrer una carrera entera en el navegador | ⬜ |
 | D130 | **"Worlds se miró desde el sofá" casi no titula** (29% → 0,4%): se bajó a propósito para que no sea el titular de cada año sin Mundial. Si se extraña, su puntaje sube un escalón (`core/temporadaResumen.js`) | ⬜ |
 | D131 | **Código muerto del plan amateur:** `decisionDePlan` sigue armando textos que nadie ve y `respuestaDePlanAmateur` (`src/dev/estrategias.js`) ya no se llama; la entrada `amateur:plan_amateur` de `HORIZONTE_POR_TIPO` queda mientras el literal siga en `amateur.js` | ⬜ |
+| D132 | **Casi nadie emigra:** el bot `criterio` firma una mudanza en ~5% de las seeds (7 de 150, igual en master `1b52224` y con la entrega 2: no es regresión). Bajó en dos escalones antes: F2 "sin año muerto" (16% → 9%) y el bot de G1 que juega los minijuegos fiel a la p (gana menos finales, recibe menos ofertas de import). Lo que lo frena es el listón de import y el cupo. Subirlo a ~15% es una decisión de balance (la historia de cruzar el charco), medible con `S/mud/medir.mjs` de la sesión 1fc157bc; el check K4c observación (60 seeds) queda en riesgo de vaciarse | ⬜ |
 
 ---
 

@@ -94,7 +94,7 @@ promesas, la foto del último split), FORMAS 18 `a189ab780b40`. Huella 979394239
 hacia el 44,6 de antes de la entrega 1 (D120), así que no se persiguió (D124).
 
 **Validate.** `--rapido` final: 380 OK, 7 FAIL (D128). Cuatro ya fallaban en la base (D123); K5c-M (a2 armado) falla
-también sin el tope del sueldo (sospecha: el fixture); K6b-F contrato y K4c observación, a un arreglo chico (G-fix D). El
+también sin el tope del sueldo (sospecha: el fixture); K6b-F contrato y K4c observación, arreglados después del primer deploy (G-fix D: el descenso con banquillo pendiente ya no dice "el contrato viaja"; el check de observación mira 60 seeds). G-fix D notó que casi nadie emigra; un bisect por los 14 merges mostró que no es de la entrega 2 (7 de 150 seeds, igual que en master): D132. El
 completo corre en segundo plano después del deploy.
 
 **Lo que encontró la revisión** (Sonnet, sobre las 10 piezas juntas): el 🎲/🧊 invertido (alta), el texto del Bo1 en
