@@ -97,7 +97,7 @@ export function rotuloDeDecision(decision, state) {
   }
   // D92 (V3b): el 2-2 del Swiss del Mundial (`systems/internacional.js`, `construirDecisionSwiss`) es un partido: sin esta rama salía
   // con la pestaña por defecto, "Decisión".
-  if (motivo === 'swiss') {
+  if (motivo === 'swiss' || motivo === 'copa_amateur') {
     return { label: 'Partido', token: 'partido' };
   }
   if (state?.serie?.activa || state?.career?.temporada?.fechaEnCurso) {

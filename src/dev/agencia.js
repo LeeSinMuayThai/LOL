@@ -195,6 +195,10 @@ export const HORIZONTE_POR_TIPO = {
   'amateur:oferta': 'carrera',
   'amateur:negociacion': 'carrera',
   'amateur:salida_amateur': 'carrera',
+  // G3a: las ofertas de equipo seguro de los 17 (con quién firmás), la final de la copa amateur y los golpes de casa (eventos).
+  'amateur:equipo_seguro': 'carrera',
+  'amateur:copa_amateur': 'split',
+  'amateur:x': 'split',
   'amateur:minijuego': 'carrera',
   'mercado:oferta': 'carrera',
   'mercado:minijuego': 'carrera',
