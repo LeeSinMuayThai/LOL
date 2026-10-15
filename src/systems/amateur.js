@@ -13,7 +13,7 @@ import { opcionDesdeRutina, descripcionDeSorteo, EJE_AMATEUR } from '../core/rar
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
 import {
   elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, juzgarMinijuego, resultadoDelBot, reglaDeLaVara,
-  factorDificultadPorRonda, torneoG1, claveDeTorneo
+  factorDificultadPorRonda, torneoG1, claveDeTorneo, techoDeVara
 } from '../core/minijuegos.js';
 import { armarG1, caminoDeSerie, varaDeRonda, devolverCupo, poderActivado } from './serie.js';
 import { conMarcasDeRutina } from '../core/curvas.js';
@@ -1723,6 +1723,8 @@ export function pausaDeFinalJugada(state, final, logs) {
   if (!entrada) {
     return null;
   }
+  // La vara de la p con el techo de la mecánica que tocó (G-fix-vara: un conteo de 3 nunca pide los 3).
+  const varaDelMapa = Math.min(final.vara, techoDeVara(entrada.id));
   // Fuera de una liga, el `{liga}` del dato es el torneo de la final.
   const crudos = textoDeMinijuego(entrada, state);
   const textos = Object.fromEntries(Object.entries(crudos)
@@ -1737,7 +1739,7 @@ export function pausaDeFinalJugada(state, final, logs) {
     formato: final.bo, mapas: final.mapas, marcador: final.marcador, ronda: 'final', torneo: final.tipo, nombreTorneo: final.nombreTorneo
   };
   const camino = caminoDeSerie({ ...state, serie }, { inicio: 'final' });
-  const armado = armarG1(state, torneo, { vara: final.vara, esFinal: true, conCharla: false, camino, premio: final.premio });
+  const armado = armarG1(state, torneo, { vara: varaDelMapa, esFinal: true, conCharla: false, camino, premio: final.premio });
   const g1 = { ...armado, poder: poderDeLaFinal(armado.poder), desempateDisponible: false };
   const rival = final.rival ? ` contra ${final.rival.nombre}` : '';
   return {
@@ -1758,7 +1760,7 @@ export function pausaDeFinalJugada(state, final, logs) {
         statRelevante: entrada.statRelevante,
         apuesta: textos.apuesta,
         regla: textos.regla,
-        reglaVara: reglaDeLaVara(final.vara),
+        reglaVara: reglaDeLaVara(varaDelMapa),
         p: final.p,
         finalJugada: final,
         g1

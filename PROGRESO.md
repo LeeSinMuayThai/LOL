@@ -34,6 +34,133 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-15 — Ola G, entrega 1: "el control" (las finales con las manos, el perfil que no decide, siempre en un equipo)
+
+PLANUI §0.9, entrega 1, con el método WF-001:
+- cuatro workers Opus high en paralelo, cada uno en su worktree: G1a, G1b, G2a y G3ab;
+- la integración (G-int);
+- un arreglo con Sonnet (G1b-fix y G-fix2);
+- un revisor Sonnet;
+- dos arreglos más con lo que encontró la revisión (G-fix-vara y G-fix-copa, Opus).
+
+**Lo que cambió para el que juega.**
+- **Las finales se juegan con las manos (G1a).**
+  - Un mapa con minijuego se decide por `resultado >= vara`, sin tirada después (`finalizarMapa`, `resolverSwissG1`).
+  - Hay minijuego en todo mapa de una final, en el mapa de cuartos o semis que puede cerrar la serie y en cada Bo1 tuyo
+    del Swiss. Desde la revisión, también en la final de la copa amateur y en la de tier 3.
+  - La vara sale de la p del mapa (`g1.varaPorP`: de 0,5 con p alta a 0,85 con p baja).
+  - Tiene un techo humano: `g1.varaMaxima` 0,85, y en los conteos nunca pide todos los pasos (`techoDeVara`).
+  - Cada ronda del torneo es más difícil (`factorEscalada`).
+  - El casi da un desempate por torneo. Si la vara ya está en el techo, el desempate achica la ventana en vez de no hacer
+    nada.
+  - El bot de Node pasa con la p del mapa, así que las tasas no se mueven por construcción.
+- **La clase (G1a).** Es el perfil del arranque, fijo (`career.clase`; VERSION 17 con `migrarDe16`). Inclina los stats
+  iniciales y da un poder de un uso por torneo: El VOD, Revancha, El escenario o El vestuario.
+- **La pantalla de la final (G1b).**
+  - Muestra el camino del torneo, la tira de mapas y la vara en las unidades del minijuego ("necesitás 3 de 4"), también en
+    la previa en lugar del % del bot.
+  - Tiene los chips del poder, del desempate y de la charla. La charla se muestra como cuánto baja la vara.
+  - Después de cada ronda: PASÓ, CASI o NO SALIÓ, con su veredicto y con el "tan cerca" que revela la ventana. La placa de
+    la final perdida dice lo que faltó en esas mismas unidades.
+  - Hay dos mecánicas nuevas, la corrida y la pizarra. En el Barón y el TP se dibuja la zona que de verdad pasa.
+  - El Swiss se juega en la tarjeta del stream (D104 y D115). En el inicio, el perfil se llama "clase", con su
+    inclinación y su poder.
+- **El perfil no decide nada (G2a).**
+  - Todo evento con 2 opciones o más frena.
+  - El tope es una parada por split, en amateur y en pro (`eventos.paradasPorSplit`), y una por año en la cola; el golpe de
+    casa también cuenta. Lo que no entra no se sortea.
+  - La tarjeta lleva el rótulo, la pista, el ⚠, el número seguro y el chip "Tu perfil", que es solo una sugerencia. El
+    número seguro no promete más de lo que deja el tope del stat.
+  - "Mientras tanto" queda para el mundo.
+- **Siempre en un equipo (G3ab).**
+  - El amateur va de los 15 a los 16, con una copa amateur por año.
+    - Elegís 🎲 o 🧊, que mueve la vara y el premio, y jugás la final con minijuego.
+    - La copa va a la vitrina y no cuenta como título de liga en el duelo ni en la tarjeta.
+  - A los 17 llega la oferta de un equipo (tier 3 como mínimo), y la firmás vos.
+  - Los golpes de casa (la PC confiscada, la familia) son eventos con parada.
+  - Toda ventana de mercado trae 3 ofertas o más; las que completan el piso van "a la baja".
+  - Podés rechazar todo una pretemporada; a la segunda, firmás. Eso vale también si todos se levantan de la mesa en la
+    negociación.
+  - La final de tier 3 la juegan los dos primeros: un Bo3 con minijuego y la copa al registro.
+  - Se fueron el "¿seguís?" de los 19, el 'no_llego' de los 24, "El mercado ya habló" y el final `sin_equipo`.
+  - D111: la penalidad de edad vuelve a ~10, con tope.
+  - La prueba del mercado pasa o no pasa por la vara.
+- **Un bug de G2a que encontró la integración.**
+  - `escalonDeEvento` contaba como continuación de cadena cualquier condición `flags.*`, también las guardas de apertura.
+  - Así, el camino "conflicto" se abría 0 de cada 200 veces (base: 52/200); ahora, 27/200.
+
+**Lo que encontró la revisión** (Sonnet), todo arreglado antes del deploy:
+- **Rondas imposibles para una persona.**
+  - El 16,5% de las rondas tenía vara 1,0 y el 54%, 0,8 o más.
+  - Con 1,0, la llamada pedía "cantala en menos de 0 ms", y el Barón y el TP pedían "a 0 del centro".
+  - Ahora, un humano simulado (225 ms de reacción) pasa en la vara máxima el 31% de las veces en la llamada y el 56-64%
+    en el Barón, el TP, la corrida y la pizarra. En la vara 0,5 pasa el 92-99%.
+- La copa amateur se tiraba, y la final de tier 3 no se jugaba.
+- "La segunda vez firmás" se escapaba por la negociación.
+- La copa amateur contaba como título de liga.
+- Además, verificó en Node:
+  - 1493 decisiones g1 sin una sola discrepancia entre `resultado >= vara` y el mapa;
+  - 0 eventos resueltos por el perfil en 2669 splits;
+  - 74 guardados de VERSION 16 que migran y siguen jugando.
+
+**Los números.** `simulate.js 1000`, base `c45f351` contra la entrega. Dos corridas de la entrega dieron lo mismo, byte a
+byte.
+
+| | base | entrega 1 |
+|---|---|---|
+| llegaATier1 | 44,6 | 35,2 |
+| ganaTituloDomestico | 15,1 | 14,3 |
+| ganaMundial | 4,0 | 3,9 |
+| noLlegaAPro | 26,4 (la definición vieja) | 10,4 (nunca jugó un split en tier 2 o tier 1) |
+| termina sin equipo | 1,1% | 0 |
+| la racha sin equipo más larga | 8 splits | 3 (nunca más de una pretemporada) |
+| años sin equipo desde los 17 | — | media 0,25 · p90 0,67 · 49,9% de las carreras tiene alguno |
+| ofertas por ventana de mercado | a veces 0 | mínimo 3 · media 4,88 (1833 ventanas) |
+| edad del primer equipo | — | 16,77 |
+| decisiones por carrera | 19,56 | 39,77 |
+| paradas de evento por carrera (G2a, antes de integrar) | 0,77 amateur · 3,24 pro | 11,95 amateur · 9,31 pro |
+| eventos que resolvió el perfil | 5857 | 0 |
+
+- `llegaATier1` bajó 9,4 puntos.
+  - El tope de G2a saca eventos amateur que sumaban LP y stats: 44,6 → 38,0.
+  - La final de tier 3: 38,0 → 35,2. Los títulos pasan de los primeros más fuertes a quien gana la final.
+  - Un intento de calibración (`amateur.lpPorBloque` de 68 a 74) solo sumó 1,4 puntos, y se revirtió (D120).
+- "No llega a pro" quedó en 10,4%, contra el ~20% de D-D: con equipo seguro a los 17, casi todos juegan en tier 2 (D120).
+
+**Verificación.**
+- `validate.js --rapido`: 374 OK y 8 FAIL, ninguno de lo que se cambió a propósito.
+  - Dos son checks vacíos.
+  - Seis son bandas o reglas que movieron el tope, el piso y la final de tier 3 (D123).
+- **Los checks del juego de antes** se reescribieron a la regla nueva, o se borraron cuando la promesa nueva los
+  reemplaza: K2b, K2d, K4c-H, K4-C, K4-C2, K4c-S, K6a-A, K6b-C, K6b-C2, W1-D, K5-C y K5c-R.
+- **Tres checks nuevos, uno por promesa**, y cada uno muerde con su mutante:
+  - "G1: un mapa con minijuego nunca tira": también cubre el poder escenario y el techo de la vara;
+  - "G2a: ningún evento con 2+ opciones lo resuelve el perfil";
+  - "G3ab siempre en un equipo": también con un bot que espera y fuerza cortes.
+- **La huella:** `VERSION_JUEGO` 'G', `HUELLA_JUEGO` 979394239, `FORMAS_CONOCIDAS[17]` 'e7260face8f8'. Se re-registraron
+  con los arreglos sin subir la versión, porque no habían salido de la rama.
+- **El build:** 4039 KB. El techo sube de 4000 a 4140 por la pantalla de las finales.
+- **El validate completo** queda pendiente: el usuario reinicia la PC. Se corre después, en segundo plano.
+- **El validate de G3ab colgado:** su primer `--rapido` (en `414b8ce`) quedó 2,5 h al 100% de CPU. La causa era un
+  headless que esperaba sin firmar, y ya estaba arreglada en `691e557`.
+
+**El costo.**
+- Unos 10 workers y ~390 pasos solo en las cuatro piezas.
+- El usuario preguntó si se podía gastar menos sin perder calidad. De ahí salió una regla general, en la memoria
+  `feedback_frugal_workers`:
+  - piezas de ≤ 50 pasos;
+  - los workers no esperan el rápido, porque su cache dura 5 minutos: lo corre el supervisor una sola vez;
+  - la prueba de aceptación va en el brief;
+  - Sonnet salvo en el motor de diseño.
+
+**Lo que quedó afuera** (en la tabla de deuda de PLANUI):
+- el Bo1 de la temporada regular con 🎲/🧊 (D118);
+- el MSI, que no existe en el motor (D119);
+- el embudo (D120);
+- lo que todavía resuelve el peso y no vos (D121);
+- la charla, que casi nunca cambia el "necesitás 3 de 4" (D122);
+- los 8 FAIL del rápido (D123).
+
 ### 2026-10-15 — La auditoría de gameplay (El Ídolo contra Lolero, jugados) y el plan de la ola G (PLANUI §0.9)
 
 El usuario (2026-10-14): "el juego es tan divertido como el ejemplo […] ver porque es mas divertido […] hacer una
