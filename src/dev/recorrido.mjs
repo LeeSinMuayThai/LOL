@@ -878,6 +878,7 @@ const pollerMomentos = setInterval(async () => {
       b.click();
       return txt || '(sin texto)';
     });
+    if (await page.locator('.fj-seguir:visible').count()) { await page.click('.fj-seguir', { timeout: 1500 }).catch(() => {}); momentos['fichaje (Seguir)'] = (momentos['fichaje (Seguir)'] || 0) + 1; L('>> FICHAJE Seguir (poller)'); }
     if (t) { momentos[t] = (momentos[t] || 0) + 1; L(`>> MOMENTO Continuar: ${t}`); if (Object.keys(momentos).length <= 8 && momentos[t] === 1) await captura('momento'); }
   } catch { /* la pagina se esta recargando */ }
 }, 400);
