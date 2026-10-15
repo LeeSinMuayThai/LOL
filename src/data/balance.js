@@ -1718,6 +1718,9 @@ export const BALANCE = {
     ultimoSplit: {
       edadDesde: 27,
       caidaDeNivel: 6,
+      // Elegiste seguir y el declive que se ve no se vuelve a preguntar mientras no cambie el club o el tier ni el nivel caiga
+      // esta cantidad de `caidaDeNivel` más que cuando elegiste.
+      caidasParaVolverAPreguntar: 2,
       pesosBot: {
         declive: { colgarla: 9, unAnioMas: 1 },
         edad: { colgarla: 1, unAnioMas: 5 },

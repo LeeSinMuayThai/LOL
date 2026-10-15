@@ -268,9 +268,9 @@ export function migrarDe17(state) {
     flags: {
       ...(state.flags ?? {}),
       fichajeEtiquetado: state.flags?.fichajeEtiquetado ?? null,
-      // G4c y G-fix A: el último split (la edad de la última pregunta y el nivel con el que elegiste seguir) y la despedida pendiente.
+      // G4c y G-fix A: el último split (la edad de la última pregunta y la foto con la que elegiste seguir) y la despedida pendiente.
       ultimoSplitEdad: state.flags?.ultimoSplitEdad ?? null,
-      seguisNivel: state.flags?.seguisNivel ?? null,
+      ultimoSplitFoto: state.flags?.ultimoSplitFoto ?? null,
       despedidaPendiente: state.flags?.despedidaPendiente ?? null
     },
     career: {

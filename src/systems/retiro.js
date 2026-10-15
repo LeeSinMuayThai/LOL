@@ -568,6 +568,11 @@ function aplicarProfesional(state) {
     };
   }
 
+  // G-fix A: el último split por edad ya preguntó este año lo mismo (y elegiste seguir): una pregunta por año.
+  if (state.flags.ultimoSplitEdad === state.age) {
+    return ultimoSplitSinAviso(conCuenta);
+  }
+
   return { state: conCuenta, logs: [], decision: decisionDeclive(conCuenta, 'declive') };
 }
 
@@ -581,11 +586,11 @@ function ultimoSplitSinAviso(state) {
     return { state, logs: [], decision: decisionDeclive(state, 'sinFirmar') };
   }
   if (declivVisible(state) && state.flags.ultimoSplitEdad !== state.age) {
-    // Sin cambios desde que elegiste seguir (mismo club, tier y estado, y el nivel no cayó `caidaDeNivel` más): no se
-    // pregunta de nuevo. Se narra una vez en el año y seguís.
-    const { seguisFirma, seguisNivel } = state.flags;
-    if (seguisFirma != null && seguisFirma === firmaDelSeguis(state)
-      && nivelDelJugador(state) > (seguisNivel ?? -Infinity) - BALANCE.retiro.ultimoSplit.caidaDeNivel) {
+    // Sin cambios desde que elegiste seguir (mismo club y tier, y el nivel no cayó `caidasParaVolverAPreguntar` veces `caidaDeNivel` más): no se pregunta de
+    // nuevo. Se narra una vez en el año y seguís.
+    const foto = state.flags.ultimoSplitFoto;
+    if (foto && foto.org === (state.career.currentOrg ?? null) && foto.tier === (state.career.tier ?? null)
+      && nivelDelJugador(state) > foto.nivel - BALANCE.retiro.ultimoSplit.caidaDeNivel * BALANCE.retiro.ultimoSplit.caidasParaVolverAPreguntar) {
       return {
         state: { ...state, flags: { ...state.flags, ultimoSplitEdad: state.age } },
         logs: [crearLog('retiro', `A los ${state.age} el declive sigue ahí, pero nada cambió desde que elegiste seguir: un año más.`)]
@@ -652,7 +657,9 @@ export function resolver(state, decision, respuesta, rng) {
           flags: {
             ...seguido.flags,
             seguisFirma: causa === 'sinFirmar' ? seguido.flags.seguisFirma : (decision.datos.firma ?? null),
-            seguisNivel: causa === 'sinFirmar' ? seguido.flags.seguisNivel : (decision.datos.nivel ?? null),
+            ultimoSplitFoto: causa === 'sinFirmar'
+              ? seguido.flags.ultimoSplitFoto
+              : { org: state.career.currentOrg ?? null, tier: state.career.tier ?? null, nivel: decision.datos.nivel ?? Math.round(nivelDelJugador(state)) },
             ultimoSplitEdad: decision.datos.edad ?? state.age
           }
         },
