@@ -8,7 +8,7 @@ import {
   rondaInicial, siguienteRonda, etiquetaDeRonda, generarRival,
   objetivoDelRival, conQuemaDelRival, esMapaDecisivoDeLaSerie, serieTerminada,
   PLANES_DE_SERIE, esSerieSinNadaEnJuego, cantadaDeLaSerie, pSerieDelCoach, charlaDisponible, conPlan, mapaDelPlan, proyeccionDelPlan,
-  probabilidadDeMapa, ajusteDeMinijuegoDeMapa, ajusteBaseDeMinijuego, ajusteDeCharla
+  probabilidadDeMapa, ajusteDeMinijuegoDeMapa, ajusteBaseDeMinijuego, ajusteDeCharla, conCharlaGastada, mapaConMinijuego, esFinalDeSerie
 } from '../core/serie.js';
 import { fuerzaDePartido } from '../core/fuerza.js';
 import { tirarPartido } from '../core/partido.js';
@@ -16,8 +16,10 @@ import {
   registrarMapa, registrarSerie, registrarFinal, registrarTitulo, registrarPico, registrarArraigoEnFila
 } from '../core/registro.js';
 import {
-  elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego,
-  generarCierreMapa, factorDificultadPorRonda
+  minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego,
+  generarCierreMapa, factorDificultadPorRonda,
+  varaDeMapa, juzgarMinijuego, factorEscalada, reglaDeLaVara, anchoDelBot, resultadoDelBot, claseDe, poderDeLaRonda,
+  claveDeTorneo, torneoG1, minijuegoDelTorneo, elegirMinijuego
 } from '../core/minijuegos.js';
 import { BALANCE } from '../data/balance.js';
 import { nombreVisibleDeLiga, nombreVisibleDeLigaOZona } from '../core/ligas.js';
@@ -208,6 +210,243 @@ export function aplicarStatsDeMinijuego(state, targets, delta, origen) {
   }, state);
 }
 
+// --- G1 (PLANUI §0.9): los mapas con minijuego se deciden con las manos ---
+
+const MOMENTO_MAPA = 'mapa_decisivo';
+const RONDAS_DOMESTICAS = ['cuartos', 'semis', 'final'];
+const ETAPAS_MUNDIAL = [
+  { id: 'swiss', nombre: 'Swiss' }, { id: 'cuartos', nombre: 'Cuartos' }, { id: 'semis', nombre: 'Semis' },
+  { id: 'final', nombre: 'Final' }
+];
+
+function estadoDeEtapa(indice, actual) {
+  return indice < actual ? 'ganada' : indice === actual ? 'actual' : 'pendiente';
+}
+
+// Las etapas del Mundial con la actual marcada ('swiss' en el Swiss): se llega a una etapa ganando las anteriores.
+export function etapasDelMundial(etapaActual) {
+  const actual = ETAPAS_MUNDIAL.findIndex((etapa) => etapa.id === (etapaActual ?? 'swiss'));
+  return ETAPAS_MUNDIAL.map((etapa, i) => ({ ...etapa, estado: estadoDeEtapa(i, actual) }));
+}
+
+// La clave del torneo de una serie: el Mundial entero (Swiss y bracket) es uno; los playoffs de un split, otro. Una
+// copa que arma otro sistema con `serie.torneo` propio es la suya.
+function claveDeLaSerie(state) {
+  return claveDeTorneo(state, state.serie.torneo ?? 'domestico');
+}
+
+// El camino del contrato de G1: el torneo, sus etapas, la tira de mapas de esta serie y el marcador. Una copa que arma
+// otro sistema puede traer su nombre en `serie.nombreTorneo`.
+export function caminoDeSerie(state, torneo) {
+  const { serie } = state;
+  const anio = state.calendario.anio;
+  const mapas = Array.from({ length: serie.formato }, (_, i) => ({ numero: i + 1, resultado: serie.mapas[i]?.resultado ?? null }));
+  const base = { mapas, marcador: [...serie.marcador], bo: serie.formato, swiss: null };
+  if (serie.torneo === 'mundial') {
+    return { torneo: `Worlds ${anio}`, etapas: etapasDelMundial(serie.etapa), ...base };
+  }
+  const desde = RONDAS_DOMESTICAS.indexOf(torneo.inicio ?? serie.ronda);
+  const rondas = desde >= 0 ? RONDAS_DOMESTICAS.slice(desde) : [serie.ronda];
+  const actual = rondas.indexOf(serie.ronda);
+  const liga = ligaDeCarrera(state);
+  const nombre = serie.nombreTorneo
+    ?? `${rondas.length === 1 ? 'Final' : 'Playoffs'} de la ${liga ? nombreLigaDe(liga) : 'copa'} ${anio}`;
+  return {
+    torneo: nombre,
+    etapas: rondas.map((ronda, i) => ({ id: ronda, nombre: etiquetaDeRonda(ronda), estado: estadoDeEtapa(i, actual) })),
+    ...base
+  };
+}
+
+// `datos.g1`, el contrato con la pantalla (briefs-g/contrato-g1.md).
+export function armarG1(state, torneo, { vara, esFinal, conCharla, camino, desempate = false, revancha = false, premio = null }) {
+  return {
+    vara,
+    margenCasi: BALANCE.g1.margenCasi,
+    escalon: torneo.escalon,
+    factorEscalada: factorEscalada(torneo.escalon),
+    camino,
+    poder: poderDeLaRonda(state, torneo, { esFinal, conCharla, charlaQueda: charlaDisponible(state) }),
+    desempate,
+    revancha,
+    // Fuera del contrato original (reportado): si a este torneo todavía le queda el desempate, para el chip.
+    desempateDisponible: !torneo.desempateUsado,
+    premio
+  };
+}
+
+// La vara de una ronda: la del mapa, o la de la ronda anterior más `desempateSubeVara` si es el desempate o la revancha.
+// En puntos enteros de 0 a 100 (los que lee el jugador), así la pantalla y el motor no se separan por un redondeo.
+export function varaDeRonda(p, varaAnterior = null) {
+  const max = BALANCE.stats.max;
+  const cruda = varaAnterior === null ? varaDeMapa(p) : varaAnterior + BALANCE.g1.desempateSubeVara;
+  return Math.min(max, Math.max(0, Math.round(cruda * max))) / max;
+}
+
+// G1: una pausa de minijuego no gasta el cupo de interrupciones del split (el que `events.js` consulta): el pipeline la
+// descontó al pausar y acá se devuelve, como la ronda del Swiss de F1.
+export function devolverCupo(state) {
+  const cupo = state.presupuesto;
+  return cupo && cupo.gastadas > 0 ? { ...state, presupuesto: { ...cupo, gastadas: cupo.gastadas - 1 } } : state;
+}
+
+// Lo que le queda al torneo después de jugar una ronda: un escalón más, y el poder y el desempate gastados si se usaron.
+export function torneoTrasRonda(torneo, { poderUsado = false, desempate = false }) {
+  return {
+    ...torneo,
+    escalon: torneo.escalon + 1,
+    poderUsado: torneo.poderUsado || poderUsado,
+    desempateUsado: torneo.desempateUsado || desempate
+  };
+}
+
+// Después de una ronda perdida: el desempate (un casi, uno por torneo) o la revancha del Hambriento (su poder, sin
+// casi). `null` si no se repite. Devuelve el torneo con lo que se gasta.
+export function repeticionTrasDerrota(state, torneo, casi) {
+  if (casi && !torneo.desempateUsado) {
+    return { tipo: 'desempate', torneo: { ...torneo, desempateUsado: true } };
+  }
+  if (claseDe(state)?.poder?.id === 'revancha' && !torneo.poderUsado) {
+    return { tipo: 'revancha', torneo: { ...torneo, poderUsado: true } };
+  }
+  return null;
+}
+
+export const LINEA_REPETICION = {
+  desempate: (sacaste, vara) => `Casi: sacaste ${sacaste} y la vara era ${vara}. Hay desempate, más corto y más difícil.`,
+  revancha: (sacaste, vara) => `Sacaste ${sacaste} y la vara era ${vara}. Revancha: el Hambriento no se va así, se juega otra vez.`
+};
+
+// El poder que el jugador activó en la ronda (el VOD o el escenario; la revancha y el vestuario no se activan).
+export function poderActivado(g1, respuesta) {
+  const poder = g1.poder;
+  return respuesta?.poder === true && poder?.disponible === true && (poder.id === 'vod' || poder.id === 'escenario');
+}
+
+// El bot (Node) usa su poder con una regla fija: el primero que le sirve.
+export function poderDelBot(g1) {
+  return g1.poder?.disponible === true && (g1.poder.id === 'vod' || g1.poder.id === 'escenario');
+}
+
+// El resultado del bot contra la vara efectiva de la ronda: pasa con `pMapa` (la p que la base tiraba), más lo que
+// la vara se movió (el escenario la baja; el desempate y la revancha la suben), en vara / ancho del bot.
+// El desempate es parte del mapa, no un premio: si al torneo le queda, el primer intento se corre para que el mapa
+// entero (intento + casi × desempate) se gane con la misma p: p1 + pCasiBot × (p1 − δ) = p. Los poderes sí suman.
+export function respuestaDelBot(g1, rng, { pMapa, bajaCharla = 0, usaPoder, ajusteBot = 0 }) {
+  const bajaPoder = usaPoder ? (g1.poder.efecto.bajaVara ?? 0) : 0;
+  const repetida = g1.desempate || g1.revancha;
+  const delta = BALANCE.g1.desempateSubeVara / anchoDelBot();
+  const pRonda = pMapa + (bajaPoder + ajusteBot) / anchoDelBot();
+  const c = BALANCE.g1.pCasiBot;
+  const pObjetivo = repetida ? pRonda - delta
+    : g1.desempateDisponible ? (pRonda + c * delta) / (1 + c) : pRonda;
+  return resultadoDelBot(rng(), g1.vara - bajaPoder - bajaCharla, pObjetivo);
+}
+
+function pausaDeMapa(state, jugada, rng, logsAcum, repeticion = null) {
+  const clave = claveDeLaSerie(state);
+  const previo = torneoG1(state, clave);
+  const torneo = repeticion?.torneo ?? { ...previo, inicio: previo.inicio ?? state.serie.ronda };
+  const { entrada, nueva } = minijuegoDelTorneo(state, torneo, MOMENTO_MAPA);
+  if (!entrada) {
+    // Un rol sin mecánica para el momento (hoy no pasa: hay universales): la pausa de siempre en el decisivo, o la tirada.
+    return esMapaDecisivoDeLaSerie(state.serie)
+      ? { state, logs: logsAcum, decision: construirDecisionDecisiva(state, jugada, charlaDisponible(state)) }
+      : finalizarMapa(state, jugada, { ajusteExtra: 0, charla: false }, rng, logsAcum);
+  }
+  const p = probabilidadDeMapa(state, jugada.fuerzaPropia, jugada.ajustePlan);
+  const vara = varaDeRonda(p, repeticion ? repeticion.varaAnterior : null);
+  const charlaEnElMapa = repeticion?.charlaEnElMapa ?? false;
+  const conCharla = !charlaEnElMapa && charlaDisponible(state);
+  const torneoConMecanica = { ...torneo, minijuego: entrada.id };
+  const st = {
+    ...state,
+    career: { ...state.career, torneoG1: torneoConMecanica },
+    flags: nueva ? { ...state.flags, minijuegosRecientes: registrarMinijuegoVisto(state, entrada.id) } : state.flags
+  };
+  const textos = textoDeMinijuego(entrada, state);
+  const ronda = state.serie.ronda;
+  const g1 = armarG1(st, torneoConMecanica, {
+    vara, esFinal: esFinalDeSerie(state.serie), conCharla, camino: caminoDeSerie(st, torneoConMecanica),
+    desempate: repeticion?.tipo === 'desempate', revancha: repeticion?.tipo === 'revancha'
+  });
+  const datosExtra = {
+    campeonElegido: jugada.campeon,
+    fuerzaPropia: jugada.fuerzaPropia,
+    entradaExtra: jugada.entradaExtra,
+    ajustePlan: jugada.ajustePlan,
+    // K4-B: la charla del coach se elige en la misma pausa, antes del minijuego. G1: baja la vara `charlaBajaVara`.
+    charla: { disponible: conCharla, bajaVara: BALANCE.g1.charlaBajaVara },
+    charlaEnElMapa,
+    // Lo que la vara ya bajó por un poder en una ronda anterior de este mismo mapa (el bot lo cuenta).
+    ajusteBot: repeticion?.ajusteBot ?? 0
+  };
+  return {
+    state: st,
+    logs: logsAcum,
+    decision: {
+      tipo: 'opciones',
+      presentacion: 'minijuego',
+      titulo: textos.titulo,
+      descripcion: textos.descripcion,
+      opciones: [],
+      datos: {
+        motivo: 'minijuego',
+        minijuego: entrada.id,
+        momento: MOMENTO_MAPA,
+        ronda,
+        dificultad: factorDificultadPorRonda(ronda),
+        statRelevante: entrada.statRelevante,
+        apuesta: textos.apuesta,
+        regla: textos.regla,
+        reglaVara: reglaDeLaVara(vara),
+        p,
+        ...datosExtra,
+        ...datosDePrensa(st, entrada.id, MOMENTO_MAPA, datosExtra),
+        g1
+      }
+    }
+  };
+}
+
+// La ronda de un mapa con minijuego, jugada: el juicio contra la vara, y el mapa (o el desempate, o la revancha).
+function resolverMapaG1(state, decision, respuesta, rng, jugada) {
+  const { g1 } = decision.datos;
+  const usada = respuesta.charla === true && decision.datos.charla?.disponible === true && charlaDisponible(state);
+  const poderUsado = poderActivado(g1, respuesta);
+  const bajaPoder = poderUsado ? (g1.poder.efecto.bajaVara ?? 0) : 0;
+  const varaEfectiva = g1.vara - bajaPoder - (usada ? decision.datos.charla.bajaVara : 0);
+  const juicio = juzgarMinijuego(respuesta.resultado ?? 0, varaEfectiva, g1.margenCasi);
+  const charla = gastarCharla(devolverCupo(state), usada);
+  const jugado = torneoTrasRonda(torneoG1(state, claveDeLaSerie(state)), { poderUsado, desempate: g1.desempate });
+  const max = BALANCE.stats.max;
+  const sacaste = Math.round(juicio.resultado * max);
+  const varaPts = Math.round(varaEfectiva * max);
+  const veredicto = veredictoDeMinijuego(decision.datos.minijuego, juicio.resultado, state, { nivel: juicio.paso ? 'bien' : 'mal' }).detalle;
+  const logs = [...charla.logs, crearLog('serie', `${veredicto} (sacaste ${sacaste}; la vara era ${varaPts}).`.trim(), {
+    minijuego: decision.datos.minijuego, vara: varaEfectiva, resultado: juicio.resultado, paso: juicio.paso, casi: juicio.casi
+  })];
+  const conTorneo = (st, torneo) => ({ ...st, career: { ...st.career, torneoG1: torneo } });
+
+  if (!juicio.paso) {
+    const repite = repeticionTrasDerrota(state, jugado, juicio.casi);
+    if (repite) {
+      return pausaDeMapa(conTorneo(charla.state, repite.torneo), jugada, rng,
+        [...logs, crearLog('serie', LINEA_REPETICION[repite.tipo](sacaste, varaPts))], {
+          tipo: repite.tipo,
+          torneo: repite.torneo,
+          varaAnterior: varaEfectiva,
+          charlaEnElMapa: usada || decision.datos.charlaEnElMapa === true,
+          ajusteBot: (decision.datos.ajusteBot ?? 0) + bajaPoder
+        });
+    }
+  }
+  return finalizarMapa(conTorneo(charla.state, jugado), jugada, {
+    charla: usada || decision.datos.charlaEnElMapa === true,
+    decidido: { gano: juicio.paso, p: decision.datos.p, vara: varaEfectiva, resultado: juicio.resultado }
+  }, rng, logs);
+}
+
 // --- Arrancar una ronda ---
 
 // K5-A: `mundial` (`{ etapa, rival }`) arma una serie del bracket del Mundial: el rival lo pone el torneo
@@ -315,30 +554,17 @@ function jugarMapaSiguiente(state, rng, logsAcum) {
 // El mapa con la quema del rival ya hecha: el plan elige (`mapaDelPlan`, la misma cuenta que la tarjeta). En el
 // mapa decisivo de una serie con algo en juego, te frena: con su minijuego en semis, final e internacional, o con
 // la previa y la charla en una pausa propia.
+// G1: un mapa con minijuego (`mapaConMinijuego`: toda final, y en cuartos y semis el que puede cerrar la serie) frena
+// y se decide por el minijuego, sin tirada. El resto se tira como siempre.
 function jugarMapa(state, rng, logsAcum) {
   const jugada = mapaDelPlan(state);
+  if (mapaConMinijuego(state.serie)) {
+    return pausaDeMapa(state, jugada, rng, logsAcum);
+  }
   if (esMapaDecisivoDeLaSerie(state.serie) && !state.serie.sinNadaEnJuego) {
-    return pausaDecisiva(state, jugada, logsAcum);
+    return { state, logs: logsAcum, decision: construirDecisionDecisiva(state, jugada, charlaDisponible(state)) };
   }
   return finalizarMapa(state, jugada, { ajusteExtra: 0, charla: false }, rng, logsAcum);
-}
-
-function pausaDecisiva(state, jugada, logsAcum) {
-  const conCharla = charlaDisponible(state);
-  if (BALANCE.serie.rondasConMinijuegoDecisivo.includes(state.serie.ronda)) {
-    const pausa = pausaDeMinijuego(state, 'mapa_decisivo', logsAcum, {
-      campeonElegido: jugada.campeon,
-      fuerzaPropia: jugada.fuerzaPropia,
-      entradaExtra: jugada.entradaExtra,
-      ajustePlan: jugada.ajustePlan,
-      // K4-B: la charla del coach se elige en la misma pausa, antes del minijuego.
-      charla: { disponible: conCharla }
-    });
-    if (pausa) {
-      return pausa;
-    }
-  }
-  return { state, logs: logsAcum, decision: construirDecisionDecisiva(state, jugada, conCharla) };
 }
 
 function gastarCharla(state, usada) {
@@ -346,16 +572,17 @@ function gastarCharla(state, usada) {
     return { state, logs: [] };
   }
   return {
-    state: { ...state, career: { ...state.career, charlaUsadaEn: state.calendario.anio } },
+    state: conCharlaGastada(state),
     logs: [crearLog('serie', 'El coach junta a todos antes del mapa que define: la charla de la temporada se usa acá.')]
   };
 }
 
 // K2b: el mapa es UNA tirada contra la p declarada. K4-B: el ajuste es el del plan más lo que lo mueve en el mapa
-// decisivo (la charla y el minijuego); sin eso, es la p que la tarjeta del plan mostró para este mapa.
-function finalizarMapa(state, jugada, { ajusteExtra, charla }, rng, logsAcum) {
+// decisivo (la charla); sin eso, es la p que la tarjeta del plan mostró para este mapa. G1: un mapa con minijuego llega
+// `decidido` (el juicio contra la vara) y no tira.
+function finalizarMapa(state, jugada, { ajusteExtra = 0, charla, decidido = null }, rng, logsAcum) {
   const { campeon, fuerzaPropia, ajustePlan } = jugada;
-  const { gano, p } = tirarPartido(probabilidadDeMapa(state, fuerzaPropia, ajustePlan + ajusteExtra), rng);
+  const { gano, p } = decidido ?? tirarPartido(probabilidadDeMapa(state, fuerzaPropia, ajustePlan + ajusteExtra), rng);
 
   const marcador = [...state.serie.marcador];
   marcador[gano ? 0 : 1] += 1;
@@ -385,7 +612,7 @@ function finalizarMapa(state, jugada, { ajusteExtra, charla }, rng, logsAcum) {
   const comodin = jugada.motivo === 'comodin' ? ` (de comodín: se te quemó todo el pool)` : '';
   // K4c-F: en una serie sin nada en juego (no te frena), el mapa va adjunto: un renglón por serie, no uno por mapa.
   // K6a-R: en una cantada, también los mapas que no frenaron (todos menos el decisivo).
-  const sinFrenar = state.serie.sinNadaEnJuego || (state.serie.cantada && !esMapaDecisivoDeLaSerie(state.serie));
+  const sinFrenar = state.serie.sinNadaEnJuego || (state.serie.cantada && !decidido && !esMapaDecisivoDeLaSerie(state.serie));
   const deMapa = sinFrenar ? adjuntar : (log) => log;
   const logs = [...logsAcum, deMapa(crearLog(
     'serie',
@@ -394,7 +621,9 @@ function finalizarMapa(state, jugada, { ajusteExtra, charla }, rng, logsAcum) {
     // K2d: `p` es la probabilidad con la que se tiró el mapa (la tarjeta del mapa la muestra).
     {
       mapa: numeroMapa, campeon, resultado: gano ? 'W' : 'L', marcador: marcadorStr, cierre, p,
-      rivalJuega, plan: state.serie.plan, charla
+      rivalJuega, plan: state.serie.plan, charla,
+      // G1: el mapa lo decidió el minijuego (la vara efectiva y lo que sacaste), no una tirada.
+      ...(decidido ? { minijuego: { vara: decidido.vara, resultado: decidido.resultado } } : {})
     }
   ))];
 
@@ -619,7 +848,12 @@ export function resolver(state, decision, respuesta, rng) {
   const ajusteBase = ajusteBaseDeMinijuego(resultado);
   const stConCupo = { ...state, serie: { ...state.serie, ...cupoGastado(decision.datos.momento) } };
 
+  if (entrada.efecto.tipo === 'mapa' && decision.datos.g1) {
+    return resolverMapaG1(stConCupo, decision, respuesta, rng, jugada);
+  }
+
   if (entrada.efecto.tipo === 'mapa') {
+    // Un guardado de la 16 con la pausa de antes de G1 pendiente: el ajuste y la tirada de siempre.
     // K2d: el mismo ajuste con el que la previa muestra la p final del mapa. K4-B: más la charla, si la elegiste.
     const usada = respuesta.charla === true && decision.datos.charla?.disponible === true && charlaDisponible(state);
     const charla = gastarCharla(stConCupo, usada);
@@ -654,6 +888,10 @@ export function resolverAuto(state, decision, rng) {
     return { opcionId: charla ? 'charla' : 'sinCharla' };
   }
 
+  if (decision.datos.g1) {
+    return respuestaAutoDeMapa(state, decision, rng);
+  }
+
   // Regla 5 de 4.6: Node simula el minijuego con gauss corrido por el stat relevante — el motor no lo implementa,
   // solo lo consume.
   const entrada = minijuegoPorId(decision.datos.minijuego);
@@ -662,4 +900,27 @@ export function resolverAuto(state, decision, rng) {
   return decision.datos.charla?.disponible
     ? { resultado, charla: usaLaCharlaEnAuto(state.serie.ronda) }
     : { resultado };
+}
+
+// G1: el bot en un mapa con minijuego. Pasa con la p que la base tiraba en ese mapa: la del plan, la charla donde la
+// base la gastaba (el mapa decisivo de la final o del Mundial) y el ajuste medio del minijuego (`resultado = stat/100`)
+// donde la base lo sumaba (`g1.botAjusteEnRondas`, el mapa decisivo). Así las tasas D-D no se mueven por construcción.
+function respuestaAutoDeMapa(state, decision, rng) {
+  const { g1 } = decision.datos;
+  const { serie } = state;
+  const decisivo = esMapaDecisivoDeLaSerie(serie);
+  const charla = decision.datos.charla?.disponible === true && decisivo && usaLaCharlaEnAuto(serie.ronda);
+  const entrada = minijuegoPorId(decision.datos.minijuego);
+  const sumaAjuste = decisivo && BALANCE.g1.botAjusteEnRondas.includes(serie.ronda);
+  const valor = state.player.stats[decision.datos.statRelevante] ?? BALANCE.stats.max / 2;
+  const ajusteMini = sumaAjuste ? ajusteDeMinijuegoDeMapa(state, entrada, valor / BALANCE.stats.max) : 0;
+  const conCharla = charla || decision.datos.charlaEnElMapa === true;
+  const pMapa = probabilidadDeMapa(
+    state, decision.datos.fuerzaPropia, (decision.datos.ajustePlan ?? 0) + ajusteDeCharla(conCharla) + ajusteMini
+  );
+  const usaPoder = poderDelBot(g1);
+  const resultado = respuestaDelBot(g1, rng, {
+    pMapa, bajaCharla: charla ? decision.datos.charla.bajaVara : 0, usaPoder, ajusteBot: decision.datos.ajusteBot ?? 0
+  });
+  return { resultado, charla, poder: usaPoder };
 }

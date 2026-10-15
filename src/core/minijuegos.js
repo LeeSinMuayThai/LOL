@@ -3,6 +3,7 @@ import { resolverTexto } from './plantillas.js';
 import { BALANCE } from '../data/balance.js';
 import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
 import SERIES_DATA from '../data/series.json' with { type: 'json' };
+import PERFILES from '../data/perfiles.json' with { type: 'json' };
 
 // Fase 9R4a: el minijuego es un DATO, no cinco ramas de `if` repartidas entre
 // `systems/serie.js`, `systems/amateur.js` y la UI. Hasta acá `minijuegos.json`
@@ -126,9 +127,11 @@ export function generarCierreMapa(campeon, gano, marcador, state) {
 // K6c: la prueba del amateur no tira dado (la vara, `veredictoDeLaPrueba`): con `pasa` el resultado ya está decidido, así que
 // la frase sale de `veredictosConVara` del dato, sin las de `veredictos` que hablan de un contrato que "se puede escapar" o de
 // "si te firman" (esas son de la prueba del mercado, que sí tira). Con `pasa: false` no hay frase: lo dice la línea de la vara.
-export function veredictoDeMinijuego(id, resultado, state = null, { pasa = null } = {}) {
+// G1: en un mapa con minijuego el nivel lo pone el juicio contra la vara (`nivel`: 'bien' si pasó, 'mal' si no), no el
+// resultado suelto: un 65 puede ganar un mapa y perder otro.
+export function veredictoDeMinijuego(id, resultado, state = null, { pasa = null, nivel: nivelDado = null } = {}) {
   const umbrales = BALANCE.serie.veredictoMinijuego;
-  const nivel = resultado >= umbrales.bien ? 'bien' : resultado >= umbrales.parejo ? 'parejo' : 'mal';
+  const nivel = nivelDado ?? (resultado >= umbrales.bien ? 'bien' : resultado >= umbrales.parejo ? 'parejo' : 'mal');
   const entrada = minijuegoPorId(id);
   const variantes = pasa === null ? entrada?.veredictos?.[nivel] : pasa ? entrada?.veredictosConVara?.[nivel] : null;
   return {
@@ -167,4 +170,102 @@ export function saltosDeFichaje(state, oferta) {
   if (oferta.tier === 1) claves.push('tier1');
   if (oferta.datos?.tipo === 'import') claves.push('import');
   return claves.filter((clave) => !hechos.includes(clave));
+}
+
+// --- G1 (PLANUI §0.9, "Las finales se juegan con las manos") ---
+//
+// Un mapa con minijuego se decide por el minijuego, sin tirada: `paso = resultado >= vara`. La vara sale de la p del
+// mapa (`varaDeMapa`) y viaja en la decisión (`datos.g1`, el contrato de G1 con la pantalla): el motor, la previa y la
+// UI juzgan con la misma cuenta (`juzgarMinijuego`). Todo puro, sin `rng`: el bot recibe su número uniforme de afuera.
+
+const CLASES = PERFILES.perfiles;
+
+// La vara del mapa: el primer escalón de `g1.varaPorP` cuyo `desde` es <= p. A más p, menos vara.
+export function varaDeMapa(p) {
+  const tabla = BALANCE.g1.varaPorP;
+  const fila = tabla.find((escalon) => p >= escalon.desde) ?? tabla[tabla.length - 1];
+  return fila.vara;
+}
+
+// El juicio, una sola cuenta: `paso` si el resultado llega a la vara efectiva (la vara menos lo que la bajaron el
+// poder y la charla); `casi` si quedó a menos de `margenCasi` por debajo.
+export function juzgarMinijuego(resultado, varaEfectiva, margenCasi = BALANCE.g1.margenCasi) {
+  const r = Math.min(1, Math.max(0, resultado ?? 0));
+  const paso = r >= varaEfectiva;
+  return { paso, casi: !paso && r >= varaEfectiva - margenCasi, resultado: r, vara: varaEfectiva };
+}
+
+// Lo que la UI multiplica por la ventana o el tiempo en la ronda `escalon` del torneo (0 = la primera), con piso.
+export function factorEscalada(escalon) {
+  const { escaladaPorEscalon, escaladaMinima } = BALANCE.g1;
+  return Math.max(escaladaMinima, escaladaPorEscalon ** Math.max(0, escalon));
+}
+
+// La regla en palabras, la que dicen la previa y la parada: "necesitás 70 de 100".
+export function reglaDeLaVara(vara) {
+  return `Necesitás ${Math.round(vara * BALANCE.stats.max)} de ${BALANCE.stats.max} para ganar el mapa.`;
+}
+
+// El ancho del resultado del bot: P(casi) = pCasiBot por construcción.
+export function anchoDelBot() {
+  return BALANCE.g1.margenCasi / BALANCE.g1.pCasiBot;
+}
+
+// El resultado del bot (Node): uniforme alrededor de la vara efectiva, tal que P(resultado >= vara) = pObjetivo con
+// `u` uniforme en [0, 1). Regla 8: el mapa es una distribución pesada [p, 1 − p], y el casi sale con P = pCasiBot.
+export function resultadoDelBot(u, varaEfectiva, pObjetivo) {
+  const p = Math.min(1, Math.max(0, pObjetivo));
+  return Math.min(1, Math.max(0, varaEfectiva + anchoDelBot() * (u - (1 - p))));
+}
+
+// La clase: el perfil del arranque, fijo para toda la carrera (`career.clase`). `null` si no hay (un estado de prueba).
+export function claseDe(state) {
+  const id = state.career?.clase ?? null;
+  return id && CLASES[id]?.clase ? { id, ...CLASES[id].clase } : null;
+}
+
+export function inclinacionDeClase(id) {
+  return CLASES[id]?.clase?.inclinacion ?? {};
+}
+
+const EFECTO_PODER = {
+  vod: () => ({ velocidad: BALANCE.g1.poderes.vodVelocidad }),
+  revancha: () => ({}),
+  escenario: () => ({ bajaVara: BALANCE.g1.poderes.escenarioBajaVara }),
+  vestuario: () => ({})
+};
+
+// El poder de tu clase en esta ronda, o `null` si no aplica: el escenario es solo de finales; el vestuario, solo donde
+// se ofrece la charla. `disponible: false` si ya lo usaste en este torneo (el vestuario: si no te quedan charlas).
+export function poderDeLaRonda(state, torneo, { esFinal, conCharla, charlaQueda }) {
+  const clase = claseDe(state);
+  const poder = clase?.poder;
+  if (!poder || (poder.id === 'escenario' && !esFinal) || (poder.id === 'vestuario' && !conCharla)) {
+    return null;
+  }
+  const disponible = poder.id === 'vestuario' ? charlaQueda : !torneo.poderUsado;
+  return { id: poder.id, nombre: poder.nombre, texto: poder.texto, disponible, efecto: EFECTO_PODER[poder.id]() };
+}
+
+// El estado del torneo de G1 (`career.torneoG1`): una mecánica por torneo, el escalón, el desempate y el poder. Un
+// torneo es los playoffs de un split, o el Mundial entero (Swiss y bracket): `clave` los separa.
+export function claveDeTorneo(state, torneo) {
+  return `${torneo}|${state.calendario?.anio ?? 0}|${state.player?.splitCount ?? 0}`;
+}
+
+export function torneoG1(state, clave) {
+  const actual = state.career?.torneoG1 ?? null;
+  return actual && actual.clave === clave
+    ? actual
+    : { clave, escalon: 0, desempateUsado: false, poderUsado: false, minijuego: null, inicio: null };
+}
+
+// La mecánica del torneo: la que ya salió si sigue siendo tuya para este momento; si no, una nueva (`elegirMinijuego`).
+export function minijuegoDelTorneo(state, torneo, momento) {
+  const previa = torneo.minijuego ? minijuegoPorId(torneo.minijuego) : null;
+  if (previa && minijuegosPara(state, momento).some((entrada) => entrada.id === previa.id)) {
+    return { entrada: previa, nueva: false };
+  }
+  const entrada = elegirMinijuego(state, momento);
+  return { entrada, nueva: Boolean(entrada) };
 }

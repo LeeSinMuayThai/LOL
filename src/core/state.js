@@ -9,6 +9,8 @@ import { bonusPermanenteInicial, desgasteInicial } from './curvas.js';
 import { puntosAbsolutos } from './ranked.js';
 import { rankearMundo } from './topMundial.js';
 import { esFechaDeDesafio, seedDelDia } from './desafio.js';
+import { inclinacionDeClase } from './minijuegos.js';
+import { clampStat } from './numeros.js';
 
 // El mundo entero sale de la seed (CONCEPTO §8): rol, region, colegio, viejos,
 // potencial oculto, forma de carrera, pool inicial, meta y rivales. Por eso el
@@ -41,6 +43,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
   }
   const { inicial } = BALANCE;
   const { jugador, origen, mundo } = generarMundo(rng, EDAD_INICIAL, eleccion);
+  // G1 (PLANUI §0.9): la clase es el perfil del arranque, fija para toda la carrera. Inclina los stats iniciales
+  // (`data/perfiles.json` → clase.inclinacion, con clamp) y da un poder de un uso por torneo (`core/minijuegos.js`).
+  const clase = perfilInicial(seed, eleccion?.perfil ?? null).actual;
+  const statsIniciales = conInclinacion(jugador.stats, clase);
 
   const state = {
     seed,
@@ -110,7 +116,7 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
     player: {
       name: jugador.handle,
       role: jugador.role,
-      stats: jugador.stats,
+      stats: statsIniciales,
       oculto: jugador.oculto,
       studies: jugador.barras.studies,
       familyTrust: jugador.barras.familyTrust,
@@ -201,6 +207,13 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       ultimoEliminadoPor: null,
       // K4-B: el año del calendario en que se usó la charla del coach (una por temporada); null si nunca.
       charlaUsadaEn: null,
+      // G1: la segunda charla de la temporada, la del vestuario (clase Leal); null si nunca.
+      charlaSegundaUsadaEn: null,
+      // G1: la clase del arranque (un id de `data/perfiles.json`), fija. No la mueve el perfil, que sí cambia.
+      clase,
+      // G1: el torneo en curso con minijuegos de mapa (`core/minijuegos.js` → torneoG1): `{ clave, escalon,
+      // desempateUsado, poderUsado, minijuego, inicio }`. null hasta el primero.
+      torneoG1: null,
       // El contrato vigente (fase 9). Objeto completo de ceros, nunca null
       // (trampa T4): antes de la primera firma profesional no hay contrato,
       // pero el campo tiene que existir para que validate.js pueda verificar
@@ -568,4 +581,12 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
   state.mundo.topMundialPrevioAnual = state.mundo.topMundial;
 
   return state;
+}
+
+// G1: los stats iniciales con la inclinación de la clase, cada uno con clamp.
+function conInclinacion(stats, clase) {
+  const inclinacion = inclinacionDeClase(clase);
+  return Object.fromEntries(Object.entries(stats).map(([stat, valor]) => [
+    stat, stat in inclinacion ? clampStat(valor + inclinacion[stat]) : valor
+  ]));
 }

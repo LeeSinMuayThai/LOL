@@ -1910,12 +1910,9 @@ export const BALANCE = {
     // y del internacional, de 7 a 6. Con cA entera la prensa es el 28% del banco que compite por un momento (banda ≤ 35%)
     // (PLAN.md, "Paso 2 — lo que midieron los barridos" y decisiones del paso 2, punto 4).
     rondasConPrensa: [],
-    // K4-B: en qué rondas el mapa decisivo trae su minijuego (con la charla del coach en la misma pausa). En las demás
-    // el mapa decisivo frena igual, pero solo con la charla (`motivo: 'decisivo'`).
-    // K4c: `last_hit`, `la_vision` y `el_kite` (`data/minijuegos.json`) solo tenían el momento `mapa_cerrado`, que K4-B apagó: no
-    // salían nunca. Suman `mapa_decisivo` a sus `momentos` (antes: solo `mapa_cerrado`) y con cA entera salen las 10 mecánicas del
-    // catálogo, 4 minijuegos por carrera en vez de 11 (criterio, 300 × 60; PLAN.md, "Paso 2 — lo que midieron los barridos").
-    rondasConMinijuegoDecisivo: ['semis', 'final', 'internacional'],
+    // G1 (PLANUI §0.9): `rondasConMinijuegoDecisivo` se fue. Dónde hay minijuego de mapa lo decide `mapaConMinijuego`
+    // (`core/minijuegos.js`): toda final en cada mapa, y en cuartos y semis cada mapa que puede cerrar la serie. Sus
+    // constantes viven en la sección `g1`.
     // Fase 9R4a: cuanto mueve cada minijuego (`impacto`) y con cuanta
     // dispersion lo simula el camino headless (`spread`) ya NO viven aca: cada
     // entrada de `data/minijuegos.json` trae los suyos. Es el cierre de D20
@@ -2288,6 +2285,47 @@ export const BALANCE = {
     leyendas: {
       escala: { anios: 15, titulos: 10, internacionales: 12, rank: 20 },
       penalizacionRolDistinto: 0.3
+    }
+  },
+  // G1 (PLANUI §0.9, "Las finales se juegan con las manos"): un mapa con minijuego se decide por el minijuego, sin tirada.
+  // `paso = resultado >= vara` (`core/minijuegos.js`). La p del mapa (fuerza, rival, plan) se vuelve una vara de 0 a 1.
+  g1: {
+    // La vara por p del mapa: el primer escalón cuyo `desde` es <= p. A más p, menos vara. Los valores de arranque del
+    // brief; se calibran jugando (el supervisor juega 10 finales con las manos: si se ganan más de ~p + 20 puntos, sube).
+    varaPorP: [
+      { desde: 0.75, vara: 0.6 },
+      { desde: 0.55, vara: 0.7 },
+      { desde: 0.4, vara: 0.8 },
+      { desde: 0.25, vara: 0.9 },
+      { desde: 0, vara: 1.0 }
+    ],
+    // "Casi": vara - margenCasi <= resultado < vara. Da el desempate (uno por torneo).
+    margenCasi: 0.08,
+    // El desempate es el mismo mapa otra vez, un escalón más y con la vara más alta (tope 1).
+    desempateSubeVara: 0.1,
+    // La escalada: la UI multiplica la ventana o el tiempo por `escaladaPorEscalon ** escalon`, nunca por debajo del piso
+    // (un Mundial largo son ~15 rondas: sin piso, la última sería injugable).
+    escaladaPorEscalon: 0.96,
+    escaladaMinima: 0.6,
+    // La charla del coach en un mapa con minijuego baja la vara esto (la UI la conoce antes de jugar: se elige en la
+    // misma pausa). En Node, el bot pasa con la p de siempre con la charla en la fuerza (`serie.plan.empujeCharla`).
+    charlaBajaVara: 0.08,
+    // El bot (Node): su resultado es uniforme alrededor de la vara efectiva, con un ancho tal que P(casi) = pCasiBot
+    // (ancho = margenCasi / pCasiBot). Así P(paso) = la p del mapa por construcción, y lo que mueve la vara (el
+    // escenario, el desempate) mueve su p en vara / ancho.
+    pCasiBot: 0.1,
+    // El ajuste medio que el minijuego le daba al bot (con `resultado = stat/100`) solo se suma donde la base lo sumaba:
+    // el mapa decisivo de estas rondas. En los mapas que G1 suma (cuartos, los primeros de una final, el Swiss), la base
+    // tiraba sin minijuego: el bot pasa con la p pelada y las tasas D-D no se mueven por construcción.
+    botAjusteEnRondas: ['semis', 'final', 'internacional'],
+    // Los poderes de la clase (`data/perfiles.json` → clase.poder), uno por torneo.
+    poderes: {
+      // El VOD: la ronda arranca más lenta (la UI multiplica la velocidad por esto).
+      vodVelocidad: 0.75,
+      // El escenario: en una final, la vara de un mapa baja esto.
+      escenarioBajaVara: 0.15,
+      // El vestuario: charlas del coach por temporada (el resto de las clases tiene una).
+      vestuarioCharlas: 2
     }
   }
 };

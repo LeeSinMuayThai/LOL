@@ -942,7 +942,10 @@ const FORMAS_CONOCIDAS = {
   // Ola F (PLANUI §0.8): `registro.finales`, las finales domésticas jugadas (D106, `systems/serie.js`), y las carreras de muestra
   // se mueven con la llamada de tier 2 y la última fecha que frena (F2) y la carta del cierre (F4). Un guardado de la 15 carga
   // con `migrarDe15`, que arranca las finales vacías.
-  16: 'f6a5c9b7e186'
+  16: 'f6a5c9b7e186',
+  // G1a (ola G, PLANUI §0.9): career.clase, career.charlaSegundaUsadaEn, career.torneoG1. El supervisor la vuelve a
+  // registrar al integrar la entrega 1 (G2a y G3ab suman campos).
+  17: '7d10dbd669fa'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -21554,13 +21557,17 @@ function correrCarreraK5(seed, { splits = SPLITS_K5 } = {}) {
     const resultado = avanzarSplitAutoK5(state, rng, (sistema, st, decision, r) => {
       // F1 (PLANUI §0.8): las rondas del Swiss que no son el 2-2 frenan siempre, con una sola opción y sin gastar el tope
       // T9 (cuida el bracket y la final): no cuentan como interrupción del Mundial, ni tienen la previa del 2-2.
-      const rondaDelSwiss = decision.datos?.motivo === 'swiss' && decision.datos.vidaOMuerte === false;
+      // G1 (PLANUI §0.9): un minijuego de mapa (`datos.g1`: cada Bo1 del Swiss, los mapas del bracket que pueden cerrar la
+      // serie, cada mapa de la final) tampoco gasta el tope; el 2-2 no se tira: su p es la de la decisión, la que pone la vara.
+      const rondaDelSwiss = (decision.datos?.motivo === 'swiss' && decision.datos.vidaOMuerte === false) || Boolean(decision.datos?.g1);
       if (sistema.id === 'internacional' && !rondaDelSwiss) {
         pausasMundial += 1;
       }
       const respuesta = sistema.resolverAuto(st, decision, r);
-      if (decision.datos?.motivo === 'swiss' && !rondaDelSwiss) {
-        pDeLaPrevia = previaDeDecisionK5(st, decision).opciones.find((o) => o.id === respuesta.opcionId).p;
+      if (decision.datos?.motivo === 'swiss' && decision.datos.vidaOMuerte === true) {
+        pDeLaPrevia = decision.datos.g1
+          ? decision.datos.p
+          : previaDeDecisionK5(st, decision).opciones.find((o) => o.id === respuesta.opcionId).p;
       }
       return respuesta;
     });
@@ -24919,7 +24926,8 @@ check('K4c-F 4: de las series en las que no frenaste, un renglón por serie (los
         }
       } else if (log.cantada) {
         seriesCantadas += 1;
-        const malos = mapas.filter((mapa) => formaBeatK4cf(mapa) !== (mapa.mapa === log.formato));
+        // G1: un mapa que decidió el minijuego frenó (es beat), como el decisivo.
+        const malos = mapas.filter((mapa) => formaBeatK4cf(mapa) !== (mapa.mapa === log.formato || typeof mapa.minijuego === 'object'));
         if (malos.length > 0) {
           throw new Error(`seed ${seed}, log ${i}: serie cantada con ${malos.length} mapa(s) mal comprimidos (solo el decisivo es beat)`);
         }
@@ -29445,6 +29453,54 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_W1D.toLowerCase().inc
 
 check(NOMBRE_CHECK_W1D, () => {
   if (errorW1D) throw errorW1D;
+});
+
+// --- G1 (PLANUI §0.9, "Las finales se juegan con las manos"): la promesa -------------------------------------------------
+// Un mapa con minijuego (toda final, el que puede cerrar cuartos o semis, cada Bo1 del Swiss) no tira: lo decide
+// `resultado >= vara`. El jugador de prueba contesta alternando justo en la vara (tiene que ganar) y lejos debajo, sin
+// casi (tiene que perder; la revancha del Hambriento lo repite y ahí contesta en la vara). Un motor que tirara después del
+// minijuego, o que corriera la p con él, rompe la igualdad en la mitad de los mapas.
+const SEEDS_G1 = 80;
+const SPLITS_G1 = 30;
+const DEBAJO_DEL_CASI_G1 = 0.05;
+const MUESTRA_MAPAS_G1 = 20;
+const MUESTRA_SWISS_G1 = 5;
+
+check('G1: un mapa con minijuego nunca tira: el resultado del mapa es resultado >= vara (series, finales y Swiss)', () => {
+  const mal = [];
+  let mapas = 0;
+  let swiss = 0;
+  let enLaVara = 0;
+  for (let seed = 1; seed <= SEEDS_G1; seed += 1) {
+    const rng = mulberry32(seed);
+    let estado = createInitialState(seed, rng);
+    let vuelta = 0;
+    const responder = (sistema, st, decision, rngLocal) => {
+      if (!decision.datos?.g1) return sistema.resolverAuto(st, decision, rngLocal);
+      vuelta += 1;
+      const { vara, margenCasi } = decision.datos.g1;
+      const resultado = vuelta % 2 === 0 ? vara : Math.max(0, vara - margenCasi - DEBAJO_DEL_CASI_G1);
+      return { resultado, charla: false, poder: false };
+    };
+    for (let i = 0; i < SPLITS_G1 && !estado.terminado; i += 1) {
+      estado = avanzarSplitAuto(estado, rng, responder).state;
+    }
+    for (const log of estado.logs) {
+      const mini = log.minijuego;
+      if (!mini || typeof mini !== 'object' || (log.resultado !== 'W' && log.resultado !== 'L')) continue;
+      if (log.etapa === 'swiss') swiss += 1;
+      else mapas += 1;
+      if (mini.resultado === mini.vara) enLaVara += 1;
+      if ((mini.resultado >= mini.vara) !== (log.resultado === 'W')) {
+        mal.push(`seed ${seed}: sacó ${mini.resultado} con la vara en ${mini.vara} y el mapa fue ${log.resultado} (${log.message})`);
+      }
+    }
+  }
+  if (mapas < MUESTRA_MAPAS_G1 || swiss < MUESTRA_SWISS_G1 || enLaVara === 0) {
+    mal.push(`muestra chica: ${mapas} mapas de serie, ${swiss} Bo1 del Swiss, ${enLaVara} justo en la vara`);
+  }
+  console.log(`      ${mapas} mapas de serie y ${swiss} Bo1 del Swiss decididos por el minijuego (${enLaVara} justo en la vara)`);
+  if (mal.length > 0) throw new Error(mal.slice(0, 4).join(' | '));
 });
 
 if (errores.length > 0) {

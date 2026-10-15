@@ -35,7 +35,7 @@
       "Entrás al foso sin visión: si clavás el smite se da vuelta el mapa, si lo tirás temprano quedás vendido.",
       "Los cinco están pegados al Barón y vos tenés un smite y media ventana."
     ],
-    "apuesta": "Si clavás el smite, este mapa se te va a favor; si lo errás, se complica.",
+    "apuesta": "Si clavás el smite, el mapa es tuyo. Si lo tirás temprano, es de ellos.",
     "veredictos": {
       "bien": [
         "El Barón es tuyo: el mapa se te va a favor.",
@@ -86,7 +86,7 @@
       "Todos esperan que alguien diga algo por voz. Sos vos.",
       "Se abre la ventana de una jugada y dura lo que dura un pestañeo."
     ],
-    "apuesta": "Si la llamás a tiempo y te siguen, el mapa se inclina; si llegás tarde, lo pagás.",
+    "apuesta": "Si la llamada sale y el equipo la sigue, el mapa es tuyo. Si no, es de ellos.",
     "veredictos": {
       "bien": [
         "La llamada sale y todos te siguen: el mapa se inclina para tu lado.",
@@ -105,7 +105,8 @@
   {
     "id": "rueda_de_prensa",
     "momentos": [
-      "post_serie", "post_escandalo"
+      "post_serie",
+      "post_escandalo"
     ],
     "roles": [],
     "statRelevante": "adaptabilidad",
@@ -249,7 +250,7 @@
       "La ola entra a la torre y el jungla rival está cerca. Todo lo que remates es ventaja.",
       "Está parejo y la diferencia son cinco last hits."
     ],
-    "apuesta": "Cada minion que rematás empuja este mapa para tu lado; los que perdés, para el otro.",
+    "apuesta": "Si ganás la línea a fuerza de farm, el mapa es tuyo. Si se te escapan los minions, es de ellos.",
     "veredictos": {
       "bien": [
         "Te llevás la ola entera: salís de la línea con ventaja.",
@@ -299,7 +300,7 @@
       "Hay una ventana para el full combo y dura lo que dura el stun.",
       "Toda la pelea depende de que la secuencia salga completa y en orden."
     ],
-    "apuesta": "Si el combo sale entero el mapa se te va a favor; si se te traba, quedás vendido.",
+    "apuesta": "Si el combo sale entero, el mapa es tuyo. Si se te traba, es de ellos.",
     "veredictos": {
       "bien": [
         "Sale entero y limpio: se lo llevás puesto.",
@@ -349,7 +350,7 @@
       "El mapa está cerrado y cada skillshot que comés es la pelea.",
       "Están buscándote a vos: si no te enganchan, ganan ellos el tiempo."
     ],
-    "apuesta": "Cada skillshot que esquivás inclina este mapa; cada uno que comés, también, para el otro lado.",
+    "apuesta": "Si esquivás lo que importa, el mapa es tuyo. Si te come el skillshot, es de ellos.",
     "veredictos": {
       "bien": [
         "No te tocan una: sobrevivís y la pelea se da vuelta.",
@@ -402,7 +403,7 @@
       "Se apagaron las wards justo donde se va a jugar.",
       "Nadie tiene visión de la mitad del mapa y hay que decidir dónde ponerla."
     ],
-    "apuesta": "La visión que armás bien te da el objetivo; la que dejás abierta se la regalás.",
+    "apuesta": "Si les leés el mapa con las wards, el mapa es tuyo. Si te agarran a oscuras, es de ellos.",
     "veredictos": {
       "bien": [
         "Wardeás exactamente donde se juega: los ves venir.",
@@ -454,7 +455,7 @@
       "El bruiser rival entra derecho. Si lo kiteás, la pelea es tuya.",
       "Está cerrado y sos el daño: pegar, moverse, pegar."
     ],
-    "apuesta": "Cada golpe que metés sin comerte el suyo empuja el mapa; si perdés el ritmo, te caés.",
+    "apuesta": "Si kiteás sin que te toquen, el mapa es tuyo. Si te alcanzan, es de ellos.",
     "veredictos": {
       "bien": [
         "Lo kiteás entero: no te toca y se muere caminando.",
@@ -506,7 +507,7 @@
       "Si bajás justo, sos uno de más. Si bajás tarde, llegás a mirar.",
       "El mapa se define en el otro lado y vos tenés el TP listo."
     ],
-    "apuesta": "Un TP a tiempo te da el mapa; uno tarde te deja mirando cómo se pierde.",
+    "apuesta": "Si el TP cae donde tiene que caer, el mapa es tuyo. Si llega tarde, es de ellos.",
     "veredictos": {
       "bien": [
         "Bajás justo a tiempo: sos uno de más y se define ahí.",
@@ -519,6 +520,94 @@
       "mal": [
         "Llegás a mirar: la pelea ya estaba perdida.",
         "Tirás el TP temprano y avisás que bajabas."
+      ]
+    }
+  },
+  {
+    "id": "la_corrida",
+    "momentos": [
+      "mapa_cerrado",
+      "mapa_decisivo"
+    ],
+    "roles": [],
+    "statRelevante": "mecanica",
+    "efecto": {
+      "tipo": "mapa"
+    },
+    "impacto": 0.11,
+    "spread": 0.16,
+    "reglaEnFiccion": "La barra corre: frená adentro de la zona, justo cuando el rival gasta el flash. Tu mecánica agranda la zona.",
+    "nombresPorCompeticion": {
+      "internacional": "La corrida de Worlds",
+      "default": "La corrida de {liga}"
+    },
+    "titulos": [
+      "La corrida",
+      "El engage justo",
+      "Entrar o no entrar"
+    ],
+    "descripciones": [
+      "El rival quemó el flash hace dos segundos y todavía no se dio cuenta. Hay una ventana para entrar y dura un parpadeo.",
+      "Los cinco esperando tu engage. Si entrás en el momento, la pelea es de ustedes.",
+      "Medio mapa en juego y un solo engage. Ni antes ni después."
+    ],
+    "apuesta": "Si entrás en el momento justo, el mapa es tuyo. Si entrás antes o después, es de ellos.",
+    "veredictos": {
+      "bien": [
+        "Entraste en el frame exacto: el rival no llegó ni a apretar el flash. Pelea ganada.",
+        "El engage perfecto: cuando se dieron cuenta, ya estaban grises."
+      ],
+      "parejo": [
+        "Entraste un toque tarde, pero alcanzó: la pelea sale pareja.",
+        "No fue el engage del año, pero la pelea no se pierde."
+      ],
+      "mal": [
+        "Entraste un segundo antes y el rival tenía todo: te comiste el combo entero y el chat ya está haciendo el clip.",
+        "Frenaste tarde: cuando llegaste, la pelea ya era un replay y vos eras el que miraba."
+      ]
+    }
+  },
+  {
+    "id": "la_pizarra",
+    "momentos": [
+      "mapa_cerrado",
+      "mapa_decisivo"
+    ],
+    "roles": [],
+    "statRelevante": "macro",
+    "efecto": {
+      "tipo": "mapa"
+    },
+    "impacto": 0.11,
+    "spread": 0.16,
+    "reglaEnFiccion": "El analista te mostró la pizarra del rival un segundo: memorizá sus rotaciones y repetilas en orden. Tu macro te deja verla más tiempo.",
+    "nombresPorCompeticion": {
+      "internacional": "La pizarra de Worlds",
+      "default": "La pizarra de {liga}"
+    },
+    "titulos": [
+      "La pizarra del rival",
+      "Lo que mostró el analista",
+      "Ya sabemos a dónde van"
+    ],
+    "descripciones": [
+      "El analista consiguió el plan del rival para el mid game. Lo vio una vez. Vos también.",
+      "Antes del mapa, la pizarra: dónde rotan, cuándo invaden, a qué objetivo van. Si te la acordás, llegás primero a todo.",
+      "Tienen un plan y lo conocés. La pregunta es si te lo acordás en el minuto 20."
+    ],
+    "apuesta": "Si te acordás de la pizarra, llegás primero a cada pelea y el mapa es tuyo. Si no, es de ellos.",
+    "veredictos": {
+      "bien": [
+        "Llegaste a cada rotación antes que ellos: parecía que jugabas con el mapa del rival abierto.",
+        "El rival cambió de plan en el minuto 25 y ni así: ya estabas ahí."
+      ],
+      "parejo": [
+        "Te acordaste de la mitad, y con eso alcanzó para no perder ninguna pelea.",
+        "Algunas rotaciones las clavaste y otras las adivinaste. Sale parejo."
+      ],
+      "mal": [
+        "Te acordaste de la mitad de la pizarra y justo la otra mitad era la que importaba: te rotaron a bot mientras mirabas el dragón.",
+        "Confundiste el plan del rival con el del scrim del martes. El analista no te mira a los ojos."
       ]
     }
   }
