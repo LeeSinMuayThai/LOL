@@ -175,6 +175,15 @@ html[data-textos='completos'] .tx-insp-t { -webkit-line-clamp: unset; display: b
 
 /* la fecha: la p grande, las opciones y lo que se juega */
 .tx-serie[data-modo='fecha'] .tx-op { grid-template-columns: auto minmax(0, 1fr); }
+/* G-fix C1: el Bo1 que frena: cada fila crece con su sello y su premio (no se pisan), y la regla de cada vara en lugar de la p */
+.tx-op[data-g1] { height: auto; min-height: 42px; padding-block: 8px; align-items: start; }
+.tx-op[data-g1] .op-label { white-space: normal; overflow: visible; line-height: 1.25; }
+.tx-op[data-g1] .g1-sello-riesgo { display: flex; margin: 6px 0 0; }
+.tx-chance-regla { max-width: 280px; }
+.tx-regla { display: grid; gap: 2px; margin: 0; font: 600 14px / 1.35 var(--f-cuerpo); color: var(--ink); }
+.tx-regla b { font: 800 10px / 1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; }
+.tx-regla[data-riesgo='arriesgado'] b { color: var(--warn); }
+.tx-regla[data-riesgo='seguro'] b { color: var(--up); }
 .tx-chance { display: grid; align-content: start; gap: 8px; min-width: 180px; }
 .tx-chance-p { display: flex; align-items: baseline; gap: 10px; margin: 0; }
 .tx-chance-p b { font-size: var(--t-num-l); line-height: 0.86; color: var(--ink); text-shadow: 0 0 26px var(--tx-a); }

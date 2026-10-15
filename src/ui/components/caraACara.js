@@ -38,7 +38,7 @@ import {
   cuadrosQuietos, apareceEn, contarEnCuadros
 } from './transmisionComun.js';
 import { tanCercaDeLaFinal } from '../core/momentos.js';
-import { tanCerca } from './varaG1.js';
+import { tanCerca, reglaDeVara } from './varaG1.js';
 import { selloDeRiesgo } from './finales.js';
 
 const TX = {
@@ -235,7 +235,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
   const mejor = Math.max(...ops.map((o) => pSerieDe(o) ?? 0));
   const filas = ops.map((o, i) => el('button', {
     class: 'opcion tx-op', type: 'button', 'data-atajo': i < 4 ? String(i + 1) : null, 'data-id': o.id, 'data-mejor': pSerieDe(o) != null && pSerieDe(o) === mejor && ops.length > 1 ? '' : null,
-    'aria-describedby': `tx-desc-${i + 1}`, style: { '--v': String(pSerieDe(o) ?? 0) }
+    'aria-describedby': `tx-desc-${i + 1}`, 'data-g1': o.g1 ? '' : null, style: { '--v': String(pSerieDe(o) ?? 0) }
   }, [
     el('span', { class: 'op-tecla', 'aria-hidden': 'true', text: String(i + 1) }),
     // G1: el Bo1 con riesgo (🎲 ARRIESGADO / 🧊 SEGURO y el premio), solo si la opción trae `g1`
@@ -307,11 +307,24 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
 
   // la fecha: el cruce con la p grande y por qué importa (el decisivo jugado como minijuego: la chance del mapa)
   const pFecha = soloNarrar ? (Number.isFinite(pMapa) ? pMapa : pg.p ?? null) : Number.isFinite(pg.p) ? pg.p : decision.datos?.pAntesDeDecidir ?? null;
-  const secP = fecha || soloNarrar ? el('section', { class: 'tx-chance', 'aria-label': `${soloNarrar ? 'Tu chance en el mapa decisivo' : 'Tu chance en esta fecha'}: ${pct(pFecha)}` }, [
+  // G-fix C1: el Bo1 que frena no se tira: en lugar de la p (la del bot), la regla de la vara de cada encare
+  const bo1 = fecha ? decision.datos?.bo1 ?? null : null;
+  const reglaDelEncare = (o) => {
+    try {
+      return reglaDeVara(bo1.minijuego, o.g1.vara, estado, { dificultad: bo1.dificultad, g1: { vara: o.g1.vara, factorEscalada: bo1.factorEscalada } });
+    } catch { return null; }
+  };
+  const secRegla = bo1 ? el('section', { class: 'tx-chance tx-chance-regla', 'aria-label': 'Lo decide el minijuego' }, [
+    el('p', { class: 'eq-kicker' }, [el('span', { text: 'Lo decide el minijuego' })]),
+    ...ops.filter((o) => Number.isFinite(o.g1?.vara)).map((o) => el('p', { class: 'tx-regla', 'data-riesgo': o.g1.riesgo }, [
+      el('b', { text: o.g1.riesgo === 'arriesgado' ? '🎲 Arriesgado' : '🧊 Seguro' }), el('span', { text: reglaDelEncare(o) ?? '' })
+    ]))
+  ]) : null;
+  const secP = secRegla ?? (fecha || soloNarrar ? el('section', { class: 'tx-chance', 'aria-label': `${soloNarrar ? 'Tu chance en el mapa decisivo' : 'Tu chance en esta fecha'}: ${pct(pFecha)}` }, [
     el('p', { class: 'eq-kicker' }, [el('span', { text: soloNarrar ? 'Tu chance en el mapa' : 'Tu chance' })]),
     el('p', { class: 'tx-chance-p' }, [el('b', { class: 'num', text: pct(pFecha) }), el('small', { text: soloNarrar ? 'con lo del minijuego' : 'así como llegan' })]),
     el('i', { class: 'tx-chance-barra', style: { '--v': String(pFecha ?? 0) } })
-  ]) : null;
+  ]) : null);
   const secPorque = fecha && pg.porQue ? el('section', { class: 'tx-porque' }, [el('p', { class: 'eq-kicker' }, [el('span', { text: 'Lo que se juega' })]), el('p', { class: 'tx-porque-t', text: pg.porQue })]) : null;
 
   const cuerpo = el('div', { class: 'tx-cuerpo' }, fecha ? [secP, secPlan, secPorque] : soloNarrar ? [secLibres, secP, secFearless] : [secLibres, secPlan, secFearless]);
@@ -319,6 +332,8 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
   raiz.append(arriba, escenario, franjaTx);
   contenedor.replaceChildren(raiz);
   if (ops.length) apuntar(0);
+  // G-fix C1: en el celu la elección del Bo1 queda debajo del escenario: se scrollea sola hasta las dos opciones
+  if (bo1 && celular()) requestAnimationFrame(() => secPlan.scrollIntoView({ block: 'start', behavior: quieto() ? 'auto' : 'smooth' }));
 
   // el aura: apuntar un libre cruza tu lado de la costura (el nombre lo sigue)
   const nombreA = dueloReposo?.querySelector('.tx-duelo-n[data-lado="a"]');
