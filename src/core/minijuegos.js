@@ -88,6 +88,10 @@ export function textoDeMinijuego(entrada, state) {
     }
   }
 
+  // Sin liga (un hueco entre contratos): el nombre de la competición dice "la liga" en vez de dejar el {liga} sin resolver.
+  if (!state.career?.liga) {
+    titulos = titulos.map((titulo) => titulo.replaceAll('{liga}', 'la liga'));
+  }
   const titulo = resolverTexto(titulos, state);
   const descripcionBase = resolverTexto(entrada.descripciones, state);
   const regla = entrada.reglaEnFiccion ? resolverTexto(entrada.reglaEnFiccion, state) : '';

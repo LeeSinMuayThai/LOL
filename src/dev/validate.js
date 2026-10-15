@@ -29514,6 +29514,8 @@ check('G2b una carta por año: una sola decisión de carta por año jugado, 3 ca
       const antes = state;
       state = avanzarSplitAuto(state, rng, responder).state;
       if (antes.phase === 'retirado' || state.phase === 'retirado') retirado.add(state.age);
+      // La vuelta del retiro adelanta el reloj los años que pasaron afuera: esos años no se jugaron, no tienen carta.
+      for (let edad = antes.age + 1; antes.phase === 'retirado' && edad < state.age; edad += 1) retirado.add(edad);
     }
     for (let edad = primera + 1; edad <= state.age; edad += 1) {
       if (retirado.has(edad)) continue;
