@@ -1133,7 +1133,8 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     const T = (ms) => Math.round(ms * k);
     const medida = getComputedStyle(carta);
     const ancho = parseFloat(medida.width) || 1;
-    const alto = parseFloat(medida.height) || 1;
+    let alto = parseFloat(medida.height) || 1;
+    const altoCarta = alto;
     const origen = carta.getBoundingClientRect();
     const papel = carta.cloneNode(true);
     for (const n of papel.querySelectorAll('[id]')) {
@@ -1157,6 +1158,13 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     const velo = el('div', { class: 'ms-frente-velo', style: { '--ms-frente-fondo': `var(${tono.vacio})`, '--ms-frente-luz': `var(${tono.luz})` } });
     const capa = el('div', { class: 'ms-frente', 'aria-hidden': 'true' }, [velo, caja]);
     (document.querySelector('.shell') ?? document.body).append(capa);
+    // G-fix F: el papel es tan alto como su contenido (la carta recorta: con los cuatro ejes y un texto largo, la firma y el sello
+    // quedaban cortados abajo); más alto, la escala al frente lo achica para que entre entero en la pantalla
+    const alturaPapel = Math.ceil(papel.scrollHeight);
+    if (alturaPapel > alto + 1) {
+      alto = alturaPapel;
+      caja.style.height = `${alto}px`;
+    }
     // tu firma llena su línea: el ancho del dibujo, el del nombre (con un mínimo, para que la rúbrica no quede enorme)
     try {
       const largo = firma.texto.getComputedTextLength();
@@ -1174,7 +1182,7 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     const escala = Math.min(Math.min(PAPEL.ancho, vw * (celular() ? PAPEL.vwCelular : PAPEL.vw)) / ancho, (vh - 2 * PAPEL.aire) / alto);
     caja.style.transform = `scale(${escala.toFixed(4)})`;
     carta.style.visibility = 'hidden';
-    const s0 = origen.height / alto;
+    const s0 = origen.height / altoCarta;
     const dx = Math.round(origen.left + origen.width / 2 - (destino.left + destino.width / 2));
     const dy = Math.round(origen.top + origen.height / 2 - (destino.top + destino.height / 2));
     const pose = (px, py, rx, ry, rz, s) => `translate(${px}px, ${py}px) perspective(${PAPEL.perspectiva}px) rotateX(${rx}deg) rotateY(${ry}deg) rotate(${rz}deg) scale(${s.toFixed(4)})`;

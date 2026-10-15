@@ -383,6 +383,12 @@ html[data-textos='breves'] .ms-extra { display: none; }
 /* en el papel escalado, los sellos sin mezcla multiply: con el papel en su propia capa, la mezcla se dibujaba dos veces */
 .ms-frente-papel :is(.ms-carta-sello, .ms-carta-firmada) { mix-blend-mode: normal; }
 .ms-frente-papel .ms-carta { box-shadow: inset 0 -1px 0 var(--ms-papel-canto), 0 40px 90px var(--sombra), 0 0 0 1px color-mix(in srgb, var(--h-acento) 40%, transparent), 0 0 60px color-mix(in srgb, var(--h-luz) 24%, transparent); }
+/* G-fix F: en la firma los ejes van compactos (una línea cada uno) y el texto largo se corta, para que el papel no crezca de más */
+.ms-papel .ms-carta-cuerpo { gap: 7px; padding-top: 14px; padding-bottom: 14px; }
+.ms-papel .ms-carta-texto { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: 13px; line-height: 1.35; }
+.ms-papel .ms-carta-fila { padding: 4px 0; }
+.ms-papel .ms-carta-ejes { gap: 1px; margin: 0; }
+.ms-papel .ms-carta-ejes .ms-eje { grid-template-columns: 18px 58px minmax(0, 1fr); font-size: 11.5px; line-height: 1.25; }
 /* tu firma, trazada sobre tu línea (la misma letra que la hoja y el walkout) */
 .ms-papel-firma { position: absolute; left: -10%; bottom: 18px; width: 136%; height: auto; overflow: hidden; pointer-events: none; }
 .ms-papel-firma-trazo { font: italic 800 92px / 1 var(--f-display); font-stretch: 85%; fill: var(--ms-tinta-papel); stroke: var(--h-acento); stroke-width: 1.6; paint-order: stroke; }
@@ -634,7 +640,9 @@ html[data-reducido] .fj-pl-grieta [pathLength] { stroke-dashoffset: 0; }
   .fj-placas { flex-direction: column; align-items: stretch; width: 100%; }
   .fj-placas .ln-placa { max-width: 100%; text-align: left; }
   .fj-log { display: none; }
-  .fj-lado { position: relative; right: auto; top: auto; width: min(240px, 70vw); margin: 22px auto 0; transform: none; }
+  .fj-lado { position: relative; right: auto; top: auto; width: min(240px, 70vw); margin: 22px auto 0; padding-bottom: 70px; transform: none; }
+  /* G-fix F: "Seguir" fijo abajo: a la vista sin scrollear, aunque el contenido de arriba sea largo */
+  .fj-lado .fj-seguir { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 9; transform: translateX(-50%); box-shadow: 0 8px 28px var(--sombra); }
 }
 
 /* G3c-ui: las etiquetas de la oferta (grandes, la primera manda el color) y los cuatro ejes del frente */
