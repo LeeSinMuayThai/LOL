@@ -34,6 +34,69 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-15 — La auditoría de gameplay (El Ídolo contra Lolero, jugados) y el plan de la ola G (PLANUI §0.9)
+
+El usuario (2026-10-14): "el juego es tan divertido como el ejemplo […] ver porque es mas divertido […] hacer una
+auditoria completa y detallada de como es jugar la carrera, de porque se siente mas juego, mas controlada […] mi idea
+no es un plan que dure 3 meses pero que si sea completo y arregle completamente el tema del gameplay."
+
+**Lo jugado.** Cuatro carreras, sin tocar `src/`.
+- **El Ídolo 1.** Habilidoso, de All Boys a Gimnasia de Mendoza, 24 temporadas: 16 títulos, Leyenda 100/100 con
+  estatua, el tiro libre del 89' y el palmarés club por club.
+- **Lolero 1.** LAS, mid, Hambriento, seed 1025974653, 12 años.
+  - Primer equipo a los 19.
+  - El título de la LRS, con un clic entre planes de 84-86%.
+  - Cuatro pretemporadas sin una sola oferta, con nivel 69-75.
+  - El retiro a los 27: "EL TELÉFONO DEJÓ DE SONAR".
+- **Lolero 1b.** EMEA, Profesional, 3 años.
+  - La final de CBLOL: el combo salió 5/5 y después vino una tirada al 72%.
+  - El Swiss del Mundial: cuatro "A jugarlo" de una sola opción.
+- **El Ídolo 2.** Cabulero, la carrera del día, 22 temporadas.
+  - Cada final de suerte es un gesto tuyo: la generala, Monty Hall con los botines, la ruleta que cargás, mayor o menor.
+  - La promesa del pibe maravilla se paga dos años después.
+  - Irte con el jeque te cuesta la Eurocopa.
+
+**Los números** (`AUDITORIA.md` §A; las dos de El Ídolo contra las dos de Lolero):
+- años sin club: 0 y 0, contra 9 (LAS) y 2;
+- partidos definidos con un gesto tuyo: ~45 y ~35, contra 0 y 0;
+- eventos que decidió el juego por vos: 0, contra ~5 por año amateur.
+
+**El diagnóstico.**
+- El Ídolo tiene menos sistemas, pero cada número está a la vista, cada decisión es tuya y cada final la ganás o la
+  perdés con tus manos.
+- Lolero decide por vos, esconde lo que movés y resuelve el clímax con una tirada.
+- W y F arreglaron la vitrina. Lo que falta es el control.
+
+**Lo que eligió el usuario** (textual en PLANUI §0.9 y en PLAN §K.1):
+1. Las finales, con minijuegos de habilidad para todos. La clase inclina los stats y da un poder de un uso.
+2. El perfil no decide nada: todo evento con elección frena, con un tope por split.
+3. El amateur, corto y siempre con equipo: equipo seguro a los 17 y nunca sin ofertas.
+
+**El plan: la ola G** (PLANUI §0.9), en dos entregas.
+- **Entrega 1, "el control":**
+  - G1, las finales se juegan con las manos, sin tirada (cierra W7);
+  - G2a, el perfil no decide;
+  - G3a-b, el amateur corto y nunca sin equipo (D111, la penalidad de edad).
+- **Entrega 2, "lo que se ve y el mundo":**
+  - G2b-c, una carta por año y la ficha con los 5 stats;
+  - G3c, el mercado como dilema (W5: la traición, volvé a casa, el arraigo por org);
+  - G4, el diario que no se repite, las promesas y el final como ceremonia.
+- Deudas nuevas: D111-D117.
+
+**Método.**
+- La ventana del Chrome del usuario se oculta y congela las animaciones. Desde los 20, Lolero 1 se reprodujo con la
+  misma seed en un Chromium con GPU, y salió idéntica.
+- Los minijuegos se jugaron por script: la auditoría mide cómo se juega, no cuánto cuesta ganar.
+- Lolero se jugó con `?previa=auditoria`: la partida guardada del usuario no se tocó.
+
+**Documentos.**
+- `AUDITORIA.md`, reescrita. La anterior: `git show 749b5cf:AUDITORIA.md`.
+- PLANUI: la §0.9 y su fila de estado.
+- PLAN:
+  - en §K.1, qué partes de D-B y D-D reemplaza la ola G;
+  - la nota en "Minijuegos".
+- La tabla de documentos de `CLAUDE.md`.
+
 ### 2026-10-14 — PLANUI §0.8, ola F: "que se sienta más divertido" (el Mundial se juega, ningún año muerto, la consecuencia en el momento, la carta que mueve un número que ves)
 
 El usuario jugó la W1: "se nota un poquito, un poquito […] ahora quiero que veas si el juego se puede sentir más

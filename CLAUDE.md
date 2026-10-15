@@ -55,10 +55,10 @@ Orden de lectura al abrir el proyecto:
 | `CLAUDE.md` | este archivo: las reglas duras |
 | `CONCEPTO.md` | qué es el juego y por qué los sistemas están conectados así. **§12 es el archivo de investigación**: ligas 2026, salarios, duración de carreras, Fearless — no hay que volver a investigarlo |
 | **`PLAN.md`** | el plan del juego, fase por fase (terminado con FASE V). Sigue siendo la fuente de la tabla de deuda técnica, las trampas conocidas (T1-T10) y las reglas de proceso |
-| **`PLANUI.md`** | **el plan vigente: la UI nueva** (2026-10-09). La vitrina de direcciones de arte (`vitrina/`), las dos compuertas del usuario, el sistema de diseño, pantalla por pantalla, las olas U1-U4 y su verificación. Continúa la numeración de deudas de `PLAN.md` (D102+) |
+| **`PLANUI.md`** | **el plan vigente: la UI nueva** (2026-10-09). La vitrina de direcciones de arte (`vitrina/`), las dos compuertas del usuario, el sistema de diseño, pantalla por pantalla, las olas U1-U4 y su verificación. Continúa la numeración de deudas de `PLAN.md` (D102+). Desde §0.7 lleva también las olas de gameplay: W, F y **G** (§0.9, la vigente) |
 | `PROGRESO.md` | changelog: qué se hizo, por qué, y con qué números medidos |
 | `DISENO.md` | arquitectura de archivos |
-| `AUDITORIA.md` | auditoría completa fechada (2026-10-01, contra el commit `2c63c4f`): cómo vamos contra lo que se quiere, por qué no se siente como El Ídolo/Copero (medido, con un experimento contrafáctico de agencia), qué se hizo bien y mal, y salud del código — una foto, no se actualiza sola. Es la base del próximo plan: lo accionable se pliega a `PLAN.md` cuando ese plan se escriba. La anterior (2026-09-25, contra `3fc6ea5`) sigue en git: `git show 2c63c4f:AUDITORIA.md` |
+| `AUDITORIA.md` | auditoría de gameplay fechada (2026-10-14, contra lolero.lol con la ola F, `7ce3e81`): cuatro partidas jugadas, dos de El Ídolo (Potrero 2.6) y dos de Lolero; por qué El Ídolo se siente más juego y más controlado, qué le falta a Lolero, lo que eligió el usuario y dónde está cada cosa en el código — una foto, no se actualiza sola. Es la base de la ola G (`PLANUI.md` §0.9). La anterior (2026-10-01, contra `2c63c4f`: el contrafáctico de agencia y la salud del código) sigue en git: `git show 749b5cf:AUDITORIA.md` |
 
 > `TRASPASO.md` y un `AUDITORIA.md` anterior se borraron el 2026-09-02: describían un repo de 28
 > commits atrás y ya se contradecían con el código. Lo que seguía vivo se mudó — la investigación a

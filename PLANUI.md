@@ -40,8 +40,9 @@
 | **U3a (adelantada)** | Lo que dijo el usuario jugando P2 (§0.6): la copa y el resumen de la temporada, "Mientras tanto" en rápido y la firma de una sola coreografía | ✅ 2026-10-14: 2 workers (Opus high + Opus xhigh) + scout + revisor Sonnet; publicada |
 | **W · ola W1** | "Que se sienta el avance" (§0.7): la ficha en todas las anchuras, el diario con "Última hora" y el ascenso, "tan cerca" y la vitrina, la tarjeta final con el duelo y el arraigo | ✅ 2026-10-14: 3 workers Opus high + revisor Sonnet (0 bloqueantes, 3 para arreglar, arreglados en una ronda); publicada. Falta que el usuario la juegue en RÁPIDO |
 | **Arreglo · la firma en todas las firmas** | El usuario (2026-10-14): "se vio bien… pero solo se vio una vez. Y probé dos". El fichaje (el mapa con tu línea, el escudo, la firma trazada y el jersey) solo lo montaban el mercado y la prueba con contrato. Faltaba en el primer club (la oferta directa del amateur o la prueba con un tier 3 no crean contrato: `fichajeDe` devolvía null), en el equipo chico que te levanta y en las firmas que el motor hace solas en el relato (la mudanza pendiente, la academia). Ahora `fichajeDe` cuenta el club nuevo sin contrato (placas "Primer equipo" y "Tu línea", sin sueldo) y el relato monta como momento la firma que ninguna parada mostró (`fichajeDelRelato`, sin repetir ni al recargar). Muestras `?previa=primer-club` y `?previa=mudanza`. El "20 % más" de la firma queda para cuando diga qué parte | ✅ 2026-10-14 |
-| **W · olas W2-W3** | La carta de pretemporada y ¿gloria o billetera? (motor chico, medido); después, la final sin tirada y la plata (§0.7) | ⬜ el usuario jugó la W1 ("se nota un poquito"); W4 lo reemplaza F4, W5/W7/W8 quedan después de F |
+| **W · olas W2-W3** | La carta de pretemporada y ¿gloria o billetera? (motor chico, medido); después, la final sin tirada y la plata (§0.7) | ⬜ el usuario jugó la W1 ("se nota un poquito"); W4 lo reemplaza F4, W5/W7/W8 quedan después de F. Con la ola G: W5 → G3c, W7 → G1, W8 → G5 (§0.9) |
 | **F · ola F** | Lolero jugado seis años (§0.8): el Mundial se juega y se ve (Swiss y bracket con "vos"), ningún año muerto, la consecuencia en el momento y el diario que titula lo que pasó, la carta que mueve un número que ves | ✅ 2026-10-14: el usuario eligió "los 4 juntos"; 2 workers Opus high + 2 Sonnet high + revisor Sonnet (0 bloqueantes, 2 para arreglar + 5 menores, arreglados); huella 433142448 ('F'), guardado VERSION 16; publicada. Falta que el usuario la juegue en RÁPIDO |
+| **G · ola G** | El Ídolo contra Lolero, jugados (§0.9): las finales con las manos y sin tirada, el perfil que no decide, siempre en un equipo, el mercado como dilema, el diario que no se repite y el final como ceremonia. Dos entregas | 🔶 2026-10-15: la auditoría (`AUDITORIA.md`) y el plan, aprobados; la entrega 1, por arrancar |
 | **U3** | El resto de los momentos (banners, ceremonias, primer contrato) + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
@@ -729,6 +730,361 @@ pantalla.
 **Cómo se haría.** Cuatro workers Opus high en worktrees, dueños de archivos disjuntos (F1, F2, F3, F4), y un revisor
 Sonnet. Como F1-F3 tocan el motor, el validate completo corre en segundo plano. Después, deploy, y el usuario juega en
 RÁPIDO.
+
+### 0.9 G · "que se sienta juego": El Ídolo contra Lolero, jugados (2026-10-14, el usuario textual + cuatro partidas)
+
+> "eres un experto, el juego es tan divertido como el ejemplo, tu trabajo va a ser abrir claude in chrome y jugar en
+> potrero futbol […] tu trabajo sera ver porque es mas divertido, ver todo pero principalmente el gameplay, hacer una
+> auditoria completa y detallada de como es jugar la carrera, de porque se siente mas juego, mas controlada, etc […] la
+> auditoria tiene que ser completa y detallada como para poder sacar un plan, mi idea no es un plan que dure 3 meses
+> pero que si sea completo y arregle completamente el tema del gameplay."
+
+**Lo que se hizo.** El supervisor jugó cuatro carreras: dos de El Ídolo (Potrero 2.6) y dos de Lolero en vivo (ola F).
+La auditoría completa está en **`AUDITORIA.md` (2026-10-14)**. **Las referencias §A-§F de esta sección son de ese
+archivo.**
+- §A tiene los números. En Lolero:
+  - 9 años sin equipo en una carrera de 12;
+  - 0 partidos definidos con un gesto tuyo, contra ~35-45 en El Ídolo;
+  - ~5 eventos por año amateur que decidió el perfil, contra 0.
+- §B son los 12 principios de El Ídolo y §C los 11 problemas de Lolero, cada uno jugado.
+- §D es el diagnóstico y §F dice dónde está cada cosa en el código.
+
+**El diagnóstico (§D).**
+- El Ídolo tiene menos sistemas, pero cada número está a la vista, cada decisión es tuya y cada final la ganás o la
+  perdés con tus manos.
+- Lolero decide por vos, esconde lo que movés y resuelve el clímax con una tirada.
+- W y F arreglaron la vitrina. Lo que falta es **el control**.
+
+**Lo que eligió el usuario (2026-10-14, textual; no volver a preguntar).**
+
+| Tema | Decisión |
+|---|---|
+| Las finales | *"O sea que la clase sí tenga peso, pero más para las estadísticas. Si bien puede ser como que te marque que si elegiste el cabulero, por poner un ejemplo, te ponga un dadito o algo así extra o algún coso especial, pero por lo general, mecánico, minijuegos, habilidades, ¿me entendés? Como dijiste en el primero."* → Las finales se definen con minijuegos de habilidad para todos. La clase inclina los stats y da un poder especial de un uso |
+| El perfil | Eligió *"Que no decida nada"* → Todo evento con elección frena y lo decidís vos, con un tope por split. Lo que no entra no pasa. El perfil queda como sugerencia marcada |
+| El amateur | Eligió *"Corta y siempre con equipo"* → De 15 a 16 en soloQ, con copas amateur jugables. A los 17, equipo seguro (tier 3 como mínimo). Nunca más de una pretemporada sin club: siempre hay ofertas, aunque sean a la baja |
+| El plan | Aprobado el 2026-10-15, como está abajo |
+
+**Los documentos (G.0), antes del código: ✅ 2026-10-15.**
+- `AUDITORIA.md`, reescrita.
+- Esta sección.
+- Las deudas D111-D117, en la tabla del final.
+- En `PLAN.md`:
+  - la fila de §K.1 que deja escrito qué reemplazan estas decisiones: lo de D-B sobre minijuegos y perfil, y la
+    definición de "no llega a pro" de D-D;
+  - una nota en la decisión "Minijuegos".
+- `PROGRESO.md`.
+
+#### El plan: ola G
+
+> Son cuatro piezas en dos entregas. Cada pieza nombra:
+> - el principio de El Ídolo que trae (§B.n);
+> - el problema de Lolero que cierra (§C.n);
+> - la decisión del usuario que la manda (§E.n).
+>
+> Escala: ~1-2 semanas, contando que el usuario juega entre entregas. No son meses.
+>
+> **Entrega 1, "el control":** quién decide, quién define la final y que nunca te quedes sin equipo (G1, G2a, G3a,
+> G3b).
+> **Entrega 2, "lo que se ve y el mundo":** la carta y la ficha, el mercado como dilema, el diario y la ceremonia (G2b,
+> G2c, G3c, G4).
+
+
+#### G1 · Las finales se juegan con las manos *(§E.1 · trae §B.1-2 · cierra §C.1-2 y W7)*
+
+**El contrato nuevo.** Un mapa o un partido con minijuego **se decide por el minijuego, sin tirada**.
+- El motor calcula la p del mapa como hoy: fuerza, rival, plan y charla.
+- Esa p se convierte en una **dificultad** de 0 a 1.
+- El minijuego traduce la dificultad a su regla visible ("necesitás 4 de 5", "zona verde 18%") y devuelve
+  `{ paso, casi }`.
+- La regla en palabras sale de una función pura de `core/`. La usan la previa y el minijuego, así el texto y el juego
+  dicen lo mismo.
+- En Node, el bot pasa con probabilidad p, más el ajuste medio que hoy le da el minijuego (con `resultado = stat/100`).
+  Así las tasas D-D no se mueven por construcción.
+- Es la regla 8: en Node, el resultado es una distribución pesada [p, 1−p].
+
+**Motor (G1a).**
+- **Sin tirada.**
+  - `finalizarMapa` (`systems/serie.js:356-358`): con minijuego, `gano = paso`; sin minijuego, la tirada de siempre.
+  - Lo mismo en el Swiss (`resolverSwiss`, `systems/internacional.js:193`) y en el Bo1 que frena
+    (`systems/temporada.js:352`).
+  - `ajusteDeMinijuegoDeMapa` (`core/serie.js:388-394`) sale del camino del mapa.
+- **Dónde hay minijuego.** Reemplaza a `rondasConMinijuegoDecisivo` (`balance.js:1918`).
+  - **Toda final, en cada mapa**: la doméstica de cualquier tier, las copas amateur de G3 y la final internacional.
+  - **Cuartos y semis, en cada mapa que puede cerrar la serie** (el que está a un mapa de ganarla o de perderla),
+    domésticos y del bracket internacional. Nunca perdés una serie sin haber jugado el mapa que la cierra.
+  - **El Swiss del Mundial y del MSI, en cada Bo1 tuyo**, en lugar de "A jugarlo" (`construirDecisionSwiss`, :88-123).
+  - **El Bo1 que frena en la temporada regular** (`construirDecisionMomento`, `temporada.js:277-295`; la parada
+    garantizada de F2):
+    - primero elegís cómo lo encarás, con el premio a la vista: **🎲 ARRIESGADO** (más difícil, más premio) o
+      **🧊 SEGURO** (más fácil, menos premio), como el tiro libre del 89' de El Ídolo;
+    - después se juega el minijuego;
+    - los efectos del dato se reparten en "si sale" y "si no sale": rangos, con el número seguro a la vista (la regla
+      de F4). Se revisa la regla de `core/previa.js:87` ("nunca un número mostrado").
+- **Una mecánica por torneo, cada vez más difícil.**
+  - `elegirMinijuego` (`core/minijuegos.js:47-62`) elige una vez por serie o torneo.
+  - Cada mapa o partido siguiente es más difícil (`g1.escalada`: la ventana más chica, todo más rápido), como "cada
+    partido, más larga y más rápida" de La seña del DT.
+- **El casi.** Errar por poco (`g1.margenCasi`) da **un desempate por torneo**, más corto y más difícil: los penales
+  de El Ídolo. El bot también lo tiene (`g1.pCasiBot`).
+- **La clase.** Es el perfil del arranque, fijo para toda la carrera: `career.clase`, con VERSION 17 y `migrarDe16`.
+  - Inclina los stats iniciales: `inclinacion` en `data/perfiles.json`, chica (por ejemplo +3/+2/−2).
+  - Da **un poder de un uso por torneo**, a la vista en la pantalla del minijuego:
+
+    | Clase | Poder | Qué hace |
+    |---|---|---|
+    | Profesional | **El VOD** | ver la secuencia o el patrón otra vez |
+    | Hambriento | **Revancha** | rejugar un mapa perdido |
+    | Showman | **El escenario** | en una final, la vara de un mapa baja un escalón |
+    | Leal | **El vestuario** | la charla del coach dos veces por temporada |
+
+  - El bot usa su poder con una regla fija: el primero que le sirve.
+- **Variedad.**
+  - `la_llamada` y `la_prueba` tienen que leer su stat en la ventana (`ventanaPorStat`, `minijuegos/comun.js:42-47`).
+  - Mid y support tienen solo 4 mecánicas de mapa. Se suman **dos mecánicas universales**, cada una con su stat: una
+    barra de timing tipo "La corrida" y un memotest de "la pizarra del rival".
+- **La charla del coach** sigue siendo el recurso único de la temporada, lo mejor de Lolero. Se puede usar en
+  cualquier mapa con minijuego.
+- **La prueba de ingreso del mercado** deja de tirar: pasa o no pasa por la vara, como la del amateur (K6c). Lo hace
+  G3ab, que es dueño de `mercado.js`.
+
+**Pantalla (G1b).**
+- **La parada del minijuego** (`ui/paradas/minijuego.js`):
+  - arriba, **el camino del torneo** (el Swiss 1-0/0-1…, o CUARTOS ✓ · SEMIS ▶ · FINAL);
+  - debajo, **la tira de mapas** (MAPA 1 ✓ · MAPA 2 ✗ · MAPA 3 ▶), donde el marcador queda escrito;
+  - la regla con la vara: "necesitás 4 de 5 · tu mecánica 71 te abre la ventana";
+  - los chips del poder, del desempate y de la charla, con los usos que quedan.
+- **Después de cada ronda**:
+  - el resultado, con una línea específica, graciosa si perdés (los `veredictos` por nivel de `data/minijuegos.json`
+    ya existen);
+  - el "tan cerca" que revela la ventana: "la zona era 41-58, frenaste en 61".
+- **El stream del Mundial** (`stream.js:201-218`):
+  - cada ronda del Swiss lanza el minijuego;
+  - se saca "cambia con cada una" (D115);
+  - la previa muestra el campeón del plan (D104).
+- **La pantalla de inicio**: el perfil pasa a ser **la clase**, con su inclinación de stats y su poder. Se saca
+  "decide por vos lo chico", que con G2 ya no es verdad.
+
+**Medición.**
+- Rondas de minijuego por año (mediana 3-8; un año de Mundial, ≤ 25) y por carrera.
+- Títulos y Mundial por región, en banda (D-D).
+- El supervisor juega 10 finales **con las manos** en el Chromium con GPU, no con el script que lee la posición. Si se
+  ganan más de ~p + 20 puntos, se endurece `g1.vara`.
+
+#### G2 · Decidís vos, y lo ves *(§E.2 · trae §B.3, B.4, B.6 · cierra §C.3-5)*
+
+**G2a · El perfil no decide nada (entrega 1).**
+- **Todo evento con dos opciones o más frena** (`presentarOResolver`, `systems/events.js:528-540`), tenga o no
+  `bifurcacion` en el dato.
+- **El tope es 1 por split, en amateur y en pro**: `presupuesto.interrupcionesPorSplit` (`balance.js:685-687`,
+  `events.js:509`; hoy solo pro).
+  - Si el split ya gastó su parada, **el evento no se sortea**: lo que no entra no pasa. Nada se resuelve por el
+    perfil.
+  - La continuación de una cadena (`encadenar`, :617-622) tiene prioridad en el split siguiente.
+  - Con más de un candidato gana el de más peso (golpe duro > bifurcación > el resto), de forma determinista.
+- **La cola** (`core/cola.js:77-91`, desde los 28) deja de resolver por el perfil: el tope baja a 1 por año.
+- `edad.probSegundaDecisionPorTipo` (`balance.js:673`) se pliega al tope.
+- En Node no cambia nada: el bot es un jugador con ese perfil (`opcionDelPerfil`, `core/perfil.js:90-105`).
+- **La parada de evento, con el formato de El Ídolo** (`ui/components/decision/`):
+  - el rótulo: PASAN COSAS, DECISIÓN DIFÍCIL o GOLPE DURO;
+  - un texto de ~30 palabras;
+  - opciones de ≤ 6 palabras, cada una con una línea de pista;
+  - **⚠ con el riesgo en palabras**, y el número seguro de cada opción (el mínimo del rango principal, la regla de F4);
+  - el chip "TU PERFIL" en la opción que elegiría tu perfil: es una sugerencia, nunca una decisión.
+- **"Mientras tanto"** (`feed.js:480-486`) queda para el mundo, no para tus decisiones.
+
+**G2b · Una carta por año, y la ficha que la muestra (entrega 2).**
+- **Una sola decisión al arrancar el año.** Hoy son dos:
+  - el plan del año amateur (`decisionDePlan`, `amateur.js:566-604`): 4-5 cartas × 5 barras;
+  - la carta del cierre (`data/events/cierre_edad.json`, `systems/edadCierre.js`).
+- Se funden en **tres cartas**. Cada una tiene:
+  - **un número grande y seguro** en un stat de la ficha ("+4 MECÁNICA");
+  - a veces, un costo a la vista ("−2 CABEZA");
+  - una rareza;
+  - el color de tu situación: el soloQ, el bootcamp, la gaming house de tu org.
+- **La rutina amateur deja de ser una decisión**: la arma el motor desde tu perfil (`planInicial`). Sus dilemas (el
+  examen, la familia, la PC) llegan como eventos de G2a.
+- **La ficha** (`ui/fichaFija.js`) muestra **siempre** los cinco stats que mueven las cartas, con ▲▼ en el acto:
+  Mecánica, Macro, Laneo, Calls y Cabeza. Hoy están en la hoja "Tu juego" (`core/ficha.js:444-458`).
+- **"Élite"** se arregla (D113): la ficha llama así a 63-78 (`core/ficha.js:27-39`) y el mercado a más de 80
+  (`demanda.js:29-58`).
+
+**G2c · El texto de las opciones (entrega 2; Sonnet, solo datos).** En los ~60 eventos más frecuentes, medidos con
+`simulate.js`:
+- el campo `aviso` (el ⚠);
+- opciones de ≤ 6 palabras.
+
+#### G3 · Siempre en un equipo, y el mercado es un dilema *(§E.3 · trae §B.5, B.7, B.10 · cierra §C.6-9 y W5)*
+
+**G3a · La etapa amateur, corta (entrega 1).**
+- **De 15 a 16, en soloQ, con una copa amateur jugable por año** (la Clash, el LAN, el torneo del instituto).
+  - La copa entra por la misma puerta que una final: una serie de `systems/serie.js` con ronda 'final'.
+  - G3a la arma con la API de hoy. Cuando entre G1, se vuelve minijuego sin tocar `amateur.js`.
+  - Deja la copa en la vitrina y un titular.
+- **A los 17, equipo seguro, tier 3 como mínimo.**
+  - `buscarSalida` (`amateur.js:1037-1046`) firma en la primera pretemporada de los 17, con `orgQueTeFicha`
+    (`core/tier3.js:73`) y la firma de siempre.
+  - Los prodigios pueden seguir firmando antes, por scouting (`probabilidadDeScouting`, :981-998).
+- **Se sacan** el "¿seguís?" de los 19 (`decisionSalidaAmateur`, :1522-1534) y `edadLimite` 24 → 'no_llego'.
+- **Las tiradas que te cambian la vida pasan a ser eventos con parada** (GOLPE DURO) en `data/events/`. Ejemplo: "Te
+  confiscaron la PC" (`amateur.js:919-929`), que hoy es solo una bandera.
+- **Los torneos de tier 3 tienen final jugable y copa.** Hoy el "1.º de 6" se ve solo en el cajón.
+
+**G3b · Nunca sin equipo (entrega 1).**
+- **La causa de las cero ofertas (D111)** es la penalidad de edad, `(1−sesgoEtario(edad))×100`
+  (`core/valorMercado.js:25-27`; `balance.js:1226`, tabla :1437-1441):
+  - vale −48 a los 25 y −70 a los 27;
+  - el comentario dice ~10;
+  - se lleva a ese ~10, con tope.
+- **Piso de ofertas.** Si `ofertaPosible` (`core/demanda.js:520-581`) deja menos de 3, el mercado completa hasta 3
+  (`mercado.ofertasMinimas`) con ofertas **A LA BAJA**: tu liga, la de abajo, tier 3.
+- **Desaparece el bucle "El mercado ya habló"** (`mercado.js:907-1075`).
+  - Podés rechazar todo **una** pretemporada; la ventana de mitad de año de F2 te vuelve a llamar.
+  - A la segunda, firmás o cerrás la carrera (G4c).
+- **`sin_equipo` deja de ser un final** (`retiro.js:125-129`). Quedan el cuerpo, la edad y tu decisión.
+- **En `simulate.js`**:
+  - `noLlegaAPro` (:1200) pasa a contar "nunca jugó en tier 2 o tier 1" (§E.3);
+  - métrica nueva: años sin equipo.
+
+**G3c · El mercado como dilema (entrega 2, con W5).**
+- **Cuatro ejes en el frente de cada oferta**, como El Ídolo:
+  - **la plata**: el sueldo, topeado por su "hasta" (D112: hoy $511k con "hasta $348k", `core/salarios.js:12-22`);
+  - **los minutos**: "vas a jugar MÁS / MENOS que ahora", de la jerarquía proyectada;
+  - **el arraigo que perdés**: "−N con RED";
+  - **el arraigo con el que arrancás**: "allá arrancás Uno más (6/100)"; en la renovación, "te faltan 21 para Querido".
+- **El arraigo se guarda por org** (`career.arraigoPorOrg`). Hoy se pierde entero al irte (`mercado.js:135-141`).
+- **Las etiquetas:**
+  - **RENOVACIÓN**;
+  - **BOMBAZO**: el doble de tu sueldo o más;
+  - **TRAICIÓN**: el clásico de tu org, de un `data/clasicos.json` nuevo (hoy "clásico" es solo un rótulo de partido,
+    `core/temporada.js:258-267`). Cuesta −30 de arraigo y sale en el diario;
+  - **VOLVÉ A CASA**: una org donde llegaste a Querido. Arrancás con lo guardado menos la salida;
+  - **A LA BAJA**.
+
+#### G4 · El mundo se acuerda, y el final es una ceremonia *(trae §B.8, B.9, B.11 · cierra §C.10-11)* — entrega 2
+
+**G4a · El diario** (`core/temporadaResumen.js`).
+- **Nunca el mismo titular dos años seguidos**, con tres redacciones o más por familia. Hoy el "OTRA VEZ —" aparece
+  recién a la cuarta (:371-374, `balance.js:1772`).
+- "El parche te dejó sin X" (:478-481) sale solo el año del parche.
+- **Titulares nuevos:**
+  - GOLPE DURO: la PC, la familia, la lesión;
+  - la copa amateur;
+  - la primera firma;
+  - TRAICIÓN y VOLVISTE A CASA;
+  - **"EL RIVAL TE PASÓ EL TRAPO"**: el duelo eterno se lleva el titular el año que te gana.
+- **Se sacan las contradicciones** (D116, D117):
+  - "¡SOS UNA ESTRELLA!" sin equipo;
+  - "el día que dejaste tu país" sin haber emigrado;
+  - "ni un scout te escribió" después de "tres personas preguntan por vos".
+
+**G4b · Promesas que se pagan.**
+- Un `data/events/promesas.json` nuevo con 4-6 promesas, cada una con plazo, condición y pago.
+- Ejemplo, el prodigio: "si llegás a Máster antes de los 16, te vienen a buscar de tier 2". Se paga, o se cuenta que
+  no.
+- Consecuencias de un año al siguiente en el diario: "tu ex equipo ganó la liga sin vos".
+
+**G4c · La ceremonia.**
+- **El último split.** Frena una decisión cuando el declive se ve o a la segunda pretemporada sin firmar: "colgarlo
+  con la frente alta" o "un año más ⚠ (podés terminar en el banco… o eterno)".
+- **El último partido.** Un mapa de despedida con minijuego y el premio a la vista: 🎲 la jugada para el clip o 🧊 el
+  farm para el rookie. Salga bien o mal, es un buen recuerdo.
+- **El monumento**, según tu escalón más alto de arraigo:
+  - Leyenda: **retiran tu camiseta** (el número que elegiste en la firma) en esa org;
+  - Ídolo: cuelgan tu bandera;
+  - y el apodo de esa org: "EL HÉROE DE RED CANIDS".
+- **La tarjeta** (`ui/screens/tarjeta.js`) pasa a ser un palmarés:
+  - el tipo de carta, según tu escalón más alto;
+  - org por org, con su escalón (ya está);
+  - las finales perdidas (`registro.finales`, de F3);
+  - **premios con nombre**, sacados del registro: El hijo pródigo, Cruzó el charco, Matador de clásicos…;
+  - el duelo.
+- "De dónde sale el número" baja al final. "Tu potencial, revelado" (:141-142) se pliega en "trayectoria": al final no
+  hay sorpresa oculta.
+
+#### G5 · Opcional, después de que el usuario juegue las dos entregas
+
+- **W8, la plata pesa** (§0.7: "¿gloria o billetera?").
+  - Sin tienda. Una tienda como la de El Ídolo choca con la decisión "La plata no es gastable" de `PLAN.md`.
+  - La tienda entra solo si la pide el usuario.
+- **El desafío diario, con objetivos con estrella.** El desafío ya existe (D-C); le faltan los objetivos.
+- **La rueda de prensa vuelve** después de una final (`rondasConPrensa`, `balance.js:1912`).
+
+#### Lo que no se toca
+
+- La firma.
+- La serie mapa por mapa con el Fearless y el "te leyeron".
+- El stream del Mundial con el tablero suizo.
+- La charla del coach como recurso único.
+- Los parches y el meta, las noticias y las revanchas.
+- El duelo eterno.
+- La huella y el determinismo (regla 1).
+- Los eventos como datos con rangos (reglas 4 y 7).
+
+#### Entregas y workers
+
+El método es WF-001: worker en worktree, revisor independiente, y el validate completo lo corre el supervisor en
+segundo plano. Los workers son Opus high, con ~70 llamadas.
+
+| Entrega | Worker | Dueño de |
+|---|---|---|
+| **1 · El control** | G1a, motor | `systems/serie.js`, `core/serie.js`, `systems/internacional.js`, `systems/temporada.js`, `core/minijuegos.js`, `data/minijuegos.json`, `data/perfiles.json`, `core/state.js` (VERSION 17: el único que la sube) |
+| | G1b, pantalla | `ui/paradas/minijuego.js`, `ui/components/minijuegos/*`, `ui/paradas/caraACara.js`, el stream, la pantalla de inicio |
+| | G2a | `systems/events.js`, `core/cola.js`, `ui/components/decision/*`, `ui/components/feed.js` |
+| | G3ab | `systems/amateur.js`, `core/tier3.js`, `core/valorMercado.js`, `core/demanda.js`, `systems/mercado.js`, `systems/retiro.js`, las métricas de `src/dev/simulate.js` |
+| **2 · Lo que se ve y el mundo** | G2b | la carta del año (el plan de `amateur.js`, `edadCierre.js`, `cierre_edad.json`, `cartas.js`), `ui/fichaFija.js`, `core/ficha.js` |
+| | G2c (Sonnet) | el texto de `data/events/*.json` |
+| | G3c | `systems/mercado.js`, `core/demanda.js`, `core/salarios.js`, `ui/components/mercado.js`, `data/clasicos.json` |
+| | G4ab | `core/temporadaResumen.js`, `ui/core/momentos.js`, `data/events/promesas.json` |
+| | G4c | `systems/retiro.js`, `ui/screens/tarjeta.js`, `ui/app.js`, `core/legado.js` |
+
+- **El contrato del minijuego** (los `datos`: dificultad, regla, poder, desempate, camino) lo escribe el supervisor en
+  los dos briefs de G1. Así G1a y G1b trabajan en paralelo.
+- **`balance.js`** tiene una sección por worker (`g1`, `eventos`, `amateur`/`mercado`), y el supervisor integra.
+- **Un revisor por entrega.**
+- **La integración**, en orden:
+  1. validate `--rapido`;
+  2. `simulate.js 1000` dos veces, con la huella idéntica;
+  3. base contra cambio;
+  4. el validate completo, en segundo plano;
+  5. el deploy: merge → push → build → `npx wrangler deploy` → md5;
+  6. **el usuario juega en RÁPIDO**.
+- Al terminar, el workflow se registra en `~/.claude/workflows.md`.
+
+#### Verificación
+
+Base `749b5cf` contra cada entrega, con `simulate.js` y jugando:
+
+| Medida | Hoy (esta auditoría) | Meta |
+|---|---|---|
+| Años sin equipo desde los 17 | 6 (LAS: 17-18 amateur, 24-27 libre) | 0, y nunca más de una pretemporada libre seguida |
+| Eventos que decide el perfil en el navegador | ~5 por año amateur | 0 |
+| Paradas de evento | 0-2 por año amateur; el resto, el perfil | ≤ 1 por split (en la cola, 1 por año), todas tuyas |
+| Partidos definidos con tus manos | 0 | toda final, todo mapa que cierra una serie, todo Bo1 del Swiss |
+| Tirada después de un minijuego | siempre | nunca |
+| Rondas de minijuego de mapa | 0-1 por carrera | mediana 3-8 por año; un año de Mundial, ≤ 25 |
+| Ofertas por pretemporada | 0, cuatro seguidas | 3 o más, siempre |
+| Titular repetido en años seguidos | 3 seguidos | 0 |
+| D-D | en banda | en banda, con "no llega a pro" redefinido (~20%) |
+| El final de la carrera | "el teléfono dejó de sonar" | el último split, el último partido, el monumento y el palmarés |
+
+- **La definición de terminado:**
+  - el validate: el rápido lo corren los workers; el completo, el supervisor en segundo plano;
+  - dos corridas con la misma seed, idénticas;
+  - `simulate.js 1000` sin crash;
+  - el commit y PROGRESO.
+- **Jugado.** El supervisor juega una carrera entera por entrega en el Chromium con GPU (`--use-angle=d3d11`). Juega
+  los minijuegos de verdad, no leyendo la posición, y anota los tiempos y las rondas. Después juega el usuario.
+
+#### Riesgos
+
+- **Fatiga de minijuegos.** Las perillas de `g1` (dónde y cuántos) se ajustan después de jugar.
+- **Ganar demasiado con las manos.** La vara y la escalada por ronda se calibran jugando, no por script.
+- **G3 alarga las carreras.** Más años pueden traer más títulos: la inflación de El Ídolo. Se mide la duración y se
+  cuidan las bandas D-D.
+- **El peso del build** está en 3904 de 4000 KB. Dos mecánicas nuevas pueden obligar a subir el techo.
+
+
+**Las deudas nuevas** (D111-D117) están en la tabla del final de este documento.
 
 ## 1. Por qué un tercer plan
 
@@ -2257,6 +2613,13 @@ Son del **motor**. Van a la etapa "arreglar el juego" que pidió el usuario (§0
 | D108 | **El puntaje del arranque del año vive solo en la foto de la UI** (`fotoDeSplit`, `ui/core/escena.js`): en una partida retomada a mitad de año el diario no muestra el delta del puntaje. Si se quiere siempre, va `puntaje` en `CAMPOS_EDAD` (motor) (§0.7, W2) | ⬜ |
 | D109 | **Los playoffs de tu liga no tienen cuadro:** `systems/serie.js` genera el rival de cada ronda (`generarRival(state, ronda, rng)`) y no guarda el bracket, así que "dónde estás vos" en los playoffs domésticos no se puede mostrar sin inventarlo (F1 lo reportó y no lo inventó; el Mundial sí tiene su cuadro de 8). Pedido del usuario en §0.8 | ⬜ |
 | D110 | **El validate completo de la ola F (7ce3e81): 564 OK, 7 FAIL**, ninguno perseguido. Dos son de la llamada de F2 o del lote: (a) "La tabla de temporada cierra" revienta en 2 de 300 seeds (182 y 249) porque, después de firmar con la llamada de tier 2, hasta el split siguiente `career.temporada.tabla` es la de tier 3 y tu org nueva no está; en la UI, el panel de la tabla muestra esas filas bajo la liga de tier 2 y sin tu fila marcada (no crashea: `posicionEnTabla` cubre el caso); (b) V5 no encontró en su lote de 20 una carrera con todo junto (curva, títulos de tier 2/3, Mundial y Golden Road): falta de cobertura, no un error. Los otros cinco son bandas que F movió a propósito: K4c p90 de interrupciones en el split internacional 10 (meta ≤ 6: F1 frena cada ronda del Swiss), K4c bifurcaciones por carrera 4.68 (meta 5-9), K5c el azar se estanca en tier 2/3 el 8.3% (banda 8.58-13.92: la llamada saca gente del tier 3), K6b-C frenadas desde los 28 17.98 (≤ 14.1) y la del terco 14.08 (≤ 10.93). Se re-basan o se corrigen después de que el usuario juegue F | ⬜ |
+| D111 | **La penalidad de edad del mercado no es la que dice su comentario:** `(1−sesgoEtario(edad))×100` (`core/valorMercado.js:25-27`; `balance.js:1226`, tabla :1437-1441) vale ~−48 a los 25 y ~−70 a los 27, y el comentario dice ~10. Es la causa más probable de las cuatro pretemporadas sin una sola oferta que tuvo la auditoría (§0.9, G3b) | ⬜ |
+| D112 | **El sueldo supera el "hasta" de la oferta:** "hasta $X" es el presupuesto del asiento (`core/demanda.js:144-164`) y nunca topea el sueldo (`core/salarios.js:12-22`). Se jugó una oferta de $511k con "hasta $348k" (§0.9, G3c) | ⬜ |
+| D113 | **"Élite" no significa lo mismo en la ficha que en el mercado:** la ficha llama élite a 63-78 (`core/ficha.js:27-39`), y el mercado empuja recién desde 80 (`core/demanda.js:29-58`) (§0.9, G2b) | ⬜ |
+| D114 | **El diario se repite:** "UN AÑO MÁS EN LA GRIETA" salió tres años seguidos y "El parche te dejó sin Ahri", cinco. El "OTRA VEZ —" llega recién a la cuarta repetición (`core/temporadaResumen.js:371-374`, `balance.js:1772`), y el renglón del parche no mira el año (:478-481) (§0.9, G4a) | ⬜ |
+| D115 | **"Tu chance cambia con cada una" con una sola opción**, en las rondas del Swiss (`stream.js:201-218`) (§0.9, G1b) | ⬜ |
+| D116 | **"¡SOS UNA ESTRELLA!" sin equipo:** el titular del hype sale cuando la ficha dice "El que no llegó" (§0.9, G4a) | ⬜ |
+| D117 | **"El día que dejaste tu país" sin haber emigrado:** el evento del viaje salió en una carrera que nunca dejó LAS (§0.9, G4a) | ⬜ |
 
 ---
 
