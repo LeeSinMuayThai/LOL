@@ -119,8 +119,9 @@ export function franjaDelTramo(logs, desde = 0) {
   const narrativos = (logs ?? []).slice(Math.max(0, desde)).filter((log) => formaBeat(log) && !log.tecnico);
   const propias = narrativos.map((log) => ({ log, eleccion: eleccionDelJugador(log) })).filter((x) => x.eleccion);
   const elecciones = propias.map((x) => x.eleccion).reverse().slice(0, ELECCIONES_DE_FRANJA);
-  const mostradas = new Set(propias.slice(-ELECCIONES_DE_FRANJA).map((x) => x.log));
-  // La elegida ya sale arriba: ni cuenta en la franja, ni suma sus chips, ni repite su titular.
+  // G2a (PLANUI §0.9): "Mientras tanto" queda para el mundo. Lo que elegiste vos —las que salen arriba y las que no
+  // entran en el bloque— no cuenta en la franja, ni suma sus chips, ni repite su titular.
+  const mostradas = new Set(propias.map((x) => x.log));
   const restantes = narrativos.filter((log) => !mostradas.has(log));
   const titulares = restantes
     .map((log, i) => ({ log, i, peso: pesoDe(log) }))

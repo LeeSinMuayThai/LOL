@@ -1,8 +1,8 @@
 import { BALANCE } from '../data/balance.js';
-import { elegirEventoCierre, resolverOpcion, elegirOpcionAutomatica, decisionDesdeEvento, opcionDelPerfilPara } from './events.js';
+import { elegirEventoCierre, resolverOpcion, elegirOpcionAutomatica, decisionDesdeEvento } from './events.js';
 import { lineaDePlan } from './practica.js';
 import { esPlanValido } from '../core/rutinas.js';
-import { frenaEnLaCola, hitoDelCierre, conFirmaDeLaCola, narradaEnLaCola } from '../core/cola.js';
+import { frenaEnLaCola, hitoDelCierre, conFirmaDeLaCola } from '../core/cola.js';
 
 export const id = 'edadCierre';
 
@@ -29,12 +29,9 @@ export function aplicar(state, rng) {
 
   const decision = decisionDeCierre(nextState, evento);
   // K6b-C2 (la cola de verdad): en la cola, el cierre frena solo si es un hito, si algo cambió o si su tipo tiene
-  // palanca (`core/cola.js`). Si no, lo resuelve tu perfil por el mismo `resolver` (fija el plan de su opción, con las
-  // mismas tiradas que después de la pausa) y queda una línea de crónica.
+  // palanca, con el tope del año (`core/cola.js`). G2a: si no frena, no pasa: tu perfil ya no lo resuelve por vos.
   if (!frenaEnLaCola(nextState, 'cierre', hitoDelCierre(state, nextState.age)).frena) {
-    const opcionId = opcionDelPerfilPara(nextState, evento);
-    const resuelto = resolverConCronica(nextState, decision, opcionId, rng);
-    return { ...resuelto, logs: narradaEnLaCola(resuelto.logs, 'cierre', opcionId) };
+    return { state: nextState, logs: [] };
   }
   return { state: conFirmaDeLaCola(nextState, 'cierre'), logs: [], decision };
 }

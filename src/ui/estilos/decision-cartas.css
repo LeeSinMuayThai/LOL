@@ -221,6 +221,15 @@
 html[data-textos='completos'] .cv-raiz .cv-desc { display: block; }
 .cv-chips { justify-content: center; gap: 5px; }
 .cv-chips .eje-chip { padding: 2px 8px 2px 6px; font-size: 11.5px; }
+/* G2a (la carta de El Ídolo): la pista de la opción, su número seguro y el riesgo en palabras */
+.cv-pista { color: var(--ink-dim); font: 400 13px/1.35 var(--f-cuerpo); }
+html[data-textos='completos'] .cv-raiz .cv-pista { display: none; }
+.cv-seguro { display: inline-flex; align-items: baseline; gap: 6px; color: var(--ink-dim); font: 500 12px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .04em; }
+.cv-seguro svg { width: 14px; height: 14px; flex: none; align-self: center; color: var(--eje, var(--luz)); }
+.cv-seguro b { color: var(--eje, var(--ink)); font: 700 20px/1 var(--f-mono); letter-spacing: 0; }
+.cv-seguro[data-signo='baja'] b { color: var(--down, var(--ink)); }
+.cv-aviso { display: flex; gap: 6px; align-items: baseline; color: var(--gold); font: 400 12.5px/1.35 var(--f-cuerpo); }
+.cv-aviso b { flex: none; }
 .cv-plan { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-dim); font: 500 12px/1.3 var(--f-mono); }
 .cv-plan svg { width: 14px; height: 14px; flex: none; color: var(--eje, var(--luz)); }
 .cv-tags { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; gap: 6px; pointer-events: none; z-index: 2; }

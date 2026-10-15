@@ -18,7 +18,8 @@ export function aplicar(state, rng) {
     : (esSplitEventful(state) ? p.eventful : p.rutina);
 
   return {
-    state: { ...state, presupuesto: { total, gastadas: 0 } },
+    // G2a: `eventos` es la parada de evento del split (`BALANCE.eventos.paradasPorSplit`, `systems/events.js`).
+    state: { ...state, presupuesto: { total, gastadas: 0, eventos: 0 } },
     logs: []
   };
 }
