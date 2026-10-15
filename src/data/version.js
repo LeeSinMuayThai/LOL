@@ -193,5 +193,6 @@ export const VERSION_JUEGO = 'G';
 // (finales, cuartos y semis que pueden cerrar, el Swiss) se deciden por la vara, sin tirada, y la clase inclina los stats del
 // arranque; G2a: todo evento con 2+ opciones frena, una parada de evento por split (la continuación de cadena es la bandera ya
 // puesta, no la guarda de apertura); G3ab: siempre en un equipo (equipo seguro a los 17, copa amateur, piso de 3 ofertas).
-// Guardado VERSION 17.
-export const HUELLA_JUEGO = 628507834;
+// Re-registrada (G no salió de la rama, 628507834 → 979394239) con los arreglos de la revisión: la vara con techo humano (0,85)
+// y la final de la copa amateur y la de tier 3 con minijuego, sin tirada. Guardado VERSION 17.
+export const HUELLA_JUEGO = 979394239;

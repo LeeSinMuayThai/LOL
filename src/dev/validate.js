@@ -947,8 +947,9 @@ const FORMAS_CONOCIDAS = {
   16: 'f6a5c9b7e186',
   // Ola G, entrega 1 (PLANUI §0.9), integrada: G1a (career.clase, career.charlaSegundaUsadaEn, career.torneoG1), G2a
   // (presupuesto.eventos, flags.colaAnio) y G3ab (flags.copaAmateur, flags.rechazoMercado). Un guardado de la 16 carga con
-  // `migrarDe16`, que los suma a todos.
-  17: 'b21e0cb21aa4'
+  // `migrarDe16`, que los suma a todos. Re-registrada (la 17 no salió de la rama) con los arreglos de la revisión: la final de la
+  // copa amateur y la de tier 3 se juegan con minijuego, y las carreras de muestra recorren esas decisiones.
+  17: 'e7260face8f8'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
