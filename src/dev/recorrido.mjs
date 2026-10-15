@@ -942,7 +942,7 @@ for (let it = 0; it < 3000; it++) {
   if (pieza === 'minijuego') {
     // Entre el minijuego y lo que sigue hay momentos (el fichaje, ~4 s hasta su Seguir) donde `data-pieza` sigue en minijuego
     // sin nada adentro: se espera sin contarlo como parada, y solo es trabada si dura (~10 s).
-    if (!(await page.innerText('#minijuegoTitle').catch(() => '')).trim()) { await page.waitForTimeout(700); stuck += 0.5; continue; }
+    if (!(await page.innerText('#minijuegoTitle').catch(() => '')).trim()) { await page.waitForTimeout(700); stuck -= 0.8; continue; /* el snapshot ya sumo 1: neto +0.2 por espera de 700 ms, ~20 s hasta 'trabado' */ }
     paradas++; step++;
     const tit = await page.innerText('#minijuegoTitle').catch(() => '');
     const ap = await page.innerText('#minijuego').catch(() => '');
@@ -1033,7 +1033,7 @@ for (let it = 0; it < 3000; it++) {
     const opts = await leerOpciones(sel);
     const t = await page.innerText('#decisionTitle').catch(() => '');
     // El resultado de una carta (el dorso "Lo que pasó") se narra solo, sin opciones: se espera, y solo es trabada si dura (~10 s).
-    if (!opts.length) { L('.. decision sin opciones (narrando el resultado?)'); if (!stuck) await captura('decision-sin-opciones'); await page.waitForTimeout(700); stuck += 0.5; continue; }
+    if (!opts.length) { L('.. decision sin opciones (narrando el resultado?)'); if (!stuck) await captura('decision-sin-opciones'); await page.waitForTimeout(700); stuck -= 0.8; continue; /* el snapshot ya sumo 1: neto +0.2 por espera de 700 ms, ~20 s hasta 'trabado' */ }
     const serieViva = await page.evaluate(() => { const e = document.querySelector('#serieContexto'); return !!e && e.checkVisibility({ checkVisibilityCSS: true }); });
     // V3b: la fecha marcada (pieza `partido` con una decision que no es plan de serie ni Swiss) es su propio tipo; antes caia en 'decision'.
     let tipoP = tipoDeParada('decision', t, opts, { topbar });
