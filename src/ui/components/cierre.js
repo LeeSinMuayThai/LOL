@@ -14,7 +14,7 @@ import { itemsDeGoldenRoad } from '../core/trayectoria.js';
 import { moverNumero, leerSoloElFinal } from '../core/delta.js';
 
 // Las bandas del nivel con el mismo nombre que la ficha (`LABEL_NIVEL` de components/ficha.js, que no lo exporta).
-const LABEL_BANDA_NIVEL = { prospecto: 'Prospecto', titular: 'Competitivo', elite: 'Élite', clase_mundial: 'Clase mundial' };
+const LABEL_BANDA_NIVEL = { prospecto: 'Prospecto', titular: 'Competitivo', elite: 'Alto nivel', clase_mundial: 'Élite' };
 
 function bloque(clase, texto) {
   const el = document.createElement('div');

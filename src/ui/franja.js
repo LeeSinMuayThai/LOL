@@ -25,7 +25,7 @@ import { crearFichaFija, hayFicha } from './fichaFija.js';
 // La ventana REAL de la pausa (`ventanaVisibleDe`, K6a-U), con los nombres de los carteles de las páginas.
 const LABEL_VENTANA = LABEL_DE_VENTANA;
 // Los nombres de las bandas de nivel, los mismos que la ficha (`components/ficha.js`).
-const LABEL_BANDA = { prospecto: 'Prospecto', titular: 'Competitivo', elite: 'Élite', clase_mundial: 'Clase mundial' };
+const LABEL_BANDA = { prospecto: 'Prospecto', titular: 'Competitivo', elite: 'Alto nivel', clase_mundial: 'Élite' };
 const LABEL_FASE = { amateur: 'Amateur', profesional: 'Agente libre', retirado: 'Retirado' };
 // La trayectoria mínima arranca a los 15 (la edad de la primera pieza).
 const EDAD_INICIAL = 15;

@@ -141,7 +141,7 @@
   align-items: center;
   gap: var(--s-4);
   width: 100%;
-  height: 100%;
+  height: var(--ficha-tira);
   margin: 0;
   padding: 0 var(--margen);
   border: 0;
@@ -251,15 +251,19 @@
 .fj-fila[data-banda="elite"] .fj-fila-valor { color: var(--nivel-elite); }
 .fj-fila[data-banda="clase_mundial"] .fj-fila-valor { color: var(--nivel-clase_mundial); }
 /* F4 (PLANUI §0.8, punto 8): "Tu juego", los seis stats que mueven las cartas, cada uno con su ▲▼ del año. */
-.fj-juego { padding: 10px 0 9px; box-shadow: inset 0 1px 0 var(--linea); }
-.fj-juego-rot { display: block; margin-bottom: 8px; font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
-.fj-juego-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; margin: 0; padding: 0; list-style: none; }
-.fj-stat { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 7px; padding-top: 6px; box-shadow: inset 0 1px 0 var(--linea); min-width: 0; }
-.fj-stat-rot { flex: 1 0 100%; font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
-.fj-stat-valor { font: 800 17px / 1 var(--f-display); font-stretch: var(--ancho-numero); color: var(--ink); font-variant-numeric: tabular-nums; }
-.fj-stat .fj-delta { font: 500 11px / 1 var(--f-mono); }
-.fj-fila + .fj-juego { box-shadow: inset 0 1px 0 var(--linea); }
-.fj-juego + .fj-fila { box-shadow: inset 0 1px 0 var(--linea); }
+/* G2b-ficha: los cinco stats que mueven las cartas, siempre a la vista bajo la tira. Cinco columnas iguales; el ▲▼ "en el acto" va al
+   lado del número y se apaga solo (lo maneja `fichaFija.js`). La promesa abierta (G4b) es un chip al final, solo en pantallas anchas. */
+.fj-juego-fija { display: flex; align-items: center; gap: var(--s-4); height: var(--ficha-juego); margin: 0; padding: 0 var(--margen); list-style: none; box-shadow: inset 0 1px 0 var(--linea); overflow: hidden; }
+.fj-stat { display: inline-flex; align-items: baseline; gap: 6px; flex: 0 0 auto; min-width: 0; white-space: nowrap; }
+.fj-stat-rot { font: 500 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
+.fj-stat-valor { font: 800 15px / 1 var(--f-display); font-stretch: var(--ancho-numero); color: var(--ink); font-variant-numeric: tabular-nums; }
+.fj-stat-flash { display: inline-flex; align-items: center; gap: 3px; min-width: 0; font: 600 11px / 1 var(--f-mono); font-variant-numeric: tabular-nums; }
+.fj-stat-flash[data-signo="sube"] { color: var(--up); }
+.fj-stat-flash[data-signo="baja"] { color: var(--down); }
+.fj-promesa { display: inline-flex; align-items: baseline; gap: 6px; min-width: 0; max-width: 46%; margin-left: auto; padding: 3px 9px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--filete); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.fj-promesa[hidden] { display: none; }
+.fj-promesa-texto { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.fj-promesa-prog { color: var(--ink-dim); }
 .fj-fuerte { font-weight: 700; color: var(--ink); }
 .fj-fila-texto .fj-delta { margin-left: 8px; font: 500 11px / 1 var(--f-mono); }
 .fj-fila > .fj-escalones,
@@ -306,5 +310,11 @@
   .fj-arraigo { flex: 0 1 auto; overflow: hidden; }
   .fj-vitrina .fj-copa:nth-child(n + 4) { display: none; }
   .fj-hoja { left: 0; width: 100vw; padding: 4px 14px 12px; }
+  .fj-juego-fija { justify-content: space-between; gap: 4px; padding: 0 12px; }
+  .fj-stat { flex-direction: column; align-items: flex-start; gap: 3px; position: relative; flex: 1 1 0; }
+  .fj-stat-rot { letter-spacing: 0.02em; }
+  .fj-stat-valor { font-size: 14px; }
+  .fj-stat-flash { position: absolute; top: 0; right: 2px; }
+  .fj-promesa { display: none; }
   .fj-fila { grid-template-columns: 92px 44px minmax(0, 1fr); }
 }

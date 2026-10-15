@@ -435,6 +435,10 @@ export function dineroGanado(registro) {
   return Number.isFinite(valor) && valor > 0 ? valor : 0;
 }
 
+// D113: el rótulo de cada banda. "Élite" es la banda que el mercado trata como élite (> `mercado.elite.umbralNivel`); la de 63-80 es
+// "Alto nivel". Un solo lugar para el rótulo (los ids de banda no cambian).
+export const ROTULO_DE_BANDA = { prospecto: 'Prospecto', titular: 'Competitivo', elite: 'Alto nivel', clase_mundial: 'Élite' };
+
 // --- F4 (PLANUI §0.8, punto 8): "tu juego", los stats que mueven las cartas ---
 //
 // La carta del cierre dice "Mecánica ~+5, Macro ~+2, Consistencia ~-6" y la ficha solo mostraba el nivel: se elegía a ciegas.
@@ -445,6 +449,19 @@ const STATS_DE_JUEGO = [
   ['mecanica', 'Mecánica'], ['macro', 'Macro'], ['laneo', 'Laneo'],
   ['shotcalling', 'Calls'], ['adaptabilidad', 'Adapt.'], ['mentalidad', 'Cabeza']
 ];
+
+// G2b-ficha: los cinco que mueven las cartas de la ficha fija, siempre a la vista (Mecánica, Macro, Laneo, Calls, Cabeza).
+const STATS_DE_LA_FICHA_FIJA = ['mecanica', 'macro', 'laneo', 'shotcalling', 'mentalidad'];
+export function statsQueMuevenLasCartas(state) {
+  const todos = statsDeJuego(state);
+  return STATS_DE_LA_FICHA_FIJA.map((id) => todos.find((s) => s.id === id)).filter(Boolean);
+}
+
+// G4b escribe `career.promesas`; la ficha lee la abierta, defensiva: `{ texto, progreso }` o null.
+export function promesaAbierta(state) {
+  const p = state.career?.promesas?.find?.((x) => x?.estado === 'abierta');
+  return p ? { texto: String(p.texto ?? ''), progreso: String(p.progreso ?? '') } : null;
+}
 
 // `[{ id, rotulo, corto, valor, delta }]`; `delta` es 0 si no llega al umbral o la foto no trae el stat.
 export function statsDeJuego(state) {
