@@ -40,6 +40,23 @@ export function dificultadDe(state, datos) {
   return (vod > 0 ? vod : 1) / factor;
 }
 
+// G1: la vara que se juega en esta ronda, con la misma cuenta que el motor (`systems/serie.js`, `resolverMapaG1`): la vara de
+// la decisión menos lo que la bajaron el poder del escenario (`datos.poderActivo`) y la charla del coach elegida
+// (`datos.charlaActiva`, con lo que baja en `datos.charla.bajaVara`). `null` si la jugada no es de una final (sin `g1`).
+export function varaEfectivaDe(datos) {
+  const g1 = datos?.g1;
+  if (!g1) return null;
+  const poder = datos.poderActivo ? (g1.poder?.efecto?.bajaVara ?? 0) : 0;
+  const charla = datos.charlaActiva && datos.charla?.disponible ? (datos.charla.bajaVara ?? 0) : 0;
+  return Math.max(0, g1.vara - poder - charla);
+}
+
+// G1: la mitad del ancho de la zona que pasa en las mecánicas de distancia (el Barón, el TP). El resultado es
+// `1 - distancia / escala` y pasa con `resultado >= vara`, o sea con `distancia <= (1 - vara) × escala`: ese es el radio.
+export function radioDeLaZona(vara, escala) {
+  return (1 - Math.max(0, vara)) * escala;
+}
+
 // Cuánto amortigua `factorDificultadRonda` el efecto final sobre un timing
 // (caída de last hit, velocidad de robarBaron): sin esto, el salto de 1.4x
 // en el internacional se sentiría desproporcionado contra el 1.2x de la final.

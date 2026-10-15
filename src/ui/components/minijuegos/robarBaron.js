@@ -1,4 +1,4 @@
-import { motionReducido, unaSolaVez, ventanaPorStat, dificultadDe, AMORTIGUACION_DIFICULTAD } from './comun.js';
+import { motionReducido, unaSolaVez, ventanaPorStat, dificultadDe, varaEfectivaDe, radioDeLaZona, AMORTIGUACION_DIFICULTAD } from './comun.js';
 
 // Robar Baron (fase 4). Migrado de index.html en la fase T6 —
 // PLAN.md §8.5 lo dejó sin mover a propósito "porque la fase 12 le cambia
@@ -24,8 +24,12 @@ export const ESCALA_DISTANCIA = 45;
 export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);
   const dificultad = dificultadDe(state, datos);
-  const anchoZona = ventanaPorStat(state.player.stats.mecanica, 14, 32, dificultad);
   const centroZona = 25 + rngUi() * 50;
+  // G1: en una final la zona dibujada ES la que pasa (el radio sale de la vara efectiva, como el juicio del motor); sin `g1`
+  // (otros momentos), el ancho de siempre, que corre `mecanica`.
+  const vara = varaEfectivaDe(datos);
+  const radio = vara === null ? null : radioDeLaZona(vara, ESCALA_DISTANCIA);
+  const anchoZona = radio === null ? ventanaPorStat(state.player.stats.mecanica, 14, 32, dificultad) : radio * 2;
   const reducido = motionReducido();
   const velocidadPaso = 1.7 * (1 + (dificultad - 1) * AMORTIGUACION_DIFICULTAD);
 
@@ -34,8 +38,10 @@ export function montar(container, state, onDone, rngUi, datos = null) {
     '<button type="button" class="minijuego-btn">¡Smite ya!</button>';
 
   const zona = container.querySelector('.minijuego-zona');
-  zona.style.left = (centroZona - anchoZona / 2) + '%';
-  zona.style.width = anchoZona + '%';
+  const desde = Math.max(0, centroZona - anchoZona / 2);
+  const hasta = Math.min(100, centroZona + anchoZona / 2);
+  zona.style.left = desde + '%';
+  zona.style.width = (hasta - desde) + '%';
   const marcador = container.querySelector('.minijuego-marcador');
   const boton = container.querySelector('.minijuego-btn');
 
