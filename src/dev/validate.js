@@ -17376,8 +17376,10 @@ checkK2d('K2d previa 1: la p de la previa es exactamente la que el motor tira (=
     const previa = previaDeDecision(st, decision);
     mapasConMinijuego += 1;
     if (!previa?.nota?.includes(reglaDeLaVara(g1.vara))) problemas.push(`minijuego ${i}: la previa no dice la vara ${g1.vara}: "${previa?.nota}"`);
-    if (!g1.desempate && !g1.revancha && varaDeRondaG1(previa.p) !== g1.vara) {
-      problemas.push(`minijuego ${i}: la previa muestra p = ${previa.p} (vara ${varaDeRondaG1(previa.p)}), el motor juzga contra ${g1.vara}`);
+    // G-fix-vara: la vara que dice la previa (`previa.vara`, la pantalla la pone en las unidades de la mecánica) es la que juzga el motor.
+    if (previa?.vara?.valor !== g1.vara) problemas.push(`minijuego ${i}: la previa dice la vara ${previa?.vara?.valor}, el motor juzga contra ${g1.vara}`);
+    if (!g1.desempate && !g1.revancha && varaDeRondaG1(previa.p, null, decision.datos.minijuego) !== g1.vara) {
+      problemas.push(`minijuego ${i}: la previa muestra p = ${previa.p} (vara ${varaDeRondaG1(previa.p, null, decision.datos.minijuego)}), el motor juzga contra ${g1.vara}`);
     }
     const gana = sistema.resolver(st, decision, { resultado: g1.vara }, mulberry32(34000 + i)).logs.find(esLogDeMapaK2d);
     if (gana?.resultado !== 'W') problemas.push(`minijuego ${i}: llegó a la vara ${g1.vara} y el mapa salió ${gana?.resultado}`);
