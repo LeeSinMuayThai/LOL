@@ -8,7 +8,7 @@ import { conPlantelesDe, fuerzaDePlantel } from '../core/plantel.js';
 import { BALANCE } from '../data/balance.js';
 import { nombreVisibleDeLiga, esLigaFranquiciada } from '../core/ligas.js';
 import { nivelDelJugador } from '../core/ficha.js';
-import { calibreDeLiga, orgsQueTeFicharian, asientoAbierto } from '../core/demanda.js';
+import { calibreDeLiga, orgsQueTeFicharian, asientoAbierto, ofertaPosible } from '../core/demanda.js';
 import { entero, plata } from '../core/formato.js';
 import { etiquetaRol } from '../data/roles.js';
 import { construirOferta, aceptarOferta } from './mercado.js';
@@ -106,8 +106,26 @@ export const MOTIVO_LLAMADA = 'llamada_tier2';
 // Solo el split del medio (`regular`). En el de playoffs, el último del año, el contrato "hasta la pretemporada" vencía sin
 // jugarse un solo split: el mercado corre en el split siguiente y ya te agarra (medido: 204 de 511 llamadas caían ahí). Ese
 // split igual frena con el cierre del año.
+// G3b, "nunca sin equipo": también el salto del último split del año trae su llamada (antes quedabas agente libre hasta la
+// pretemporada). En la pretemporada no: ahí corre el mercado entero.
 function saltoAMitadDeAnio(state) {
-  return calcularContexto(state).ventana === 'regular';
+  return calcularContexto(state).ventana !== 'pretemporada';
+}
+
+function clubQueTeHaceLugar(state, liga) {
+  const nivel = nivelDelJugador(state);
+  const conPlantel = liga.orgs.filter((org) => state.mundo.planteles?.[org.nombre]);
+  const orden = [
+    ...conPlantel.filter((org) => org.fuerza <= nivel).sort((a, b) => b.fuerza - a.fuerza),
+    ...conPlantel.filter((org) => org.fuerza > nivel).sort((a, b) => a.fuerza - b.fuerza)
+  ];
+  for (const org of orden) {
+    const forzada = ofertaPosible(state, org.nombre, state.player.role, { forzada: true });
+    if (forzada?.posible) {
+      return { org, liga, motivo: forzada.motivo };
+    }
+  }
+  return null;
 }
 
 function clubQueTeLlama(state, liga) {
@@ -175,7 +193,9 @@ function conLlamadaDeTier2(salto, rng) {
   if (!liga) {
     return salto;
   }
-  const club = clubQueTeLlama(state, liga);
+  // G3b, "nunca sin equipo": si ningún club tiene el asiento abierto, el más fuerte que no te supera te hace lugar (el piso de
+  // ofertas del mercado, `ofertaPosible` forzada).
+  const club = clubQueTeLlama(state, liga) ?? clubQueTeHaceLugar(state, liga);
   if (!club) {
     return { ...salto, decision: decisionSinLugar(state, liga) };
   }
@@ -227,17 +247,18 @@ function resolverTier3(state, rng) {
     0, 1
   );
   if (!chance(probAscenso, rng)) {
-    return disolverEquipo(state, []);
+    // G3b, "nunca sin equipo": el armado se disuelve y otro equipo chico te levanta en el mismo split.
+    const disuelto = disolverEquipo(state, []);
+    const otro = reFicharTier3(disuelto.state, rng);
+    return { state: otro.state, logs: [...disuelto.logs, ...otro.logs] };
   }
   return conLlamadaDeTier2(saltarATier2(state, []), rng);
 }
 
 // Un tier 3 disuelto nunca queda mucho tiempo sin equipo: es la característica
 // del nivel, siempre hay otro armado chico buscando gente.
+// G3b (PLANUI §0.9, "nunca sin equipo"): ya no es una tirada por split: el split siguiente a la disolución ya tenés club.
 function reFicharTier3(state, rng) {
-  if (!chance(1 / BALANCE.competitivo.splitsLibrePromedioTier3, rng)) {
-    return { state, logs: [] };
-  }
   const org = elegirOrgTier3(state, rng);
   return {
     state: asignarOrgTier3(state, org),

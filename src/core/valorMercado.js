@@ -22,8 +22,10 @@ export function sesgoEtario(edad) {
 // siendo mejor de verdad, se queda. Es en puntos de nivel a propósito: un
 // factor multiplicativo (`nivel · sesgoEtario`) dejaría a un jugador de 30 en
 // nivel efectivo ~17 — un muro de edad, no un mercado que se enfría.
+// G3b (D111): con tope (`demanda.castigoEtarioTope`): la edad enfría el mercado, no lo apaga.
 export function castigoEtario(edad) {
-  return (1 - sesgoEtario(edad)) * BALANCE.demanda.castigoEtarioNivel;
+  const { castigoEtarioNivel, castigoEtarioTope } = BALANCE.demanda;
+  return Math.min(castigoEtarioTope, (1 - sesgoEtario(edad)) * castigoEtarioNivel);
 }
 
 // Fase 9Wb (§9W.4): estar en el Top 20 del mundo mueve tu valor de mercado,

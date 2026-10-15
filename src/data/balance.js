@@ -385,12 +385,32 @@ export const BALANCE = {
     // ademas el techo que usa `secundario.js` para congelar su flag (D10: el
     // significado real, "la edad en la que ya no sos amateur pase lo que
     // pase", no cambió, solo el valor).
+    // G3a (PLANUI §0.9): ya no corta la carrera ('no_llego' se fue con el "¿seguís?" de los 19): a los 17 hay equipo
+    // seguro (`edadEquipoSeguro`). Queda como el techo con el que `secundario.js` congela su flag.
     edadLimite: 24,
-    // Desde esta edad, el cierre de temporada te ofrece la decision real:
-    // seguir peleandola en soloQ o dejarlo por tu cuenta (antes de que
-    // `edadLimite` lo decida por vos). Antes de esto no hay nada en juego
-    // todavia (regla 1: el motor no para si la decision no cambia nada).
-    edadOfertaDeSalida: 19,
+    // G3a, "corta y siempre con equipo": desde esta edad, la primera semana del año trae las ofertas de equipo seguro
+    // (`ofertasEquipoSeguro` clubes de tier 3 de tu región, la vara de la prueba en 0: firmás seguro, la prueba decide con
+    // cuánto crédito entrás). Los prodigios pueden firmar antes, por scouting.
+    edadEquipoSeguro: 17,
+    ofertasEquipoSeguro: 3,
+    // G3a: la copa amateur del año (la Clash, el LAN, el torneo del instituto), una por año antes de `edadEquipoSeguro`,
+    // en el último split del año. La p de ganar la final sale de tu nivel contra el del rival (`copaNivelRival`):
+    // `copaPBase` + (nivel − rival) · `copaPPendiente`, entre `copaPMin` y `copaPMax`. El plan que elegís la corre
+    // (`copaAjusteArriesgado` / `copaAjusteSeguro`) y mueve el premio: el hype de ganarla, en rangos.
+    copaNivelRival: 45,
+    copaPBase: 0.5,
+    copaPPendiente: 0.02,
+    copaPMin: 0.15,
+    copaPMax: 0.85,
+    copaAjusteArriesgado: -0.1,
+    copaAjusteSeguro: 0.08,
+    copaHypeArriesgadoMin: 8,
+    copaHypeArriesgadoMax: 14,
+    copaHypeSeguroMin: 3,
+    copaHypeSeguroMax: 6,
+    copaMentalidadDerrotaMin: -4,
+    copaMentalidadDerrotaMax: -1,
+    copas: ['el torneo del instituto', 'la Clash', 'el LAN'],
 
     // --- Como reparte el jugador automatico (simulacion masiva) ---
     // No reparte al azar: reacciona a las barras que tiene en rojo, como haria
@@ -1227,7 +1247,11 @@ export const BALANCE = {
     // 9Mj: 18 → 20 (junto con `factorRenovacionDeclive`) empuja las caídas
     // tier 1 → tier 2 hacia banda (check 8, quedó en ~14% — ver §9M.12.4).
     // K5c paso 3 (Final2): 20 → 100 (el castigo etario de la disputa, con el `sesgoEtario` de abajo).
-    castigoEtarioNivel: 100,
+    // G3b (D111): 100 → 15, con tope `castigoEtarioTope`. Con 100 valía ~48 puntos a los 25 y ~70 a los 27 (no ~10 como
+    // dice este comentario): un nivel 70 de 25 a 27 perdía toda disputa y se quedaba sin ofertas. Con 15: ~7 a los 25,
+    // ~10 a los 27, y nunca más de 12.
+    castigoEtarioNivel: 15,
+    castigoEtarioTope: 12,
     // Tu propio club también se enfría: un veterano pasado el declive Y bajo la
     // banda de su liga tiene la renovación castigada por este factor (el club
     // prefiere rejuvenecer). Un 30 que sigue claramente mejor que la camada
@@ -1264,6 +1288,10 @@ export const BALANCE = {
   // `core/valorMercado.js`; no se vuelven a investigar (cita ya hecha ahí).
   mercado: {
     ofertasMax: 6,
+    // G3b, "nunca sin equipo": si la mano trae menos que esto, el mercado la completa con ofertas A LA BAJA
+    // (`tag: 'a_la_baja'`): clubes de tu liga y de la de abajo de tu región que te hacen lugar (las reglas duras se
+    // respetan, el asiento y el presupuesto no), del más fuerte que no te supera hacia abajo.
+    ofertasMinimas: 3,
     probRenovacionBase: 0.55,
     probRenovacionPorJerarquia: 0.35,
     // Splits sin ninguna oferta antes de caer a nivel 'libre' — la puerta por

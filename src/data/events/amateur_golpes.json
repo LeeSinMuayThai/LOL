@@ -1,0 +1,182 @@
+[
+  {
+    "id": "amateur_pc_confiscada",
+    "bifurcacion": true,
+    "category": "soloq_precarrera",
+    "categoria": "golpe_duro",
+    "title": "Te confiscaron la PC",
+    "description": "Llegó el boletín y en casa no hubo charla: la PC se va al placard. Tu vieja tiene la llave y la mirada de alguien que no va a negociar esta noche.",
+    "weight": 1,
+    "cooldown": 1,
+    "contexto": {
+      "etapa": ["amateur"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptarlo",
+        "label": "Bancártela sin pelear",
+        "descripcion": "Cumplís el castigo sin hacer ruido. Perdés ranked, pero en casa se nota que lo tomaste en serio.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Cumplís sin chistar. Lo que dura el castigo lo pasás con la carpeta del colegio abierta, y en casa lo ven.",
+            "effects": [
+              { "type": "stat", "path": "flags.pcConfiscada", "min": 1, "max": 2, "clamp": [0, 3] },
+              { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 6, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te la bancás, pero el castigo se estira: en casa quieren ver las notas del próximo boletín antes de devolverte nada.",
+            "effects": [
+              { "type": "stat", "path": "flags.pcConfiscada", "min": 2, "max": 3, "clamp": [0, 3] },
+              { "type": "stat", "path": "player.familyTrust", "min": 1, "max": 4, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "negociar_un_periodo",
+        "label": "Negociar: un periodo y un compromiso",
+        "descripcion": "Proponés estudiar a cambio de que el castigo sea corto. Puede salir, o te pueden leer como el que quiere zafar.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Te escuchan. Un periodo sin PC y un horario de estudio pegado en la heladera.",
+            "effects": [
+              { "type": "stat", "path": "flags.pcConfiscada", "min": 1, "max": 2, "clamp": [0, 3] },
+              { "type": "stat", "path": "player.studies", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La negociación sale mal: te dicen que no se negocia, y el castigo queda como estaba o peor.",
+            "effects": [
+              { "type": "stat", "path": "flags.pcConfiscada", "min": 1, "max": 3, "clamp": [0, 3] },
+              { "type": "stat", "path": "player.familyTrust", "min": -6, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_en_lo_de_un_amigo",
+        "label": "Jugar a escondidas en lo de un amigo",
+        "descripcion": "La PC está en el placard, pero la de tu amigo no. Si te descubren, el castigo se alarga y la confianza se rompe.",
+        "weight": 2,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Nadie se entera. Jugás menos y peor, en una silla que no es la tuya, pero la cuenta no se enfría.",
+            "effects": [
+              { "type": "stat", "path": "flags.pcConfiscada", "min": 1, "max": 2, "clamp": [0, 3] },
+              { "type": "ladder", "min": 10, "max": 40 }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Te descubren a la semana. El castigo se alarga y en casa ya no te creen ni la hora.",
+            "effects": [
+              { "type": "stat", "path": "flags.pcConfiscada", "min": 2, "max": 3, "clamp": [0, 3] },
+              { "type": "stat", "path": "player.familyTrust", "min": -12, "max": -6, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "amateur_ultimatum_en_casa",
+    "bifurcacion": true,
+    "category": "soloq_precarrera",
+    "categoria": "golpe_duro",
+    "title": "El ultimátum",
+    "description": "Sentados en la mesa de la cocina, sin la tele de fondo: en casa dicen que el ranked se terminó. Que el colegio va primero y que esto no es un trabajo. Es la charla que temías.",
+    "weight": 1,
+    "cooldown": 1,
+    "contexto": {
+      "etapa": ["amateur"]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "prometer_el_boletin",
+        "label": "Prometer el boletín y aflojar",
+        "descripcion": "Aceptás un tiempo largo sin PC a cambio de no cerrar la puerta. Perdés ranked; ganás tiempo con tu familia.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Aceptan el trato. La PC vuelve al placard por un buen rato, pero el ranked no se termina: se pausa.",
+            "effects": [
+              { "type": "stat", "path": "flags.pcConfiscada", "min": 2, "max": 3, "clamp": [0, 3] },
+              { "type": "stat", "path": "player.familyTrust", "min": 6, "max": 12, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Aceptan, pero con letra chica: notas o nada. El colegio pasa a ser tu segundo turno.",
+            "effects": [
+              { "type": "stat", "path": "flags.pcConfiscada", "min": 1, "max": 2, "clamp": [0, 3] },
+              { "type": "stat", "path": "player.studies", "min": 3, "max": 7, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 5, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mostrar_la_ladder",
+        "label": "Mostrarles la ladder y defenderlo",
+        "descripcion": "Les abrís el op.gg y les explicás qué es estar arriba. Si lo entienden, ganás aire; si no, la cosa se pone peor.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "No entienden todo, pero entienden que no es un capricho. Un periodo sin PC para calmar las aguas y seguís.",
+            "effects": [
+              { "type": "stat", "path": "flags.pcConfiscada", "min": 1, "max": 2, "clamp": [0, 3] },
+              { "type": "stat", "path": "player.familyTrust", "min": 1, "max": 4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 4, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Para ellos es un jueguito y vos acabás de confirmarlo. El castigo es largo y la charla queda abierta.",
+            "effects": [
+              { "type": "stat", "path": "flags.pcConfiscada", "min": 2, "max": 3, "clamp": [0, 3] },
+              { "type": "stat", "path": "player.familyTrust", "min": -10, "max": -4, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -2, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "portazo",
+        "label": "Portazo",
+        "descripcion": "Te encerrás en tu pieza. No negociás nada. Puede que se calme solo; puede que se rompa algo.",
+        "weight": 1,
+        "outcomes": [
+          {
+            "weight": 3,
+            "texto": "A los días se enfría. Te devuelven la PC antes de lo que pensabas, pero nadie se olvida del portazo.",
+            "effects": [
+              { "type": "stat", "path": "flags.pcConfiscada", "min": 1, "max": 2, "clamp": [0, 3] },
+              { "type": "stat", "path": "player.familyTrust", "min": -8, "max": -3, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 7,
+            "texto": "El portazo se escuchó en toda la cuadra. El castigo es el más largo que tuviste y en casa ya no hay confianza que gastar.",
+            "effects": [
+              { "type": "stat", "path": "flags.pcConfiscada", "min": 2, "max": 3, "clamp": [0, 3] },
+              { "type": "stat", "path": "player.familyTrust", "min": -16, "max": -8, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -8, "max": -3, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

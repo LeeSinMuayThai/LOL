@@ -265,10 +265,12 @@ function marcasDeRegistro(state) {
   const registro = state.career.registro;
   const marcas = [];
 
-  if (registro.titulos.length > 0) {
+  // G3a: la copa amateur (`tier: 'amateur'`) no te hace campeón de nada en el circuito.
+  const titulosDeLiga = registro.titulos.filter((titulo) => titulo.tier !== 'amateur');
+  if (titulosDeLiga.length > 0) {
     marcas.push('es_campeon');
   }
-  if (registro.titulos.length >= r.multicampeonUmbral) {
+  if (titulosDeLiga.length >= r.multicampeonUmbral) {
     marcas.push('multicampeon');
   }
   if (registro.porOrg.some((fila) => fila.tier === 3)) {

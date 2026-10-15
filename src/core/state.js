@@ -447,6 +447,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // K6d-B (D77): la oferta que el club te guarda un split ("pedirle que te espere", `systems/amateur.js`): { org, tier, liga,
       // vara? }. `null` si no hay ninguna. Se espera una sola vez por oferta: la que vuelve es firmar o dejarla.
       ofertaGuardada: null,
+      // G3a: la edad en la que jugaste la copa amateur del año (`systems/amateur.js`), o null.
+      copaAmateur: null,
+      // G3b: la última ventana de mercado se cerró sin firma: la siguiente (la de mitad de año) no trae "no firmar".
+      rechazoMercado: false,
       avisos: 0,
       nocturno: false,
       negociacionGanada: false,

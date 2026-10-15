@@ -115,8 +115,10 @@ function probasteCon(state) {
   return `probaste con ${lista} y no alcanzó`;
 }
 
-function finDeSalida(state) {
-  return state.career.currentOrg ? 'retiro_elegido' : 'sin_equipo';
+// G3b (PLANUI §0.9): 'sin_equipo' dejó de ser un final. Siempre hay mano (el piso de ofertas de `systems/mercado.js`), así que
+// la carrera se cierra por el cuerpo, la edad o tu decisión, nunca porque el teléfono dejó de sonar.
+function finDeSalida() {
+  return 'retiro_elegido';
 }
 
 // K5-C: la bifurcación del mercado (`systems/mercado.js`, motivo `fin_mercado`) termina acá cuando elegís colgar el
@@ -361,7 +363,8 @@ function aplicarProfesional(state) {
   // contexto.js`: ese eje asume que 'declive' garantiza tener org, para el
   // contenido). Acá sí importa el mercado directo: no tener equipo es la
   // causa modal de retiro real (`CONCEPTO` §12.4), así que se suma aparte.
-  const enPresion = contexto.etapa === 'declive' || !state.career.currentOrg;
+  // G3b: estar sin club ya no suma presión de retiro (nunca pasa más de una ventana: el mercado de mitad de año te llama).
+  const enPresion = contexto.etapa === 'declive';
 
   if (!enPresion) {
     if (state.flags.splitsEnDeclive === 0) {

@@ -13,13 +13,14 @@ import { opcionDesdeRutina, descripcionDeSorteo, EJE_AMATEUR } from '../core/rar
 import { elegirOrgTier3, asignarOrgTier3 } from '../core/tier3.js';
 import { elegirMinijuego, minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto } from '../core/minijuegos.js';
 import { conMarcasDeRutina } from '../core/curvas.js';
-import { esCierreDeEdad } from './edadCierre.js';
 import { nombreVisibleDeLiga } from '../core/ligas.js';
 import { opcionDelPerfil, nombreDePerfil, pisoSoloQDePerfil } from '../core/perfil.js';
 import { etiquetaCampo } from '../core/selectors.js';
 import { nivelDelJugador } from '../core/ficha.js';
 import { riesgoDeBurnoutAlCierre, textoDelCierre, porcentajeDeBurnout, opcionQueNoQuema } from './atributos.js';
 import { conCierresAvisados } from './burnout.js';
+import { decisionDesdeEvento, resolverOpcion, elegirOpcionAutomatica } from './events.js';
+import GOLPES_AMATEUR from '../data/events/amateur_golpes.json' with { type: 'json' };
 
 export const id = 'amateur';
 
@@ -676,8 +677,8 @@ function vivirLaSemana(state, rutina, rng, { cronica = null, plan = false, esper
   const rRiesgo = evaluarRiesgoFamiliar(rReparto.state, rng);
   const logs = [...rReparto.logs, ...rRiesgo.logs];
 
-  if (rRiesgo.state.terminado) {
-    return { state: rRiesgo.state, logs };
+  if (rRiesgo.state.terminado || rRiesgo.decision) {
+    return { state: rRiesgo.state, logs, ...(rRiesgo.decision ? { decision: rRiesgo.decision } : {}) };
   }
 
   // K6c: el año del plan cuenta sus semanas y en cuántas estuviste en el radar de los scouts (para el resumen del año). Sin
@@ -899,6 +900,13 @@ function aplicarReparto(state, reparto, extra, rng, { cronica = null, plan = fal
 
 // --- Bandas de riesgo familiar ---
 
+// G3a: el golpe de casa como parada, con el dato del evento (`decisionDesdeEvento`, la misma carta que cualquier evento).
+function golpeDeCasa(state, eventoId) {
+  const evento = GOLPES_AMATEUR.find((candidato) => candidato.id === eventoId);
+  const decision = decisionDesdeEvento(state, evento, { franja: 'normal', slot: 1 });
+  return { state, logs: [], decision: { ...decision, datos: { ...decision.datos, golpeAmateur: true } } };
+}
+
 function evaluarRiesgoFamiliar(state, rng) {
   const a = BALANCE.amateur;
 
@@ -909,25 +917,15 @@ function evaluarRiesgoFamiliar(state, rng) {
   const estudios = state.player.studies;
   const multiplicador = multiplicadorFamiliar(state);
   const { corte: probCorte, confiscacion: probConfiscacion } = probabilidadesDeCasa(state, estudios, state.player.familyTrust);
+  // G3a (PLANUI §0.9): las tiradas que te cambian la vida son eventos con parada (GOLPE DURO, `data/events/amateur_golpes.json`).
+  // La tirada es la misma (la chance que muestra la carta del plan, `probabilidadesDeCasa`); lo que pasa después lo elegís vos,
+  // con sus rangos y pesos. El corte ya no termina la carrera: es el ultimátum, y a los 17 hay equipo seguro igual.
   if (chance(probCorte, rng)) {
-    return {
-      state: { ...state, phase: 'retirado', terminado: true, finAnticipado: 'prohibicion_familiar' },
-      logs: [crearLog('amateur', 'Se terminó: en tu casa decidieron que el ranked se acabó, y esta vez no hay vuelta atrás.')]
-    };
+    return golpeDeCasa(state, 'amateur_ultimatum_en_casa');
   }
 
   if (chance(probConfiscacion, rng)) {
-    return {
-      state: {
-        ...state,
-        player: {
-          ...state.player,
-          familyTrust: clampStat(state.player.familyTrust - roll(a.confiscacionCostoTrustMin, a.confiscacionCostoTrustMax, rng))
-        },
-        flags: { ...state.flags, pcConfiscada: a.periodosSinPC }
-      },
-      logs: [crearLog('amateur', 'Te confiscaron la PC. El próximo periodo lo vas a mirar desde afuera.')]
-    };
+    return golpeDeCasa(state, 'amateur_pc_confiscada');
   }
 
   const probAviso = Math.min(a.riesgoTotalTecho, probBanda(estudios, a.avisoUmbral, a.avisoPendiente, a.avisoTecho) * multiplicador);
@@ -1512,24 +1510,146 @@ function resolverNocturno(state, opcionId, rng) {
   };
 }
 
-// Fase 10a (§10.1): antes de esto, `edadLimite` cortaba en silencio a los 20
-// — un dado sin que el jugador eligiera nada. Ahora `edadLimite` es la red
-// anti-loop (24: nadie se queda en soloQ para siempre) y, desde
-// `edadOfertaDeSalida` (19), cada cierre de temporada pregunta de verdad:
-// ¿la seguís peleando, sabiendo que la ventana se sigue cerrando (el sesgo
-// etario de `scoutingSesgoEtario` ya lo dice), o la dejás vos antes de que
-// lo decida la edad?
-function decisionSalidaAmateur(state) {
-  return {
-    tipo: 'opciones',
-    bisagra: true,
-    titulo: `Fin de temporada, ${state.age} años: ¿seguís?`,
-    descripcion: 'Los scouts miran cada vez menos. ¿La seguís peleando en soloQ o la dejás vos, antes de que se cierre sola?',
-    opciones: [
-      { id: 'seguir', label: 'La seguís peleando', descripcion: 'Un año más de grindeo. Cada vez entra menos gente por esta puerta.' },
-      { id: 'dejar', label: 'La dejás acá', descripcion: 'Cerrás la etapa amateur por tu cuenta.' }
+// --- G3a: a los 17, equipo seguro ---
+
+// Los clubes de tier 3 de tu región que te ofrecen (`amateur.ofertasEquipoSeguro`, sin repetir). Uno por tirada de `elegirOrgTier3`.
+function clubesDelEquipoSeguro(state, rng) {
+  const clubes = [];
+  for (let i = 0; i < BALANCE.amateur.ofertasEquipoSeguro; i += 1) {
+    const org = elegirOrgTier3(state, rng, clubes.map((club) => club.nombre));
+    if (org && !clubes.some((club) => club.nombre === org.nombre)) {
+      clubes.push(org);
+    }
+  }
+  return clubes;
+}
+
+// La primera semana de los 17 (y cada una hasta que firmes): las ofertas de tier 3 que ya no dependen del scouting. Es la
+// decisión de oferta de siempre, con la vara de la prueba en 0 (firmás seguro; la prueba decide el crédito de entrada).
+function decisionEquipoSeguro(state, rng) {
+  // Si tu ladder ya te pone en el radar de una liga de tier 2 (`nivelDeInteres` 'elite', como el scouting), ese club va primero.
+  const ligaTier2 = nivelDeInteres(state) === 'elite' ? ligaTier2DeLaRegion(state) : null;
+  const deTier2 = ligaTier2 ? orgQueTeFicha(state, rng) : null;
+  const tier3 = clubesDelEquipoSeguro(state, rng);
+  const clubes = deTier2?.tier === 2 ? [deTier2.org, ...tier3.slice(0, -1)] : tier3;
+  const ranked = etiquetaDeRanked(state.player.ranked, servidorDeLaPartida(state));
+  return decisionDeOpciones(
+    `${state.age} años: ${clubes.length > 1 ? 'te quieren' : 'te quiere'} ${lista(clubes.map((club) => club.nombre))}`,
+    `Con ${ranked} y ${state.age} años, el circuito chico te abre la puerta: ${clubes.length > 1 ? 'elegís con quién' : 'es con ellos'}. Contrato mínimo, gaming house y el colegio a la noche. Hay una prueba antes de firmar, pero ${TEXTO_VARA_CERO}: decide con cuánto crédito entrás.`,
+    clubes.map((org) => (deTier2?.tier === 2 && org === deTier2.org
+      ? {
+          id: org.nombre,
+          label: `Firmar con ${org.nombre}`,
+          descripcion: `Directo en ${nombreVisibleDeLiga(ligaTier2.id)}: te salteás el tramo de probarte en un equipo chico.`,
+          pesoAuto: 7
+        }
+      : {
+          id: org.nombre,
+          label: `Firmar con ${org.nombre}`,
+          descripcion: `Equipo de tier 3 (nivel ${org.fuerza}). Firmás seguro y se termina la etapa amateur.`,
+          pesoAuto: 1
+        })),
+    'equipo_seguro',
+    { clubes, tier2: deTier2?.tier === 2 ? { org: deTier2.org.nombre, liga: ligaTier2.id } : null }
+  );
+}
+
+function resolverEquipoSeguro(state, decision, opcionId) {
+  const org = decision.datos.clubes.find((club) => club.nombre === opcionId) ?? decision.datos.clubes[0];
+  if (decision.datos.tier2?.org === org.nombre) {
+    return firmarConEquipo(state, { datos: { org, tier: 2, liga: decision.datos.tier2.liga } });
+  }
+  const pausa = pausaDeLaPrueba(state, { org, tier: 3, liga: null, vara: 0 });
+  return { state: pausa.state, logs: [], decision: pausa.decision };
+}
+
+// --- G3a: la copa amateur del año ---
+//
+// Una por año antes de los 17, en el último split del año: el torneo del instituto, la Clash, el LAN. Hito más parada simple:
+// elegís cómo la encarás (más premio o más chance) y la final se tira con la p que dice la carta. Si la ganás, la copa queda en
+// la vitrina (`registro.titulos` con `tier: 'amateur'`, que no cuenta como título de tier 1 ni de tier 2).
+// Pendiente (reportado): la final como serie de `systems/serie.js`, cuando la serie acepte un torneo sin liga.
+
+// Quién levantó la copa con vos (la vitrina y el momento del título nombran un equipo).
+const TEXTO_EQUIPO_DE_LA_COPA = 'tu quinteto del server';
+
+function correspondeCopa(state) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  return state.age < BALANCE.amateur.edadEquipoSeguro
+    && state.player.splitCount % porAnio === porAnio - 1
+    && state.flags.copaAmateur !== state.age
+    && !state.flags.ofertaGuardada
+    && (state.flags.pcConfiscada ?? 0) === 0;
+}
+
+function nombreDeCopa(state) {
+  const { copas } = BALANCE.amateur;
+  return copas[state.age % copas.length];
+}
+
+export function probabilidadDeCopa(state, plan) {
+  const a = BALANCE.amateur;
+  const base = a.copaPBase + (nivelDelJugador(state) - a.copaNivelRival) * a.copaPPendiente;
+  const ajuste = plan === 'arriesgado' ? a.copaAjusteArriesgado : a.copaAjusteSeguro;
+  return clamp(base + ajuste, a.copaPMin, a.copaPMax);
+}
+
+function decisionDeCopa(state) {
+  const a = BALANCE.amateur;
+  const copa = nombreDeCopa(state);
+  const pArriesgado = probabilidadDeCopa(state, 'arriesgado');
+  const pSeguro = probabilidadDeCopa(state, 'seguro');
+  return decisionDeOpciones(
+    `La final de ${copa}`,
+    `Llegaste a la final de ${copa} con tu dúo y tres pibes del server. Tu nivel ${entero(nivelDelJugador(state))} contra un rival de ${a.copaNivelRival}: se juega esta noche.`,
+    [
+      {
+        id: 'arriesgado',
+        label: 'Jugarla al frente',
+        descripcion: `${porcentaje(pArriesgado)} de ganarla. Si sale, todo el server habla de vos (hype +${a.copaHypeArriesgadoMin} a +${a.copaHypeArriesgadoMax}).`,
+        pesoAuto: 1
+      },
+      {
+        id: 'seguro',
+        label: 'Jugarla segura',
+        descripcion: `${porcentaje(pSeguro)} de ganarla. Si sale, la copa es tuya igual, con menos ruido (hype +${a.copaHypeSeguroMin} a +${a.copaHypeSeguroMax}).`,
+        pesoAuto: 1
+      }
     ],
-    datos: { motivo: 'salida_amateur' }
+    'copa_amateur',
+    { copa }
+  );
+}
+
+function resolverCopa(state, decision, opcionId, rng) {
+  const a = BALANCE.amateur;
+  const plan = opcionId === 'arriesgado' ? 'arriesgado' : 'seguro';
+  const { copa } = decision.datos;
+  const p = probabilidadDeCopa(state, plan);
+  const conCopa = { ...state, flags: { ...state.flags, copaAmateur: state.age } };
+  if (!chance(p, rng)) {
+    const golpe = roll(a.copaMentalidadDerrotaMin, a.copaMentalidadDerrotaMax, rng);
+    const perdida = {
+      ...conCopa,
+      player: { ...conCopa.player, stats: { ...conCopa.player.stats, mentalidad: clampStat(conCopa.player.stats.mentalidad + golpe) } }
+    };
+    const sigue = continuarElSplit(perdida, rng);
+    return { ...sigue, logs: [crearLog('amateur', `Perdiste la final de ${copa} (tenías ${porcentaje(p)}). Duele más de lo que pensabas (mentalidad ${deltaCorto(golpe)}).`), ...sigue.logs] };
+  }
+  const hype = plan === 'arriesgado'
+    ? roll(a.copaHypeArriesgadoMin, a.copaHypeArriesgadoMax, rng)
+    : roll(a.copaHypeSeguroMin, a.copaHypeSeguroMax, rng);
+  const registro = conCopa.career.registro;
+  const titulo = { nombre: copa.charAt(0).toUpperCase() + copa.slice(1), anio: conCopa.calendario.anio, org: TEXTO_EQUIPO_DE_LA_COPA, liga: null, tier: 'amateur' };
+  const ganada = {
+    ...conCopa,
+    player: { ...conCopa.player, stats: { ...conCopa.player.stats, hype: clampStat(conCopa.player.stats.hype + hype) } },
+    career: { ...conCopa.career, registro: { ...registro, titulos: [...registro.titulos, titulo] } }
+  };
+  const sigue = continuarElSplit(ganada, rng);
+  return {
+    ...sigue,
+    logs: [crearLog('amateur', `¡Campeón de ${copa} a los ${state.age}! La copa va a la vitrina y el server no habla de otra cosa (hype ${deltaCorto(hype)}).`, { titular: true, copaAmateur: titulo }), ...sigue.logs]
   };
 }
 
@@ -1540,16 +1660,9 @@ export function aplicar(state, rng) {
     return { state, logs: [] };
   }
 
-  if (state.age >= BALANCE.amateur.edadLimite) {
-    return {
-      state: { ...state, phase: 'retirado', terminado: true, finAnticipado: 'no_llego' },
-      logs: [crearLog('amateur', `Cumpliste ${state.age} y nadie te llamó. La ventana de los prospectos se cerró.`)]
-    };
-  }
-
-  // K6d-B: con una oferta guardada en la mano no hay "¿seguís?": la oferta vuelve al final de esta semana, como prometió la carta.
-  if (state.age >= BALANCE.amateur.edadOfertaDeSalida && esCierreDeEdad(state) && !state.flags.ofertaGuardada) {
-    return { state, logs: [], decision: decisionSalidaAmateur(state) };
+  // G3a (PLANUI §0.9): se fueron el "¿seguís?" de los 19 y el corte de `edadLimite` ('no_llego'). A los 17, equipo seguro.
+  if (state.age >= BALANCE.amateur.edadEquipoSeguro && !state.flags.ofertaGuardada) {
+    return { state, logs: [], decision: decisionEquipoSeguro(state, rng) };
   }
 
   // K6c: arranca un año (el primero, o el que sigue a un cierre de edad): frena con el resumen y el plan del año.
@@ -1557,18 +1670,28 @@ export function aplicar(state, rng) {
     return { state, logs: [], decision: decisionDePlan(state, rng) };
   }
 
+  // G3a: la copa amateur del año, en su último split.
+  if (correspondeCopa(state)) {
+    return { state, logs: [], decision: decisionDeCopa(state) };
+  }
+
   return continuarElSplit(state, rng);
 }
 
 export function resolver(state, decision, respuesta, rng) {
+  // G3a: un guardado con el "¿seguís?" pendiente (ya no se ofrece): se sigue, la ventana ya no se cierra.
   if (decision.datos.motivo === 'salida_amateur') {
-    if (respuesta.opcionId === 'dejar') {
-      return {
-        state: { ...state, phase: 'retirado', terminado: true, finAnticipado: 'no_llego' },
-        logs: [crearLog('amateur', `A los ${state.age} la dejás vos, antes de que se cierre sola.`)]
-      };
-    }
-    return { state, logs: [crearLog('amateur', 'Decidís seguir. La ventana se sigue cerrando igual.')] };
+    return { state, logs: [crearLog('amateur', 'Decidís seguir.')] };
+  }
+  // G3a: el golpe de casa (un evento con parada).
+  if (decision.datos.golpeAmateur) {
+    return resolverOpcion(state, decision.datos.evento, respuesta.opcionId, rng);
+  }
+  if (decision.datos.motivo === 'equipo_seguro') {
+    return resolverEquipoSeguro(state, decision, respuesta.opcionId);
+  }
+  if (decision.datos.motivo === 'copa_amateur') {
+    return resolverCopa(state, decision, respuesta.opcionId, rng);
   }
 
   if (decision.datos.motivo === 'reparto') {
@@ -1621,6 +1744,9 @@ export function resolverAuto(state, decision, rng) {
   // que esta decisión existiera — la agencia es para el humano.
   if (decision.datos.motivo === 'salida_amateur') {
     return { opcionId: 'seguir' };
+  }
+  if (decision.datos.golpeAmateur) {
+    return elegirOpcionAutomatica(state, decision, rng);
   }
   // K6c: el plan del año, sin elegir: la propuesta de tu perfil (la opción marcada). Sin `rng`.
   if (decision.datos.motivo === 'plan_amateur') {
