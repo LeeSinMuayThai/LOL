@@ -79,7 +79,7 @@
 // casa, Final2 con la LPL en 91, el no-pro con piso de soloQ, El GOAT = nuevo Faker). Sin esto, después del merge dos juegos
 // distintos compartirían "v K4c" en el desafío, el historial y el texto compartido. La etiqueta no entra en la huella (la tupla de
 // `calcularHuellaJuego` no la lee): la huella del bloque C es la de abajo. Misma `VERSION` del guardado (12, no salió de la rama).
-export const VERSION_JUEGO = 'G';
+export const VERSION_JUEGO = 'G2';
 // K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
@@ -195,4 +195,9 @@ export const VERSION_JUEGO = 'G';
 // puesta, no la guarda de apertura); G3ab: siempre en un equipo (equipo seguro a los 17, copa amateur, piso de 3 ofertas).
 // Re-registrada (G no salió de la rama, 628507834 → 979394239) con los arreglos de la revisión: la vara con techo humano (0,85)
 // y la final de la copa amateur y la de tier 3 con minijuego, sin tirada. Guardado VERSION 17.
-export const HUELLA_JUEGO = 979394239;
+// G2 (ola G, entrega 2, PLANUI §0.9, 979394239 → 193370552; corrimiento declarado): `VERSION_JUEGO` pasa a 'G2'. G2b: una
+// carta por año con número seguro (el plan amateur lo arma el perfil); G3c: el sueldo topeado por el "hasta", el arraigo por
+// org y las etiquetas TRAICIÓN / VOLVÉ A CASA / BOMBAZO; G4b: las promesas (sistema nuevo en ETAPAS_SPLIT); G4c: el último
+// split, el partido de despedida y el monumento; G1c: el Bo1 que frena se decide con el minijuego (🎲/🧊) y la charla vale una
+// unidad. Guardado VERSION 18.
+export const HUELLA_JUEGO = 193370552;
