@@ -4,6 +4,7 @@
     "profesional": {
       "nombre": "Profesional",
       "descripcion": "Review, horarios y cabeza fría. Elegís lo que te hace mejor jugador aunque no luzca.",
+      "clase": {"inclinacion": {"macro": 3, "mentalidad": 3, "mecanica": -2}, "poder": {"id": "vod", "nombre": "El VOD", "texto": "Una vez por torneo, una ronda arranca más lenta: ya la viste en el review."}},
       "familias": { "juego": 2, "lectura": 2, "cabeza": 2, "fama": 0, "ladder": 1, "partido": 2, "puesto": 1, "grupo": 1, "raiz": 0.5, "pool": 1.5, "estudio": 0.5 },
       "riesgo": { "seguro": 1.5, "incierto": 0, "ruleta": -1.5 },
       "pisoSoloQ": 0.6,
@@ -12,6 +13,7 @@
     "hambriento": {
       "nombre": "Hambriento",
       "descripcion": "Querés el puesto, el LP y la copa, y los querés ya. Si hay que arriesgar, se arriesga.",
+      "clase": {"inclinacion": {"mecanica": 3, "laneo": 3, "mentalidad": -2}, "poder": {"id": "revancha", "nombre": "Revancha", "texto": "Una vez por torneo, si perdés un mapa con minijuego, lo jugás de nuevo."}},
       "familias": { "juego": 2, "lectura": 1, "cabeza": 0.5, "fama": 1, "ladder": 2.5, "partido": 2.5, "puesto": 2.5, "grupo": 0, "raiz": -0.5, "pool": 1, "estudio": 0 },
       "riesgo": { "seguro": -1, "incierto": 0.5, "ruleta": 1.5 },
       "pisoSoloQ": 0,
@@ -20,6 +22,7 @@
     "showman": {
       "nombre": "Showman",
       "descripcion": "El clip, el stream y la frase que queda. Jugás para que te miren.",
+      "clase": {"inclinacion": {"mecanica": 4, "adaptabilidad": 2, "macro": -2}, "poder": {"id": "escenario", "nombre": "El escenario", "texto": "Una vez por torneo, en una final, la vara de un mapa baja un escalón: el público empuja."}},
       "familias": { "juego": 1, "lectura": 0, "cabeza": 0.5, "fama": 3, "ladder": 1, "partido": 1, "puesto": 1, "grupo": 0, "raiz": 0, "pool": 0.5, "estudio": 0 },
       "riesgo": { "seguro": -1.5, "incierto": 0, "ruleta": 2 },
       "pisoSoloQ": 0,
@@ -28,6 +31,7 @@
     "leal": {
       "nombre": "Leal",
       "descripcion": "El vestuario, el club y los tuyos primero. Bancás el proyecto aunque te cueste.",
+      "clase": {"inclinacion": {"shotcalling": 3, "mentalidad": 3, "mecanica": -2}, "poder": {"id": "vestuario", "nombre": "El vestuario", "texto": "La charla del coach te rinde dos veces por temporada, no una."}},
       "familias": { "juego": 0.5, "lectura": 1, "cabeza": 1, "fama": -0.5, "ladder": 0, "partido": 1.5, "puesto": 0.5, "grupo": 3, "raiz": 3, "pool": 0.5, "estudio": 1 },
       "riesgo": { "seguro": 1, "incierto": 0, "ruleta": -1 },
       "pisoSoloQ": 0.6,
