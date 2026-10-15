@@ -1,6 +1,6 @@
 import LIGAS from '../data/leagues.json' with { type: 'json' };
 import { BALANCE } from '../data/balance.js';
-import { splitsJugadosEnTier, esBuenPapel, mundialesGanados, titulosDeFila, trofeosDelDuelo } from './registro.js';
+import { splitsJugadosEnTier, esBuenPapel, mundialesGanados, titulosDeFila, trofeosDelDuelo, titulosDeLiga } from './registro.js';
 import { bandaDeArraigoFicha } from './ficha.js';
 import { aniosProDe } from './puntaje.js';
 import { desdePuntos, etiquetaDeRanked, servidorDeLaPartida } from './ranked.js';
@@ -254,7 +254,7 @@ export function componerLegado(state) {
     intBuenos: r.internacionales.filter(esBuenPapel).length,
     intTotales: r.internacionales.length,
     titulosT1: titulosDeTier(r, 1),
-    titulosTotales: r.titulos.length,
+    titulosTotales: titulosDeLiga(r).length,
     orgs: r.porOrg.length,
     arraigoMax: Math.max(0, ...r.porOrg.map((fila) => fila.arraigoMaximo ?? 0)),
     splitsT1: splitsDeTier(r, 1),
@@ -276,7 +276,7 @@ export function componerLegado(state) {
       // comparada). Reemplaza a `max(1, anio - anioBase)`, que contaba desde los 15 (el amateur y tier 3 incluidos).
       anios: Math.round(aniosProDe(state)),
       splits: r.splitsJugados,
-      titulos: r.titulos.length,
+      titulos: titulosDeLiga(r).length,
       internacionales: r.internacionales.length,
       nivelMax: Math.round(r.picos.nivel),
       valorMaxUSD: r.picos.valorMercadoUSD,
@@ -356,7 +356,7 @@ export function dueloEterno(state) {
     tuyos,
     suyos,
     filas: [
-      { id: 'titulos', etiqueta: 'Títulos de liga', tuyos: registro.titulos.length, suyos: archirrival.titulos },
+      { id: 'titulos', etiqueta: 'Títulos de liga', tuyos: titulosDeLiga(registro).length, suyos: archirrival.titulos },
       { id: 'mundiales', etiqueta: 'Mundiales', tuyos: mundialesGanados(registro).length, suyos: archirrival.internacionales },
       { id: 'nivel', etiqueta: 'Nivel pico', tuyos: nivelTuyo, suyos: nivelSuyo }
     ],

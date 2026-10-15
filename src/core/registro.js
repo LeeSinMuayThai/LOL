@@ -367,7 +367,13 @@ export function goldenRoads(registro) {
 // K6b-U: los trofeos del duelo: los títulos de liga más los Mundiales ganados. Un cuartos de final jugado no es un
 // trofeo (antes contaba cualquier "buen papel": 6 contra los 2 títulos de la tarjeta).
 export function trofeosDelDuelo(registro) {
-  return registro.titulos.length + mundialesGanados(registro).length;
+  return titulosDeLiga(registro).length + mundialesGanados(registro).length;
+}
+
+// G-fix-copa: los títulos de liga (tier 1, 2 y 3). La copa amateur (`tier: 'amateur'`) queda en la vitrina pero no es un
+// título de liga: no cuenta en el duelo ni en la tarjeta, como ya no puntúa (`core/puntaje.js`).
+export function titulosDeLiga(registro) {
+  return registro.titulos.filter((titulo) => titulo.tier !== 'amateur');
 }
 
 // K6b-U: los títulos de una fila de la historia, con los Mundiales ganados con esa org en esos años (el Mundial se

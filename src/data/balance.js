@@ -410,6 +410,8 @@ export const BALANCE = {
     copaHypeSeguroMax: 6,
     copaMentalidadDerrotaMin: -4,
     copaMentalidadDerrotaMax: -1,
+    // G-fix-copa: la final de la copa se juega con las manos, a un mapa (la Clash, el LAN y el torneo del instituto son Bo1).
+    copaBo: 1,
     copas: ['el torneo del instituto', 'la Clash', 'el LAN'],
 
     // --- Como reparte el jugador automatico (simulacion masiva) ---
@@ -1075,7 +1077,11 @@ export const BALANCE = {
     fuerzaMedia: 18,
     fuerzaSpread: 6,
     fuerzaMin: 5,
-    fuerzaMax: 35
+    fuerzaMax: 35,
+    // G-fix-copa: la final del torneo chico (`core/tier3.js#finalDeTier3`): la juegan los dos primeros de la tabla, a un
+    // Bo3 con minijuego en cada mapa. Reemplaza al título directo del 1.º.
+    puestosDeFinal: 2,
+    boFinal: 3
   },
 
   // El tránsito entre tiers (fase 3 / 9Md). `CLAUDE.md`/el usuario piden que el

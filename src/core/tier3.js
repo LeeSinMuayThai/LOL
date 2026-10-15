@@ -76,6 +76,24 @@ export function elegirOrgTier3(state, rng, excluidas = []) {
   return pick(libres.length > 0 ? libres : todas, rng);
 }
 
+// G-fix-copa (PLANUI §0.9): la final del torneo chico de la región, el "1.º de 6" que antes se veía solo en el cajón. Al
+// cierre de la temporada la juegan los `tier3.puestosDeFinal` primeros de la tabla, al mejor de `tier3.boFinal`, contra el
+// otro finalista. Pura: `null` si no te toca (no estás en tier 3, o no quedaste en los puestos de la final).
+export function finalDeTier3(state) {
+  const t = state.career.temporada;
+  const { puestosDeFinal } = BALANCE.tier3;
+  if (state.career.tier !== 3 || !t?.tabla || t.tabla.length < puestosDeFinal || !(t.posicion <= puestosDeFinal)) {
+    return null;
+  }
+  const finalistas = t.tabla.slice(0, puestosDeFinal);
+  const fila = finalistas.find((candidata) => candidata.org !== state.career.currentOrg);
+  if (!fila) {
+    return null;
+  }
+  const org = orgsTier3DeLaRegion(state, state.mundo.regionIdOrigen).find((candidata) => candidata.nombre === fila.org);
+  return { rival: { nombre: fila.org, fuerza: org?.fuerza ?? BALANCE.tier3.fuerzaMedia }, fuerzaPropia: t.fuerzaPropia };
+}
+
 // Firmar con un tier 3 no toca `phase` ni `splitFichaje`: eso lo decide quien
 // llama (amateur.js la primera vez, systems/competitivo.js cuando te levantan
 // después de que se disuelve el anterior).

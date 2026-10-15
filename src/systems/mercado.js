@@ -472,7 +472,7 @@ function clubesALaBaja(state, liga) {
 // Si la mano trae menos de `mercado.ofertasMinimas`, se completa con ofertas A LA BAJA: el club te hace lugar (como el piso
 // de franquicia: `ofertaPosible` forzada, que respeta las reglas duras), con `tag: 'a_la_baja'`. Sin asiento congelado: no
 // entran en "el mundo siguió sin vos" (`orgsOfrecidasDe`). Exportada para el check de la promesa.
-export function conPisoDeOfertas(state, ofertas, rng) {
+export function conPisoDeOfertas(state, ofertas, rng, excluidas = new Set()) {
   const { ofertasMinimas } = BALANCE.mercado;
   if (ofertas.length >= ofertasMinimas) {
     return ofertas;
@@ -483,7 +483,7 @@ export function conPisoDeOfertas(state, ofertas, rng) {
       if (completas.length >= ofertasMinimas) {
         return completas;
       }
-      if (completas.some((oferta) => oferta.org === org.nombre)) {
+      if (excluidas.has(org.nombre) || completas.some((oferta) => oferta.org === org.nombre)) {
         continue;
       }
       const forzada = ofertaPosible(state, org.nombre, state.player.role, { forzada: true });
@@ -1877,6 +1877,21 @@ function resolverMercado(state, decision, respuesta, rng) {
         clubesInteresados: decision.datos.clubesInteresados,
         asientosAbiertos: decision.datos.asientosAbiertos ?? []
       });
+      // G-fix-copa: a la segunda, firmás también si todos se levantan de la mesa. Sin esto, el corte dejaba al jugador
+      // libre (`resolverEspera`) aunque la ventana no ofreciera esperar. Con `sinEsperar`, el piso vuelve a completar la
+      // mano a la baja (sin los clubes que se levantaron) y firmás la primera.
+      if (decision.datos.sinEsperar) {
+        const piso = conPisoDeOfertas(state, [], rng, new Set(negociacionesRotas.map((rota) => rota.org)));
+        if (piso.length > 0) {
+          const mano = construirDecisionOfertas(state, piso, {
+            negociacionesRotas,
+            clubesInteresados: decision.datos.clubesInteresados,
+            asientosAbiertos: decision.datos.asientosAbiertos ?? []
+          });
+          const firmado = resolverMercado(state, mano, { opcionId: piso[0].id }, rng);
+          return { ...firmado, logs: [crearLog('mercado', `${res.logs[0].message} No podés quedarte otra ventana sin club: te hacen lugar a la baja.`), ...firmado.logs] };
+        }
+      }
       return resolverEspera(state, decisionActualizada, rng, `${res.logs[0].message} No queda nada que firmar esta ventana.`);
     }
 

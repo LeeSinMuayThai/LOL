@@ -11,6 +11,8 @@ import { hypeHaciaSuBase } from '../core/barras.js';
 import { BALANCE } from '../data/balance.js';
 import { ROLES } from '../data/roles.js';
 import { nombreVisibleDeLigaOZona } from '../core/ligas.js';
+import { finalDeTier3 } from '../core/tier3.js';
+import { pausaDeFinalDeTier3, resolverMapaDeFinalDeTier3, respuestaAutoDeFinal } from './amateur.js';
 import { faltan as faltanTexto, plural } from '../core/formato.js';
 
 export const id = 'rendimiento';
@@ -118,7 +120,8 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
 
   // El titulo se levanta cuando cierra la temporada, no en cada split: los
   // splits intermedios son regular season y dejan posicion, no trofeo.
-  const campeon = !juegaSerieDePlayoffs && posicion === 1 && esCierre;
+  // G-fix-copa: en tier 3 el título ya no es del 1.º al instante: la final se juega (`aplicar`, más abajo).
+  const campeon = !juegaSerieDePlayoffs && liga.tier !== 3 && posicion === 1 && esCierre;
   const podio = posicion <= Math.max(2, Math.round(equipos * 0.34));
   const fracaso = posicion > equipos * r.posicionFracaso;
 
@@ -269,5 +272,19 @@ export function aplicar(state, rng) {
   });
   const conFila = { ...state, career: { ...state.career, registro } };
 
-  return consecuencias(conFila, t.rendimiento, resultado, esCierreDeTemporada(state.player.splitCount), rng);
+  const esCierre = esCierreDeTemporada(state.player.splitCount);
+  const hecho = consecuencias(conFila, t.rendimiento, resultado, esCierre, rng);
+  // G-fix-copa (PLANUI §0.9): al cierre, los dos primeros de tier 3 juegan la final, con minijuego en cada mapa.
+  const finalT3 = esCierre && liga.tier === 3 ? finalDeTier3(hecho.state) : null;
+  const pausa = finalT3 ? pausaDeFinalDeTier3(hecho.state, finalT3, nombreVisibleDeLigaOZona(liga)) : null;
+  return pausa ? { state: pausa.state, logs: hecho.logs, decision: pausa.decision } : hecho;
+}
+
+// G-fix-copa: la única parada de este sistema es un mapa de la final de tier 3.
+export function resolver(state, decision, respuesta, rng) {
+  return resolverMapaDeFinalDeTier3(state, decision, respuesta, rng);
+}
+
+export function resolverAuto(state, decision, rng) {
+  return respuestaAutoDeFinal(decision, rng);
 }
