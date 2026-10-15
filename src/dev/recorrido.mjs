@@ -1029,6 +1029,15 @@ for (let it = 0; it < 3000; it++) {
     L(`[${step}] ${topbar} | MERCADO (${cartas.length} cartas): ` + cartas.map((c, q) => `\n    ${q === i ? '>>' : '  '} [${sc[q].s.toFixed(0)}] ${c.slice(0, 260)}`).join(''));
     if (i >= 0) {
       if (SEL_CARTA === '.ms-op') {
+        if (await page.locator('.ms-op').nth(i).isDisabled()) {
+          // ya respondida (la transición después de firmar) o trabada: se espera con captura, como el camino bloqueado
+          const libresOp = await page.locator('.ms-op:not([disabled])').count();
+          L('    > CARTA ELEGIDA DESHABILITADA (' + libresOp + ' cartas habilitadas)');
+          if (!capturadas.has('cartas-bloqueadas')) { await captura('cartas-bloqueadas'); capturadas.add('cartas-bloqueadas'); }
+          const firmarYa = page.locator('.ln-bloquear:not([disabled])').first();
+          if (await firmarYa.count()) await firmarYa.click({ timeout: 5000 }); else { await page.waitForTimeout(1500); stuck++; }
+          continue;
+        }
         await page.locator('.ms-op').nth(i).click();
         await page.waitForTimeout(500);
         const firmar = page.locator('.ln-bloquear:not([disabled])').first();
