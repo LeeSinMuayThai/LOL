@@ -75,7 +75,7 @@ import {
 } from '../core/temporada.js';
 import { tierListDeRol, boostDelPool } from '../core/regimen.js';
 import { nivelDelJugador, deltasDeStats, fichaCompleta, loQueConstruiste } from '../core/ficha.js';
-import { componerLegado } from '../core/legado.js';
+import { componerLegado, monumento as monumentoG4c, premiosConNombre as premiosConNombreG4c } from '../core/legado.js';
 import { titularDelAnio } from '../core/temporadaResumen.js';
 import { bandaDeArraigo, filaAbierta as filaAbiertaK5 } from '../core/registro.js';
 import { rankearMundo, rankearPoblacion, puntajeRanking, bonusResultadoDelAnio, factorPorPrestigio } from '../core/topMundial.js';
@@ -14655,6 +14655,9 @@ const DELEGACION_COMUN_K0 = {
   'amateur:nocturno': 'el modo nocturno: sin previa',
   'retiro:retiro_declive': 'el retiro por declive: sin previa',
   'retiro:retiro_vuelta': 'la vuelta del retiro: sin previa',
+  // G4c: el último partido (el plan de la despedida y su mapa con minijuego): sin previa ni mejor o peor, salga como salga.
+  'retiro:ultimo_partido': 'el último partido: sin previa',
+  'retiro:minijuego': 'el mapa de despedida: sin previa',
   'salud:lesion_grave': 'la lesión grave: sin previa',
   'servicioMilitar:servicio_te_vas': 'el servicio militar: sin previa',
   'servicioMilitar:servicio_adentro': 'el servicio militar: sin previa',
@@ -20123,7 +20126,9 @@ check('K4-C2 regla 15: retirarse termina la carrera por el camino del retiro, co
     throw new Error(`el log no cuenta el motivo en palabras: ${textos}`);
   }
   const final = resolverOpcion({ ...state, flags: { ...state.flags, vueltasUsadas: BALANCE.retiro.vueltasMaximas } }, canal, 'vivir_del_canal', mulberry32(seed)).state;
-  if (!final.terminado) {
+  // G4c: el retiro de una bifurcación deja el último partido pendiente (se juega en el split que viene) y la carrera se cierra
+  // después de jugarlo: sin vueltas, la despedida pendiente cierra para siempre (reversible: false).
+  if (!final.terminado && final.flags.despedidaPendiente?.reversible !== false) {
     throw new Error('sin vueltas disponibles, retirarse no cerró la carrera');
   }
   // La ventana de vuelta: en la parada del "¿Volvés?", la bifurcación de la ventana (`la_llamada_del_manager`) sale.
@@ -20132,7 +20137,8 @@ check('K4-C2 regla 15: retirarse termina la carrera por el camino del retiro, co
     const enVentana = {
       ...st,
       player: { ...st.player, splitCount: st.player.splitCount + BALANCE.edad.splitsPorEdad },
-      flags: { ...st.flags, splitsEnVentana: BALANCE.edad.splitsPorEdad - 1, cooldownHasta: {} }
+      // G4c: con el último partido ya jugado (si no, esta parada es la despedida, antes de la ventana).
+      flags: { ...st.flags, splitsEnVentana: BALANCE.edad.splitsPorEdad - 1, cooldownHasta: {}, despedidaPendiente: null }
     };
     const v = aplicarRetiroK4c2(enVentana, mulberry32(s));
     if (v.decision?.datos?.evento?.id === 'la_llamada_del_manager') llamadas += 1;
@@ -29539,6 +29545,56 @@ check('G3c el mercado como dilema: TRAICIÓN solo del clásico, VOLVÉ A CASA co
   }
   console.log(`      ${JSON.stringify(cuenta)}`);
   if (cuenta.conHasta === 0 || cuenta.traicion === 0 || cuenta.volve === 0) mal.push(`muestra vacía: ${JSON.stringify(cuenta)}`);
+  if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
+});
+
+// --- G4c (PLANUI §0.9, "la ceremonia"): la promesa ---------------------------------------------------------------------
+// Toda carrera que termina por decisión o por edad (`retiro_elegido`: el último split, la línea Faker, el mercado, una
+// bifurcación) pasa por el último partido —un mapa con minijuego del contrato G1 (`datos.g1`, `finalJugada.tipo:
+// 'despedida'`)— y queda en `registro.despedidas`, con la edad del retiro que cerró la carrera. Y el monumento sale del
+// escalón más alto de arraigo de `registro.porOrg`: Leyenda → camiseta, Ídolo → bandera, abajo nada.
+const SEEDS_G4C = 40;
+const SPLITS_G4C = 120;
+
+check('G4c: toda carrera que termina por decisión o por edad pasa por el último partido, y el monumento sale del escalón más alto de arraigo', () => {
+  const mal = [];
+  let elegidos = 0;
+  let minijuegos = 0;
+  const tipos = new Set();
+  const escalones = ['uno_mas', 'querido', 'idolo', 'leyenda'];
+  for (let seed = 1; seed <= SEEDS_G4C; seed += 1) {
+    const rng = mulberry32(seed);
+    let estado = createInitialState(seed, rng);
+    const responder = (sistema, st, decision, r) => {
+      if (sistema.id === 'retiro' && decision.datos?.finalJugada?.tipo === 'despedida') {
+        if (!decision.datos.g1 || decision.presentacion !== 'minijuego') mal.push(`seed ${seed}: el último partido no es un minijuego de G1`);
+        minijuegos += 1;
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < SPLITS_G4C && !estado.terminado; i += 1) {
+      estado = avanzarSplitAuto(estado, rng, responder).state;
+    }
+    if (!estado.terminado || estado.finAnticipado !== 'retiro_elegido') continue;
+    elegidos += 1;
+    const ultima = (estado.career.registro.despedidas ?? []).at(-1);
+    if (!ultima || ultima.edad !== estado.age) {
+      mal.push(`seed ${seed}: se retiró a los ${estado.age} sin su último partido (${JSON.stringify(ultima ?? null)})`);
+    }
+    const filas = estado.career.registro.porOrg;
+    const tope = Math.max(...filas.map((f) => escalones.indexOf(bandaDeArraigoK6AU(Math.round(f.arraigoMaximo ?? 0)).id)));
+    const m = monumentoG4c(estado);
+    tipos.add(m.tipo);
+    const esperado = { leyenda: 'camiseta', idolo: 'bandera' }[escalones[tope]] ?? null;
+    if (m.escalon !== escalones[tope] || m.tipo !== esperado) {
+      mal.push(`seed ${seed}: monumento ${m.escalon}/${m.tipo} con el escalón más alto en ${escalones[tope]}`);
+    }
+    if (JSON.stringify(premiosConNombreG4c(estado)) !== JSON.stringify(premiosConNombreG4c(estado))) {
+      mal.push(`seed ${seed}: los premios con nombre no son deterministas`);
+    }
+  }
+  console.log(`      ${elegidos} retiros por decisión o por edad, ${minijuegos} últimos partidos jugados; monumentos: ${[...tipos].map((t) => t ?? 'ninguno').join(', ')}`);
+  if (elegidos === 0 || minijuegos < elegidos) mal.push(`muestra corta: ${elegidos} retiros, ${minijuegos} últimos partidos`);
   if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
 });
 

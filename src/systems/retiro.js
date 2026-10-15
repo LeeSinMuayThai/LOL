@@ -9,6 +9,11 @@ import {
 import { armarRosterAlVolver } from './roster.js';
 import { calcularCalendario } from './edadInicio.js';
 import { orgsQueTeFicharian } from '../core/demanda.js';
+import { weightedPick } from '../core/rng.js';
+import { nivelDelJugador } from '../core/ficha.js';
+import { resultadoDelBot } from '../core/minijuegos.js';
+import { varaDeRonda } from './serie.js';
+import { pausaDeFinalJugada, jugarMapaDeFinal, respuestaAutoDeFinal } from './amateur.js';
 
 export const id = 'retiro';
 
@@ -124,10 +129,18 @@ function finDeSalida() {
 // K5-C: la bifurcación del mercado (`systems/mercado.js`, motivo `fin_mercado`) termina acá cuando elegís colgar el
 // mouse. Mismo retiro que `retiro_declive` —con la ventana de vuelta si te quedan vueltas—, pero con el motivo que
 // dio el mercado ("Ninguna org de LCK te ofreció contrato en dos pretemporadas seguidas.").
+// G4c: el último partido de este retiro no se puede jugar acá (lo llama `systems/mercado.js`, que no encadena la parada):
+// queda pendiente y se juega en el split que viene (`despedidaDiferida`). Hasta entonces la carrera no se da por terminada.
 export function retirarsePorMercado(state, motivo) {
   const finAnticipado = finDeSalida(state);
   const puedeVolver = state.flags.vueltasUsadas < BALANCE.retiro.vueltasMaximas;
-  return terminar(state, finAnticipado, `${motivo} ${mensajeDeSalida(state, finAnticipado)}`, { reversible: puedeVolver, motivo });
+  const mensaje = `${motivo} ${mensajeDeSalida(state, finAnticipado)}`;
+  return conDespedidaPendiente(terminar(state, finAnticipado, mensaje, { reversible: true, motivo }),
+    { finAnticipado, mensaje, reversible: puedeVolver, motivo });
+}
+
+function conDespedidaPendiente(fin, retiro) {
+  return { ...fin, state: { ...fin.state, terminado: false, flags: { ...fin.state.flags, despedidaPendiente: retiro } } };
 }
 
 // K6b-C (D-B en la cola): lo que tiene que cambiar para que el "¿la seguís?" vuelva a frenar. Si elegiste seguir y en la
@@ -158,20 +171,164 @@ function seguirPeleandola(state) {
   return { ...state, flags: { ...state.flags, splitsEnDeclive } };
 }
 
-function decisionDeclive(state) {
+// --- G4c (PLANUI §0.9): la ceremonia del final ---
+//
+// El último split: la parada del "¿la seguís?" de siempre (`motivo: 'retiro_declive'`, los mismos ids `retirarse` / `seguir`)
+// con la cara de El Ídolo: "Colgarla con la frente alta" o "Un año más ⚠". Frena por tres causas (`datos.causa`):
+//  - 'declive': el aviso de siempre (`splitsDeclivePorAviso` pretemporadas en declive);
+//  - 'sinFirmar': rechazaste todo el mercado y la ventana que viene te obliga a firmar (G3b: "a la segunda, firmás o
+//    cerrás la carrera"; la parada va acá, antes de esa segunda ventana, porque la del mercado no ofrece el cierre);
+//  - 'edad': el declive se ve (`declivVisible`), una vez por año.
+// Colgarla no cierra en el acto: antes se juega el último partido (`decisionUltimoPartido`).
+
+// El declive que se ve: desde `ultimoSplit.edadDesde` años, con el nivel `caidaDeNivel` o más debajo de tu pico. Pura.
+export function declivVisible(state) {
+  const u = BALANCE.retiro.ultimoSplit;
+  const pico = state.career.registro.picos.nivel;
+  return state.age >= u.edadDesde && pico > 0 && (pico - nivelDelJugador(state)) >= u.caidaDeNivel;
+}
+
+// Rechazaste todo el mercado (`flags.rechazoMercado`, `systems/mercado.js`) y seguís sin club, a la edad del último split
+// (`ultimoSplit.edadDesde`): más joven, la ventana que viene te firma y listo (G3b); colgarla a los 18 no es una ceremonia.
+function sinFirmar(state) {
+  return !state.career.currentOrg && Boolean(state.flags.rechazoMercado) && state.age >= BALANCE.retiro.ultimoSplit.edadDesde;
+}
+
+function contextoDelUltimoSplit(state, causa) {
+  if (causa === 'sinFirmar') {
+    return `A los ${state.age} le dijiste que no a todo el mercado. En la próxima ventana firmás con alguien, o cerrás la carrera acá.`;
+  }
+  if (causa === 'edad') {
+    const pico = Math.round(state.career.registro.picos.nivel);
+    return `A los ${state.age} ya no sos el de tu mejor año: estás en ${Math.round(nivelDelJugador(state))} y tu pico fue ${pico}.`;
+  }
+  return probasteCon(state)
+    ? `A los ${state.age} ${probasteCon(state)}${state.career.currentOrg ? '' : ', y seguís sin club'}.`
+    : `A los ${state.age} el mercado te está diciendo que no.`;
+}
+
+function decisionDeclive(state, causa = 'declive') {
+  const puedeVolver = state.flags.vueltasUsadas < BALANCE.retiro.vueltasMaximas;
   return {
     tipo: 'opciones',
     bisagra: true,
-    titulo: 'Fin de temporada: ¿la seguís?',
-    descripcion: probasteCon(state)
-      ? `A los ${state.age} ${probasteCon(state)}${state.career.currentOrg ? '' : ', y seguís sin club'}. ¿Seguís peleándola o colgás el mouse?`
-      : `A los ${state.age} el mercado te está diciendo que no. ¿Seguís peleándola o colgás el mouse?`,
+    titulo: 'El último split',
+    descripcion: `${contextoDelUltimoSplit(state, causa)} ¿La colgás ahora o vas por un año más?`,
     opciones: [
-      { id: 'seguir', label: 'La seguís peleando', descripcion: 'Un año más contra la corriente. Esto no se resetea solo.' },
-      { id: 'retirarse', label: 'Colgás el mouse', descripcion: 'Cerrás la carrera. Con la puerta entreabierta, si el cuerpo y las ganas dan.' }
+      { id: 'retirarse', label: 'Colgarla con la frente alta', descripcion: `Cerrás la carrera con un último partido de despedida.${puedeVolver ? ' La puerta queda entreabierta, si el cuerpo y las ganas dan.' : ''}` },
+      { id: 'seguir', label: 'Un año más ⚠', descripcion: 'Podés terminar en el banco… o eterno.' }
     ],
-    datos: { motivo: 'retiro_declive', firma: firmaDelSeguis(state) }
+    datos: {
+      motivo: 'retiro_declive', causa, firma: firmaDelSeguis(state), edad: state.age,
+      nivel: Math.round(nivelDelJugador(state)), pico: Math.round(state.career.registro.picos.nivel)
+    }
   };
+}
+
+// El último partido: un mapa de despedida (Bo1 con minijuego, el contrato de G1 vía `pausaDeFinalJugada`) con el premio a
+// la vista. Lo juega todo retiro por decisión (el último split, el mercado, una bifurcación) o por edad (la línea Faker).
+// No lo juega el que se va de golpe: la lesión, el burnout o la familia te sacan sin despedida (no pasan por este sistema).
+// `retiro` es el cierre que se aplica después: `{ finAnticipado, mensaje, reversible, motivo }`.
+const PLANES_DE_DESPEDIDA = ['clip', 'farm'];
+
+const PREMIO_DE_DESPEDIDA = {
+  clip: { si: 'La jugada da la vuelta al mundo: la van a pasar en cada video de despedida.', no: 'Si no sale, te aplauden de pie igual.' },
+  farm: { si: 'El rookie que entra por vos se lleva el MVP de tu último mapa.', no: 'Si no sale, el pibe igual no se olvida nunca de esa noche.' }
+};
+
+function orgDeLaDespedida(state) {
+  return state.career.currentOrg ?? state.career.registro.porOrg.at(-1)?.org ?? null;
+}
+
+function puntos(vara) {
+  return Math.round(vara * BALANCE.stats.max);
+}
+
+function pDeDespedida(plan) {
+  const d = BALANCE.retiro.despedida;
+  return plan === 'clip' ? d.pClip : d.pFarm;
+}
+
+function decisionUltimoPartido(state, retiro, diferida = false) {
+  const max = BALANCE.stats.max;
+  const org = orgDeLaDespedida(state);
+  const vara = (plan) => puntos(varaDeRonda(pDeDespedida(plan)));
+  return {
+    tipo: 'opciones',
+    bisagra: true,
+    titulo: 'El último partido',
+    descripcion: `${org ? `Un mapa más con ${org}` : 'Un showmatch'}, el de la despedida. Lo jugás vos, y salga como salga, es tuyo.`,
+    opciones: [
+      { id: 'clip', label: 'La jugada para el clip', descripcion: `🎲 Necesitás ${vara('clip')} de ${max} en el minijuego. ${PREMIO_DE_DESPEDIDA.clip.si}` },
+      { id: 'farm', label: 'El farm para el rookie', descripcion: `🧊 Necesitás ${vara('farm')} de ${max} en el minijuego. ${PREMIO_DE_DESPEDIDA.farm.si}` }
+    ],
+    datos: { motivo: 'ultimo_partido', org, retiro, diferida, varas: { clip: vara('clip'), farm: vara('farm') } }
+  };
+}
+
+function jugarUltimoPartido(state, decision, opcionId, rng) {
+  const plan = PLANES_DE_DESPEDIDA.includes(opcionId) ? opcionId : 'farm';
+  const p = pDeDespedida(plan);
+  const { org, retiro, diferida } = decision.datos;
+  const final = {
+    tipo: 'despedida',
+    nombreTorneo: 'El último partido',
+    plan, org, retiro, diferida,
+    rival: null,
+    bo: BALANCE.retiro.despedida.bo,
+    marcador: [0, 0],
+    mapas: [],
+    p,
+    vara: varaDeRonda(p),
+    poderUsado: false,
+    premio: PREMIO_DE_DESPEDIDA[plan]
+  };
+  // Sin mecánica para el momento (hoy no pasa: hay universales), el bot juega el mapa.
+  return pausaDeFinalJugada(state, final, [])
+    ?? cerrarDespedida(state, final, resultadoDelBot(rng(), final.vara, p), final.vara);
+}
+
+function lineaDeDespedida(entrada) {
+  const marca = `(${entrada.resultado} contra ${entrada.vara})`;
+  if (entrada.plan === 'clip') {
+    return entrada.gano
+      ? `El último mapa: fuiste por la jugada para el clip y salió ${marca}. La van a pasar en cada video de despedida.`
+      : `El último mapa: fuiste por la jugada para el clip y no salió ${marca}. Te aplauden de pie igual: una carrera no se borra en un mapa.`;
+  }
+  return entrada.gano
+    ? `El último mapa: le dejaste el farm al rookie y la rompió ${marca}. Él se lleva el MVP; vos, el aplauso más largo de la noche.`
+    : `El último mapa: le dejaste el farm al rookie y no alcanzó ${marca}. Él no se va a olvidar nunca de esa noche, y vos tampoco.`;
+}
+
+// El último partido, jugado: queda en `registro.despedidas` (salga bien o mal, sin castigo) y recién ahí se cierra la carrera.
+function cerrarDespedida(state, final, resultado, vara, logsPrevios = [], ganoDado = null) {
+  const r = Math.min(1, Math.max(0, resultado ?? 0));
+  const entrada = {
+    anio: state.calendario?.anio ?? null, edad: state.age, org: final.org, plan: final.plan,
+    gano: ganoDado ?? r >= vara, resultado: puntos(r), vara: puntos(vara)
+  };
+  const registro = state.career.registro;
+  const conRegistro = {
+    ...state,
+    career: { ...state.career, registro: { ...registro, despedidas: [...(registro.despedidas ?? []), entrada] } }
+  };
+  const linea = crearLog('retiro', lineaDeDespedida(entrada), { titular: true, despedida: entrada });
+  const retiro = final.retiro;
+  if (final.diferida) {
+    return {
+      state: { ...conRegistro, terminado: !retiro.reversible, flags: { ...conRegistro.flags, despedidaPendiente: null } },
+      logs: [...logsPrevios, linea]
+    };
+  }
+  const fin = terminar(conRegistro, retiro.finAnticipado, retiro.mensaje, { reversible: retiro.reversible, motivo: retiro.motivo });
+  return { state: fin.state, logs: [...logsPrevios, linea, ...fin.logs] };
+}
+
+// El último partido de un retiro que no lo pudo jugar en el momento (`retirarsePorMercado`, `retirarsePorCamino`): frena en
+// el primer split del retirado, antes de la ventana de vuelta. El split cuenta en el reloj de la ventana igual.
+function despedidaDiferida(state) {
+  const conCuenta = { ...state, flags: { ...state.flags, splitsEnVentana: state.flags.splitsEnVentana + 1 } };
+  return { state: conCuenta, logs: [], decision: decisionUltimoPartido(conCuenta, state.flags.despedidaPendiente, true) };
 }
 
 // K4-C2 (regla 15): el retiro que elegís en una bifurcación (`retirarse` en `data/events/caminos.json`: dejar de
@@ -213,7 +370,11 @@ export function retirarsePorCamino(state, motivo) {
       }
     }
     : retirado;
-  return { state: conSplitPro, descripcion: `te retirás ${MOTIVOS_DE_RETIRO[motivo]}`, logs };
+  // G4c: dejar de competir por una bifurcación también es un retiro por decisión: el último partido queda pendiente.
+  const pendiente = conDespedidaPendiente({ state: conSplitPro, logs }, {
+    finAnticipado: 'retiro_elegido', mensaje: null, reversible: puedeVolver, motivo: conSplitPro.motivoRetiro
+  });
+  return { state: pendiente.state, descripcion: `te retirás ${MOTIVOS_DE_RETIRO[motivo]}`, logs };
 }
 
 // K4-C2: la ventana de vuelta tiene su contenido (`data/events/retiro_y_vuelta.json`, etapa `retirado`), que el
@@ -332,7 +493,7 @@ export function aplicar(state, rng) {
   // — un retiro terminal nunca vuelve a correr `ETAPAS_SPLIT`
   // (`core/pipeline.js` corta en `state.terminado` antes de llegar).
   if (state.phase === 'retirado') {
-    return aplicarVentanaDeVuelta(state, rng);
+    return state.flags.despedidaPendiente ? despedidaDiferida(state) : aplicarVentanaDeVuelta(state, rng);
   }
 
   if (state.phase !== 'profesional') {
@@ -360,7 +521,9 @@ function aplicarProfesional(state) {
   if (state.age >= r.edadRetiroForzoso) {
     const finAnticipado = finDeSalida(state);
     const motivo = `Llegaste a los ${state.age}: la línea que casi nadie cruza en el competitivo.`;
-    return terminar(state, finAnticipado, mensajeDeSalida(state, finAnticipado), { reversible: false, motivo });
+    // G4c: la línea no se pregunta, pero se despide: el último partido antes de cerrar.
+    const retiro = { finAnticipado, mensaje: mensajeDeSalida(state, finAnticipado), reversible: false, motivo };
+    return { state, logs: [], decision: decisionUltimoPartido(state, retiro) };
   }
 
   // `contexto.etapa === 'declive'` no incluye "sin equipo" (D30, `core/
@@ -372,7 +535,7 @@ function aplicarProfesional(state) {
 
   if (!enPresion) {
     if (state.flags.splitsEnDeclive === 0) {
-      return { state, logs: [] };
+      return ultimoSplitSinAviso(state);
     }
     // Saliste del declive (volviste a tener equipo, dejaste el banco, o tu
     // nivel se recuperó): la cuenta BAJA, no se borra de un año para el
@@ -382,7 +545,7 @@ function aplicarProfesional(state) {
     // usuario) igual se cumple: unos años sostenidos para arriba SÍ la
     // bajan del todo.
     const splitsEnDeclive = Math.max(0, state.flags.splitsEnDeclive - 1);
-    return { state: { ...state, flags: { ...state.flags, splitsEnDeclive } }, logs: [] };
+    return ultimoSplitSinAviso({ ...state, flags: { ...state.flags, splitsEnDeclive } });
   }
 
   const splitsEnDeclive = state.flags.splitsEnDeclive + 1;
@@ -391,7 +554,7 @@ function aplicarProfesional(state) {
   // K5-C: si el mercado ya frenó esta misma pretemporada con "bajás o te retirás" (`forkMercadoSplit`), no se
   // pregunta dos veces: la cuenta sigue, la pregunta queda para el año que viene.
   if (splitsEnDeclive < r.splitsDeclivePorAviso || state.flags.forkMercadoSplit === state.player.splitCount) {
-    return { state: conCuenta, logs: [] };
+    return ultimoSplitSinAviso(conCuenta);
   }
 
   // K6b-C: nada cambió desde que elegiste seguir: no se pregunta de nuevo. Seguís, y se dice en una línea.
@@ -402,7 +565,22 @@ function aplicarProfesional(state) {
     };
   }
 
-  return { state: conCuenta, logs: [], decision: decisionDeclive(conCuenta) };
+  return { state: conCuenta, logs: [], decision: decisionDeclive(conCuenta, 'declive') };
+}
+
+// G4c: sin el aviso del declive, el último split frena igual si rechazaste todo el mercado o si el declive se ve (una vez por
+// año). No si el mercado ya frenó esta pretemporada con su bifurcación.
+function ultimoSplitSinAviso(state) {
+  if (state.flags.forkMercadoSplit === state.player.splitCount) {
+    return { state, logs: [] };
+  }
+  if (sinFirmar(state)) {
+    return { state, logs: [], decision: decisionDeclive(state, 'sinFirmar') };
+  }
+  if (declivVisible(state) && state.flags.ultimoSplitEdad !== state.age) {
+    return { state, logs: [], decision: decisionDeclive(state, 'edad') };
+  }
+  return { state, logs: [] };
 }
 
 // K5c (motor): el mundo no te espera. Mientras dura la ventana `player.splitCount` queda congelado (lo mueve
@@ -426,6 +604,18 @@ function relojAlVolver(state) {
 export function resolver(state, decision, respuesta, rng) {
   const { motivo } = decision.datos;
 
+  if (motivo === 'ultimo_partido') {
+    return jugarUltimoPartido(state, decision, respuesta.opcionId, rng);
+  }
+
+  if (motivo === 'minijuego') {
+    const jugado = jugarMapaDeFinal(state, decision, respuesta);
+    if (jugado.decision) {
+      return jugado;
+    }
+    return cerrarDespedida(jugado.state, decision.datos.finalJugada, respuesta.resultado, decision.datos.g1.vara, jugado.logs, jugado.gano);
+  }
+
   if (motivo === 'evento_ventana') {
     const resuelto = resolverEvento(state, decision, respuesta, rng);
     // K6b-C: después de una bifurcación de la ventana, algo cambió: la vuelta se pregunta siempre. G2a: después de un
@@ -438,22 +628,38 @@ export function resolver(state, decision, respuesta, rng) {
 
   if (motivo === 'retiro_declive') {
     const r = BALANCE.retiro;
+    const causa = decision.datos.causa ?? 'declive';
     if (respuesta.opcionId === 'seguir') {
-      // K6b-C: la foto con la que elegiste seguir. Mientras no cambie, el año que viene no se pregunta de nuevo.
-      const seguido = seguirPeleandola(state);
+      // K6b-C: la foto con la que elegiste seguir. Mientras no cambie, el año que viene no se pregunta de nuevo. G4c: la foto
+      // es la del aviso del declive; las otras dos causas no la tocan (el declive que se ve se pregunta una vez por año).
+      const seguido = causa === 'declive' ? seguirPeleandola(state) : state;
       return {
-        state: { ...seguido, flags: { ...seguido.flags, seguisFirma: decision.datos.firma ?? null } },
-        logs: [crearLog('retiro', 'Decidís seguir. El mercado no va a esperar para siempre.')]
+        state: {
+          ...seguido,
+          flags: {
+            ...seguido.flags,
+            seguisFirma: causa === 'declive' ? (decision.datos.firma ?? null) : seguido.flags.seguisFirma,
+            ultimoSplitEdad: decision.datos.edad ?? state.age
+          }
+        },
+        logs: [crearLog('retiro', 'Un año más. Podés terminar en el banco… o eterno.')]
       };
     }
     const finAnticipado = finDeSalida(state);
     const puedeVolver = state.flags.vueltasUsadas < r.vueltasMaximas;
     const enBaja = `${pretemporadasEnPalabras(state.flags.splitsEnDeclive)} en baja`;
     const probaste = probasteCon(state);
-    const motivo = probaste
+    const motivoDeclive = probaste
       ? `${probaste[0].toUpperCase()}${probaste.slice(1)}: ${enBaja}.`
       : `El mercado te venía diciendo que no: ${enBaja}.`;
-    return terminar(state, finAnticipado, mensajeDeSalida(state, finAnticipado), { reversible: puedeVolver, motivo });
+    const motivo = {
+      declive: motivoDeclive,
+      sinFirmar: `Le dijiste que no a todo el mercado y la colgaste a los ${state.age}, con la frente alta.`,
+      edad: `La colgaste a los ${state.age}, con la frente alta, antes de que el declive hablara por vos.`
+    }[causa] ?? motivoDeclive;
+    // G4c: colgarla es ir al último partido; la carrera se cierra después (`cerrarDespedida`).
+    const retiro = { finAnticipado, mensaje: mensajeDeSalida(state, finAnticipado), reversible: puedeVolver, motivo };
+    return { state, logs: [], decision: decisionUltimoPartido(state, retiro) };
   }
 
   // motivo === 'retiro_vuelta'
@@ -501,16 +707,32 @@ export function resolver(state, decision, respuesta, rng) {
   };
 }
 
+function perfilDelBot(state) {
+  return state.player.perfil?.actual ?? state.career.clase ?? null;
+}
+
 export function resolverAuto(state, decision, rng) {
   const { motivo } = decision.datos;
   if (motivo === 'evento_ventana') {
     return resolverAutoEvento(state, decision, rng);
   }
   if (motivo === 'retiro_declive') {
-    // Alguien con criterio acepta el veredicto del mercado en vez de
-    // insistir contra viento y marea (`CONCEPTO` §12.4: la causa modal de
-    // retiro real es "no te renuevan", no la negación).
-    return { opcionId: 'retirarse' };
+    // G4c: el bot elige con su perfil, una distribución con pesos por causa (`ultimoSplit.pesosBot`). En el aviso del declive
+    // casi siempre acepta el veredicto del mercado (`CONCEPTO` §12.4: la causa modal de retiro real es "no te renuevan", no
+    // la negación); cuando solo se ve el declive, o cuando rechazó el mercado, casi siempre va por un año más.
+    const u = BALANCE.retiro.ultimoSplit;
+    const pesos = u.pesosBot[decision.datos.causa ?? 'declive'] ?? u.pesosBot.declive;
+    const inclinacion = u.inclinacionUnAnioMas[perfilDelBot(state)] ?? 1;
+    const opciones = [{ id: 'retirarse', peso: pesos.colgarla }, { id: 'seguir', peso: pesos.unAnioMas * inclinacion }];
+    return { opcionId: weightedPick(opciones, (o) => o.peso, rng).id };
+  }
+  if (motivo === 'ultimo_partido') {
+    const pesos = BALANCE.retiro.despedida.pesosPlanBot[perfilDelBot(state)] ?? { clip: 1, farm: 1 };
+    return { opcionId: weightedPick(PLANES_DE_DESPEDIDA, (plan) => pesos[plan], rng) };
+  }
+  if (motivo === 'minijuego') {
+    // El bot pasa el mapa de despedida con la p del plan (`resultadoDelBot`).
+    return respuestaAutoDeFinal(decision, rng);
   }
   // La vuelta: se ejercita una vez por carrera (Bjergsen volvió; no todos
   // vuelven dos veces), nunca la segunda — dos vueltas es la excepción real.
