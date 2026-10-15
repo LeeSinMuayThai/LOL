@@ -1783,7 +1783,15 @@ export function jugarMapaDeFinal(state, decision, respuesta) {
   const numero = final.mapas.length + 1;
   const mapas = [...final.mapas, { numero, resultado: juicio.paso ? 'W' : 'L' }];
   const st = devolverCupo(state);
-  const logs = [crearLog('serie', `Mapa ${numero} de la final: sacaste ${Math.round(juicio.resultado * max)} y la vara era ${Math.round(juicio.vara * max)}. ${juicio.paso ? 'Lo ganaste' : 'Lo perdiste'} (${marcador[0]}-${marcador[1]}).`, {
+  const sacaste = Math.round(juicio.resultado * max);
+  const vara = Math.round(juicio.vara * max);
+  // La despedida no es una final que se pierda: el mapa del adiós se cuenta con calor, sin marcador ni "perdiste".
+  const linea = final.tipo === 'despedida'
+    ? (juicio.paso
+      ? `Tu último mapa salió como lo soñaste: sacaste ${sacaste} y la vara era ${vara}. Te vas con una buena.`
+      : `Tu último mapa no salió como lo soñaste (sacaste ${sacaste}, la vara era ${vara}), pero el que te va a recordar no se fija en eso.`)
+    : `Mapa ${numero} de la final: sacaste ${sacaste} y la vara era ${vara}. ${juicio.paso ? 'Lo ganaste' : 'Lo perdiste'} (${marcador[0]}-${marcador[1]}).`;
+  const logs = [crearLog('serie', linea, {
     minijuego: decision.datos.minijuego, vara: juicio.vara, resultado: juicio.resultado, paso: juicio.paso, casi: juicio.casi
   })];
   const necesarias = Math.ceil(final.bo / 2);

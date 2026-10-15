@@ -90,13 +90,19 @@ export function frenteDeOferta(state, oferta) {
   const traicion = esTraicion(state, oferta.org);
 
   const liga = state.mundo.ligas.find((candidata) => candidata.id === oferta.liga);
+  // BOMBAZO es raro: el doble de tu sueldo actual si tenés un contrato pro (tier 1 o 2); libre, o viniendo de tier 3 o del
+  // amateur, el doble de la mediana del sueldo de ese asiento (tu sueldo de ahí no dice nada de lo que vale la oferta). Y sale
+  // siempre que además sea plata de estrella (`bombazoEtiquetaMedianas` veces esa mediana): el doble de un sueldo de rookie no
+  // es un bombazo (medido: con solo el doble salía en el 27% de las ofertas).
   const sueldoVigente = state.career.contrato.salarioAnualUSD;
-  const referencia = sueldoVigente > 0 ? sueldoVigente : (liga?.salario.medianaUSD ?? 0);
+  const conContratoPro = Boolean(actual) && sueldoVigente > 0 && state.career.tier <= m.bombazoTierMaximo;
+  const referencia = conContratoPro ? sueldoVigente : (liga?.salario.medianaUSD ?? 0);
   const etiquetas = [
     ...(oferta.tag === 'renovacion' ? ['RENOVACION'] : []),
     ...(traicion ? ['TRAICION'] : []),
     ...(!esOrgActual && fuisteQueridoEn(state, oferta.org) ? ['VOLVE_A_CASA'] : []),
-    ...(referencia > 0 && oferta.salarioAnualUSD >= referencia * m.bombazoEtiquetaMultiplo ? ['BOMBAZO'] : []),
+    ...(referencia > 0 && oferta.salarioAnualUSD >= referencia * m.bombazoEtiquetaMultiplo
+      && oferta.salarioAnualUSD >= (liga?.salario.medianaUSD ?? 0) * m.bombazoEtiquetaMedianas ? ['BOMBAZO'] : []),
     ...(oferta.aLaBaja ? ['A_LA_BAJA'] : [])
   ];
 

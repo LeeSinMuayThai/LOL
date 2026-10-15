@@ -2246,6 +2246,9 @@
     "contexto": {
       "etapa": [
         "amateur"
+      ],
+      "ladder": [
+        "medio"
       ]
     },
     "conditions": [],

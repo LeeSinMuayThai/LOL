@@ -196,6 +196,9 @@ function sinFirmar(state) {
 
 function contextoDelUltimoSplit(state, causa) {
   if (causa === 'sinFirmar') {
+    if (probasteCon(state)) {
+      return `A los ${state.age} ${probasteCon(state)}, y seguís sin club. En la próxima ventana firmás con alguien, o cerrás la carrera acá.`;
+    }
     return `A los ${state.age} le dijiste que no a todo el mercado. En la próxima ventana firmás con alguien, o cerrás la carrera acá.`;
   }
   if (causa === 'edad') {
@@ -215,8 +218,8 @@ function decisionDeclive(state, causa = 'declive') {
     titulo: 'El último split',
     descripcion: `${contextoDelUltimoSplit(state, causa)} ¿La colgás ahora o vas por un año más?`,
     opciones: [
-      { id: 'retirarse', label: 'Colgarla con la frente alta', descripcion: `Cerrás la carrera con un último partido de despedida.${puedeVolver ? ' La puerta queda entreabierta, si el cuerpo y las ganas dan.' : ''}` },
-      { id: 'seguir', label: 'Un año más ⚠', descripcion: 'Podés terminar en el banco… o eterno.' }
+      { id: 'seguir', label: 'Un año más ⚠', descripcion: 'Podés terminar en el banco… o eterno.' },
+      { id: 'retirarse', label: 'Colgarla con la frente alta', descripcion: `Cerrás la carrera con un último partido de despedida.${puedeVolver ? ' La puerta queda entreabierta, si el cuerpo y las ganas dan.' : ''}` }
     ],
     datos: {
       motivo: 'retiro_declive', causa, firma: firmaDelSeguis(state), edad: state.age,
@@ -565,6 +568,11 @@ function aplicarProfesional(state) {
     };
   }
 
+  // G-fix A: el último split por edad ya preguntó este año lo mismo (y elegiste seguir): una pregunta por año.
+  if (state.flags.ultimoSplitEdad === state.age) {
+    return ultimoSplitSinAviso(conCuenta);
+  }
+
   return { state: conCuenta, logs: [], decision: decisionDeclive(conCuenta, 'declive') };
 }
 
@@ -578,6 +586,16 @@ function ultimoSplitSinAviso(state) {
     return { state, logs: [], decision: decisionDeclive(state, 'sinFirmar') };
   }
   if (declivVisible(state) && state.flags.ultimoSplitEdad !== state.age) {
+    // Sin cambios desde que elegiste seguir (mismo club y tier, y el nivel no cayó `caidasParaVolverAPreguntar` veces `caidaDeNivel` más): no se pregunta de
+    // nuevo. Se narra una vez en el año y seguís.
+    const foto = state.flags.ultimoSplitFoto;
+    if (foto && foto.org === (state.career.currentOrg ?? null) && foto.tier === (state.career.tier ?? null)
+      && nivelDelJugador(state) > foto.nivel - BALANCE.retiro.ultimoSplit.caidaDeNivel * BALANCE.retiro.ultimoSplit.caidasParaVolverAPreguntar) {
+      return {
+        state: { ...state, flags: { ...state.flags, ultimoSplitEdad: state.age } },
+        logs: [crearLog('retiro', `A los ${state.age} el declive sigue ahí, pero nada cambió desde que elegiste seguir: un año más.`)]
+      };
+    }
     return { state, logs: [], decision: decisionDeclive(state, 'edad') };
   }
   return { state, logs: [] };
@@ -638,7 +656,10 @@ export function resolver(state, decision, respuesta, rng) {
           ...seguido,
           flags: {
             ...seguido.flags,
-            seguisFirma: causa === 'declive' ? (decision.datos.firma ?? null) : seguido.flags.seguisFirma,
+            seguisFirma: causa === 'sinFirmar' ? seguido.flags.seguisFirma : (decision.datos.firma ?? null),
+            ultimoSplitFoto: causa === 'sinFirmar'
+              ? seguido.flags.ultimoSplitFoto
+              : { org: state.career.currentOrg ?? null, tier: state.career.tier ?? null, nivel: decision.datos.nivel ?? Math.round(nivelDelJugador(state)) },
             ultimoSplitEdad: decision.datos.edad ?? state.age
           }
         },
@@ -654,7 +675,9 @@ export function resolver(state, decision, respuesta, rng) {
       : `El mercado te venía diciendo que no: ${enBaja}.`;
     const motivo = {
       declive: motivoDeclive,
-      sinFirmar: `Le dijiste que no a todo el mercado y la colgaste a los ${state.age}, con la frente alta.`,
+      sinFirmar: probaste
+        ? `${probaste[0].toUpperCase()}${probaste.slice(1)}: la colgaste a los ${state.age}, con la frente alta.`
+        : `Le dijiste que no a todo el mercado y la colgaste a los ${state.age}, con la frente alta.`,
       edad: `La colgaste a los ${state.age}, con la frente alta, antes de que el declive hablara por vos.`
     }[causa] ?? motivoDeclive;
     // G4c: colgarla es ir al último partido; la carrera se cierra después (`cerrarDespedida`).

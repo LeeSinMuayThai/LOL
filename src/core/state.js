@@ -519,6 +519,8 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // G4c: la edad a la que ya se preguntó el último split por el declive que se ve (una vez por año), y el último partido
       // que quedó pendiente de un retiro que no lo pudo jugar en el momento (el del mercado o el de una bifurcación).
       ultimoSplitEdad: null,
+      // G-fix A: la foto (club, tier y nivel) con la que elegiste seguir en el último split; sin cambios, no se pregunta de nuevo.
+      ultimoSplitFoto: null,
       despedidaPendiente: null,
       finMercadoFirma: null,
       // K6b-fix (la espera vence): cuántas pretemporadas seguidas se narró "seguís buscando" desde la última vez que respondiste

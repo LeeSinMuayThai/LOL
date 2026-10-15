@@ -2,7 +2,7 @@
 //
 // `career.promesas = [{ id, estado: 'abierta'|'cumplida'|'rota', texto, progreso, vence, ... }]`. Hay una abierta a la vez;
 // las resueltas quedan en la lista como historia. `texto` y `progreso` son strings listos para mostrar. El contenido de cada
-// promesa (quién la hace, cuándo puede abrirse, plazo, condición, pago y castigo como rangos) vive en
+// promesa (quién la hace, cuándo puede abrirse, plazo, condición y pago como rangos; la promesa rota no castiga) vive en
 // `data/events/promesas.json`; acá solo está la cuenta.
 //
 // Dónde corre: justo antes de `resumenAnio` en `ETAPAS_SPLIT`, con `escena` ya escrita: así el diario del año
@@ -144,7 +144,7 @@ function conQuedan(progreso, quedan) {
   return `${progreso} · ${tiempo}`;
 }
 
-// --- Pago y castigo ---
+// --- Pago ---
 
 // Aplica un bloque `{ hype: [min, max], arraigo: [min, max] }` y devuelve el estado y las líneas "+9 hype".
 function aplicarEfectos(state, efectos, rng) {
@@ -193,7 +193,8 @@ export function aplicar(state, rng) {
         next = reemplazar(next, hecha);
         logs.push(logDe(rellenar(def.lineaCumple, varsDe(abierta, { tier: state.career.tier })), abierta, 'cumplida', pagado.resumen));
       } else if (veredicto.rota || vencida) {
-        const castigado = aplicarEfectos(next, def.castigo, rng);
+        // "Se paga, o se cuenta que no": una promesa rota no te saca nada (vos no la elegiste); queda el titular.
+        const castigado = { state: next, resumen: '' };
         next = castigado.state;
         const rota = { ...abierta, estado: 'rota', progreso: veredicto.rota ? veredicto.progreso : 'se pasó el plazo', resueltaEn: anio, resueltaSplit: state.player.splitCount };
         next = reemplazar(next, rota);

@@ -1309,6 +1309,10 @@ export const BALANCE = {
     // La etiqueta BOMBAZO del frente: el sueldo ofrecido es este múltiplo de tu sueldo actual o más (sin contrato, de la
     // mediana de la liga de la oferta, como `bombazoMultiplo`). Distinta de `bombazoMultiplo`, que es el `tag` viejo.
     bombazoEtiquetaMultiplo: 2,
+    // El sueldo de referencia del BOMBAZO es el tuyo solo si tu contrato es de tier 1 o 2.
+    bombazoTierMaximo: 2,
+    // ...y la oferta es al menos este múltiplo de la mediana del sueldo de la liga (plata de estrella). Medido: 6,6% de las ofertas.
+    bombazoEtiquetaMedianas: 4,
     probRenovacionBase: 0.55,
     probRenovacionPorJerarquia: 0.35,
     // Splits sin ninguna oferta antes de caer a nivel 'libre' — la puerta por
@@ -1714,6 +1718,9 @@ export const BALANCE = {
     ultimoSplit: {
       edadDesde: 27,
       caidaDeNivel: 6,
+      // Elegiste seguir y el declive que se ve no se vuelve a preguntar mientras no cambie el club o el tier ni el nivel caiga
+      // esta cantidad de `caidaDeNivel` más que cuando elegiste.
+      caidasParaVolverAPreguntar: 2,
       pesosBot: {
         declive: { colgarla: 9, unAnioMas: 1 },
         edad: { colgarla: 1, unAnioMas: 5 },

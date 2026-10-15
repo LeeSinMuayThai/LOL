@@ -157,7 +157,8 @@
     "contexto": {
       "etapa": ["debut", "profesional"],
       "region": ["NA", "BR", "LAN", "LAS"],
-      "nivel": ["tier3", "tier2", "tier1"]
+      "nivel": ["tier3", "tier2", "tier1"],
+      "residencia": ["import", "residente"]
     },
     "conditions": [],
     "options": [

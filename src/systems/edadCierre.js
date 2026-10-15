@@ -5,6 +5,7 @@ import { esPlanValido } from '../core/rutinas.js';
 import { getPath, etiquetaCampo, cumpleCondiciones } from '../core/selectors.js';
 import { calcularContexto, coincideContexto } from '../core/contexto.js';
 import { weightedPick } from '../core/rng.js';
+import { textoResuelveCompleto } from '../core/plantillas.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 
 export const id = 'edadCierre';
@@ -41,7 +42,9 @@ export function aplicar(state, rng) {
 // siempre no cambia).
 function cierreSinCooldown(state, rng) {
   const contexto = calcularContexto(state);
-  const cierres = TODOS_LOS_EVENTOS.filter((evento) => evento.cierreDeEdad && opcionesVivas(state, evento, contexto).length >= 2);
+  // Sin los que traerían un {token} sin resolver (el "{companero}" de un roster que no tenés): el contexto es lo que los habilita.
+  const cierres = TODOS_LOS_EVENTOS.filter((evento) => evento.cierreDeEdad && opcionesVivas(state, evento, contexto).length >= 2
+    && textoResuelveCompleto(evento.description, state));
   const deTuContexto = cierres.filter((evento) => disponibleEn(state, evento, contexto));
   const deTuNivel = cierres.filter((evento) => cumpleCondiciones(state, evento.conditions)
     && coincideContexto(contexto, Object.fromEntries(['etapa', 'nivel'].filter((clave) => evento.contexto?.[clave]).map((clave) => [clave, evento.contexto[clave]])), state.age));

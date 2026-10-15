@@ -19521,7 +19521,9 @@ check('K4c (revisión) probaste y no alcanzó: la prueba del mercado fallida sin
         const { sistemaId, decision } = st.pendiente;
         if (sistemaId === 'retiro' && decision.datos.motivo === 'retiro_declive' && (st.flags.pruebasFallidas ?? []).length > 0) {
           const ultima = st.flags.pruebasFallidas.at(-1);
-          const retirado = resolverDecision(structuredClone(st), { opcionId: 'retirarse' }, mulberry32(seed)).state;
+          // G4c: colgarla frena en el último partido; el motivo del retiro viaja en la decisión hasta que se juega.
+          const alColgarla = resolverDecision(structuredClone(st), { opcionId: 'retirarse' }, mulberry32(seed)).state;
+          const retirado = { ...alColgarla, motivoRetiro: alColgarla.motivoRetiro ?? alColgarla.pendiente?.decision.datos.retiro?.motivo };
           // K5c paso 3b-2 (regla 17): con dos pruebas fallidas el texto las nombra a las dos ("probaste con A y con B y no alcanzó",
           // `probasteCon` en `systems/retiro.js`); el check pedía "probaste con <la última>" y daba rojo con el texto correcto. Ahora:
           // la frase empieza en "probaste con", nombra cada org probada y cierra con la última y "no alcanzó".
@@ -29495,6 +29497,8 @@ check('G2b una carta por año: una sola decisión de carta por año jugado, 3 ca
       const antes = state;
       state = avanzarSplitAuto(state, rng, responder).state;
       if (antes.phase === 'retirado' || state.phase === 'retirado') retirado.add(state.age);
+      // La vuelta del retiro adelanta el reloj los años que pasaron afuera: esos años no se jugaron, no tienen carta.
+      for (let edad = antes.age + 1; antes.phase === 'retirado' && edad < state.age; edad += 1) retirado.add(edad);
     }
     for (let edad = primera + 1; edad <= state.age; edad += 1) {
       if (retirado.has(edad)) continue;
