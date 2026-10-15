@@ -17,7 +17,7 @@ import { motionReducido, unaSolaVez, ventanaPorStat, dificultadDe, AMORTIGUACION
 // decisión — antes el CSS apagaba sus propias animaciones y esta, dibujada por
 // JS, seguía corriendo igual.
 const PASOS = 20;
-// A qué distancia del centro de la zona el resultado llega a 0 (en la escala 0-100 de la barra). La usa `g1.js` para
+// A qué distancia del centro de la zona el resultado llega a 0 (en la escala 0-100 de la barra). La usa `components/varaG1.js` para
 // decir la vara en unidades de la barra.
 export const ESCALA_DISTANCIA = 45;
 

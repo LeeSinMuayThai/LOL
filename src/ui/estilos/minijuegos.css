@@ -413,7 +413,7 @@ button.g1-poder:disabled { cursor: default; }
 .mj-pizarra-dorso { font: 800 15px / 1 var(--f-mono); color: var(--ink-mute); }
 .mj-pizarra-carta:is([data-estado="vista"], [data-estado="abierta"], [data-estado="par"], [data-estado="error"]) .mj-pizarra-dorso,
 .mj-pizarra-carta[data-estado="tapada"] .mj-pizarra-cara { visibility: hidden; }
-.mj-pizarra-carta[data-estado="tapada"] { background: repeating-linear-gradient(135deg, var(--panel-hondo) 0 6px, color-mix(in srgb, var(--panel-hondo) 80%, var(--gold)) 6px 7px); }
+.mj-pizarra-carta[data-estado="tapada"] { background: radial-gradient(90% 90% at 50% 0%, color-mix(in srgb, var(--gold) 14%, transparent), transparent 70%), var(--panel-hondo); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 30%, var(--linea)); }
 .mj-pizarra-carta[data-estado="tapada"]:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 1px var(--gold); }
 .mj-pizarra-carta[data-estado="abierta"] { box-shadow: inset 0 0 0 2px var(--gold); }
 .mj-pizarra-carta[data-estado="par"] { cursor: default; color: var(--up); box-shadow: inset 0 0 0 2px var(--up); background: color-mix(in srgb, var(--up) 12%, var(--panel-hondo)); }

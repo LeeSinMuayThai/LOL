@@ -9,7 +9,7 @@ import { unaSolaVez, ventanaPorStat, escuchaTeclado, motionReducido, dificultadD
 // escalón, con el número a la vista. Se pierde la animación, no la decisión.
 
 const PASOS = 20;
-// Lo que la escala de distancia suma a la media zona (a esa distancia del centro, el resultado es 0). La lee `g1.js`.
+// Lo que la escala de distancia suma a la media zona (a esa distancia del centro, el resultado es 0). La lee `components/varaG1.js`.
 export const MARGEN_DISTANCIA = 14;
 // El ancho de la zona, entre estos topes según `macro` (`ventanaPorStat`).
 export const ANCHO_ZONA = [12, 26];

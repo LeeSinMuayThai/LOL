@@ -89,7 +89,8 @@ export function logsDelSwiss(logs) {
   return logs.slice(0, (fin >= 0 ? fin : i) + 1);
 }
 
-export function crearStream(contenedor, decision, { estado, previa = null, mundo, sonido = null, responder, rngUi = null }) {
+export function crearStream(contenedor, decision, opciones) {
+  const { estado, previa = null, mundo, sonido = null, responder } = opciones;
   const comp = competicionDeEstado(estado, { internacional: true });
   const fx = () => mundo?.fx?.() ?? null;
   const ops = decision.opciones ?? [];
@@ -413,9 +414,9 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     const apuesta = el('div', { class: 'g1-apuesta' });
     const widget = el('div', { class: 'minijuego-widget' });
     g1Juego.append(apuesta, widget);
+    // `opciones` trae el RNG de la interfaz (el ctx de la parada): lo usa solo el widget
     montarMinijuego(tarjeta, decision, {
-      estado,
-      rngUi: rngUi ?? (() => 0.5),
+      ...opciones,
       responder: (r) => elegir(0, r),
       renderPrevia: () => null,
       nodos: { titulo: el('div'), desc: el('div'), apuesta, widget },

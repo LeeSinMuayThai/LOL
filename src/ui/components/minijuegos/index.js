@@ -12,7 +12,7 @@ import { montar as montarLaVision } from './laVision.js';
 import { montar as montarElKite } from './elKite.js';
 import { montar as montarElTeleport } from './elTeleport.js';
 // G1 (PLANUI §0.9, "Variedad"): las dos mecánicas universales, de cualquier rol (mid y support tenían solo 4 de mapa).
-// El dato (`data/minijuegos.json`) lo registra el motor; si todavía no está, la parada igual las monta (`g1.js`).
+// El dato (`data/minijuegos.json`) lo registra el motor; si todavía no está, la parada igual las monta (`components/varaG1.js`).
 import { montar as montarLaCorrida } from './laCorrida.js';
 import { montar as montarLaPizarra } from './laPizarra.js';
 
@@ -52,7 +52,7 @@ import { minijuegoPorId, lecturaDeVentana } from "../../../core/minijuegos.js";
 
 export { veredictoDeMinijuego } from "../../../core/minijuegos.js";
 export { marcarHit, marcarMiss } from './comun.js';
-export * as g1 from './g1.js';
+export * as g1 from '../varaG1.js';
 
 // La apuesta, antes de jugar (fase 9R4d). Hasta acá entrabas al minijuego sin
 // saber qué te estabas jugando y lo descubrías al terminar, en el beat de

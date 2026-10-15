@@ -31,8 +31,8 @@ import { crearCaminoG1, crearMesaG1, marcarMapaG1, crearVeredictoG1 } from '../c
 const TECLA_VAMOS = 'V';
 // Hasta cuántas opciones de la charla llevan atajo (las teclas 1-4 del teclado).
 const OPCIONES_CON_ATAJO = 4;
-// G1: lo que el veredicto queda a la vista antes de que la parada se vaya (con el "tan cerca", hay una línea más que leer).
-const LECTURA_VEREDICTO_MS = 1600;
+// G1: lo que el veredicto de una final queda a la vista antes de que la parada se vaya (con el "tan cerca", hay una línea
+// más que leer que en los 1600 ms de siempre).
 const LECTURA_VEREDICTO_G1_MS = 2300;
 
 // El acompañante: el minijuego no tiene (§V.4: "inicio, final o minijuego → nada").
@@ -143,7 +143,7 @@ async function narrarElDecisivo(contenedor, decision, { estado, previa, mundo, s
 // torneo y la tira de mapas con el marcador escrito (`conCamino`: el stream del Swiss ya tiene su tablero y no lo repite);
 // antes del widget, la mesa: la regla con la vara en las unidades del minijuego, el poder de la clase, el rótulo del
 // desempate o la revancha y la charla. El veredicto dice PASÓ / CASI / NO SALIÓ con la misma cuenta que el motor
-// (`components/minijuegos/g1.js`) y el "tan cerca". La respuesta suma `poder` (contrato de G1).
+// (`components/varaG1.js`) y el "tan cerca". La respuesta suma `poder` (contrato de G1).
 // `nodos` (el stream la reusa): { titulo, desc, apuesta, widget }; por defecto, los del panel `#minijuego`.
 export function montarParada(contenedor, decision, { estado, rngUi, responder, renderPrevia, nodos = null, conCamino = true }) {
   const estadoActual = estado;
@@ -246,18 +246,16 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
     const montar = montadorDe(decision.datos.minijuego);
     let resuelto = false;
     mesa?.alJugar?.();
-    montar(minijuegoWidget, estadoActual, (resultado, detalle) => {
+    // el widget recibe `decision.datos` (el tono de la prensa, la `g1` de la final); con el poder activado, una copia que
+    // lo dice (`poderActivo`: el VOD hace la ronda más lenta, `dificultadDe`)
+    const jugar = (decision) => montar(minijuegoWidget, estadoActual, (resultado, detalle) => {
       if (resuelto) {
         return;
       }
       resuelto = true;
       contenedor.dataset.fase = 'resultado';
-      const respuesta = {
-        resultado,
-        ...(decision.datos.charla?.disponible ? { charla } : {}),
-        ...(g1?.poder ? { poder: poderActivo } : {})
-      };
       if (g1) {
+        const respuesta = { resultado, ...(decision.datos.charla?.disponible ? { charla } : {}), ...(g1.poder ? { poder: poderActivo } : {}) };
         // la final con las manos: el juicio al toque, con la cuenta del motor; el mapa queda escrito en la tira
         const juicio = G1.juzgar(resultado, g1, poderActivo);
         if (juicio.paso) marcarHit(minijuegoWidget);
@@ -295,8 +293,9 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
             : 'Te firman: sacaste ' + laPrueba.sacaste + '% y la vara era ' + laPrueba.vara + '%.')
           : 'No llegaste: te faltó ' + laPrueba.falta + '% (sacaste ' + laPrueba.sacaste + '%, la vara era ' + laPrueba.vara + '%).') + '</div>' : '')
         + '</div>';
-      setTimeout(() => responder(respuesta), LECTURA_VEREDICTO_MS);
-    }, rngUi, { ...decision.datos, poderActivo });
+      setTimeout(() => responder(decision.datos.charla?.disponible ? { resultado, charla } : { resultado }), 1600);
+    }, rngUi, decision.datos);
+    jugar(poderActivo ? { ...decision, datos: { ...decision.datos, poderActivo } } : decision);
 
     // El widget ya es más grande que la espera: si no entra, que se vea entero (el reloj corre).
     minijuegoWidget.scrollIntoView?.({ block: 'nearest' });

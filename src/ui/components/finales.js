@@ -9,7 +9,7 @@
 import { el } from '../fx/util.js';
 import { logoOrg, siglaDe } from '../fx/competicion.js';
 import { BALANCE } from '../../data/balance.js';
-import * as G1 from './minijuegos/g1.js';
+import * as G1 from './varaG1.js';
 
 const SWISS = BALANCE.mundial;
 const MARCA = { ganada: '✓', perdida: '✗', actual: '▶', pendiente: '' };

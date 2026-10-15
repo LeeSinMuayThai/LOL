@@ -1,24 +1,24 @@
-// G1 (PLANUI §0.9, contrato de G1): la vara de cada minijuego en sus unidades, el juicio con la misma cuenta que el
+// G1 (PLANUI §0.9, contrato de G1). Vive fuera de `minijuegos/` (ahí cada archivo es una mecánica): la vara de cada minijuego en sus unidades, el juicio con la misma cuenta que el
 // motor y el "tan cerca" de después. Puro (sin DOM): lo usan la parada del minijuego y el stream del Swiss.
 //
 // La cuenta del motor (contrato): `paso = resultado >= vara`, con `vara` ya bajada por el poder del escenario si se
 // activó; es "casi" si `vara - margenCasi <= resultado < vara`. Acá se repite tal cual, y la regla en palabras sale de
 // la misma vara: "necesitás 3 de 4" es el menor `k` con `k / total >= vara` (no `ceil(vara × total)`, que con la coma
 // flotante puede pedir uno de más: 0,6 × 5 = 3,0000000000000004).
-import { BALANCE } from '../../../data/balance.js';
-import { veredictoDeMinijuego, minijuegoPorId, lecturaDeVentana } from '../../../core/minijuegos.js';
-import { ventanaPorStat, dificultadDe } from './comun.js';
-import { TOTAL as MINIONS } from './lastHit.js';
-import { LARGO as TECLAS_COMBO } from './elCombo.js';
-import { RONDAS as SKILLSHOTS } from './dodge.js';
-import { TIEMPOS } from './elKite.js';
-import { A_OSCURAS } from './laVision.js';
-import { BLANCOS } from './laPrueba.js';
-import { FRENADAS } from './laCorrida.js';
-import { TOPE_ERRORES, PARES } from './laPizarra.js';
-import { ESCALA_DISTANCIA } from './robarBaron.js';
-import { MARGEN_DISTANCIA, ANCHO_ZONA } from './elTeleport.js';
-import { VENTANA_MS } from './laLlamada.js';
+import { BALANCE } from '../../data/balance.js';
+import { veredictoDeMinijuego, minijuegoPorId, lecturaDeVentana } from '../../core/minijuegos.js';
+import { ventanaPorStat, dificultadDe } from './minijuegos/comun.js';
+import { TOTAL as MINIONS } from './minijuegos/lastHit.js';
+import { LARGO as TECLAS_COMBO } from './minijuegos/elCombo.js';
+import { RONDAS as SKILLSHOTS } from './minijuegos/dodge.js';
+import { TIEMPOS } from './minijuegos/elKite.js';
+import { A_OSCURAS } from './minijuegos/laVision.js';
+import { BLANCOS } from './minijuegos/laPrueba.js';
+import { FRENADAS } from './minijuegos/laCorrida.js';
+import { TOPE_ERRORES, PARES } from './minijuegos/laPizarra.js';
+import { ESCALA_DISTANCIA } from './minijuegos/robarBaron.js';
+import { MARGEN_DISTANCIA, ANCHO_ZONA } from './minijuegos/elTeleport.js';
+import { VENTANA_MS } from './minijuegos/laLlamada.js';
 
 // Las mecánicas que se cuentan de a una: el total y cómo se llama lo que se cuenta.
 const CONTEO = {

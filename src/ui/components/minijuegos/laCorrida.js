@@ -3,7 +3,7 @@ import { motionReducido, unaSolaVez, ventanaPorStat, escuchaTeclado, dificultadD
 // "La corrida" (G1, PLANUI §0.9, "Variedad"): una mecánica universal, de cualquier rol. La barra corre de punta a punta
 // y frenás en la zona: cuatro frenadas, cada una un poco más rápida que la anterior (como "cada partido, más larga y más
 // rápida" de La seña del DT). La zona la agranda `mecanica`. El resultado es la fracción de frenadas en la zona, así la
-// vara se dice en frenadas ("necesitás 3 de 4", `g1.js`).
+// vara se dice en frenadas ("necesitás 3 de 4", `components/varaG1.js`).
 //
 // Contrato de T6: `montar(container, state, onDone, rngUi, datos)` → `onDone(0..1, detalle)`. `detalle` es la última
 // frenada que se fue de la zona (o la última, si las clavaste todas): la zona y dónde frenaste, para el "tan cerca".

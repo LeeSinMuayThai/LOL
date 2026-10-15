@@ -4,7 +4,7 @@ import { unaSolaVez, ventanaPorStat, dificultadDe, marcadorDeRondas } from './co
 // la pizarra del rival un instante (las jugadas que repite) y después se da vuelta: armás los pares de memoria. Cada par
 // que no es, un error. Cuánto la ves lo abre `macro`; el VOD del Profesional (`dificultadDe`) te la deja ver más.
 //
-// El resultado es `1 - errores / TOPE_ERRORES`, así la vara se dice en errores ("podés errar 2 veces", `g1.js`). Con más
+// El resultado es `1 - errores / TOPE_ERRORES`, así la vara se dice en errores ("podés errar 2 veces", `components/varaG1.js`). Con más
 // errores que el tope, la pizarra se cierra.
 //
 // Contrato de T6: `montar(container, state, onDone, rngUi, datos)` → `onDone(0..1, { tipo: 'errores', errores })`.
