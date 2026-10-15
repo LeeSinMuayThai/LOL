@@ -944,9 +944,10 @@ const FORMAS_CONOCIDAS = {
   // se mueven con la llamada de tier 2 y la última fecha que frena (F2) y la carta del cierre (F4). Un guardado de la 15 carga
   // con `migrarDe15`, que arranca las finales vacías.
   16: 'f6a5c9b7e186',
-  // G1a (ola G, PLANUI §0.9): career.clase, career.charlaSegundaUsadaEn, career.torneoG1. El supervisor la vuelve a
-  // registrar al integrar la entrega 1 (G2a y G3ab suman campos).
-  17: '7d10dbd669fa'
+  // Ola G, entrega 1 (PLANUI §0.9), integrada: G1a (career.clase, career.charlaSegundaUsadaEn, career.torneoG1), G2a
+  // (presupuesto.eventos, flags.colaAnio) y G3ab (flags.copaAmateur, flags.rechazoMercado). Un guardado de la 16 carga con
+  // `migrarDe16`, que los suma a todos.
+  17: 'b21e0cb21aa4'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que

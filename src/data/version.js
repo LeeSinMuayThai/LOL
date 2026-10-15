@@ -79,7 +79,7 @@
 // casa, Final2 con la LPL en 91, el no-pro con piso de soloQ, El GOAT = nuevo Faker). Sin esto, después del merge dos juegos
 // distintos compartirían "v K4c" en el desafío, el historial y el texto compartido. La etiqueta no entra en la huella (la tupla de
 // `calcularHuellaJuego` no la lee): la huella del bloque C es la de abajo. Misma `VERSION` del guardado (12, no salió de la rama).
-export const VERSION_JUEGO = 'F';
+export const VERSION_JUEGO = 'G';
 // K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
@@ -189,4 +189,9 @@ export const VERSION_JUEGO = 'F';
 // frenó frena en su última fecha; F4: el stat principal de cada carta del cierre siempre suma (seis ramas con piso 1). F1 (cada
 // ronda del Swiss frena, con una sola opción y sin gastar el presupuesto) y F3 (las finales al registro, los titulares) no mueven
 // la huella. Ninguna seed de K6d reproduce su carrera. Guardado VERSION 16.
-export const HUELLA_JUEGO = 433142448;
+// G (ola G, entrega 1, PLANUI §0.9, 628507834; corrimiento declarado): `VERSION_JUEGO` pasa a 'G'. G1: los mapas con minijuego
+// (finales, cuartos y semis que pueden cerrar, el Swiss) se deciden por la vara, sin tirada, y la clase inclina los stats del
+// arranque; G2a: todo evento con 2+ opciones frena, una parada de evento por split (la continuación de cadena es la bandera ya
+// puesta, no la guarda de apertura); G3ab: siempre en un equipo (equipo seguro a los 17, copa amateur, piso de 3 ofertas).
+// Guardado VERSION 17.
+export const HUELLA_JUEGO = 628507834;
