@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, relojDeMinijuego, dificultadDe } from './comun.js';
+import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, relojDeMinijuego, dificultadDe, PASOS_DE_CONTEO } from './comun.js';
 
 // "El combo" (fase 9R4c). La secuencia aparece un momento y hay que repetirla
 // de memoria con el teclado (o con los botones, que son los mismos). `mecanica`
@@ -8,7 +8,8 @@ import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, relojDeMi
 // mecánicas distintas, no cinco variantes de apretar en el momento justo.
 
 const TECLAS = ['Q', 'W', 'E', 'R'];
-export const LARGO = 5;
+// G-fix-vara: cuántos pasos, en `BALANCE.g1.conteo` (de ahí el motor saca el techo de la vara: nunca todos).
+export const LARGO = PASOS_DE_CONTEO.el_combo;
 
 export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);

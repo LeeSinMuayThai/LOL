@@ -76,7 +76,9 @@ function texto(clase, contenido) {
 function lineaDeLaPrevia(previa) {
   const p = document.createElement('span');
   p.className = 'previa-linea-p';
-  p.append(texto('previa-linea-pct', `${previa.porcentaje}%`), texto('previa-linea-etq', 'de ganar'));
+  // G-fix-vara: en un mapa con minijuego, la regla de la vara ("Necesitás 3 de 4 frenadas"): la p es la del bot.
+  if (previa.regla) p.append(texto('previa-linea-regla', previa.regla));
+  else p.append(texto('previa-linea-pct', `${previa.porcentaje}%`), texto('previa-linea-etq', 'de ganar'));
   const partes = [p, texto('previa-linea-rival', `vs ${previa.rival.nombre}`)];
   if (previa.subtitulo) {
     partes.push(texto('previa-linea-sub', previa.subtitulo));
@@ -105,6 +107,11 @@ function partesDeLaPrevia(previa) {
   pct.className = 'previa-p';
   pct.innerHTML = '<span class="previa-pct"></span><span class="previa-pct-label">de ganar</span>';
   pct.firstChild.textContent = `${previa.porcentaje}%`;
+  if (previa.regla) {
+    pct.firstChild.className = 'previa-regla';
+    pct.firstChild.textContent = previa.regla;
+    pct.lastChild.textContent = 'lo decide el minijuego';
+  }
   duelo.append(lado(previa.propio, ''), pct, lado(previa.rival, ' previa-lado--rival'));
 
   const desglose = document.createElement('dl');

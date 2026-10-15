@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, motionReducido, dificultadDe } from './comun.js';
+import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, motionReducido, dificultadDe, PASOS_DE_CONTEO } from './comun.js';
 
 // "Dodge" (fase 9R4c). Cuatro skillshots, uno por vez: el carril peligroso se
 // telegrafía y tenés lo que dura el telegrafiado para moverte a otro. `mecanica`
@@ -9,7 +9,8 @@ import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, motionRed
 // carril, así que con `prefers-reduced-motion` se juega igual.
 
 const CARRILES = 5;
-export const RONDAS = 4;
+// G-fix-vara: cuántos pasos, en `BALANCE.g1.conteo` (de ahí el motor saca el techo de la vara: nunca todos).
+export const RONDAS = PASOS_DE_CONTEO.dodge;
 
 export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);

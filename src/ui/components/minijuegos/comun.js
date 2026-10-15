@@ -13,6 +13,10 @@
 //   · el stat que declara el catálogo abre la ventana (`ventanaPorStat`)
 
 import { BALANCE } from '../../../data/balance.js';
+import { radioQuePasa } from '../../../core/minijuegos.js';
+
+// G-fix-vara: los pasos de las mecánicas de conteo de un mapa (el motor saca de acá el techo de la vara).
+export const PASOS_DE_CONTEO = BALANCE.g1.conteo;
 
 // La misma preferencia que apaga las animaciones en CSS (base.css). Acá se
 // respeta para el TIMING de JS: sin esto el CSS no animaría nada pero el
@@ -52,9 +56,10 @@ export function varaEfectivaDe(datos) {
 }
 
 // G1: la mitad del ancho de la zona que pasa en las mecánicas de distancia (el Barón, el TP). El resultado es
-// `1 - distancia / escala` y pasa con `resultado >= vara`, o sea con `distancia <= (1 - vara) × escala`: ese es el radio.
+// `1 - max(0, distancia - piso) / escala` (`resultadoDeDistancia`, con el piso humano de `g1.pisoHumano`) y pasa con
+// `resultado >= vara`, o sea con `distancia <= piso + (1 - vara) × escala`: ese es el radio, nunca más chico que el piso.
 export function radioDeLaZona(vara, escala) {
-  return (1 - Math.max(0, vara)) * escala;
+  return radioQuePasa(vara, escala);
 }
 
 // Cuánto amortigua `factorDificultadRonda` el efecto final sobre un timing

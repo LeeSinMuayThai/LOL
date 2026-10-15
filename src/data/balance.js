@@ -2325,19 +2325,34 @@ export const BALANCE = {
   // G1 (PLANUI §0.9, "Las finales se juegan con las manos"): un mapa con minijuego se decide por el minijuego, sin tirada.
   // `paso = resultado >= vara` (`core/minijuegos.js`). La p del mapa (fuerza, rival, plan) se vuelve una vara de 0 a 1.
   g1: {
-    // La vara por p del mapa: el primer escalón cuyo `desde` es <= p. A más p, menos vara. Los valores de arranque del
-    // brief; se calibran jugando (el supervisor juega 10 finales con las manos: si se ganan más de ~p + 20 puntos, sube).
+    // La vara por p del mapa: el primer escalón cuyo `desde` es <= p. A más p, menos vara. G-fix-vara: todo el rango queda
+    // debajo del techo humano (`varaMaxima`): con 1,0 la llamada pedía "menos de 0 ms" y el Barón, "a 0 del centro".
     varaPorP: [
-      { desde: 0.75, vara: 0.6 },
-      { desde: 0.55, vara: 0.7 },
-      { desde: 0.4, vara: 0.8 },
-      { desde: 0.25, vara: 0.9 },
-      { desde: 0, vara: 1.0 }
+      { desde: 0.75, vara: 0.5 },
+      { desde: 0.55, vara: 0.6 },
+      { desde: 0.4, vara: 0.7 },
+      { desde: 0.25, vara: 0.8 },
+      { desde: 0, vara: 0.85 }
     ],
+    // El techo humano: ninguna ronda pide más que esto, tampoco después del desempate, la revancha o la escalada. El poder
+    // y la charla bajan desde acá. En las mecánicas que se cuentan de a una (`conteo`), el techo es además (total − 1) /
+    // total: nunca se pide perfección, siempre podés errar una.
+    varaMaxima: 0.85,
+    // Cuántos pasos tiene cada mecánica de conteo de un mapa (la UI los lee de acá, y el motor saca su techo).
+    conteo: { last_hit: 5, el_combo: 5, dodge: 4, el_kite: 8, la_vision: 3, la_corrida: 4 },
+    // El piso humano de las mecánicas analógicas: lo que una persona no puede achicar, y que por eso no se descuenta.
+    //   la llamada: resultado = 1 − max(0, latencia − llamadaMs) / (ventana − llamadaMs), con la ventana por encima del
+    //   piso (la reacción humana es ~200-250 ms: sin piso, la vara 0,8 pedía menos de 137 ms).
+    //   el Barón y el TP: resultado = 1 − max(0, d − distancia) / escala, así la zona que pasa nunca es más
+    //   chica que este radio (en la escala 0-100 de la barra).
+    pisoHumano: { llamadaMs: 180, distancia: 1 },
     // "Casi": vara - margenCasi <= resultado < vara. Da el desempate (uno por torneo).
     margenCasi: 0.08,
-    // El desempate es el mismo mapa otra vez, un escalón más y con la vara más alta (tope 1).
+    // El desempate y la revancha: la misma ronda otra vez, un escalón más y con la vara más alta. Lo que la suba no puede
+    // subir por el techo lo achica la ventana: la escalada se multiplica por `repeticionEnTechoAchica` elevado a la
+    // fracción de la suba que no entró (nunca "no cambia nada").
     desempateSubeVara: 0.1,
+    repeticionEnTechoAchica: 0.8,
     // La escalada: la UI multiplica la ventana o el tiempo por `escaladaPorEscalon ** escalon`, nunca por debajo del piso
     // (un Mundial largo son ~15 rondas: sin piso, la última sería injugable).
     escaladaPorEscalon: 0.96,

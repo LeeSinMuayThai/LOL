@@ -115,7 +115,8 @@ export function crearApuesta(decision, state, { resto = '' } = {}) {
   const [lineaApuesta, restoApuesta] = primeraOracion(decision.datos.apuesta ?? '');
   if (lineaApuesta) caja.appendChild(el('div', 'minijuego-apuesta-texto', lineaApuesta));
 
-  if (lectura) {
+  // G-fix-vara: con `g1` la línea del stat ya la dice la mesa de la vara (`finales.js`, debajo de la regla): una sola vez.
+  if (lectura && !decision.datos.g1) {
     caja.appendChild(el('span', 'minijuego-apuesta-stat', `Tu ${NOMBRE_STAT[lectura.stat] ?? lectura.stat} ${lectura.valor} · ${lectura.frase}`));
   }
 

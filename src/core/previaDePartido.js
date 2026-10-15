@@ -77,7 +77,8 @@ function previaDeSwiss(state, opciones) {
     rival: { nombre: `${e.rival} (${nombreVisibleDeLiga(e.ligaRival)})`, fuerza: e.fuerzaRival },
     p: probabilidadDeCruceSwiss(state, base, e.fuerzaRival, ajusteCharla),
     campeon: desglose.campeon,
-    nota: conMinijuego ? notaDeLaVara(opciones, probabilidadDeCruceSwiss(state, base, e.fuerzaRival)) : null
+    nota: conMinijuego ? notaDeLaVara(opciones, probabilidadDeCruceSwiss(state, base, e.fuerzaRival)) : null,
+    vara: conMinijuego ? varaDeLaPrevia(opciones, probabilidadDeCruceSwiss(state, base, e.fuerzaRival)) : null
   });
 }
 
@@ -122,9 +123,16 @@ function previaDeFecha(state, opciones) {
 
 // G1: la regla de la vara en palabras, la misma que juzga el motor (la vara de la decisión si viene, si no la de la p).
 function notaDeLaVara(opciones, p) {
+  return `No se tira: lo decide el minijuego. ${reglaDeLaVara(varaDeLaPrevia(opciones, p).valor)}`;
+}
+
+// G-fix-vara: la vara que la previa muestra en lugar de la p (la p de un mapa con minijuego es la del bot, no la tuya):
+// `{ valor, minijuego }`, con la charla ya bajada. La pantalla la dice en las unidades de la mecánica ("necesitás 3 de 4
+// frenadas en la zona", `components/varaG1.js`), con la misma cuenta que juzga el motor.
+function varaDeLaPrevia(opciones, p) {
   const vara = Number.isFinite(opciones.vara) ? opciones.vara : varaDeMapa(p);
   const baja = opciones.charla === true ? BALANCE.g1.charlaBajaVara : 0;
-  return `No se tira: lo decide el minijuego. ${reglaDeLaVara(Math.max(0, vara - baja))}`;
+  return { valor: Math.max(0, vara - baja), minijuego: opciones.minijuego };
 }
 
 function previaDeMapa(state, opciones) {
@@ -158,7 +166,8 @@ function previaDeMapa(state, opciones) {
     rival: { nombre: serie.rival.org, fuerza: fuerzaRivalDeMapa(state), campeon: serie.rivalJuega ?? null },
     p,
     campeon: opciones.campeon,
-    nota
+    nota,
+    vara: conMinijuego ? varaDeLaPrevia(opciones, p) : null
   });
 }
 
@@ -191,7 +200,7 @@ const FILAS = [
   { clave: 'minijuego', etiqueta: 'El minijuego', signo: true, opcional: true }
 ];
 
-function armarPrevia({ tipo, titulo, subtitulo = null, porQue = null, propio, desglose, extras, fuerzaBase, fuerzaFinal, rival, p, campeon, nota }) {
+function armarPrevia({ tipo, titulo, subtitulo = null, porQue = null, propio, desglose, extras, fuerzaBase, fuerzaFinal, rival, p, campeon, nota, vara = null }) {
   const aportes = aportesDelDesglose(desglose);
   aportes.campeon += extras.campeon ?? 0;
   aportes.momento = extras.momento ?? 0;
@@ -223,7 +232,8 @@ function armarPrevia({ tipo, titulo, subtitulo = null, porQue = null, propio, de
     p,
     porcentaje: porcentaje(p),
     textoProbabilidad: `${porcentaje(p)}% de ganar`,
-    nota
+    nota,
+    vara
   };
 }
 
