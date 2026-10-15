@@ -153,6 +153,10 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
   const minijuegoWidget = nodos?.widget ?? contenedor.querySelector('#minijuegoWidget');
   const g1 = decision.datos?.g1 ?? null;
   let poderActivo = false;
+  // G1: la charla del coach elegida para este mapa (baja la vara; el juicio de la UI cuenta con ella, como el motor)
+  let charlaElegida = false;
+  const bajaCharla = () => (charlaElegida && decision.datos.charla?.disponible ? (decision.datos.charla.bajaVara ?? 0) : 0);
+  const textosDeLaCharla = [];
   let camino = null;
   let mesa = null;
 
@@ -176,6 +180,8 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
     mesa = crearMesaG1(decision, estadoActual, {
       alCambiarPoder: (activo) => {
         poderActivo = activo;
+        // el poder (el escenario) también baja la vara: lo que dicen los botones de la charla cuenta con él
+        textosDeLaCharla.forEach((pintar) => pintar());
       }
     });
     minijuegoWidget.before(mesa.nodo);
@@ -198,7 +204,23 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
       boton.type = 'button';
       boton.appendChild(crearTecla(String(indice + 1)));
       boton.appendChild(nodo('span', 'minijuego-charla-label', opcion.label));
-      if (opcion.previa) {
+      if (g1) {
+        // G1: la charla no mueve la p (el mapa lo decide el minijuego): baja la vara, y eso es lo que se ve, en las
+        // unidades del minijuego ("la charla baja la vara: necesitás 3 de 5 ...")
+        const efecto = nodo('span', 'minijuego-charla-p minijuego-charla-vara');
+        boton.classList.add('minijuego-charla-opcion--vara');
+        const pintar = () => {
+          const baja = opcion.charla ? (decision.datos.charla.bajaVara ?? 0) : 0;
+          const regla = G1.reglaDeVara(decision.datos.minijuego, G1.varaEfectiva(g1, poderActivo, baja), estadoActual, decision.datos);
+          const enFrase = regla.charAt(0).toLowerCase() + regla.slice(1);
+          // con pocos pasos (3 de 4) bajar la vara no siempre mueve el número: se dice igual, sin prometer de más
+          const igual = opcion.charla && regla === G1.reglaDeVara(decision.datos.minijuego, G1.varaEfectiva(g1, poderActivo, 0), estadoActual, decision.datos);
+          efecto.textContent = opcion.charla ? `la charla baja la vara${igual ? ' un poco, y acá el número no cambia' : ''}: ${enFrase}` : `sin la charla: ${enFrase}`;
+        };
+        pintar();
+        textosDeLaCharla.push(pintar);
+        boton.appendChild(efecto);
+      } else if (opcion.previa) {
         boton.appendChild(nodo('span', 'minijuego-charla-p', `${opcion.previa.porcentaje}% de ganar`));
       }
       if (indice < OPCIONES_CON_ATAJO) {
@@ -207,6 +229,8 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
       }
       boton.addEventListener('click', () => {
         renderPrevia(decision, estadoActual, { charla: opcion.charla });
+        charlaElegida = opcion.charla;
+        mesa?.fijarCharla?.(opcion.charla);
         minijuegoWidget.innerHTML = '';
         montarMinijuego(opcion.charla);
       });
@@ -257,7 +281,7 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
       if (g1) {
         const respuesta = { resultado, ...(decision.datos.charla?.disponible ? { charla } : {}), ...(g1.poder ? { poder: poderActivo } : {}) };
         // la final con las manos: el juicio al toque, con la cuenta del motor; el mapa queda escrito en la tira
-        const juicio = G1.juzgar(resultado, g1, poderActivo);
+        const juicio = G1.juzgar(resultado, g1, poderActivo, bajaCharla());
         if (juicio.paso) marcarHit(minijuegoWidget);
         else if (!juicio.casi) marcarMiss(minijuegoWidget);
         marcarMapaG1(camino, juicio.clave);
@@ -295,7 +319,7 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
         + '</div>';
       setTimeout(() => responder(decision.datos.charla?.disponible ? { resultado, charla } : { resultado }), 1600);
     }, rngUi, decision.datos);
-    jugar(poderActivo ? { ...decision, datos: { ...decision.datos, poderActivo } } : decision);
+    jugar(g1 ? { ...decision, datos: { ...decision.datos, poderActivo, charlaActiva: charlaElegida } } : decision);
 
     // El widget ya es más grande que la espera: si no entra, que se vea entero (el reloj corre).
     minijuegoWidget.scrollIntoView?.({ block: 'nearest' });

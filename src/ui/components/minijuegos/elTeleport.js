@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, escuchaTeclado, motionReducido, dificultadDe } from './comun.js';
+import { unaSolaVez, ventanaPorStat, escuchaTeclado, motionReducido, dificultadDe, varaEfectivaDe, radioDeLaZona } from './comun.js';
 
 // "El teleport" (fase 9R4c). Es de timing como el Barón, pero al revés: el TP
 // tarda en canalizar, así que hay que apretar ANTES de que la pelea esté en la
@@ -18,6 +18,11 @@ export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);
   const dificultad = dificultadDe(state, datos);
   const ancho = ventanaPorStat(state.player.stats.macro, ANCHO_ZONA[0], ANCHO_ZONA[1], dificultad);
+  // G1: en una final la zona dibujada ES la que pasa: el TP tiene que caer a `radio` o menos del centro, y `radio` sale de
+  // la vara efectiva con la misma cuenta que el motor (`escala` es la de `components/varaG1.js`). El `ancho` por `macro`
+  // sigue siendo lo que arma la escala. Sin `g1`, la zona de siempre.
+  const vara = varaEfectivaDe(datos);
+  const radio = vara === null ? ancho / 2 : radioDeLaZona(vara, ancho / 2 + MARGEN_DISTANCIA);
   const reducido = motionReducido();
   const canalizacion = 18; // lo que el TP tarda, en la misma escala 0-100
   const centro = 30 + rngUi() * 45;
@@ -30,8 +35,9 @@ export function montar(container, state, onDone, rngUi, datos = null) {
     + '<button type="button" class="minijuego-btn">TP ya</button>';
 
   const zona = container.querySelector('.minijuego-zona');
-  zona.style.left = `${Math.max(0, centro - ancho / 2)}%`;
-  zona.style.width = `${ancho}%`;
+  const desde = Math.max(0, centro - radio);
+  zona.style.left = `${desde}%`;
+  zona.style.width = `${Math.min(100, centro + radio) - desde}%`;
 
   const cursor = container.querySelector('.minijuego-marcador');
   const boton = container.querySelector('.minijuego-btn');

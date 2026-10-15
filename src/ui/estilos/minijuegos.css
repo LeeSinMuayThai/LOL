@@ -108,6 +108,9 @@ html[data-reducido] :is(.minijuego, .minijuego-widget--hit, .minijuego-widget--m
 .minijuego-charla-opcion:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .minijuego-charla-label { flex: 1 1 0; min-width: 0; }
 .minijuego-charla-p { flex: none; font: 900 18px / 1 var(--f-display); font-stretch: var(--ancho-numero); font-variant-numeric: tabular-nums; color: var(--luz-texto); white-space: nowrap; }
+/* G1: la charla baja la vara, no mueve un %: el efecto va en su propia línea, en palabras */
+.minijuego-charla-opcion--vara { flex-wrap: wrap; row-gap: 2px; padding-block: 10px; }
+.minijuego-charla-vara { flex: 1 1 100%; font: 600 13px / 1.35 var(--f-cuerpo); font-stretch: normal; white-space: normal; color: var(--luz-texto); }
 
 /* ---------- "¡Vamos!": el aro de ceremonia (el reloj no corre hasta tocarlo) ---------- */
 .minijuego-espera { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
@@ -375,6 +378,9 @@ button.g1-poder:disabled { cursor: default; }
 .g1-rotulo[data-tipo="desempate"] { color: var(--gold); box-shadow: inset 0 0 0 1.5px var(--gold); }
 .g1-rotulo[data-tipo="revancha"] { color: var(--down); box-shadow: inset 0 0 0 1.5px var(--down); }
 .g1-charla[data-vacia] { opacity: 0.6; }
+.g1-charla[data-usada] { box-shadow: inset 0 0 0 1.5px var(--gold); }
+.g1-desempate[data-queda] { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 55%, var(--linea)); }
+.g1-desempate .g1-poder-k { color: var(--gold); }
 .g1-premio { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; padding: 10px 14px; border-radius: var(--r-control); background: var(--panel-hondo); box-shadow: inset 0 0 0 1px var(--linea); font-size: 13px; }
 .g1-premio span { font: 700 10px / 1.6 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mute); }
 /* jugando: la vara queda (se juega contra ella); los chips se pliegan al poder activo */

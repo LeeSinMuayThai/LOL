@@ -42,14 +42,16 @@ const LINEA_SIN_DATO = {
 export const TITULO_JUICIO = { paso: 'PASÓ', casi: 'CASI', no: 'NO SALIÓ' };
 const NIVEL_DE_JUICIO = { paso: 'bien', casi: 'parejo', no: 'mal' };
 
-export function varaEfectiva(g1, poderActivo = false) {
+// La vara de la ronda: la del motor menos lo que bajó el poder del escenario y la charla del coach (`bajaCharla`: lo que
+// baja la charla si se eligió, `0` si no).
+export function varaEfectiva(g1, poderActivo = false, bajaCharla = 0) {
   const baja = poderActivo && g1?.poder?.efecto?.bajaVara ? g1.poder.efecto.bajaVara : 0;
-  return Math.max(0, (g1?.vara ?? 0) - baja);
+  return Math.max(0, (g1?.vara ?? 0) - baja - bajaCharla);
 }
 
 // `{ paso, casi, vara, clave }`: la cuenta del motor.
-export function juzgar(resultado, g1, poderActivo = false) {
-  const vara = varaEfectiva(g1, poderActivo);
+export function juzgar(resultado, g1, poderActivo = false, bajaCharla = 0) {
+  const vara = varaEfectiva(g1, poderActivo, bajaCharla);
   const paso = resultado >= vara;
   const casi = !paso && resultado >= vara - (g1?.margenCasi ?? 0);
   return { paso, casi, vara, clave: paso ? 'paso' : casi ? 'casi' : 'no' };

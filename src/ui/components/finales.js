@@ -128,11 +128,17 @@ export function crearMesaG1(decision, estado, { alCambiarPoder = () => {} } = {}
   const antes = el('s', { class: 'g1-regla-antes' });
   const stat = G1.lineaDeStat(id, estado);
   let activo = false;
+  let charlaActiva = false;
+  const bajaCharla = () => (charlaActiva ? (decision.datos.charla?.bajaVara ?? 0) : 0);
   const pintarRegla = () => {
-    regla.textContent = G1.reglaDeVara(id, G1.varaEfectiva(g1, activo), estado, decision.datos);
-    const bajo = activo && poder?.efecto?.bajaVara;
-    antes.textContent = bajo ? G1.reglaDeVara(id, g1.vara, estado, decision.datos) : '';
-    antes.hidden = !bajo;
+    regla.textContent = G1.reglaDeVara(id, G1.varaEfectiva(g1, activo, bajaCharla()), estado, decision.datos);
+    // la regla tachada de antes: la vara que había sin el poder ni la charla
+    const bajo = (activo && poder?.efecto?.bajaVara) || charlaActiva;
+    const antesDicho = bajo ? G1.reglaDeVara(id, g1.vara, estado, decision.datos) : '';
+    // con una mecánica de pocos pasos (3 de 4), bajar la vara 0,08 puede no mover el número: no se tacha lo que no cambió
+    const cambio = antesDicho !== regla.textContent;
+    antes.textContent = cambio ? antesDicho : '';
+    antes.hidden = !cambio;
   };
   pintarRegla();
 
@@ -159,15 +165,27 @@ export function crearMesaG1(decision, estado, { alCambiarPoder = () => {} } = {}
     }
     chips.push(botonPoder);
   }
+  // El desempate que todavía te queda en este torneo (`g1.desempateDisponible`, lo da el motor): un solo casi por torneo.
+  if (!g1.desempate && !g1.revancha && g1.desempateDisponible) {
+    chips.push(el('span', { class: 'g1-chip g1-desempate', 'data-queda': '' }, [
+      el('span', { class: 'g1-poder-k', text: 'Te queda el desempate' }),
+      el('small', { text: 'Si quedás a un pelo, se juega otra vez, más corto y más difícil.' })
+    ]));
+  }
   if (g1.desempate) chips.push(el('span', { class: 'g1-chip g1-rotulo', 'data-tipo': 'desempate', text: 'Desempate' }));
   if (g1.revancha) chips.push(el('span', { class: 'g1-chip g1-rotulo', 'data-tipo': 'revancha', text: 'Revancha' }));
   const charla = decision.datos.charla;
+  let chipCharla = null;
+  let textoCharla = null;
   if (charla) {
     const usos = charla.usos ?? (charla.disponible ? 1 : 0);
-    chips.push(el('span', { class: 'g1-chip g1-charla', 'data-vacia': usos > 0 ? null : '' }, [
+    textoCharla = el('b', { text: usos > 0 ? `te ${usos === 1 ? 'queda 1' : `quedan ${usos}`} esta temporada` : 'ya la usaste esta temporada' });
+    chipCharla = el('span', { class: 'g1-chip g1-charla', 'data-vacia': usos > 0 ? null : '' }, [
       el('span', { class: 'g1-poder-k', text: 'Charla del coach' }),
-      el('b', { text: usos > 0 ? `te ${usos === 1 ? 'queda 1' : `quedan ${usos}`} esta temporada` : 'ya la usaste esta temporada' })
-    ]));
+      textoCharla
+    ]);
+    textoCharla.dataset.base = textoCharla.textContent;
+    chips.push(chipCharla);
   }
   const premio = g1.premio
     ? el('p', { class: 'g1-premio' }, [el('span', { text: 'Si sale' }), el('b', { text: g1.premio.si }), el('span', { text: 'Si no' }), el('b', { text: g1.premio.no })])
@@ -184,6 +202,16 @@ export function crearMesaG1(decision, estado, { alCambiarPoder = () => {} } = {}
   ]);
   return {
     nodo,
+    // La charla se elige antes del "¡Vamos!": la vara de la regla baja lo que baja la charla (`datos.charla.bajaVara`).
+    fijarCharla(activa) {
+      charlaActiva = activa === true && charla?.disponible === true;
+      if (chipCharla) {
+        if (charlaActiva) chipCharla.dataset.usada = '';
+        else delete chipCharla.dataset.usada;
+        textoCharla.textContent = charlaActiva ? 'la usás en este mapa' : textoCharla.dataset.base;
+      }
+      pintarRegla();
+    },
     alJugar() {
       nodo.dataset.jugando = '';
       if (botonPoder?.tagName === 'BUTTON') botonPoder.disabled = true;
