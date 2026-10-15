@@ -940,6 +940,9 @@ for (let it = 0; it < 3000; it++) {
   }
 
   if (pieza === 'minijuego') {
+    // Entre el minijuego y lo que sigue hay momentos (el fichaje, ~4 s hasta su Seguir) donde `data-pieza` sigue en minijuego
+    // sin nada adentro: se espera sin contarlo como parada, y solo es trabada si dura (~10 s).
+    if (!(await page.innerText('#minijuegoTitle').catch(() => '')).trim() && !(await page.locator('#minijuegoWidget *').count())) { await page.waitForTimeout(700); stuck += 0.5; continue; }
     paradas++; step++;
     const tit = await page.innerText('#minijuegoTitle').catch(() => '');
     const ap = await page.innerText('#minijuego').catch(() => '');
