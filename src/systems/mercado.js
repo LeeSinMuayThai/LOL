@@ -18,6 +18,7 @@ import { BALANCE } from '../data/balance.js';
 import { ajusteBaseDeMinijuego, varaDeLaPrueba, veredictoDeLaPrueba } from '../core/serie.js';
 import { retirarsePorMercado, pretemporadasEnPalabras, aniosEnPalabras } from './retiro.js';
 import { nombreVisibleDeLiga } from '../core/ligas.js';
+import { rivalClasico } from '../core/clasicos.js';
 
 export const id = 'mercado';
 
@@ -35,6 +36,99 @@ function conFilaCerrada(state, motivo) {
     anio: state.calendario.anio, split: state.player.splitCount,
     arraigoActual: state.career.arraigo, motivo
   });
+}
+
+// G3c: al irte de una org, tu arraigo queda guardado ahí (`career.arraigoPorOrg`), menos `mercado.costoTraicion` si te vas al
+// clásico (`traicion`). Devuelve el mapa nuevo; sin org actual, el de siempre.
+function arraigoPorOrgAlIrte(state, traicion = false) {
+  const org = state.career.currentOrg;
+  const guardado = state.career.arraigoPorOrg ?? {};
+  if (!org) {
+    return guardado;
+  }
+  const costo = traicion ? BALANCE.mercado.costoTraicion : 0;
+  return { ...guardado, [org]: Math.round(clampStat(state.career.arraigo - costo)) };
+}
+
+// --- G3c (PLANUI §0.9): el frente de la oferta y sus etiquetas ---
+
+// Con cuánto arraigo arrancás en `org` si firmás: si ya jugaste ahí, lo que dejaste guardado menos la salida; si no, la
+// fracción de tu hype de siempre (`arraigoInicial`). En tu org actual, el que tenés.
+function arraigoDeLlegada(state, org) {
+  if (org === state.career.currentOrg) {
+    return Math.round(state.career.arraigo);
+  }
+  const guardado = state.career.arraigoPorOrg?.[org];
+  if (guardado != null) {
+    return Math.round(clampStat(guardado - BALANCE.mercado.costoSalidaArraigo));
+  }
+  return Math.round(arraigoInicial(state.player.stats.hype));
+}
+
+// ¿Llegaste a Querido en `org` alguna vez? Del pico de sus filas cerradas o de lo que quedó guardado.
+function fuisteQueridoEn(state, org) {
+  const querido = BALANCE.arraigo.hitos.querido;
+  return (state.career.arraigoPorOrg?.[org] ?? 0) >= querido
+    || state.career.registro.porOrg.some((fila) => fila.org === org && fila.hastaAnio != null && (fila.arraigoMaximo ?? 0) >= querido);
+}
+
+// ¿Firmar con `org` es traicionar a tu club? Su clásico (`data/clasicos.json`) en la liga de tu org actual.
+function esTraicion(state, org) {
+  const actual = state.career.currentOrg;
+  return Boolean(actual) && org !== actual && rivalClasico(state.career.liga, actual) === org;
+}
+
+const PRIORIDAD_ETIQUETA_FILA = ['TRAICION', 'VOLVE_A_CASA', 'BOMBAZO', 'A_LA_BAJA'];
+
+// Las etiquetas de una oferta (puede llevar varias) y el frente que muestra la carta: la plata (topeada por el "hasta" del
+// asiento, D112), los minutos, el arraigo que perdés y el arraigo con el que arrancás. Puro, sin rng: se recalcula cada vez
+// que cambia el sueldo (negociar, traspaso, piso a la baja).
+export function frenteDeOferta(state, oferta) {
+  const m = BALANCE.mercado;
+  const actual = state.career.currentOrg;
+  const esOrgActual = oferta.org === actual;
+  const traicion = esTraicion(state, oferta.org);
+
+  const liga = state.mundo.ligas.find((candidata) => candidata.id === oferta.liga);
+  const sueldoVigente = state.career.contrato.salarioAnualUSD;
+  const referencia = sueldoVigente > 0 ? sueldoVigente : (liga?.salario.medianaUSD ?? 0);
+  const etiquetas = [
+    ...(oferta.tag === 'renovacion' ? ['RENOVACION'] : []),
+    ...(traicion ? ['TRAICION'] : []),
+    ...(!esOrgActual && fuisteQueridoEn(state, oferta.org) ? ['VOLVE_A_CASA'] : []),
+    ...(referencia > 0 && oferta.salarioAnualUSD >= referencia * m.bombazoEtiquetaMultiplo ? ['BOMBAZO'] : []),
+    ...(oferta.aLaBaja ? ['A_LA_BAJA'] : [])
+  ];
+
+  const flecha = oferta.proyeccionJerarquia?.flecha ?? 'igual';
+  const minutos = !actual ? 'mas' : (esOrgActual ? 'igual' : ({ sube: 'mas', baja: 'menos' }[flecha] ?? 'igual'));
+
+  const arraigoActual = Math.round(state.career.arraigo);
+  const arraigoPierde = esOrgActual || !actual
+    ? null
+    : { org: actual, valor: Math.min(arraigoActual, m.costoSalidaArraigo + (traicion ? m.costoTraicion : 0)) };
+
+  const valor = arraigoDeLlegada(state, oferta.org);
+  const banda = bandaDeArraigoFicha(valor);
+  const arraigoArranca = {
+    valor,
+    escalon: banda.label,
+    faltan: banda.esMaxima ? null : Math.round(banda.techo - valor),
+    proximo: banda.esMaxima ? null : bandaDeArraigoFicha(banda.techo).label
+  };
+
+  return { sueldo: oferta.salarioAnualUSD, hasta: oferta.hasta ?? null, minutos, arraigoPierde, arraigoArranca, etiquetas };
+}
+
+function conFrente(state, oferta) {
+  return { ...oferta, frente: frenteDeOferta(state, oferta) };
+}
+
+// La etiqueta de la fila del registro que abre la firma (una sola: la de más peso) y a quién traicionaste.
+function etiquetaDeFirma(state, oferta) {
+  const { etiquetas } = frenteDeOferta(state, oferta);
+  const etiqueta = PRIORIDAD_ETIQUETA_FILA.find((e) => etiquetas.includes(e)) ?? null;
+  return { etiqueta, traicionA: etiqueta === 'TRAICION' ? state.career.currentOrg : null };
 }
 
 // La org de `orgNombre` en cualquiera de las 6 ligas del mundo (una oferta
@@ -75,7 +169,9 @@ function tipoDeContrato(state, liga, esRenovacion) {
   return 'transferencia';
 }
 
-export function construirOferta(state, liga, org, tagForzado, rng) {
+// `hasta`: lo que el asiento puede pagar (`presupuesto` de `ofertaPosible`, el "te puede pagar hasta $X" del motivo). El sueldo
+// nunca lo supera (D112). `null` cuando la oferta no viene de un asiento con presupuesto (renovación, piso, traspaso).
+export function construirOferta(state, liga, org, tagForzado, rng, { hasta = null } = {}) {
   const m = BALANCE.mercado;
   const jerarquiaActual = state.career.jerarquia;
   const esRenovacion = tagForzado === 'renovacion';
@@ -88,9 +184,10 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
   const ligaParaSalario = esRenovacion
     ? { ...liga, salario: { ...liga.salario, sigma: liga.salario.sigma * m.renovacionSigmaFactor } }
     : liga;
-  const salarioAnualUSD = salarioDeOferta(ligaParaSalario, {
+  const salarioCrudo = salarioDeOferta(ligaParaSalario, {
     rol: state.player.role, jerarquia: jerarquiaActual, hype: state.player.stats.hype
   }, rng);
+  const salarioAnualUSD = hasta === null ? salarioCrudo : Math.min(salarioCrudo, hasta);
   const anios = roll(m.aniosContratoMin, m.aniosContratoMax, rng);
 
   // D67: el salario de referencia es el contrato vigente si lo hay; si es 0
@@ -133,20 +230,31 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
     : 'Con esa jerarquía tus llamadas en el mapa decisivo cuentan enteras.';
 
   const bandaArraigoActual = bandaDeArraigoFicha(state.career.arraigo);
-  const costeArraigo = esOrgActual
-    ? { pierde: 0, etiqueta: 'Seguís en la misma organización: no perdés nada.' }
+  // G3c: el arraigo ya no se pierde entero al irte: queda guardado con tu org (`career.arraigoPorOrg`) y si volvés arrancás
+  // con eso menos `costoSalidaArraigo`. Lo que se pierde de verdad es esa salida (más `costoTraicion` si te vas al clásico).
+  const traicion = esTraicion(state, org.nombre);
+  const arraigoHoy = Math.round(state.career.arraigo);
+  const pierdeDeVerdad = Math.min(arraigoHoy, m.costoSalidaArraigo + (traicion ? m.costoTraicion : 0));
+  const costeArraigo = esOrgActual || !state.career.currentOrg
+    ? { pierde: 0, etiqueta: esOrgActual ? 'Seguís en la misma organización: no perdés nada.' : 'No dejás a nadie atrás.' }
     : {
-      pierde: Math.round(state.career.arraigo),
-      etiqueta: `Dejás ${state.career.currentOrg ?? 'tu equipo actual'}: perdés ${bandaArraigoActual.label} (${Math.round(state.career.arraigo)}/100)`
+      pierde: pierdeDeVerdad,
+      etiqueta: traicion
+        ? `Te vas al clásico: ${state.career.currentOrg} no te lo perdona (−${pierdeDeVerdad} de arraigo con ellos).`
+        : `Dejás ${state.career.currentOrg} en ${bandaArraigoActual.label} (${arraigoHoy}/100): si volvés, arrancás con −${pierdeDeVerdad}.`
     };
+  // K6a-U: el arraigo de llegada es una cuenta (`arraigoInicial`: una fracción de tu hype) y la carta dice esa cuenta, con la
+  // banda que le toca. G3c: si ya jugaste ahí, lo guardado menos la salida.
+  const valorLlegada = arraigoDeLlegada(state, org.nombre);
+  const volves = !esOrgActual && state.career.arraigoPorOrg?.[org.nombre] != null;
   const arraigoAlLlegar = esOrgActual
-    ? { valor: Math.round(state.career.arraigo), etiqueta: 'Seguís donde estabas.' }
-    : (() => {
-      // K6a-U: "casi de cero: tu fama te precede" se contradecía en la misma línea. El arraigo de llegada es una cuenta
-      // (`arraigoInicial`: una fracción de tu hype) y la carta dice esa cuenta, con la banda que le toca.
-      const valor = Math.round(arraigoInicial(state.player.stats.hype));
-      return { valor, etiqueta: `Allá arrancás en ${bandaDeArraigoFicha(valor).label} (${valor}/100): el arraigo se arma de a poco.` };
-    })();
+    ? { valor: valorLlegada, etiqueta: 'Seguís donde estabas.' }
+    : {
+      valor: valorLlegada,
+      etiqueta: volves
+        ? `Volvés: arrancás en ${bandaDeArraigoFicha(valorLlegada).label} (${valorLlegada}/100), lo que dejaste menos la salida.`
+        : `Allá arrancás en ${bandaDeArraigoFicha(valorLlegada).label} (${valorLlegada}/100): el arraigo se arma de a poco.`
+    };
 
   const progresoHito = esOrgActual && !bandaArraigoActual.esMaxima
     ? {
@@ -180,11 +288,11 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
     escalonesMax: m.escalonesNegociacionMax
   };
 
-  return {
+  return conFrente(state, {
     id: org.nombre,
     org: org.nombre, liga: liga.id, tier: liga.tier, region: liga.regionId,
     tag,
-    salarioAnualUSD, anios,
+    salarioAnualUSD, anios, hasta,
     proyeccionJerarquia, proyeccionPicks,
     costeArraigo, arraigoInicial: arraigoAlLlegar,
     progresoHito,
@@ -209,7 +317,7 @@ export function construirOferta(state, liga, org, tagForzado, rng) {
       // `'salida'` y `aceptarOferta` la escribe en el contrato (regla 15).
       clausula: null
     }
-  };
+  });
 }
 
 // --- K4-C2: la oferta de import que trae una bifurcación (`ofertaDeImport` en `data/events/caminos.json`) ---
@@ -422,8 +530,9 @@ export function generarOfertas(state, rng) {
   const cupoEtario = Math.max(claramenteArriba || hayCasaEnLaMano ? 1 : 0, Math.round(manoBase * sesgoEtarioDe(state)));
   const candidatas = posibles.slice(0, cupoEtario);
 
-  for (const { org, liga, motivo, forzadaFranquicia } of candidatas) {
-    const oferta = construirOferta(state, liga, org, null, rng);
+  for (const { org, liga, motivo, forzadaFranquicia, presupuesto } of candidatas) {
+    // D112: el "hasta" del motivo topea el sueldo. La franquicia forzada no lo dice (salta el presupuesto).
+    const oferta = construirOferta(state, liga, org, null, rng, { hasta: forzadaFranquicia ? null : (presupuesto ?? null) });
     ofertas.push({ ...oferta, motivoDemanda: motivo, ...(forzadaFranquicia ? { forzadaFranquicia: true } : {}) });
   }
 
@@ -489,7 +598,7 @@ export function conPisoDeOfertas(state, ofertas, rng, excluidas = new Set()) {
       const forzada = ofertaPosible(state, org.nombre, state.player.role, { forzada: true });
       if (forzada?.posible) {
         const oferta = construirOferta(state, liga, org, null, rng);
-        completas.push({ ...oferta, tag: 'a_la_baja', motivoDemanda: forzada.motivo, aLaBaja: true });
+        completas.push(conFrente(state, { ...oferta, tag: 'a_la_baja', motivoDemanda: forzada.motivo, aLaBaja: true }));
       }
     }
   }
@@ -624,6 +733,7 @@ function quedarLibre(state, racha, rng) {
         ...cerrado.state.career,
         currentOrg: null, liga: null, rosterDeOrg: null, companeros: [], sinergia: 0,
         contrato: { ...cerrado.state.career.contrato, avisoNoRenovacion: false },
+        arraigoPorOrg: arraigoPorOrgAlIrte(cerrado.state),
         registro: conFilaCerrada(cerrado.state, 'libre')
       }
     },
@@ -650,6 +760,7 @@ function teVasDelClub(state, motivoFila = 'libre') {
         ...state.career,
         currentOrg: null, liga: null, rosterDeOrg: null, companeros: [], sinergia: 0,
         contrato: { ...state.career.contrato, avisoNoRenovacion: false },
+        arraigoPorOrg: arraigoPorOrgAlIrte(state),
         registro: conFilaCerrada(state, motivoFila)
       }
     },
@@ -1235,6 +1346,12 @@ function aceptarOfertaSinFlag(state, oferta, rng, { motivoFila } = {}) {
   // compañeros (venías sin equipo) no hay nada que resetear: lo arma el roster.
   const sinergiaAlFirmar = state.career.companeros.length > 0 ? sinergiaAlFichar(state, rng) : null;
 
+  // G3c: el arraigo con la org que dejás queda guardado (menos la traición, si te vas al clásico), y la firma le deja a
+  // `roster.js` la etiqueta de la fila nueva y, si volvés a una org donde ya jugaste, el arraigo con el que arrancás.
+  const firma = etiquetaDeFirma(state, oferta);
+  const yaJugasteAhi = state.career.arraigoPorOrg?.[oferta.org] != null;
+  const fichajeEtiquetado = { ...firma, arraigo: yaJugasteAhi ? arraigoDeLlegada(state, oferta.org) : null };
+
   return {
     state: {
       ...state,
@@ -1245,7 +1362,8 @@ function aceptarOfertaSinFlag(state, oferta, rng, { motivoFila } = {}) {
         splitsSinOfertaEnTier: 0,
         pruebasFallidas: [],
         jerarquiaProyectadaAlFichar: oferta.datos.jerarquiaProyectada,
-        sinergiaProyectadaAlFichar: sinergiaAlFirmar
+        sinergiaProyectadaAlFichar: sinergiaAlFirmar,
+        fichajeEtiquetado
       },
       career: {
         ...state.career,
@@ -1268,6 +1386,7 @@ function aceptarOfertaSinFlag(state, oferta, rng, { motivoFila } = {}) {
           ? state.player.splitCount
           : state.career.splitPrimerContratoTier2,
         contrato,
+        arraigoPorOrg: arraigoPorOrgAlIrte(state, firma.etiqueta === 'TRAICION'),
         registro: conFilaCerrada(state, motivoFilaFinal)
       }
     },
@@ -1319,10 +1438,10 @@ function ofertaDeTraspaso(state, rng) {
     ofertaCruda.salarioAnualUSD,
     Math.round(state.career.contrato.salarioAnualUSD * m.traspasoSalarioMinFactor)
   );
-  const oferta = {
+  const oferta = conFrente(state, {
     ...ofertaCruda, salarioAnualUSD,
     negociacion: { ...ofertaCruda.negociacion, salarioBase: salarioAnualUSD }
-  };
+  });
   const conClausula = state.career.contrato.clausula === 'salida';
   // D82 (a), regla 15: el precio sale del valor que muestra "Vos en el mercado" (`precioDeTraspaso`), y si la edad lo baja
   // de verdad, la tarjeta lo dice en vez de dejar un "valés $326k/año" al lado de un traspaso de $73k sin explicación.
@@ -1475,6 +1594,7 @@ function resolverBanquillo(state, logsPrevios, rng) {
         career: {
           ...state.career, currentOrg: null, liga: null, rosterDeOrg: null, companeros: [], sinergia: 0,
           contrato: { ...state.career.contrato, avisoNoRenovacion: false },
+          arraigoPorOrg: arraigoPorOrgAlIrte(state),
           registro: conFilaCerrada(state, 'banquillo')
         }
       },
@@ -1551,7 +1671,8 @@ function negociarPedirMas(ofertas, idx, state, rng) {
   const m = BALANCE.mercado;
   const oferta = ofertas[idx];
   const neg = oferta.negociacion ?? { escalones: 0, clausula: false, salarioBase: oferta.salarioAnualUSD };
-  if (neg.escalones >= m.escalonesNegociacionMax) {
+  // D112: tampoco pasa del "hasta" del asiento.
+  if (neg.escalones >= m.escalonesNegociacionMax || (oferta.hasta != null && oferta.salarioAnualUSD >= oferta.hasta)) {
     return { ofertas, logs: [crearLog('mercado', `${oferta.org} no se mueve más del número.`)], nuevasRotas: [] };
   }
 
@@ -1573,11 +1694,12 @@ function negociarPedirMas(ofertas, idx, state, rng) {
 
   const entero = chance(m.probAceptaEscalonEntero, rng);
   const suba = Math.round(neg.salarioBase * m.escalonNegociacionFactor * (entero ? 1 : m.contraofertaFactor));
-  const actualizada = {
+  const subido = oferta.salarioAnualUSD + suba;
+  const actualizada = conFrente(state, {
     ...oferta,
-    salarioAnualUSD: oferta.salarioAnualUSD + suba,
+    salarioAnualUSD: oferta.hasta != null ? Math.min(subido, oferta.hasta) : subido,
     negociacion: { ...neg, escalones: neg.escalones + 1 }
-  };
+  });
   return {
     ofertas: ofertas.map((o, i) => (i === idx ? actualizada : o)),
     logs: [crearLog('mercado', entero
@@ -1590,7 +1712,7 @@ function negociarPedirMas(ofertas, idx, state, rng) {
 // Pedir cláusula de salida: `contrato.clausula` deja de valer siempre `null`.
 // Se paga con sueldo. A cambio, un club grande te puede sacar a mitad de
 // contrato (lo consume 9Mf). Trato directo, sin dado.
-function negociarClausula(ofertas, idx) {
+function negociarClausula(ofertas, idx, state) {
   const m = BALANCE.mercado;
   const oferta = ofertas[idx];
   const neg = oferta.negociacion ?? { escalones: 0, clausula: false, salarioBase: oferta.salarioAnualUSD };
@@ -1598,12 +1720,12 @@ function negociarClausula(ofertas, idx) {
     return { ofertas, logs: [crearLog('mercado', `${oferta.org} ya te incluyó la cláusula.`)], nuevasRotas: [] };
   }
   const costo = Math.round(oferta.salarioAnualUSD * m.precioClausulaSalida);
-  const actualizada = {
+  const actualizada = conFrente(state, {
     ...oferta,
     salarioAnualUSD: oferta.salarioAnualUSD - costo,
     negociacion: { ...neg, clausula: true },
     datos: { ...oferta.datos, clausula: 'salida' }
-  };
+  });
   return {
     ofertas: ofertas.map((o, i) => (i === idx ? actualizada : o)),
     logs: [crearLog('mercado', `${oferta.org} te suma la cláusula de salida: cuesta ${plata(costo)} de sueldo (${plata(actualizada.salarioAnualUSD)}/año).`)],
@@ -1867,7 +1989,7 @@ function resolverMercado(state, decision, respuesta, rng) {
       return { state, logs: [], decision };
     }
     const res = respuesta.negociar === 'clausula'
-      ? negociarClausula(decision.opciones, idx)
+      ? negociarClausula(decision.opciones, idx, state)
       : negociarPedirMas(decision.opciones, idx, state, rng);
     const negociacionesRotas = [...(decision.datos.negociacionesRotas ?? []), ...res.nuevasRotas];
 

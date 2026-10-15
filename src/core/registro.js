@@ -37,7 +37,7 @@ export const TIERS_DE_SPLIT = [1, 2, 3];
 // cierra la fila): "cuánto jugaste en tier N" se lee de `splitsPorTier`.
 // `jugadoSinFila`: lo jugado con esta org antes de que existiera su fila
 // (`flags.splitJugadoSinFila`); la fila arranca con eso adentro.
-export function abrirFila(registro, { org, liga, tier, anio, split }, jugadoSinFila = null) {
+export function abrirFila(registro, { org, liga, tier, anio, split, etiqueta = null, traicionA = null }, jugadoSinFila = null) {
   return {
     ...registro,
     porOrg: [...registro.porOrg, {
@@ -50,7 +50,9 @@ export function abrirFila(registro, { org, liga, tier, anio, split }, jugadoSinF
       jerarquiaMaxima: 0, arraigoFinal: null, arraigoMaximo: 0,
       titulos: [],
       salarioAnualUSD: 0, // la fase 9 lo llena
-      motivoDeSalida: null
+      motivoDeSalida: null,
+      // G3c: cómo llegaste (`'BOMBAZO' | 'TRAICION' | 'VOLVE_A_CASA' | 'A_LA_BAJA' | null`) y a quién traicionaste.
+      etiqueta, traicionA
     }]
   };
 }

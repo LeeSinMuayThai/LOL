@@ -82,6 +82,7 @@ import { rankearMundo, rankearPoblacion, puntajeRanking, bonusResultadoDelAnio, 
 import { salarioDeOferta } from '../core/salarios.js';
 import { valorDeMercado, presupuestoDeDemanda, sesgoEtario } from '../core/valorMercado.js';
 import { orgsQueTeFicharian, ofertaPosible, residenciaEn, factorElite } from '../core/demanda.js';
+import { rivalClasico } from '../core/clasicos.js';
 import { aplicar as aplicarMercado, construirOferta, ofertaDeImportPosible, academiaDelBanquillo, generarOfertas } from '../systems/mercado.js';
 import { aplicar as aplicarRetiroK4c2, MOTIVOS_DE_RETIRO } from '../systems/retiro.js';
 import { cartaDeRutina, resolverPreparacion } from '../systems/practica.js';
@@ -29475,6 +29476,69 @@ check('G2b una carta por año: una sola decisión de carta por año jugado, 3 ca
     }
   }
   console.log(`      ${cartas} cartas en ${anios} años jugados (10 carreras)`);
+  if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
+});
+
+// G3c (PLANUI §0.9), la promesa del mercado como dilema: TRAICIÓN sale solo en ofertas del clásico de tu org actual
+// (`data/clasicos.json`); VOLVÉ A CASA arranca con lo guardado menos la salida (`mercado.costoSalidaArraigo`), y la fila nueva
+// del registro lleva la etiqueta de la firma; el sueldo nunca supera el "hasta" del asiento (D112). Carreras enteras.
+check('G3c el mercado como dilema: TRAICIÓN solo del clásico, VOLVÉ A CASA con lo guardado menos la salida, sueldo ≤ "hasta"', () => {
+  const mal = [];
+  const cuenta = { ofertas: 0, conHasta: 0, traicion: 0, volve: 0, firmasVolve: 0, filasEtiquetadas: 0 };
+  for (let seed = 1; seed <= 40; seed += 1) {
+    const rng = mulberry32(seed);
+    let estado = createInitialState(seed, rng);
+    const responder = (sistema, st, decision, r) => {
+      if (sistema.id === 'mercado' && decision.presentacion === 'mercado' && decision.datos?.motivo === 'oferta') {
+        const rival = st.career.currentOrg ? rivalClasico(st.career.liga, st.career.currentOrg) : null;
+        for (const o of decision.opciones) {
+          cuenta.ofertas += 1;
+          const { etiquetas, hasta, sueldo } = o.frente;
+          if (hasta != null) {
+            cuenta.conHasta += 1;
+            if (o.salarioAnualUSD > hasta || sueldo !== o.salarioAnualUSD) mal.push(`seed ${seed}: ${o.org} paga ${o.salarioAnualUSD} con "hasta" ${hasta}`);
+          }
+          if (etiquetas.includes('TRAICION')) {
+            cuenta.traicion += 1;
+            if (o.org !== rival) mal.push(`seed ${seed}: TRAICIÓN con ${o.org}, y el clásico de ${st.career.currentOrg} es ${rival}`);
+          } else if (rival && o.org === rival) {
+            mal.push(`seed ${seed}: ${o.org} es el clásico de ${st.career.currentOrg} y la oferta no dice TRAICIÓN`);
+          }
+          if (etiquetas.includes('VOLVE_A_CASA')) {
+            cuenta.volve += 1;
+            const guardado = st.career.arraigoPorOrg[o.org];
+            const esperado = guardado == null ? null : Math.max(0, guardado - BALANCE.mercado.costoSalidaArraigo);
+            if (esperado !== null && o.frente.arraigoArranca.valor !== esperado) {
+              mal.push(`seed ${seed}: VOLVÉ A CASA a ${o.org} arranca con ${o.frente.arraigoArranca.valor}, guardado ${guardado}`);
+            }
+          }
+        }
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < 120 && !estado.terminado; i += 1) {
+      const antes = estado;
+      estado = avanzarSplitAuto(estado, rng, responder).state;
+      const firma = estado.flags.fichajeEtiquetado;
+      if (firma && firma !== antes.flags.fichajeEtiquetado && firma.etiqueta === 'VOLVE_A_CASA') {
+        cuenta.firmasVolve += 1;
+        const org = estado.career.contrato.org;
+        const guardado = antes.career.arraigoPorOrg[org];
+        const esperado = guardado == null ? null : Math.max(0, guardado - BALANCE.mercado.costoSalidaArraigo);
+        if (esperado !== null && firma.arraigo !== esperado) mal.push(`seed ${seed}: volvés a ${org} con ${firma.arraigo}, guardado ${guardado}`);
+      }
+      const filas = estado.career.registro.porOrg;
+      if (filas.length > antes.career.registro.porOrg.length && filas[filas.length - 1].etiqueta) {
+        cuenta.filasEtiquetadas += 1;
+        const fila = filas[filas.length - 1];
+        if (fila.etiqueta === 'TRAICION' && rivalClasico(fila.liga, fila.traicionA) !== fila.org) {
+          mal.push(`seed ${seed}: fila TRAICIÓN de ${fila.org} contra ${fila.traicionA}, que no es su clásico`);
+        }
+      }
+    }
+  }
+  console.log(`      ${JSON.stringify(cuenta)}`);
+  if (cuenta.conHasta === 0 || cuenta.traicion === 0 || cuenta.volve === 0) mal.push(`muestra vacía: ${JSON.stringify(cuenta)}`);
   if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
 });
 

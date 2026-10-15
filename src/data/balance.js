@@ -1298,6 +1298,15 @@ export const BALANCE = {
     // (`tag: 'a_la_baja'`): clubes de tu liga y de la de abajo de tu región que te hacen lugar (las reglas duras se
     // respetan, el asiento y el presupuesto no), del más fuerte que no te supera hacia abajo.
     ofertasMinimas: 3,
+    // G3c (PLANUI §0.9), el mercado como dilema. El arraigo se guarda por org al irte (`career.arraigoPorOrg`); si volvés,
+    // arrancás con lo guardado menos `costoSalidaArraigo` (la gente perdona, pero no del todo).
+    costoSalidaArraigo: 15,
+    // TRAICIÓN: firmar con el clásico de tu org (`data/clasicos.json`). Se cobra del arraigo que dejás guardado con la org que
+    // traicionás (te cierra la vuelta a casa), no del de llegada.
+    costoTraicion: 30,
+    // La etiqueta BOMBAZO del frente: el sueldo ofrecido es este múltiplo de tu sueldo actual o más (sin contrato, de la
+    // mediana de la liga de la oferta, como `bombazoMultiplo`). Distinta de `bombazoMultiplo`, que es el `tag` viejo.
+    bombazoEtiquetaMultiplo: 2,
     probRenovacionBase: 0.55,
     probRenovacionPorJerarquia: 0.35,
     // Splits sin ninguna oferta antes de caer a nivel 'libre' — la puerta por

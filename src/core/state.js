@@ -190,6 +190,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // se cierra en `registro.porOrg` al irte y el nuevo arranca casi en
       // cero, salvo que el hype ya te haya hecho conocido de antes.
       arraigo: 0,
+      // G3c: el arraigo que dejaste en cada org al irte (`{ [org]: 0-100 }`). Si volvés, arrancás con eso menos
+      // `mercado.costoSalidaArraigo`.
+      arraigoPorOrg: {},
       sinergia: 0,
       // Ventana móvil de "cómo te fue" (0-100 por split). Alimenta el momentum
       // del contexto: es lo que distingue una racha de un slump.
@@ -469,6 +472,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // tarjeta de oferta ANTES de aceptar. `roster.js` la usa tal cual en
       // vez de volver a tirar el dado (regla de proceso 15) y la resetea acá.
       jerarquiaProyectadaAlFichar: null,
+      // G3c: lo que la firma le deja a `roster.js` para abrir la fila nueva: `{ arraigo, etiqueta, traicionA }`. `arraigo`
+      // es `null` salvo que vuelvas a una org donde ya jugaste (lo guardado menos la salida). `roster.js` lo consume.
+      fichajeEtiquetado: null,
       // K1 (D76): el split del pase, jugado antes de que `roster.js` abra la
       // fila (`{ org, splitsPorTier }`, de `temporada.js`). Si no, `null`.
       splitJugadoSinFila: null,

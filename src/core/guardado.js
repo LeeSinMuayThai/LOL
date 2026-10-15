@@ -77,8 +77,11 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // quedó guardado: se toma el perfil de hoy, `player.perfil.actual`), sin la inclinación de stats (esa ya no se puede dar al
 // arranque); el torneo, sin empezar. G2a y G3ab suman `presupuesto.eventos` (0), `flags.colaAnio` (null),
 // `flags.copaAmateur` (null) y `flags.rechazoMercado` (false). Una pausa pendiente de antes de G1 se resuelve con la tirada de siempre.
-export const VERSION = 17;
-const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16];
+// · 18 (ola G, entrega 2, G3c: `career.arraigoPorOrg`, el arraigo que dejaste en cada org; `flags.fichajeEtiquetado`, lo que la
+// firma le deja a `roster.js`; y `etiqueta`/`traicionA` en cada fila de `registro.porOrg`). Un guardado de la 17 carga con
+// `migrarDe17`: el arraigo por org sale de las filas cerradas que lo tienen (la última de cada org); si no, `{}`.
+export const VERSION = 18;
+const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16, 17];
 
 // El marcador de los años pro, reconstruido de lo que la 11 sí guardaba. La fila del registro de la org del primer contrato de tier
 // 2 o 1 la abre `roster.js` el split siguiente al de la firma, así que la firma fue en su `desdeSplit` - 1. Sin esa fila todavía
@@ -250,9 +253,39 @@ export function migrarDe16(state) {
   };
 }
 
+export function migrarDe17(state) {
+  if (!state.career) {
+    return state;
+  }
+  const registro = state.career.registro;
+  const filas = registro?.porOrg ?? [];
+  const arraigoPorOrg = state.career.arraigoPorOrg ?? Object.fromEntries(
+    filas.filter((fila) => fila.hastaAnio != null && typeof fila.arraigoFinal === 'number')
+      .map((fila) => [fila.org, Math.round(fila.arraigoFinal)])
+  );
+  return {
+    ...state,
+    flags: { ...(state.flags ?? {}), fichajeEtiquetado: state.flags?.fichajeEtiquetado ?? null },
+    career: {
+      ...state.career,
+      arraigoPorOrg,
+      registro: registro
+        ? { ...registro, porOrg: filas.map((fila) => ({ ...fila, etiqueta: fila.etiqueta ?? null, traicionA: fila.traicionA ?? null })) }
+        : registro
+    }
+  };
+}
+
 // De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10` … `migrarDe15`; cada versión
 // siguiente, por las que le faltan).
 function migrar(version, state) {
+  if (version !== VERSION && version !== 17) {
+    return migrarDe17(migrarHasta17(version, state));
+  }
+  return version === 17 ? migrarDe17(state) : state;
+}
+
+function migrarHasta17(version, state) {
   if (version === 10) {
     return migrarDe16(migrarDe15(migrarDe14(migrarDe13(migrarDe12(migrarDe11(migrarDe10(state)))))));
   }
