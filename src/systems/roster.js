@@ -187,6 +187,7 @@ function armarRoster(state, rng) {
   // en la fila desde que se abre. K1 (D76): lo jugado por tier lo suma
   // `temporada.js`; el split del pase, ya jugado acá, entra con la fila.
   const sinFila = state.flags.splitJugadoSinFila;
+  const fichaje = state.flags.fichajeEtiquetado ?? null;
   if (sinFila && sinFila.org !== org.nombre) {
     throw new Error(`Se abre la fila de ${org.nombre} con un split jugado sin fila de ${sinFila.org}`);
   }
@@ -195,7 +196,9 @@ function armarRoster(state, rng) {
       registrarSplitEnFila(
         abrirFila(state.career.registro, {
           org: org.nombre, liga: state.career.liga, tier: state.career.tier,
-          anio: state.calendario.anio, split: state.player.splitCount
+          anio: state.calendario.anio, split: state.player.splitCount,
+          // G3c: la etiqueta de la firma (TRAICIÓN, VOLVÉ A CASA...) que dejó `mercado.js`.
+          etiqueta: fichaje?.etiqueta ?? null, traicionA: fichaje?.traicionA ?? null
         }, sinFila?.splitsPorTier ?? null)
       ),
       jerarquiaRedondeada
@@ -206,7 +209,8 @@ function armarRoster(state, rng) {
   // Arraigo (fase 8.4): NUNCA se resetea a 0 a secas — arranca en una
   // fracción del hype que ya tenías ("tu fama te precede", imagen 6 de
   // PLAN.md). El registro guarda el pico independientemente del split-a-split.
-  const arraigoNuevo = Math.round(arraigoInicial(state.player.stats.hype));
+  // G3c: si volvés a una org donde ya jugaste, arrancás con lo que dejaste ahí menos la salida (lo fijó la firma).
+  const arraigoNuevo = Math.round(fichaje?.arraigo ?? arraigoInicial(state.player.stats.hype));
   const registroConPicos = conPagaDelSplit(
     registrarArraigoEnFila(
       registrarPico(registrarPico(registroConFila, 'jerarquia', jerarquiaRedondeada), 'arraigo', arraigoNuevo),
@@ -218,7 +222,7 @@ function armarRoster(state, rng) {
   return {
     state: {
       ...state,
-      flags: { ...state.flags, bonusJerarquiaTryout: 0, jerarquiaProyectadaAlFichar: null, splitJugadoSinFila: null, sinergiaProyectadaAlFichar: null },
+      flags: { ...state.flags, bonusJerarquiaTryout: 0, jerarquiaProyectadaAlFichar: null, splitJugadoSinFila: null, sinergiaProyectadaAlFichar: null, fichajeEtiquetado: null },
       career: {
         ...state.career, companeros, jerarquia: jerarquiaRedondeada, sinergia: Math.round(sinergia),
         rosterDeOrg: org.nombre, arraigo: arraigoNuevo, registro: registroConPicos
