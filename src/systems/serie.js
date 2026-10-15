@@ -18,7 +18,7 @@ import {
 import {
   minijuegoPorId, textoDeMinijuego, registrarMinijuegoVisto, veredictoDeMinijuego,
   generarCierreMapa, factorDificultadPorRonda,
-  varaDeMapa, juzgarMinijuego, factorEscalada, reglaDeLaVara, anchoDelBot, resultadoDelBot, claseDe, poderDeLaRonda,
+  varaDeMapa, techoDeVara, juzgarMinijuego, factorEscalada, reglaDeLaVara, anchoDelBot, resultadoDelBot, claseDe, poderDeLaRonda,
   claveDeTorneo, torneoG1, minijuegoDelTorneo, elegirMinijuego
 } from '../core/minijuegos.js';
 import { BALANCE } from '../data/balance.js';
@@ -258,13 +258,14 @@ export function caminoDeSerie(state, torneo) {
   };
 }
 
-// `datos.g1`, el contrato con la pantalla (briefs-g/contrato-g1.md).
-export function armarG1(state, torneo, { vara, esFinal, conCharla, camino, desempate = false, revancha = false, premio = null }) {
+// `datos.g1`, el contrato con la pantalla (briefs-g/contrato-g1.md). `varaAnterior`: la vara de la ronda que se repite
+// (el desempate o la revancha), para que la suba que el techo no dejó entrar achique la ventana (`escaladaDeRepeticion`).
+export function armarG1(state, torneo, { vara, esFinal, conCharla, camino, desempate = false, revancha = false, premio = null, varaAnterior = null }) {
   return {
     vara,
     margenCasi: BALANCE.g1.margenCasi,
     escalon: torneo.escalon,
-    factorEscalada: factorEscalada(torneo.escalon),
+    factorEscalada: factorEscalada(torneo.escalon) * escaladaDeRepeticion(desempate || revancha ? varaAnterior : null, vara),
     camino,
     poder: poderDeLaRonda(state, torneo, { esFinal, conCharla, charlaQueda: charlaDisponible(state) }),
     desempate,
@@ -275,12 +276,22 @@ export function armarG1(state, torneo, { vara, esFinal, conCharla, camino, desem
   };
 }
 
-// La vara de una ronda: la del mapa, o la de la ronda anterior más `desempateSubeVara` si es el desempate o la revancha.
-// En puntos enteros de 0 a 100 (los que lee el jugador), así la pantalla y el motor no se separan por un redondeo.
-export function varaDeRonda(p, varaAnterior = null) {
+// La vara de una ronda: la del mapa, o la de la ronda anterior más `desempateSubeVara` si es el desempate o la revancha;
+// nunca por encima del techo humano de la mecánica (`techoDeVara`). En puntos enteros de 0 a 100 (los que lee el
+// jugador), así la pantalla y el motor no se separan por un redondeo.
+export function varaDeRonda(p, varaAnterior = null, minijuego = null) {
   const max = BALANCE.stats.max;
   const cruda = varaAnterior === null ? varaDeMapa(p) : varaAnterior + BALANCE.g1.desempateSubeVara;
-  return Math.min(max, Math.max(0, Math.round(cruda * max))) / max;
+  return Math.min(techoDeVara(minijuego), Math.max(0, Math.round(cruda * max) / max));
+}
+
+// El escalón de una repetición nunca es "nada": lo que la suba no pudo subir por el techo achica la ventana, en
+// `repeticionEnTechoAchica` elevado a la fracción de la suba que no entró. 1 si no es una repetición o si la suba entró.
+export function escaladaDeRepeticion(varaAnterior, vara) {
+  if (varaAnterior === null || varaAnterior === undefined) return 1;
+  const { desempateSubeVara, repeticionEnTechoAchica } = BALANCE.g1;
+  const sobra = Math.min(1, Math.max(0, (varaAnterior + desempateSubeVara - vara) / desempateSubeVara));
+  return repeticionEnTechoAchica ** sobra;
 }
 
 // G1: una pausa de minijuego no gasta el cupo de interrupciones del split (el que `events.js` consulta): el pipeline la
@@ -355,7 +366,7 @@ function pausaDeMapa(state, jugada, rng, logsAcum, repeticion = null) {
       : finalizarMapa(state, jugada, { ajusteExtra: 0, charla: false }, rng, logsAcum);
   }
   const p = probabilidadDeMapa(state, jugada.fuerzaPropia, jugada.ajustePlan);
-  const vara = varaDeRonda(p, repeticion ? repeticion.varaAnterior : null);
+  const vara = varaDeRonda(p, repeticion ? repeticion.varaAnterior : null, entrada.id);
   const charlaEnElMapa = repeticion?.charlaEnElMapa ?? false;
   const conCharla = !charlaEnElMapa && charlaDisponible(state);
   const torneoConMecanica = { ...torneo, minijuego: entrada.id };
@@ -368,7 +379,8 @@ function pausaDeMapa(state, jugada, rng, logsAcum, repeticion = null) {
   const ronda = state.serie.ronda;
   const g1 = armarG1(st, torneoConMecanica, {
     vara, esFinal: esFinalDeSerie(state.serie), conCharla, camino: caminoDeSerie(st, torneoConMecanica),
-    desempate: repeticion?.tipo === 'desempate', revancha: repeticion?.tipo === 'revancha'
+    desempate: repeticion?.tipo === 'desempate', revancha: repeticion?.tipo === 'revancha',
+    varaAnterior: repeticion?.varaAnterior ?? null
   });
   const datosExtra = {
     campeonElegido: jugada.campeon,

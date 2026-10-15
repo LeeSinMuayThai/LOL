@@ -93,7 +93,8 @@ import LIGAS from '../data/leagues.json' with { type: 'json' };
 import CAMPEONES from '../data/champions.json' with { type: 'json' };
 import MINIJUEGOS from '../data/minijuegos.json' with { type: 'json' };
 import {
-  elegirMinijuego, minijuegosPara, veredictoDeMinijuego, textoDeMinijuego, lecturaDeVentana, minijuegoPorId, reglaDeLaVara
+  elegirMinijuego, minijuegosPara, veredictoDeMinijuego, textoDeMinijuego, lecturaDeVentana, minijuegoPorId, reglaDeLaVara,
+  techoDeVara
 } from '../core/minijuegos.js';
 import { varaDeRonda as varaDeRondaG1 } from '../systems/serie.js';
 import { esMapaDeDesempate } from '../core/serie.js';
@@ -29192,20 +29193,37 @@ const SPLITS_G1 = 30;
 const DEBAJO_DEL_CASI_G1 = 0.05;
 const MUESTRA_MAPAS_G1 = 20;
 const MUESTRA_SWISS_G1 = 5;
+const CADA_SHOWMAN_G1 = 4;
+const PELO_G1 = 0.001;
 
+// G-fix-vara: también el techo humano (ninguna ronda con la vara arriba de `techoDeVara`: `g1.varaMaxima`, y en las de
+// conteo nunca todos los pasos) y el poder del escenario: una de cada cuatro carreras es del Showman y, con el poder a mano,
+// saca justo la vara bajada (más un pelo, para que no se confunda con otra respuesta). Si el motor ignorara el `bajaVara`,
+// ese mapa saldría L y el check se pone rojo.
 check('G1: un mapa con minijuego nunca tira: el resultado del mapa es resultado >= vara (series, finales y Swiss)', () => {
   const mal = [];
   let mapas = 0;
   let swiss = 0;
   let enLaVara = 0;
+  const conPoder = new Set();
+  let maxVara = 0;
   for (let seed = 1; seed <= SEEDS_G1; seed += 1) {
     const rng = mulberry32(seed);
-    let estado = createInitialState(seed, rng);
+    let estado = createInitialState(seed, rng, seed % CADA_SHOWMAN_G1 === 0 ? { perfil: 'showman' } : null);
     let vuelta = 0;
     const responder = (sistema, st, decision, rngLocal) => {
       if (!decision.datos?.g1) return sistema.resolverAuto(st, decision, rngLocal);
       vuelta += 1;
-      const { vara, margenCasi } = decision.datos.g1;
+      const { vara, margenCasi, poder } = decision.datos.g1;
+      maxVara = Math.max(maxVara, vara);
+      if (vara > techoDeVara(decision.datos.minijuego)) {
+        mal.push(`seed ${seed}: ${decision.datos.minijuego} con la vara en ${vara}, arriba del techo ${techoDeVara(decision.datos.minijuego)}`);
+      }
+      if (poder?.id === 'escenario' && poder.disponible && poder.efecto?.bajaVara > 0) {
+        const resultado = vara - poder.efecto.bajaVara + PELO_G1;
+        conPoder.add(resultado);
+        return { resultado, charla: false, poder: true };
+      }
       const resultado = vuelta % 2 === 0 ? vara : Math.max(0, vara - margenCasi - DEBAJO_DEL_CASI_G1);
       return { resultado, charla: false, poder: false };
     };
@@ -29218,15 +29236,18 @@ check('G1: un mapa con minijuego nunca tira: el resultado del mapa es resultado 
       if (log.etapa === 'swiss') swiss += 1;
       else mapas += 1;
       if (mini.resultado === mini.vara) enLaVara += 1;
+      if (conPoder.has(mini.resultado) && log.resultado !== 'W') {
+        mal.push(`seed ${seed}: con el escenario sacó ${mini.resultado} (la vara bajada) y el mapa fue ${log.resultado}: el motor ignoró el bajaVara`);
+      }
       if ((mini.resultado >= mini.vara) !== (log.resultado === 'W')) {
         mal.push(`seed ${seed}: sacó ${mini.resultado} con la vara en ${mini.vara} y el mapa fue ${log.resultado} (${log.message})`);
       }
     }
   }
-  if (mapas < MUESTRA_MAPAS_G1 || swiss < MUESTRA_SWISS_G1 || enLaVara === 0) {
-    mal.push(`muestra chica: ${mapas} mapas de serie, ${swiss} Bo1 del Swiss, ${enLaVara} justo en la vara`);
+  if (mapas < MUESTRA_MAPAS_G1 || swiss < MUESTRA_SWISS_G1 || enLaVara === 0 || conPoder.size === 0) {
+    mal.push(`muestra chica: ${mapas} mapas de serie, ${swiss} Bo1 del Swiss, ${enLaVara} justo en la vara, ${conPoder.size} con el escenario`);
   }
-  console.log(`      ${mapas} mapas de serie y ${swiss} Bo1 del Swiss decididos por el minijuego (${enLaVara} justo en la vara)`);
+  console.log(`      ${mapas} mapas de serie y ${swiss} Bo1 del Swiss decididos por el minijuego (${enLaVara} justo en la vara, ${conPoder.size} con el escenario; vara máxima ${maxVara})`);
   if (mal.length > 0) throw new Error(mal.slice(0, 4).join(' | '));
 });
 

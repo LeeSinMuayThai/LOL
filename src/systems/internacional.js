@@ -113,7 +113,7 @@ function construirParadaSwiss(state, repeticion = null) {
   const ronda = t.swiss.rondas.length + 1;
   const vidaOMuerte = esVidaOMuerte(record);
   const p = probabilidadDeCruceSwiss(state, e.fuerzaPropia, e.fuerzaRival);
-  const vara = varaDeRonda(p, repeticion ? repeticion.varaAnterior : null);
+  const vara = varaDeRonda(p, repeticion ? repeticion.varaAnterior : null, entrada.id);
   const charlaEnElMapa = repeticion?.charlaEnElMapa ?? false;
   const conCharla = vidaOMuerte && !charlaEnElMapa && charlaDisponible(state);
   const torneoConMecanica = { ...torneo, minijuego: entrada.id };
@@ -132,7 +132,8 @@ function construirParadaSwiss(state, repeticion = null) {
   };
   const g1 = armarG1(st, torneoConMecanica, {
     vara, esFinal: false, conCharla, camino,
-    desempate: repeticion?.tipo === 'desempate', revancha: repeticion?.tipo === 'revancha'
+    desempate: repeticion?.tipo === 'desempate', revancha: repeticion?.tipo === 'revancha',
+    varaAnterior: repeticion?.varaAnterior ?? null
   });
   // El nombre de la mecánica es el del Mundial (`nombresPorCompeticion.internacional`).
   const textos = textoDeMinijuego(entrada, { ...st, serie: { ...(st.serie ?? {}), ronda: 'internacional' } });

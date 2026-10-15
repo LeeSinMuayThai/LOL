@@ -1,4 +1,5 @@
 import { unaSolaVez, ventanaPorStat, escuchaTeclado, motionReducido, dificultadDe, varaEfectivaDe, radioDeLaZona } from './comun.js';
+import { resultadoDeDistancia } from '../../../core/minijuegos.js';
 
 // "El teleport" (fase 9R4c). Es de timing como el Barón, pero al revés: el TP
 // tarda en canalizar, así que hay que apretar ANTES de que la pelea esté en la
@@ -10,9 +11,10 @@ import { unaSolaVez, ventanaPorStat, escuchaTeclado, motionReducido, dificultadD
 
 const PASOS = 20;
 // Lo que la escala de distancia suma a la media zona (a esa distancia del centro, el resultado es 0). La lee `components/varaG1.js`.
-export const MARGEN_DISTANCIA = 14;
-// El ancho de la zona, entre estos topes según `macro` (`ventanaPorStat`).
-export const ANCHO_ZONA = [12, 26];
+export const MARGEN_DISTANCIA = 4;
+// El ancho de la zona, entre estos topes según `macro` (`ventanaPorStat`). G-fix-vara: eran [12, 26] con margen 14 (una escala
+// de ~24: con la vara del techo, un 76% de paso para un humano bueno); ahora la escala es ~9 y la zona arranca en el piso humano.
+export const ANCHO_ZONA = [6, 14];
 
 export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);
@@ -84,7 +86,7 @@ export function montar(container, state, onDone, rngUi, datos = null) {
     const llegada = posicion + canalizacion;
     const distancia = Math.abs(llegada - centro);
     const escala = ancho / 2 + MARGEN_DISTANCIA;
-    cerrar(Math.max(0, 1 - distancia / escala), { tipo: 'distancia', pos: llegada, centro, escala });
+    cerrar(resultadoDeDistancia(distancia, escala), { tipo: 'distancia', pos: llegada, centro, escala });
   }
 
   boton.addEventListener('click', tirarTp);

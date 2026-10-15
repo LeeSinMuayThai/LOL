@@ -1,4 +1,5 @@
 import { motionReducido, unaSolaVez, ventanaPorStat, dificultadDe, varaEfectivaDe, radioDeLaZona, AMORTIGUACION_DIFICULTAD } from './comun.js';
+import { resultadoDeDistancia } from '../../../core/minijuegos.js';
 
 // Robar Baron (fase 4). Migrado de index.html en la fase T6 —
 // PLAN.md §8.5 lo dejó sin mover a propósito "porque la fase 12 le cambia
@@ -17,9 +18,10 @@ import { motionReducido, unaSolaVez, ventanaPorStat, dificultadDe, varaEfectivaD
 // decisión — antes el CSS apagaba sus propias animaciones y esta, dibujada por
 // JS, seguía corriendo igual.
 const PASOS = 20;
-// A qué distancia del centro de la zona el resultado llega a 0 (en la escala 0-100 de la barra). La usa `components/varaG1.js` para
-// decir la vara en unidades de la barra.
-export const ESCALA_DISTANCIA = 45;
+// A qué distancia del centro de la zona (más el piso humano, `g1.pisoHumano.distancia`) el resultado llega a 0, en la escala
+// 0-100 de la barra. La usa `components/varaG1.js` para decir la vara en unidades de la barra. G-fix-vara: era 45, y con la
+// vara del techo (0,85) la zona medía 13 de ancho (un 94% de paso para un humano bueno); con 12, mide ~6.
+export const ESCALA_DISTANCIA = 12;
 
 export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);
@@ -84,6 +86,6 @@ export function montar(container, state, onDone, rngUi, datos = null) {
     activo = false;
     clearInterval(reloj);
     const distancia = Math.abs(pos - centroZona);
-    terminar(Math.max(0, 1 - distancia / ESCALA_DISTANCIA), { tipo: 'distancia', pos, centro: centroZona, escala: ESCALA_DISTANCIA });
+    terminar(resultadoDeDistancia(distancia, ESCALA_DISTANCIA), { tipo: 'distancia', pos, centro: centroZona, escala: ESCALA_DISTANCIA });
   }, { once: true });
 }

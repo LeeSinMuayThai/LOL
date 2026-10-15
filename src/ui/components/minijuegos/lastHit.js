@@ -1,4 +1,4 @@
-import { motionReducido, unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, dificultadDe, AMORTIGUACION_DIFICULTAD } from './comun.js';
+import { motionReducido, unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, dificultadDe, AMORTIGUACION_DIFICULTAD, PASOS_DE_CONTEO } from './comun.js';
 
 // "Last hit" (fase 9R4c). El minion baja de vida solo; el remate entra si le
 // pegás cuando ya está en zona de ejecución. Muy temprano no lo matás, muy
@@ -7,7 +7,8 @@ import { motionReducido, unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeR
 //
 // Contrato de T6: `montar(container, state, onDone, rngUi)` → `onDone(0..1)`.
 
-export const TOTAL = 5;
+// G-fix-vara: cuántos pasos, en `BALANCE.g1.conteo` (de ahí el motor saca el techo de la vara: nunca todos).
+export const TOTAL = PASOS_DE_CONTEO.last_hit;
 const TECLAS = ['1', '2', '3', '4', '5'];
 
 export function montar(container, state, onDone, rngUi, datos = null) {

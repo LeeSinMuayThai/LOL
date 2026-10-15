@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, marcadorDeRondas, relojDeMinijuego, dificultadDe } from './comun.js';
+import { unaSolaVez, ventanaPorStat, marcadorDeRondas, relojDeMinijuego, dificultadDe, PASOS_DE_CONTEO } from './comun.js';
 
 // "La visión" (fase 9R4c). Se apagan tres zonas del mapa por un momento y hay
 // que decir cuáles quedaron a oscuras para wardearlas. No es puntería ni
@@ -10,7 +10,8 @@ const ZONAS = [
   'Río de arriba', 'Foso del Barón', 'Tribush azul',
   'Río de abajo', 'Foso del Dragón', 'Tribush rojo'
 ];
-export const A_OSCURAS = 3;
+// G-fix-vara: cuántos pasos, en `BALANCE.g1.conteo` (de ahí el motor saca el techo de la vara: nunca todos).
+export const A_OSCURAS = PASOS_DE_CONTEO.la_vision;
 
 export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);

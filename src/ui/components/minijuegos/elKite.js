@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, dificultadDe } from './comun.js';
+import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, dificultadDe, PASOS_DE_CONTEO } from './comun.js';
 
 // "El kite" (fase 9R4c). Atacar, moverse, atacar, moverse: ocho tiempos
 // alternados contra un metrónomo. Si repetís la misma acción dos veces seguidas
@@ -7,7 +7,8 @@ import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, dificulta
 //
 // Teclado: A (atacar) y S (moverse), o los dos botones.
 
-export const TIEMPOS = 8;
+// G-fix-vara: cuántos pasos, en `BALANCE.g1.conteo` (de ahí el motor saca el techo de la vara: nunca todos).
+export const TIEMPOS = PASOS_DE_CONTEO.el_kite;
 
 export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);

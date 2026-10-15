@@ -187,6 +187,39 @@ export function varaDeMapa(p) {
   return fila.vara;
 }
 
+// G-fix-vara: el techo de la vara del minijuego `id`: `g1.varaMaxima`, y en las mecánicas de conteo además (total − 1) /
+// total, en puntos enteros hacia abajo (con 3 pasos, 0,66: "2 de 3"; redondeado a 0,67 pediría los 3).
+export function techoDeVara(id = null) {
+  const { varaMaxima, conteo } = BALANCE.g1;
+  const max = BALANCE.stats.max;
+  const total = id ? conteo[id] : undefined;
+  const techo = total > 1 ? Math.min(varaMaxima, (total - 1) / total) : varaMaxima;
+  return Math.floor(techo * max + EPSILON_PUNTOS) / max;
+}
+
+const EPSILON_PUNTOS = 1e-9;
+
+// El piso humano de las mecánicas analógicas (`g1.pisoHumano`): la cuenta del resultado y su inversa (lo que pasa con una
+// vara), una sola para la mecánica, la regla y el "tan cerca".
+export function resultadoDeLatencia(ms, ventanaMs) {
+  const piso = BALANCE.g1.pisoHumano.llamadaMs;
+  return Math.min(1, Math.max(0, 1 - Math.max(0, ms - piso) / Math.max(1, ventanaMs - piso)));
+}
+
+export function latenciaQuePasa(vara, ventanaMs) {
+  const piso = BALANCE.g1.pisoHumano.llamadaMs;
+  return piso + (1 - Math.max(0, vara)) * Math.max(0, ventanaMs - piso);
+}
+
+export function resultadoDeDistancia(distancia, escala) {
+  const piso = BALANCE.g1.pisoHumano.distancia;
+  return Math.min(1, Math.max(0, 1 - Math.max(0, distancia - piso) / escala));
+}
+
+export function radioQuePasa(vara, escala) {
+  return BALANCE.g1.pisoHumano.distancia + (1 - Math.max(0, vara)) * escala;
+}
+
 // El juicio, una sola cuenta: `paso` si el resultado llega a la vara efectiva (la vara menos lo que la bajaron el
 // poder y la charla); `casi` si quedó a menos de `margenCasi` por debajo.
 export function juzgarMinijuego(resultado, varaEfectiva, margenCasi = BALANCE.g1.margenCasi) {

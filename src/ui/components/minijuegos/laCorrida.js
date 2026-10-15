@@ -1,4 +1,4 @@
-import { motionReducido, unaSolaVez, ventanaPorStat, escuchaTeclado, dificultadDe, AMORTIGUACION_DIFICULTAD } from './comun.js';
+import { motionReducido, unaSolaVez, ventanaPorStat, escuchaTeclado, dificultadDe, AMORTIGUACION_DIFICULTAD, PASOS_DE_CONTEO } from './comun.js';
 
 // "La corrida" (G1, PLANUI §0.9, "Variedad"): una mecánica universal, de cualquier rol. La barra corre de punta a punta
 // y frenás en la zona: cuatro frenadas, cada una un poco más rápida que la anterior (como "cada partido, más larga y más
@@ -8,9 +8,11 @@ import { motionReducido, unaSolaVez, ventanaPorStat, escuchaTeclado, dificultadD
 // Contrato de T6: `montar(container, state, onDone, rngUi, datos)` → `onDone(0..1, detalle)`. `detalle` es la última
 // frenada que se fue de la zona (o la última, si las clavaste todas): la zona y dónde frenaste, para el "tan cerca".
 
-export const FRENADAS = 4;
-// El ancho de la zona (en la escala 0-100 de la barra), entre estos topes según `mecanica`.
-const ANCHO_ZONA = [9, 22];
+// G-fix-vara: cuántos pasos, en `BALANCE.g1.conteo` (de ahí el motor saca el techo de la vara: nunca todos).
+export const FRENADAS = PASOS_DE_CONTEO.la_corrida;
+// El ancho de la zona (en la escala 0-100 de la barra), entre estos topes según `mecanica`. G-fix-vara: eran [9, 22] y un humano
+// bueno (35 ms de error al frenar) clavaba las 4 frenadas casi siempre: con la vara del techo (3 de 4) pasaba el 100%.
+export const ANCHO_ZONA = [5, 9];
 // Lo que corre el cursor por cuadro en la primera frenada, y cuánto más rápido va cada frenada siguiente.
 const VELOCIDAD_BASE = 1.35;
 const ACELERACION_POR_FRENADA = 0.14;

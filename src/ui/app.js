@@ -32,6 +32,7 @@ import { VERSION_JUEGO } from '../data/version.js';
 import { iniciarDesafio } from '../core/desafio.js';
 import { interpretarSeed } from '../core/numeros.js';
 import { previaDeDecision } from '../core/previaDePartido.js';
+import { reglaDeVara } from './components/varaG1.js';
 import { momentosDelTramo, resumenDelTramo } from './core/momentos.js';
 import { mostrarTitulo, mostrarResumen, precalentarCopa } from './fx/momento.js';
 import { fichajeDelRelato, fichajeYaNarrado, narrarFichaje } from './components/fichaje.js';
@@ -245,6 +246,8 @@ export function iniciar() {
     let previa = null;
     try {
       previa = decision ? previaDeDecision(estado, decision, opciones) : null;
+      // G-fix-vara: un mapa con minijuego muestra la regla de la vara en las unidades de la mecánica, no la p del bot.
+      if (previa?.vara) previa = { ...previa, regla: reglaDeVara(previa.vara.minijuego, previa.vara.valor, estado, decision.datos) };
     } catch (error) {
       console.error('No se pudo armar la previa:', error);
     }

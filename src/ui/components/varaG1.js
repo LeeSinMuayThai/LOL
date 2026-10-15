@@ -6,7 +6,7 @@
 // la misma vara: "necesitás 3 de 4" es el menor `k` con `k / total >= vara` (no `ceil(vara × total)`, que con la coma
 // flotante puede pedir uno de más: 0,6 × 5 = 3,0000000000000004).
 import { BALANCE } from '../../data/balance.js';
-import { veredictoDeMinijuego, minijuegoPorId, lecturaDeVentana } from '../../core/minijuegos.js';
+import { veredictoDeMinijuego, minijuegoPorId, lecturaDeVentana, latenciaQuePasa, radioQuePasa } from '../../core/minijuegos.js';
 import { ventanaPorStat, dificultadDe } from './minijuegos/comun.js';
 import { TOTAL as MINIONS } from './minijuegos/lastHit.js';
 import { LARGO as TECLAS_COMBO } from './minijuegos/elCombo.js';
@@ -22,13 +22,13 @@ import { VENTANA_MS } from './minijuegos/laLlamada.js';
 
 // Las mecánicas que se cuentan de a una: el total y cómo se llama lo que se cuenta.
 const CONTEO = {
-  last_hit: { total: MINIONS, unidad: 'minions' },
-  el_combo: { total: TECLAS_COMBO, unidad: 'teclas del combo' },
-  dodge: { total: SKILLSHOTS, unidad: 'skillshots' },
-  el_kite: { total: TIEMPOS, unidad: 'tiempos de kite' },
-  la_vision: { total: A_OSCURAS, unidad: 'wards' },
-  la_prueba: { total: BLANCOS, unidad: 'blancos' },
-  la_corrida: { total: FRENADAS, unidad: 'frenadas en la zona' }
+  last_hit: { total: MINIONS, unidad: 'minions', articulo: 'los' },
+  el_combo: { total: TECLAS_COMBO, unidad: 'teclas del combo', articulo: 'las' },
+  dodge: { total: SKILLSHOTS, unidad: 'skillshots', articulo: 'los' },
+  el_kite: { total: TIEMPOS, unidad: 'tiempos de kite', articulo: 'los' },
+  la_vision: { total: A_OSCURAS, unidad: 'wards', articulo: 'los' },
+  la_prueba: { total: BLANCOS, unidad: 'blancos', articulo: 'los' },
+  la_corrida: { total: FRENADAS, unidad: 'frenadas en la zona', articulo: 'las' }
 };
 // El stat de las dos mecánicas nuevas, por si `data/minijuegos.json` todavía no las trae (la entrada la registra G1a).
 const STAT_SIN_DATO = { la_corrida: 'mecanica', la_pizarra: 'macro' };
@@ -79,7 +79,10 @@ export function medidaDe(id, state, datos) {
     return { tipo: 'distancia', escala: ancho / 2 + MARGEN_DISTANCIA };
   }
   if (id === 'la_llamada') {
-    return { tipo: 'latencia', ventanaMs: ventanaPorStat(state?.player?.stats?.shotcalling, VENTANA_MS[0], VENTANA_MS[1], dificultadDe(state, datos)) };
+    // la misma ventana que arma la mecánica: el piso humano más lo que abre `shotcalling` (`laLlamada.js`)
+    const ventanaMs = BALANCE.g1.pisoHumano.llamadaMs
+      + ventanaPorStat(state?.player?.stats?.shotcalling, VENTANA_MS[0], VENTANA_MS[1], dificultadDe(state, datos));
+    return { tipo: 'latencia', ventanaMs };
   }
   return { tipo: 'porcentaje' };
 }
@@ -92,8 +95,8 @@ export function reglaDeVara(id, vara, state, datos) {
   if (m.tipo === 'conteo') {
     const n = necesarios(vara, m.total);
     if (n <= 0) return `Pasás aunque no claves ninguno: la vara está en el piso`;
-    if (n > m.total) return `Ni con los ${m.total} alcanza`;
-    return n === m.total ? `Necesitás los ${m.total} ${m.unidad}, sin fallar uno` : `Necesitás ${n} de ${m.total} ${m.unidad}`;
+    if (n > m.total) return `Ni con ${m.articulo} ${m.total} alcanza`;
+    return n === m.total ? `Necesitás ${m.articulo} ${m.total} ${m.unidad}, sin fallar ${m.articulo === 'las' ? 'una' : 'uno'}` : `Necesitás ${n} de ${m.total} ${m.unidad}`;
   }
   if (m.tipo === 'errores') {
     const e = erroresPermitidos(vara, m.tope);
@@ -101,10 +104,10 @@ export function reglaDeVara(id, vara, state, datos) {
     return e === 0 ? `Los ${m.pares} pares sin un solo error` : `Los ${m.pares} pares, con ${e} ${e === 1 ? 'error' : 'errores'} como mucho`;
   }
   if (m.tipo === 'distancia') {
-    const d = redondo((1 - vara) * m.escala);
+    const d = redondo(radioQuePasa(vara, m.escala));
     return id === 'el_teleport' ? `Que el TP caiga a ${d} o menos del centro de la pelea` : `Smite a ${d} o menos del centro de la zona`;
   }
-  if (m.tipo === 'latencia') return `Cantala en menos de ${redondo((1 - vara) * m.ventanaMs)} ms`;
+  if (m.tipo === 'latencia') return `Cantala en menos de ${redondo(latenciaQuePasa(vara, m.ventanaMs))} ms`;
   return `Sacá ${Math.ceil(vara * 100)}% o más`;
 }
 
@@ -141,7 +144,7 @@ export function tanCerca(id, resultado, detalle, juicio, state, datos) {
   if (m.tipo === 'distancia') {
     if (detalle?.tipo === 'tarde') return 'Se te pasó la pelea: el TP nunca salió.';
     if (detalle?.tipo !== 'distancia') return '';
-    const radio = (1 - vara) * detalle.escala;
+    const radio = radioQuePasa(vara, detalle.escala);
     const zona = `${enBarra(detalle.centro - radio)}-${enBarra(detalle.centro + radio)}`;
     return id === 'el_teleport'
       ? `La pelea que pasaba era ${zona}; tu TP cayó en ${enBarra(detalle.pos)}.`
@@ -150,7 +153,7 @@ export function tanCerca(id, resultado, detalle, juicio, state, datos) {
   if (m.tipo === 'latencia') {
     if (detalle?.tipo === 'temprano') return 'Cantaste antes de la señal: el equipo fue a ciegas.';
     if (detalle?.tipo !== 'latencia') return '';
-    return `Tenías ${redondo((1 - vara) * detalle.ventanaMs)} ms y llegaste en ${redondo(detalle.ms)}.`;
+    return `Tenías ${redondo(latenciaQuePasa(vara, detalle.ventanaMs))} ms y llegaste en ${redondo(detalle.ms)}.`;
   }
   return `Sacaste ${redondo(resultado * 100)}% y la vara era ${redondo(vara * 100)}%.`;
 }
