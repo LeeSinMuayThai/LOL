@@ -190,6 +190,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // se cierra en `registro.porOrg` al irte y el nuevo arranca casi en
       // cero, salvo que el hype ya te haya hecho conocido de antes.
       arraigo: 0,
+      // G4c (PLANUI §0.9): el número de camiseta que elegiste al firmar con cada org (`core/legado.js#fijarDorsal`). Si llegás
+      // a Leyenda ahí, es el que retiran (`monumento`).
+      dorsalPorOrg: {},
       sinergia: 0,
       // Ventana móvil de "cómo te fue" (0-100 por split). Alimenta el momentum
       // del contexto: es lo que distingue una racha de un slump.
@@ -297,6 +300,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
         // Una fila por org por la que pasaste (imagen 15: "TU HISTORIA, CLUB
         // POR CLUB"). Se abre al firmar y se cierra al irte; nunca se borra.
         porOrg: [],
+        // G4c: el último partido de cada retiro por decisión o por edad (`systems/retiro.js`), `{ anio, edad, org, plan, gano,
+        // resultado, vara }`. Solo crece: si volvés y te retirás otra vez, hay otro.
+        despedidas: [],
         // Trofeos de por vida, para poder agrupar "5× LCK 2030 2031 2033...".
         titulos: [],
         internacionales: [],
@@ -502,6 +508,10 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // "¿la seguís?", y la de la última vez que elegiste seguir buscando en "El mercado ya habló" (`firmaDelFinPorMercado`,
       // `systems/mercado.js`). Mientras la foto no cambie, la pregunta no se repite: se sigue y se narra. `null` = no hay.
       seguisFirma: null,
+      // G4c: la edad a la que ya se preguntó el último split por el declive que se ve (una vez por año), y el último partido
+      // que quedó pendiente de un retiro que no lo pudo jugar en el momento (el del mercado o el de una bifurcación).
+      ultimoSplitEdad: null,
+      despedidaPendiente: null,
       finMercadoFirma: null,
       // K6b-fix (la espera vence): cuántas pretemporadas seguidas se narró "seguís buscando" desde la última vez que respondiste
       // "El mercado ya habló". Al llegar a `BALANCE.mercado.splitsSinOfertaParaLibre` la pregunta vuelve a frenar.

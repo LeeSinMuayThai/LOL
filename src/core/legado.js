@@ -402,3 +402,134 @@ export function finalesPerdidas(registro) {
     .sort((a, b) => a.anio - b.anio)
     .map(({ tier, ...resto }) => ({ ...resto, mundial: tier === 0 }));
 }
+
+// --- G4c (PLANUI §0.9): la ceremonia del final: el monumento, los premios con nombre y el dorsal ---
+//
+// Lecturas puras del registro (cero `rng`, cero DOM), para la tarjeta-palmarés (`ui/screens/tarjeta.js`), más `fijarDorsal`,
+// que la pantalla de la firma (`ui/components/fichaje.js`) llama con el número que eligió el jugador.
+
+const ORDEN_DE_ESCALONES = ['uno_mas', 'querido', 'idolo', 'leyenda'];
+// Leyenda: retiran tu camiseta; Ídolo: cuelgan tu bandera. Abajo de eso, no hay monumento.
+const TIPO_DE_MONUMENTO = { leyenda: 'camiseta', idolo: 'bandera' };
+const APODO_DE_ESCALON = { leyenda: 'LA LEYENDA DE', idolo: 'EL HÉROE DE', querido: 'EL QUERIDO DE' };
+
+// El monumento: la org de tu escalón más alto de arraigo (el pico de cada fila, `arraigoMaximo`). Entre Ídolo y Leyenda
+// manda `apodoDeLealtad` (a igual escalón, la org donde más ganaste), así el apodo de la tarjeta y el monumento son la
+// misma org; abajo de Ídolo, la de más arraigo (a igual valor, la primera). `dorsal`: el que elegiste en esa org
+// (`career.dorsalPorOrg`), o `null`. `{ org: null, ... }` si nunca firmaste con nadie.
+export function monumento(state) {
+  const registro = state.career?.registro;
+  const filas = registro?.porOrg ?? [];
+  if (filas.length === 0) {
+    return { org: null, escalon: null, etiqueta: null, tipo: null, dorsal: null, apodo: null };
+  }
+  const lealtad = apodoDeLealtad(registro);
+  const mejor = filas
+    .map((fila, i) => ({ fila, i, banda: bandaDeArraigoFicha(Math.round(fila.arraigoMaximo ?? 0)) }))
+    .sort((a, b) => (ORDEN_DE_ESCALONES.indexOf(b.banda.id) - ORDEN_DE_ESCALONES.indexOf(a.banda.id))
+      || (b.banda.valor - a.banda.valor) || (a.i - b.i))[0];
+  const org = lealtad?.org ?? mejor.fila.org;
+  const escalon = lealtad?.id ?? mejor.banda.id;
+  const apodo = APODO_DE_ESCALON[escalon] ? `${APODO_DE_ESCALON[escalon]} ${org.toUpperCase()}` : null;
+  return {
+    org,
+    escalon,
+    etiqueta: lealtad?.label ?? mejor.banda.label,
+    tipo: TIPO_DE_MONUMENTO[escalon] ?? null,
+    dorsal: state.career.dorsalPorOrg?.[org] ?? null,
+    apodo
+  };
+}
+
+// Los premios con nombre: solo del registro, deterministas, en un orden fijo. Cada uno `{ id, nombre, linea }`; sale solo
+// si te lo ganaste. Los umbrales, en `BALANCE.retiro.premios`. Las etiquetas de mercado (`VOLVE_A_CASA`, `TRAICION`, de
+// G3c) se leen defensivas: un registro anterior no las trae y esos premios no salen.
+export function premiosConNombre(state) {
+  const registro = state.career?.registro;
+  if (!registro) {
+    return [];
+  }
+  const umbral = BALANCE.retiro.premios;
+  const filas = registro.porOrg ?? [];
+  const premios = [];
+  const premio = (id, nombre, linea) => premios.push({ id, nombre, linea });
+
+  const vuelta = filas.find((fila) => fila.etiqueta === 'VOLVE_A_CASA');
+  if (vuelta) {
+    premio('hijo_prodigo', 'El hijo pródigo', `Volviste a ${vuelta.org} en ${vuelta.desdeAnio} y te recibieron como a uno de la casa.`);
+  }
+
+  const traicion = filas.find((fila) => fila.etiqueta === 'TRAICION');
+  if (traicion) {
+    premio('cruzaste_la_vereda', 'Cruzaste la vereda', traicion.traicionA
+      ? `De ${traicion.traicionA} a ${traicion.org}, el clásico de toda la vida. Hay hinchas que todavía no te lo perdonan.`
+      : `Te fuiste al clásico: ${traicion.org}. Hay hinchas que todavía no te lo perdonan.`);
+  }
+
+  const regiones = [];
+  for (const fila of filas) {
+    const region = REGION_DE_LIGA[fila.liga];
+    if (region && !regiones.includes(region)) {
+      regiones.push(region);
+    }
+  }
+  if (regiones.length >= umbral.regionesCruzoElCharco) {
+    premio('cruzo_el_charco', 'Cruzó el charco', `Jugaste en ${regiones.length} regiones: ${enumerar(regiones)}.`);
+  }
+
+  const orgsPro = [...new Set(filas
+    .filter((fila) => (fila.splitsPorTier?.[1] ?? 0) + (fila.splitsPorTier?.[2] ?? 0) > 0)
+    .map((fila) => fila.org))];
+  if (orgsPro.length === 1) {
+    premio('leal_hasta_el_final', 'Leal hasta el final', `Toda tu carrera pro con la camiseta de ${orgsPro[0]}.`);
+  }
+
+  const mundiales = mundialesGanados(registro).length;
+  if (mundiales > 0) {
+    premio('campeon_del_mundo', 'Campeón del mundo', mundiales === 1
+      ? 'Levantaste la Copa del Invocador.'
+      : `Levantaste la Copa del Invocador ${mundiales} veces.`);
+  }
+
+  const ligas = titulosDeLiga(registro).length;
+  if (ligas >= umbral.titulosDinastia) {
+    premio('dinastia', 'Dinastía', `${ligas} títulos de liga. Durante años, la final era con vos o no era.`);
+  }
+
+  const perdidas = (registro.finales ?? []).filter((final) => !final.gano).length
+    + (registro.internacionales ?? []).filter((intl) => intl.resultado === 'final').length;
+  if (perdidas >= umbral.finalesLaEspina) {
+    premio('la_espina', 'La espina', `${perdidas} finales perdidas. Cada una sigue doliendo un poco.`);
+  }
+
+  if (registro.splitsJugados >= umbral.splitsMilBatallas) {
+    premio('mil_batallas', 'Mil batallas', `${registro.splitsJugados} splits arriba del escenario. Pocos aguantan tanto.`);
+  }
+
+  const copa = (registro.titulos ?? []).find((titulo) => titulo.tier === 'amateur');
+  if (copa) {
+    premio('de_abajo', 'De abajo', `Antes de ser pro ya levantabas copas: ${copa.nombre} ${copa.anio}.`);
+  }
+
+  const despedida = (registro.despedidas ?? []).at(-1);
+  if (despedida?.gano) {
+    premio('el_ultimo_baile', 'El último baile', despedida.plan === 'clip'
+      ? 'Tu último mapa terminó en un clip que todavía circula.'
+      : 'Tu último mapa se lo regalaste a un rookie, y lo ganó.');
+  }
+
+  return premios;
+}
+
+// El número de camiseta con `org` (por defecto, tu club de hoy). Puro: devuelve el state nuevo, como el resto del motor. Un
+// número fuera de `BALANCE.retiro.dorsal` (o sin org) no cambia nada.
+export function fijarDorsal(state, numero, org = state.career?.currentOrg ?? null) {
+  const { min, max } = BALANCE.retiro.dorsal;
+  if (!org || !Number.isInteger(numero) || numero < min || numero > max) {
+    return state;
+  }
+  return {
+    ...state,
+    career: { ...state.career, dorsalPorOrg: { ...(state.career.dorsalPorOrg ?? {}), [org]: numero } }
+  };
+}

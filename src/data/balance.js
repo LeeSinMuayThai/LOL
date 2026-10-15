@@ -1673,7 +1673,46 @@ export const BALANCE = {
     // seguís buscando, si nadie ofrece); desde esta edad aceptás el veredicto y te retirás — mismo criterio que
     // `retiro_declive` ("no te renuevan" es la causa modal de retiro real, `CONCEPTO` §12.4).
     // K5c paso 3 (Final2): 27 → 22.
-    edadAutoAceptaVeredicto: 22
+    edadAutoAceptaVeredicto: 22,
+    // G4c (PLANUI §0.9, "la ceremonia"): el último split. Además del aviso de siempre (`splitsDeclivePorAviso`
+    // pretemporadas en declive), frena cuando el declive SE VE —desde `edadDesde` años, con el nivel `caidaDeNivel`
+    // puntos o más debajo de tu pico (`registro.picos.nivel`)— una vez por año, o cuando rechazaste todo el mercado y
+    // la ventana que viene te obliga a firmar ("a la segunda, firmás o cerrás la carrera"), también desde `edadDesde`. El bot (Node) elige con su
+    // perfil: pesos por causa de la parada (`colgarla` / `unAnioMas`), con la inclinación de cada perfil a "un año más".
+    ultimoSplit: {
+      edadDesde: 27,
+      caidaDeNivel: 6,
+      pesosBot: {
+        declive: { colgarla: 9, unAnioMas: 1 },
+        edad: { colgarla: 1, unAnioMas: 5 },
+        sinFirmar: { colgarla: 1, unAnioMas: 6 }
+      },
+      inclinacionUnAnioMas: { profesional: 1, hambriento: 1.5, showman: 1.25, leal: 0.75 }
+    },
+    // G4c: el último partido. Un mapa de despedida (Bo1 con minijuego, el contrato de G1) al retirarte por decisión o por
+    // edad. 🎲 la jugada para el clip (p más baja, vara más alta) o 🧊 el farm para el rookie. La p es la del bot
+    // (`resultadoDelBot`); la vara sale de la p (`varaDeRonda`). Sin castigo: salga como salga, queda en el registro.
+    despedida: {
+      bo: 1,
+      pClip: 0.45,
+      pFarm: 0.75,
+      // Cómo elige el bot (Node) el plan, por perfil.
+      pesosPlanBot: {
+        profesional: { clip: 1, farm: 2 },
+        hambriento: { clip: 2, farm: 1 },
+        showman: { clip: 3, farm: 1 },
+        leal: { clip: 1, farm: 3 }
+      }
+    },
+    // G4c: el número de camiseta que elegís al firmar (`core/legado.js#fijarDorsal`).
+    dorsal: { min: 1, max: 99 },
+    // G4c: los umbrales de los premios con nombre de la tarjeta (`core/legado.js#premiosConNombre`).
+    premios: {
+      regionesCruzoElCharco: 2,
+      finalesLaEspina: 2,
+      titulosDinastia: 3,
+      splitsMilBatallas: 30
+    }
   },
 
   // Fase 10c (PLAN.md §10.4.2): la cadena causal de D9. `player.deudaSueno`
