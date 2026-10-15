@@ -161,7 +161,12 @@ const SPLITS_DE_VERIFICACION = 30;
 // queda fuera de la cuenta y `dist/` no lleva capturas ni generadores): lo que creció es la pantalla nueva de las finales con las
 // manos (`components/finales.js`, `varaG1.js`, las mecánicas `laCorrida` y `laPizarra`, el camino y la mesa de la vara, el stream
 // del Swiss, `estilos/minijuegos.css` +205 líneas). Subido a 4140: ~100 KB (2,5%) de margen sobre el peso medido ese día.
-const PESO_MAXIMO_KB = 4140;
+//
+// Re-medido en la entrega 2 de la ola G (2026-10-15, `e2-int`, PLANUI §0.9): 4183 KB contra 4140. Tampoco viaja nada de más: crecieron
+// las piezas nuevas (el mercado con sus cuatro ejes y etiquetas, la ceremonia con `components/monumento.js` y la tarjeta-palmarés,
+// la fila de stats de la ficha, `systems/promesas.js` y sus datos, los textos de G2c y los titulares de G4a). Subido a 4290: ~100 KB
+// (2,5%) de margen sobre el peso medido ese día.
+const PESO_MAXIMO_KB = 4290;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
