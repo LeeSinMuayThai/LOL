@@ -109,7 +109,7 @@ function textoDelAviso(aviso) {
   }
   return aviso.probabilidad > 0
     ? ` Ya lo habías visto (~${entero(aviso.mentalidad)}) y la cabeza siguió cayendo.`
-    : ` La última carta te mostró este cierre en ~${entero(aviso.mentalidad)}, sin burnout en el sorteo; la cabeza siguió cayendo y ahora el dado puede pinchar.`;
+    : ` La última carta te mostró este cierre en ~${entero(aviso.mentalidad)}, sin burnout en el sorteo; la cabeza siguió cayendo y ahora el burnout puede salir.`;
 }
 
 function decisionDeLaParada(state, opciones, aviso) {
@@ -121,7 +121,7 @@ function decisionDeLaParada(state, opciones, aviso) {
     tipo: 'opciones',
     titulo: `La cabeza en rojo — mentalidad ${entero(state.player.stats.mentalidad)}`,
     descripcion: `Cerraste ${splits} con la mentalidad en zona roja (${burnoutMentalBajo} o menos). Con ${burnoutSplitsMinimos} splits seguidos en rojo `
-      + `el dado del burnout entra al sorteo al cierre: si seguís así, cerrás con ${textoDelCierre(seguir)}.${textoDelAviso(aviso)}`,
+      + `el burnout entra al sorteo del cierre: si seguís así, cerrás con ${textoDelCierre(seguir)}.${textoDelAviso(aviso)}`,
     opciones: opciones.map((opcion) => ({
       id: opcion.id,
       label: ETIQUETAS[opcion.id],

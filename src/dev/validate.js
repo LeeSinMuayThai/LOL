@@ -13031,7 +13031,9 @@ check('K4c-H Δp sobre el motor real: pPorOpcion lee la p de la previa (la misma
   // traían serie:decisivo): un serie:plan (su pSerie por opción es la lectura independiente), un serie:decisivo (la p del mapa, con y sin
   // charla) y la fecha marcada (sin p por opción al decidir: null, y la p que tiró cada réplica es el `p` de su log).
   const vistos = {};
-  const TIPOS_K4CH = ['serie:plan', 'serie:decisivo', 'temporada:momento'];
+  // Ola G (G1): serie:decisivo ya no existe (el mapa que puede cerrar la serie lo decide un minijuego, sin p por opción): su
+  // mitad del check se fue; la p de esos mapas la cuidan K2d previa 1 (la vara) y el check de la promesa de G1.
+  const TIPOS_K4CH = ['serie:plan', 'temporada:momento'];
   for (const seed of [1, 2, 3, 4, 5, 6]) {
     if (TIPOS_K4CH.every((tipo) => vistos[tipo])) {
       break;
@@ -13044,7 +13046,7 @@ check('K4c-H Δp sobre el motor real: pPorOpcion lee la p de la previa (la misma
       while (st.pendiente) {
         const { sistemaId, decision } = st.pendiente;
         const tipo = `${sistemaId}:${decision.datos?.motivo ?? decision.presentacion ?? 'x'}`;
-        if (['serie:plan', 'serie:decisivo', 'temporada:momento'].includes(tipo) && !vistos[tipo] && (decision.opciones ?? []).length >= 2) {
+        if (TIPOS_K4CH.includes(tipo) && !vistos[tipo] && (decision.opciones ?? []).length >= 2) {
           vistos[tipo] = { seed, splitCount, st: structuredClone(st), decision };
         }
         st = resolverDecision(st, sistemaPorId(sistemaId).resolverAuto(st, decision, rng), rng).state;
@@ -13052,7 +13054,7 @@ check('K4c-H Δp sobre el motor real: pPorOpcion lee la p de la previa (la misma
       splitCount += 1;
     }
   }
-  for (const tipo of ['serie:plan', 'serie:decisivo', 'temporada:momento']) {
+  for (const tipo of TIPOS_K4CH) {
     if (!vistos[tipo]) {
       throw new Error(`check vacío: en las seeds 1-6 no apareció ${tipo} en 45 splits`);
     }
@@ -13062,11 +13064,6 @@ check('K4c-H Δp sobre el motor real: pPorOpcion lee la p de la previa (la misma
   const pPlan = pPorOpcion(plan.st, plan.decision, opsDe(plan.decision));
   if (!pPlan || pPlan.length !== plan.decision.opciones.length || pPlan.some((p, i) => p !== plan.decision.opciones[i].pSerie)) {
     throw new Error(`serie:plan: la p por opción tenía que ser la pSerie declarada ${JSON.stringify(plan.decision.opciones.map((o) => o.pSerie))}, dio ${JSON.stringify(pPlan)}`);
-  }
-  const decisivo = vistos['serie:decisivo'];
-  const pDecisivo = pPorOpcion(decisivo.st, decisivo.decision, opsDe(decisivo.decision));
-  if (!pDecisivo || pDecisivo.some((p) => !(p > 0 && p < 1)) || new Set(pDecisivo).size < 2) {
-    throw new Error(`serie:decisivo: una p por opción, distintas, en (0, 1); dio ${JSON.stringify(pDecisivo)}`);
   }
   const momento = vistos['temporada:momento'];
   if (pPorOpcion(momento.st, momento.decision, opsDe(momento.decision)) !== null) {
@@ -16894,10 +16891,11 @@ function draftsDeSerieK2b(maximo) {
   return casos;
 }
 
-check('K2b una tirada por mapa: el mapa es rng() < p con la p de probabilidadDePartido sobre la fuerza de partido del campeón elegido, y un mapa que cierra una serie perdida sin internacional tira un solo rng()', () => {
-  // Cada serie se juega con el plan del coach (sin tiradas de lectura) en el marcador del desempate de unos cuartos de
-  // un equipo que no clasifica al internacional, desde el mapa 1 (no es el mapa decisivo por índice: no frena): si se
-  // pierde, después del mapa no queda nada que sortear.
+check('K2b una tirada por mapa: el mapa sin minijuego es rng() < p con la p de probabilidadDePartido sobre la fuerza de partido del campeón elegido', () => {
+  // Cada serie se juega con el plan del coach (sin tiradas de lectura) desde el primer mapa de unos cuartos de un equipo
+  // que no clasifica al internacional. Ola G (G1): el mapa que puede cerrar unos cuartos (antes, el del desempate, con su
+  // "un solo rng() si cierra la serie perdida") lo decide un minijuego y no tira: esa mitad la reemplaza el check de la
+  // promesa de G1 ("un mapa con minijuego nunca tira"). Acá queda el mapa que no puede cerrar la serie: 0-0 en un Bo3 o más.
   const casos = draftsDeSerieK2b(SERIES_K2B);
   if (casos.length < SERIES_K2B) {
     throw new Error(`check vacío: solo ${casos.length} drafts de serie`);
@@ -16910,10 +16908,11 @@ check('K2b una tirada por mapa: el mapa es rng() < p con la p de probabilidadDeP
   casos.forEach(({ st, decision }, i) => {
     const liga = st.mundo.ligas.find((l) => l.id === st.career.liga);
     const necesarias = Math.ceil(st.serie.formato / 2);
+    if (necesarias < 2) return;
     const escenario = {
       ...st,
       career: { ...st.career, posicion: (liga?.cuposInternacionales ?? 0) + 1 },
-      serie: { ...st.serie, ronda: 'cuartos', marcador: [necesarias - 1, necesarias - 1] }
+      serie: { ...st.serie, ronda: 'cuartos', marcador: [0, 0] }
     };
     // K4-B: el campeón que juega el plan del coach, y el rival de ESE mapa (también quema: `fuerzaRivalDeMapa`).
     const proximo = estadoDelProximoMapa(conPlan(escenario, 'coach'));
@@ -16936,10 +16935,6 @@ check('K2b una tirada por mapa: el mapa es rng() < p con la p de probabilidadDeP
       }
       if (mapa.resultado === 'L') {
         derrotas += 1;
-        if (valores.length !== 1) {
-          problemas.push(`draft ${i}: el mapa que cerró la serie (perdida, sin internacional) tiró ${valores.length} rng()`);
-          return;
-        }
       } else {
         victorias += 1;
       }
@@ -19040,21 +19035,19 @@ function opcionEsperadaK4c(perfil, decision) {
   return mejor;
 }
 
-check('K4-C solo frenan las bifurcaciones: toda pausa de eventos es un evento con bifurcacion: true (40 carreras × 60)', () => {
+// Ola G (G2a, "el perfil no decide nada"): la regla de K4-C ("solo frenan las bifurcaciones; el resto lo resuelve tu perfil y
+// deja crónica") se dio vuelta: frena todo evento con dos opciones vivas o más, con o sin `bifurcacion`. Este check mide la
+// regla nueva (ninguna pausa de evento es de una sola opción); la otra mitad, que el perfil no resuelva nada, es el check "G2a".
+check('K4-C toda pausa de eventos es un evento con dos opciones o más (G2a: frena todo lo que se elige, no solo las bifurcaciones) (40 carreras × 60)', () => {
   let pausasEvento = 0;
-  let cronicas = 0;
-  for (const { seed, pausas, final } of carrerasK4c()) {
+  for (const { seed, pausas } of carrerasK4c()) {
     for (const { sistema, decision } of pausas) {
       if (sistema !== 'eventos' || decision.datos?.motivo === 'minijuego') continue;
       pausasEvento += 1;
-      if (decision.datos?.evento?.bifurcacion !== true) {
-        throw new Error(`seed ${seed}: frenó un evento que no es bifurcación (${decision.titulo})`);
+      if ((decision.opciones ?? []).length < 2) {
+        throw new Error(`seed ${seed}: frenó un evento sin nada que elegir (${decision.titulo}, ${(decision.opciones ?? []).length} opción)`);
       }
     }
-    cronicas += final.logs.filter((log) => log.cronica).length;
-  }
-  if (cronicas === 0) {
-    throw new Error('ningún evento se resolvió por perfil: no hay líneas de crónica');
   }
   if (pausasEvento === 0) {
     throw new Error('ninguna bifurcación frenó en 40 carreras: el marcado no llega al motor');
@@ -19188,26 +19181,8 @@ check('K4-C el perfil está completo en el estado desde el arranque y se corre c
   }
 });
 
-check('K4-C cada evento resuelto por perfil deja una línea de crónica, sin ids crudos', () => {
-  const ids = new Set(TODOS_LOS_EVENTOS.flatMap((e) => [e.id, ...e.options.map((o) => o.id)]));
-  let vistas = 0;
-  for (const { seed, final } of carrerasK4c().slice(0, 15)) {
-    const cronicas = final.logs.filter((log) => log.cronica);
-    for (const log of cronicas) {
-      vistas += 1;
-      if (!log.titulo || !log.opcion || !log.cuerpo || typeof log.descripcion !== 'string' || !log.perfil) {
-        throw new Error(`seed ${seed}: línea de crónica incompleta: ${JSON.stringify(log).slice(0, 200)}`);
-      }
-      const crudo = log.message.match(/\b[a-z0-9]+(?:_[a-z0-9]+)+\b/g)?.find((t) => ids.has(t) || /_/.test(t));
-      if (crudo || /\{[a-zA-Z]+\}/.test(log.message)) {
-        throw new Error(`seed ${seed}: id o token crudo en la crónica ("${crudo ?? log.message}")`);
-      }
-    }
-  }
-  if (vistas === 0) {
-    throw new Error('ninguna línea de crónica en 15 carreras');
-  }
-});
+// Ola G (G2a): se borró "K4-C cada evento resuelto por perfil deja una línea de crónica": el perfil ya no resuelve eventos (no
+// hay crónica que mirar). Lo reemplaza el check "G2a: ningún evento con 2+ opciones lo resuelve el perfil".
 
 check('K4-C la rueda de prensa sale solo después de una final o de un escándalo', () => {
   let prensas = 0;
@@ -19565,6 +19540,7 @@ check('K4c-S un tryout fallido del amateur posterga la firma: seguís en la esca
     throw new Error(`check vacío: ${fallidos.length} tryouts fallidos del amateur (hacen falta 10)`);
   }
   let firmaDespues = 0;
+  const diagK4cS = [];
   fallidos.forEach((f, indice) => {
     const { estado } = f.bajo;
     // El split sigue después de la prueba: puede cortarse por otra causa (la familia, la edad), pero nunca por haber firmado.
@@ -19574,18 +19550,26 @@ check('K4c-S un tryout fallido del amateur posterga la firma: seguís en la esca
     if ((estado.flags.bonusJerarquiaTryout ?? 0) !== f.antes.bonus) {
       throw new Error(`seed ${f.seed}: el tryout fallido dejó crédito de jerarquía (${estado.flags.bonusJerarquiaTryout})`);
     }
-    if (indice < 12 && !estado.terminado && !estado.pendiente) {
+    // Ola G (G3a): con el piso de ofertas la otra oferta puede llegar en el mismo split (la prueba fallida deja otra parada
+    // pendiente): se contesta con el bot del sistema y se sigue, en vez de saltear la carrera.
+    if (indice < 12 && !estado.terminado) {
       let s = estado;
       for (let k = 0; k < 10 && !s.terminado && s.phase === 'amateur'; k += 1) {
+        while (s.pendiente && !s.terminado) {
+          const { sistemaId, decision } = s.pendiente;
+          s = resolverDecision(s, sistemaPorId(sistemaId).resolverAuto(s, decision, f.bajo.rr), f.bajo.rr).state;
+        }
+        if (s.terminado || s.phase !== 'amateur') break;
         s = avanzarSplitAuto(s, f.bajo.rr).state;
       }
       if (s.phase === 'profesional') {
         firmaDespues += 1;
       }
+      diagK4cS.push(`${f.seed}:${f.antes?.edad ?? estado.age}→${s.age} ${s.phase} ${s.career.currentOrg ?? '-'}${s.terminado ? ' fin' : ''}${s.pendiente ? ` pend:${s.pendiente.sistemaId}` : ''}`);
     }
   });
   if (firmaDespues === 0) {
-    throw new Error('ninguna de las primeras 12 carreras con tryout fallido recibió otra oferta en 10 splits: la firma no se posterga, se pierde');
+    throw new Error(`ninguna de las primeras 12 carreras con tryout fallido recibió otra oferta en 10 splits: la firma no se posterga, se pierde [${diagK4cS.join(', ')}]`);
   }
 });
 
@@ -19845,7 +19829,10 @@ check('K4-C2 los caminos se abren y los seguimientos se resuelven en carreras re
     }
   }
   const seguimientos = caminosK4c2().filter((e) => !e.bifurcacion);
-  const vistos = seguimientos.filter((e) => carreras.some((c) => c.final.logs.some((log) => log.cronica && log.titulo === e.title)));
+  // Ola G (G2a): un seguimiento con elección ya no se resuelve por el perfil (no deja crónica): frena. Se cuenta como visto
+  // si frenó en alguna carrera o si se aplicó solo (una opción viva: su log trae el título).
+  const vistos = seguimientos.filter((e) => carreras.some((c) => c.pausas.some(({ decision }) => decision.datos?.evento?.id === e.id)
+    || c.final.logs.some((log) => log.titulo === e.title)));
   if (vistos.length < 3) {
     throw new Error(`solo ${vistos.length} de ${seguimientos.length} eventos de seguimiento se resolvieron en ${carreras.length} carreras (${vistos.map((e) => e.id).join(', ')})`);
   }
@@ -26178,7 +26165,8 @@ const CARRERAS_K6aA = 30;
 const SPLITS_K6aA = 60;
 // La mediana de paradas de la semana por carrera (criterio). Antes de K6a-A era 8 (60 carreras, sonda del worker).
 const META_SEMANAS_K6aA = 1;
-const MOTIVOS_DE_SALIDA_K6aA = ['oferta', 'negociacion', 'nocturno', 'salida_amateur'];
+// Ola G (G3a): sin 'salida_amateur': el "¿seguís?" del amateur ya no existe (siempre estás en un equipo).
+const MOTIVOS_DE_SALIDA_K6aA = ['oferta', 'negociacion', 'nocturno'];
 const IDS_QUE_TERMINAN_K6aA = new Set(['retirarse', 'retirarte', 'dejar', 'vivir_del_canal']);
 const EFECTOS_DE_CARRERA_K6aA = new Set(['retirarse', 'camino', 'ofertaDeImport', 'cambiarRol']);
 // El encuadre de azar puro: "el dado", "los dados", "el dado trajo", "ruleta". (`dado` solo es también el participio
@@ -27600,50 +27588,9 @@ check(`K6b-C la cola: el "¿la seguís?", "El mercado ya habló" sin ofertas y e
   console.log(`      ${paradas} paradas de la cola frenaron, ${narradas} repeticiones se narraron sin frenar`);
 });
 
-check(`K6b-C la cola: un mercado de una sola carta frena solo si se juega algo, la previa lo dice, y si no se firma y se narra (${SEEDS_K6BC} seeds, regla 7)`, () => {
-  const { unaSolaCartaFrenada, unaSolaCartaNarradas, unaSolaCartaFirmadas } = cosechaDeLaColaK6BC();
-  const sinPrevia = unaSolaCartaFrenada.filter((parada) => !parada.enJuego || !CASOS_UNA_SOLA_CARTA_K6BC.includes(parada.enJuego.caso)
-    || !parada.descripcion.includes(parada.enJuego.texto));
-  if (sinPrevia.length > 0) {
-    throw new Error(`${sinPrevia.length} mercado(s) de una sola carta frenaron sin decir qué se juega: ${JSON.stringify(sinPrevia.slice(0, 2))}`);
-  }
-  if (unaSolaCartaNarradas === 0) {
-    throw new Error(`check vacío: ningún mercado de una sola carta se resolvió solo en ${SEEDS_K6BC} seeds`);
-  }
-  // Revisión de K6b (regla 15): la que se firmó sola es una continuidad: la misma liga y el mismo tier (CBLOL → LCK o
-  // LCK → LPL a los 29 se firmaban solas, "no había nada que pensar"). Mutante: volver a frenar solo con prueba o bajada.
-  const mudanzas = unaSolaCartaFirmadas.filter((carta) => carta.ligaAntes == null || carta.liga !== carta.ligaAntes || carta.tier !== carta.tierAntes);
-  if (mudanzas.length > 0) {
-    throw new Error(`${mudanzas.length} carta(s) única(s) se firmaron solas cambiando de liga, región o tier: ${JSON.stringify(mudanzas.slice(0, 2))}`);
-  }
-  // Regla 7, sobre un estado real de tier 1 con club: la renovación de tu club, de tu tier y sin prueba, no se juega nada; la
-  // misma carta un tier abajo sí (bajar o prueba), y lo dice.
-  const st = createInitialState(1, mulberry32(1));
-  const enTier1 = { ...st, phase: 'profesional', career: { ...st.career, tier: 1, currentOrg: 'Org K6bC', liga: 'LCK' } };
-  const renovacion = { id: 'r', org: 'Org K6bC', liga: 'LCK', tier: 1, tag: 'renovacion', salarioAnualUSD: 1 };
-  const deTuTier = enJuegoK6BC(enTier1, renovacion);
-  if (deTuTier !== null) throw new Error(`la renovación de tu tier no se juega nada y dio ${JSON.stringify(deTuTier)}`);
-  const abajo = enJuegoK6BC(enTier1, { ...renovacion, id: 'b', org: 'Otra K6bC', liga: 'LCK_CL', tier: 2, tag: null });
-  if (!abajo || !['prueba', 'bajar'].includes(abajo.caso) || !abajo.texto) {
-    throw new Error(`una carta un tier abajo se juega algo y dio ${JSON.stringify(abajo)}`);
-  }
-  // Revisión de K6b (regla 15), con los saltos ya estrenados (sin prueba): otro club de tu liga y tier es continuidad; uno de
-  // otra liga de primera (otra región) frena con la mudanza en la previa; uno de tu región un tier arriba también.
-  const sinSaltos = { ...enTier1, flags: { ...enTier1.flags, saltosConPrueba: ['tier2', 'tier1', 'import'] } };
-  const mismaLiga = enJuegoK6BC(sinSaltos, { ...renovacion, id: 'm', org: 'Otra K6bC', tag: null });
-  if (mismaLiga !== null) throw new Error(`otro club de tu liga y tu tier es continuidad y dio ${JSON.stringify(mismaLiga)}`);
-  const otraRegion = enJuegoK6BC(sinSaltos, { ...renovacion, id: 'o', org: 'Otra K6bC', liga: 'LPL', tag: null });
-  if (!otraRegion || otraRegion.caso !== 'cambio' || !otraRegion.otraRegion || !/LCK → LPL/.test(otraRegion.texto)) {
-    throw new Error(`LCK → LPL sin prueba tiene que frenar con la mudanza y dio ${JSON.stringify(otraRegion)}`);
-  }
-  const enTier2 = { ...sinSaltos, career: { ...sinSaltos.career, tier: 2, liga: 'LCK_CL' } };
-  const arriba = enJuegoK6BC(enTier2, { ...renovacion, id: 'a', org: 'Otra K6bC', tag: null });
-  if (!arriba || arriba.caso !== 'cambio' || !arriba.subeDeTier || arriba.otraRegion) {
-    throw new Error(`LCK CL → LCK sin prueba tiene que frenar (sube de tier, misma región) y dio ${JSON.stringify(arriba)}`);
-  }
-  const porCaso = Object.fromEntries(CASOS_UNA_SOLA_CARTA_K6BC.map((caso) => [caso, unaSolaCartaFrenada.filter((p) => p.enJuego?.caso === caso).length]));
-  console.log(`      ${unaSolaCartaFrenada.length} mercado(s) de una sola carta frenaron (con su previa: ${JSON.stringify(porCaso)}), ${unaSolaCartaNarradas} se firmaron solos (todos continuidad)`);
-});
+// Ola G (G3b): se borró "K6b-C la cola: un mercado de una sola carta frena solo si se juega algo...": con el piso de ofertas
+// toda mano trae 3 cartas o más y el mercado de una sola carta no existe (check vacío en 40 seeds). Lo reemplaza "G3ab siempre en
+// un equipo". Sigue en git: `git show c45f351:src/dev/validate.js`.
 
 // --- Revisión de K6b: la vuelta del retiro de free agent (PLAN.md §K6b, "el sin equipo al ~45% es un artefacto") ----------
 // (a) la vuelta se pregunta en la pretemporada y, sin club, es al mercado de esa misma pretemporada (el split sigue desde
@@ -27867,7 +27814,9 @@ check(`K6b-C2 la cola de verdad: en la cola, el cierre de año y el momento fren
     throw new Error(`${malas.length} parada(s) de la cola frenaron sin hito, sin cambio y sin palanca: ${JSON.stringify(malas.slice(0, 3))}`);
   }
   // Un tipo sin palanca tiene que narrarse alguna vez; uno con palanca frena siempre en la cola (y no se narra nunca).
-  const sinNarrar = Object.keys(narradas).filter((tipo) => !palanca[tipo] && narradas[tipo] === 0);
+  // Ola G (G2a, core/cola.js): lo que no frena en la cola no pasa (ya no lo resuelve el perfil ni se narra), así que "un tipo
+  // sin palanca tiene que narrarse alguna vez" dejó de ser la regla: queda que uno con palanca no se narre nunca.
+  const sinNarrar = [];
   const narradasConPalanca = Object.keys(narradas).filter((tipo) => palanca[tipo] && narradas[tipo] > 0);
   if (enCola === 0 || sinNarrar.length > 0 || narradasConPalanca.length > 0) {
     throw new Error(`check vacío o al revés: ${enCola} paradas en la cola; sin palanca y nunca narrados [${sinNarrar.join(', ')}]; con palanca y narrados [${narradasConPalanca.join(', ')}]`);
@@ -29200,42 +29149,14 @@ if (SOLO.length === 0 || SOLO.some((texto) => NOMBRE_CHECK_W1D.toLowerCase().inc
     }
     if (resumenes === 0 || !tipos.firma || !tipos.plan || Object.keys(ejes).length === 0 || puntajes === 0) mal.push(`muestra vacía: ${resumenes} resúmenes, ${JSON.stringify(tipos)}, ascensos ${JSON.stringify(ejes)}, ${puntajes} deltas del puntaje`);
 
-    // "Tan cerca": la chance sin la jugada, contra el motor. El motor se resuelve aparte con una tirada fija (la p del mapa no
-    // depende de la tirada) y a la carrera se le contesta lo mismo.
-    let jugadas = 0;
-    const RESULTADOS = [0.5, 0.15, 0.9];
-    for (let seed = 1; seed <= 40; seed += 1) {
-      const rng = mulberry32(seed);
-      let estado = createInitialState(seed, rng);
-      const responder = (sistema, st, decision, r) => {
-        const datos = decision.datos ?? {};
-        if (sistema.id !== 'serie' || datos.motivo !== 'minijuego' || datos.momento !== 'mapa_decisivo') return sistema.resolverAuto(st, decision, r);
-        const resultado = RESULTADOS[jugadas % RESULTADOS.length];
-        const respuesta = datos.charla?.disponible ? { resultado, charla: false } : { resultado };
-        const aparte = sistema.resolver(st, decision, respuesta, () => 0.5);
-        const mapa = (aparte.logs ?? []).find((l) => l?.mapa);
-        const pSin = probabilidadDeMapa(st, datos.fuerzaPropia, (datos.ajustePlan ?? 0) + ajusteDeCharla(Boolean(mapa?.charla)));
-        if (!mapa || !Number.isFinite(mapa.p)) mal.push(`seed ${seed}: el decisivo no dejó el log del mapa con su p`);
-        else if (resultado === 0.5 && Math.abs(mapa.p - pSin) > 1e-9) mal.push(`seed ${seed}: con la jugada en 0,5 el motor tiró con ${mapa.p} y la placa calcula ${pSin}`);
-        else if (resultado !== 0.5 && Math.sign(mapa.p - pSin) !== Math.sign(resultado - 0.5)) mal.push(`seed ${seed}: la jugada en ${resultado} movió la p de ${pSin} a ${mapa.p}`);
-        const cerca = tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: true, pFinal: mapa?.p, pSinJugada: pSin });
-        if (resultado > 0.5 && !/^Ganaste la jugada/.test(cerca?.texto ?? '')) mal.push(`seed ${seed}: jugada ganada y la placa dice ${cerca?.texto}`);
-        if (resultado < 0.5 && !/^La jugada no salió/.test(cerca?.texto ?? '')) mal.push(`seed ${seed}: jugada perdida y la placa dice ${cerca?.texto}`);
-        // los puntos son la resta de los porcentajes que se muestran
-        const nums = (cerca?.texto ?? '').match(/te costó (\d+) puntos? de chance \(de (\d+)% a (\d+)%\)/);
-        if (nums && Number(nums[1]) !== Math.max(1, Number(nums[2]) - Number(nums[3]))) mal.push(`seed ${seed}: ${cerca.texto}`);
-        jugadas += 1;
-        return respuesta;
-      };
-      for (let i = 0; i < 60 && !estado.terminado; i += 1) {
-        estado = avanzarSplitAuto(estado, rng, responder).state;
-      }
-    }
-    if (jugadas < 6) mal.push(`solo ${jugadas} jugadas del mapa decisivo en la muestra`);
+    // Ola G (G1): se fue la mitad de "tan cerca" que recalculaba la chance sin la jugada contra la p tirada: el mapa decisivo de
+    // una final ya no se tira, lo decide el minijuego contra la vara (el "tan cerca" de G1 es el CASI del veredicto, con la
+    // cuenta del motor, `juzgarMinijuego`). La placa de cierre (`tanCercaDeLaFinal`, ui/core/momentos.js) todavía habla de
+    // chance: la arregla la UI. Queda la guarda de que no sale fuera de una final perdida en el decisivo.
     if (tanCercaDeLaFinal({ perdioLaFinal: false, decisivo: true, pFinal: 0.5 }) || tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: false, pFinal: 0.5 })) {
       mal.push('"tan cerca" salió fuera de una final perdida en el mapa decisivo');
     }
-    console.log(`      ${resumenes} resúmenes (${puntajes} con el delta del puntaje), última hora ${JSON.stringify(tipos)}, ascensos ${JSON.stringify(ejes)}, ${jugadas} jugadas del decisivo`);
+    console.log(`      ${resumenes} resúmenes (${puntajes} con el delta del puntaje), última hora ${JSON.stringify(tipos)}, ascensos ${JSON.stringify(ejes)}`);
     if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
   } catch (error) {
     errorW1D = error;

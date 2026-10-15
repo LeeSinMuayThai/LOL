@@ -1180,7 +1180,7 @@ function textoDeLaRacha(riesgo, state) {
   const hoy = `hoy está en ~${entero(state.player.stats.mentalidad)}`;
   const racha = riesgo.racha === 0 ? `la mentalidad ${hoy}`
     : `cerraste ${riesgo.racha === 1 ? 'el último split' : `los últimos ${riesgo.racha} splits`} con la mentalidad en zona roja (${burnoutMentalBajo} o menos) y ${hoy}`;
-  return `Ojo con la cabeza: ${racha}. El dado del burnout corre al cierre de cada split, firmes o no.`;
+  return `Ojo con la cabeza: ${racha}. El burnout se sortea al cierre de cada split, firmes o no.`;
 }
 
 // La carta de la oferta (la del scouting y la que el club te guardó). Con el riesgo de K6d-B, cada opción dice su mentalidad y su %
