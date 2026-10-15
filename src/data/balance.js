@@ -1585,6 +1585,18 @@ export const BALANCE = {
     banquilloArraigoFactor: 0.6
   },
 
+  // G2b (PLANUI §0.9, "una carta por año"): la carta del año es la única decisión del arranque del año. Cada opción del
+  // cierre (`data/events/cierre_edad.json`) declara en `carta` su stat principal, uno de estos cinco (los de la ficha), y
+  // todos sus outcomes lo suben: el piso es el número seguro que muestra la carta (`systems/edadCierre.js`). La rutina del
+  // amateur deja de ser una decisión: la arma el motor con la propuesta de tu perfil (`systems/amateur.js`).
+  carta: {
+    stats: ['mecanica', 'macro', 'laneo', 'shotcalling', 'mentalidad'],
+    // Una carta es rara si su número seguro llega a esto (la misma escala del stat, ya con el tope del clamp).
+    rarezaDesde: 4,
+    // El tier del club desde el que la carta se juega en "la gaming house" (debajo, "el bootcamp").
+    tierGamingHouse: 1
+  },
+
   // K6b-C2 (PLAN.md §K6b, "la cola de verdad"; D-B en la cola). Desde los `edadDesde` años o desde el aviso de declive
   // (`etapa === 'declive'`, `core/contexto.js`), lo que llegue primero, el cierre de año y el momento de una fecha marcada
   // frenan solo si es un hito, si algo cambió (el club, el tier, una lesión o el declive) o si su tipo tiene palanca. Si no,

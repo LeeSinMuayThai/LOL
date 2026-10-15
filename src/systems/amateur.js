@@ -629,8 +629,9 @@ function resolverPlan(state, decision, opcionId, rng) {
     ofertas: []
   };
   const conPlan = { ...state, flags: { ...state.flags, anioAmateur } };
-  const deQuien = rutinaId === propuesta ? ', la que proponía tu perfil' : '';
-  const log = crearLog('amateur', `Tu plan para este año: "${rutina.titulo}"${deQuien}. Las semanas corren solas con ese plan; el juego frena si una te mete en un riesgo evitable.`);
+  // G2b: la rutina la arma tu perfil (ya no se elige); la línea lo dice.
+  const deQuien = rutinaId === propuesta ? ', la que arma tu perfil' : '';
+  const log = crearLog('amateur', `Tu rutina para este año: "${rutina.titulo}"${deQuien}. Las semanas corren solas con esa rutina; el juego frena si una te mete en un riesgo evitable.`);
   const sigue = continuarElSplit(conPlan, rng);
   return { ...sigue, logs: [log, ...sigue.logs] };
 }
@@ -1883,9 +1884,12 @@ export function aplicar(state, rng) {
     return { state, logs: [], decision: decisionEquipoSeguro(state, rng) };
   }
 
-  // K6c: arranca un año (el primero, o el que sigue a un cierre de edad): frena con el resumen y el plan del año.
+  // K6c: arranca un año (el primero, o el que sigue a un cierre de edad) con su plan. G2b (PLANUI §0.9, "una carta por
+  // año"): la rutina del año ya no es una decisión: la arma el motor con la propuesta de tu perfil (la que ya elegía el
+  // bot), con el mismo sorteo de rutinas. La única decisión del arranque del año es la carta del cierre (`edadCierre.js`).
   if (necesitaPlan(state)) {
-    return { state, logs: [], decision: decisionDePlan(state, rng) };
+    const plan = decisionDePlan(state, rng);
+    return resolverPlan(state, plan, plan.datos.propuesta, rng);
   }
 
   // G3a: la copa amateur del año, en su último split.
