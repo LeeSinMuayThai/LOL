@@ -327,9 +327,7 @@ function resolverDescenso(state, rng) {
         contrato: { ...state.career.contrato, tier: 2, liga: ligaDestino.id }
       }
     },
-    logs: [crearLog('competitivo', `${orgQueBaja.nombre} termina último en ${nombreVisibleDeLiga(ligaActual.id)}: desciende a ${nombreVisibleDeLiga(ligaDestino.id)}. ${contratoQueSeVence(state)
-      ? 'Tu contrato se termina ahora: si bajás con ellos depende de que te renueven.'
-      : 'Bajás con ellos — el contrato viaja.'}`)]
+    logs: [crearLog('competitivo', `${orgQueBaja.nombre} termina último en ${nombreVisibleDeLiga(ligaActual.id)}: desciende a ${nombreVisibleDeLiga(ligaDestino.id)}. ${textoDelContratoEnElDescenso(state)}`)]
   };
 }
 
@@ -338,6 +336,17 @@ function resolverDescenso(state, rng) {
 // o irte lo decide la renovación: decir "viaja" y en el mismo receso "no te renovaron" era la contradicción de K6.
 function contratoQueSeVence(state) {
   return Math.max(0, state.career.contrato.aniosRestantes - 1) <= 0;
+}
+
+// El banquillo pendiente (`flags.banquilloPendiente`) se cobra en el mercado de esta misma pretemporada: el club te cede a su
+// academia, así que el contrato NO viaja con la org que baja. Mismo criterio que arriba: no decir "viaja" y mandarte a otro lado.
+function textoDelContratoEnElDescenso(state) {
+  if (contratoQueSeVence(state)) {
+    return 'Tu contrato se termina ahora: si bajás con ellos depende de que te renueven.';
+  }
+  return state.flags.banquilloPendiente
+    ? 'Venías al banco: el club decide ahora si te cede a su academia.'
+    : 'Bajás con ellos — el contrato viaja.';
 }
 
 export function aplicar(state, rng) {

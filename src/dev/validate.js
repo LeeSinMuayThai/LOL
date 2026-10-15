@@ -13265,7 +13265,7 @@ check('K4c observación (revisión): minijuegosPorMecanica, bifurcaciones, cambi
   // cambiarlo: `criterio` firma una mudanza en 10 de las seeds 1-40 (la primera, la 7); `malas` en ninguna.
   const totales = { minijuegos: 0, bifurcaciones: 0, cambiosDeLinea: 0, cambiosDeRegion: 0, mudanzasFirmadas: 0, fueraDeSuRegion: 0 };
   const SEEDS_MIN_OBSERVACION_K4C = 2;
-  const SEEDS_MAX_OBSERVACION_K4C = 30;
+  const SEEDS_MAX_OBSERVACION_K4C = 60;
   const muestra = [];
   for (let s = 1; s <= SEEDS_MAX_OBSERVACION_K4C; s += 1) {
     muestra.push(['criterio', s], ['malas', s]);
