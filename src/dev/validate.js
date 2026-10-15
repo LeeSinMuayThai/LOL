@@ -20747,12 +20747,13 @@ check('K4-A la fecha marcada no tiene draft: frena una sola vez, con el momento'
     throw new Error(`${pausas.draft} pausas de draft en una fecha marcada (temporada:draft debería haber desaparecido)`);
   }
   const marcadas = marcadasPorSplit[1] ?? 0;
-  if ((pausas.momento ?? 0) > marcadas) {
-    throw new Error(`${pausas.momento} momentos para ${marcadas} fechas marcadas: la fecha frena más de una vez`);
+  // G1c: la fecha marcada frena con el momento y, si es un Bo1, otra vez con su minijuego (`bo1`, un solo partido): cada uno, a lo sumo una vez.
+  if ((pausas.momento ?? 0) > marcadas || (pausas.bo1 ?? 0) > marcadas) {
+    throw new Error(`${pausas.momento ?? 0} momentos y ${pausas.bo1 ?? 0} minijuegos de Bo1 para ${marcadas} fechas marcadas: la fecha frena más de una vez`);
   }
-  const otras = Object.keys(pausas).filter((m) => m !== 'momento');
+  const otras = Object.keys(pausas).filter((m) => m !== 'momento' && m !== 'bo1');
   if (otras.length > 0) {
-    throw new Error(`la temporada pausó con ${otras.join(', ')}: solo debería frenar con el momento`);
+    throw new Error(`la temporada pausó con ${otras.join(', ')}: solo debería frenar con el momento (o con el minijuego del Bo1)`);
   }
 });
 
@@ -27757,8 +27758,12 @@ function narradasConMotivoK6BC2(paradas) {
   return malas;
 }
 const clubTierK6BC2 = (st) => `${st.career.currentOrg ?? 'libre'}|${st.career.tier ?? '-'}`;
-const palancaK6BC2 = () => Object.fromEntries(Object.entries(BALANCE.cola.palancaMedidaPct)
-  .map(([tipo, pct]) => [tipo, pct >= BALANCE.cola.umbralPalancaPct]));
+// G2b: el cierre de año es la carta del año, LA decisión del año: frena siempre, también en la cola (no pasa por la regla de
+// `core/cola.js`), así que para el juez tiene palanca sin importar el balance. Solo el momento sigue la regla de la cola.
+const palancaK6BC2 = () => ({
+  ...Object.fromEntries(Object.entries(BALANCE.cola.palancaMedidaPct).map(([tipo, pct]) => [tipo, pct >= BALANCE.cola.umbralPalancaPct])),
+  cierre: true
+});
 // `palanca` es la del juez (la del balance real); el mutante cambia la del motor sin cambiar esta.
 function cosechaK6BC2(palanca = palancaK6BC2()) {
   const cosecha = { malas: [], enCola: 0, palanca, narradas: { cierre: 0, momento: 0 }, narradasConMotivo: [] };
@@ -27840,20 +27845,9 @@ check(`K6b-C2 la cola de verdad: en la cola, el cierre de año y el momento fren
   if (enCola === 0 || sinNarrar.length > 0 || narradasConPalanca.length > 0) {
     throw new Error(`check vacío o al revés: ${enCola} paradas en la cola; sin palanca y nunca narrados [${sinNarrar.join(', ')}]; con palanca y narrados [${narradasConPalanca.join(', ')}]`);
   }
-  // Regla 7 sobre el motor: con el cierre frenando siempre (el motor lo cree con palanca; el juez sigue con la del balance real),
-  // aparecen cierres sin motivo y no se narra ninguno: el check se pone en rojo.
-  const palancaReal = BALANCE.cola.palancaMedidaPct.cierre;
-  let mutante;
-  try {
-    BALANCE.cola.palancaMedidaPct.cierre = 100;
-    mutante = cosechaK6BC2(palanca);
-  } finally {
-    BALANCE.cola.palancaMedidaPct.cierre = palancaReal;
-  }
-  if (palanca.cierre || mutante.malas.length === 0 || mutante.narradas.cierre > 0) {
-    throw new Error(`el mutante (el cierre frena siempre) deja ${mutante.malas.length} sin motivo y ${mutante.narradas.cierre} narrados: el check no muerde`);
-  }
-  console.log(`      ${enCola} paradas en la cola frenaron con motivo; narradas: ${narradas.cierre} cierres y ${narradas.momento} momentos; el mutante: ${mutante.malas.length} sin motivo, ${mutante.narradas.cierre} cierres narrados`);
+  // G2b: el mutante de la palanca del cierre se fue con la regla (el cierre es la carta del año y frena siempre); el del momento no
+  // muerde (con `palancaMedidaPct.momento` en 0 o el umbral por las nubes el momento tampoco se narra: lo frena la fecha marcada).
+  console.log(`      ${enCola} paradas en la cola frenaron con motivo; narradas: ${narradas.cierre} cierres y ${narradas.momento} momentos`);
 });
 
 // La meta del instrumento (PLAN.md §K6b, K6b-C, y §K.3c para la leyenda): con `criterio`, las frenadas desde los 28 (sobre las carreras
