@@ -2457,7 +2457,17 @@ export const BALANCE = {
     // D118: el Bo1 que frena en la temporada regular. Antes del minijuego se elige cómo encararlo: 🎲 ARRIESGADO (la opción
     // del momento con más varianza; la vara sube esto) o 🧊 SEGURO (la de menos; la vara baja esto). La vara base sale de
     // la p de la fecha con el ajuste medio del momento (`varaDeRonda`), con el techo humano de la mecánica.
-    bo1: { arriesgadoSubeVara: 0.1, seguroBajaVara: 0.1 },
+    bo1: {
+      arriesgadoSubeVara: 0.1,
+      seguroBajaVara: 0.1,
+      // G-fix C1: más difícil, más premio. El premio sale de los efectos del momento (sin el ajuste del partido): "el mejor"
+      // es lo bueno del outcome que más da entre todas las opciones vivas, "el peor", lo malo del que más quita. Cada rango
+      // se multiplica por su factor (un rango bueno nunca baja de +1; uno malo que redondea a 0 se va).
+      // 🎲 si sale: el mejor × arriesgadoSi y además arriesgadoHype; si no sale: el peor × arriesgadoNo.
+      // 🧊 si sale: el mejor × seguroSi (o seguroHypeSinPremio si el momento no da nada bueno); si no sale: el peor × seguroNo.
+      // El valor esperado de los dos (con la p del bot de cada encare) queda parejo: lo mide r2-bo1 y lo cuida el check G1c.
+      premio: { arriesgadoSi: 0.75, arriesgadoHype: [1, 2], arriesgadoNo: 1, seguroSi: 0.4, seguroHypeSinPremio: [1, 1], seguroNo: 0.5 }
+    },
     // El bot (Node): su resultado es uniforme alrededor de la vara efectiva, con un ancho tal que P(casi) = pCasiBot
     // (ancho = margenCasi / pCasiBot). Así P(paso) = la p del mapa por construcción, y lo que mueve la vara (el
     // escenario, el desempate) mueve su p en vara / ancho.

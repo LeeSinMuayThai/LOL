@@ -17,9 +17,9 @@ import { disponibleEn, opcionesVivas, resolverOpcion, cooldownActivo, pesoConMem
 import { devolverCupo } from './serie.js';
 import {
   elegirMinijuego, registrarMinijuegoVisto, textoDeMinijuego, minijuegoPorId, juzgarMinijuego, resultadoDelBot,
-  factorDificultadPorRonda, factorEscalada, reglaDeLaVara, varaDeMapa, techoDeVara
+  factorDificultadPorRonda, factorEscalada, reglaDeLaVara, varaDeMapa, techoDeVara, anchoDelBot
 } from '../core/minijuegos.js';
-import { textoDeRangos } from '../core/previa.js';
+import { textoDeRangos, payoffNormalizado, familiaDeEfecto } from '../core/previa.js';
 import { frenaEnLaCola, hitoDelMomento, conFirmaDeLaCola, enLaCola } from '../core/cola.js';
 import { registrarFecha, registrarSplitJugado } from '../core/registro.js';
 import { BALANCE } from '../data/balance.js';
@@ -355,11 +355,62 @@ export function varasDelBo1(pBot, minijuego) {
   };
 }
 
-function premioDelEncare(opcion, encare) {
-  const si = textoDeRangos(opcion.outcomes[encare.si].effects);
-  const no = textoDeRangos(opcion.outcomes[encare.no].effects);
-  return { si: si ? `ganan · ${si}` : 'ganan', no: no ? `pierden · ${no}` : 'pierden' };
+// G-fix C1: el premio de cada encare (más difícil, más premio). Sale de los efectos del momento, como rangos (regla 7):
+// "el mejor" es lo bueno del outcome que más da entre todas las opciones vivas; "el peor", lo malo del que más quita
+// (`payoffNormalizado`: cada familia en su escala). Los factores, en `g1.bo1.premio`.
+const PATH_HYPE = 'player.stats.hype';
+const esMagnitud = (effect) => effect.type !== 'partido' && familiaDeEfecto(effect) !== null;
+const valorDe = (effects) => payoffNormalizado({ effects });
+const sinCeroNegativo = (n) => (n === 0 ? 0 : n);
+
+// Un rango por un factor: uno bueno nunca baja de +1 (un "si sale" siempre paga algo); uno malo que redondea a 0 se va.
+function escalarEfectos(effects, factor) {
+  return effects.map((effect) => {
+    const lo = sinCeroNegativo(Math.round(effect.min * factor));
+    const hi = sinCeroNegativo(Math.round(effect.max * factor));
+    if (effect.min + effect.max > 0) {
+      const min = Math.max(1, lo);
+      return { ...effect, min, max: Math.max(min, hi) };
+    }
+    return { ...effect, min: Math.min(lo, hi), max: Math.max(lo, hi) };
+  }).filter((effect) => effect.min !== 0 || effect.max !== 0);
 }
+
+// Suma un rango de hype: si el premio ya mueve el hype, se agranda ese rango (una fila, no dos).
+function conHype(effects, [min, max]) {
+  const i = effects.findIndex((effect) => effect.type === 'stat' && effect.path === PATH_HYPE);
+  if (i < 0) return [...effects, { type: 'stat', path: PATH_HYPE, min, max, clamp: [0, BALANCE.stats.max] }];
+  return effects.map((effect, k) => (k === i ? { ...effect, min: effect.min + min, max: effect.max + max } : effect));
+}
+
+function extremosDelMomento(opciones) {
+  const outcomes = opciones.flatMap((opcion) => opcion.outcomes.map((outcome) => outcome.effects.filter(esMagnitud)));
+  const buenos = outcomes.map((effects) => effects.filter((effect) => effect.min + effect.max > 0));
+  const malos = outcomes.map((effects) => effects.filter((effect) => effect.min + effect.max < 0));
+  const mejor = buenos.reduce((a, b) => (valorDe(b) > valorDe(a) ? b : a), []);
+  const peor = malos.reduce((a, b) => (valorDe(b) < valorDe(a) ? b : a), []);
+  return { mejor, peor };
+}
+
+// `{ arriesgado: { si, no }, seguro: { si, no } }`: listas de efectos (rangos), nunca un "si sale" vacío.
+export function premiosDelBo1(opciones) {
+  const P = BALANCE.g1.bo1.premio;
+  const { mejor, peor } = extremosDelMomento(opciones);
+  const seguroSi = mejor.length > 0 ? escalarEfectos(mejor, P.seguroSi) : conHype([], P.seguroHypeSinPremio);
+  return {
+    arriesgado: { si: conHype(escalarEfectos(mejor, P.arriesgadoSi), P.arriesgadoHype), no: escalarEfectos(peor, P.arriesgadoNo) },
+    seguro: { si: seguroSi, no: escalarEfectos(peor, P.seguroNo) }
+  };
+}
+
+const textoDelPremio = (effects, base) => {
+  const rangos = textoDeRangos(effects);
+  return rangos ? `${base} · ${rangos}` : base;
+};
+
+// La p del bot con la vara de su encare: lo que la vara sube o baja desde la base mueve la p en vara / ancho (la regla de
+// `resultadoDelBot`, como el escenario o el desempate).
+const pDelEncare = (pBot, varaBase, vara) => Math.min(1, Math.max(0, pBot - (vara - varaBase) / anchoDelBot()));
 
 // La parada de la elección. `null` si el rol no tiene mecánica de mapa (no pasa: hay universales): queda el momento.
 function construirDecisionBo1(state, evento, contexto, fecha, decisionDelMomento) {
@@ -368,24 +419,36 @@ function construirDecisionBo1(state, evento, contexto, fecha, decisionDelMomento
   const vivas = opcionesVivas(state, evento, contexto);
   const pBot = probabilidadDeFechaMarcada(state, { ajustePartido: ajusteMedioDelMomento(state, vivas) });
   const varas = varasDelBo1(pBot, entrada.id);
+  const varaBase = Math.min(techoDeVara(entrada.id), enPuntos(varaDeMapa(pBot)));
   const encares = encaresDelMomento(vivas);
+  const premios = premiosDelBo1(vivas);
   const porOpcion = {};
   const opciones = ['arriesgado', 'seguro'].map((riesgo) => {
     const encare = encares[riesgo];
-    const premio = premioDelEncare(encare.opcion, encare);
-    porOpcion[encare.opcion.id] = { riesgo, vara: varas[riesgo], si: encare.si, no: encare.no, premio };
+    const { si: efectosSi, no: efectosNo } = premios[riesgo];
+    const premio = { si: textoDelPremio(efectosSi, 'ganás la fecha'), no: textoDelPremio(efectosNo, 'perdés la fecha') };
+    const p = pDelEncare(pBot, varaBase, varas[riesgo]);
+    porOpcion[encare.opcion.id] = {
+      riesgo, vara: varas[riesgo], p, si: encare.si, no: encare.no, efectosSi, efectosNo, premio,
+      valorSi: valorDe(efectosSi), valorNo: valorDe(efectosNo)
+    };
     return {
       id: encare.opcion.id,
       label: resolverTexto(encare.opcion.label, state),
-      descripcion: `${resolverTexto(encare.opcion.descripcion, state)} Si sale: ${premio.si}. Si no: ${premio.no}.`,
-      g1: { riesgo, premio: `Si sale: ${premio.si} · si no: ${premio.no}` }
+      // la descripción es la del momento: el "si sale / si no" ya está en el premio (`g1.premio`)
+      descripcion: resolverTexto(encare.opcion.descripcion, state),
+      g1: { riesgo, vara: varas[riesgo], premio: `Si sale: ${premio.si} · si no: ${premio.no}` }
     };
   });
   return {
     ...decisionDelMomento,
     descripcion: `${decisionDelMomento.descripcion} Elegí cómo lo encarás: no se tira, lo decide el minijuego.`,
     opciones,
-    datos: { ...decisionDelMomento.datos, bo1: { minijuego: entrada.id, pBot, porOpcion } }
+    datos: {
+      ...decisionDelMomento.datos,
+      // `dificultad` y `factorEscalada`: los del minijuego que viene, para que la pantalla diga la regla de cada vara
+      bo1: { minijuego: entrada.id, pBot, porOpcion, dificultad: factorDificultadPorRonda(null), factorEscalada: factorEscalada(0) }
+    }
   };
 }
 
@@ -426,6 +489,8 @@ function pausaDelBo1(state, decision, opcionId) {
         riesgo: encare.riesgo,
         si: encare.si,
         no: encare.no,
+        efectosSi: encare.efectosSi,
+        efectosNo: encare.efectosNo,
         rival: fecha.rival,
         etiqueta,
         minijuego: entrada.id,
@@ -435,8 +500,9 @@ function pausaDelBo1(state, decision, opcionId) {
         apuesta: textos.apuesta,
         regla: textos.regla,
         reglaVara: reglaDeLaVara(encare.vara),
-        p: bo1.pBot,
-        pBot: bo1.pBot,
+        // G-fix C1: la p del bot con la vara de este encare (🎲 más difícil, 🧊 más fácil)
+        p: encare.p,
+        pBot: encare.p,
         pAntesDeDecidir,
         g1
       }
@@ -451,8 +517,12 @@ function resolverBo1(state, decision, respuesta, rng) {
   const evento = TODOS_LOS_EVENTOS.find((candidato) => candidato.id === d.eventoId);
   const opcion = evento.options.find((candidata) => candidata.id === d.opcionId);
   const outcome = opcion.outcomes[juicio.paso ? d.si : d.no];
-  const sinPartido = { ...outcome, effects: outcome.effects.filter((effect) => effect.type !== 'partido') };
-  const { state: tras, logs } = resolverOpcion(devolverCupo(state), evento, d.opcionId, rng, { outcome: sinPartido });
+  // G-fix C1: el texto es el del outcome del encare; los números, el premio a la vista (más lo que no es una magnitud, como
+  // un camino o un momento, que el outcome traía)
+  const premio = juicio.paso ? d.efectosSi : d.efectosNo;
+  const otros = outcome.effects.filter((effect) => effect.type !== 'partido' && familiaDeEfecto(effect) === null);
+  const forzado = { ...outcome, effects: [...premio, ...otros] };
+  const { state: tras, logs } = resolverOpcion(devolverCupo(state), evento, d.opcionId, rng, { outcome: forzado });
   const max = BALANCE.stats.max;
   const juicioTexto = juicio.paso ? 'salió' : juicio.casi ? 'casi' : 'no salió';
   const linea = crearLog(

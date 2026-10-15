@@ -37,7 +37,7 @@ export function textoDeRiesgo(opcion, riesgo) {
 // payoff. El pool comparte un solo `path` ("player.championPool") para
 // aprender y maestría — la familia distingue una de otra; "olvidar" no toma
 // cantidad, así que tampoco entra.
-function familiaDeEfecto(effect) {
+export function familiaDeEfecto(effect) {
   if (effect.type === 'pool') {
     return effect.accion === 'olvidar' ? null : `pool_${effect.accion}`;
   }

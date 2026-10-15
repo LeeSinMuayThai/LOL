@@ -29627,7 +29627,8 @@ check('G4c: toda carrera que termina por decisión o por edad pasa por el últim
 // G1c (D118 y D122, PLANUI §0.9): la promesa de la pieza. El Bo1 que frena en la temporada regular no tiene tirada: la
 // fecha sale del `paso` del minijuego (se responde justo en la vara o un punto abajo, y el resultado tiene que seguirlo); y
 // la charla del coach baja la regla visible al menos una unidad en las mecánicas que se cuentan (`unidadesDeLaRegla`).
-check('G1c el Bo1 que frena no tiene tirada (lo decide el paso del minijuego) y la charla baja la regla al menos una unidad', () => {
+// G-fix C1: y la elección es de verdad: en cada parada 🎲 paga más si sale que 🧊, y ningún "si sale" está vacío.
+check('G1c el Bo1 que frena no tiene tirada (lo decide el paso del minijuego), 🎲 paga más que 🧊 si sale y la charla baja la regla al menos una unidad', () => {
   const necesariosG1c = (vara, total) => { let k = 0; while (k <= total && k / total < vara) k += 1; return k; };
   const mal = [];
   const cuenta = { encares: 0, bo1: 0, ganados: 0, charlas: 0 };
@@ -29641,6 +29642,15 @@ check('G1c el Bo1 que frena no tiene tirada (lo decide el paso del minijuego) y 
         cuenta.encares += 1;
         const riesgos = decision.opciones.map((o) => o.g1?.riesgo).sort().join(',');
         if (riesgos !== 'arriesgado,seguro') mal.push(`seed ${seed}: el encare trae ${riesgos}`);
+        // G-fix C1: más difícil, más premio. 🎲 (vara más alta) si sale paga más que 🧊 si sale, y ningún "si sale" está vacío.
+        const encares = Object.values(datos.bo1.porOpcion);
+        const A = encares.find((e) => e.riesgo === 'arriesgado');
+        const S = encares.find((e) => e.riesgo === 'seguro');
+        if (A && S) {
+          if (!(A.efectosSi.length > 0 && S.efectosSi.length > 0)) mal.push(`seed ${seed}: ${datos.eventoId} tiene un "si sale" sin premio`);
+          if (!(A.valorSi > S.valorSi)) mal.push(`seed ${seed}: ${datos.eventoId}: 🎲 si sale (${A.premio.si}) no paga más que 🧊 (${S.premio.si})`);
+          if (!(A.vara > S.vara)) mal.push(`seed ${seed}: ${datos.eventoId}: la vara de 🎲 (${A.vara}) no es más alta que la de 🧊 (${S.vara})`);
+        }
       }
       if (sistema.id === 'temporada' && datos.motivo === 'bo1') {
         cuenta.bo1 += 1;
