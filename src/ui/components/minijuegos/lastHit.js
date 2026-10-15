@@ -1,4 +1,4 @@
-import { motionReducido, unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, factorDificultadRonda, AMORTIGUACION_DIFICULTAD } from './comun.js';
+import { motionReducido, unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, dificultadDe, AMORTIGUACION_DIFICULTAD } from './comun.js';
 
 // "Last hit" (fase 9R4c). El minion baja de vida solo; el remate entra si le
 // pegás cuando ya está en zona de ejecución. Muy temprano no lo matás, muy
@@ -7,12 +7,12 @@ import { motionReducido, unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeR
 //
 // Contrato de T6: `montar(container, state, onDone, rngUi)` → `onDone(0..1)`.
 
-const TOTAL = 5;
+export const TOTAL = 5;
 const TECLAS = ['1', '2', '3', '4', '5'];
 
-export function montar(container, state, onDone, rngUi) {
+export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);
-  const dificultad = factorDificultadRonda(state.serie?.ronda);
+  const dificultad = dificultadDe(state, datos);
   const ventana = ventanaPorStat(state.player.stats.laneo, 14, 34, dificultad);
   const reducido = motionReducido();
 

@@ -1,4 +1,4 @@
-import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, motionReducido, factorDificultadRonda } from './comun.js';
+import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, motionReducido, dificultadDe } from './comun.js';
 
 // "Dodge" (fase 9R4c). Cuatro skillshots, uno por vez: el carril peligroso se
 // telegrafía y tenés lo que dura el telegrafiado para moverte a otro. `mecanica`
@@ -9,11 +9,11 @@ import { unaSolaVez, ventanaPorStat, escuchaTeclado, marcadorDeRondas, motionRed
 // carril, así que con `prefers-reduced-motion` se juega igual.
 
 const CARRILES = 5;
-const RONDAS = 4;
+export const RONDAS = 4;
 
-export function montar(container, state, onDone, rngUi) {
+export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);
-  const dificultad = factorDificultadRonda(state.serie?.ronda);
+  const dificultad = dificultadDe(state, datos);
   const msAviso = ventanaPorStat(state.player.stats.mecanica, 700, 1600, dificultad);
 
   container.innerHTML =

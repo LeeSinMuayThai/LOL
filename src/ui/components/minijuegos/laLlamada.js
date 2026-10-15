@@ -1,10 +1,14 @@
-import { factorDificultadRonda } from './comun.js';
+import { dificultadDe, ventanaPorStat, unaSolaVez } from './comun.js';
+
+// G1 (PLANUI §0.9, "Variedad"): la ventana la abre `shotcalling` (antes era fija, 700 ms para todos), entre estos topes.
+export const VENTANA_MS = [520, 900];
 
 // La Llamada (fase 4). Migrado de index.html en la fase T6 — ver
 // `robarBaron.js` para el porqué del `rngUi` como parámetro.
-export function montar(container, state, onDone, rngUi) {
-  const dificultad = factorDificultadRonda(state.serie?.ronda);
-  const ventanaMs = 700 / dificultad;
+export function montar(container, state, onDone, rngUi, datos = null) {
+  const terminar = unaSolaVez(onDone);
+  const dificultad = dificultadDe(state, datos);
+  const ventanaMs = ventanaPorStat(state.player.stats.shotcalling, VENTANA_MS[0], VENTANA_MS[1], dificultad);
 
   container.innerHTML =
     '<div class="minijuego-aviso">Esperá la señal del equipo...</div>' +
@@ -23,10 +27,10 @@ export function montar(container, state, onDone, rngUi) {
   boton.addEventListener('click', () => {
     if (!listo) {
       clearTimeout(espera);
-      onDone(0.05);
+      terminar(0.05, { tipo: 'temprano' });
       return;
     }
     const latencia = performance.now() - inicio;
-    onDone(Math.max(0, 1 - latencia / ventanaMs));
+    terminar(Math.max(0, 1 - latencia / ventanaMs), { tipo: 'latencia', ms: latencia, ventanaMs });
   }, { once: true });
 }
