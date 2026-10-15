@@ -6,6 +6,7 @@ import { aniosProDe } from './puntaje.js';
 import { desdePuntos, etiquetaDeRanked, servidorDeLaPartida } from './ranked.js';
 import { plural, deLaLiga } from './formato.js';
 import { nombreVisibleDeLiga } from './ligas.js';
+import { rivalClasico } from './clasicos.js';
 
 // El veredicto de la carrera (PLAN.md §10.2, CONCEPTO §9): NO se elige de una
 // lista, se COMPONE — una plantilla de arquetipo más un detalle real sacado del
@@ -482,6 +483,16 @@ export function premiosConNombre(state) {
     .map((fila) => fila.org))];
   if (orgsPro.length === 1) {
     premio('leal_hasta_el_final', 'Leal hasta el final', `Toda tu carrera pro con el jersey de ${orgsPro[0]}.`);
+  }
+
+  // Matador de clásicos: lo que el registro puede contar son las finales (`registro.finales` trae el rival): las que le ganaste al
+  // clásico de tu org en esa liga (`data/clasicos.json`). Los clásicos de la fase regular no dejan fila por rival.
+  const finalesAlClasico = (registro.finales ?? []).filter((final) => final.gano && final.rival && rivalClasico(final.liga, final.org) === final.rival);
+  if (finalesAlClasico.length > 0) {
+    const unica = finalesAlClasico.length === 1;
+    premio('matador_de_clasicos', 'Matador de clásicos', unica
+      ? `Le ganaste la final de ${finalesAlClasico[0].anio} a ${finalesAlClasico[0].rival}, el clásico de toda la vida.`
+      : `Le ganaste ${finalesAlClasico.length} finales a tu clásico: la última, a ${finalesAlClasico[finalesAlClasico.length - 1].rival}.`);
   }
 
   const mundiales = mundialesGanados(registro).length;

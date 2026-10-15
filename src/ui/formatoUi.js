@@ -201,6 +201,8 @@ export function acentoDeLog(type) {
 const ROTULO_DE_MINIJUEGO = {
   mapa_decisivo: 'Mapa decisivo',
   mapa_cerrado: 'Mapa',
+  // G1c: el Bo1 de la fecha marcada que frena la temporada.
+  fecha_bo1: 'Bo1',
   post_serie: 'Rueda de prensa',
   post_escandalo: 'Rueda de prensa',
   tryout: 'La prueba'

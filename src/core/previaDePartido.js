@@ -100,6 +100,7 @@ function previaDeFecha(state, opciones) {
   const base = t.fuerzaPropia;
   const momento = base * ajustePartido;
   const p = probabilidadDeFechaMarcada(state, { ajustePartido });
+  const conMinijuego = Boolean(opciones.minijuego) && Number.isFinite(opciones.vara);
 
   return armarPrevia({
     tipo: 'fecha',
@@ -115,9 +116,13 @@ function previaDeFecha(state, opciones) {
     campeon: fecha.campeonElegido?.name ?? desglose.campeon,
     // K4-A: por qué frena esta fecha (la clasificación, el archirrival...).
     porQue: textoPorQueImporta(state),
-    nota: ajustePartido === 0
-      ? 'Si lo que elegís ahora mueve el partido, la probabilidad final sale con el resultado.'
-      : null
+    // G1c: el Bo1 que frena la fecha es un minijuego: decide la vara, no la p (la del bot), y la previa dice la regla.
+    nota: conMinijuego
+      ? notaDeLaVara(opciones, p)
+      : ajustePartido === 0
+        ? 'Si lo que elegís ahora mueve el partido, la probabilidad final sale con el resultado.'
+        : null,
+    vara: conMinijuego ? varaDeLaPrevia(opciones, p) : null
   });
 }
 
@@ -294,7 +299,9 @@ export function previaDeDecision(state, decision, { resultadoMinijuego, charla =
   }
   // K4-A: la fecha marcada ya no tiene draft; el subtítulo es el rótulo del
   // partido ("Se define la clasificación", "El archirrival"...).
-  const previa = previaDePartido(state, { tipo: 'fecha' });
+  const previa = previaDePartido(state, datos.motivo === 'bo1' && datos.g1 && datos.minijuego
+    ? { tipo: 'fecha', minijuego: datos.minijuego, vara: datos.g1.vara }
+    : { tipo: 'fecha' });
   return datos.etiqueta ? { ...previa, subtitulo: datos.etiqueta } : previa;
 }
 
