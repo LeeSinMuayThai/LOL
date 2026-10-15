@@ -1,7 +1,8 @@
 // El inicio (PLANUI §0.2; portado de `vitrina/fusion/js/inicio.js` con `op=linea`, el champ select de §4.10). La primera
 // vez, una intro de ~3 s salteable: el brillo del monitor, "15 años. Una pieza.", la luz que se abre y LOLERO. Después,
 // la selección como el champ select del cliente, dentro de la luz y el bitono del inicio:
-//   - el invocador (tu handle), el servidor (la región: la dificultad) y el perfil en una línea;
+//   - el invocador (tu handle), el servidor (la región: la dificultad) y la clase (G1: el perfil, con su inclinación de
+//     stats y su poder) en una línea;
 //   - la línea como pestañas con glifos arriba de la grilla; cada línea recuerda sus mains (el motor solo deja mains de tu
 //     línea, así que la pestaña ES la línea);
 //   - los retratos grandes en bitono (el tile de Data Dragon); apuntar uno es el aura: su arte va a la luz y su nombre se
@@ -18,6 +19,8 @@ import { miles, linkDeResultado } from '../resultado.js';
 import { medallaDeGoldenRoad } from '../core/trayectoria.js';
 import { claveDe } from '../core/mundo.js';
 import { nombreVisibleDeLiga } from '../formatoUi.js';
+import { statsDeJuego } from '../../core/ficha.js';
+import PERFILES from '../../data/perfiles.json' with { type: 'json' };
 import { cargarImagen, urlTile, urlCarga, urlCentrada } from '../fx/arte.js';
 import { pintarCampeon, fijarColor } from '../fx/color.js';
 import { bloquear as bloquearCeremonia } from '../fx/ceremonia.js';
@@ -138,7 +141,15 @@ export function crearPantallaInicio(elements, modulos, { alBloquear, mundo, soni
     regionTexto.title = regionTexto.textContent;
   }
 
-  // --- el perfil, en una línea ---
+  // --- la clase, en una línea (G1, PLANUI §0.9: el perfil pasa a ser la clase, fija para la carrera) ---
+  // "+3 Macro · +3 Cabeza · −2 Mecánica", con los nombres de la ficha (`statsDeJuego`), de mayor a menor.
+  function inclinacionDe(id) {
+    const inclinacion = PERFILES.perfiles[id]?.clase?.inclinacion ?? {};
+    return statsDeJuego({ player: { stats: inclinacion } })
+      .sort((a, b) => b.valor - a.valor)
+      .map((s) => `${s.valor > 0 ? '+' : '−'}${Math.abs(s.valor)} ${s.corto}`)
+      .join(' · ');
+  }
   function renderPerfiles() {
     const { IDS_PERFIL, nombreDePerfil, descripcionDePerfil } = modulos;
     perfilGrid.replaceChildren(...IDS_PERFIL.map((id) => {
@@ -153,13 +164,22 @@ export function crearPantallaInicio(elements, modulos, { alBloquear, mundo, soni
       });
       return boton;
     }));
-    // K4c (plan anual): el plan del primer año sale del perfil; K5c: cuánto grindea soloQ. La línea lo dice (regla 15).
+    // K4c (plan anual): el plan del primer año sale del perfil; K5c: cuánto grindea soloQ. Van en el título (la línea
+    // completa); a la vista, la inclinación y el poder. G1: "decide por vos lo chico" se fue (con G2 decidís todo vos).
     const plan = perfilElegido && modulos.textoDePlanInicial ? ` ${modulos.textoDePlanInicial(perfilElegido)}` : '';
     const soloQ = perfilElegido && modulos.soloQDePerfil ? ` ${modulos.soloQDePerfil(perfilElegido)}` : '';
-    perfilTexto.textContent = perfilElegido
-      ? `${descripcionDePerfil(perfilElegido)} Decide por vos lo chico; lo grande lo decidís vos, y te va corriendo el perfil.${plan}${soloQ}`
-      : 'Si no elegís, lo decide la seed. El perfil decide por vos lo chico; lo grande lo decidís vos.';
-    perfilTexto.title = perfilTexto.textContent;
+    const poder = perfilElegido ? PERFILES.perfiles[perfilElegido]?.clase?.poder : null;
+    if (perfilElegido) {
+      const inclinacion = inclinacionDe(perfilElegido);
+      perfilTexto.replaceChildren(...[
+        inclinacion ? nodo('span', 'in-clase-incl', inclinacion) : null,
+        poder ? nodo('span', 'in-clase-poder', `✦ ${poder.nombre}: ${poder.texto}`) : null
+      ].filter(Boolean));
+      perfilTexto.title = `${descripcionDePerfil(perfilElegido)} ${inclinacion}. ${poder ? `${poder.nombre}: ${poder.texto}` : ''}${plan}${soloQ}`;
+    } else {
+      perfilTexto.textContent = 'Si no elegís, la clase la decide la seed. Cada clase inclina tus stats y trae un poder de un uso por torneo.';
+      perfilTexto.title = perfilTexto.textContent;
+    }
   }
 
   // --- la línea: las pestañas con glifos ---

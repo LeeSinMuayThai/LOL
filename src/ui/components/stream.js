@@ -30,6 +30,7 @@ import { BALANCE } from '../../data/balance.js';
 import { crearNarracion } from '../narracion.js';
 import { tableroDelSwiss } from '../../core/internacional.js';
 import { crearTableroSwiss } from './swiss.js';
+import { montarParada as montarMinijuego } from '../paradas/minijuego.js';
 import { anim, pct, ventanaTx, irseEn, tonosDeLados, carasDe, cabeceraTx, competicionDeEstado, TX_SUS, programarSuspenso, placaDecisiva, latirPlaca, entrarPlaca, cuadrosQuietos, apareceEn, contarEnCuadros } from './transmisionComun.js';
 
 const TXS = {
@@ -88,7 +89,7 @@ export function logsDelSwiss(logs) {
   return logs.slice(0, (fin >= 0 ? fin : i) + 1);
 }
 
-export function crearStream(contenedor, decision, { estado, previa = null, mundo, sonido = null, responder }) {
+export function crearStream(contenedor, decision, { estado, previa = null, mundo, sonido = null, responder, rngUi = null }) {
   const comp = competicionDeEstado(estado, { internacional: true });
   const fx = () => mundo?.fx?.() ?? null;
   const ops = decision.opciones ?? [];
@@ -103,7 +104,9 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
   const rondas = (it.swiss?.rondas ?? []).flat().filter((x) => x.a === org || x.b === org).sort((a, b) => a.ronda - b.ronda);
   const rec = it.swiss?.record?.[org] ?? { v: 0, d: 0 };
   const recRival = it.swiss?.record?.[rival];
-  const camaraN = pg.desglose?.campeon ?? estado.player?.campeonDelSplit ?? null;
+  // D104: el campeón del plan (el que el motor eligió para este Bo1) antes que el del split
+  const campeonPlan = decision.datos?.campeonElegido ?? pg.desglose?.campeon ?? null;
+  const camaraN = campeonPlan ?? estado.player?.campeonDelSplit ?? null;
   const camara = claveDe(camaraN);
   const anio = it.anio ?? comp.anio;
   const proxima = (rondas[rondas.length - 1]?.ronda ?? 0) + 1;
@@ -215,13 +218,23 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
       el('span', { class: 'tx-pr-op-puntos', 'aria-hidden': 'true' }, [icoPrediccion(), el('span', { text: num(azV.entero(PRED.puntos[0], PRED.puntos[1])) }), el('span', { class: 'tx-pr-op-votan', text: `${num(azV.entero(PRED.votan[0], PRED.votan[1]))} votan` })])
     ]);
   });
-  const insp = el('p', { class: 'tx-sw-insp', 'aria-live': 'polite', text: 'Apuntá una opción: tu chance de ganar el Bo1 cambia con cada una.' });
+  // D115: "cambia con cada una" solo si hay más de una
+  const insp = el('p', { class: 'tx-sw-insp', 'aria-live': 'polite', text: ops.length > 1 ? 'Apuntá una opción: tu chance de ganar el Bo1 cambia con cada una.' : 'Tu chance de ganar el Bo1, antes de jugarlo.' });
   const ocultas = el('div', { class: 'solo-lectores' }, ops.map((o, i) => el('div', { id: `tx-sw-desc-${i + 1}`, text: `${o.descripcion ?? ''} ${pOpc[o.id]?.texto ?? ''}` })));
   const opsNodo = el('div', { class: 'tx-pr-ops', id: 'decisionOptions', role: 'group', 'aria-label': 'Opciones' }, filas);
   const prEstado = el('span', { class: 'tx-pr-estado', text: 'Elegí' });
+  // D104: con qué lo jugás, a la vista
+  const conQuien = campeonPlan ? el('p', { class: 'tx-sw-insp tx-sw-campeon' }, ['Lo jugás con ', el('b', { text: campeonPlan })]) : null;
+  // G1 (PLANUI §0.9): la ronda del Swiss con minijuego se juega acá, en la tarjeta, con el tablero a la vista
+  const g1Juego = decision.datos?.g1 && decision.datos?.minijuego ? el('div', { class: 'g1-juego' }) : null;
+  if (g1Juego) {
+    opsNodo.hidden = true;
+    insp.hidden = true;
+    filas.forEach((f) => f.removeAttribute('data-atajo'));
+  }
   const tarjeta = el('section', { class: 'tx-pr', 'aria-label': `Predicción: ${decision.titulo}` }, [
     el('p', { class: 'tx-pr-cab' }, [el('i', { class: 'tx-pr-ico' }, icoPrediccion()), el('b', { class: 'tx-pr-k', text: 'Predicción' }), prEstado]),
-    cab.nodo, opsNodo, insp, ocultas
+    cab.nodo, conQuien, opsNodo, insp, g1Juego, ocultas
   ]);
   // encima del video la tarjeta es absoluta (y se va al cerrar); debajo, queda cerrada en su lugar, como en Twitch
   const encimaDelVideo = () => getComputedStyle(tarjeta).position === 'absolute';
@@ -376,7 +389,8 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
 
   // ---------- elegir ----------
   let elegida = null;
-  function elegir(i) {
+  // `extra` (G1): lo que devuelve el minijuego ({ resultado, poder? }), que viaja con la opción
+  function elegir(i, extra = null) {
     const op = ops[i];
     if (!op || elegida) return;
     elegida = { i, op };
@@ -393,7 +407,20 @@ export function crearStream(contenedor, decision, { estado, previa = null, mundo
     fx()?.pulso?.('peligro');
     mundo?.aquietar?.(false);
     sonido?.clic?.();
-    responder({ opcionId: op.id });
+    responder(extra ? { opcionId: op.id, ...extra } : { opcionId: op.id });
+  }
+  if (g1Juego) {
+    const apuesta = el('div', { class: 'g1-apuesta' });
+    const widget = el('div', { class: 'minijuego-widget' });
+    g1Juego.append(apuesta, widget);
+    montarMinijuego(tarjeta, decision, {
+      estado,
+      rngUi: rngUi ?? (() => 0.5),
+      responder: (r) => elegir(0, r),
+      renderPrevia: () => null,
+      nodos: { titulo: el('div'), desc: el('div'), apuesta, widget },
+      conCamino: false
+    });
   }
   raiz.addEventListener('keydown', (e) => {
     if (e.altKey || e.ctrlKey || e.metaKey || elegida) return;

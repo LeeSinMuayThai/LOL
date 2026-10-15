@@ -39,6 +39,7 @@ import {
 } from './transmisionComun.js';
 import { tanCercaDeLaFinal } from '../core/momentos.js';
 import { probabilidadDeMapa, ajusteDeCharla } from '../../core/serie.js';
+import { selloDeRiesgo } from './finales.js';
 
 const TX = {
   t0: 360, // el primer mapa, después de fijar el plan
@@ -237,7 +238,8 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     'aria-describedby': `tx-desc-${i + 1}`, style: { '--v': String(pSerieDe(o) ?? 0) }
   }, [
     el('span', { class: 'op-tecla', 'aria-hidden': 'true', text: String(i + 1) }),
-    el('span', { class: 'op-label', text: o.label }),
+    // G1: el Bo1 con riesgo (🎲 ARRIESGADO / 🧊 SEGURO y el premio), solo si la opción trae `g1`
+    el('span', { class: 'op-label' }, [o.label, selloDeRiesgo(o)]),
     pMapasDe(o) ? el('span', { class: 'tx-op-mapas', 'aria-hidden': 'true' }, Array.from({ length: formato }, (_, j) => {
       const restantes = pMapasDe(o);
       const desde = formato - restantes.length;
