@@ -161,7 +161,7 @@ async function completarElDraft() {
   await page.locator('#regionGrid > *').nth(REGION).click();
   await page.locator('#perfilGrid > *').nth(PERFIL).click();
   await page.locator('#rolGrid > *').nth(ROL).click();
-  for (let i = 0; i < 3; i++) await page.locator('#campeonGrid .campeon-tile:not(.campeon-tile--elegido)').first().click();
+  for (let i = 0; i < 3; i++) await page.locator('#campeonGrid .in-cs-retrato[aria-pressed="false"]').first().click();
   await page.waitForSelector('#run:not([disabled])');
 }
 let webglDisponible = null;
@@ -997,10 +997,11 @@ for (let it = 0; it < 3000; it++) {
   // V2-B: el partido (fecha marcada, plan de Fearless, decisivo, Swiss) es su propia pieza, con el mismo panel `#decision`.
   if (pieza === 'decision' || pieza === 'partido') {
     paradas++; step++;
-    const sel = '#decisionOptions .option-btn:not([disabled])';
+    const sel = '#decisionOptions .option-btn:not([disabled]), #decisionOptions button.opcion:not([disabled])';
     const opts = await leerOpciones(sel);
     const t = await page.innerText('#decisionTitle').catch(() => '');
-    if (!opts.length) { L('!! decision sin opciones'); await captura('decision-sin-opciones'); stuck += 3; continue; }
+    // El resultado de una carta (el dorso "Lo que pasó") se narra solo, sin opciones: se espera, y solo es trabada si dura (~10 s).
+    if (!opts.length) { L('.. decision sin opciones (narrando el resultado?)'); if (!stuck) await captura('decision-sin-opciones'); await page.waitForTimeout(700); stuck += 0.5; continue; }
     const serieViva = await page.evaluate(() => { const e = document.querySelector('#serieContexto'); return !!e && e.checkVisibility({ checkVisibilityCSS: true }); });
     // V3b: la fecha marcada (pieza `partido` con una decision que no es plan de serie ni Swiss) es su propio tipo; antes caia en 'decision'.
     let tipoP = tipoDeParada('decision', t, opts, { topbar });
@@ -1018,6 +1019,7 @@ for (let it = 0; it < 3000; it++) {
     const descTxt = await page.innerText('#decisionDesc').catch(() => '');
     const perfilPick = (descTxt.match(/Tu perfil iba a ir por "([^"]+)"/) || [])[1];
     if (!MALA && /EL PLAN DEL AÑO/i.test(t)) { const j = opts.findIndex((o) => /IRÍA POR ESTA/i.test(o.full)); if (j >= 0) idx = j; }
+    if (!MALA && opts.some((o) => o.perfil)) idx = opts.findIndex((o) => o.perfil);
     if (!MALA && perfilPick) { const j = opts.findIndex((o) => o.titulo.toLowerCase().includes(perfilPick.toLowerCase())); if (j >= 0) idx = j; }
     if (!MALA && !pro) { const j = opts.findIndex((o) => /contestarle|venderte bien/i.test(o.titulo)); if (j >= 0) idx = j; }
     {
