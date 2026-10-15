@@ -80,13 +80,57 @@ export function lineaDeMotivoDeOferta(oferta) {
 }
 
 // ================================================================================================= constantes
+// G3c-ui (PLANUI §0.9): el frente de la oferta. Lee `oferta.frente` tal cual llega del motor (`systems/mercado.js:frenteDeOferta`);
+// no calcula nada. Las etiquetas: la primera manda el color; la TRAICIÓN dice de qué org es el clásico (`orgActual`).
+const ETIQUETAS = {
+  RENOVACION: { clave: 'renovacion', texto: 'Renovación' },
+  TRAICION: { clave: 'traicion', texto: 'Traición' },
+  VOLVE_A_CASA: { clave: 'casa', texto: 'Volvé a casa' },
+  BOMBAZO: { clave: 'bombazo', texto: 'Bombazo' },
+  A_LA_BAJA: { clave: 'a_la_baja', texto: 'A la baja' }
+};
+const ETIQUETA_DE_TAG = { renovacion: 'RENOVACION', bombazo: 'BOMBAZO', a_la_baja: 'A_LA_BAJA' };
+const MINUTOS = { mas: { texto: 'Vas a jugar MÁS que ahora', tono: 'bien' }, igual: { texto: 'Vas a jugar IGUAL que ahora', tono: 'neutro' }, menos: { texto: 'Vas a jugar MENOS que ahora', tono: 'mal' } };
+export function etiquetasDeOferta(oferta, orgActual = null) {
+  const ids = oferta.frente?.etiquetas ?? (ETIQUETA_DE_TAG[oferta.tag] ? [ETIQUETA_DE_TAG[oferta.tag]] : []);
+  return ids.filter((id) => ETIQUETAS[id]).map((id) => ({ id, ...ETIQUETAS[id], sub: id === 'TRAICION' && orgActual ? `es el clásico de ${orgActual}` : null }));
+}
+// Los cuatro ejes del frente: `[{ clave, ico, k, texto, tono }]`. Sin `frente` (una partida vieja), ninguno.
+export function ejesDeOferta(oferta) {
+  const f = oferta.frente;
+  if (!f) {
+    return [];
+  }
+  const a = f.arraigoArranca;
+  const renueva = (f.etiquetas ?? []).includes('RENOVACION');
+  const arraigo = renueva
+    ? `Sos ${a.escalon} (${a.valor}/100)${a.faltan != null ? `: te faltan ${a.faltan} para ${a.proximo}` : ''}`
+    : `Allá arrancás ${a.escalon} (${a.valor}/100)${a.faltan != null ? ` · ${a.faltan} para ${a.proximo}` : ''}`;
+  return [
+    { clave: 'plata', ico: '\u{1F4B0}', k: 'Plata', texto: `USD ${num(f.sueldo)} / año${f.hasta ? ` · hasta USD ${num(f.hasta)}` : ''}`, tono: 'neutro' },
+    { clave: 'minutos', ico: '\u23F1', k: 'Minutos', texto: MINUTOS[f.minutos]?.texto ?? MINUTOS.igual.texto, tono: MINUTOS[f.minutos]?.tono ?? 'neutro' },
+    f.arraigoPierde ? { clave: 'pierde', ico: '\u{1F494}', k: 'Perdés', texto: `−${f.arraigoPierde.valor} de arraigo con ${f.arraigoPierde.org}`, tono: 'mal' } : null,
+    { clave: 'arraigo', ico: '\u{1F3E0}', k: renueva ? 'Tu arraigo' : 'Arrancás', texto: arraigo, tono: 'neutro' }
+  ].filter(Boolean);
+}
+function nodoEtiquetas(oferta, orgActual, clase = 'ms-etqs') {
+  const lista = etiquetasDeOferta(oferta, orgActual);
+  if (!lista.length) {
+    return null;
+  }
+  return el('div', { class: clase }, lista.map((e, k) => el('span', { class: 'ms-etq', 'data-etq': e.clave, 'data-primera': k === 0 ? 'si' : 'no' }, [el('b', { text: e.texto }), e.sub ? el('i', { text: e.sub }) : null])));
+}
+function nodoEjes(oferta, clase = 'ms-ejes') {
+  const ejes = ejesDeOferta(oferta);
+  return ejes.length ? el('ul', { class: clase }, ejes.map((e) => el('li', { class: 'ms-eje', 'data-eje': e.clave, 'data-tono': e.tono }, [el('span', { class: 'ms-eje-ico', 'aria-hidden': 'true', text: e.ico }), el('span', { class: 'ms-eje-k', text: e.k }), el('span', { class: 'ms-eje-t', text: e.texto })]))) : null;
+}
+
 const PLANTEL = {
   abajo: { ico: 'margen', largo: 'plantel flojo' },
   medio: { ico: 'parejo', largo: 'plantel parejo' },
   arriba: { ico: 'pelea', largo: 'plantel cargado' },
   primero: { ico: 'pelea', largo: 'el más fuerte de su liga' }
 };
-const ETIQUETA_TAG = { renovacion: 'Renovación', bombazo: 'Bombazo', a_la_baja: 'A la baja' };
 const TIPO_DE_CONTRATO = { renovacion: 'renovación', import: 'import', transferencia: 'transferencia', rookie: 'rookie' };
 // El aura: entra a los 120 ms de apuntar (barrer la grilla no dispara seis cruces), vuelve a los 600, el mundo cruza en 350.
 const T_MS = { aura: 120, vuelta: 600, cruce: 350, borde: 620, letra: 26 };
@@ -288,7 +332,8 @@ function normalizar(o) {
     tipo: o.datos?.tipo ?? null,
     clausula: Boolean(o.negociacion?.clausula || o.datos?.clausula === 'salida'),
     escalones: o.negociacion?.escalones ?? 0,
-    tag: o.tag
+    tag: o.tag,
+    frente: o.frente ?? null
   };
 }
 
@@ -349,7 +394,7 @@ function sellarCarta(c, { w, t, texto, dur }) {
 // Las ofertas como cartas formales: el membrete (la banda en la noche de la org, con su escudo), a quién va, los términos y
 // el sello. Caen sobre la pila en el orden en que llegan (la última, arriba); apuntar una org la saca de la pila y la pone
 // al frente; al soltar vuelve a su lugar. Los giros y corrimientos, del azar decorativo.
-function pilaDeCartas({ ofertas, norm, tonos, yo, dias, orden, semilla }) {
+function pilaDeCartas({ ofertas, norm, tonos, yo, dias, orden, semilla, orgActual = null }) {
   const id = `ms-carta-${semilla}`.replace(/\W/g, '');
   const azar = crearAzar(`cartas|${semilla}`);
   const altura = ofertas.map(() => 0);
@@ -375,16 +420,18 @@ function pilaDeCartas({ ofertas, norm, tonos, yo, dias, orden, semilla }) {
         dias ? el('span', { class: 'ms-carta-dia', text: `Día ${dias[i]}` }) : null
       ]),
       el('div', { class: 'ms-carta-cuerpo' }, [
+        nodoEtiquetas(o, orgActual, 'ms-etqs ms-carta-etqs'),
         el('p', { class: 'ms-carta-k', text: `Oferta de contrato · ${yo.ventana} ${yo.anio ?? ''}`.trim() }),
         el('p', { class: 'ms-carta-para' }, ['Para ', el('b', { text: yo.handle }), yo.rolEtiqueta ? ` · ${yo.rolEtiqueta}` : '']),
         o.descripcion || o.motivoDemanda ? el('p', { class: 'ms-carta-texto', text: [o.descripcion, o.motivoDemanda ? `Te quieren: ${o.motivoDemanda}.` : null].filter(Boolean).join(' ') }) : null,
         el('dl', { class: 'ms-carta-terminos' }, [
-          fila('Sueldo', `USD ${num(x.sueldo)} / año`),
+          x.frente ? null : fila('Sueldo', `USD ${num(x.sueldo)} / año`),
           fila('Contrato', `${aniosTxt(x.anios)} · ${periodo(yo.anio, x.anios)}`),
           x.tipo ? fila('Modalidad', `${TIPO_DE_CONTRATO[x.tipo] ?? x.tipo}${x.clausula ? ', con cláusula' : ''}`) : null,
           x.jer ? fila('Jerarquía', `${x.jer.hasta} de 100, proyectada`) : null,
           x.plantel ? fila('Plantel', `${x.plantel.puesto}.º de ${x.plantel.de} en ${nombreVisibleDeLiga(x.plantel.liga ?? o.liga)}`) : null
         ]),
+        nodoEjes(o, 'ms-ejes ms-carta-ejes'),
         el('footer', { class: 'ms-carta-pie' }, [
           el('div', { class: 'ms-carta-firmas' }, [
             el('div', { class: 'ms-carta-firma' }, [el('i'), el('span', { text: `Por ${o.org}` })]),
@@ -449,6 +496,7 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
   const caminos = traspaso ? decision.opciones : [];
   const ofertas = traspaso ? [decision.opciones.find((o) => o.org)].filter(Boolean) : decision.opciones;
   const norm = ofertas.map(normalizar);
+  const orgActual = estado.career?.currentOrg ?? null;
   const vos = datos.vos ?? {};
   const valor = vos.valorUSD ?? 0;
   const rol = estado.player?.role ?? 'mid';
@@ -505,7 +553,7 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     relojUlt
   ]);
   // la derecha: las cartas (sin campeón)
-  const heroe = pilaDeCartas({ ofertas, norm, tonos, yo, dias: traspaso ? null : dias, orden, semilla });
+  const heroe = pilaDeCartas({ ofertas, norm, tonos, yo, dias: traspaso ? null : dias, orden, semilla, orgActual });
   const heroeNodo = el('aside', { class: 'ms-heroe', 'aria-hidden': 'true' }, el('div', { class: 'ms-heroe-in ms-h-ofertas' }, heroe.nodo));
   // el aura
   const velo = el('div', { class: 'ms-velo', 'aria-hidden': 'true' });
@@ -538,11 +586,12 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
       x.plantel ? `, ${x.plantel.puesto}.º de ${x.plantel.de} en su liga` : '',
       '.'
     ]);
-    const tag = ETIQUETA_TAG[o.tag];
+    const etq = etiquetasDeOferta(o, orgActual)[0] ?? null;
+    const tag = etq ? etq.texto : null;
     return el('button', { type: 'button', class: 'ms-op', 'data-atajo': i < 9 ? String(i + 1) : null, 'data-tono': t.id, 'aria-pressed': 'false', 'aria-keyshortcuts': i < 9 ? String(i + 1) : null, 'aria-label': `${o.org}, ${nombreVisibleDeLiga(o.liga)}${o.tier ? `, tier ${o.tier}` : ''}${tag ? `, ${tag.toLowerCase()}` : ''}`, 'aria-describedby': desc.id, style: { '--ms-acento': `var(${t.acento})`, '--ms-luz': `var(${t.luz})` } }, [
       el('span', { class: 'ms-op-vacio', 'aria-hidden': 'true' }, escudo('?')),
       el('span', { class: 'ms-op-tecla', 'aria-hidden': 'true', text: String(i + 1) }),
-      tag ? el('span', { class: 'ms-op-tag', 'data-tag': o.tag, text: tag }) : null,
+      tag ? el('span', { class: 'ms-op-tag', 'data-tag': o.tag, 'data-etq': etq.clave, text: tag }) : null,
       el('span', { class: 'ms-op-cresta' }, pintarLogo(o.org, { tam: 54, alt: '' })),
       el('span', { class: 'ms-op-txt' }, [
         el('b', { class: 'ms-op-org', text: o.org }),
@@ -608,7 +657,7 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     const x = norm[i];
     const pl = PLANTEL[x.plantel?.banda] ?? null;
     return [
-      { id: 'sueldo', k: 'Sueldo', n: num(x.sueldo), u: 'USD / año', ref: valor ? `${fmt1.format(x.sueldo / valor)}× tu valor (${num(valor)})` : null },
+      { id: 'sueldo', k: 'Sueldo', n: num(x.sueldo), u: 'USD / año', ref: x.frente?.hasta ? `hasta USD ${num(x.frente.hasta)}` : (valor ? `${fmt1.format(x.sueldo / valor)}× tu valor (${num(valor)})` : null) },
       { k: 'Contrato', n: String(x.anios), u: x.anios === 1 ? 'año' : 'años', ref: periodo(yo.anio, x.anios) },
       x.jer ? { k: 'Jerarquía', n: String(x.jer.hasta), u: 'de 100', ref: ['proyectada', x.jer.etiqueta ? x.jer.etiqueta.toLowerCase() : null].filter(Boolean).join(' · ') } : null,
       x.plantel ? { k: 'Plantel', n: `${x.plantel.puesto}.º`, u: `de ${x.plantel.de}`, ref: pl?.largo ?? null } : null
@@ -645,7 +694,7 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
         o.tier ? el('span', { text: `tier ${o.tier}` }) : null,
         x.tipo ? el('span', { text: `${TIPO_DE_CONTRATO[x.tipo] ?? x.tipo}${x.clausula ? ', con cláusula' : ''}` }) : null,
         traspaso ? el('span', { text: 'te quiere a mitad de contrato' }) : el('span', { text: `oferta ${i + 1} de ${ofertas.length}` }),
-        ETIQUETA_TAG[o.tag] ? el('span', { class: 'ms-aura-tag', 'data-tag': o.tag, text: ETIQUETA_TAG[o.tag] }) : null
+        null
       ];
       nombre = o.org;
       terminos = terminosDe(i);
@@ -653,7 +702,8 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     const nom = el('h2', { class: 'ms-aura-nombre', 'aria-label': nombre }, [...String(nombre)].map((c) => el('span', { class: 'ms-aura-letra', 'aria-hidden': 'true', text: c })));
     const k = el('p', { class: 'ms-aura-k' }, kicker.filter(Boolean));
     const dl = el('dl', { class: 'ms-terminos' }, terminos.map(terminoNodo));
-    aura.replaceChildren(el('div', { class: 'ms-aura-cab' }, [escudoNodo, el('div', { class: 'ms-aura-t' }, [k, nom])]), dl);
+    const etqs = i >= 0 && ofertas[i] ? nodoEtiquetas(ofertas[i], orgActual, 'ms-etqs ms-aura-etqs') : null;
+    aura.replaceChildren(el('div', { class: 'ms-aura-cab' }, [escudoNodo, el('div', { class: 'ms-aura-t' }, [etqs, k, nom])]), dl);
     ajustarLetra(nom);
     if (!animado || quieto()) return;
     animar(escudoNodo, [{ opacity: 0, transform: 'scale(.86)', filter: 'blur(8px)' }, { opacity: 1, transform: 'none', filter: 'blur(0px)' }], { dur: 360 });
@@ -720,11 +770,12 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     ].filter(Boolean));
     inspector.replaceChildren(
       el('p', { class: 'ms-insp-texto', text: [o.descripcion, lineaDeMotivoDeOferta(o)].filter(Boolean).join(' ') }),
+      nodoEjes(o),
       el('ul', { class: 'ms-insp-previa' }, [
         o.riesgo ? el('li', {}, [icono(pl.ico), o.riesgo]) : null,
-        o.costeArraigo?.pierde > 0 ? el('li', { class: 'ms-extra' }, [icono('arraigo'), o.costeArraigo.etiqueta]) : null,
-        o.arraigoInicial ? el('li', {}, [icono('arraigo'), o.arraigoInicial.etiqueta]) : null,
-        hito ? el('li', {}, [icono('meta'), hito]) : null,
+        !x.frente && o.costeArraigo?.pierde > 0 ? el('li', { class: 'ms-extra' }, [icono('arraigo'), o.costeArraigo.etiqueta]) : null,
+        !x.frente && o.arraigoInicial ? el('li', {}, [icono('arraigo'), o.arraigoInicial.etiqueta]) : null,
+        !x.frente && hito ? el('li', {}, [icono('meta'), hito]) : null,
         o.proyeccionPicks ? el('li', { class: 'ms-extra' }, [icono('jerarquia'), o.proyeccionPicks]) : null,
         x.escalones > 0 ? el('li', {}, [icono('mercado'), `Pediste más ${x.escalones === 1 ? 'una vez' : `${x.escalones} veces`}`]) : null,
         x.clausula ? el('li', {}, [icono('candado'), 'Con cláusula de salida']) : null,
