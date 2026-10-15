@@ -193,6 +193,8 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // G3c: el arraigo que dejaste en cada org al irte (`{ [org]: 0-100 }`). Si volvés, arrancás con eso menos
       // `mercado.costoSalidaArraigo`.
       arraigoPorOrg: {},
+      // G4b: las promesas del entorno (`systems/promesas.js`): [{ id, estado: 'abierta'|'cumplida'|'rota', texto, progreso, vence }].
+      promesas: [],
       sinergia: 0,
       // Ventana móvil de "cómo te fue" (0-100 por split). Alimenta el momentum
       // del contexto: es lo que distingue una racha de un slump.

@@ -79,6 +79,30 @@ function golpeDelAnio(state, anioAnterior) {
   return null;
 }
 
+// G4b: la promesa que se resolvió en los últimos `splitsPorEdad` splits (este año). Una promesa rota por el retiro no cuenta: no
+// hay año que la narre.
+function promesaDelAnio(state) {
+  const promesas = Array.isArray(state.career.promesas) ? state.career.promesas : [];
+  return promesas.find((p) => p.estado !== 'abierta' && p.resueltaSplit != null
+    && state.player.splitCount - p.resueltaSplit < BALANCE.edad.splitsPorEdad) ?? null;
+}
+
+// G4b: `mundo.escenaAnual` guarda el campeón de cada liga de tier 1 de ESTE año. Si la última org de la que te fuiste (hace como
+// mucho `exEquipoAnios` años) se llevó su liga y vos ya no estás ahí, es "tu ex equipo ganó la liga sin vos". Solo mira la
+// fila cerrada más reciente y solo las ligas de tier 1 (son las únicas con campeón guardado).
+function exEquipoCampeonDelAnio(state) {
+  const escena = state.mundo.escenaAnual;
+  const cerradas = state.career.registro.porOrg.filter((fila) => fila.hastaAnio != null);
+  const ultima = cerradas[cerradas.length - 1];
+  if (!escena || !ultima || ultima.org === state.career.currentOrg) {
+    return null;
+  }
+  if (state.calendario.anio - ultima.hastaAnio > BALANCE.temporadaResumen.exEquipoAnios) {
+    return null;
+  }
+  return escena.campeones?.[ultima.liga] === ultima.org ? { org: ultima.org, liga: ultima.liga } : null;
+}
+
 function construirContexto(state) {
   const anio = state.calendario.anio;
   const registro = state.career.registro;
@@ -101,7 +125,9 @@ function construirContexto(state) {
     rendimientoEsteAnio: rendimientoPropioMedio(state) * BALANCE.stats.max,
     deltaNivel: deltaNivelEsteAnio(state),
     rivalGanoEsteAnio: archirrivalGanoEsteAnio(state.mundo.archirrival),
-    anioAnterior: temporadas[temporadas.length - 1] ?? null
+    anioAnterior: temporadas[temporadas.length - 1] ?? null,
+    promesaResuelta: promesaDelAnio(state),
+    exEquipoCampeon: exEquipoCampeonDelAnio(state)
   };
 }
 
@@ -216,6 +242,12 @@ const PUNTAJES = {
   traicion: 79,
   copa_amateur: 79,
   volve_a_casa: 78,
+  // G4b: la promesa que se resolvió este año (se cumplió o no llegaste), y la consecuencia de un año al siguiente: tu ex equipo
+  // levantó la liga sin vos. La que se cumple pesa como volver a casa; la rota, como perder una final; el ex equipo, por encima
+  // del color y por debajo de lo que te pasó a vos.
+  promesa_cumplida: 78,
+  promesa_rota: 74,
+  ex_equipo_campeon: 71,
   // F3 (PLANUI §0.8 punto 7): lo que pasó en el año titula por encima de lo que NO pasó (`ausencia`) y del color (`main_muerto`,
   // `debut`...), y por debajo de un título de liga y de un papel internacional desde cuartos (78). Si en el mismo año
   // se pierde la final y se juega el primer Mundial, gana el Mundial: aparece antes en `CANDIDATOS` y el empate lo gana el primero.
@@ -340,6 +372,42 @@ function candidatoVolveACasa(state, ctx) {
   return {
     titular: redaccion(ctx, 'volve_a_casa', ['VOLVISTE A CASA', `DE VUELTA EN ${org}`, `${org} TE RECIBE DE NUEVO`]),
     bajada: `${fila.org} te abrió la puerta otra vez.`
+  };
+}
+
+// G4b: lo que te prometieron y cómo terminó. La bajada es el texto de la promesa y cómo quedó.
+function candidatoPromesaCumplida(state, ctx) {
+  const p = ctx.promesaResuelta;
+  if (p?.estado !== 'cumplida') {
+    return null;
+  }
+  return {
+    titular: redaccion(ctx, 'promesa_cumplida', ['SE CUMPLIÓ', 'PROMESA CUMPLIDA', 'LO PROMETIDO, SE PAGÓ']),
+    bajada: `${p.texto}: cumplida. ${p.quien} no se equivocó.`
+  };
+}
+
+function candidatoPromesaRota(state, ctx) {
+  const p = ctx.promesaResuelta;
+  if (p?.estado !== 'rota') {
+    return null;
+  }
+  return {
+    titular: redaccion(ctx, 'promesa_rota', ['NO LLEGASTE', 'LA PROMESA SE QUEDÓ CORTA', 'SE PASÓ EL PLAZO']),
+    bajada: `${p.texto}: no se dio (${p.progreso}).`
+  };
+}
+
+// G4b: la consecuencia de irte: tu ex equipo levantó la liga y vos lo viste desde afuera.
+function candidatoExEquipoCampeon(state, ctx) {
+  const ex = ctx.exEquipoCampeon;
+  if (!ex) {
+    return null;
+  }
+  const org = String(ex.org).toUpperCase();
+  return {
+    titular: redaccion(ctx, 'ex_equipo_campeon', [`${org} GANÓ LA LIGA SIN VOS`, 'TU EX EQUIPO FUE CAMPEÓN', `${org} LEVANTÓ EL TROFEO Y VOS NO ESTABAS`]),
+    bajada: `${ex.org} salió campeón de ${nombreVisibleDeLiga(ex.liga)} sin vos en el plantel.`
   };
 }
 
@@ -509,6 +577,8 @@ const CANDIDATOS = [
   ['traicion', candidatoTraicion],
   ['copa_amateur', candidatoCopaAmateur],
   ['volve_a_casa', candidatoVolveACasa],
+  ['promesa_cumplida', candidatoPromesaCumplida],
+  ['promesa_rota', candidatoPromesaRota],
   ['primer_mundial', candidatoPrimerMundial],
   ['final_perdida', candidatoFinalPerdida],
   ['afuera_en_el_swiss', candidatoAfueraEnElSwiss],
@@ -516,6 +586,7 @@ const CANDIDATOS = [
   ['ausencia', candidatoAusencia],
   ['primera_firma', candidatoPrimeraFirma],
   ['debut', candidatoDebut],
+  ['ex_equipo_campeon', candidatoExEquipoCampeon],
   ['main_muerto', candidatoMainMuerto],
   ['sequia', candidatoSequia],
   ['rival', candidatoRival],

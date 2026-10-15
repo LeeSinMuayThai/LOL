@@ -4,6 +4,7 @@ import { componerLegado } from './legado.js';
 import { puntajeDeCarrera } from './puntaje.js';
 import { pronosticoDeOxido } from './pool.js';
 import { conSplitPendienteAsentado } from './registro.js';
+import { resolverAlRetiro } from '../systems/promesas.js';
 
 export { ETAPAS_SPLIT };
 
@@ -36,7 +37,8 @@ function conTarjeta(resultado) {
   if (resultado.state.terminado && !resultado.state.tarjeta) {
     // K4c (paso 3a, D76): antes de componer la tarjeta (que lee el registro), el split jugado que esperaba su fila se
     // asienta: si la carrera cierra en el split del pase, `roster.js` no vuelve a correr para abrírsela.
-    const cerrado = conSplitPendienteAsentado(resultado.state);
+    // G4b: lo que quedó prometido y abierto se cuenta como roto (ninguna promesa se queda abierta al retiro).
+    const cerrado = resolverAlRetiro(conSplitPendienteAsentado(resultado.state));
     const tarjeta = { ...componerLegado(cerrado), puntaje: puntajeDeCarrera(cerrado) };
     return { ...resultado, state: { ...cerrado, tarjeta } };
   }
