@@ -1013,7 +1013,8 @@ for (let it = 0; it < 3000; it++) {
         await probarUnoEnElMercado();
       } else { await captura('mercado', { completa: true }); capturadas.add('mercado'); }
     }
-    const cartas = await page.$$eval('#mercadoGrid .mercado-card', (cs) => cs.map((c) => c.innerText.replace(/\n+/g, ' | ')));
+    const SEL_CARTA = (await page.locator('.ms-op').count()) ? '.ms-op' : '#mercadoGrid .mercado-card';
+    const cartas = await page.$$eval(SEL_CARTA,(cs) => cs.map((c) => c.innerText.replace(/\n+/g, ' | ')));
     const fichaTop = (snap.match(/^FICHA: ([\s\S]{0,400})/m) || [])[1] || '';
     const tierActual = tierDe(fichaTop) ?? (pro ? 2 : null);
     const esperarVisible = await page.evaluate(() => { const e = document.querySelector('#mercadoEsperar'); return !!e && !e.hidden; });
@@ -1027,7 +1028,12 @@ for (let it = 0; it < 3000; it++) {
     }
     L(`[${step}] ${topbar} | MERCADO (${cartas.length} cartas): ` + cartas.map((c, q) => `\n    ${q === i ? '>>' : '  '} [${sc[q].s.toFixed(0)}] ${c.slice(0, 260)}`).join(''));
     if (i >= 0) {
-      await page.locator('#mercadoGrid .mercado-card').nth(i).locator('.mercado-card-acciones button').first().click();
+      if (SEL_CARTA === '.ms-op') {
+        await page.locator('.ms-op').nth(i).click();
+        await page.waitForTimeout(500);
+        const firmar = page.locator('.ln-bloquear:not([disabled])').first();
+        if (await firmar.count()) await firmar.click({ timeout: 5000 }); else await page.keyboard.press('Enter');
+      } else await page.locator('#mercadoGrid .mercado-card').nth(i).locator('.mercado-card-acciones button').first().click();
       if (!pro) { pro = true; await page.waitForTimeout(400); }
     } else if (await page.locator('.ms-camino').count()) {
       const libres = await page.locator('.ms-camino:not([disabled])').count();
@@ -1036,6 +1042,7 @@ for (let it = 0; it < 3000; it++) {
       else { if (!capturadas.has('camino-bloqueado')) { await captura('camino-bloqueado'); capturadas.add('camino-bloqueado'); } await page.waitForTimeout(1500); stuck++; }
     }
     else if (esperarVisible) { L('    > ESPERAR'); await page.click('#mercadoEsperar'); }
+    else if (await page.locator('.ms-otra:not([disabled])').count()) { L('    > ESPERAR (ms-otra)'); await page.locator('.ms-otra:not([disabled])').last().click(); }
     else { L('!! mercado sin botones'); await captura('mercado-vacio'); stuck += 3; }
     continue;
   }
