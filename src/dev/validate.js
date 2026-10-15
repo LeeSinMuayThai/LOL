@@ -29187,6 +29187,48 @@ check(NOMBRE_CHECK_W1D, () => {
   if (errorW1D) throw errorW1D;
 });
 
+// --- G4a (PLANUI §0.9, "El diario se acuerda"): la promesa -------------------------------------------------------------
+// En 200 carreras, el titular del año nunca es el mismo dos años seguidos y ninguno contradice el estado: sin equipo no se
+// anuncia "¡Sos una estrella!" (D116), y una traición o una vuelta a casa se titulan solo si la fila del año las lleva.
+const { ascensosYDeltas: ascensosYDeltasG4a } = await import('../ui/core/momentos.js');
+checkLento('G4a: en 200 carreras ningún titular del diario se repite dos años seguidos y ninguno contradice el estado (estrella sin equipo, traición sin etiqueta)', () => {
+  const SEEDS = 200;
+  const SPLITS_TOPE = 120;
+  let titulares = 0;
+  for (let i = 0; i < SEEDS; i += 1) {
+    const seed = 7000 + i;
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    let anterior = null;
+    for (let s = 0; s < SPLITS_TOPE && !state.terminado; s += 1) {
+      const paso = avanzarSplitAuto(state, rng);
+      state = paso.state;
+      const resumen = paso.logs.find((log) => log.type === 'edad' && Number.isFinite(log.nota));
+      if (!resumen) continue;
+      titulares += 1;
+      const texto = resumen.message;
+      if (anterior && anterior.texto === texto) {
+        throw new Error(`seed ${seed}: el titular "${texto}" se repite en ${anterior.anio} y ${resumen.anio}`);
+      }
+      anterior = { texto, anio: resumen.anio };
+      const fila = state.career.registro.porOrg.find((f) => f.desdeAnio === resumen.anio);
+      if (/^TRAICIÓN|TE PASASTE AL ENEMIGO|NO SE PERDONA$/.test(texto) && fila?.etiqueta !== 'TRAICION') {
+        throw new Error(`seed ${seed}: "${texto}" sin la etiqueta TRAICION en la fila del año`);
+      }
+      if (/^VOLVISTE A CASA/.test(texto) && fila?.etiqueta !== 'VOLVE_A_CASA') {
+        throw new Error(`seed ${seed}: "${texto}" sin la etiqueta VOLVE_A_CASA en la fila del año`);
+      }
+      const estrella = ascensosYDeltasG4a(state, resumen.anio).ascensos.find((a) => a.eje === 'hype');
+      if (estrella && !state.career.currentOrg) {
+        throw new Error(`seed ${seed}: "${estrella.texto}" sin equipo en ${resumen.anio}`);
+      }
+    }
+  }
+  if (titulares < SEEDS * 3) {
+    throw new Error(`la muestra no alcanza: ${titulares} titulares en ${SEEDS} carreras`);
+  }
+});
+
 // --- G1 (PLANUI §0.9, "Las finales se juegan con las manos"): la promesa -------------------------------------------------
 // Un mapa con minijuego (toda final, el que puede cerrar cuartos o semis, cada Bo1 del Swiss) no tira: lo decide
 // `resultado >= vara`. El jugador de prueba contesta alternando justo en la vara (tiene que ganar) y lejos debajo, sin

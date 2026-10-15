@@ -1791,6 +1791,9 @@ export const BALANCE = {
     // la sequía real ("¿y el shotcalling?", jugás bien y no te sale nada).
     // Medido: ≤30 cae en ~5% de los años profesionales.
     umbralSequiaRendimiento: 30,
+    // G4a (D114, PLANUI §0.9): los golpes del año que el diario titula (`golpe_duro`). La confianza de la familia
+    // cae al menos esto contra el cierre del año anterior (marca persistida en `registro.temporadas[].marcas`).
+    umbralGolpeFamilia: 12,
     // Sin carrera competitiva todavía (etapa amateur): la nota compone otra
     // cosa — el ladder de soloQ y el cuidado del cuerpo/estudios/familia en
     // vez de liga/playoffs/internacional, que no existen antes del debut.

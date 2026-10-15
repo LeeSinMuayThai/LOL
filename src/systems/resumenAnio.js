@@ -30,7 +30,8 @@ export function aplicar(state, rng) { // eslint-disable-line no-unused-vars
   const vinetas = vinetasDelAnio(state);
 
   const registro = registrarTemporada(state.career.registro, {
-    anio: state.calendario.anio, nota, tipo: titular.tipo, tipoBase: titular.tipoBase, mainMuerto: titular.mainMuerto
+    anio: state.calendario.anio, nota, tipo: titular.tipo, tipoBase: titular.tipoBase, mainMuerto: titular.mainMuerto,
+    marcas: titular.marcas
   });
 
   const log = crearLog('edad', titular.titular, {
