@@ -34,14 +34,76 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
-### 2026-10-15 — Ola G, entrega 2, G4a: el diario se acuerda (D114, D116)
+### 2026-10-15 — Ola G, entrega 2: "lo que se ve y el mundo" (la carta del año, el mercado como dilema, el Bo1 con las manos, el diario, las promesas y la ceremonia)
 
-- `core/temporadaResumen.js`: cada titular tiene 3 redacciones y la que sale rota con el año, así que el mismo tipo en dos años seguidos nunca repite el texto. Prioridad escrita en `PRIORIDAD_DE_TITULARES`.
-- Titulares nuevos: golpe duro (lesión grave, PC confiscada, la familia que te frena), copa amateur (ya no sale como "CAMPEONES DE LIGA"), primera firma, TRAICIÓN y VOLVISTE A CASA (leen `etiqueta` de la fila de `registro.porOrg`, defensivo: sin ella no sale), y "EL RIVAL TE PASÓ EL TRAPO".
-- "El parche te dejó sin X" solo el año del parche. El banner "¡Sos una estrella!" no sale sin equipo (`ui/core/momentos.js`).
-- `registro.temporadas[]` guarda `marcas` (PC confiscada, confianza de la familia) para detectar el golpe contra el cierre anterior.
-- Check nuevo (uno): 200 carreras, ningún titular se repite dos años seguidos ni contradice el estado. `simulate.js 200`: dos corridas idénticas y sin diferencias contra la base de `1b52224`.
-- Afuera (de G2c, son eventos): "el día que dejaste tu país" sin haber emigrado (D117) y "ni un scout te escribió" tras "tres personas preguntan por vos".
+PLANUI §0.9, entrega 2. Método WF-001 con las reglas de workers austeros: piezas de ≤55 llamadas, nadie espera el validate
+(el supervisor corrió un `--rapido` a mitad y otro al final), un revisor para toda la entrega. Diez piezas en dos tandas,
+un revisor y cuatro rondas de arreglos chicos (A, B, C1+C1-ui, C2, más D en curso).
+
+**Lo que cambió para el jugador**
+- **G2b, una carta por año.** La rutina del amateur ya no se elige: la arma tu perfil. La única decisión del año es la
+  carta del cierre: 3 cartas, cada una con un número seguro grande en uno de los cinco stats de la ficha ("+3 LANEO
+  SEGURO"), a veces un costo a la vista, rareza y el color de tu situación (soloQ, bootcamp, gaming house). El motor aplica
+  al menos ese número. La carta entra sin scrollear a 1440×900 y a 390×844 (C2: el recap se pliega).
+- **La ficha muestra lo que mueven las cartas.** Mecánica, Macro, Laneo, Calls y Cabeza siempre visibles, con ▲▼ en el
+  acto. "Élite" significa lo mismo que en el mercado: más de 80 (D113); 63-80 es "Alto nivel". La promesa abierta, como
+  chip.
+- **G2c, el texto de las opciones.** En los 60 eventos con elección que más salen: 79 avisos del riesgo en palabras (⚠) y
+  63 rótulos a 6 palabras o menos. Solo datos: `simulate` idéntico.
+- **G3c, el mercado como dilema.** Cada oferta tiene cuatro ejes en el frente: la plata (el sueldo topeado por su
+  "hasta", D112), los minutos (MÁS/IGUAL/MENOS), el arraigo que perdés y con el que arrancás ("te faltan 21 para
+  Querido"). Etiquetas grandes con color: RENOVACIÓN, BOMBAZO (raro: 6,6% de las ofertas), **TRAICIÓN** (el clásico de tu
+  org, `data/clasicos.json`; cuesta 30 de arraigo guardado con la org traicionada) y **VOLVÉ A CASA** (arrancás con lo
+  guardado menos la salida, nunca debajo de Querido). El arraigo se guarda por org (`career.arraigoPorOrg`).
+- **G1c, el Bo1 que frena se juega con las manos (D118, D122).** Primero 🎲 ARRIESGADO (vara más alta, más premio) o
+  🧊 SEGURO (vara más baja, premio chico), con el premio a la vista como rangos; después el minijuego, y la fecha es su
+  resultado, sin tirada. La previa dice la regla de cada vara ("necesitás 3 de 4"), no un %. La charla del coach baja la
+  regla al menos una unidad ("con la charla: 2 de 4"). La revisión encontró que 🧊 dominaba a 🎲 (pedía menos y pagaba más,
+  y 388 de 1036 "si sale" no daban nada); C1 lo rehízo: 0 "si sale" vacíos, 🎲 siempre paga más que 🧊.
+- **G4a, el diario se acuerda (D114, D116, D117).** Tres redacciones por titular que rotan; titulares nuevos (golpe duro,
+  copa amateur, primera firma, TRAICIÓN, VOLVISTE A CASA, "EL RIVAL TE PASÓ EL TRAPO"); el parche solo el año del parche;
+  sin estrella sin equipo ni viaje sin emigrar. "Worlds se miró desde el sofá" ya no es el titular de cada año sin Mundial
+  (29% → 0,4%). En 100 carreras: titular repetido en años seguidos 3 → 0.
+- **G4b, promesas que se pagan.** Sistema nuevo (`systems/promesas.js`, una línea en `ETAPAS_SPLIT`) con 5 promesas en
+  `data/events/promesas.json`: una abierta a la vez, con su progreso en la ficha; se paga (hype, arraigo) o el diario cuenta
+  que no ("NO LLEGASTE"), sin castigo: vos no la elegiste. "{ORG} GANÓ LA LIGA SIN VOS" cuando tu ex equipo sale campeón.
+- **G4c, la ceremonia.** El "¿la seguís?" pasa a "Un año más ⚠ / Colgarla con la frente alta" y frena por el declive que
+  se ve o a la segunda pretemporada sin firmar, solo si algo cambió desde la última vez. Toda carrera que termina por
+  decisión o por edad juega **el último partido**: 🎲 la jugada para el clip o 🧊 el farm para el rookie, con minijuego y
+  sin castigo. **El monumento**: Leyenda → retiran tu jersey con el número que elegiste en la firma (`career.dorsalPorOrg`),
+  Ídolo → cuelgan tu bandera, con el apodo de esa org. **La tarjeta es un palmarés**: el tipo de carta por tu escalón más
+  alto, org por org, las finales perdidas, 10 premios con nombre (El hijo pródigo, Cruzó el charco, Matador de clásicos,
+  La espina…) y el duelo.
+
+**Guardado y huella.** VERSION 18 (`migrarDe17`: arraigo por org desde las filas cerradas, dorsales, despedidas,
+promesas, la foto del último split), FORMAS 18 `a189ab780b40`. Huella 979394239 → 193370552, `VERSION_JUEGO` 'G2'.
+
+**Números** (`simulate.js 1000`, base master `1b52224` → entrega 2; dos corridas idénticas, 0 crashes):
+
+| Medida | Base | Entrega 2 |
+|---|---|---|
+| noLlegaAPro | 10,4 | 11,1 |
+| llegaATier1 | 35,2 | 38,5 |
+| ganaTituloDomestico | 14,3 | 12,9 |
+| ganaTituloTier2 | 30,4 | 29,6 |
+| ganaMundial | 3,9 | 4,5 |
+| top20 | 0,7 | 0,8 |
+| burnout | 0,1% | 0,1% |
+
+`llegaATier1` sube por la carta del año: el número seguro sube la ganancia media de stats por carta de 0,89 a 1,62. Vuelve
+hacia el 44,6 de antes de la entrega 1 (D120), así que no se persiguió (D124).
+
+**Validate.** `--rapido` final: 380 OK, 7 FAIL (D128). Cuatro ya fallaban en la base (D123); K5c-M (a2 armado) falla
+también sin el tope del sueldo (sospecha: el fixture); K6b-F contrato y K4c observación, a un arreglo chico (G-fix D). El
+completo corre en segundo plano después del deploy.
+
+**Lo que encontró la revisión** (Sonnet, sobre las 10 piezas juntas): el 🎲/🧊 invertido (alta), el texto del Bo1 en
+tercera persona y sus filas que se pisaban, la carta del año debajo del pliegue, "de el torneo" (198 → 0), VOLVÉ A CASA
+que arrancaba en "Uno más", un titular repetido y el sofá en el 30% de los titulares. Todo arreglado antes del deploy.
+
+**Workers** (~2,6 M tokens de subagentes en total): G2b, G3c, G4c, G1c y C1 Opus high; G2c, G4a, G2b-ficha, G3c-ui,
+G4b, G4c-ui, la revisión, A, B, C1-ui, C2 y D Sonnet. Ninguno esperó el validate; los que se quedaron con procesos de
+fondo después de entregar se frenaron.
 
 ### 2026-10-15 — Ola G, entrega 1: "el control" (las finales con las manos, el perfil que no decide, siempre en un equipo)
 
