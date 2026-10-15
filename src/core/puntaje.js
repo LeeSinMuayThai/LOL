@@ -122,7 +122,8 @@ function validarCarrera(state) {
       fallar(`la fila de ${fila.org} no trae splitsPorTier completo (${JSON.stringify(fila.splitsPorTier)})`);
     }
   }
-  for (const t of r.titulos) {
+  // G3a: la copa amateur (`tier: 'amateur'`) está en la vitrina pero no es un título de liga: no puntúa.
+  for (const t of r.titulos.filter((titulo) => titulo.tier !== 'amateur')) {
     const donde = `el título ${t.nombre} ${t.anio}`;
     if (!TIERS_DE_SPLIT.includes(t.tier)) {
       fallar(`${donde} no trae tier (${String(t.tier)})`);
@@ -218,7 +219,7 @@ function componenteTrayectoria(state) {
 
 function componenteTitulos(state) {
   const { porTitulo, prestigioReferencia } = P().titulos;
-  const titulos = registroDe(state).titulos;
+  const titulos = registroDe(state).titulos.filter((titulo) => titulo.tier !== 'amateur');
   // Tier 3 no es una liga: vale con el prestigio sintético de su zona.
   const prestigio = (t) => (t.tier === 3 ? BALANCE.tier3.fuerzaMedia : LIGA_POR_ID[t.liga].prestigio);
   const crudo = titulos.reduce((total, t) => total + porTitulo[t.tier] * (prestigio(t) / prestigioReferencia), 0);

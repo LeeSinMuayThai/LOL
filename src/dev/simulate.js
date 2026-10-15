@@ -237,6 +237,10 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
 
   const carrera = { splitsPro: 0, splitsConEquipo: 0, maxRachaSinEquipo: 0, tierMaximo: null };
   let rachaSinEquipo = 0;
+  // G3ab (PLANUI §0.9, "siempre en un equipo"): desde los 17, los splits sin club (sin contar la ventana de un retiro
+  // reversible), la racha más larga, la edad del primer equipo y cuántas ofertas trajo cada ventana de mercado.
+  const g3 = { splitsSinEquipo17: 0, maxRachaSinEquipo17: 0, edadPrimerEquipo: null, ofertasPorMercado: [] };
+  let rachaSinEquipo17 = 0;
 
   const jugabilidad = {
     splitsPro: 0,
@@ -344,6 +348,11 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
   // respuesta: solo mira la decisión de pasada antes de contestarla, así
   // el comportamiento y el consumo de `rng` quedan idénticos a hoy.
   const responderInstrumentado = (sistema, st, decision, rngLocal) => {
+    // G3ab: la mano de cada ventana de mercado (la primera presentación; las re-presentaciones de una negociación no cuentan).
+    if (sistema.id === 'mercado' && decision.presentacion === 'mercado' && decision.datos?.motivo === 'oferta'
+      && !decision.datos.negociacionesRotas?.length && !decision.datos.clubesInteresados?.length) {
+      g3.ofertasPorMercado.push(decision.opciones.length);
+    }
     contarTanda(st);
     jugabilidad.decisiones += 1;
     decisionesEnSplitActual += 1;
@@ -395,6 +404,7 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
     decisionesEnSplitActual = 0;
     frenoElCierre = false;
     const edadAntes = state.age;
+    const logsAntesDelSplit = state.logs.length;
     splitEnCurso = state.player.splitCount;
     // K2a: `systems/temporada.js` es el único que escribe `career.temporada` y la arma ENTERA de nuevo cada vez que
     // corre (`iniciarTemporada`); los demás sistemas la copian por referencia. Si al cerrar el split el objeto es
@@ -545,7 +555,28 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
       rachaSinEquipo += 1;
       carrera.maxRachaSinEquipo = Math.max(carrera.maxRachaSinEquipo, rachaSinEquipo);
     }
+    // G3ab: una mano de una sola carta (firmada sin pausa) o ninguna también es una ventana de mercado.
+    for (const log of state.logs.slice(logsAntesDelSplit)) {
+      if (log.unaSolaCarta) {
+        g3.ofertasPorMercado.push(1);
+      } else if (log.type === 'mercado' && /^Nadie te llama esta pretemporada|^Nadie te ofrece nada/.test(log.message)) {
+        g3.ofertasPorMercado.push(0);
+      }
+    }
+    if (state.career.currentOrg && g3.edadPrimerEquipo === null) {
+      g3.edadPrimerEquipo = state.age;
+    }
+    if (!state.terminado && state.phase !== 'retirado' && edadAntes >= BALANCE.amateur.edadEquipoSeguro) {
+      if (state.career.currentOrg) {
+        rachaSinEquipo17 = 0;
+      } else {
+        g3.splitsSinEquipo17 += 1;
+        rachaSinEquipo17 += 1;
+        g3.maxRachaSinEquipo17 = Math.max(g3.maxRachaSinEquipo17, rachaSinEquipo17);
+      }
+    }
   }
+  carrera.g3 = g3;
 
   // K1 (D75): "llegó a tier N" = jugó al menos un split con contrato en tier N (`splitsPorTier[N] > 0` en alguna
   // fila del registro), la misma definición que usan el puntaje y el veredicto. Antes se tomaba el menor
@@ -1197,12 +1228,14 @@ export function bloqueEmbudo(resultados, carreras, observaciones, { conNotas = f
   const tierMaximo = (indice) => carreras[indice].tierMaximo;
   const indices = resultados.map((_, indice) => indice);
 
-  const noLlegaAPro = indices.filter((i) => resultados[i].splitFichaje === null).length;
-  const llegaAPro = indices.filter((i) => resultados[i].splitFichaje !== null).length;
-  // Llegó a pro y nunca a tier 1 (`tierMaximo >= 2`). Los pros que no jugaron NINGÚN split con contrato
-  // (`tierMaximo === null`, D75) no son "estancados en T2/T3": se cuentan aparte.
-  const estancadoT2T3 = indices.filter((i) => resultados[i].splitFichaje !== null && tierMaximo(i) !== null && tierMaximo(i) >= 2).length;
-  const proSinTierNunca = indices.filter((i) => resultados[i].splitFichaje !== null && tierMaximo(i) === null).length;
+  // G3ab (§E.3): con equipo seguro a los 17 todos firman; "no llega a pro" pasa a ser "nunca jugó un split en tier 2 o
+  // tier 1" (el tier 3 es el circuito chico). `estancadoT2T3` queda como "llegó a tier 2 y nunca a tier 1", y
+  // `proSinTierNunca` vale 0 por definición (los que nunca jugaron con contrato caen en `noLlegaAPro`).
+  const jugoEnLigaReal = (i) => tierMaximo(i) !== null && tierMaximo(i) <= 2;
+  const noLlegaAPro = indices.filter((i) => !jugoEnLigaReal(i)).length;
+  const llegaAPro = indices.filter((i) => jugoEnLigaReal(i)).length;
+  const estancadoT2T3 = indices.filter((i) => tierMaximo(i) === 2).length;
+  const proSinTierNunca = 0;
   const llegaATier1 = indices.filter((i) => tierMaximo(i) === 1).length;
 
   // En el motor actual, registro.titulos acumula campeonatos domésticos de liga (systems/rendimiento.js, systems/serie.js).
@@ -2269,6 +2302,36 @@ export function bloqueCurvaDeEdad(resultados, observaciones) {
   return { porEdad, rPotencialDuracion: { r: redondear(r, 3), n: pros.length } };
 }
 
+// G3ab (PLANUI §0.9): "siempre en un equipo". Los años sin equipo desde los 17 (splits sin club / splits por año): la media,
+// el p90 y el % de carreras con alguno; la racha más larga en splits (la meta: nunca más de una pretemporada, 3 splits);
+// las ofertas de cada ventana de mercado (mínimo, media, % de ventanas con menos de `mercado.ofertasMinimas`) y la edad del
+// primer equipo.
+export function bloqueSiempreConEquipo(carreras) {
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  const conG3 = carreras.filter((c) => c.g3);
+  const anios = conG3.map((c) => c.g3.splitsSinEquipo17 / porAnio).sort((a, b) => a - b);
+  const p90 = anios.length > 0 ? anios[Math.min(anios.length - 1, Math.floor(anios.length * 0.9))] : 0;
+  const ofertas = conG3.flatMap((c) => c.g3.ofertasPorMercado);
+  const edades = conG3.map((c) => c.g3.edadPrimerEquipo).filter((edad) => edad !== null);
+  const red = (x) => Math.round(x * 100) / 100;
+  return {
+    aniosSinEquipoDesde17: {
+      media: red(anios.reduce((s, x) => s + x, 0) / Math.max(1, anios.length)),
+      p90: red(p90),
+      pctConAlguno: red((100 * conG3.filter((c) => c.g3.splitsSinEquipo17 > 0).length) / Math.max(1, conG3.length))
+    },
+    maxRachaSinEquipoDesde17: estadisticas(conG3.map((c) => c.g3.maxRachaSinEquipo17)),
+    rachaMasDeUnaPretemporada: conG3.filter((c) => c.g3.maxRachaSinEquipo17 > porAnio).length,
+    ofertasPorMercado: {
+      ventanas: ofertas.length,
+      minimo: ofertas.length > 0 ? Math.min(...ofertas) : null,
+      media: red(ofertas.reduce((s, x) => s + x, 0) / Math.max(1, ofertas.length)),
+      pctMenosDelMinimo: red((100 * ofertas.filter((n) => n < BALANCE.mercado.ofertasMinimas).length) / Math.max(1, ofertas.length))
+    },
+    edadPrimerEquipo: { media: red(edades.reduce((s, x) => s + x, 0) / Math.max(1, edades.length)), n: edades.length }
+  };
+}
+
 // El bloque `carrera` del reporte (ver el comentario en `correrLote`).
 function bloqueCarrera(carreras, total) {
   const conPro = carreras.filter((c) => c.splitsPro > 0);
@@ -2280,6 +2343,7 @@ function bloqueCarrera(carreras, total) {
     splitsProConEquipo: splitsPro > 0 ? `${((conEquipo / splitsPro) * 100).toFixed(1)}%` : 'sin splits pro',
     varadas: `${varadas} (${((varadas / total) * 100).toFixed(1)}%)`,
     maxRachaSinEquipo: estadisticas(conPro.map((c) => c.maxRachaSinEquipo)),
+    siempreConEquipo: bloqueSiempreConEquipo(carreras),
     tierMaximo: porcentajes(conteo(carreras, (c) => (c.tierMaximo === null ? 'nunca_fichado' : `tier${c.tierMaximo}`)), total)
   };
 }
@@ -2324,8 +2388,13 @@ function bloqueJugabilidad(jugabilidades) {
 // en que corrió la temporada, en ligas modeladas. Ojo: es la de ANTES de las etapas del split, ~2 puntos arriba de
 // la que mide la temporada al arrancar (la de la investigación de K2, 71,7 → 55,9): sirve para comparar puntos del
 // barrido entre sí, no contra esos números.
+// G3a: la copa amateur (`tier: 'amateur'`) no es un título de liga: va aparte (`copasAmateurPorCarrera`).
 export function titulosPorCarrera(resultados) {
-  return promedio(resultados.map((r) => r.career.registro.titulos.length));
+  return promedio(resultados.map((r) => r.career.registro.titulos.filter((t) => t.tier !== 'amateur').length));
+}
+
+export function copasAmateurPorCarrera(resultados) {
+  return promedio(resultados.map((r) => r.career.registro.titulos.filter((t) => t.tier === 'amateur').length));
 }
 
 export function jerarquiaMedia(observaciones) {

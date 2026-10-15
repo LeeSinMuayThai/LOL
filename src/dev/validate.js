@@ -29447,6 +29447,52 @@ check(NOMBRE_CHECK_W1D, () => {
   if (errorW1D) throw errorW1D;
 });
 
+// G3ab (PLANUI §0.9), la promesa de "siempre en un equipo": desde los 17, nadie pasa más de una pretemporada sin club (una
+// racha sin club de más de `edad.splitsPorEdad` splits, sin contar la ventana de un retiro reversible), y toda ventana de
+// mercado trae `mercado.ofertasMinimas` ofertas o más. Carreras enteras (hasta el retiro), con las respuestas del headless.
+check('G3ab siempre en un equipo: desde los 17 nunca más de una pretemporada sin club, y toda mano trae 3 ofertas o más', () => {
+  const mal = [];
+  const porAnio = BALANCE.edad.splitsPorEdad;
+  let manos = 0;
+  let splits17 = 0;
+  for (let seed = 1; seed <= 24; seed += 1) {
+    const rng = mulberry32(seed);
+    let estado = createInitialState(seed, rng);
+    let racha = 0;
+    const responder = (sistema, st, decision, r) => {
+      if (sistema.id === 'mercado' && decision.presentacion === 'mercado' && decision.datos?.motivo === 'oferta') {
+        manos += 1;
+        if (decision.opciones.length < BALANCE.mercado.ofertasMinimas) {
+          mal.push(`seed ${seed}, ${st.age} años: una mano de ${decision.opciones.length} ofertas`);
+        }
+      }
+      return sistema.resolverAuto(st, decision, r);
+    };
+    for (let i = 0; i < 80 && !estado.terminado; i += 1) {
+      const edad = estado.age;
+      const n0 = estado.logs.length;
+      estado = avanzarSplitAuto(estado, rng, responder).state;
+      if (estado.logs.slice(n0).some((log) => log.unaSolaCarta)) {
+        mal.push(`seed ${seed}, ${edad} años: una mano de una sola carta (firmada sin pausa)`);
+      }
+      if (edad < BALANCE.amateur.edadEquipoSeguro || estado.terminado || estado.phase === 'retirado') {
+        continue;
+      }
+      splits17 += 1;
+      racha = estado.career.currentOrg ? 0 : racha + 1;
+      if (racha > porAnio) {
+        mal.push(`seed ${seed}: ${racha} splits seguidos sin club a los ${estado.age}`);
+      }
+    }
+    if (estado.finAnticipado === 'sin_equipo' || estado.finAnticipado === 'no_llego') {
+      mal.push(`seed ${seed}: la carrera terminó en '${estado.finAnticipado}'`);
+    }
+  }
+  console.log(`      ${manos} manos de mercado, ${splits17} splits desde los 17`);
+  if (manos < 20) mal.push(`solo ${manos} manos de mercado en la muestra`);
+  if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
+});
+
 if (errores.length > 0) {
   console.error(`\n${errores.length} check(s) fallaron.`);
   process.exit(1);

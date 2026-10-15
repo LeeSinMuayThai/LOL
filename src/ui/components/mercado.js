@@ -86,7 +86,7 @@ const PLANTEL = {
   arriba: { ico: 'pelea', largo: 'plantel cargado' },
   primero: { ico: 'pelea', largo: 'el más fuerte de su liga' }
 };
-const ETIQUETA_TAG = { renovacion: 'Renovación', bombazo: 'Bombazo' };
+const ETIQUETA_TAG = { renovacion: 'Renovación', bombazo: 'Bombazo', a_la_baja: 'A la baja' };
 const TIPO_DE_CONTRATO = { renovacion: 'renovación', import: 'import', transferencia: 'transferencia', rookie: 'rookie' };
 // El aura: entra a los 120 ms de apuntar (barrer la grilla no dispara seis cruces), vuelve a los 600, el mundo cruza en 350.
 const T_MS = { aura: 120, vuelta: 600, cruce: 350, borde: 620, letra: 26 };
@@ -579,7 +579,8 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
   const btnRepresentante = !traspaso && datos.representanteDisponible
     ? el('button', { type: 'button', class: 'btn-mas ms-otra', title: 'Te dice qué clubes te siguen sin haber ofertado. Una vez por carrera.' }, [icono('chat'), 'Llamar al representante'])
     : null;
-  const btnEsperar = traspaso ? null : el('button', { type: 'button', class: 'btn-mas ms-otra', title: 'Esta ventana no firmás con nadie.' }, 'No firmar esta ventana');
+  // G3b: en la segunda ventana seguida sin club no hay "no firmar" (`datos.sinEsperar`): firmás.
+  const btnEsperar = traspaso || datos.sinEsperar ? null : el('button', { type: 'button', class: 'btn-mas ms-otra', title: 'Esta ventana no firmás con nadie.' }, 'No firmar esta ventana');
   const otras = traspaso ? null : el('div', { class: 'ms-otras' }, [
     el('p', { class: 'ms-leyenda', 'aria-hidden': 'true' }, [el('span', {}, [el('i', { class: 'ms-ley-sueldo' }), el('span', { text: 'sueldo / año' })]), el('span', {}, [el('i', { class: 'ms-ley-jer' }), el('span', { text: 'jerarquía proyectada' })])]),
     interesados.length ? el('p', { class: 'ms-siguen' }, [el('span', { class: 'ms-siguen-k', text: 'Te siguen sin ofertar' }), ...interesados.map((x) => el('span', { class: 'ms-siguen-org', title: x.motivo ?? '' }, [pintarLogo(x.org, { tam: 16, alt: '' }), x.org]))]) : null,

@@ -47,6 +47,7 @@ const ETIQUETAS_CAMPO = {
   'player.sleep': 'Sueño',
   'player.studies': 'Estudios',
   'player.familyTrust': 'Confianza familiar',
+  'flags.pcConfiscada': 'Periodos sin PC',
   'player.stats.mecanica': 'Mecánica',
   'player.stats.macro': 'Macro',
   'player.stats.teamfight': 'Teamfight',
