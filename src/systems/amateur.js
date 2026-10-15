@@ -1570,6 +1570,9 @@ function resolverEquipoSeguro(state, decision, opcionId) {
 // la vitrina (`registro.titulos` con `tier: 'amateur'`, que no cuenta como título de tier 1 ni de tier 2).
 // Pendiente (reportado): la final como serie de `systems/serie.js`, cuando la serie acepte un torneo sin liga.
 
+// Quién levantó la copa con vos (la vitrina y el momento del título nombran un equipo).
+const TEXTO_EQUIPO_DE_LA_COPA = 'tu quinteto del server';
+
 function correspondeCopa(state) {
   const porAnio = BALANCE.edad.splitsPorEdad;
   return state.age < BALANCE.amateur.edadEquipoSeguro
@@ -1637,7 +1640,7 @@ function resolverCopa(state, decision, opcionId, rng) {
     ? roll(a.copaHypeArriesgadoMin, a.copaHypeArriesgadoMax, rng)
     : roll(a.copaHypeSeguroMin, a.copaHypeSeguroMax, rng);
   const registro = conCopa.career.registro;
-  const titulo = { nombre: copa.charAt(0).toUpperCase() + copa.slice(1), anio: conCopa.calendario.anio, org: null, liga: null, tier: 'amateur' };
+  const titulo = { nombre: copa.charAt(0).toUpperCase() + copa.slice(1), anio: conCopa.calendario.anio, org: TEXTO_EQUIPO_DE_LA_COPA, liga: null, tier: 'amateur' };
   const ganada = {
     ...conCopa,
     player: { ...conCopa.player, stats: { ...conCopa.player.stats, hype: clampStat(conCopa.player.stats.hype + hype) } },

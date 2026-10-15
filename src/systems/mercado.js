@@ -1853,8 +1853,9 @@ function resolverMercado(state, decision, respuesta, rng) {
   // Esperar: no firmás nada esta ventana.
   if (respuesta.negociar === 'esperar') {
     // G3b: a la segunda, firmás. La pantalla no ofrece el botón; el motor no confía en eso.
+    // Sin el botón, quien igual responde "esperar" firma la primera de la mano (sin esto, un bot que siempre espera no cerraba nunca).
     if (decision.datos.sinEsperar) {
-      return { state, logs: [], decision };
+      return resolverMercado(state, decision, { opcionId: decision.opciones[0].id }, rng);
     }
     return resolverEspera(state, decision, rng, 'Elegís esperar: esta ventana no firmás con nadie.');
   }

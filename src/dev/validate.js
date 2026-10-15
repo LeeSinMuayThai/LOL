@@ -175,6 +175,13 @@ function check(nombre, fn) {
   correrUnCheck(nombre, fn);
 }
 
+// G3b (PLANUI §0.9): la bifurcación del mercado ("El mercado ya habló" / "Primera no llama") ya no existe: el piso de ofertas
+// siempre trae mano y el retiro llega por el cuerpo o la edad. Sus checks quedan escritos (vuelven si la bifurcación vuelve con
+// el último split de G4c) y se saltean; la promesa nueva la cuida "G3ab siempre en un equipo".
+function checkSinBifurcacion(nombre) {
+  console.log(`SKIP  ${nombre} (G3b: la bifurcación del mercado ya no existe)`);
+}
+
 function checkLento(nombre, fn) {
   if (SOLO.length > 0 && !SOLO.some((texto) => nombre.toLowerCase().includes(texto))) {
     return;
@@ -4209,12 +4216,14 @@ check('Tier 3, el nivel manda: con nivel de sobra para el tier 2 de tu región e
       usos += 1;
       return rngBase();
     };
-    const { state, logs } = aplicarCompetitivoT3n(arriba, rngContado);
+    const { state, logs, decision } = aplicarCompetitivoT3n(arriba, rngContado);
     const texto = logs.map((log) => log.message).join(' ');
     if (state.career.tier !== 2 || state.career.liga !== liga.id) {
       throw new Error(`nivel ${nivel} con calibre ${calibreBorde} + ${margen} (el borde): seguís en tier ${state.career.tier} (rng ${semilla})`);
     }
-    if (usos > 0) {
+    // G3b: el salto de cualquier split que no es la pretemporada trae la llamada de un club (`construirOferta` tira el sueldo y
+    // los años): esas tiradas son de la oferta, no del salto.
+    if (usos > 0 && !decision) {
       throw new Error(`el salto con nivel de sobra consumió ${usos} tirada(s) de rng: tiene que ser sin dado`);
     }
     const comparado = `${Math.round(nivel)} de nivel contra el ${Math.round(calibreBorde)} de un equipo medio de ${nombreVisibleDeLigaT3n(liga.id)}`;
@@ -4431,7 +4440,8 @@ check('El sesgo etario reduce cuántas ofertas llegan: 28 recibe ≤50% del prom
     for (let i = 0; i < muestras; i += 1) {
       const resultado = aplicarMercado(estadoDeEdad(edad), rng);
       total += resultado.decision
-        ? resultado.decision.opciones.filter((o) => o.tag !== 'renovacion').length
+        // G3b: las del piso (`a_la_baja`) no son de la demanda: el sesgo etario se mide sobre las que llegan solas.
+        ? resultado.decision.opciones.filter((o) => o.tag !== 'renovacion' && o.tag !== 'a_la_baja').length
         : 0;
     }
     return total / muestras;
@@ -10561,7 +10571,7 @@ function idsCrudosK5C(texto, ligas) {
   return problemas;
 }
 
-check('K5-C: con el umbral prendido, un jugador por debajo de su liga pasa N pretemporadas sin oferta de su tier y recién ahí frena "bajás o te retirás"', () => {
+checkSinBifurcacion('K5-C: con el umbral prendido, un jugador por debajo de su liga pasa N pretemporadas sin oferta de su tier y recién ahí frena "bajás o te retirás"', () => {
   const carreras = muestraK5C(UMBRAL_K5C);
   const forks = carreras.flatMap((c) => c.forks);
   const problemas = [];
@@ -10607,7 +10617,7 @@ check('K5-C: con el umbral prendido, un jugador por debajo de su liga pasa N pre
   }
 });
 
-check('K5-C: el retiro por mercado deja su motivo (log, estado y tarjeta) y la bifurcación no muestra ids crudos', () => {
+checkSinBifurcacion('K5-C: el retiro por mercado deja su motivo (log, estado y tarjeta) y la bifurcación no muestra ids crudos', () => {
   const retirarse = (sistema, st, decision, rng) => (decision.datos?.motivo === 'fin_mercado'
     ? { opcionId: 'retirarse' }
     : sistema.resolverAuto(st, decision, rng));
@@ -10736,7 +10746,7 @@ function buscarK5C(condicion, { responderBase = responderPorDefectoK5C, factores
   });
 }
 
-check('K5-C: "bajás" lleva a la mano de ofertas de más abajo, firmás un tier abajo y la cuenta vuelve a cero', () => {
+checkSinBifurcacion('K5-C: "bajás" lleva a la mano de ofertas de más abajo, firmás un tier abajo y la cuenta vuelve a cero', () => {
   const [carrera] = buscarK5C((fork) => fork.opciones[0] === 'bajar' && fork.respuesta === 'bajar', { tope: SEEDS_BUSQUEDA_BAJAR_K5C });
   if (!carrera) {
     throw new Error(`ninguna bifurcación con "bajar" contestada en ${SEEDS_BUSQUEDA_BAJAR_K5C} seeds degradadas`);
@@ -10756,7 +10766,7 @@ check('K5-C: "bajás" lleva a la mano de ofertas de más abajo, firmás un tier 
   }
 });
 
-check('K5-C: los bots contestan la bifurcación del mercado con una opción válida y su regla', () => {
+checkSinBifurcacion('K5-C: los bots contestan la bifurcación del mercado con una opción válida y su regla', () => {
   const problemas = [];
   const reglas = {
     criterio: (fork) => (fork.edad >= BALANCE.retiro.edadAutoAceptaVeredicto ? 'retirarse' : fork.opciones[0]),
@@ -10906,7 +10916,7 @@ const retirarseK5CR = (sistema, st, decision, rng) => {
   return sistema.resolverAuto(st, decision, rng);
 };
 
-check('K5c-R: con las perillas prendidas, el que se queda en tier 2 sin ofertas de tier 1 recibe la bifurcación, y su motivo llega al log, al estado y a la tarjeta', () => {
+checkSinBifurcacion('K5c-R: con las perillas prendidas, el que se queda en tier 2 sin ofertas de tier 1 recibe la bifurcación, y su motivo llega al log, al estado y a la tarjeta', () => {
   const carreras = muestraK5CR('retirarse', PERILLAS_K5CR, { degradar: true, responderBase: retirarseK5CR });
   const problemas = [];
   let forks = 0;
@@ -11049,7 +11059,7 @@ check('K5c-R: la cuenta de la presión sube todos los splits jugados en tier 2 (
   }
 });
 
-check('K5c-R: los bots contestan la bifurcación de la presión con la regla de edad de K5-C, y elegir seguir vuelve a cero la cuenta', () => {
+checkSinBifurcacion('K5c-R: los bots contestan la bifurcación de la presión con la regla de edad de K5-C, y elegir seguir vuelve a cero la cuenta', () => {
   const problemas = [];
   const reglas = {
     criterio: (fork) => (fork.edad >= BALANCE.retiro.edadAutoAceptaVeredicto ? 'retirarse' : fork.opciones[0]),
@@ -19670,7 +19680,10 @@ check('K4c (revisión) el respaldo de la prueba del mercado es el de la regla, r
     if (f.respaldo !== f.respaldoALaMano) {
       throw new Error(`${donde}: la prueba anuncia el respaldo ${f.respaldo}; con la regla (renovación, si no la mejor pagada sin prueba) es ${f.respaldoALaMano}`);
     }
-    if (f.respaldoALaMano === null ? !f.apuesta.includes('Si no alcanza, esta ventana no firmás con nadie.') : !f.apuesta.includes(f.respaldoALaMano)) {
+    // G3b: en la segunda ventana seguida sin club, sin respaldo, la apuesta dice que firmás igual (`TEXTO_FIRMAS_IGUAL`).
+    if (f.respaldoALaMano === null
+      ? !f.apuesta.includes('Si no alcanza, esta ventana no firmás con nadie.') && !f.apuesta.includes('Si no alcanza, firmás igual')
+      : !f.apuesta.includes(f.respaldoALaMano)) {
       throw new Error(`${donde}: la apuesta no dice el respaldo de la regla (${f.respaldoALaMano}): "${f.apuesta}"`);
     }
     if (!f.bajo.ficho && f.respaldoALaMano !== null && f.bajo.estado.career.currentOrg !== f.respaldoALaMano) {
