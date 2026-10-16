@@ -12861,15 +12861,16 @@ check('K4c-H horizonte: la palanca en el horizonte, la fracción ponderada, la t
 });
 
 check('K4c-H horizonte sobre el motor real: replicasDeDecision trae `hz` en el horizonte de cada parada y coincide con una lectura independiente', () => {
-  // Una parada de cada horizonte en carreras reales (seeds 1 a 3, hasta 45 splits): amateur:reparto (split, escalera), temporada:momento
-  // (partido) y, si aparece, serie:plan (serie). Se responde con réplicas cortas (2 splits) y se compara el `hz` de la primera réplica de la
+  // Una parada de cada horizonte en carreras reales (seeds 1 a 3, hasta 45 splits): amateur:reparto (split, escalera) y serie:plan
+  // (serie). H1b: la temporada regular ya no frena en ninguna fecha, así que `temporada:momento` (el horizonte `partido`) dejó de existir
+  // en el motor real: su mitad de este check se fue; el horizonte `partido` sigue medido con datos a mano en los checks de abajo. Se responde con réplicas cortas (2 splits) y se compara el `hz` de la primera réplica de la
   // primera opción con una lectura que no usa `seguimientoDeHorizonte`: se repite la misma carrera (mismos números aleatorios) y se lee a mano.
   //
   // K6c, segunda pasada (regla 17): desde que la semana del plan del año frena solo con riesgo nuevo, `amateur:reparto` es rara (0,03
   // paradas por carrera con `resolverAuto`, ninguna en las seeds 1-3). La búsqueda sigue en ronda (seeds 4, 5, ...) hasta encontrar las
   // dos obligatorias, con el mismo tope de 45 splits por carrera; lo que se mide (el `hz` contra la lectura a mano) no cambia.
-  const objetivos = { 'amateur:reparto': 'split', 'temporada:momento': 'partido', 'serie:plan': 'serie' };
-  const obligatorias = ['amateur:reparto', 'temporada:momento'];
+  const objetivos = { 'amateur:reparto': 'split', 'serie:plan': 'serie' };
+  const obligatorias = ['amateur:reparto', 'serie:plan'];
   const SEEDS_EN_RONDA_K4cH = 60;
   const vistos = {};
   const faltan = (seed) => (seed <= 3 ? Object.keys(vistos).length < Object.keys(objetivos).length : obligatorias.some((t) => !vistos[t]));
@@ -12890,7 +12891,7 @@ check('K4c-H horizonte sobre el motor real: replicasDeDecision trae `hz` en el h
       splitCount += 1;
     }
   }
-  if (!vistos['amateur:reparto'] || !vistos['temporada:momento']) {
+  if (obligatorias.some((tipo) => !vistos[tipo])) {
     throw new Error(`check vacío: en las seeds 1-${SEEDS_EN_RONDA_K4cH} no apareció ${obligatorias.filter((t) => !vistos[t]).join(' ni ')} en 45 splits`);
   }
   for (const [tipo, { seed, splitCount, st, decision }] of Object.entries(vistos)) {
@@ -12926,9 +12927,6 @@ check('K4c-H horizonte sobre el motor real: replicasDeDecision trae `hz` en el h
     let independiente;
     if (horizonte === 'split') {
       independiente = unidad === 'escalera' ? puntosAbsolutos(paso.state.player.ranked) : (paso.state.career.posicion ?? null);
-    } else if (horizonte === 'partido') {
-      const fechaMarcada = logs.find((l) => l.type === 'temporada' && typeof l.pSinMomento === 'number');
-      independiente = fechaMarcada ? (fechaMarcada.message.includes(' Ganan. ') ? 1 : 0) : null;
     } else {
       const cierre = logs.find((l) => l.postSerie === true);
       independiente = cierre ? (cierre.gano ? 1 : 0) : null;
@@ -13004,14 +13002,15 @@ check('K4c-H Δp: la palanca de serie y partido por p declarada (umbral 5 pp), e
   }
 });
 
-check('K4c-H Δp sobre el motor real: pPorOpcion lee la p de la previa (la misma que declaran las opciones del plan) y el `pH` de la fecha marcada es el `p` del log', () => {
+check('K4c-H Δp sobre el motor real: pPorOpcion lee la p de la previa (la misma que declaran las opciones del plan)', () => {
   // Seeds 1-6 hasta 45 splits, cortando apenas aparecen los tres (K4c, paso 3a, arreglos: con el stream nuevo las seeds 1-2 ya no
   // traían serie:decisivo): un serie:plan (su pSerie por opción es la lectura independiente), un serie:decisivo (la p del mapa, con y sin
   // charla) y la fecha marcada (sin p por opción al decidir: null, y la p que tiró cada réplica es el `p` de su log).
   const vistos = {};
   // Ola G (G1): serie:decisivo ya no existe (el mapa que puede cerrar la serie lo decide un minijuego, sin p por opción): su
   // mitad del check se fue; la p de esos mapas la cuidan K2d previa 1 (la vara) y el check de la promesa de G1.
-  const TIPOS_K4CH = ['serie:plan', 'temporada:momento'];
+  // H1b: la fecha marcada (temporada:momento) ya no frena la temporada: su mitad (el `pH` contra el `p` del log) se fue con ella.
+  const TIPOS_K4CH = ['serie:plan'];
   for (const seed of [1, 2, 3, 4, 5, 6]) {
     if (TIPOS_K4CH.every((tipo) => vistos[tipo])) {
       break;
@@ -13042,28 +13041,6 @@ check('K4c-H Δp sobre el motor real: pPorOpcion lee la p de la previa (la misma
   const pPlan = pPorOpcion(plan.st, plan.decision, opsDe(plan.decision));
   if (!pPlan || pPlan.length !== plan.decision.opciones.length || pPlan.some((p, i) => p !== plan.decision.opciones[i].pSerie)) {
     throw new Error(`serie:plan: la p por opción tenía que ser la pSerie declarada ${JSON.stringify(plan.decision.opciones.map((o) => o.pSerie))}, dio ${JSON.stringify(pPlan)}`);
-  }
-  const momento = vistos['temporada:momento'];
-  if (pPorOpcion(momento.st, momento.decision, opsDe(momento.decision)) !== null) {
-    throw new Error('temporada:momento no declara p por opción al decidir: pPorOpcion tenía que dar null');
-  }
-  // La p de la réplica 0 / opción 0 de la fecha marcada contra el log del mismo split repetido a mano (mismos números aleatorios).
-  const { seed, splitCount, st } = momento;
-  const ops = opsDe(momento.decision);
-  const porOpcion = replicasDeDecision(st, ops, { seed, splitCount, tipo: 'temporada:momento', reps: 2, splits: splitCount + 2, horizonte: 'partido', unidad: UNIDAD_RESULTADO_H });
-  const rr = mulberry32(hashCadenaH(`${seed}|${splitCount}|temporada:momento|0`));
-  const { _l, ...respuesta } = ops[0];
-  let paso = resolverDecision(structuredClone(st), respuesta, rr);
-  const logs = [...paso.logs];
-  const esLaFecha = (l) => l.type === 'temporada' && typeof l.pSinMomento === 'number';
-  while (paso.state.pendiente && !logs.some(esLaFecha)) {
-    const { sistemaId, decision: siguiente } = paso.state.pendiente;
-    paso = resolverDecision(paso.state, sistemaPorId(sistemaId).resolverAuto(paso.state, siguiente, rr), rr);
-    logs.push(...paso.logs);
-  }
-  const log = logs.find(esLaFecha);
-  if (!log || porOpcion[0][0].pH !== log.p) {
-    throw new Error(`temporada:momento: pH de la réplica 0 / opción 0 es ${porOpcion[0][0]?.pH}; el log dice ${log?.p}`);
   }
 });
 
