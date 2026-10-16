@@ -12,6 +12,8 @@ import * as esquive from '../ui/arcade/esquive.js';
 import * as pizarra from '../ui/arcade/pizarra.js';
 import * as llamada from '../ui/arcade/llamada.js';
 import { BALANCE } from '../data/balance.js';
+import * as teleport from '../ui/arcade/teleport.js';
+import * as vision from '../ui/arcade/vision.js';
 
 const CORRIDAS = Number(process.env.CORRIDAS ?? process.argv[2]) || 1000;
 const STAT = Number(process.argv[3]) || 60;
@@ -210,12 +212,129 @@ function azarLlamada(rng) {
   };
 }
 
+// --- el teleport (M2) ----------------------------------------------------------------------------------------------------
+// El humano elige la pelea (a veces cae en un cebo, a veces lee mal las barras cuando son dos), el sitio más cercano al centro
+// que no sea del lado rival (a veces se tienta con la trampa), y tira el TP cuando estima que la pelea arranca menos lo que
+// canaliza: la estimación de cuándo llegan los campeones le sale con ±TP_SD_LLEGADA_S (y a veces se descuida: TP_P_DESCUIDO).
+const TP_CANAL_S = 2.2;
+const TP_LEE_BARRAS_S = 1.6;
+const TP_SD_LLEGADA_S = 0.3;
+const TP_P_DESCUIDO = 0.22;
+const TP_SD_DESCUIDO_S = 1.1;
+const TP_P_CEBO = 0.08;
+const TP_RUIDO_BARRAS = 0.13;
+const TP_P_TRAMPA = 0.03;
+function humanoTeleport(rng) {
+  let fase = -1;
+  let plan = null;
+  return (e) => {
+    const f = e.fase;
+    if (f.fin || f.canal) return null;
+    if (f.i !== fase) { fase = f.i; plan = null; }
+    const reales = f.lugares.filter((l) => l.real);
+    if (!plan) {
+      const decideEn = rtSegundos(rng) + (reales.length > 1 ? TP_LEE_BARRAS_S : 0);
+      if (f.t < decideEn) return null;
+      let l;
+      if (f.lugares.length > reales.length && rng() < TP_P_CEBO) {
+        const cebos = f.lugares.filter((x) => !x.real);
+        l = cebos[Math.floor(rng() * cebos.length)];
+      } else if (reales.length > 1) {
+        const vista = reales.map((x) => teleport.ventajaVisible(x, f.t) + gauss(0, TP_RUIDO_BARRAS, rng));
+        l = reales[vista[0] >= vista[1] ? 0 : 1];
+      } else {
+        l = reales[0];
+      }
+      const sitios = l.sitios.map((_, k) => f.sitios.find((s) => s.id === l.sitios[k].id));
+      const seguros = sitios.filter((s) => !s.rival);
+      const pool = rng() < TP_P_TRAMPA ? sitios : seguros;
+      const cerca = pool.reduce((a, s) => (s.d < a.d ? s : a));
+      plan = { sitio: cerca.n, en: l.tIni + e.p.ventanaS / 2 + gauss(0, rng() < TP_P_DESCUIDO ? TP_SD_DESCUIDO_S : TP_SD_LLEGADA_S, rng) - TP_CANAL_S };
+    }
+    return f.t >= plan.en ? { tp: plan.sitio } : null;
+  };
+}
+const TP_AZAR_MAXIMO_S = 8;
+function azarTeleport(rng) {
+  let fase = -1;
+  let plan = null;
+  return (e) => {
+    const f = e.fase;
+    if (f.fin || f.canal) return null;
+    if (f.i !== fase) { fase = f.i; plan = { en: rng() * TP_AZAR_MAXIMO_S, sitio: Math.floor(rng() * f.sitios.length) }; }
+    return f.t >= plan.en ? { tp: plan.sitio } : null;
+  };
+}
+
+// --- la visión (M2) ------------------------------------------------------------------------------------------------------
+// El humano lee cada pista con su tiempo de reacción (a veces se le pasa una, a veces la lee al revés), suma para qué lado van,
+// y cuando leyó todas decide y pone sus wards adelante del jungla (dos campamentos más allá). Si queda parejo, tapa los dos lados.
+const VIS_P_OLVIDO = 0.04;
+const VIS_P_LEE_MAL = 0.06;
+// una de cada cinco partidas llega distraído (cansado, mirando otra cosa): lee mal casi la mitad de las pistas
+const VIS_P_DISTRAIDO = 0.25;
+const VIS_P_LEE_MAL_DISTRAIDO = 0.42;
+const VIS_DECIDE_S = 0.15;
+const VIS_ENTRE_WARDS_S = 0.2;
+const VIS_RUIDO_CLICK = 1.5;
+function humanoVision(rng) {
+  let caza = -1;
+  let st = null;
+  const pMal = rng() < VIS_P_DISTRAIDO ? VIS_P_LEE_MAL_DISTRAIDO : VIS_P_LEE_MAL;
+  const camp = (k) => vision.CAMPS[Math.max(0, Math.min(vision.CAMPS.length - 1, k))];
+  return (e) => {
+    const c = e.caza;
+    if (c.fin) return null;
+    if (c.i !== caza) { caza = c.i; st = { leeEn: new Map(), leidas: 0, score: 0, decideEn: null, cola: null }; }
+    const s = c.pistas.find((p) => p.tipo === 'ward' && p.visible)?.camp;
+    for (const p of c.pistas) {
+      if (p.visible && !st.leeEn.has(p)) st.leeEn.set(p, c.t + rtSegundos(rng));
+    }
+    for (const [p, en] of st.leeEn) {
+      if (en === null || c.t < en) continue;
+      st.leeEn.set(p, null);
+      st.leidas += 1;
+      if (p.tipo === 'ward' || rng() < VIS_P_OLVIDO) continue;
+      const d = vision.implica(p, s);
+      st.score += rng() < pMal ? -d : d;
+    }
+    if (st.decideEn === null && st.leidas >= c.pistas.length) {
+      st.decideEn = c.t + VIS_DECIDE_S;
+      const dir = Math.sign(st.score);
+      const lugares = dir === 0 ? [s + 2, s - 2] : [s + 2 * dir, s + 3 * dir];
+      st.cola = lugares.filter((k) => k >= 0 && k < vision.CAMPS.length);
+      if (!st.cola.length) st.cola = [s + 2 * (dir || 1)];
+    }
+    if (st.decideEn === null || c.t < st.decideEn || !st.cola.length || c.quedan <= 0) return null;
+    st.decideEn = c.t + VIS_ENTRE_WARDS_S;
+    const k = st.cola.shift();
+    const a = camp(k);
+    return { ward: { x: a.x + gauss(0, VIS_RUIDO_CLICK, rng), y: a.y + gauss(0, VIS_RUIDO_CLICK, rng) } };
+  };
+}
+const VIS_AZAR_MAXIMO_S = 5;
+function azarVision(rng) {
+  let caza = -1;
+  let plan = [];
+  return (e) => {
+    const c = e.caza;
+    if (c.fin) return null;
+    if (c.i !== caza) { caza = c.i; plan = Array.from({ length: 2 }, () => ({ en: rng() * VIS_AZAR_MAXIMO_S, x: rng() * 100, y: rng() * 100 })); }
+    const k = plan.findIndex((p) => c.t >= p.en);
+    if (k < 0 || c.quedan <= 0) return null;
+    const [p] = plan.splice(k, 1);
+    return { ward: { x: p.x, y: p.y } };
+  };
+}
+
 // --- la tabla ------------------------------------------------------------------------------------------------------------
 const MECANICAS = [
   { id: 'robar_baron', m: baron, humano: humanoBaron, azar: azarBaron, conVara: true },
   { id: 'dodge', m: esquive, humano: humanoDodge, azar: azarDodge, conVara: false },
   { id: 'la_pizarra', m: pizarra, humano: humanoPizarra, azar: azarPizarra, conVara: false },
-  { id: 'la_llamada', m: llamada, humano: humanoLlamada, azar: azarLlamada, conVara: false }
+  { id: 'la_llamada', m: llamada, humano: humanoLlamada, azar: azarLlamada, conVara: false },
+  { id: 'el_teleport', m: teleport, humano: humanoTeleport, azar: azarTeleport, conVara: true },
+  { id: 'la_vision', m: vision, humano: humanoVision, azar: azarVision, conVara: false }
 ];
 
 export { MECANICAS };
