@@ -12,6 +12,7 @@ import { TOTAL as MINIONS } from './minijuegos/lastHit.js';
 import { LARGO as TECLAS_COMBO } from './minijuegos/elCombo.js';
 import { RONDAS as SKILLSHOTS } from './minijuegos/dodge.js';
 import { TIEMPOS } from './minijuegos/elKite.js';
+import { TIROS } from './minijuegos/elGancho.js';
 import { A_OSCURAS } from './minijuegos/laVision.js';
 import { BLANCOS } from './minijuegos/laPrueba.js';
 import { FRENADAS } from './minijuegos/laCorrida.js';
@@ -26,6 +27,7 @@ const CONTEO = {
   el_combo: { total: TECLAS_COMBO, unidad: 'teclas del combo', articulo: 'las' },
   dodge: { total: SKILLSHOTS, unidad: 'oleadas', articulo: 'las' },
   el_kite: { total: TIEMPOS, unidad: 'tiempos de kite', articulo: 'los' },
+  el_gancho: { total: TIROS, unidad: 'ganchos', articulo: 'los' },
   la_vision: { total: A_OSCURAS, unidad: 'wards', articulo: 'los' },
   la_prueba: { total: BLANCOS, unidad: 'blancos', articulo: 'los' },
   la_corrida: { total: FRENADAS, unidad: 'frenadas en la zona', articulo: 'las' }

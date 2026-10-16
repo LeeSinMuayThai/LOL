@@ -2436,7 +2436,7 @@ export const BALANCE = {
     // Cuántos pasos tiene cada mecánica de conteo de un mapa (la UI los lee de acá, y el motor saca su techo).
     // H3k: el dodge pasó de 4 carriles a 7 oleadas en una arena. Con 4, el techo (n − 1) / n = 0,75 juntaba las varas 0,7
     // y 0,85 en "3 de 4"; con 7 cada escalón de `varaPorP` pide otro número (4, 5 y 6 de 7).
-    conteo: { last_hit: 5, el_combo: 5, dodge: 7, el_kite: 8, la_vision: 3, la_corrida: 4 },
+    conteo: { last_hit: 5, el_combo: 5, dodge: 7, el_kite: 8, el_gancho: 5, la_vision: 3, la_corrida: 4 },
     // H3k (PLANUI §0.10, "El kit"): las dos mecánicas del arcade, con la lógica pura en `ui/arcade/<id>.js` (`simular`, que
     // corre en Node). Todo en segundos y en unidades del mundo de cada mecánica. `pasoFijoS`: el paso de la simulación; el
     // cuadro del monitor solo decide cuántos pasos se corren (a 60 y a 144 Hz, lo mismo).
@@ -2496,6 +2496,83 @@ export const BALANCE = {
         circulo: { radio: 8.5 },
         cono: { alcance: 44, apertura: 0.9 },
         flash: { distancia: 13 }
+      },
+      // M1 (ola H, entrega 2). Last hit: la línea vista de costado, `g1.conteo.last_hit` minions en tres fases (`objetivos` por
+      // fase: la oleada melee, el cañón, bajo tu torre). Cada minion baja a golpes de los aliados (`golpe` puntos cada
+      // `golpeCadaS`, multiplicado por la `intensidad` de ese minion: cuánta gente le pega) y tu auto pega `danio` (el stat,
+      // por `ventanaPorStat`): lo matás si le queda `danio` o menos; más vida es TEMPRANO (no muere y el cooldown pasa a
+      // `falloCdS`: perdés el ritmo; salvo en una fase `parcial`, la de la torre, donde es un pre-golpe que no cuesta nada) y con la vida en 0 te lo robó la oleada o la torre. Bajo la torre, cada `torre.cadaS` sale
+      // un tiro (avisado `vueloS` antes) de `torre.danio`: si el minion llega a 0 por ahí, es de la torre. `oro` es lo que salta.
+      last_hit: {
+        cdS: 0.7,
+        falloCdS: 2.1,
+        danioStat: [20, 38],
+        intensidad: [0.9, 2.3],
+        jitterMinion: [0.9, 1.1],
+        llegaS: 0.5,
+        entreS: 0.7,
+        maxS: 60,
+        fases: [
+          { tipo: 'melee', objetivos: 2, hp: 100, golpe: [5, 12], golpeCadaS: [0.14, 0.26], oro: 21 },
+          { tipo: 'canon', objetivos: 1, hp: 140, golpe: [6, 22], golpeCadaS: [0.3, 0.75], oro: 45 },
+          { tipo: 'torre', objetivos: 2, hp: 100, golpe: [2, 5], golpeCadaS: [0.32, 0.65], oro: 21, parcial: true, parcialCdS: 1.25, torre: { danio: 42, cadaS: 1.1, vueloS: 0.42 } }
+        ]
+      },
+      // El kite: vista de arriba, un bruiser te viene encima. `g1.conteo.el_kite` tiempos; un tiempo es una vuelta del anillo de
+      // ataque (se llena en `cargaS`; pegar antes de tiempo lo vacía: `penaAnillo`): LIMPIO si pegás (anillo lleno, a `rango` o
+      // menos) sin que te agarren (contacto) antes. El bruiser sube de `v0` a `v1` u/s en `rampaS` desde tu último tiempo, dividido
+      // por la ventana del stat; fase 2: dash avisado (`avisoS` por la ventana); fase 3: un slow alrededor del bruiser.
+      el_kite: {
+        mundo: [160, 90],
+        radioJugador: 2.2,
+        radioBruiser: 4.6,
+        velocidad: 34,
+        rango: 24,
+        cargaS: 0.8,
+        penaAnillo: 1,
+        recuperaS: 0.8,
+        empuje: 14,
+        retroceso: 4,
+        golpeAturdeS: 0.2,
+        ventanaStat: [0.78, 1.4],
+        intensidad: [0.6, 2.2],
+        maxS: 90,
+        fases: [
+          { desde: 0, v0: 18, v1: 34, rampaS: 2.5 },
+          { desde: 3, v0: 20, v1: 30, rampaS: 3, dash: { cadaS: [2.2, 3.4], avisoS: 0.55, distancia: 38, velocidad: 110, ancho: 9 } },
+          { desde: 6, v0: 22, v1: 30, rampaS: 3, slow: { radio: 19, factor: 0.45 } }
+        ]
+      },
+      // El gancho (support): vista de arriba, el ADC y el support rival se mueven entre minions. `g1.conteo.el_gancho` ganchos,
+      // uno por vez (`cdS` entre uno y otro). El gancho viaja a `velocidad` u/s, se frena en el primer minion (`radioMinion`) o
+      // en el primer rival (`radioBlanco` por la ventana del stat) y no llega más lejos que `alcance`. Fase 1: los rivales van
+      // de lado a lado a `vT`; fase 2: amagan (`juke`: cada tanto invierten tras un aviso de `amagueS`); fase 3: se esconden
+      // detrás de una pared de minions (`pared`) que se mueve. Un gancho cuenta si pega en un rival.
+      el_gancho: {
+        mundo: [160, 90],
+        yo: [16, 45],
+        velocidad: 105,
+        alcance: 130,
+        cdS: 0.6,
+        radioGancho: 1.3,
+        radioMinion: 3.6,
+        radioBlanco: 4.4,
+        ventanaStat: [0.7, 1.5],
+        intensidad: [0.8, 1.5],
+        giroRadS: 1.7,
+        anguloMaximo: 1.15,
+        amagueS: 0.22,
+        yMin: 10,
+        yMax: 80,
+        xSeAcercaPorS: 40,
+        modulacion: { amp: 0.05, omega: 1.8 },
+        minionsSueltos: { n: 4, x: [52, 90], v: [5, 10] },
+        maxS: 60,
+        fases: [
+          { desde: 0, x: 112, vT: 26, juke: null, pared: null },
+          { desde: 2, x: 112, vT: 30, juke: [1.0, 1.8], pared: null },
+          { desde: 4, x: 130, vT: 26, juke: [1.2, 2.0], pared: { x: 98, n: 5, amplitud: 9, omega: 0.9 } }
+        ]
       }
     },
     // El piso humano de las mecánicas analógicas: lo que una persona no puede achicar, y que por eso no se descuenta.
