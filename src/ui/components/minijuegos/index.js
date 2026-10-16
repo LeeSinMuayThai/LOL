@@ -10,6 +10,7 @@ import { montar as montarElCombo } from './elCombo.js';
 import { montar as montarDodge } from './dodge.js';
 import { montar as montarLaVision } from './laVision.js';
 import { montar as montarElKite } from './elKite.js';
+import { montar as montarElGancho } from './elGancho.js';
 import { montar as montarElTeleport } from './elTeleport.js';
 // G1 (PLANUI §0.9, "Variedad"): las dos mecánicas universales, de cualquier rol (mid y support tenían solo 4 de mapa).
 // El dato (`data/minijuegos.json`) lo registra el motor; si todavía no está, la parada igual las monta (`components/varaG1.js`).
@@ -32,6 +33,7 @@ export const MONTAR_MINIJUEGO = {
   dodge: montarDodge,
   la_vision: montarLaVision,
   el_kite: montarElKite,
+  el_gancho: montarElGancho,
   el_teleport: montarElTeleport,
   la_corrida: montarLaCorrida,
   la_pizarra: montarLaPizarra

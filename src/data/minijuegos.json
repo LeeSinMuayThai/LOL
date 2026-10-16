@@ -610,5 +610,57 @@
         "Confundiste el plan del rival con el del scrim del martes. El analista no te mira a los ojos."
       ]
     }
+  },
+  {
+    "id": "el_gancho",
+    "momentos": [
+      "mapa_cerrado",
+      "mapa_decisivo"
+    ],
+    "roles": [
+      "support"
+    ],
+    "statRelevante": "mecanica",
+    "efecto": {
+      "tipo": "mapa"
+    },
+    "impacto": 0.11,
+    "spread": 0.16,
+    "reglaEnFiccion": "Apuntá el gancho adelantándote al ADC y al support rival, y tiralo por un hueco entre los minions.",
+    "nombresPorCompeticion": {
+      "internacional": "El gancho del internacional",
+      "LCK": "El gancho de la LCK",
+      "LPL": "El gancho agresivo de la LPL",
+      "LEC": "El gancho de la LEC",
+      "LCS": "El hook de la LCS",
+      "CBLOL": "O gancho do CBLOL",
+      "LCP": "El gancho del LCP",
+      "default": "El gancho en {liga}"
+    },
+    "titulos": [
+      "El gancho que abre la pelea",
+      "Enganchar al ADC",
+      "Un hook entre los minions"
+    ],
+    "descripciones": [
+      "Tenés que sacarlos de la línea: un gancho bien puesto y tu ADC hace el resto.",
+      "Se mueven entre los minions y vos tenés una sola chance por vez. Hay que adelantarle el tiro.",
+      "El support rival no se deja: si lo enganchás, la jugada es tuya."
+    ],
+    "apuesta": "Si el gancho entra, la pelea empieza como vos querés. Si lo frena un minion, empieza como ellos quieren.",
+    "veredictos": {
+      "bien": [
+        "Los enganchás cuando querés: la línea es tuya y abrís cada pelea.",
+        "Hook tras hook, no te dejan respirar."
+      ],
+      "parejo": [
+        "Enganchás los que importan y fallás alguno: alcanza para sostener la línea.",
+        "Entran los justos: se arma, pero sin ventaja."
+      ],
+      "mal": [
+        "Los ganchos mueren en los minions: nunca abrís una pelea.",
+        "Les tirás donde estaban, no donde van."
+      ]
+    }
   }
 ]
