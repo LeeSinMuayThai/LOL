@@ -1,1 +1,3796 @@
-[]
+[
+  {
+    "category": "raros_salud",
+    "conditions": [],
+    "id": "salud_muneca_con_vendas",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "salud",
+    "title": "La muñeca avisa",
+    "description": "La muñeca te molesta desde el scrim de ayer. El kinesiólogo pide una semana de pausa; el calendario no.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "parar_una_semana",
+        "label": "Parar una semana",
+        "descripcion": "Hielo, ejercicios y VOD de mate.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Volvés con la muñeca sana y la cabeza clara. Hasta el VOD se mira distinto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La semana sin teclado te enfría los reflejos. Volvés oxidado y de mal humor.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_con_vendas",
+        "label": "Seguir con vendas",
+        "descripcion": "El calendario no espera a nadie.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Aguantás sin drama y el equipo ni se entera. La muñeca guarda la factura.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 0,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La venda no hace magia: errás la mitad de los skillshots. El kinesiólogo pone cara de te lo dije.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [],
+    "id": "salud_insomnio_de_scrims",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "salud",
+    "title": "El techo y la partida",
+    "description": "Cerrás el scrim a las cuatro y el cerebro sigue en la partida. Mirás el techo repasando cada teamfight.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "apagar_todo",
+        "label": "Apagar todo y dormir",
+        "descripcion": "Pantallas afuera, té de tilo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Cortás la luz azul y a la tercera noche dormís de corrido. Un lujo que no sabías que extrañabas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Das mil vueltas y cada vez que cerrás los ojos aparece el Baron. Una noche perdida más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "revisar_el_vod",
+        "label": "Revisar el VOD igual",
+        "descripcion": "Si no dormís, al menos aprendés.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "A las seis ya viste el error de fondo: tu macro estaba torcida. Dormís dos horas, pero entendés.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Amanecés con ojeras y la misma duda. El VOD te dejó más ansioso que antes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [],
+    "id": "salud_la_silla_nueva",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "salud",
+    "title": "La silla nueva",
+    "description": "La org compra sillas ergonómicas y la tuya es la peor del lote. La espalda se acuerda de cada hora de ladder.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "pedir_el_escritorio_regulable",
+        "label": "Pedir escritorio regulable",
+        "descripcion": "Un mueble y una conversación con el manager.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El manager lo aprueba sin chistar. Jugar parado una hora por día te destapa el cuello.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 0,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo piden diez más y queda en lista de espera. Mientras tanto, igual de torcido.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "aguantar_con_almohadones",
+        "label": "Aguantar con almohadones",
+        "descripcion": "La espalda es de goma, dicen.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Con dos almohadones y fe aguantás el split. Nadie sabe cuánto duele el Bo3.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 0,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "La lumbalgia llega en pleno playoff y jugás de costado como un cangrejo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [],
+    "id": "salud_los_lentes",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "salud",
+    "title": "Los lentes",
+    "description": "Un optometrista te mira la pantalla y se agarra la cabeza: hace años que jugás entrecerrando los ojos.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "lentes_con_filtro",
+        "label": "Probar lentes con filtro",
+        "descripcion": "Cambia cómo ves el minimapa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Con los lentes ves el minimapa como en 4K. Las rotaciones rivales dejan de ser una sorpresa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 0,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te dan dolor de cabeza la primera semana y odiás hasta el marco. Después te acostumbrás.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cambiar_de_monitor",
+        "label": "Cambiar de monitor",
+        "descripcion": "Tal vez era la pantalla, no vos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El monitor nuevo es una bendición: contraste, tasa de refresco, todo. Le echabas la culpa al ping.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El monitor es mejor, pero la vista sigue igual. Lo descubrís en el scrim de la tarde.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [],
+    "id": "salud_gripe_antes_del_bo3",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "salud",
+    "title": "Gripe en el warm-up",
+    "description": "Estornudás en el warm-up y el manager te mira de reojo. Hay Bo3 en tres horas.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "jugar_con_fiebre",
+        "label": "Jugar con fiebre",
+        "descripcion": "Un Bo3 en cuarentena.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Jugás en piloto automático y ganás de pura tos. El equipo te aplaude con barbijo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "La fiebre sube en el segundo mapa y regalás una torre por lado. Al suplente le llega la hora.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ceder_el_lugar",
+        "label": "Ceder tu lugar al suplente",
+        "descripcion": "Un partido afuera, pero sano.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El suplente la rompe y vos mirás desde el sillón con un té. El equipo valora que no te hayas hecho el héroe.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El suplente la rompe de más y la prensa pregunta si te necesitan. Sano, pero incómodo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [],
+    "id": "salud_el_tupper_del_bootcamp",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "salud",
+    "title": "El tupper o la pizza",
+    "description": "En el bootcamp la cocinera te deja un tupper por día y vos vivís de pizza. El analista dice que dormís peor.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "comer_lo_del_tupper",
+        "label": "Comer lo del tupper",
+        "descripcion": "Cuarenta días de pollo y arroz.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "A la tercera semana dormís mejor y el laneo sale más fino. La cocinera sonríe con todo el cuerpo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El pollo se te vuelve un trauma y a la cuarta semana pedís milanesa a escondidas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 0,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_con_la_pizza",
+        "label": "Seguir con la pizza",
+        "descripcion": "La carrera es corta, la muzza no.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "El equipo se suma y la pizza del viernes se vuelve ritual. Se nota en el voice.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Tres semanas de masa y el cuerpo cobra: pesadez, ojeras y una siesta forzada en pleno scrim.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [],
+    "id": "salud_la_psicologa_de_la_org",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "salud",
+    "title": "La psicóloga de la org",
+    "description": "La org contrató una psicóloga deportiva y te cruza en el pasillo. Te propone una sesión sin compromiso.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "ir_a_la_sesion",
+        "label": "Ir a la sesión",
+        "descripcion": "Una hora, sin cámaras ni coach.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Salís más liviano de lo que entraste. Ponerle nombre al tilt ya es la mitad de arreglarlo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La primera sesión te saca todo de golpe y volvés al scrim con los ojos rojos. Mañana se nota la mejora.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decir_que_estas_bien",
+        "label": "Decir que estás bien",
+        "descripcion": "Cuando estás bien, todos lo dicen.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Cumplís con la sonrisa y seguís. Hay semanas en que te alcanza.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 0,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Pasan dos splits sin hablar con nadie y un día explotás con un compañero. La psicóloga no dice nada, pero anotó la fecha.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [],
+    "id": "salud_semana_sin_pantallas",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "salud",
+    "title": "Semana sin cliente",
+    "description": "El coach te prohíbe tocar el cliente una semana. Es una orden, aunque suene a castigo.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "obedecer_y_desconectar",
+        "label": "Obedecer y desconectar",
+        "descripcion": "Gimnasio, amigos, el sol.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Volvés a la ladder con ganas de ganar y no de no perder. El coach te guiña un ojo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Los primeros tres días son una abstinencia. Al cuarto salís a caminar y descubrís que la gente tiene vida.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_a_escondidas",
+        "label": "Jugar a escondidas",
+        "descripcion": "Una cuenta secundaria, cero rastros.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 3,
+            "texto": "Nadie se entera y de paso probás un pick nuevo en la soloQ. El coach sospecha, pero no puede probarlo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 7,
+            "texto": "Lo pesca el analista por el rank de la cuenta nueva. El coach no dice nada: te da el doble de VOD.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 2
+      }
+    ],
+    "id": "salud_ataque_en_vivo",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "salud",
+    "title": "Pánico en directo",
+    "description": "En pleno stream de scrim el corazón se acelera y la pantalla se nubla. El chat lo está viendo todo.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "cortar_el_stream",
+        "label": "Cortar el stream",
+        "descripcion": "Respirar, agua, cámara apagada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Apagás y respirás con la ventana abierta. Cuando volvés, el chat te llena de corazones.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El clip del corte ya circula antes de que te tomes el agua. Los memes llegan antes que la calma.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_como_si_nada",
+        "label": "Seguir como si nada",
+        "descripcion": "La cara de póker te sale gratis.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Pasa el susto y el chat ovaciona tu sangre fría. Después temblás en el baño, pero nadie ve.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Se te va la mano en un teamfight y regalás cuatro kills en directo. El clip se hace viral.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [],
+    "id": "salud_cafeina_de_mas",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "salud",
+    "title": "Cuatro latas",
+    "description": "El bootcamp es una góndola de latas. Llevás cuatro energizantes hoy y la mano ya tiembla.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "cortar_con_la_cafeina",
+        "label": "Cortar con la cafeína",
+        "descripcion": "Agua, mate y paciencia.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tres días de dolor de cabeza y después un sueño profundo. La mano deja de bailar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La abstinencia te agarra en pleno scrim y la cabeza se te cae sobre el teclado. Risas generales.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "aguantar_con_una_mas",
+        "label": "Aguantar con una más",
+        "descripcion": "La cuarta no cuenta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Ganás el scrim a los gritos y la quinta lata te espera en el pasillo. Mañana pagás.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Se te acelera todo: clicks de más, rotaciones a cualquier lado. Un jungla con taquicardia ya no es un jungla.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 5
+      }
+    ],
+    "id": "salud_la_resonancia",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "salud",
+    "title": "La resonancia",
+    "description": "La resonancia confirma lo que temías: la muñeca necesita tratamiento serio. El médico habla de meses; el staff, de semanas.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "tratamiento_completo",
+        "label": "Hacer el tratamiento completo",
+        "descripcion": "Meses de kinesio y cero ladder.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Volvés con la muñeca nueva y una paciencia que no tenías. El equipo juega mejor con vos de vuelta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La recuperación se estira más de lo previsto y volvés con el pulso lento. La paciencia aprendida es el consuelo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "tratamiento_express",
+        "label": "Pedir el tratamiento express",
+        "descripcion": "Infiltración y a jugar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "La infiltración te devuelve a la pelea en cinco días. Un héroe de pasillo con la muñeca rezongando.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 0,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "El dolor vuelve a las dos semanas, peor. El médico no puede creer que lo hayas hecho.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -7,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 6
+      }
+    ],
+    "id": "salud_martes_sin_cliente",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "salud",
+    "title": "Martes sin cliente",
+    "description": "Llevás dos splits sin un día libre y ya no disfrutás ni ganar. Un martes mirás el cliente y no lo abrís.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "pedir_un_mes_libre",
+        "label": "Pedir un mes libre",
+        "descripcion": "Sin scrims, sin ladder, sin excusas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La org acepta a regañadientes. Volvés flaco de nervios y gordo de ganas, con la mirada limpia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El mes libre se vuelve dos meses sin ritmo. Volvés fresco, pero el equipo ya funciona sin vos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "apretar_los_dientes",
+        "label": "Apretar los dientes",
+        "descripcion": "Un split más y listo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 3,
+            "texto": "Aguantás el split a fuerza de rutina y llegás de pie al descanso. Un milagro con ojeras.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 7,
+            "texto": "En el tercer scrim te quedás mirando la pantalla sin hacer nada. El coach te manda a casa y no preguntás.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -7,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 6
+      }
+    ],
+    "id": "salud_la_sesion_que_hizo_clic",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "salud",
+    "title": "Algo hizo clic",
+    "description": "Después de meses de sesiones, algo cambia: las partidas pesan menos y el tilt llega más tarde.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "llevarlo_al_scrim",
+        "label": "Llevarlo al scrim",
+        "descripcion": "Probar si aguanta una serie dura.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "En el tercer mapa tu compañero pierde la cabeza y vos no. Lo calmás con una frase y el team te mira distinto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Aguantás el primer mapa y el segundo, pero el tercero se te escapa el tilt. Igual, mejor que antes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardarlo_para_vos",
+        "label": "Guardarlo para vos",
+        "descripcion": "Lo que funciona, no se toca.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo mantenés privado y funciona igual. Nadie ve el cambio, solo los resultados.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo guardás tanto que lo olvidás. Un mes después estás tiltado y sin recordar qué hacías.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 4
+      }
+    ],
+    "id": "salud_el_preparador_fisico",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "salud",
+    "title": "El preparador físico",
+    "description": "La org te asigna un preparador físico: gimnasio a las ocho, comida medida y cero soloQ de madrugada.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "seguir_el_plan",
+        "label": "Seguir el plan a rajatabla",
+        "descripcion": "Cuerpo de atleta, mente de ladder.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "A los dos meses el cuerpo responde y la cabeza se aclara. El preparador te dice que sos su mejor alumno.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te pasás con el gimnasio y una contractura te deja afuera de un scrim. El preparador pide perdón.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "negociar_la_soloq",
+        "label": "Negociar la soloQ",
+        "descripcion": "Una hora de ladder a la noche.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Acordás una hora y la cumplís. El preparador sonríe: ya vio de todo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La hora se vuelve tres y el plan se evapora. Tu cuerpo no te lo perdona.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 6
+      }
+    ],
+    "id": "salud_un_mes_en_cama",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "salud",
+    "title": "Un mes en cama",
+    "description": "Una mononucleosis te deja un mes en cama y la ladder prohibida. El equipo juega sin vos.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "descansar_de_verdad",
+        "label": "Descansar de verdad",
+        "descripcion": "Cama, sopa y celular lejos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El mes te devuelve el cuerpo y de paso las ganas. Volvés con hambre de scrim.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Volvés recuperado, pero el equipo cambió de sistema y tu lugar ya es un hueco a llenar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mirar_los_vods_desde_la_cama",
+        "label": "Mirar los VODs desde la cama",
+        "descripcion": "Estudiar mientras te curás.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Con fiebre y mantas entendés el draft más que en tres meses de scrims. Volvés con un plan.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La fiebre se alarga y cada VOD parece una pesadilla. Volvés más ansioso que sano.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [],
+    "id": "salud_cuarenta_partidas",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "salud",
+    "title": "Cuarenta partidas",
+    "description": "Cuarenta partidas en tres días y el LP sube y baja como la bolsa. Ya no sabés si jugás por mejorar o por no parar.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "desinstalar_un_rato",
+        "label": "Desinstalar un rato",
+        "descripcion": "El cliente se queda afuera una semana.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Pasás la semana en el parque y el LP deja de importarte. Volvés a jugar como cuando era un hobby.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "A los tres días ya lo volviste a bajar. Un hábito es un hábito, aunque lo llames pausa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ponerte_un_limite",
+        "label": "Ponerte un límite diario",
+        "descripcion": "Diez partidas, ni una más.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Diez partidas bien jugadas valen más que cuarenta con ojeras. Tu win rate lo agradece.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El límite aguanta cuatro días. El quinto, un amigo te invita a \"una nomás\" y son las cuatro de la mañana.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 4
+      }
+    ],
+    "id": "salud_el_pico_de_forma",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "salud",
+    "title": "El pico de forma",
+    "description": "Sueño, comida y entrenamiento caen en su lugar el mismo mes. Te sentís liviano y el mapa se lee solo.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "aprovechar_la_racha",
+        "label": "Aprovechar la racha",
+        "descripcion": "Meter horas mientras dura.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Metés ladder y scrim con la cabeza fría y todo sale. La gente empieza a hablar de tu forma.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La sobrecarga te agarra a mitad de camino y bajás dos escalones. Fue lindo mientras duró.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cuidar_la_rutina",
+        "label": "Cuidar la rutina",
+        "descripcion": "No tocar lo que funciona.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Sostenés lo que hacés y la forma dura el split entero. Sin fuegos artificiales, con consistencia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La rutina se vuelve costumbre aburrida y el hambre baja un poco. Un golpecito de monotonía.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 8
+      }
+    ],
+    "id": "salud_la_muneca_del_destino",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "salud",
+    "title": "La muñeca del destino",
+    "description": "El médico te muestra la imagen: sin operación, la muñeca no llega a los treinta. Con operación, perdés una temporada entera.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "operarte_ya",
+        "label": "Operarte ya",
+        "descripcion": "Una temporada afuera, la muñeca nueva.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Entrás al quirófano con el equipo en la puerta del hospital. Salís sin dolor y con una temporada para pensar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_operada"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La operación sale bien, pero el posoperatorio es un tedio de manual. Contás los días con la pared.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_operada"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "esperar_otro_split",
+        "label": "Esperar otro split",
+        "descripcion": "Un split más a todo o nada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Jugás el split con la muñeca rezando y el equipo te cubre las espaldas. Sale una temporada brillante que te va a costar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_aplazada"
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Cada serie es una apuesta. Te escondés los espasmos y el médico, en la pared, cuenta los días.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -8,
+                "max": -5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_aplazada"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [
+      {
+        "field": "flags.caminos.playoffs",
+        "op": "eq",
+        "value": "salud_operada"
+      }
+    ],
+    "id": "salud_la_cirugia",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "salud",
+    "title": "Después del quirófano",
+    "description": "Meses después, el médico te da el alta. La muñeca responde mejor que antes y el equipo te espera con una remera con tu nombre.",
+    "weight": 12,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "volver_de_a_poco",
+        "label": "Volver de a poco",
+        "descripcion": "Scrims suaves y cero apuros.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Volvés al ritmo sin apuro y el pulso te devuelve la mecánica. Es otro jugador el que pisa la grieta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 6,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "volviste_de_la_cirugia",
+                "values": [
+                  "El día que volviste de la cirugía de muñeca",
+                  "La vuelta después de la operación que casi te saca del juego"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La vuelta se hace larga y los primeros scrims son una vergüenza. A los dos meses empezás a verte otra vez.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "volviste_de_la_cirugia",
+                "values": [
+                  "La vuelta lenta después de la operación",
+                  "El día que la muñeca respondió otra vez"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "volver_a_toda_maquina",
+        "label": "Volver a toda máquina",
+        "descripcion": "Recuperar el tiempo perdido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Te tirás a la ladder como si nada y sorprendés a todos. El kinesiólogo mira el monitor con orgullo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "volviste_de_la_cirugia",
+                "values": [
+                  "El día que volviste de la cirugía como si nada",
+                  "La vuelta a toda máquina después del quirófano"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te pasás de rosca y la muñeca protesta. Otra semana de hielo y el doctor te mira como a un alumno rebelde.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -4,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "volviste_de_la_cirugia",
+                "values": [
+                  "La vuelta apurada que costó una recaída",
+                  "El día que quisiste volver antes de tiempo"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [
+      {
+        "field": "flags.caminos.playoffs",
+        "op": "eq",
+        "value": "salud_aplazada"
+      }
+    ],
+    "id": "salud_la_muneca_cobra",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "salud",
+    "title": "La muñeca cobra",
+    "description": "La muñeca cobra la deuda: un chasquido en pleno scrim y el médico no necesita ver la imagen para saber qué pasó.",
+    "weight": 12,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "operarte_ahora",
+        "label": "Operarte ahora",
+        "descripcion": "Tarde, pero antes que nunca.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Pasás por el quirófano más lento, pero pasás. La recuperación te enseña una paciencia que no tenías.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -3,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_muneca_cobro",
+                "values": [
+                  "El día que la muñeca cobró la deuda",
+                  "La operación que llegó un split tarde"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La cirugía es más complicada porque esperaste. Salís con la muñeca mejor y la cabeza hecha pedazos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_muneca_cobro",
+                "values": [
+                  "La operación que llegó tarde y costó cara",
+                  "El día que dejaste de hacerte el fuerte"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rehabilitacion_larga",
+        "label": "Intentar sin quirófano",
+        "descripcion": "Kinesio, hielo y disciplina de monje.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Contra todo pronóstico, la rehabilitación funciona. La muñeca queda a un 90% y la cabeza, al 110%.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -2,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_muneca_cobro",
+                "values": [
+                  "La rehabilitación que evitó el quirófano",
+                  "El día que le ganaste la apuesta al médico"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Meses de ejercicios sin avances. Al final, el quirófano te espera igual y sin las ganas de antes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_muneca_cobro",
+                "values": [
+                  "El camino largo hacia la operación",
+                  "El día que entendiste que no había atajo"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 10
+      }
+    ],
+    "id": "salud_el_colapso",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "salud",
+    "title": "El colapso",
+    "description": "Una mañana no podés levantarte. No es la gripe: es todo lo que venís aguantando hace tres años.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "pedir_ayuda_de_verdad",
+        "label": "Pedir ayuda de verdad",
+        "descripcion": "Familia, psicóloga, cero secretos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Llamás a tu vieja y llorás veinte minutos. Es el primer paso del camino más difícil y más importante.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_colapso"
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Pedís ayuda y te encontrás con un sistema lento. Igual, hablarlo te alivia un montón.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_colapso"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "esconderlo_un_tiempo",
+        "label": "Esconderlo un tiempo",
+        "descripcion": "Un día más y se pasa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 3,
+            "texto": "Te recomponés a base de rutina y respiración. Nadie se entera de lo cerca que estuviste.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_colapso"
+              }
+            ]
+          },
+          {
+            "weight": 7,
+            "texto": "Te hacés el fuerte tres semanas y un día se te cae la mirada en pleno scrim. El silencio del equipo lo dice todo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -8,
+                "max": -5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_colapso"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [
+      {
+        "field": "flags.caminos.playoffs",
+        "op": "eq",
+        "value": "salud_colapso"
+      }
+    ],
+    "id": "salud_la_vuelta_del_colapso",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "salud",
+    "title": "Después del colapso",
+    "description": "Meses después, el equipo te propone una rutina nueva: un día libre por semana y una charla mensual con la psicóloga.",
+    "weight": 12,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "aceptar_la_rutina",
+        "label": "Aceptar la rutina",
+        "descripcion": "Un día libre, cuarenta minutos de charla.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Con el tiempo, el día libre se vuelve sagrado y la charla, un ancla. Jugás el mejor split de tu vida.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "salud_despues_del_colapso",
+                "values": [
+                  "El split en que aprendiste a cuidarte",
+                  "El día que el colapso se convirtió en rutina"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Cuesta acostumbrarse: el día libre da culpa y la charla, fiaca. A la tercera semana empieza a rendir.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "salud_despues_del_colapso",
+                "values": [
+                  "El split en que aprendiste a frenar",
+                  "La rutina que costó aceptar"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cambiar_de_aire",
+        "label": "Cambiar de aire",
+        "descripcion": "Irte unos meses al sur, a tu ritmo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Un mes frente al lago te devuelve las ganas. Volvés dorado de sol y con otra cabeza.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "salud_despues_del_colapso",
+                "values": [
+                  "Los meses lejos del cliente que te salvaron",
+                  "El día que elegiste respirar"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El aire cambia, la cabeza no tanto. Volvés a una ladder que no esperó y con el mismo cansancio.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "salud_despues_del_colapso",
+                "values": [
+                  "Los meses de huida que no sanaron nada",
+                  "El viaje que sirvió para entender"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 8
+      }
+    ],
+    "id": "salud_el_monje",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "salud",
+    "title": "El monje del scrim",
+    "description": "Un excampeón retirado te ofrece su rutina: cinco de la mañana, sin pantallas después de las ocho, un cuaderno de partidas.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "seguir_su_rutina",
+        "label": "Seguir su rutina",
+        "descripcion": "Disciplina de monasterio.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Dos meses después dormís como un lirón y entendés el juego en cámara lenta. El viejo te mira de lejos con una sonrisa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_monje"
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El primer mes es una tortura. Al segundo, ya no lo odiás, y al tercero lo defendés en el voice.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_monje"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "adaptarla_a_tu_manera",
+        "label": "Adaptarla a tu manera",
+        "descripcion": "Tomás lo que sirve y dejás el resto.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Agarrás el cuaderno y el despertador, pero no el resto. Sale una mezcla que solo funciona en vos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_monje"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "A la tercera semana ya no abrís el cuaderno. Te queda el despertador, nada más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_monje"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [
+      {
+        "field": "flags.caminos.playoffs",
+        "op": "eq",
+        "value": "salud_monje"
+      }
+    ],
+    "id": "salud_el_cuerpo_de_otro_nivel",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "salud",
+    "title": "Otro nivel",
+    "description": "Meses de rutina después, algo cambia: dormís, comés y jugás sin esfuerzo. El analista te muestra tus números: nunca estuvieron así.",
+    "weight": 12,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "compartir_la_rutina",
+        "label": "Compartir la rutina",
+        "descripcion": "Que el equipo entero se sume.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Los cinco empiezan a madrugar y el team se vuelve una máquina. Dos splits después, la gente habla de \"esa\" generación.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_monje_del_split",
+                "values": [
+                  "El split en que el equipo entero se volvió monje",
+                  "La rutina que cambió a una generación"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Dos del team abandonan a la semana y uno se queja del horario. Aguantan tres y igual mejoran.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_monje_del_split",
+                "values": [
+                  "La rutina que solo aguantaron tres",
+                  "El split en que predicaste con el ejemplo"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardarla_para_vos",
+        "label": "Guardarla para vos",
+        "descripcion": "Tu rutina es tu ventaja.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Nadie sabe por qué rendís tanto. Vos tampoco lo contás: el misterio es parte del personaje.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_monje_del_split",
+                "values": [
+                  "El split en que nadie entendió tu forma",
+                  "El misterio del jugador que dormía temprano"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El equipo huele el secreto y empiezan los comentarios en el voice. Ganás, pero con aire raro.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_monje_del_split",
+                "values": [
+                  "El split en que ganaste solo con tu secreto",
+                  "La forma que el equipo no te perdonó del todo"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 10
+      }
+    ],
+    "id": "salud_la_voz_en_la_cabeza",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "salud",
+    "title": "La voz en la cabeza",
+    "description": "Después de cada derrota, una voz repite la jugada. Ya no la podés apagar ni en la ducha.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "hablarlo_con_tu_vieja",
+        "label": "Hablarlo con tu vieja",
+        "descripcion": "Llamada larga, de las que cuestan.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Tu vieja te escucha sin decir \"dejá el juego\". Con eso alcanza para que la voz baje el volumen.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_voz"
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La llamada termina con ella preocupada y vos arrepentido. Igual, la voz queda más tranquila.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -2,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_voz"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ahogarla_con_ladder",
+        "label": "Ahogarla con ladder",
+        "descripcion": "Si no podés callarla, jugá más fuerte.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 3,
+            "texto": "Tres días seguidos de ranked y la voz se apaga a las cinco de la mañana. Te dormís sobre el teclado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 0,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_voz"
+              }
+            ]
+          },
+          {
+            "weight": 7,
+            "texto": "La voz se pone más fuerte con cada derrota. Al décimo día jugás con auriculares sin música, para oírla mejor.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -8,
+                "max": -5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "salud_voz"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_salud",
+    "conditions": [
+      {
+        "field": "flags.caminos.playoffs",
+        "op": "eq",
+        "value": "salud_voz"
+      }
+    ],
+    "id": "salud_la_charla_que_cambio_todo",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "salud",
+    "title": "La charla",
+    "description": "Tu coach te cita a solas: sabe lo de la voz, y cuenta que a él le pasó lo mismo en sus años de jugador.",
+    "weight": 12,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "escucharlo_entero",
+        "label": "Escucharlo entero",
+        "descripcion": "Una hora, sin celular.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Te cuenta cómo aprendió a ponerle nombre a la voz. Salís con una herramienta y con un amigo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_charla_del_coach",
+                "values": [
+                  "La charla con el coach que apagó la voz",
+                  "El día que supiste que no eras el único"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La charla se estira y a la mitad ya no escuchás. Pero la intención queda en el aire y vuelve cuando la necesitás.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_charla_del_coach",
+                "values": [
+                  "La charla del coach que entendiste meses después",
+                  "El consejo que llegó tarde y bien"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cortar_la_charla",
+        "label": "Cortar la charla",
+        "descripcion": "Ya lo estás manejando solo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 3,
+            "texto": "Le agradecés y te vas. Esa noche, solo, aprendés lo que él quería contarte. A tu manera, pero lo aprendés.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_charla_del_coach",
+                "values": [
+                  "La charla que cortaste y aprendiste solo",
+                  "El día que dijiste que no necesitabas ayuda"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 7,
+            "texto": "Te vas y la voz vuelve esa noche. El coach te mira desde el pasillo y no insiste, pero toma nota.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_charla_del_coach",
+                "values": [
+                  "La charla que cortaste y la voz que volvió",
+                  "El día que el orgullo pesó más que la ayuda"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
