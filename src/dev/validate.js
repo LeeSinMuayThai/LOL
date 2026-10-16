@@ -13624,8 +13624,11 @@ checkLento('K0 cierre de año: la tarjeta "Cierre de …" y su pausa salen en lo
   if (problemas.length > 0) {
     throw new Error(`${problemas.length} problemas: ${problemas.slice(0, 5).join(' | ')}`);
   }
-  if (total.tarjetas < 20 || total.conParada < 100 || total.carteles < 500 || total.cartelesDeAnioNuevo < 150) {
-    throw new Error(`check vacío: ${total.tarjetas} tarjetas de año (20), ${total.conParada} años con parada (100), ${total.carteles} carteles (500), ${total.cartelesDeAnioNuevo} de año nuevo (150)`);
+  // H2a: todos los años tienen su mano (`edadCierre.aplicar` frena siempre), así que ya no hay años de la muestra sin parada: la
+  // tarjeta "Cierre de …" sale solo si el motor no frena (`cierreFrenado: false`), y esa rama la prueba el bucle de arriba con cada año
+  // frenado ("sin cierreFrenado la tarjeta del año tenía que salir"). Lo que sí tiene que ser positivo es esa cuenta.
+  if (total.conParada < 100 || total.carteles < 500 || total.cartelesDeAnioNuevo < 150) {
+    throw new Error(`check vacío: ${total.conParada} años con parada (100), ${total.carteles} carteles (500), ${total.cartelesDeAnioNuevo} de año nuevo (150)`);
   }
   console.log(`      ${total.tarjetas} años cerraron sin parada (tarjeta "Cierre de …" y pausa) y ${total.conParada} con la parada de edadCierre: ${Math.round((100 * total.tarjetas) / (total.tarjetas + total.conParada))}% de los cierres necesitan la pausa propia; ${total.carteles} carteles contra el motor`);
 });
