@@ -1,0 +1,414 @@
+[
+  {
+    "id": "am_parar_dos_semanas",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Parar dos semanas",
+    "linea": "Volvés con ganas, no con culpa",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_cola_vacia",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Cola vacía, a subir",
+    "linea": "El mejor momento del año para farmear",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_vods_y_campeon_nuevo",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "VODs y campeón nuevo",
+    "linea": "Dos semanas pegado a las replays",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_fecha_y_objetivo",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Fecha y objetivo",
+    "linea": "Les prometés elo y lo cumplís",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_colegio_primero",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Colegio primero, ranked después",
+    "linea": "Ordenás todo y la cabeza respira",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_mensajes_de_scouts",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Mostrarles los scouts",
+    "linea": "Los DMs de los equipos hablan solos",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_un_ano_mas",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {
+      "ladder": [
+        "medio"
+      ]
+    },
+    "titulo": "Un año más",
+    "linea": "Todo el tiempo libre, en la cola",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_plan_b",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {
+      "ladder": [
+        "medio"
+      ]
+    },
+    "titulo": "Abrir un plan B",
+    "linea": "Mirar otra cosa te saca el peso",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_stream_y_equipo",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {
+      "ladder": [
+        "medio"
+      ]
+    },
+    "titulo": "Stream y equipo amateur",
+    "linea": "Salís del anonimato, cueste lo que cueste",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_lo_que_falta",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {
+      "edadMin": 17
+    },
+    "titulo": "Lo que te falta",
+    "linea": "Anotás cada error de rotación",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_lo_ya_logrado",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {
+      "edadMin": 17
+    },
+    "titulo": "Lo que ya lograste",
+    "linea": "Mirar atrás para no quemarte",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_tryouts_abiertos",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {
+      "edadMin": 17
+    },
+    "titulo": "Tryouts abiertos",
+    "linea": "Dejás de contar y te anotás",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_duo_con_el_top",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Duo con el top",
+    "linea": "Te enseñó a ganar el lado fuerte",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_scrims_del_barrio",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Scrims con el barrio",
+    "linea": "Cinco amigos, un Discord y cero excusas",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_smurf_para_practicar",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Smurf para practicar",
+    "linea": "Cuenta nueva, pool nuevo, cero presión",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_revisar_derrotas",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Revisar las derrotas",
+    "linea": "Cada muerte tonta, anotada y corregida",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_primer_dragon",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Llamar el primer dragón",
+    "linea": "Hablás cuando nadie quería hacerlo",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_coach_del_cyber",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "El coach del cyber",
+    "linea": "Un ex-pro te corrige la rotación",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_mes_sin_perder",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Un mes sin perder",
+    "linea": "La cola se te acomoda de golpe",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_scout_de_academy",
+    "rareza": "epica",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Te mira un scout",
+    "linea": "Un analista de academy sigue tus partidas",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ]
+  }
+]

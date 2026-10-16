@@ -1,0 +1,330 @@
+[
+  {
+    "id": "t1_leer_el_year_review",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Leer el year review",
+    "linea": "Párrafo por párrafo, sin saltearte nada",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_no_abrir_el_link",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "No abrir el link",
+    "linea": "Lo que no leés no te pesa",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t1_poner_tu_version",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Poner tu versión",
+    "linea": "Respondés en redes y te escuchan",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t1_pelicula_con_el_analista",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Película con el analista",
+    "linea": "Ven juntos cada objetivo del último split",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_briefing_previo",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Briefing antes de jugar",
+    "linea": "Llevás el plan A, el B y el C",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t1_swap_con_el_soporte",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Swap con el soporte",
+    "linea": "Cambian de carril y ganan prioridad",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_pausa_de_cinco_dias",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Pausa de cinco días",
+    "linea": "El club te da aire entre torneos",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t1_mil_repeticiones",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Mil repeticiones",
+    "linea": "Entrenás el mismo combo hasta que sale solo",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_estudiar_a_los_coreanos",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Estudiar a los coreanos",
+    "linea": "Mirás cómo leen el mapa en la LCK",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_comms_con_tu_jungla",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Comms con tu jungla",
+    "linea": "Dos horas de charla, ni una discusión",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t1_playbook_a_medida",
+    "rareza": "rara",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Playbook a medida",
+    "linea": "El cuerpo técnico arma el mapa para vos",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_fase_de_lineas_perfecta",
+    "rareza": "rara",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Fase de líneas perfecta",
+    "linea": "Ganás los matchups más duros del meta",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_final_bajo_presion",
+    "rareza": "rara",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Final bajo presión",
+    "linea": "Jugás con la cabeza despejada",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t1_campeon_de_carril",
+    "rareza": "epica",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Dueño del carril",
+    "linea": "Nadie te gana la lane en todo el año",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_todo_o_nada",
+    "rareza": "legendaria",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Todo o nada",
+    "linea": "Un split de otra galaxia, y la cabeza lo paga",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "costo": {
+      "stat": "mentalidad",
+      "valor": [
+        -2,
+        -1
+      ]
+    },
+    "plan": "juego"
+  }
+]

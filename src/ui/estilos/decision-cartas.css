@@ -433,3 +433,24 @@ html[data-reducido] .cv-rara .cv-marco, html[data-reducido] .cv-gemas .on, html[
   .cv-raiz:not([data-forma='matriz']) .cv-ranura { --cv-arte: calc(var(--cv-ancho, 260px) * 0.4); }
   .cv-raiz:not([data-forma='matriz']) .cv-mano { padding: 10px 4px 16px; }
 }
+
+/* H2a (el mazo): el marco por rareza de la mano del año: gris, azul, violeta, dorado. */
+.cv-r-comun { --cv-rz: #8a919c; }
+.cv-r-rara { --cv-rz: #4aa3ff; }
+.cv-r-epica { --cv-rz: #a96bff; }
+.cv-r-legendaria { --cv-rz: var(--gold, #e8b84a); }
+.cv-r-comun .cv-marco, .cv-r-rara .cv-marco, .cv-r-epica .cv-marco, .cv-r-legendaria .cv-marco {
+  background: linear-gradient(165deg, var(--cv-rz) 0%, color-mix(in srgb, var(--cv-rz) 38%, transparent) 45%, color-mix(in srgb, var(--cv-rz) 16%, transparent) 100%);
+}
+.cv-r-rara.opcion.cv-carta { box-shadow: 0 18px 40px var(--sombra), 0 0 22px color-mix(in srgb, var(--cv-rz) 30%, transparent); }
+.cv-r-epica.opcion.cv-carta { box-shadow: 0 18px 40px var(--sombra), 0 0 28px color-mix(in srgb, var(--cv-rz) 40%, transparent); }
+.cv-r-legendaria.opcion.cv-carta { box-shadow: 0 18px 40px var(--sombra), 0 0 34px color-mix(in srgb, var(--cv-rz) 55%, transparent); }
+.cv-r-rara .cv-tag-rara, .cv-r-epica .cv-tag-rara, .cv-r-legendaria .cv-tag-rara { background: var(--cv-rz); color: var(--bg-void); }
+.cv-planteo[hidden] { display: none; }
+.cv-otra {
+  display: block; margin: 14px auto 0; padding: 10px 18px; border-radius: 999px; cursor: pointer;
+  font: 600 12px/1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-dim); background: transparent; box-shadow: inset 0 0 0 1px var(--linea);
+}
+.cv-otra:hover, .cv-otra:focus-visible { color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink-dim); }
+.cv-raiz.eligiendo .cv-otra { opacity: 0.4; pointer-events: none; }

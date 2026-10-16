@@ -10,6 +10,7 @@ import { etiquetaCampo } from '../../core/selectors.js';
 import { cierreDeSplit } from './escena.js';
 import { formaBeat } from '../../core/log.js';
 import { TODOS_LOS_EVENTOS } from '../../data/events/index.js';
+import { BALANCE } from '../../data/balance.js';
 import { bandaDeArraigoFicha, bandaDeHype, bandaDeJerarquia, nivelDelAnio, escaleraDeArraigo, escaleraDeJerarquia, escaleraDeHype, puntajeEnVivo } from '../../core/ficha.js';
 import { hechosDeCarrera, nivelDeCarrera, NIVELES } from '../../core/puntaje.js';
 import { conSplitPendienteAsentado } from '../../core/registro.js';
@@ -227,7 +228,7 @@ let catalogo = null;
 function claseDeEvento(nombre) {
   if (!catalogo) {
     catalogo = {
-      plan: TODOS_LOS_EVENTOS.filter((e) => e.cierreDeEdad).map((e) => patronDeTitulo(e.title)),
+      plan: [...TODOS_LOS_EVENTOS.filter((e) => e.cierreDeEdad).map((e) => patronDeTitulo(e.title)), patronDeTitulo(BALANCE.cartas.titulo)],
       bifurcacion: TODOS_LOS_EVENTOS.filter((e) => e.bifurcacion && !e.cierreDeEdad).map((e) => patronDeTitulo(e.title))
     };
   }
