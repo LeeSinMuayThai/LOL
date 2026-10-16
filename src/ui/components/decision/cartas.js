@@ -31,6 +31,7 @@ import { tonoDestino, tonoOrg, aplicarTono } from '../../fx/tono.js';
 import { emblema } from './emblema.js';
 import { quemar } from '../../fx/ceremonia.js';
 import { campeonesNombrados } from '../../core/mundo.js';
+import { mostrarLegendaria } from '../../fx/momento.js';
 import { ejeDe } from '../../core/ejes.js';
 import { rotuloDeDecision } from '../../formatoUi.js';
 import { crearCostura, equiposDelMundo } from '../costura.js';
@@ -60,7 +61,16 @@ const T = {
   viaje: 340,
   giro: 300,
   abre: 420,
-  contenido: 160
+  contenido: 160,
+  // H2b: la vuelta de las cartas de la mano (boca abajo, de a una; la legendaria, última y con pausa)
+  vuelta: 380,
+  pausaVuelta: 260,
+  pausaLegendaria: 640,
+  vueltaLegendaria: 900,
+  giroDorso: 170,
+  brote: 700,
+  chispas: 14,
+  chispaDist: 90
 };
 // El vuelo de la carta al repartirse y la inclinación máxima al apuntar (grados).
 const REPARTO = { y: 70, rotX: 22, escala: 0.9 };
@@ -95,7 +105,7 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
   const fx = () => mundo?.fx?.() ?? null;
 
   // ------------------------------------------------------------------ la cabecera
-  const raiz = el('section', { class: 'parada parada-decision cv-raiz', 'data-forma': forma, 'data-bisagra': lec.bisagra ? '' : null, 'data-costura': variante });
+  const raiz = el('section', { class: 'parada parada-decision cv-raiz', 'data-mano': esMano ? '' : null, 'data-forma': forma, 'data-bisagra': lec.bisagra ? '' : null, 'data-costura': variante });
   const col = el('div', { class: 'cv-col' });
   const rotuloCat = rotuloDeDecision(decision, estado);
   const rotuloTexto = el('span', { class: 'cv-rotulo-txt', text: esMatriz ? 'El plan del año' : rotuloDeEvento(decision) ?? rotuloCat.label });
@@ -199,7 +209,7 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
     return el('span', { class: 'cv-seguro', 'data-signo': s.valor > 0 ? 'sube' : s.valor < 0 ? 'baja' : 'cero', style: estiloEje(ejeDe(s.campo)), title: `${s.etiqueta}: ${s.valor > 0 ? 'lo mínimo que te llevás' : 'lo peor que te puede dejar'}` }, [
       icono(glifoDeCampo(s.campo)),
       el('b', { text: `${conSigno(s.valor)}${s.unidad ? ` ${s.unidad}` : ''}` }),
-      el('span', { text: `${nombre} ${s.valor > 0 ? 'seguro' : 'de piso'}` })
+      el('span', { text: esMano ? nombre : `${nombre} ${s.valor > 0 ? 'seguro' : 'de piso'}` })
     ]);
   };
   // G2b (una carta por año): el costo a la vista, otro stat de la ficha que la carta seguro te baja ("−2 Cabeza").
@@ -209,7 +219,7 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
     return el('span', { class: 'cv-seguro cv-costo', 'data-signo': 'baja', style: estiloEje(ejeDe(c.campo)), title: `${c.etiqueta}: lo que seguro te cuesta (puede ser más)` }, [
       icono(glifoDeCampo(c.campo)),
       el('b', { text: conSigno(c.valor) }),
-      el('span', { text: `${lector.nombreDeEje(c.campo)} de costo` })
+      el('span', { text: esMano ? lector.nombreDeEje(c.campo) : `${lector.nombreDeEje(c.campo)} de costo` })
     ]);
   };
   const avisoDe = (o) => (o.aviso?.texto ? el('span', { class: 'cv-aviso' }, [
@@ -250,6 +260,9 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
   const mano = el('div', { class: 'cv-mano', id: 'decisionOptions', role: 'group', 'aria-label': esMatriz ? 'El plan del año: opciones por eje' : 'Opciones', style: { '--cv-n': String(Math.max(1, total)) } });
   const cartas = [];
   const ranuras = [];
+  // H2b: la mano se reparte boca abajo y las cartas se dan vuelta de a una (sin movimiento, nacen boca arriba)
+  let repartiendo = esMano && !quieto();
+  const timersVuelta = [];
   // dos emblemas iguales en la misma mano (mismo eje y misma stat): el repetido cambia de composición y lleva acento
   const vistos = new Map();
   disponibles.forEach((o, i) => {
@@ -273,7 +286,7 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
       esMatriz ? null : costoDe(o),
       esMatriz ? barras(o) : (o.previa ?? []).length > (esMano ? 1 : 0) ? el('span', { class: 'eje-chips cv-chips' }, o.previa.map(chipDePrevia)) : null,
       esMatriz || esMano ? null : avisoDe(o),
-      planDe(o),
+      esMano ? null : planDe(o),
       el('span', { class: 'cv-pie' }, esMano ? [] : [gemas(o), pDe(o) != null ? medidorP(pDe(o)) : null])
     ]);
     const b = el('button', { type: 'button', class: `opcion cv-carta${esMano ? ` cv-r-${o.rareza ?? 'comun'}` : rara ? ' cv-rara' : ''}`, 'data-atajo': i < 4 ? String(i + 1) : null, 'data-id': o.id, 'data-eje': eje, 'data-arte': arte.tipo, 'aria-describedby': descId(i), style: estiloEje(eje) }, [
@@ -289,7 +302,8 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
       descOculta(o, i)
     ]);
     cartas.push(b);
-    const ranura = el('div', { class: 'cv-ranura' }, [el('i', { class: 'cv-halo', 'aria-hidden': 'true', style: estiloEje(eje) }), b]);
+    const ranura = el('div', { class: `cv-ranura${esMano ? ` cv-r-${o.rareza ?? 'comun'}` : ''}` }, [el('i', { class: 'cv-halo', 'aria-hidden': 'true', style: estiloEje(eje) }), b]);
+    if (repartiendo) ranura.append(el('span', { class: 'cv-reverso', 'aria-hidden': 'true' }, el('i')));
     ranuras.push(ranura);
     mano.append(ranura);
   });
@@ -463,6 +477,7 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
   if (otra) {
     const botonOtra = el('button', { type: 'button', class: 'cv-otra', text: `${otra.label} (quedan ${otra.quedan})` });
     botonOtra.addEventListener('click', () => {
+      if (repartiendo) { terminarReparto(); return; }
       if (elegido) return;
       elegido = true;
       raiz.classList.add('eligiendo');
@@ -537,10 +552,65 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
       r.querySelectorAll('.cv-mx-riel i').forEach((b, k) => animar(b, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: t + T.chips + k * T.chipPaso, dur: T.carta }));
     });
     entrar(inspector, T.inspector + d + ranuras.length * T.paso, 8);
+    if (repartiendo) programarVueltas(d);
+  }
+  // H2b: cada carta se da vuelta con el brillo de su rareza (rara azul, épica violeta, legendaria dorada con chispas); la
+  // legendaria va última, después de una pausa. Cualquier clic o tecla antes de que termine las da vuelta a todas de golpe.
+  const rarezaDe = (i) => disponibles[i]?.rareza ?? 'comun';
+  function voltear(i) {
+    const r = ranuras[i];
+    const rev = r?.querySelector('.cv-reverso');
+    if (!rev) return;
+    const rz = rarezaDe(i);
+    animar(rev, [{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { dur: T.giroDorso, easing: 'ease-in', fill: 'forwards' });
+    animar(cartas[i], [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: T.giroDorso, dur: T.giroDorso * 1.6, easing: EXPO });
+    timersVuelta.push(setTimeout(() => {
+      rev.remove();
+      if (rz === 'comun') return;
+      const brote = el('i', { class: 'cv-brote', 'aria-hidden': 'true' });
+      r.append(brote);
+      animar(brote, [{ opacity: 0.9, transform: 'scale(0.7)' }, { opacity: 0, transform: 'scale(1.35)' }], { dur: T.brote, easing: 'ease-out', forzar: true });
+      timersVuelta.push(setTimeout(() => brote.remove(), T.brote));
+      if (rz === 'legendaria') {
+        for (let c = 0; c < T.chispas; c++) {
+          const ang = (c / T.chispas) * Math.PI * 2 + 0.4;
+          const dist = T.chispaDist * (c % 2 ? 1 : 0.6);
+          const chispa = el('i', { class: 'cv-chispa', 'aria-hidden': 'true' });
+          r.append(chispa);
+          animar(chispa, [{ opacity: 1, transform: 'translate(-50%, -50%) scale(1)' }, { opacity: 0, transform: `translate(calc(-50% + ${Math.cos(ang) * dist}px), calc(-50% + ${Math.sin(ang) * dist}px)) scale(0.2)` }], { dur: T.brote, easing: 'ease-out', forzar: true });
+          timersVuelta.push(setTimeout(() => chispa.remove(), T.brote));
+        }
+      }
+    }, T.giroDorso));
+    if (rz === 'legendaria') {
+      sonido?.golpe?.();
+      timersVuelta.push(setTimeout(() => sonido?.flash?.(), T.giroDorso));
+    } else sonido?.[rz === 'comun' ? 'clic' : 'ding']?.();
+  }
+  function terminarReparto() {
+    if (!repartiendo) return;
+    repartiendo = false;
+    timersVuelta.splice(0).forEach(clearTimeout);
+    ranuras.forEach((r) => {
+      r.querySelectorAll('.cv-reverso, .cv-brote, .cv-chispa').forEach((x) => x.remove());
+    });
+    cartas.forEach((c) => c.getAnimations?.().forEach((a) => a.finish?.()));
+  }
+  function programarVueltas(d) {
+    const orden = ranuras.map((_, i) => i).sort((a, b) => (rarezaDe(a) === 'legendaria') - (rarezaDe(b) === 'legendaria') || a - b);
+    let t = T.cartas + d + ranuras.length * T.paso + T.carta + T.pausaVuelta;
+    orden.forEach((i, k) => {
+      const leg = rarezaDe(i) === 'legendaria';
+      if (leg && k > 0) t += T.pausaLegendaria;
+      timersVuelta.push(setTimeout(() => { if (raiz.isConnected) voltear(i); }, t));
+      t += leg ? T.vueltaLegendaria : T.vuelta;
+    });
+    timersVuelta.push(setTimeout(() => { repartiendo = false; }, t));
   }
   function abrirPanel({ instantaneo = false } = {}) {
     raiz.classList.remove('dc-espera');
     if (quieto() || instantaneo) {
+      terminarReparto();
       if (!elegido) titulo.focus({ preventScroll: true });
       return;
     }
@@ -556,6 +626,7 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
   let respuesta = null;
   function elegir(i) {
     if (elegido) return;
+    if (repartiendo) { terminarReparto(); return; }
     const o = disponibles[i];
     const carta = cartas[i];
     if (!o || !carta || carta.classList.contains('bloqueada')) return;
@@ -579,6 +650,13 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
     const tono = capa?.elegir(i) ?? null;
     if (tono) mundo?.tenir?.(tono);
     respuesta = { i, o };
+    // H2b: la legendaria elegida tiene su momento dorado antes de que el año siga
+    if (esMano && o.rareza === 'legendaria' && !quieto()) {
+      const sg = o.seguro;
+      mostrarLegendaria({ valor: sg && Number.isFinite(sg.valor) ? conSigno(sg.valor) : '', stat: sg ? lector.nombreDeEje(sg.campo) : '', titulo: o.label }, { sonido })
+        .then(() => responder({ opcionId: o.id }), () => responder({ opcionId: o.id }));
+      return;
+    }
     responder({ opcionId: o.id });
   }
 

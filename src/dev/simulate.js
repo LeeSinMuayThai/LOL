@@ -379,9 +379,10 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
     observacion.paradasPorEdad[st.age] = (observacion.paradasPorEdad[st.age] ?? 0) + 1;
     if (sistema.id === 'eventos' && decision.datos?.evento?.id) {
       observacion.eventosVistos.push(decision.datos.evento.id);
-      if (decision.datos.evento.id === 'mano_del_anio') {
-        observacion.manosDeCartas.push((decision.opciones ?? []).map((o) => o.carta).filter(Boolean).map((c) => ({ id: c.id, rareza: c.rareza ?? 'comun' })));
-      }
+    }
+    // H2b (D144): la mano la registra `edadCierre` (tipo `edadCierre:mano`), no `eventos`. Una "Otra mano" no se cuenta: el bot no la usa.
+    if (sistema.id === 'edadCierre' && decision.datos?.motivo === 'mano') {
+      observacion.manosDeCartas.push((decision.opciones ?? []).filter((o) => !o.cambio).map((o) => ({ id: o.id, rareza: o.rareza ?? 'comun' })));
     }
     if (st.age >= EDAD_COLA_DE_CARRERA) {
       observacion.frenadasCola += 1;
@@ -1851,6 +1852,7 @@ export function bloqueVariedad(observaciones) {
         manosPorCarrera: redondear(promedio(manos.map((m) => m.length)), 1),
         distintasPorCarrera: redondear(promedio(cartasPorCarrera.map((c) => c.size)), 1),
         mezclaDeRarezasMostrada: Object.fromEntries(Object.entries(mezcla).map(([r, n]) => [r, redondear((100 * n) / mostradas, 1)])),
+        carrerasConLegendariaPct: redondear((100 * manos.filter((m) => m.flat().some((c) => c.rareza === 'legendaria')).length) / total, 1),
         jaccardMediano: jaccardMediano(cartasPorCarrera)
       }
       : 'n/a'
