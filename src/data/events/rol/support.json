@@ -1,10 +1,11 @@
 [
   {
     "id": "support_nadie_te_vio",
+    "voz": "corta",
     "category": "rol_support",
     "categoria": "rutina",
-    "title": "Ganaron por vos y nadie lo sabe",
-    "description": "El ward que pusiste evitó una emboscada que nadie más vio venir. Tu equipo ganó la partida gracias a esa jugada, y en las estadísticas ni figura.",
+    "title": "Nadie vio tu ward",
+    "description": "El ward que pusiste evitó una emboscada que nadie más vio venir. Ganaron gracias a esa jugada, y en las estadísticas ni figura.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -16,8 +17,8 @@
     "options": [
       {
         "id": "señalarlo_vos_mismo",
-        "label": "Marcarlo vos en tu propio repaso",
-        "descripcion": "Ponés el clip y explicás por qué esa visión cambió el partido. Nadie más lo iba a hacer por vos.",
+        "label": "Marcarlo vos en el repaso",
+        "descripcion": "Ponés el clip y explicás la visión.",
         "weight": 5,
         "outcomes": [
           {
@@ -40,12 +41,12 @@
       {
         "id": "dejarlo_pasar",
         "label": "No decir nada",
-        "descripcion": "Sabés lo que hiciste. No necesitás que nadie más lo confirme.",
+        "descripcion": "Sabés lo que hiciste.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Te lo guardás para vos. Es una forma silenciosa de estar tranquilo con tu propio partido.",
+            "texto": "Te lo guardás. Es una forma silenciosa de estar tranquilo con tu propio partido.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
@@ -63,10 +64,11 @@
   },
   {
     "id": "support_no_te_siguen_la_llamada",
+    "voz": "corta",
     "category": "rol_support",
     "categoria": "rutina",
-    "title": "Ves la jugada y nadie te sigue",
-    "description": "Desde tu posición ves clarísimo que el equipo puede robar un objetivo grande. Lo pedís por el comm, y {adc} sigue farmeando como si no te hubiera escuchado.",
+    "title": "Nadie sigue tu llamada",
+    "description": "Desde tu posición ves claro que el equipo puede robar un objetivo grande. Lo pedís por comm y {adc} sigue farmeando como si nada.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -80,12 +82,12 @@
       {
         "id": "insistir_por_el_comm",
         "label": "Insistir hasta que te den bola",
-        "descripcion": "Repetís la llamada más fuerte. Puede que reaccionen a tiempo, o puede que sigan sin registrarte.",
+        "descripcion": "Repetís la llamada a los gritos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "A la segunda insistencia, {adc} reacciona y llegan a tiempo. La jugada sale, y la próxima vez te van a escuchar más rápido.",
+            "texto": "A la segunda insistencia {adc} reacciona y llegan a tiempo. La jugada sale, y la próxima te van a escuchar más rápido.",
             "effects": [
               { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
@@ -93,7 +95,7 @@
           },
           {
             "weight": 5,
-            "texto": "Nadie reacciona a tiempo y la ventana se cierra. Vos viste la jugada perfecta y el equipo ni se enteró de que existió.",
+            "texto": "Nadie reacciona a tiempo y la ventana se cierra. Viste la jugada perfecta y el equipo ni se enteró de que existió.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
@@ -102,8 +104,8 @@
       },
       {
         "id": "ir_solo",
-        "label": "Ir vos solo a buscarla",
-        "descripcion": "Si no te siguen, la jugás igual. Sin respaldo, el riesgo es todo tuyo.",
+        "label": "Ir vos solo",
+        "descripcion": "Si no te siguen, la jugás igual.",
         "weight": 5,
         "outcomes": [
           {
@@ -116,7 +118,7 @@
           },
           {
             "weight": 6,
-            "texto": "Sin respaldo, morís antes de terminar la jugada. En el review, la lectura queda como \"se fue solo\" y no como \"nadie lo siguió\".",
+            "texto": "Sin respaldo, morís antes de terminar la jugada. En el review queda se fue solo, no nadie lo siguió.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
             ]
@@ -127,10 +129,11 @@
   },
   {
     "id": "support_roam_o_babysit",
+    "voz": "corta",
     "category": "rol_support",
     "categoria": "rutina",
-    "title": "Tu ADC atrás, el mapa te reclama",
-    "description": "{adc} viene comiendo una fase de líneas dura y necesita que te quedes a cuidarlo. Al mismo tiempo, arriba y en mid hay jugadas para hacer si aparecés vos.",
+    "title": "Cuidar al ADC o roamear",
+    "description": "{adc} viene comiendo una fase de líneas dura y necesita que te quedes a cuidarlo. Arriba y en mid hay jugadas si aparecés vos.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -144,7 +147,7 @@
       {
         "id": "quedarte_a_cuidar",
         "label": "Quedarte a levantar a tu ADC",
-        "descripcion": "Priorizás recuperar a tu carry: lo escoltás, le prendés el CS, jugás para que vuelva al partido. El resto del mapa se las arregla sin vos.",
+        "descripcion": "Lo escoltás hasta que vuelva al partido.",
         "weight": 5,
         "outcomes": [
           {
@@ -169,13 +172,13 @@
       },
       {
         "id": "soltar_y_roamear",
-        "label": "Soltar el bot y jugar el mapa",
-        "descripcion": "Aceptás que tu ADC va a sufrir un rato y te vas a generar ventaja en otro lado. Si el resto del mapa crece, compensás lo que se pierde abajo.",
+        "label": "Soltar el bot y roamear",
+        "descripcion": "Tu ADC sufre un rato, vos generás ventaja.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Dos roams, dos kills, mid y top adelantados. {adc} la pasó mal veinte minutos pero el equipo está arriba en todo lo demás.",
+            "texto": "Dos roams, dos kills, mid y top adelantados. {adc} la pasó mal veinte minutos, pero el equipo está arriba en todo lo demás.",
             "effects": [
               { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -194,10 +197,11 @@
   },
   {
     "id": "support_la_vision_del_equipo",
+    "voz": "corta",
     "category": "rol_support",
     "categoria": "rutina",
     "title": "Sos el único que compra visión",
-    "description": "Mirás la tienda del equipo y los pinks los pagás siempre vos. Cuando estás muerto o sin oro, el mapa se apaga y nadie más lo enciende.",
+    "description": "Mirás la tienda del equipo y los pinks los pagás siempre vos. Cuando estás muerto o sin oro, el mapa se apaga y nadie lo enciende.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -210,15 +214,15 @@
     "options": [
       {
         "id": "hacerte_cargo_de_la_vision",
-        "label": "Asumir el mapa entero como tu trabajo",
-        "descripcion": "Dejás de esperar que los demás pongan wards y te volvés el que controla la visión del equipo solo. Es carga mental y oro que no va a tus items.",
+        "label": "Asumir la visión como tu trabajo",
+        "descripcion": "Carga mental y oro que no va a tus items.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
               "El equipo juega ciego menos cuando vos estás vivo, y aprenden a jugar alrededor de eso. Tu visión se vuelve un sistema, no un gasto.",
-              "Nadie más compra un pink en todo el año y no hace falta: el mapa lo prendés vos y el equipo confía en tus llamadas de visión."
+              "Nadie más compra un pink en todo el año y no hace falta: el mapa lo prendés vos y el equipo confía en tus llamadas."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 5, "clamp": [0, 100] },
@@ -227,7 +231,7 @@
           },
           {
             "weight": 4,
-            "texto": "Cargar la visión solo te deja siempre sin oro para items, y en las peleas se nota que sos el más pobre del mapa. El equipo ve, vos no pegás.",
+            "texto": "Cargar la visión solo te deja sin oro para items y en las peleas sos el más pobre. El equipo ve, vos no pegás.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -236,13 +240,13 @@
       },
       {
         "id": "exigir_que_compren_pinks",
-        "label": "Exigir que el resto también compre visión",
-        "descripcion": "Lo pedís en la reunión de equipo: un pink por rotación cada uno. Puede ordenar al equipo, o puede sonar a que le estás pasando tu trabajo a los demás.",
+        "label": "Exigir que todos compren visión",
+        "descripcion": "Un pink por rotación cada uno.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El equipo lo toma y la visión pasa a ser cosa de todos. Con oro libre para tus items, en las peleas ahora también pesás vos.",
+            "texto": "El equipo lo toma y la visión pasa a ser de todos. Con oro libre para tus items, en las peleas ahora también pesás vos.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.teamfight", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -261,10 +265,11 @@
   },
   {
     "id": "support_el_shotcaller",
+    "voz": "corta",
     "category": "rol_support",
     "categoria": "rutina",
     "title": "El equipo llama con tu voz",
-    "description": "Nadie más toma la iniciativa en el comm: cuando hay que decidir si se pelea o se cede, el equipo espera a que hables vos. Te volviste el shotcaller sin haberlo pedido.",
+    "description": "Nadie más toma la iniciativa en el comm: cuando hay que decidir pelear o ceder, el equipo espera que hables vos. Sos shotcaller sin haberlo pedido.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -278,14 +283,14 @@
       {
         "id": "tomar_el_comm",
         "label": "Hacerte cargo de las llamadas",
-        "descripcion": "Aceptás el rol: estudiás macro, ensayás llamadas claras y cortas, te preparás para cargar la cabeza del equipo además de tu propio juego.",
+        "descripcion": "Macro estudiado y llamadas claras y cortas.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
               "Tus llamadas son cortas y a tiempo y el equipo las sigue sin dudar. Con una sola voz clara, dejan de perder peleas por indecisión.",
-              "Te volvés el cerebro del equipo en vivo. Rinden mejor de lo que la suma de sus stats dice, y es por cómo los ordenás."
+              "Te volvés el cerebro del equipo en vivo. Rinden mejor de lo que dice la suma de sus stats, y es por cómo los ordenás."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.shotcalling", "min": 3, "max": 6, "clamp": [0, 100] },
@@ -303,20 +308,20 @@
       },
       {
         "id": "empujar_a_otro",
-        "label": "Empujar a que otro tome las llamadas",
-        "descripcion": "Creés que el shotcalling le corresponde a alguien con más visión de mapa desde su posición. Insistís en que el mid o la jungla agarren el comm.",
+        "label": "Empujar a otro al comm",
+        "descripcion": "El shotcalling le toca a quien ve más mapa.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El jungla toma el comm y le queda bien: vos te concentrás en jugar y las llamadas mejoran con alguien que ve toda la jungla.",
+            "texto": "El jungla toma el comm y le queda bien: vos jugás y las llamadas mejoran con alguien que ve toda la jungla.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Nadie más quiere el rol y el comm queda en silencio en los momentos clave. Sin una voz que ordene, las peleas se pierden por desarme.",
+            "texto": "Nadie más quiere el rol y el comm queda en silencio en los momentos clave. Sin una voz que ordene, las peleas se pierden.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -328,10 +333,11 @@
   },
   {
     "id": "support_el_engage_a_ciegas",
+    "voz": "corta",
     "category": "rol_support",
     "categoria": "rutina",
-    "title": "Engancharla y rezar que te sigan",
-    "description": "La composición de {org} necesita que vos abras las peleas. Cada engage es soltar el gatillo sin saber todavía si el equipo va a estar atrás para rematar.",
+    "title": "Engancharla y rezar",
+    "description": "La composición de {org} necesita que vos abras las peleas. Cada engage es soltar el gatillo sin saber si el equipo va a estar atrás para rematar.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -344,8 +350,8 @@
     "options": [
       {
         "id": "confiar_y_enganchar",
-        "label": "Tirar el engage y confiar en el equipo",
-        "descripcion": "Soltás la jugada en el momento que la ves, asumiendo que el equipo la va a leer y va a entrar. Si no te siguen, te comés la pelea solo.",
+        "label": "Tirar el engage y confiar",
+        "descripcion": "Soltás la jugada apenas la ves.",
         "weight": 5,
         "outcomes": [
           {
@@ -370,8 +376,8 @@
       },
       {
         "id": "esperar_confirmacion",
-        "label": "Esperar a tener la jugada confirmada",
-        "descripcion": "No enganchás hasta escuchar que el equipo está listo y en posición. Más peleas ordenadas, y muchas ventanas de engage que se cierran mientras confirmás.",
+        "label": "Esperar la confirmación del equipo",
+        "descripcion": "No enganchás hasta que estén listos y en posición.",
         "weight": 5,
         "outcomes": [
           {
@@ -394,10 +400,11 @@
   },
   {
     "id": "support_enchanter_o_tanque",
+    "voz": "corta",
     "category": "rol_support",
     "categoria": "rutina",
-    "title": "Escudo para el carry o iniciar las peleas",
-    "description": "El draft de {org} te deja elegir tu identidad del partido: enchanter que mantiene vivo al ADC, o tanque que va al frente y crea las jugadas. Dos trabajos distintos.",
+    "title": "Escudo o iniciar peleas",
+    "description": "El draft de {org} te deja elegir tu identidad en el partido: enchanter que mantiene vivo al ADC, o tanque que va al frente y crea las jugadas.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -410,15 +417,15 @@
     "options": [
       {
         "id": "jugar_enchanter",
-        "label": "Enchanter: tu ADC no se muere nunca",
-        "descripcion": "Ponés todo al servicio de mantener vivo al carry. Poca gloria, y si tu ADC no rinde, no tenés plan B.",
+        "label": "Enchanter: tu ADC no muere nunca",
+        "descripcion": "Poca gloria y sin plan B.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
               "Tu ADC sobrevive peleas que no tenía derecho a sobrevivir y termina cargando la serie. El escudo justo en el momento justo.",
-              "Nadie habla de vos y tu carry hace cuádruples. Eso, para un enchanter, es un partido perfecto."
+              "Nadie habla de vos y tu carry hace cuádruples. Para un enchanter, eso es un partido perfecto."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.teamfight", "min": 2, "max": 4, "clamp": [0, 100] },
@@ -427,7 +434,7 @@
           },
           {
             "weight": 4,
-            "texto": "Tu ADC no aparece y vos no tenés cómo generar nada por tu cuenta. Un enchanter atado a un carry que no rinde no existe en el partido.",
+            "texto": "Tu ADC no aparece y vos no tenés cómo generar nada por tu cuenta. Un enchanter atado a un carry que no rinde no existe.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -437,7 +444,7 @@
       {
         "id": "jugar_tanque",
         "label": "Tanque: vos creás las jugadas",
-        "descripcion": "Tomás la iniciativa del partido en tus manos: engages, peel bruto, presencia en el mapa. Más control, y un error tuyo de posición cuesta la pelea entera.",
+        "descripcion": "Más control, y un error tuyo cuesta la pelea.",
         "weight": 5,
         "outcomes": [
           {
@@ -461,10 +468,11 @@
   },
   {
     "id": "support_la_soloq_de_support",
+    "voz": "corta",
     "category": "rol_support",
     "categoria": "rutina",
     "title": "Cargar una partida desde support",
-    "description": "En soloQ el support es el rol que nadie agradece y todos culpan. Estás para ganar puntos y tenés que hacerlo desde el puesto con menos oro del mapa.",
+    "description": "En soloQ el support es el rol que nadie agradece y todos culpan. Tenés que ganar puntos desde el puesto con menos oro del mapa.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -477,8 +485,8 @@
       {
         "id": "carrilear_el_mapa",
         "label": "Tomar el mando del equipo random",
-        "descripcion": "Marcás objetivos, pingueás timings, ordenás a cuatro desconocidos como si fueran tu equipo. Si te hacen caso, ganás; si no, perdés igual pero con la conciencia limpia.",
-        "aviso": "Si nadie te sigue, perdés igual y te tiltás",
+        "descripcion": "Ordenás a cuatro desconocidos como si fueran tu equipo.",
+        "aviso": "Si nadie te sigue, perdés y te tiltás",
         "weight": 5,
         "outcomes": [
           {
@@ -502,8 +510,8 @@
       {
         "id": "jugar_lo_tuyo_support",
         "label": "Jugar lo tuyo, soltar el resto",
-        "descripcion": "Te concentrás solo en lo que controlás: visión impecable, roams limpios, cero muertes tontas. Lo que hagan los otros cuatro no es tu problema.",
-        "aviso": "Si el equipo pierde igual, perdés LP de todos modos",
+        "descripcion": "Visión impecable, roams limpios y cero muertes tontas.",
+        "aviso": "Si el equipo pierde igual, perdés LP",
         "weight": 5,
         "outcomes": [
           {
@@ -530,10 +538,11 @@
   },
   {
     "id": "support_el_carry_estrella",
+    "voz": "corta",
     "category": "rol_support",
     "categoria": "rutina",
-    "title": "Sos la niñera del pibe que promocionan",
-    "description": "El equipo de {org} gira alrededor de un {adc} joven al que la prensa ya trata de estrella. Tu trabajo, además de jugar, es mantenerle la cabeza en su lugar.",
+    "title": "Sos la niñera del pibe",
+    "description": "{org} gira alrededor de un {adc} joven que la prensa ya trata de estrella. Tu trabajo, además de jugar, es mantenerle la cabeza en su lugar.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -546,15 +555,15 @@
     "options": [
       {
         "id": "sostenerle_la_cabeza",
-        "label": "Hacer el trabajo de contención sin quejarte",
-        "descripcion": "Lo bancás en las malas, le marcás los errores en privado, absorbés su frustración para que llegue entero a los partidos. Es un rol invisible y agotador.",
+        "label": "Contenerlo sin quejarte",
+        "descripcion": "Absorbés su frustración para que llegue entero.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "El pibe rinde a su techo todo el año y buena parte es porque vos le sacaste el ruido de encima. El staff sabe quién sostuvo eso.",
-              "Nadie te lo agradece en público, pero el carry juega tranquilo y el equipo entero se apoya en esa calma que vos armaste."
+              "El pibe rinde a su techo todo el año y en buena parte es porque le sacaste el ruido. El staff sabe quién sostuvo eso.",
+              "Nadie te lo agradece en público, pero el carry juega tranquilo y el equipo entero se apoya en la calma que armaste."
             ],
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 4, "clamp": [0, 100] },
@@ -563,7 +572,7 @@
           },
           {
             "weight": 4,
-            "texto": "Cargar tu juego y la cabeza de otro todo el split te vacía. Llegás a playoffs vos con la mentalidad al límite.",
+            "texto": "Cargar tu juego y la cabeza de otro todo el split te vacía. Llegás a playoffs con la mentalidad al límite.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
@@ -573,19 +582,19 @@
       {
         "id": "marcar_el_limite",
         "label": "Ponerle límites de una vez",
-        "descripcion": "Le decís de frente que no sos su psicólogo, que baje la actitud de estrella y se ponga a laburar como el resto. Puede espabilarlo, o puede romper el bot.",
+        "descripcion": "Le decís que no sos su psicólogo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El pibe lo escucha viniendo de un par y no de un coach. Baja los humos, y el bot pasa a funcionar de igual a igual.",
+            "texto": "El pibe lo escucha viniendo de un par y no de un coach. Baja los humos, y el bot funciona de igual a igual.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Se lo toma como un ataque y el bot se enfría en el peor momento del split. Ahora además de niñera sos el que lo encaró.",
+            "texto": "Se lo toma como un ataque y el bot se enfría en el peor momento del split. Y encima sos el que lo encaró.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -4, "max": -2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }

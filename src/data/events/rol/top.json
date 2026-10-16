@@ -1,10 +1,11 @@
 [
   {
     "id": "top_splitpush_plan",
+    "voz": "corta",
     "category": "rol_top",
     "categoria": "rutina",
     "title": "El plan sos vos, solo",
-    "description": "El coach de {org} arma la jornada alrededor tuyo: split push todo el partido mientras el resto sostiene un 4v5 en el resto del mapa.",
+    "description": "El coach de {org} arma la jornada a tu alrededor: split push todo el partido mientras el resto sostiene un 4v5 en el mapa.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -18,12 +19,12 @@
       {
         "id": "confiar_en_el_plan",
         "label": "Confiar en el plan y meterle",
-        "descripcion": "Te vas solo a un lado del mapa sabiendo que si el resto pierde su pelea, el que se come la culpa sos vos.",
+        "descripcion": "Si el resto pierde, la culpa es tuya.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El plan funciona: abrís la base mientras el resto aguanta. {org} se lleva la jornada por una idea que te tocó ejecutar a vos.",
+            "texto": "El plan funciona: abrís la base mientras el resto aguanta. {org} se lleva la jornada por una idea que te tocó ejecutar.",
             "effects": [
               { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
@@ -31,7 +32,7 @@
           },
           {
             "weight": 4,
-            "texto": "El resto pierde su pelea antes de que termines de abrir nada. En el review, el plan \"fue una boludez\", y te toca escucharlo un rato largo.",
+            "texto": "El resto pierde su pelea antes de que abras nada. En el review el plan fue una boludez, y te toca escucharlo un buen rato.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -41,20 +42,20 @@
       },
       {
         "id": "pedir_jugar_junto",
-        "label": "Pedir jugar más pegado al grupo",
-        "descripcion": "Le decís al coach que no te cierra estar tan solo. Puede sonar prudente, o puede sonar a que no confiás en tu propio juego.",
+        "label": "Pedir jugar pegado al grupo",
+        "descripcion": "No te cierra estar tan solo.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "El coach ajusta el plan y jugás más cerca del grupo. Nadie te lo reprocha; tampoco es la jornada que se va a recordar.",
+            "texto": "El coach ajusta el plan y jugás más cerca del grupo. Nadie te lo reprocha; tampoco es la jornada que se recuerda.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "Se ajusta el plan, pero queda flotando en el grupo la sensación de que te achicaste.",
+            "texto": "Se ajusta el plan, pero queda flotando la sensación de que te achicaste.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -66,10 +67,11 @@
   },
   {
     "id": "top_recorte_sin_contexto",
+    "voz": "corta",
     "category": "rol_top",
     "categoria": "rutina",
-    "title": "El streamer te sacó de contexto",
-    "description": "Un streamer grande recorta tu peor teamfight de las últimas semanas y lo sube sin la jugada anterior que la explica. El clip se ve más que cualquier cosa buena que hiciste en el año.",
+    "title": "Te sacaron de contexto",
+    "description": "Un streamer grande recorta tu peor teamfight de las últimas semanas y lo sube sin la jugada que la explica. El clip se ve más que todo tu año.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -84,7 +86,7 @@
       {
         "id": "contestarle_con_contexto",
         "label": "Subir el video completo",
-        "descripcion": "Le ganás el argumento mostrando la jugada entera. También le das más aire al tema.",
+        "descripcion": "Mostrás la jugada entera, aunque le das más aire.",
         "weight": 5,
         "outcomes": [
           {
@@ -97,7 +99,7 @@
           },
           {
             "weight": 4,
-            "texto": "Nadie mira un video de ocho minutos. El recorte de dos segundos ya ganó la pelea antes de que empezaras a jugarla.",
+            "texto": "Nadie mira un video de ocho minutos. El recorte de dos segundos ya ganó la pelea antes de que empezaras.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -107,7 +109,7 @@
       {
         "id": "no_darle_bola",
         "label": "Dejarlo pasar",
-        "descripcion": "El tema muere solo si nadie lo alimenta.",
+        "descripcion": "Si nadie lo alimenta, muere solo.",
         "weight": 5,
         "outcomes": [
           {
@@ -119,7 +121,7 @@
           },
           {
             "weight": 3,
-            "texto": "Se comenta un par de días más de lo que esperabas, pero al final se apaga solo.",
+            "texto": "Se comenta un par de días más de lo esperado, pero al final se apaga solo.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -130,10 +132,11 @@
   },
   {
     "id": "top_weakside_de_por_vida",
+    "voz": "corta",
     "category": "rol_top",
     "categoria": "rutina",
-    "title": "Siempre te toca el lado débil",
-    "description": "El plan de {org} es el mismo todos los partidos: la jungla y los recursos van abajo, y vos aguantás arriba con lo justo. Sos bueno, pero nadie lo ve porque nunca te dejan jugar para ganar.",
+    "title": "El lado débil de por vida",
+    "description": "El plan de {org} es el mismo siempre: jungla y recursos van abajo y vos aguantás arriba con lo justo. Sos bueno, pero nadie lo ve.",
     "weight": 6,
     "cooldown": 6,
     "contexto": {
@@ -146,8 +149,8 @@
     "options": [
       {
         "id": "abrazar_el_rol",
-        "label": "Hacerte el mejor del mundo aguantando",
-        "descripcion": "Aceptás el trabajo sucio y te ponés a estudiar cómo sobrevivir 1v2 sin ceder nada. Es una carrera que no da highlights, pero te vuelve indispensable.",
+        "label": "Ser el mejor aguantando",
+        "descripcion": "Estudiás cómo sobrevivir 1v2 sin ceder nada.",
         "weight": 5,
         "outcomes": [
           {
@@ -163,7 +166,7 @@
           },
           {
             "weight": 4,
-            "texto": "Aguantás bien, pero el estilo te va apagando: hace un año que no jugás un partido para vos y se te empieza a notar en las ganas.",
+            "texto": "Aguantás bien, pero el estilo te apaga: hace un año que no jugás un partido para vos y se te nota en las ganas.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -172,13 +175,13 @@
       },
       {
         "id": "pedir_recursos",
-        "label": "Pedirle al coach que a veces jueguen para vos",
-        "descripcion": "Le planteás que si nunca te dan nada, tu techo como jugador se estanca. Puede que lo escuchen, o que te vean como alguien que no entiende el rol moderno.",
+        "label": "Pedir que jueguen para vos",
+        "descripcion": "Si nunca te dan nada, tu techo se estanca.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El coach prueba un par de drafts con jungla arriba y explotás: se ve que tenías más para dar de lo que el plan te dejaba mostrar.",
+            "texto": "El coach prueba un par de drafts con jungla arriba y explotás: tenías más para dar de lo que el plan dejaba mostrar.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.teamfight", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -186,7 +189,7 @@
           },
           {
             "weight": 5,
-            "texto": "Te contestan que el equipo gana así y que tu trabajo es aguantar. Queda flotando que sos el que se quejó del plan que funciona.",
+            "texto": "Te contestan que el equipo gana así y que tu trabajo es aguantar. Quedás como el que se quejó del plan que funciona.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -198,10 +201,11 @@
   },
   {
     "id": "top_te_contrapickean_siempre",
+    "voz": "corta",
     "category": "rol_top",
     "categoria": "rutina",
-    "title": "Te leen el pick antes de que lo bloquees",
-    "description": "El rival de {org} de esta semana tiene lado azul y ya avisó en prensa que va a esperar tu campeón para contrapickearlo. Tu pool quedó a la vista.",
+    "title": "Te leen el pick",
+    "description": "El rival de {org} de esta semana tiene lado azul y avisó en prensa que va a esperar tu campeón para contrapickearlo. Tu pool quedó a la vista.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -214,14 +218,14 @@
     "options": [
       {
         "id": "pickear_flex",
-        "label": "Traer un pick flexible que no se pueda contrar",
-        "descripcion": "Preparás un campeón que sirve en varios matchups para que el contrapick no tenga a qué apuntar. Te obliga a jugar algo fuera de tu zona de confort.",
+        "label": "Traer un pick flexible",
+        "descripcion": "Un campeón que sirve en varios matchups.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "El flex les rompe el plan: se quedan con el contrapick en la mano y no sirve para nada. Ganaste el draft antes de cargar la partida.",
+              "El flex les rompe el plan: se quedan con el contrapick en la mano y no sirve para nada. Ganaste el draft antes de cargar.",
               "No tienen respuesta buena y terminan pickeando a ciegas ellos. El que quedó cómodo en la línea sos vos."
             ],
             "effects": [
@@ -230,7 +234,7 @@
           },
           {
             "weight": 4,
-            "texto": "El flex es sólido pero no lo tenés afilado, y en la línea se nota: dejás pasar dos ventajas que con tu pool de siempre convertías.",
+            "texto": "El flex es sólido pero no lo tenés afilado, y en la línea se nota: dejás pasar dos ventajas que con tu pool convertías.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -239,8 +243,8 @@
       },
       {
         "id": "bancar_el_confort",
-        "label": "Pickear tu campeón y ganar el matchup igual",
-        "descripcion": "Les das el contrapick y te la jugás a que tu ejecución sea mejor que la ventaja de draft que les regalaste.",
+        "label": "Pickear tu campeón igual",
+        "descripcion": "Te la jugás a que tu ejecución alcance.",
         "weight": 5,
         "outcomes": [
           {
@@ -253,7 +257,7 @@
           },
           {
             "weight": 5,
-            "texto": "El contrapick hace exactamente lo que tiene que hacer y pasás la línea entera bajo torre. Les regalaste la ventaja y la cobraron.",
+            "texto": "El contrapick hace exactamente lo que tiene que hacer y pasás la línea bajo torre. Les regalaste la ventaja y la cobraron.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
@@ -264,10 +268,11 @@
   },
   {
     "id": "top_el_tp_ahora",
+    "voz": "corta",
     "category": "rol_top",
     "categoria": "rutina",
     "title": "La llamada del teleport",
-    "description": "Abajo se está por armar una pelea 2v2 y tenés el TP listo. Si bajás, tu ola choca en torre y perdés medio nivel; si te quedás, el equipo pelea en desventaja.",
+    "description": "Abajo se arma una pelea 2v2 y tenés el TP listo. Si bajás, tu ola choca en torre y perdés medio nivel; si te quedás, el equipo pelea en desventaja.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -280,14 +285,14 @@
     "options": [
       {
         "id": "bajar_el_tp",
-        "label": "Tirar el TP y jugar con el equipo",
-        "descripcion": "Sacrificás tu propia línea para darle al equipo una ventaja numérica abajo. Si la pelea sale, el mapa se abre; si no, tiraste el TP y la ola.",
+        "label": "Tirar el TP y bajar",
+        "descripcion": "Sacrificás tu línea para ganar el 2v3 abajo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "Caés justo atrás de ellos: doble kill, primer dragón y el bot enemigo con el cooldown de flash en la cara. El TP valió tres olas.",
+              "Caés justo atrás de ellos: doble kill, primer dragón y el bot enemigo sin flash. El TP valió tres olas.",
               "La pelea se da vuelta apenas aparecés. El equipo se lleva el objetivo y vos volvés arriba con la ola perdida y una sonrisa."
             ],
             "effects": [
@@ -306,13 +311,13 @@
       },
       {
         "id": "guardar_el_tp",
-        "label": "Guardar el TP y seguir tu línea",
-        "descripcion": "Confiás en que el equipo aguante abajo y priorizás no perder tu propio desarrollo. Frío y correcto, salvo que abajo se prenda fuego.",
+        "label": "Guardar el TP, seguir tu línea",
+        "descripcion": "Frío y correcto, salvo que abajo se prenda fuego.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Abajo se defienden solos, y vos llegás a nivel seis con la ola empujada y el TP disponible para la próxima. Elegiste bien.",
+            "texto": "Abajo se defienden solos y llegás a nivel seis con la ola empujada y el TP para la próxima. Elegiste bien.",
             "effects": [
               { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.laneo", "min": 1, "max": 2, "clamp": [0, 100] }
@@ -320,7 +325,7 @@
           },
           {
             "weight": 5,
-            "texto": "Abajo mueren los dos y el comm te pregunta dónde estabas. Tenías el TP y la respuesta \"seguía mi ola\" no cae bien en el review.",
+            "texto": "Abajo mueren los dos y el comm te pregunta dónde estabas. Seguía mi ola no cae bien en el review.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -331,10 +336,11 @@
   },
   {
     "id": "top_tanque_o_carry",
+    "voz": "corta",
     "category": "rol_top",
     "categoria": "rutina",
     "title": "El meta quiere que seas muro",
-    "description": "El parche empujó a los tanques a la cima de la línea y el coach de {org} te quiere ahí. Vos sos carry top de toda la vida: la mitad de tu valor está en llevarte partidos al hombro.",
+    "description": "El parche empujó a los tanques a la cima y el coach de {org} te quiere ahí. Sos carry top de toda la vida: llevás partidos al hombro.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -347,15 +353,15 @@
     "options": [
       {
         "id": "aprender_el_tanque",
-        "label": "Tragarte el ego y aprender a jugar de muro",
-        "descripcion": "Le metés semanas de scrims a iniciar peleas y absorber daño en vez de repartirlo. Es la jugada de equipo, aunque te cueste mirarte en el reemplazo.",
+        "label": "Tragarte el ego y ser muro",
+        "descripcion": "Semanas de scrims iniciando y absorbiendo daño.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
               "Terminás siendo un tanque de élite: engages limpios, peel para el carry, un frontline que el equipo no tenía. Ganaste versatilidad de verdad.",
-              "Odiás jugarlo y aun así lo hacés bien. El equipo sube un escalón porque ahora tenés dos formas de ganar en vez de una."
+              "Odiás jugarlo y aun así lo hacés bien. El equipo sube un escalón porque ahora tenés dos formas de ganar."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 3, "max": 6, "clamp": [0, 100] },
@@ -364,7 +370,7 @@
           },
           {
             "weight": 4,
-            "texto": "Jugás el tanque a reglamento pero sin chispa, y tu impacto en los partidos baja. Sos un muro correcto y nada más.",
+            "texto": "Jugás el tanque a reglamento pero sin chispa, y tu impacto baja. Sos un muro correcto y nada más.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -373,13 +379,13 @@
       },
       {
         "id": "insistir_con_el_carry",
-        "label": "Pelear por seguir jugando para ganar líneas",
-        "descripcion": "Le decís al coach que tu valor es cargar partidos y que un tanque cualquiera lo juega. Te la jugás a que el meta también premie a los que rompen la línea.",
+        "label": "Insistir con el carry",
+        "descripcion": "Un tanque cualquiera lo juega, vos rompés líneas.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El coach te deja un par de drafts de carry y te llevás dos partidos solo. Queda claro que sacarte de eso era desperdiciarte.",
+            "texto": "El coach te deja un par de drafts de carry y te llevás dos partidos solo. Sacarte de eso era desperdiciarte.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -387,7 +393,7 @@
           },
           {
             "weight": 5,
-            "texto": "El meta no te acompaña: tus carrys se mueren contra composiciones que no se rompen 1v9, y el equipo paga tu insistencia.",
+            "texto": "El meta no te acompaña: tus carrys mueren contra composiciones que no se rompen 1v9, y el equipo paga tu insistencia.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
               { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -399,10 +405,11 @@
   },
   {
     "id": "top_solo_en_el_mapa",
+    "voz": "corta",
     "category": "rol_top",
     "categoria": "rutina",
-    "title": "Media hora sin que nadie te nombre",
-    "description": "Llevás treinta minutos jugando la línea más aislada del mapa. El comm habla de abajo, de la jungla, de los objetivos: de tu lado del mapa, nadie dice una palabra.",
+    "title": "Media hora sin que te nombren",
+    "description": "Llevás treinta minutos en la línea más aislada del mapa. El comm habla de abajo, de la jungla, de los objetivos; de tu lado, nadie dice nada.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -417,15 +424,15 @@
     "options": [
       {
         "id": "hacerte_cargo_del_lado",
-        "label": "Tomar tu lado del mapa como tu responsabilidad",
-        "descripcion": "Dejás de esperar llamadas y te volvés el que informa: dónde está el TP rival, cuándo se puede forzar, qué ola va a chocar. Convertís el aislamiento en autonomía.",
+        "label": "Tomar tu lado como responsabilidad",
+        "descripcion": "Te volvés el que informa, no el que espera.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
               "El comm empieza a confiar en tu lectura del lado izquierdo sin chequearla. Te ganaste un pedazo del mapa que ahora es tuyo.",
-              "Nadie te nombra porque no hace falta: tu lado funciona solo y el equipo puede mirar para otro lado tranquilo. Eso es jerarquía."
+              "Nadie te nombra porque no hace falta: tu lado funciona solo y el equipo mira para otro lado tranquilo. Eso es jerarquía."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] },
@@ -434,7 +441,7 @@
           },
           {
             "weight": 4,
-            "texto": "Tomás la responsabilidad pero el silencio igual pesa: jugás bien y volvés al hotel sintiendo que nadie se enteró.",
+            "texto": "Tomás la responsabilidad pero el silencio pesa igual: jugás bien y volvés al hotel sintiendo que nadie se enteró.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -443,20 +450,20 @@
       },
       {
         "id": "reclamar_atencion",
-        "label": "Pedir por comm que te tengan en cuenta",
-        "descripcion": "Cortás el silencio y decís que estás ganando y que se puede jugar por arriba. Puede ordenar al equipo, o puede sonar a que necesitás que te miren.",
+        "label": "Pedir por comm que te miren",
+        "descripcion": "Decís que estás ganando y que se juega por arriba.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El equipo redirige un par de jugadas a tu lado y resulta que tenías razón: había oro tirado arriba que nadie estaba juntando.",
+            "texto": "El equipo redirige un par de jugadas a tu lado y tenías razón: había oro tirado arriba que nadie juntaba.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Te contestan que aguantes, que abajo está el partido. Quedás como el que interrumpe las llamadas importantes para hablar de su línea.",
+            "texto": "Te contestan que aguantes, que el partido está abajo. Quedás como el que interrumpe llamadas importantes para hablar de su línea.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -467,10 +474,11 @@
   },
   {
     "id": "top_el_1v2_constante",
+    "voz": "corta",
     "category": "rol_top",
     "categoria": "rutina",
-    "title": "El jungla rival vive en tu línea",
-    "description": "Tres partidas seguidas de soloQ el jungla enemigo aparece arriba antes del minuto cuatro. Podés seguir jugando parado como si nada o cambiarte el estilo entero.",
+    "title": "Ganks constantes arriba",
+    "description": "Tres partidas seguidas de soloQ el jungla enemigo aparece arriba antes del minuto cuatro. Podés seguir parado como si nada o cambiar el estilo entero.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -482,15 +490,15 @@
     "options": [
       {
         "id": "ajustar_el_estilo",
-        "label": "Jugar seguro, pedir ayuda a jungla",
-        "descripcion": "Cedés algo de farm, jugás cerca de torre y trackeás al jungla rival vos mismo. Menos ventaja de línea, muchas menos muertes regaladas.",
-        "aviso": "Si jugás muy atrás, igual te pasan por arriba y perdés LP",
+        "label": "Jugar seguro y pedir ayuda",
+        "descripcion": "Cedés algo de farm y trackeás vos al jungla.",
+        "aviso": "Si jugás muy atrás, te pasan por arriba",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "Dejás de morir en ganks y el jungla rival pierde tiempo arriba para nada. Sin ventaja y sin déficit, el partido lo deciden en otro lado.",
+              "Dejás de morir en ganks y el jungla rival pierde tiempo arriba para nada. El partido se decide en otro lado.",
               "Jugás la línea como un problema de gestión y no de ego. Salís vivo de todos los ganks y el LP lo agradece."
             ],
             "effects": [
@@ -510,13 +518,13 @@
       {
         "id": "seguir_forzando",
         "label": "Seguir parado y ganar la línea",
-        "descripcion": "No te achicás: seguís peleando cada trade asumiendo que a veces te va a costar la vida. Si aguantás la varianza, subís rápido.",
+        "descripcion": "Peleás cada trade aunque a veces cueste la vida.",
         "aviso": "Si los ganks te agarran, regalás kills y LP",
         "weight": 5,
         "outcomes": [
           {
             "weight": 4,
-            "texto": "Ganás los trades tan fuerte que ni tres ganks alcanzan para frenarte. Cerrás la línea y el partido desde arriba.",
+            "texto": "Ganás los trades tan fuerte que ni tres ganks te frenan. Cerrás la línea y el partido desde arriba.",
             "effects": [
               { "type": "stat", "path": "player.stats.laneo", "min": 3, "max": 5, "clamp": [0, 100] },
               { "type": "ladder", "path": "player.ranked", "min": 15, "max": 28 }
@@ -536,10 +544,11 @@
   },
   {
     "id": "top_el_nombre_de_la_linea",
+    "voz": "corta",
     "category": "rol_top",
     "categoria": "rutina",
-    "title": "Enfrente está el que reinó la línea diez años",
-    "description": "El top de {org} rival esta semana es un nombre que fue el mejor del mundo en tu puesto durante media década. Ganarle es un titular; perder es lo que todos esperan.",
+    "title": "Enfrente, el que reinó diez años",
+    "description": "El top rival esta semana fue el mejor del mundo en tu puesto durante media década. Ganarle es un titular; perder es lo que todos esperan.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -553,13 +562,13 @@
       {
         "id": "jugarle_de_igual",
         "label": "Plantearle el duelo de frente",
-        "descripcion": "No le tenés respeto de más: buscás el matchup pícaro y peleás cada onda como si fuera cualquier rival. Si te sale, el mapa te reconoce.",
+        "descripcion": "Sin respeto de más, cada onda como contra cualquiera.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
             "texto": [
-              "Le ganás la línea limpia y el clip se comparte con tu nombre al lado del suyo. Esa comparación ahora existe.",
+              "Le ganás la línea limpia y el clip circula con tu nombre al lado del suyo. Esa comparación ahora existe.",
               "Lo superás en su propio juego y media liga toma nota. Dejás de ser una promesa y pasás a ser un nombre."
             ],
             "effects": [
@@ -569,7 +578,7 @@
           },
           {
             "weight": 5,
-            "texto": "Te gana los trades con una economía de recursos que todavía no tenés. No es humillante, pero se ve la diferencia de kilómetros recorridos.",
+            "texto": "Te gana los trades con una economía de recursos que todavía no tenés. No es humillante, pero se ve la diferencia de kilómetros.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -579,12 +588,12 @@
       {
         "id": "jugar_seguro_el_duelo",
         "label": "Neutralizarlo sin arriesgar",
-        "descripcion": "No buscás ganarle la línea: buscás que no te la gane. Farmeás parejo, no le das nada y dejás que el partido se resuelva en otro lado.",
+        "descripcion": "No buscás ganarle, buscás que no te gane.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Lo dejás sin una sola ventaja para llevar a las peleas. No hubo highlight, pero el nombre grande no hizo nada en todo el partido.",
+            "texto": "Lo dejás sin una sola ventaja para llevar a las peleas. No hubo highlight, pero el nombre grande no hizo nada.",
             "effects": [
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
@@ -592,7 +601,7 @@
           },
           {
             "weight": 4,
-            "texto": "Jugar tan a no perder te deja sin ritmo, y él igual encuentra un TP para incidir abajo. La experiencia se abrió paso por otro lado.",
+            "texto": "Jugar tan a no perder te deja sin ritmo, y él igual encuentra un TP para incidir abajo. La experiencia pasó por otro lado.",
             "effects": [
               { "type": "stat", "path": "player.stats.laneo", "min": -2, "max": 0, "clamp": [0, 100] }
             ]

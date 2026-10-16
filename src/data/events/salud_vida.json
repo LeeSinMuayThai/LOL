@@ -1,11 +1,12 @@
 [
   {
     "id": "visa_delay",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "category": "salud_vida",
     "categoria": "golpe_duro",
     "title": "La visa no sale",
-    "description": "El trámite para viajar con {org} se trabó en el consulado. El calendario no espera y hay una fecha en la que tenés que estar del otro lado.",
+    "description": "El trámite de la visa se trabó en el consulado y la fecha no espera.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -19,8 +20,8 @@
       {
         "id": "presionar_a_la_organizacion",
         "label": "Apretar a la organización",
-        "descripcion": "Les caés al manager todos los días. Puede destrabarse, o podés quedar como el jugador problemático por algo que no depende de nadie.",
-        "aviso": "Si el trámite no se mueve, perdés semanas y cabeza",
+        "descripcion": "Le caés al manager todos los días.",
+        "aviso": "Perdés semanas peleando con un mostrador",
         "weight": 5,
         "outcomes": [
           {
@@ -32,7 +33,7 @@
           },
           {
             "weight": 4,
-            "texto": "El trámite no se mueve un centímetro y vos gastaste tres semanas de energía peleando con un mostrador. Viajás igual, tarde y fundido.",
+            "texto": "El trámite no se mueve y gastaste tres semanas peleando con un mostrador. Viajás tarde y fundido.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
             ]
@@ -42,8 +43,8 @@
       {
         "id": "aceptar_la_demora",
         "label": "Bancártela y seguir entrenando",
-        "descripcion": "No podés hacer nada, así que hacés lo que sí podés. Perdés días de bootcamp con el equipo y los ganás solo.",
-        "aviso": "Si la espera se estira, llegás tarde y con la cabeza rota",
+        "descripcion": "Entrenás solo mientras los demás ya están allá.",
+        "aviso": "Si se estira, llegás tarde y fundido",
         "weight": 5,
         "outcomes": [
           {
@@ -55,7 +56,7 @@
           },
           {
             "weight": 3,
-            "texto": "La espera se estira más de lo que nadie calculó. Cuando por fin llegás, el equipo ya armó su rutina sin vos.",
+            "texto": "La espera se estira más de lo que nadie calculó. Cuando llegás, el equipo ya armó su rutina sin vos.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -7, "max": -4, "clamp": [0, 100] }
             ]
@@ -66,12 +67,13 @@
   },
   {
     "id": "tendinitis",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
     "title": "La muñeca",
-    "description": "Empezó como una molestia y ya es un dolor con horario. Aparece siempre a la misma hora de la sesión, y no se va con hielo.",
+    "description": "Empezó como una molestia y ya es un dolor con horario. Aparece siempre a la misma hora de la sesión y no se va con hielo.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -84,13 +86,13 @@
     "options": [
       {
         "id": "jugar_apretando_los_dientes",
-        "label": "Jugar igual y no decirle a nadie",
-        "descripcion": "Nadie se entera y no perdés un solo día. La muñeca no se arregla sola.",
+        "label": "Jugar igual y no decir nada",
+        "descripcion": "Nadie se entera y no perdés un día.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Aguantás. Se te va un poco de precisión en los combos largos y lo compensás jugando más simple, que es una forma elegante de decir que jugás peor.",
+            "texto": "Aguantás. Perdés precisión en los combos largos y la compensás jugando más simple, que es una forma elegante de decir que jugás peor.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -4, "max": -2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -98,7 +100,7 @@
           },
           {
             "weight": 4,
-            "texto": "Una noche no podés cerrar la mano del todo. Te asustás, no se lo contás a nadie, y al otro día volvés a jugar.",
+            "texto": "Una noche no podés cerrar la mano del todo. Te asustás, no contás nada y al otro día volvés a jugar.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -6, "max": -4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
@@ -109,12 +111,12 @@
       {
         "id": "frenar_y_tratarte",
         "label": "Frenar y hacerte ver",
-        "descripcion": "Kinesiología, menos horas y ejercicios aburridos. Perdés ritmo ahora para no perder la mano después.",
+        "descripcion": "Kinesiología, menos horas y ejercicios aburridos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Tres semanas de ejercicios que te dan vergüenza hacer y el dolor afloja. Perdiste ritmo; la mano te va a durar más.",
+            "texto": "Tres semanas de ejercicios que dan vergüenza y el dolor afloja. Perdiste ritmo; la mano te va a durar más.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": -1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
@@ -122,7 +124,7 @@
           },
           {
             "weight": 3,
-            "texto": "Frenás, se va, y vuelve apenas retomás el volumen de siempre. Aprendés que esto no se cura: se administra.",
+            "texto": "Frenás, se va, y vuelve apenas retomás el volumen de siempre. Esto no se cura: se administra.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -133,12 +135,13 @@
   },
   {
     "id": "burnout",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
     "title": "Se te hizo trabajo",
-    "description": "Hace tres semanas que abrís el cliente y sentís lo mismo que abriendo un Excel. No estás jugando mal: no estás jugando.",
+    "description": "Hace tres semanas que abrís el cliente y sentís lo mismo que abriendo un Excel. No jugás mal: no jugás.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -150,8 +153,8 @@
     "options": [
       {
         "id": "aguantar_el_calendario",
-        "label": "Aguantar hasta que termine el split",
-        "descripcion": "Falta poco para que se cierre el split. Apretás los dientes y lo resolvés en el receso, si llegás.",
+        "label": "Aguantar hasta el final del split",
+        "descripcion": "Apretás los dientes y lo resolvés en el receso.",
         "weight": 5,
         "outcomes": [
           {
@@ -159,7 +162,7 @@
             "modificadores": [
               { "field": "player.stats.mentalidad", "referencia": 50, "factor": 0.02 }
             ],
-            "texto": "Llegás al final del split en piloto automático. Los errores no son de manos: son de no estar mirando.",
+            "texto": "Llegás al final del split en piloto automático. Los errores no son de manos, son de no estar mirando.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -8, "max": -5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.macro", "min": -2, "max": -1, "clamp": [0, 100] }
@@ -167,7 +170,7 @@
           },
           {
             "weight": 4,
-            "texto": "No llegás entero. Las últimas semanas son un borrón y hay un par de partidas que ni te acordás de haber jugado.",
+            "texto": "No llegás entero. Las últimas semanas son un borrón y hay partidas que ni recordás haber jugado.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -10, "max": -7, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.macro", "min": -3, "max": -2, "clamp": [0, 100] }
@@ -178,19 +181,19 @@
       {
         "id": "pedir_un_quiebre",
         "label": "Pedir bajar la carga",
-        "descripcion": "Pedís bajar el ritmo un tiempo. Se soluciona antes, y queda como precedente que en algún momento pediste parar.",
+        "descripcion": "Pedís bajar el ritmo un tiempo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Bajás la intensidad —menos sesiones, menos partidas por semana— durante un mes. No es mucho, pero alcanza para volver a tener ganas.",
+            "texto": "Bajás la intensidad un mes: menos sesiones, menos partidas. No es mucho, pero alcanza para recuperar las ganas.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "Te escuchan y te bajan carga, pero el mensaje que queda adentro es otro: que sos el que no aguanta el calendario.",
+            "texto": "Te escuchan y te bajan la carga, pero queda el mensaje de que sos el que no aguanta el calendario.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.macro", "min": -1, "max": 0, "clamp": [0, 100] }
@@ -202,10 +205,11 @@
   },
   {
     "id": "psychologist",
+    "voz": "corta",
     "category": "salud_vida",
     "categoria": "salud",
     "title": "El psicólogo del club",
-    "description": "{org} tiene una psicóloga deportiva y el staff te anotó una sesión sin preguntarte. Está en el calendario, martes a las cinco.",
+    "description": "{org} tiene una psicóloga deportiva y el staff te anotó una sesión sin preguntar. Martes a las cinco, en el calendario.",
     "weight": 5,
     "cooldown": 3,
     "contexto": {
@@ -218,19 +222,19 @@
       {
         "id": "comprometerse_con_el_proceso",
         "label": "Ir en serio",
-        "descripcion": "Abrís la boca de verdad. Cuesta las primeras sesiones y es lo único que mueve la aguja.",
+        "descripcion": "Abrís la boca de verdad.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "A la cuarta sesión decís en voz alta algo que no le habías dicho a nadie. Salís liviano de una forma que no esperabas.",
+            "texto": "A la cuarta sesión decís algo que no le habías dicho a nadie. Salís liviano de una forma que no esperabas.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 7, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "Enganchás rápido. Te da dos herramientas concretas para las series largas y las usás desde la semana siguiente.",
+            "texto": "Enganchás rápido. Te da dos herramientas para las series largas y las usás desde la semana siguiente.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 7, "max": 10, "clamp": [0, 100] }
             ]
@@ -240,19 +244,19 @@
       {
         "id": "ir_por_compromiso",
         "label": "Ir y no decir nada importante",
-        "descripcion": "Cumplís el horario y contestás lo justo. Nadie te va a marcar la falta y tampoco te va a servir de mucho.",
+        "descripcion": "Cumplís el horario y contestás lo justo.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 8,
-            "texto": "Cuarenta minutos de charla sobre nada. Igual desconectar te hizo algo, aunque no lo quieras contar así.",
+            "texto": "Cuarenta minutos de charla sobre nada. Igual desconectar te hizo algo, aunque no lo cuentes así.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 2,
-            "texto": "Contestás en piloto automático hasta que una pregunta te agarra desprevenido y contestás de verdad sin querer. Algo se destrabó.",
+            "texto": "Contestás en piloto automático hasta que una pregunta te agarra desprevenido y respondés de verdad sin querer. Algo se destrabó.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 4, "clamp": [0, 100] }
             ]
@@ -263,12 +267,13 @@
   },
   {
     "id": "tunel_carpiano",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
     "title": "El antebrazo",
-    "description": "No es la muñeca esta vez: es un hormigueo que arranca en los dedos y sube por todo el antebrazo después de las sesiones largas. Un fisioterapeuta te dice la palabra que no querías escuchar: túnel carpiano.",
+    "description": "Es un hormigueo que arranca en los dedos y sube por el antebrazo después de las sesiones largas. El fisio dice la palabra que no querías: túnel carpiano.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -282,12 +287,12 @@
       {
         "id": "operarte_ahora",
         "label": "Operarte ahora, mientras es leve",
-        "descripcion": "Una intervención chica y semanas de recuperación. Perdés tiempo de juego ahora para no perder la mano en dos años.",
+        "descripcion": "Intervención chica y semanas de recuperación.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La operación sale bien y la recuperación es más corta de lo que temías. Volvés con la mano descomprimida de verdad.",
+            "texto": "La operación sale bien y la recuperación es más corta de lo que temías. Volvés con la mano descomprimida.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -3, "max": -1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -295,7 +300,7 @@
           },
           {
             "weight": 4,
-            "texto": "Las semanas afuera del roster se sienten eternas, viendo scrims desde el sillón con la mano vendada.",
+            "texto": "Las semanas afuera del roster se sienten eternas, mirando scrims desde el sillón con la mano vendada.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -5, "max": -3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
@@ -305,20 +310,20 @@
       },
       {
         "id": "manejarlo_con_ferula",
-        "label": "Manejarlo con férula y seguir jugando",
-        "descripcion": "Nada de cirugía todavía: férula de noche, ejercicios, y jugar con la molestia. Podés seguir compitiendo ya, al precio de que el problema no se va.",
+        "label": "Férula y seguir jugando",
+        "descripcion": "Férula de noche, ejercicios y a competir.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "La férula y los ejercicios contienen el avance sin frenarte del roster. No se cura, pero se vuelve manejable.",
+            "texto": "La férula y los ejercicios contienen el avance sin sacarte del roster. No se cura, pero se vuelve manejable.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": -1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "El hormigueo vuelve cada vez que la carga sube. Terminás jugando pendiente de la mano más de lo que jugás pendiente del mapa.",
+            "texto": "El hormigueo vuelve cada vez que sube la carga. Jugás más pendiente de la mano que del mapa.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -4, "max": -2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -330,12 +335,13 @@
   },
   {
     "id": "hombro_cronico",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
     "title": "Años de postura, todos juntos",
-    "description": "No fue una noche ni un split: fueron años de la misma silla, el mismo ángulo, el mismo agarre del mouse. El médico del club lo dice sin vueltas — para tu edad, tenés el hombro de alguien que vivió el doble.",
+    "description": "Fueron años de la misma silla y el mismo agarre del mouse. El médico lo dice sin vueltas: tenés hombro de alguien que vivió el doble.",
     "weight": 4,
     "cooldown": 12,
     "contexto": {
@@ -348,20 +354,20 @@
     "options": [
       {
         "id": "rearmar_la_rutina",
-        "label": "Rearmar toda la rutina de entrenamiento",
-        "descripcion": "Kinesiología permanente, ejercicios de movilidad antes de cada sesión, un ergónomo revisando tu setup. Cambia cómo entrenás de acá en adelante.",
+        "label": "Rearmar toda la rutina",
+        "descripcion": "Kinesiología permanente y un ergónomo revisando tu setup.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La rutina nueva no borra los años acumulados, pero frena el deterioro. Vas a tener que sostenerla el resto de la carrera.",
+            "texto": "La rutina nueva no borra los años, pero frena el deterioro. Vas a tener que sostenerla toda la carrera.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Cambiar una rutina de años cuesta más disciplina de la que pensabas, y las primeras semanas rinden peor, no mejor.",
+            "texto": "Cambiar una rutina de años cuesta más disciplina de la pensada, y las primeras semanas rendís peor.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": -1, "clamp": [0, 100] }
             ]
@@ -370,8 +376,8 @@
       },
       {
         "id": "jugar_con_el_dolor",
-        "label": "Aprender a jugar con el dolor de fondo",
-        "descripcion": "No cambiás nada de tu rutina de años. Es lo que sabés hacer, y para llegar hasta acá te vino sirviendo.",
+        "label": "Jugar con el dolor de fondo",
+        "descripcion": "No cambiás nada de lo que te trajo hasta acá.",
         "weight": 5,
         "outcomes": [
           {
@@ -383,7 +389,7 @@
           },
           {
             "weight": 5,
-            "texto": "Sin ajustar nada, el hombro empieza a limitarte en las sesiones largas — algo que hace dos años ni notabas.",
+            "texto": "Sin ajustar nada, el hombro empieza a limitarte en las sesiones largas, algo que hace dos años ni notabas.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -394,10 +400,11 @@
   },
   {
     "id": "el_nutricionista_del_club",
+    "voz": "corta",
     "category": "salud_vida",
     "categoria": "salud",
     "title": "El club trae un nutricionista",
-    "description": "{org} sumó a alguien que te arma un plan de comidas, te mide, y te pide cortar la Coca de las tres de la mañana. La ciencia dice que rendís mejor; tu costumbre dice otra cosa.",
+    "description": "{org} sumó a alguien que te arma un plan de comidas y te pide cortar la Coca de las tres. La ciencia dice una cosa; tu costumbre, otra.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -410,14 +417,14 @@
       {
         "id": "seguir_el_plan_a_rajatabla",
         "label": "Seguir el plan a rajatabla",
-        "descripcion": "Dos meses comiendo lo que te dicen y durmiendo cuando te dicen. Aburrido, y con un efecto que se nota en las series largas.",
+        "descripcion": "Dos meses comiendo y durmiendo cuando te dicen.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
             "texto": [
-              "A las tres semanas te levantás sin el bajón de siempre. En el mapa 4 de un Bo5 seguís teniendo cabeza, y eso es nuevo.",
-              "El plan es un plomo, pero funciona: aguantás las sesiones largas sin ese pozo de energía del mediodía."
+              "A las tres semanas te levantás sin el bajón de siempre. En el mapa 4 de un Bo5 todavía tenés cabeza.",
+              "El plan es un plomo, pero funciona: aguantás las sesiones largas sin el pozo de energía del mediodía."
             ],
             "effects": [
               { "type": "stat", "path": "player.sleep", "min": 5, "max": 10, "clamp": [0, 100] },
@@ -427,7 +434,7 @@
           },
           {
             "weight": 3,
-            "texto": "Lo seguís entero y llegás a playoffs en la mejor forma física de tu carrera. No te hace mejor jugador, pero te deja rendir el tuyo completo.",
+            "texto": "Lo seguís entero y llegás a playoffs en la mejor forma física de tu carrera. No te hace mejor jugador, pero rendís el tuyo completo.",
             "effects": [
               { "type": "stat", "path": "player.sleep", "min": 8, "max": 14, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 7, "clamp": [0, 100] }
@@ -438,12 +445,12 @@
       {
         "id": "seguirlo_a_medias",
         "label": "Seguirlo cuando te acordás",
-        "descripcion": "Agarrás lo fácil —el desayuno, la hidratación— y dejás el resto. Menos beneficio, cero pelea con tus hábitos de siempre.",
+        "descripcion": "Lo fácil sí, el resto no.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Cumplís la mitad y sentís una mejora chica. El nutricionista te mira con cara de \"podría ser más\", y tiene razón.",
+            "texto": "Cumplís la mitad y sentís una mejora chica. El nutricionista te mira con cara de podría ser más, y tiene razón.",
             "effects": [
               { "type": "stat", "path": "player.sleep", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
@@ -451,7 +458,7 @@
           },
           {
             "weight": 3,
-            "texto": "En la práctica no cambiás casi nada y a los dos meses el plan es un PDF que nadie abre. Volviste a la Coca de las tres.",
+            "texto": "A los dos meses el plan es un PDF que nadie abre. Volviste a la Coca de las tres.",
             "effects": [
               { "type": "stat", "path": "player.sleep", "min": -2, "max": 1, "clamp": [0, 100] }
             ]
@@ -462,10 +469,11 @@
   },
   {
     "id": "la_gaming_house",
+    "voz": "corta",
     "category": "salud_vida",
     "categoria": "vestuario",
     "title": "Te mudás a la casa del equipo",
-    "description": "El club alquiló una casa y quiere a los cinco titulares viviendo ahí durante el split. Compartís cocina, baño y horarios con la gente con la que ya compartís diez horas de scrim.",
+    "description": "El club alquiló una casa y quiere a los cinco titulares viviendo ahí el split. Compartís cocina y baño con la gente de las diez horas de scrim.",
     "weight": 5,
     "cooldown": 10,
     "contexto": {
@@ -479,13 +487,13 @@
       {
         "id": "hacer_vida_en_comun",
         "label": "Hacer vida en común",
-        "descripcion": "Cenás con ellos, mirás VODs en el living, te quedás charlando. El vínculo del grupo se hace más fuerte y tu tiempo a solas desaparece.",
-        "aviso": "Si el equipo pierde, la casa es un infierno",
+        "descripcion": "Cenás con ellos y mirás VODs en el living.",
+        "aviso": "Si perdés, la casa es un infierno",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "En dos meses el equipo se conoce de otra forma: sabés cómo juega cada uno porque sabés cómo es cada uno. Las llamadas salen antes.",
+            "texto": "En dos meses el equipo se conoce de otra forma: sabés cómo juega cada uno porque sabés cómo es. Las llamadas salen antes.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -493,7 +501,7 @@
           },
           {
             "weight": 4,
-            "texto": "La convivencia amplifica todo: cuando el equipo pierde, la casa es un velorio del que no podés irte. Terminás el split sin un solo día de desconexión.",
+            "texto": "La convivencia amplifica todo: si el equipo pierde, la casa es un velorio del que no podés irte. Cero días de desconexión.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
@@ -504,13 +512,13 @@
       {
         "id": "poner_limites_en_la_casa",
         "label": "Horario fijo y tu pieza",
-        "descripcion": "Vivís ahí pero te reservás las noches. Menos camaradería, más chances de llegar entero a fin de split.",
-        "aviso": "Si te quedás afuera de los chistes, cae la sinergia",
+        "descripcion": "Vivís ahí, pero te reservás las noches.",
+        "aviso": "Si quedás afuera de los chistes, cae la sinergia",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Preservás tu espacio y llegás a playoffs con la cabeza más entera que el resto. Alguno te dice \"ermitaño\", medio en serio.",
+            "texto": "Preservás tu espacio y llegás a playoffs con la cabeza más entera. Alguno te dice ermitaño, medio en serio.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -518,7 +526,7 @@
           },
           {
             "weight": 4,
-            "texto": "El resto hace grupo en el living y vos quedás afuera de los chistes internos. En las scrims se nota un pelín, en el clima más.",
+            "texto": "El resto hace grupo en el living y vos quedás afuera de los chistes. En scrims se nota poco, en el clima más.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
@@ -529,12 +537,13 @@
   },
   {
     "id": "el_pico_de_ansiedad",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
-    "title": "El pecho apretado antes de salir",
-    "description": "Faltan veinte minutos para salir al escenario y no te entra el aire. Ya te había pasado en scrims, pero nunca así, nunca el día de un partido que importa.",
+    "title": "Pecho apretado antes de salir",
+    "description": "Faltan veinte minutos para salir al escenario y no te entra el aire. Ya te pasó en scrims, pero nunca el día de un partido que importa.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -547,20 +556,20 @@
     "options": [
       {
         "id": "avisar_al_staff",
-        "label": "Avisarle al staff ahora mismo",
-        "descripcion": "Lo decís antes de salir, aunque falten minutos. Pueden ayudarte a bajarlo, y también queda registrado que te pasó.",
+        "label": "Avisarle al staff ahora",
+        "descripcion": "Lo decís antes de salir, aunque falten minutos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La psicóloga del club te saca a un pasillo, te hace respirar contando, y salís al escenario tarde pero entero. Nadie afuera se enteró.",
+            "texto": "La psicóloga te saca a un pasillo, te hace respirar contando y salís tarde pero entero. Nadie afuera se enteró.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Se maneja, pero el staff queda con el ojo puesto. En las alineaciones siguientes sentís que te evalúan la cabeza además del juego.",
+            "texto": "Se maneja, pero el staff te queda mirando. En las próximas alineaciones sentís que te evalúan la cabeza además del juego.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -571,12 +580,12 @@
       {
         "id": "bancartelo_y_salir",
         "label": "Bancártelo y salir igual",
-        "descripcion": "No decís nada, te mojás la cara y salís. Si lo controlás vos solo, nadie tiene por qué saberlo. Si no, se ve en pantalla.",
+        "descripcion": "Te mojás la cara y salís sin decir nada.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Los primeros minutos jugás en piloto automático hasta que el cuerpo se acomoda. Para la mitad del mapa ya estás. Zafaste solo.",
+            "texto": "Los primeros minutos jugás en piloto automático hasta que el cuerpo se acomoda. A mitad de mapa ya estás. Zafaste solo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -585,7 +594,7 @@
             "weight": 5,
             "texto": [
               "No se acomoda. Jugás toda la serie con medio cerebro puesto en respirar y se te nota en cada decisión.",
-              "El nudo no afloja. Cometés dos errores de posicionamiento que no son de nivel: son de no estar ahí del todo."
+              "El nudo no afloja. Cometés dos errores de posicionamiento que no son de nivel, son de no estar ahí del todo."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -7, "max": -4, "clamp": [0, 100] },
@@ -598,10 +607,11 @@
   },
   {
     "id": "la_vida_afuera_del_juego",
+    "voz": "corta",
     "category": "salud_vida",
     "categoria": "familia",
     "title": "Hay una vida esperándote afuera",
-    "description": "Alguien con quien la cosa va en serio te plantea lo obvio: que hace meses que cancelás planes, que el calendario manda, que no sabe cuánto más quiere una relación a control remoto.",
+    "description": "Alguien con quien va en serio te plantea lo obvio: hace meses que cancelás planes y no sabe cuánto más aguanta una relación a control remoto.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -615,15 +625,15 @@
     "options": [
       {
         "id": "hacer_lugar",
-        "label": "Hacer lugar de verdad, aunque cueste horas",
-        "descripcion": "Bloqueás noches en el calendario y las respetás. Vas a llegar a alguna scrim con menos preparación, y a tener algo que no se mide en stats.",
+        "label": "Hacer lugar de verdad",
+        "descripcion": "Bloqueás noches en el calendario y las respetás.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "Tener a alguien afuera del juego te descomprime más de lo que esperabas. Volvés a las sesiones con ganas, no por obligación.",
-              "Las noches que cortás a horario te devuelven algo. Rendís parecido y vivís mejor, que no es poca cosa a esta altura."
+              "Tener a alguien afuera del juego te descomprime más de lo esperado. Volvés a las sesiones con ganas, no por obligación.",
+              "Las noches que cortás a horario te devuelven algo. Rendís parecido y vivís mejor, que no es poco a esta altura."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 8, "clamp": [0, 100] },
@@ -633,7 +643,7 @@
           },
           {
             "weight": 4,
-            "texto": "Encontrás el equilibrio y funciona: la relación se sostiene y tu juego no se cae. Aprendés que no todo tiene que ser el juego para seguir siendo bueno en el juego.",
+            "texto": "Encontrás el equilibrio: la relación se sostiene y tu juego no se cae. Para ser bueno no hace falta que todo sea el juego.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 6, "max": 10, "clamp": [0, 100] },
               { "type": "stat", "path": "player.familyTrust", "min": 5, "max": 9, "clamp": [0, 100] }
@@ -643,13 +653,13 @@
       },
       {
         "id": "priorizar_la_ventana",
-        "label": "Pedir que espere hasta el final de la carrera",
-        "descripcion": "Le pedís paciencia: quedan pocos años buenos y no querés mirarlos y pensar en lo que dejaste a medias. La ventana deportiva no se reabre; la otra conversación, quizás sí.",
+        "label": "Pedir que espere al retiro",
+        "descripcion": "Quedan pocos años buenos y no se reabren.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Lo entiende, o dice que lo entiende, y seguís enfocado. En el corto plazo rendís; en el fondo queda una deuda anotada.",
+            "texto": "Lo entiende, o dice que lo entiende, y seguís enfocado. Rendís a corto plazo; queda una deuda anotada.",
             "effects": [
               { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.familyTrust", "min": -4, "max": -1, "clamp": [0, 100] }
@@ -657,7 +667,7 @@
           },
           {
             "weight": 5,
-            "texto": "No espera. La relación se termina a mitad de split y lo cargás en silencio durante semanas, jugando bien de afuera y roto de adentro.",
+            "texto": "No espera. La relación se termina a mitad de split y lo cargás en silencio, jugando bien de afuera y roto de adentro.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -8, "max": -4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.familyTrust", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -669,10 +679,11 @@
   },
   {
     "id": "lo_que_te_perdiste_en_el_cuartel",
+    "voz": "corta",
     "category": "salud_vida",
     "categoria": "familia",
-    "title": "Lo que te perdiste en el cuartel",
-    "description": "Con la baja recién en el bolsillo, prendés el teléfono y te caen dieciocho meses de notificaciones de golpe: tu antigua organización se sostuvo sin vos, y el novato que cubrió tu puesto sacó un MVP que ahora es un clip viral. Leer el resumen entero de una sentada pesa más de lo que imaginabas.",
+    "title": "Lo que te perdiste",
+    "description": "Con la baja recién en el bolsillo, prendés el teléfono y caen dieciocho meses de notificaciones. El novato que te cubrió tiene un MVP viral.",
     "weight": 7,
     "cooldown": 8,
     "contexto": {
@@ -686,13 +697,13 @@
     "options": [
       {
         "id": "responder_y_mantener_el_lazo",
-        "label": "Mandarles un mensaje de aliento y felicitar al novato",
-        "descripcion": "Te tragás el ego y festejás el triunfo de tu gente. Cuidás los vínculos para el día en que te toque volver al equipo.",
+        "label": "Felicitar al novato y alentarlos",
+        "descripcion": "Te tragás el ego y festejás a tu gente.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Tus ex-compañeros valoran el gesto y en la entrevista post-partido te mandan un saludo al aire en la transmisión oficial. La comunidad te hace tendencia y el club deja en claro que no te olvidó.",
+            "texto": "Tus ex compañeros valoran el gesto y te mandan un saludo al aire en la transmisión. La comunidad te hace tendencia.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -700,7 +711,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te responden con cariño, pero la charla se apaga rápido: ellos están concentrados en el scrim de mañana y vos todavía te estás sacudiendo el uniforme de encima. La desconexión es inevitable.",
+            "texto": "Te responden con cariño, pero la charla se apaga rápido: ellos piensan en la scrim de mañana y vos todavía te sacudís el uniforme.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": 0, "clamp": [0, 100] }
             ]
@@ -709,20 +720,20 @@
       },
       {
         "id": "cerrar_la_pagina",
-        "label": "Cerrar la pestaña y mirar para adelante",
-        "descripcion": "No sirve de nada masticar dieciocho meses de resultados ajenos. Lo que importa es el split que arranca ahora, no el que te perdiste.",
+        "label": "Cerrar la pestaña y mirar adelante",
+        "descripcion": "Importa el split que arranca, no el que te perdiste.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Cortar con el feed viejo te da una claridad rara: el pasado ya pasó, y quemarte la cabeza con lo que no jugaste no te devuelve nada.",
+            "texto": "Cortar con el feed viejo te da una claridad rara: lo que no jugaste no te devuelve nada.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "Cerrás la app, pero en la primera práctica seguís pensando en los parches que te perdiste y en si tus decisiones de mapa siguen vigentes.",
+            "texto": "Cerrás la app, pero en la primera práctica seguís pensando en los parches que te perdiste y si tu mapa sigue vigente.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
             ]
@@ -733,10 +744,11 @@
   },
   {
     "id": "las_manos_que_hay_que_reconstruir",
+    "voz": "corta",
     "category": "salud_vida",
     "categoria": "oportunidad",
-    "title": "Las manos que hay que reconstruir",
-    "description": "Primera semana libre y ya sentís el teclado raro: dieciocho meses sin tocar un cliente competitivo dejan la muñeca dura y el mapa mental oxidado. La vuelta no es apretar play, es rearmarte desde cero mientras el resto del roster ya está en scrim.",
+    "title": "Las manos oxidadas",
+    "description": "Primera semana libre y el teclado se siente raro: dieciocho meses sin cliente competitivo dejan la muñeca dura y el mapa oxidado. El roster ya está en scrim.",
     "weight": 6,
     "cooldown": 8,
     "contexto": {
@@ -750,13 +762,13 @@
     "options": [
       {
         "id": "hacer_ejercicios_de_dedos",
-        "label": "Entrenar agarre y micro desde cero, sin apuro",
-        "descripcion": "Volvés a lo básico: calentamiento de muñeca, aim trainer, partidas cortas. Reconstruir la mano lleva más tiempo del que te gustaría admitir.",
+        "label": "Reconstruir agarre y micro sin apuro",
+        "descripcion": "Calentamiento de muñeca, aim trainer y partidas cortas.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La constancia paga: en un par de semanas la sensación de control vuelve, más rápido de lo que temías después de tanto tiempo afuera.",
+            "texto": "La constancia paga: en un par de semanas vuelve la sensación de control, más rápido de lo que temías.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -764,7 +776,7 @@
           },
           {
             "weight": 4,
-            "texto": "Forzar el ritmo antes de tiempo te deja la muñeca resentida y un par de partidas de scrim jugadas por debajo de tu nivel real.",
+            "texto": "Forzás el ritmo antes de tiempo y te queda la muñeca resentida y un par de scrims por debajo de tu nivel.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -773,13 +785,13 @@
       },
       {
         "id": "nutrir_la_cabeza_tactica",
-        "label": "Empezar por VODs y teoría del meta actual",
-        "descripcion": "Antes de tocar el mouse en serio, te ponés al día con dieciocho meses de parches: qué cambió, quién juega qué, por dónde viene el juego ahora.",
+        "label": "Empezar por VODs y meta actual",
+        "descripcion": "Te ponés al día con dieciocho meses de parches.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Estudiar el meta con la cabeza fría, sin la presión de estar rindiendo en vivo, te da una lectura más ordenada de lo que cambió que la que tenías planeada.",
+            "texto": "Estudiar el meta con la cabeza fría, sin presión de rendir en vivo, te da una lectura más ordenada de la que planeabas.",
             "effects": [
               { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -787,7 +799,7 @@
           },
           {
             "weight": 4,
-            "texto": "Sin poder probar nada en la práctica todavía, la teoría se vuelve abstracta. Terminás dudando de si el meta actual se parece en algo a lo que estudiaste.",
+            "texto": "Sin poder probar nada todavía, la teoría se vuelve abstracta. Terminás dudando de si el meta actual se parece a lo que estudiaste.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": 0, "clamp": [0, 100] }
             ]
@@ -798,12 +810,13 @@
   },
   {
     "id": "el_rookie_que_te_ocupo_el_asiento",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "vestuario",
-    "title": "El rookie que te ocupó el asiento",
-    "description": "Volviste, pero el titular de tu rol ahora es el chico de dieciocho años que te cubrió mientras estabas afuera. El coach no lo dice en voz alta, pero la scrim de hoy es, en los hechos, una audición.",
+    "title": "El rookie y tu asiento",
+    "description": "Volviste y el titular ahora es el pibe de dieciocho que te cubrió. La scrim de hoy es una audición.",
     "weight": 6,
     "cooldown": 6,
     "contexto": {
@@ -818,13 +831,13 @@
     "options": [
       {
         "id": "retarlo_en_soloq",
-        "label": "Retarlo a partidas de soloQ, ganártelo en su terreno",
-        "descripcion": "Nada de esperar a la próxima scrim: lo buscás en el cliente y jugás contra él las veces que haga falta hasta que quede claro quién manda.",
+        "label": "Retarlo a soloQ",
+        "descripcion": "Lo buscás en el cliente hasta que quede claro.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Le ganás la mayoría de las partidas y el mensaje llega sin que nadie tenga que decir nada en la sala de prácticas. El rookie te empieza a tratar distinto.",
+            "texto": "Le ganás la mayoría y el mensaje llega sin que nadie diga nada en la sala. El rookie te empieza a tratar distinto.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -832,7 +845,7 @@
           },
           {
             "weight": 5,
-            "texto": "El resultado es parejo, y eso no es la afirmación que buscabas: dieciocho meses afuera te dejaron más cerca de un rookie de lo que te gustaría admitir.",
+            "texto": "Parejo. Dieciocho meses afuera te dejaron más cerca de un rookie de lo que querés admitir.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
             ]
@@ -841,13 +854,13 @@
       },
       {
         "id": "ganartelo_en_scrim",
-        "label": "Dejar que lo decidan las scrims, partido a partido",
-        "descripcion": "Sin duelos personales: te enfocás en rendir en cada práctica del equipo y confiás en que el coach vea la diferencia con el tiempo.",
+        "label": "Dejar que decidan las scrims",
+        "descripcion": "Rendís en cada práctica y esperás que el coach vea.",
         "weight": 3,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Tu experiencia en decisiones de mapa termina pesando más que la mecánica cruda del rookie. El coach te devuelve el puesto sin que hiciera falta un enfrentamiento directo.",
+            "texto": "Tu experiencia en decisiones de mapa pesa más que la mecánica cruda del rookie. El coach te devuelve el puesto sin duelos.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -855,7 +868,7 @@
           },
           {
             "weight": 4,
-            "texto": "El proceso es lento y frustrante: cada scrim que juega bien el rookie es una scrim menos donde te toca demostrar algo.",
+            "texto": "El proceso es lento y frustrante: cada scrim que el rookie juega bien es una menos para demostrar algo vos.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -864,20 +877,20 @@
       },
       {
         "id": "aceptar_el_rol_de_sexto",
-        "label": "Aceptar el banco por ahora, sin resignar la carrera",
-        "descripcion": "No forzás nada. Le das tiempo al cuerpo y a la mano, entrenás como sexto hombre, y esperás el momento en que el equipo te necesite de verdad.",
+        "label": "Aceptar el banco por ahora",
+        "descripcion": "Entrenás como sexto y esperás tu momento.",
         "weight": 3,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "La paciencia rinde: entrenás sin la presión de rendir en vivo y llegás a la titularidad de nuevo con menos desgaste que si hubieras forzado la vuelta.",
+            "texto": "La paciencia rinde: entrenás sin presión de rendir en vivo y volvés a la titularidad con menos desgaste.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "El banco se siente más largo de lo que pensabas, y el rookie no da señales de querer soltar el puesto.",
+            "texto": "El banco se siente más largo de lo que pensabas y el rookie no da señales de soltar el puesto.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -888,10 +901,11 @@
   },
   {
     "id": "la_medalla_que_te_saco_del_cuartel",
+    "voz": "corta",
     "category": "salud_vida",
     "categoria": "prensa",
-    "title": "La medalla que te sacó del cuartel",
-    "description": "El oro de los Asian Games te eximió del servicio: mientras tus compañeros de generación van a tener que parar dos años en algún momento, vos seguís de largo. En una entrevista te preguntan directamente cómo se siente esa ventaja.",
+    "title": "La medalla del cuartel",
+    "description": "El oro de los Asian Games te eximió del servicio: tus compañeros de generación van a parar y vos seguís. Te preguntan cómo se siente.",
     "weight": 5,
     "cooldown": 14,
     "contexto": {
@@ -905,13 +919,13 @@
     "options": [
       {
         "id": "usarlo_como_impulso",
-        "label": "Decir que ahora te toca demostrar que valió la pena",
-        "descripcion": "Convertís la pregunta incómoda en una declaración de intenciones: la exención no es un regalo, es tiempo que pensás usar para pelear todo lo que se pueda.",
+        "label": "Ahora toca demostrar que valió",
+        "descripcion": "La exención es tiempo para pelear todo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La frase queda bien en los titulares y los fans la toman como una promesa. Ahora hay una vara puesta en público que vas a tener que sostener.",
+            "texto": "La frase queda bien en los titulares y los fans la toman como promesa. Ahora hay una vara puesta en público.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -919,7 +933,7 @@
           },
           {
             "weight": 4,
-            "texto": "Sonás convincente y nadie te toma en falso: la ventaja te la ganaste, y decirlo así corta cualquier murmullo sobre privilegios.",
+            "texto": "Sonás convincente: la ventaja te la ganaste y decirlo así corta cualquier murmullo sobre privilegios.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
@@ -928,20 +942,20 @@
       },
       {
         "id": "reconocer_el_peso",
-        "label": "Reconocer que la excepción también pesa",
-        "descripcion": "No la vendés como un triunfo sin costo: decís en voz alta que ver a tus compañeros de generación irse, mientras vos seguís jugando, no es tan simple como parece desde afuera.",
+        "label": "Reconocer que la excepción pesa",
+        "descripcion": "Ver irse a tus compañeros no es tan simple.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "La honestidad cae bien: la nota se vuelve una de las más compartidas de la semana, y varios ex-compañeros te escriben agradeciendo que lo hayas dicho así.",
+            "texto": "La honestidad cae bien: la nota es de las más compartidas de la semana y varios ex compañeros te escriben agradeciendo.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Te queda dando vueltas más de lo que esperabas: cada vez que un compañero de tu generación anuncia la baja, la pregunta de la entrevista te vuelve a la cabeza.",
+            "texto": "Te queda dando vueltas: cada vez que un compañero de tu generación anuncia la baja, la pregunta vuelve.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]

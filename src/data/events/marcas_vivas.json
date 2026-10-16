@@ -1,10 +1,11 @@
 [
   {
     "id": "sin_pc",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "familia",
-    "title": "La PC adentro del placard",
-    "description": "Se acabó la discusión: te sacaron la PC y la guardaron. El próximo movimiento es tuyo — negociar el regreso o dejar pasar unos días para que se enfríe todo.",
+    "title": "La PC en el placard",
+    "description": "Se acabó la discusión: te sacaron la PC y la guardaron. Podés negociar el regreso o dejar pasar unos días.",
     "weight": 6,
     "cooldown": 6,
     "contexto": {
@@ -15,20 +16,20 @@
     "options": [
       {
         "id": "negociar_ahora",
-        "label": "Sentarte a negociar ahora mismo",
-        "descripcion": "Proponés un trato: horarios, notas, lo que haga falta. Si aceptan, volvés rápido; si te dicen que no, quedás peor parado para la próxima.",
+        "label": "Negociar ahora mismo",
+        "descripcion": "Proponés horarios, notas, lo que haga falta.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Aceptan el trato con condiciones. Volvés a jugar antes de lo que pensabas, con un horario que ahora es innegociable.",
+            "texto": "Aceptan con condiciones. Volvés a jugar antes de lo pensado, con un horario que ahora es innegociable.",
             "effects": [
               { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 5, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "No aceptan nada todavía: quieren verte cumplir primero y recién después hablar. Salís de la charla con las manos vacías.",
+            "texto": "No aceptan nada: primero quieren verte cumplir. Salís de la charla con las manos vacías.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -38,19 +39,19 @@
       {
         "id": "dejar_que_se_enfrie",
         "label": "Dejar pasar unos días",
-        "descripcion": "No insistís. Le das tiempo a que se calme la casa, aunque eso también sea tiempo sin jugar.",
+        "descripcion": "Le das tiempo a que se calme la casa.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Los días pasan y la vuelven a traer solas, sin que lo pidas. A veces no insistir es lo que más rápido funciona.",
+            "texto": "Pasan los días y la PC vuelve sola, sin que pidas nada. A veces no insistir es lo que más rápido funciona.",
             "effects": [
               { "type": "stat", "path": "player.familyTrust", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "El silencio se estira más de lo esperado. Cada día sin jugar es un día que el resto de tu división te saca ventaja.",
+            "texto": "El silencio se estira más de lo esperado. Cada día sin jugar, tu división te saca ventaja.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -61,10 +62,11 @@
   },
   {
     "id": "la_negociacion_que_ganaste",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "familia",
     "title": "El permiso que conseguiste",
-    "description": "Ganaste la negociación con tus viejos: te dejan seguir, por ahora. Es un permiso, no una rendición — y depende de que sigas sosteniendo lo que prometiste.",
+    "description": "Ganaste la negociación con tus viejos: te dejan seguir, por ahora. Es un permiso, no una rendición, y depende de lo que prometiste.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -76,19 +78,19 @@
       {
         "id": "usarlo_a_fondo",
         "label": "Usarlo a fondo mientras dure",
-        "descripcion": "Le metés todo lo que podés al ranked ahora que tenés la puerta abierta. Cuanto más forzás, más rápido puede volver a cerrarse.",
+        "descripcion": "Le metés todo al ranked con la puerta abierta.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Le sacás el jugo al permiso: subís de rango rápido y todavía nadie te lo reprocha en tu casa.",
+            "texto": "Le sacás el jugo al permiso: subís rápido y nadie te lo reprocha en tu casa.",
             "effects": [
               { "type": "ladder", "path": "player.ranked", "min": 20, "max": 45 }
             ]
           },
           {
             "weight": 4,
-            "texto": "Forzás tanto que empieza a notarse otra vez. Nadie dijo nada todavía, pero la mirada en tu casa ya cambió.",
+            "texto": "Forzás tanto que otra vez se nota. Nadie dijo nada, pero la mirada en tu casa ya cambió.",
             "effects": [
               { "type": "stat", "path": "player.familyTrust", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -98,19 +100,19 @@
       {
         "id": "cuidarlo",
         "label": "Cuidarlo para que no se caiga",
-        "descripcion": "Sostenés exactamente lo que prometiste, ni un poco más. Menos ranked del que querrías, pero el permiso no corre peligro.",
+        "descripcion": "Cumplís lo prometido, ni un poco más.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Cumplís lo prometido al pie de la letra. En tu casa lo notan, y el permiso deja de sentirse frágil.",
+            "texto": "Cumplís al pie de la letra. En tu casa lo notan y el permiso deja de sentirse frágil.",
             "effects": [
               { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "Jugás tan medido que sentís que estás desperdiciando el margen que te ganaste.",
+            "texto": "Jugás tan medido que sentís que desperdiciás el margen que te ganaste.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -121,10 +123,11 @@
   },
   {
     "id": "sin_titulo_secundario",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "familia",
-    "title": "El formulario que te pide un título que no tenés",
-    "description": "Un trámite de visa te pide el secundario terminado y vos lo dejaste a mitad de camino. No es la primera vez que este papel te frena algo, y probablemente no sea la última.",
+    "title": "El título que no tenés",
+    "description": "Un trámite de visa pide el secundario terminado y vos lo dejaste a mitad. No es la primera vez que este papel te frena.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -135,13 +138,13 @@
     "options": [
       {
         "id": "retomar_a_distancia",
-        "label": "Retomarlo a distancia, aunque sea de a poco",
-        "descripcion": "Averiguás cómo terminarlo online entre partidos. Te suma una carga más a la semana, y te saca este problema de encima para siempre.",
+        "label": "Retomarlo a distancia, de a poco",
+        "descripcion": "Averiguás cómo terminarlo online entre partidos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Arrancás el trámite para terminarlo a distancia. Es lento y aburrido, pero es la primera vez que sentís que el papel deja de perseguirte.",
+            "texto": "Arrancás a terminarlo a distancia. Es lento y aburrido, pero por primera vez el papel deja de perseguirte.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "momento", "path": "career.registro.momentos", "tipo": "retomo_secundario", "values": ["El día que arrancaste a terminar el secundario a distancia", "Cuando decidiste que el papel dejara de perseguirte"] }
@@ -149,7 +152,7 @@
           },
           {
             "weight": 4,
-            "texto": "Entre partidos y viajes, el trámite avanza mucho más lento de lo que pensabas.",
+            "texto": "Entre partidos y viajes, el trámite avanza mucho más lento de lo pensado.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -158,20 +161,20 @@
       },
       {
         "id": "resolverlo_con_el_club",
-        "label": "Dejar que el club lo resuelva por vos",
-        "descripcion": "El área legal de la organización se encarga del papeleo. Te ahorrás el trámite; también les debés un favor más.",
+        "label": "Que lo resuelva el club",
+        "descripcion": "El área legal se encarga del papeleo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "El club mueve el trámite por su cuenta y el formulario deja de ser tu problema. Una llamada menos que hacer vos mismo.",
+            "texto": "El club mueve el trámite y el formulario deja de ser tu problema. Una llamada menos.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "El club lo resuelve, pero te queda la sensación de necesitar que alguien más te resuelva algo que era tuyo.",
+            "texto": "El club lo resuelve, pero te queda la sensación de necesitar que otro arregle lo que era tuyo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -182,10 +185,11 @@
   },
   {
     "id": "el_secundario_que_sirvio",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "familia",
-    "title": "Lo que aprendiste en el colegio, ahora te sirve",
-    "description": "Un problema con el contrato o con un sponsor aparece en una reunión y nadie en el equipo le encuentra la vuelta. Vos sí — algo de lo que aprendiste antes de dejar todo por esto te resuelve el entuerto.",
+    "title": "Lo que aprendiste en el colegio",
+    "description": "Un problema con el contrato o un sponsor aparece en una reunión y nadie le encuentra la vuelta. Vos sí: algo del colegio te lo resuelve.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -196,13 +200,13 @@
     "options": [
       {
         "id": "resolverlo_vos",
-        "label": "Resolverlo vos mismo ahí",
-        "descripcion": "Te metés en la letra chica y proponés la solución en el momento. Queda claro delante de todos que sabés de más de una cosa.",
+        "label": "Resolverlo vos ahí mismo",
+        "descripcion": "Proponés la solución delante de todos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Resolvés el problema en la reunión y el manager te mira distinto el resto de la tarde. Nadie esperaba que fueras vos.",
+            "texto": "Resolvés el problema en la reunión y el manager te mira distinto el resto de la tarde.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -210,7 +214,7 @@
           },
           {
             "weight": 4,
-            "texto": "Tu idea sirve a medias: destraba el problema pero abre otro que nadie había visto.",
+            "texto": "Tu idea sirve a medias: destraba el problema y abre otro que nadie vio.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -220,12 +224,12 @@
       {
         "id": "avisarle_al_manager",
         "label": "Avisarle al manager en privado",
-        "descripcion": "Se lo comentás aparte, sin exponerte delante del grupo. Menos protagonismo, y la solución igual llega.",
+        "descripcion": "Se lo comentás aparte, sin exponerte.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El manager usa tu idea sin decir de dónde salió. El problema se resuelve, y el mérito queda flotando en otro lado.",
+            "texto": "El manager usa tu idea sin decir de dónde salió. El mérito queda flotando en otro lado.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
             ]
@@ -243,11 +247,12 @@
   },
   {
     "id": "el_dia_que_tuviste_signature",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "category": "identidad",
     "categoria": "prensa",
-    "title": "Ya sos \"el {signature}\" para todos",
-    "description": "Un caster te presenta en la previa como \"el {signature} de la región\" y no lo dice como un chiste. Es la primera vez que un campeón queda pegado a tu nombre en vez de al revés.",
+    "title": "Ya sos \"el {signature}\"",
+    "description": "Un caster te presenta como \"el {signature} de la región\" y no es chiste. Es la primera vez que un campeón queda pegado a tu nombre.",
     "weight": 5,
     "cooldown": 10,
     "contexto": {
@@ -259,12 +264,12 @@
       {
         "id": "abrazar_la_etiqueta",
         "label": "Abrazar la etiqueta",
-        "descripcion": "Lo usás a tu favor: skin, contenido, entrevistas alrededor del campeón. También te volvés más fácil de banear.",
+        "descripcion": "Skin, contenido y entrevistas alrededor del campeón.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Te subís a la ola: la marca te sigue a todos lados y la usás en tu favor. Del otro lado, ya nadie te lo deja pasar sin banear.",
+            "texto": "Te subís a la ola y la marca te sigue a todos lados. Del otro lado, ya nadie te deja pasar sin banear.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] },
               { "type": "momento", "path": "career.registro.momentos", "tipo": "signature_consolidado", "values": ["El día que la prensa te empezó a llamar por tu signature", "El campeón que te puso nombre propio"] }
@@ -272,7 +277,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te lo banean en cuatro de las últimas cinco partidas. La etiqueta te queda pegada justo cuando menos podés usarla.",
+            "texto": "Te lo banean en cuatro de las últimas cinco partidas. La etiqueta se te pega justo cuando menos podés usarla.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] },
               { "type": "momento", "path": "career.registro.momentos", "tipo": "signature_consolidado", "values": ["El campeón por el que te empezaron a banear primero", "La etiqueta que te siguió a todos lados"] }
@@ -282,20 +287,20 @@
       },
       {
         "id": "recordar_que_hay_mas",
-        "label": "Recordarle a todos que jugás otras cosas",
-        "descripcion": "Forzás pool en las próximas semanas para no quedar reducido a un solo campeón. Cuesta maestría en el que te hizo conocido.",
+        "label": "Recordar que jugás otras cosas",
+        "descripcion": "Forzás pool para no quedar en un solo campeón.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Mostrás que hay más pool detrás de la etiqueta. Nadie te la saca del todo, pero tampoco te define.",
+            "texto": "Mostrás que hay pool detrás de la etiqueta. Nadie te la saca del todo, pero tampoco te define.",
             "effects": [
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Diluís la marca sin construir otra igual de fuerte. Ganaste margen; perdiste la identidad que tenías gratis.",
+            "texto": "Diluís la marca sin construir otra igual de fuerte. Ganaste margen y perdiste la identidad que tenías gratis.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -306,10 +311,11 @@
   },
   {
     "id": "el_ano_muerto",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "rutina",
-    "title": "Fichado, y todavía sin edad para debutar",
-    "description": "El club ya te firmó y te reservó el lugar, pero la liga exige una edad que todavía no tenés. Falta menos de lo que parece, pero un año esperando se siente eterno cuando ya te sentís listo.",
+    "title": "Fichado, sin edad para debutar",
+    "description": "El club ya te firmó, pero la liga exige una edad que no tenés. Falta poco, pero un año esperando se siente eterno.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -320,20 +326,20 @@
     "options": [
       {
         "id": "entrenar_con_la_academia",
-        "label": "Entrenar con la academia mientras esperás",
-        "descripcion": "Te metés de lleno en scrims con el equipo de desarrollo. No cuenta para las estadísticas oficiales, pero te llega la fecha con menos óxido.",
+        "label": "Entrenar con la academia",
+        "descripcion": "Scrims con la academia hasta que llegue la fecha.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Las scrims con la academia te mantienen afilado. Cuando por fin cumplís la edad, no vas a llegar de cero.",
+            "texto": "Las scrims con la academia te mantienen afilado. Cuando cumplís la edad, no llegás de cero.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Entrenás contra gente que sabe que no te va a definir nada todavía, y el nivel de exigencia se resiente.",
+            "texto": "Entrenás contra gente que sabe que nada se define todavía, y la exigencia se resiente.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -342,20 +348,20 @@
       },
       {
         "id": "aceptar_la_espera",
-        "label": "Aceptar la espera y cuidar la cabeza",
-        "descripcion": "No forzás nada: descansás, seguís de cerca a tu futuro equipo desde afuera, y llegás entero al día que por fin te toca.",
+        "label": "Esperar y cuidar la cabeza",
+        "descripcion": "Descansás y mirás a tu futuro equipo desde afuera.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Llegás a la fecha del debut con la cabeza descansada, aunque el cuerpo competitivo esté un poco más frío de lo ideal.",
+            "texto": "Llegás al debut con la cabeza descansada, aunque el cuerpo competitivo esté un poco frío.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "La espera se hace más larga de lo que imaginabas. Ver desde afuera cómo juega el equipo que ya es tuyo, sin poder subirte, cansa distinto.",
+            "texto": "La espera se hace larga. Mirar desde afuera al equipo que ya es tuyo cansa distinto.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -366,10 +372,11 @@
   },
   {
     "id": "la_pc_del_amigo",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "familia",
     "title": "Jugás desde lo de un amigo",
-    "description": "Con tu PC guardada bajo llave, un amigo te presta la suya tres tardes por semana cuando él sale a laburar. Su setup es peor y el tiempo es prestado, pero es jugar.",
+    "description": "Con tu PC bajo llave, un amigo te presta la suya tres tardes por semana. Su setup es peor y el tiempo es prestado, pero es jugar.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -381,14 +388,14 @@
       {
         "id": "aprovechar_cada_minuto",
         "label": "Exprimir las tres tardes",
-        "descripcion": "Nada de calentar: entrás y ya estás jugando ranked. Cada partida cuenta doble porque no sabés cuándo vuelve a haber.",
+        "descripcion": "Nada de calentar, ranked de arranque.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
             "texto": [
-              "Jugás con una concentración que no tenías cuando la PC era tuya y estaba siempre. La escasez te ordenó.",
-              "Tres tardes rendidas al máximo te dan más LP que semanas enteras de jugar por inercia en tu casa."
+              "Jugás con una concentración que no tenías cuando la PC era tuya. La escasez te ordenó.",
+              "Tres tardes al máximo te dan más LP que semanas jugando por inercia en tu casa."
             ],
             "effects": [
               { "type": "ladder", "path": "player.ranked", "min": 12, "max": 25 },
@@ -398,7 +405,7 @@
           },
           {
             "weight": 3,
-            "texto": "Rendís tanto en tan poco que tu amigo empieza a contarle a la gente. La historia del pibe que sube sin PC propia gusta.",
+            "texto": "Rendís tanto en tan poco que tu amigo empieza a contarlo. La historia del pibe que sube sin PC propia gusta.",
             "effects": [
               { "type": "ladder", "path": "player.ranked", "min": 20, "max": 35 },
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
@@ -409,12 +416,12 @@
       {
         "id": "cuidar_la_relacion",
         "label": "No abusar del favor",
-        "descripcion": "Usás dos tardes en vez de tres y le dejás la máquina impecable. El acceso vale más que un par de partidas extra.",
+        "descripcion": "Dos tardes en vez de tres, máquina impecable.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 8,
-            "texto": "Sos un huésped perfecto y el favor se sostiene meses. Menos horas, pero constantes, y sin deberle nada a nadie.",
+            "texto": "Sos un huésped perfecto y el favor dura meses. Menos horas, pero constantes, y sin deberle nada a nadie.",
             "effects": [
               { "type": "ladder", "path": "player.ranked", "min": 8, "max": 16 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -434,10 +441,11 @@
   },
   {
     "id": "el_pacto_por_la_pc",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "familia",
     "title": "Tu vieja te ofrece un trato",
-    "description": "Golpea la puerta con la torre de la PC en los brazos. \"Te la devuelvo. Pero aprobás todo este trimestre o esto se termina en serio.\" No es una amenaza vacía y los dos lo saben.",
+    "description": "Entra con la torre de la PC en los brazos y dice que te la devuelve si aprobás todo el trimestre. No es una amenaza vacía.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -449,14 +457,14 @@
       {
         "id": "firmar_el_pacto",
         "label": "Aceptar y cumplirlo",
-        "descripcion": "Recuperás la PC hoy. A cambio, dos meses de estudiar en serio con el ranked de rehén.",
+        "descripcion": "Recuperás la PC hoy, con el ranked de rehén.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
             "texto": [
-              "Estudiás lo justo para cumplir y jugás con la PC de vuelta en tu escritorio. Rendís peor de lo que te gustaría, pero rendís.",
-              "Cumplir el trato te come horas de práctica. Igual, tener la máquina en tu pieza otra vez te devuelve algo que no se mide en LP."
+              "Estudiás lo justo y jugás con la PC de vuelta en tu escritorio. Rendís peor de lo que te gustaría, pero rendís.",
+              "Cumplir el trato te come horas de práctica, pero tener la máquina de vuelta vale más que el LP."
             ],
             "effects": [
               { "type": "stat", "path": "player.studies", "min": 8, "max": 15, "clamp": [0, 100] },
@@ -466,7 +474,7 @@
           },
           {
             "weight": 3,
-            "texto": "Aprobás todo con margen y encima te sobra tiempo para jugar. Tu vieja, sin decirlo, empieza a mirar esto de otra manera.",
+            "texto": "Aprobás todo con margen y encima te sobra tiempo para jugar. Tu vieja, sin decirlo, empieza a mirar esto distinto.",
             "effects": [
               { "type": "stat", "path": "player.studies", "min": 12, "max": 20, "clamp": [0, 100] },
               { "type": "stat", "path": "player.familyTrust", "min": 10, "max": 18, "clamp": [0, 100] },
@@ -478,12 +486,12 @@
       {
         "id": "pedir_mas_plazo",
         "label": "Negociar los plazos",
-        "descripcion": "Le proponés un trimestre entero en vez de dos meses, con metas parciales. Más realista, pero le estás pidiendo que confíe más.",
+        "descripcion": "Pedís el trimestre entero, con metas parciales.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Acepta a regañadientes. El plazo largo te da aire, pero cada boletín parcial es una prueba que tenés que pasar sí o sí.",
+            "texto": "Acepta a regañadientes. El plazo largo te da aire, pero cada boletín parcial es una prueba obligada.",
             "effects": [
               { "type": "stat", "path": "player.familyTrust", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.studies", "min": 4, "max": 9, "clamp": [0, 100] },
@@ -493,8 +501,8 @@
           {
             "weight": 4,
             "texto": [
-              "Tu contraoferta la convence de que te lo tomás en serio. Te da el trimestre y baja la guardia un poco.",
-              "Negociás bien y salís con más margen del que esperabas. Ahora hay que no desperdiciarlo."
+              "Tu contraoferta la convence de que va en serio. Te da el trimestre y baja un poco la guardia.",
+              "Negociás bien y salís con más margen del esperado. Ahora hay que no desperdiciarlo."
             ],
             "effects": [
               { "type": "stat", "path": "player.familyTrust", "min": 6, "max": 12, "clamp": [0, 100] },
@@ -507,10 +515,11 @@
   },
   {
     "id": "el_ultimatum_del_boletin",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "familia",
     "title": "El boletín que define",
-    "description": "Estás a una materia de que en casa se termine la discusión, y no a tu favor. Falta una semana para la prueba que la levanta o la hunde, y esa semana pinta la mejor de la temporada en la ladder.",
+    "description": "Una materia define si en casa se termina la discusión, y no a tu favor. La prueba es en una semana, la mejor ventana de ladder.",
     "weight": 6,
     "cooldown": 6,
     "contexto": {
@@ -522,15 +531,15 @@
       {
         "id": "estudiar_la_semana",
         "label": "Cerrar el ranked y estudiar",
-        "descripcion": "Perdés la mejor ventana de LP del año. Comprás meses de paz y el derecho a seguir jugando.",
-        "aviso": "Perdés la mejor ventana de LP de la semana",
+        "descripcion": "Comprás meses de paz y el derecho a seguir.",
+        "aviso": "Perdés la mejor ventana de LP",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
             "texto": [
               "Aprobás raspando y en casa se descomprime todo. La ladder esperó; la casa no habría esperado.",
-              "Levantás la materia y de paso dos más. Por primera vez en meses nadie te controla las horas de juego."
+              "Levantás la materia y de paso dos más. Por primera vez en meses nadie te controla las horas."
             ],
             "effects": [
               { "type": "stat", "path": "player.studies", "min": 10, "max": 18, "clamp": [0, 100] },
@@ -540,7 +549,7 @@
           },
           {
             "weight": 3,
-            "texto": "Aprobás con nota alta. Tus viejos, que esperaban lo peor, te levantan el control casi entero. Ganaste tiempo de verdad.",
+            "texto": "Aprobás con nota alta. Tus viejos, que esperaban lo peor, te levantan el control casi entero.",
             "effects": [
               { "type": "stat", "path": "player.studies", "min": 14, "max": 22, "clamp": [0, 100] },
               { "type": "stat", "path": "player.familyTrust", "min": 12, "max": 20, "clamp": [0, 100] },
@@ -552,13 +561,13 @@
       {
         "id": "jugarte_la_ventana",
         "label": "Racha ahora, materia a la suerte",
-        "descripcion": "Es el elo más alto de tu vida al alcance de la mano. Si zafás de la materia igual, ganaste todo.",
+        "descripcion": "El elo más alto de tu vida, al alcance.",
         "aviso": "Si desaprobás, se cae la confianza en casa",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Clavás el mejor rango de tu vida esa semana. La materia la desaprobás, y en casa se pudre de una forma que va a tardar en arreglarse.",
+            "texto": "Clavás el mejor rango de tu vida. La materia la desaprobás y en casa se pudre de una forma que tarda en arreglarse.",
             "effects": [
               { "type": "ladder", "path": "player.ranked", "min": 30, "max": 50 },
               { "type": "stat", "path": "player.familyTrust", "min": -14, "max": -8, "clamp": [0, 100] },
@@ -568,7 +577,7 @@
           {
             "weight": 5,
             "texto": [
-              "Subís un montón y encima la prueba te sale mejor de lo que merecías por lo poco que estudiaste. Zafaste de milagro.",
+              "Subís un montón y la prueba te sale mejor de lo que merecías. Zafaste de milagro.",
               "La racha aguanta y la materia la salvás con un oral de rebote. Saliste ileso, pero por poco."
             ],
             "effects": [

@@ -1,10 +1,11 @@
 [
   {
     "id": "team_drama",
+    "voz": "corta",
     "category": "drama_prensa",
     "categoria": "prensa",
-    "title": "Se pudrió todo en la gaming house",
-    "description": "{jungla} se agarró con el staff en pleno review y se fue dando un portazo. El grupo de {org} lleva dos días sin que nadie escriba.",
+    "title": "Se pudrió la gaming house",
+    "description": "{jungla} se agarró con el staff en pleno review y se fue dando un portazo. El grupo de {org} lleva dos días mudo.",
     "weight": 8,
     "cooldown": 3,
     "contexto": {
@@ -18,13 +19,13 @@
       {
         "id": "meterse_en_el_conflicto",
         "label": "Meterte y poner la cara",
-        "descripcion": "Alguien tiene que hablar. Ganás peso en la casa si sale bien, y quedás pegado si sale mal.",
-        "aviso": "Si hacés de mensajero entre dos lados, te quemás",
+        "descripcion": "Alguien tiene que hablar.",
+        "aviso": "Hacés de mensajero y te quemás",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Terminás siendo el que trasmite mensajes entre dos lados que no se hablan. Se arregla a medias y te llevaste todo el desgaste.",
+            "texto": "Terminás de mensajero entre dos que no se hablan. Se arregla a medias y el desgaste es todo tuyo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -8, "max": -5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": -4, "max": -2, "clamp": [0, 100] }
@@ -32,7 +33,7 @@
           },
           {
             "weight": 4,
-            "texto": "Decís en voz alta lo que todos pensaban y el aire se limpia. {jungla} vuelve al día siguiente y el staff toma nota de quién sostuvo el grupo.",
+            "texto": "Decís lo que todos pensaban y el aire se limpia. {jungla} vuelve y el staff anota quién sostuvo el grupo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -42,21 +43,21 @@
       },
       {
         "id": "mantenerse_al_margen",
-        "label": "No meterte y jugar tus scrims",
-        "descripcion": "No es tu quilombo. Te ahorrás el desgaste, pero el grupo registra quién se hizo el distraído.",
+        "label": "Jugar tus scrims y nada más",
+        "descripcion": "No es tu quilombo.",
         "aviso": "Si se estira, las scrims son un velorio",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Cumplís tu horario, jugás tus scrims y te vas. Se arregla solo, más o menos, y nadie te agradece nada.",
+            "texto": "Cumplís tu horario y te vas. Se arregla solo, más o menos, y nadie te agradece nada.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "Se estira dos semanas más y las scrims son un velorio. Al final alguien comenta que vos ni te enteraste, y no lo dice como un elogio.",
+            "texto": "Se estira dos semanas y las scrims son un velorio. Alguien comenta que vos ni te enteraste, y no es un elogio.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": -1, "clamp": [0, 100] }
@@ -68,10 +69,11 @@
   },
   {
     "id": "media_meme",
+    "voz": "corta",
     "category": "drama_prensa",
     "categoria": "prensa",
     "title": "Te hicieron un meme",
-    "description": "Un emote tuyo después de una muerte tonta se recorta y se vuelve una plantilla. En dos días lo usa gente que no sabe quién sos.",
+    "description": "Un emote tuyo después de una muerte tonta se vuelve plantilla. En dos días lo usa gente que ni sabe quién sos.",
     "weight": 7,
     "cooldown": 2,
     "contexto": {
@@ -84,12 +86,12 @@
       {
         "id": "subirse_a_la_ola",
         "label": "Subirte a la ola",
-        "descripcion": "Lo reposteás, te reís de vos mismo y le sacás el jugo. Fama gratis, con el costo de convertirte en el chiste.",
+        "descripcion": "Lo reposteás y te reís de vos mismo.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Contestás con el meme puesto de foto de perfil y la gente te adopta. Ahora te conocen por eso, que no es exactamente lo que querías.",
+            "texto": "Ponés el meme de foto de perfil y la gente te adopta. Ahora te conocen por eso, que no era el plan.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 10, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -97,7 +99,7 @@
           },
           {
             "weight": 3,
-            "texto": "Se te va de las manos: sale en el pre-show de la jornada y el caster lo usa dos veces. Tenés más alcance que {org} y el community manager te escribe pidiendo coordinar.",
+            "texto": "Se te va de las manos: sale en el pre-show y el caster lo usa dos veces. Tenés más alcance que {org}.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 10, "max": 16, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
@@ -108,19 +110,19 @@
       {
         "id": "ignorar_el_ruido",
         "label": "Ni mirarlo",
-        "descripcion": "Cerrás Twitter una semana. El meme muere solo, y con él la oportunidad.",
+        "descripcion": "Cerrás Twitter una semana.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 8,
-            "texto": "Una semana sin abrir nada y el asunto se muere solo. Quedó el rastro justo para que alguien lo recuerde y nada más.",
+            "texto": "Una semana sin abrir nada y el asunto muere solo. Quedó el rastro justo para que alguien lo recuerde.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 2,
-            "texto": "Que no contestes le gusta a una parte de la gente. \"Este está para jugar\", escriben. No es el hype que buscabas, pero es el que dura.",
+            "texto": "Que no contestes le gusta a una parte. \"Este está para jugar\", escriben. No es el hype que buscabas, pero dura.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
@@ -132,15 +134,16 @@
   },
   {
     "id": "old_rival",
+    "voz": "corta",
     "category": "drama_prensa",
     "categoria": "prensa",
     "title": [
       "Otra vez {rival} enfrente",
-      "De nuevo cara a cara con {rival}",
+      "De nuevo con {rival}",
       "{rival} otra vez del otro lado",
-      "Se repite el cruce con {rival}"
+      "Otro cruce con {rival}"
     ],
-    "description": "{rival} debutó tu mismo año y el cruce ya tiene historia. La prensa lo pone en la portada de la jornada antes de que se juegue.",
+    "description": "{rival} debutó tu mismo año y el cruce ya tiene historia. La prensa lo pone en portada de la jornada.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -154,7 +157,7 @@
       {
         "id": "picarse_publicamente",
         "label": "Picarte en público",
-        "descripcion": "Le contestás con nombre y apellido. Se habla del partido toda la semana y ahora tenés que ganarlo.",
+        "descripcion": "Le contestás con nombre y apellido.",
         "weight": 5,
         "outcomes": [
           {
@@ -167,7 +170,7 @@
           },
           {
             "weight": 4,
-            "texto": "Nadie le da bola a lo que dijiste y encima quedás como el que necesitaba hacer ruido. La semana se te hace larga.",
+            "texto": "Nadie le da bola a lo que dijiste y quedás como el que necesitaba hacer ruido. La semana se hace larga.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
@@ -177,8 +180,8 @@
       },
       {
         "id": "responder_con_el_nivel",
-        "label": "No decir nada y prepararlo",
-        "descripcion": "Te encerrás a mirar VODs del matchup. Sin ruido, sin promesas: solo el partido.",
+        "label": "Callarte y preparar el cruce",
+        "descripcion": "Te encerrás a mirar VODs del matchup.",
         "weight": 5,
         "outcomes": [
           {
@@ -191,7 +194,7 @@
           },
           {
             "weight": 3,
-            "texto": "Preparás el matchup y no pasa gran cosa: sale un partido parejo y aburrido. Quedaste bien parado y nada más.",
+            "texto": "Preparás todo y sale un partido parejo y aburrido. Quedás bien parado, y nada más.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
@@ -202,10 +205,11 @@
   },
   {
     "id": "transfer_rumor",
+    "voz": "corta",
     "category": "drama_prensa",
     "categoria": "prensa",
     "title": "Suena tu nombre en el mercado",
-    "description": "Un periodista tira que {org} te escucharía ofertas. No sabés si es humo o si te lo están avisando por elevación.",
+    "description": "Un periodista tira que {org} escucharía ofertas por vos. No sabés si es humo o un aviso por elevación.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -220,8 +224,8 @@
       {
         "id": "alimentar_el_rumor",
         "label": "Dejar que corra",
-        "descripcion": "No lo desmentís. El mercado empieza a mirarte y adentro del club se dan cuenta de que lo estás usando.",
-        "aviso": "Si se te va de las manos, te dan por vendido y te pega",
+        "descripcion": "No lo desmentís y el mercado empieza a mirarte.",
+        "aviso": "Si se escapa, te dan por vendido",
         "weight": 5,
         "outcomes": [
           {
@@ -234,7 +238,7 @@
           },
           {
             "weight": 4,
-            "texto": "Se te va de las manos: para el viernes te dan por vendido y hasta te ponen equipo. Jugás la jornada con medio equipo mirándote de reojo.",
+            "texto": "Se te va de las manos y para el viernes te dan por vendido. Jugás la jornada con el vestuario mirándote de reojo.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 7, "max": 10, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -4, "clamp": [0, 100] }
@@ -245,19 +249,19 @@
       {
         "id": "desmentirlo_rapido",
         "label": "Cortarlo de una",
-        "descripcion": "Salís a decir que estás bien donde estás. Ordena la interna y cierra una puerta que quizás querías abierta.",
+        "descripcion": "Salís a decir que estás bien donde estás.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Un tuit corto y el tema muere el mismo día. Adentro te lo agradecen sin decírtelo.",
+            "texto": "Un tuit corto y el tema muere el mismo día. Adentro te lo agradecen sin decirlo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "Lo desmentís y quedás como el que se pone el jersey. Sirve para la imagen; el que iba a llamar no llamó.",
+            "texto": "Lo desmentís y quedás como el que se pone la camiseta. Sirve para la imagen, pero el que iba a llamar no llamó.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -269,13 +273,14 @@
   },
   {
     "id": "el_tweet_borrado",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "escandalo": true,
     "category": "drama_prensa",
     "categoria": "prensa",
     "title": "El tweet que borraste tarde",
-    "description": "Posteaste algo caliente sobre un arbitraje en pleno enojo post-derrota y lo borraste veinte minutos después. Veinte minutos alcanzan: ya hay captura y ya circula.",
+    "description": "Posteaste algo caliente sobre un arbitraje tras la derrota y lo borraste a los veinte minutos. Alcanza: ya hay captura y circula.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -288,13 +293,13 @@
       {
         "id": "salir_a_aclarar",
         "label": "Aclarar con la cabeza fría",
-        "descripcion": "Un comunicado corto, sin excusas: estabas caliente, no era la forma. Cierra el tema o le da otra vuelta, según cómo caiga.",
+        "descripcion": "Un comunicado corto, sin excusas.",
         "aviso": "Si la aclaración arma otro hilo, te desgasta",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La aclaración madura le gusta a la gente. En un día el tema pasó de escándalo a \"le pasa a cualquiera\".",
+            "texto": "La aclaración madura le gusta a la gente. En un día pasó de escándalo a \"le pasa a cualquiera\".",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 1, "clamp": [0, 100] }
@@ -302,7 +307,7 @@
           },
           {
             "weight": 4,
-            "texto": "Aclarás, y la aclaración genera su propio hilo de gente discutiendo si hacía falta aclarar. El tema respira dos días más.",
+            "texto": "Aclarás, y la aclaración genera su propio hilo sobre si hacía falta aclarar. El tema respira dos días más.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -312,15 +317,15 @@
       {
         "id": "no_decir_nada_mas",
         "label": "No decir una palabra más",
-        "descripcion": "Ni aclaración ni disculpa. Aguantás el chubasco callado y esperás que el ciclo de noticias siga de largo.",
-        "aviso": "Si lo leen como soberbia, el club te obliga a salir a hablar",
+        "descripcion": "Aguantás callado y esperás que pase el ciclo.",
+        "aviso": "Si lo leen como soberbia, el club interviene",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
             "texto": [
-              "Tres días de silencio y el tema se lo come otra polémica ajena. Nadie se acuerda para el fin de semana.",
-              "No decís nada y la ausencia de reacción le baja el aire al asunto. Se apaga solo, más rápido de lo que temías."
+              "Tres días de silencio y otra polémica ajena se come el tema. Nadie se acuerda para el fin de semana.",
+              "No decís nada y la falta de reacción le baja el aire al asunto. Se apaga solo, más rápido de lo que temías."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -328,7 +333,7 @@
           },
           {
             "weight": 3,
-            "texto": "El silencio lo leen como soberbia. El club te termina obligando a sacar un comunicado que te sale peor que si lo hacías vos de una.",
+            "texto": "El silencio se lee como soberbia y el club te obliga a sacar un comunicado. Te sale peor que si lo hacías vos.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -340,10 +345,11 @@
   },
   {
     "id": "la_frase_fuera_de_contexto",
+    "voz": "corta",
     "category": "drama_prensa",
     "categoria": "prensa",
     "title": "Te recortaron una frase",
-    "description": "Diste una nota larga y matizada sobre el nivel de la liga. El título que salió agarra seis palabras del medio y las convierte en un desprecio a media escena.",
+    "description": "Diste una nota larga y matizada sobre el nivel de la liga. El título agarra seis palabras del medio y las vuelve un desprecio.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -355,13 +361,13 @@
     "options": [
       {
         "id": "pelearte_con_el_medio",
-        "label": "Salir a pelearte con el medio",
-        "descripcion": "Publicás el audio completo y bancás que el periodista tergiversó. Tenés razón, y ahora tenés un enemigo con micrófono.",
+        "label": "Pelearte con el medio",
+        "descripcion": "Publicás el audio completo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El audio te da la razón y una parte de la gente te la reconoce. El medio, en cambio, te marca en la libreta para la próxima.",
+            "texto": "El audio te da la razón y una parte de la gente te la reconoce. El medio te marca para la próxima.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -369,7 +375,7 @@
           },
           {
             "weight": 5,
-            "texto": "La pelea escala. Ahora la nota es \"jugador vs periodista\" y nadie se acuerda de lo que dijiste en serio.",
+            "texto": "La pelea escala y ahora la nota es jugador contra periodista. Nadie se acuerda de lo que dijiste en serio.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
             ]
@@ -378,20 +384,20 @@
       },
       {
         "id": "dejar_que_se_diluya",
-        "label": "Dejar que se diluya solo",
-        "descripcion": "No confirmás ni desmentís. La gente que te sigue de cerca sabe cómo hablás; el resto se olvida en una semana.",
+        "label": "Dejar que se diluya",
+        "descripcion": "No confirmás ni desmentís.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Una semana después ya nadie lo cita. Los rivales que se ofendieron siguen ofendidos, pero eso te va a durar menos que a ellos.",
+            "texto": "Una semana después nadie lo cita. Los rivales ofendidos siguen ofendidos, pero a vos te dura menos.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "Un rival lo usa de combustible y te gana el cruce de la jornada con eso de bandera. La frase recortada te siguió hasta la Grieta.",
+            "texto": "Un rival lo usa de combustible y te gana el cruce con la frase de bandera. Te siguió hasta la Grieta.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -403,10 +409,11 @@
   },
   {
     "id": "el_stream_del_companero",
+    "voz": "corta",
     "category": "drama_prensa",
     "categoria": "prensa",
-    "title": "{adc} habló de más en su stream",
-    "description": "En vivo, sin filtro, {adc} contó una interna de una scrim y te nombró en el medio de una anécdota que no te deja bien parado. Ya está clippeado.",
+    "title": "{adc} habló de más",
+    "description": "{adc} contó en vivo una interna de scrim y te nombró en una anécdota que no te deja bien. Ya está clippeado.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -419,20 +426,20 @@
     "options": [
       {
         "id": "hablarlo_en_privado",
-        "label": "Hablarlo con {adc} de frente y en privado",
-        "descripcion": "Nada de exponerlo público: le decís cara a cara que eso no se cuenta al aire. Se arregla adentro o se pudre adentro.",
+        "label": "Hablarlo con {adc} en privado",
+        "descripcion": "Cara a cara, sin exponerlo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Se disculpa en serio y al día siguiente aclara en su stream sin que se lo pidas. El grupo registra que lo manejaste puertas adentro.",
+            "texto": "Se disculpa en serio y al otro día aclara en su stream sin que se lo pidas. El grupo ve que lo manejaste adentro.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Se lo toma a mal — \"era un chiste\" — y quedan un par de días raros en la sala. Se ordena, pero deja marca.",
+            "texto": "Se lo toma mal, era un chiste, y quedan dos días raros en la sala. Se ordena, pero deja marca.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -443,12 +450,12 @@
       {
         "id": "contestar_en_redes",
         "label": "Contestar tu versión en redes",
-        "descripcion": "Salís a dar tu lado de la anécdota. Quedás bien parado con tu público, y convertís una interna en una novela pública.",
+        "descripcion": "Das tu lado de la anécdota.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Tu versión convence y el clip se da vuelta a tu favor. {adc} queda como el bocón, y eso también te va a costar algo adentro.",
+            "texto": "Tu versión convence y el clip se da vuelta. {adc} queda de bocón, y eso también te va a costar adentro.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "career.sinergia", "min": -4, "max": -2, "clamp": [0, 100] }
@@ -456,7 +463,7 @@
           },
           {
             "weight": 5,
-            "texto": "La ida y vuelta pública la mira todo el mundo menos el coach, que los cita a los dos y les baja el martillo por lavar los trapos afuera.",
+            "texto": "Todos miran el ida y vuelta menos el coach, que los cita a los dos por lavar los trapos afuera.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] },
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -468,10 +475,11 @@
   },
   {
     "id": "el_documental_interno",
+    "voz": "corta",
     "category": "drama_prensa",
     "categoria": "prensa",
-    "title": "Filman un detrás de escena del equipo",
-    "description": "{org} arregló con una productora una serie de documentales del split: cámaras en la gaming house, en las reuniones tácticas, en los viajes. Sos uno de los que más pantalla van a tener.",
+    "title": "Filman un detrás de escena",
+    "description": "{org} arregló con una productora un documental del split: cámaras en la gaming house, las reuniones y los viajes. Vos vas a tener pantalla.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -485,15 +493,15 @@
     "options": [
       {
         "id": "jugar_el_personaje",
-        "label": "Aprovechar la cámara y construir personaje",
-        "descripcion": "Te mostrás, tirás frases para el corte, dejás que te sigan en los momentos buenos. Sale hype, y también sale una versión tuya editada por otros.",
+        "label": "Aprovechar la cámara y hacerte personaje",
+        "descripcion": "Tirás frases para el corte.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "El episodio en el que salís más se vuelve el favorito de la gente. De golpe tenés un fandom que no tenías.",
-              "Tu manera de hablar del juego engancha en cámara. El documental te instala como cara de la liga, no solo del club."
+              "El episodio donde más salís es el favorito de la gente. De golpe tenés un fandom que no tenías.",
+              "Tu forma de hablar del juego engancha en cámara. El documental te instala como cara de la liga."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 12, "clamp": [0, 100] },
@@ -502,7 +510,7 @@
           },
           {
             "weight": 4,
-            "texto": "El montaje te agarra en una mala racha y te pinta como el punto débil del equipo. La edición no miente, pero elige.",
+            "texto": "El montaje te agarra en una mala racha y te pinta como el punto débil. La edición no miente, pero elige.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
@@ -512,20 +520,20 @@
       },
       {
         "id": "mantenerte_al_costado",
-        "label": "Colaborar lo justo y no dar más",
-        "descripcion": "Respondés lo que te preguntan y nada más. Menos protagonismo en la serie, más control sobre lo que se ve de vos.",
+        "label": "Colaborar lo justo",
+        "descripcion": "Respondés lo que te preguntan y nada más.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Salís poco y bien. No sos la estrella del documental, pero tampoco te expusiste a que te editen una versión que no elegiste.",
+            "texto": "Salís poco y bien. No sos la estrella, pero tampoco te editan una versión que no elegiste.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "Tu bajo perfil en cámara lo leen como frialdad. Un compañero más histriónico se lleva toda la simpatía del público.",
+            "texto": "Tu bajo perfil se lee como frialdad y un compañero más histriónico se lleva la simpatía del público.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
