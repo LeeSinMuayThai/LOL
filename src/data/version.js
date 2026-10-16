@@ -202,4 +202,5 @@ export const VERSION_JUEGO = 'H';
 // org y las etiquetas TRAICIÓN / VOLVÉ A CASA / BOMBAZO; G4b: las promesas (sistema nuevo en ETAPAS_SPLIT); G4c: el último
 // split, el partido de despedida y el monumento; G1c: el Bo1 que frena se decide con el minijuego (🎲/🧊) y la charla vale una
 // unidad. Guardado VERSION 18.
-export const HUELLA_JUEGO = 193370552;
+// H (ola H, entrega 1, PLANUI §0.10, 193370552 → 423616085; corrimiento declarado): ver `VERSION_JUEGO` 'H' arriba (el mazo de rareza, el arcade, la temporada sin paradas de partido, las cartas del cierre). Guardado VERSION 19.
+export const HUELLA_JUEGO = 423616085;

@@ -959,8 +959,9 @@ const FORMAS_CONOCIDAS = {
   18: 'a189ab780b40',
   // Ola H, entrega 1 (PLANUI §0.10), H1a: `flags.sorteosSinRara` (el piso de rareza del sorteo del split), `flags.cartas` (la mano
   // del cierre de año, de H2a), `flags.colaFirmas.evento` y `flags.colaAnio.eventos` (el evento del split en la cola); se va
-  // `presupuesto.total` (el cupo de 9Rf). Un guardado de la 18 carga con `migrarDe18`.
-  19: 'dd1bb37910e2'
+  // `presupuesto.total` (el cupo de 9Rf). Un guardado de la 18 carga con `migrarDe18`. Re-registrada (dd1bb37910e2 → 39704745419d) con
+  // la integración de la entrega 1 (H1a-H4a juntas).
+  19: '39704745419d'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
