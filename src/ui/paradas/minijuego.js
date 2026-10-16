@@ -25,7 +25,8 @@ import { fichajeDe, narrarFichaje } from '../components/fichaje.js';
 import { narrarContratoFirmado, firmaDeLaPrueba } from '../components/mercado.js';
 import { crearCaraACaraDeNarracion } from '../components/caraACara.js';
 import { fundirCuadro } from '../narracion.js';
-import { crearCaminoG1, crearMesaG1, marcarMapaG1, crearVeredictoG1 } from '../components/finales.js';
+import { crearCaminoG1, crearMesaG1, marcarMapaG1, crearVeredictoG1, marcarPartidoSwiss, crearTandaG1 } from '../components/finales.js';
+import { omitirDemoDeLaProxima } from '../arcade/kit.js';
 import { tension } from '../sonido.js';
 
 // La tecla de "¡Vamos!". Ningún minijuego la usa (Enter y Espacio sí, y un Enter sostenido se contaría como jugada).
@@ -35,6 +36,9 @@ const OPCIONES_CON_ATAJO = 4;
 // G1: lo que el veredicto de una final queda a la vista antes de que la parada se vaya (con el "tan cerca", hay una línea
 // más que leer que en los 1600 ms de siempre).
 const LECTURA_VEREDICTO_G1_MS = 2300;
+// H3u: la transición entre los partidos de una tanda (el resultado del anterior y el rival que viene): 1,2 s como mucho.
+const TRANSICION_TANDA_MS = 1100;
+const TRANSICION_TANDA_REDUCIDA_MS = 500;
 
 // H3k (PLANUI §0.10, "La salida"): el suspenso antes del sello. Una pista que se llena despacio (y frena al final) hasta lo que
 // sacaste, con la vara marcada si la hay y el número que sube; recién después, el sello. Con motion reducido, un instante.
@@ -213,6 +217,9 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
   const textosDeLaCharla = [];
   let camino = null;
   let mesa = null;
+  // H3u: la tanda (el Swiss de a varios, el Play-In): un partido por mecánica, cada uno con su vara
+  const tanda = g1 && decision.datos.tanda?.partidos?.length > 1 ? decision.datos.tanda : null;
+  let tandaVista = null;
 
   contenedor.hidden = false;
   contenedor.dataset.fase = 'previa';
@@ -239,6 +246,11 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
       }
     });
     minijuegoWidget.before(mesa.nodo);
+    if (tanda) {
+      tandaVista = crearTandaG1(tanda);
+      minijuegoWidget.before(tandaVista.nodo);
+      mesa.fijarVara(tanda.partidos[0].vara);
+    }
   } else {
     delete contenedor.dataset.g1;
   }
@@ -320,6 +332,10 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
   function arrancarMinijuego(charla) {
     contenedor.dataset.fase = 'juego';
     minijuegoWidget.innerHTML = '';
+    if (tanda) {
+      arrancarTanda(charla);
+      return;
+    }
     const montar = montadorDe(decision.datos.minijuego);
     let resuelto = false;
     mesa?.alJugar?.();
@@ -383,5 +399,67 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
 
     // El widget ya es más grande que la espera: si no entra, que se vea entero (el reloj corre).
     minijuegoWidget.scrollIntoView?.({ block: 'nearest' });
+  }
+
+  // H3u: la tanda. Cada partido monta la mecánica de nuevo con su vara (la demo solo antes del primero); entre uno y otro, una
+  // transición de poco más de un segundo con el resultado del anterior. Se corta al llegar a las victorias que pasan o a las
+  // derrotas que dejan afuera. La respuesta es `{ resultados }`: el motor juzga cada partido con su vara.
+  function arrancarTanda(charla) {
+    const { partidos, victoriasParaPasar, derrotasParaQuedarAfuera } = tanda;
+    const montar = montadorDe(decision.datos.minijuego);
+    const resultados = [];
+    let victorias = 0;
+    let derrotas = 0;
+    mesa?.alJugar?.();
+    const jugarPartido = (i) => {
+      contenedor.dataset.fase = 'juego';
+      minijuegoWidget.innerHTML = '';
+      const g1Partido = { ...g1, vara: partidos[i].vara };
+      mesa?.fijarVara?.(partidos[i].vara);
+      tandaVista.actual(i);
+      if (i > 0) omitirDemoDeLaProxima();
+      let resuelto = false;
+      montar(minijuegoWidget, estadoActual, (resultado, detalle) => {
+        if (resuelto) return;
+        resuelto = true;
+        resultados.push(resultado);
+        if (registro) registro.detalle = detalle ?? null;
+        const juicio = G1.juzgar(resultado, g1Partido, poderActivo, bajaCharla());
+        if (juicio.paso) victorias += 1;
+        else derrotas += 1;
+        tandaVista.marcar(i, juicio.clave);
+        marcarPartidoSwiss(camino, juicio.paso);
+        const termina = victorias >= victoriasParaPasar || derrotas >= derrotasParaQuedarAfuera || i === partidos.length - 1;
+        if (!termina) {
+          transicionDeTanda(i + 2, partidos.length, tandaVista.rivalDe(i + 1), juicio.clave, () => jugarPartido(i + 1));
+          return;
+        }
+        contenedor.dataset.fase = 'resultado';
+        suspenso(minijuegoWidget, resultado, juicio.vara, () => {
+          if (juicio.paso) marcarHit(minijuegoWidget);
+          else if (!juicio.casi) marcarMiss(minijuegoWidget);
+          mesa?.alTerminar?.(juicio);
+          minijuegoWidget.replaceChildren(crearVeredictoG1(decision, estadoActual, { resultado, detalle, juicio, poderActivo }));
+          const respuesta = { resultados, ...(decision.datos.charla?.disponible ? { charla } : {}), ...(g1.poder ? { poder: poderActivo } : {}) };
+          setTimeout(() => responder(respuesta), LECTURA_VEREDICTO_G1_MS);
+        });
+      }, rngUi, { ...decision.datos, g1: g1Partido, poderActivo, charlaActiva: charlaElegida });
+      minijuegoWidget.scrollIntoView?.({ block: 'nearest' });
+    };
+    jugarPartido(0);
+  }
+
+  // "Partido 2 de 3 · vs {rival}", con cómo salió el anterior.
+  function transicionDeTanda(numero, total, rival, claveAnterior, siguiente) {
+    const reducido = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const caja = nodo('div', 'mj-transicion');
+    caja.setAttribute('role', 'status');
+    caja.dataset.juicio = claveAnterior;
+    caja.append(
+      nodo('b', 'mj-transicion-previo', `Partido ${numero - 1}: ${G1.TITULO_JUICIO[claveAnterior]}`),
+      nodo('span', 'mj-transicion-sig', `Partido ${numero} de ${total}${rival ? ` · vs ${rival}` : ''}`)
+    );
+    minijuegoWidget.replaceChildren(caja);
+    setTimeout(siguiente, reducido ? TRANSICION_TANDA_REDUCIDA_MS : TRANSICION_TANDA_MS);
   }
 }

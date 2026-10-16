@@ -8,7 +8,7 @@
 import { BALANCE } from '../../data/balance.js';
 import { veredictoDeMinijuego, minijuegoPorId, lecturaDeVentana, latenciaQuePasa, radioQuePasa } from '../../core/minijuegos.js';
 import { ventanaPorStat, dificultadDe } from './minijuegos/comun.js';
-import { reglaDe } from '../../core/minijuegos.js';
+import { reglaDe, fraseDeLaVara } from '../../core/minijuegos.js';
 import { BLANCOS } from './minijuegos/laPrueba.js';
 import { TOPE_ERRORES, PARES } from './minijuegos/laPizarra.js';
 import { ESCALA_DISTANCIA } from './minijuegos/robarBaron.js';
@@ -84,28 +84,71 @@ export function medidaDe(id, state, datos) {
 
 const redondo = (n) => Math.round(n);
 
-// La regla con la vara, en las unidades del minijuego: "Necesitás 3 de 4 frenadas en la zona".
+// La regla con la vara, dicha en la ficción (`minijuegos.json` → `regla.frase`, vía `fraseDeLaVara`): "Rematá 3 minions antes de
+// que te los roben". `{n}` es la vara en las unidades de la mecánica; las de distancia dibujan la zona y su frase no lleva número.
 export function reglaDeVara(id, vara, state, datos) {
   const m = medidaDe(id, state, datos);
   if (m.tipo === 'conteo') {
     const n = necesarios(vara, m.total);
     if (n <= 0) return `Pasás aunque no claves ninguno: la vara está en el piso`;
     if (n > m.total) return `Ni con ${m.articulo} ${m.total} alcanza`;
-    return n === m.total ? `Necesitás ${m.articulo} ${m.total} ${m.unidad}, sin fallar ${m.articulo === 'las' ? 'una' : 'uno'}` : `Necesitás ${n} de ${m.total} ${m.unidad}`;
+    return fraseDeLaVara(id, n) ?? `Necesitás ${n} de ${m.total} ${m.unidad}`;
   }
   if (m.tipo === 'errores') {
     const e = erroresPermitidos(vara, m.tope);
     if (e < 0) return 'Ni sin errores alcanza';
-    return e === 0 ? `Los ${m.pares} pares sin un solo error` : `Los ${m.pares} pares, con ${e} ${e === 1 ? 'error' : 'errores'} como mucho`;
+    if (e === 0) return 'Armá la pizarra sin un solo error';
+    const frase = fraseDeLaVara(id, e);
+    return frase ? (e === 1 ? frase.replace('1 errores', '1 error') : frase) : `Los ${m.pares} pares, con ${e} errores como mucho`;
   }
-  if (m.tipo === 'distancia') {
-    const d = redondo(radioQuePasa(vara, m.escala));
-    // H3k: el Barón, con un decimal (la zona del canvas mide eso, y a la vara alta un punto es media zona)
-    const dBaron = String(Math.round(radioQuePasa(vara, m.escala) * 10) / 10).replace('.', ',');
-    return id === 'el_teleport' ? `Que el TP caiga a ${d} o menos del centro de la pelea` : `Los 3 smites a ${dBaron} o menos del centro de su zona`;
+  if (m.tipo === 'distancia') return fraseDeLaVara(id, 0) ?? (id === 'el_teleport' ? 'Que el TP caiga en la pelea' : 'Los 3 smites adentro de su zona');
+  if (m.tipo === 'latencia') {
+    const ms = redondo(latenciaQuePasa(vara, m.ventanaMs));
+    return fraseDeLaVara(id, ms) ?? `Cantala en menos de ${ms} ms`;
   }
-  if (m.tipo === 'latencia') return `Cantala en menos de ${redondo(latenciaQuePasa(vara, m.ventanaMs))} ms`;
   return `Sacá ${Math.ceil(vara * 100)}% o más`;
+}
+
+// H3u: el "tan cerca" de las mecánicas rehechas, en la ficción y con la medida. Cada línea, de 12 palabras o menos.
+const TELEPORT_FALLA = { temprano: 'Te vieron el TP antes de la pelea', rival: 'Caíste adentro del equipo rival', cebo: 'Era un cebo', perdida: 'Caíste en la pelea que se perdía' };
+const LLAMADA_FALLA = { mal: 'Cantaste el objetivo equivocado', temprano: 'Cantaste antes de que se abra', tarde: 'Se te pasó la ventana' };
+const LAST_HIT_FALLA = { torre: 'la torre te los robó', oleada: 'la oleada se los llevó', tiempo: 'se te fue el tiempo' };
+const GANCHO_FALLA = { minion: 'un minion se metió en el medio', lejos: 'el gancho se quedó corto', tiempo: 'se te fue el tiempo' };
+const masFrecuente = (lista) => {
+  const cuenta = {};
+  for (const x of lista) cuenta[x] = (cuenta[x] ?? 0) + 1;
+  return Object.keys(cuenta).sort((a, b) => cuenta[b] - cuenta[a])[0] ?? null;
+};
+const unaVez = (n) => (n === 1 ? 'una vez' : `${n} veces`);
+function cercaDeConteo(detalle) {
+  if (!detalle) return '';
+  if (detalle.tipo === 'combos') {
+    const cortados = detalle.intentos.filter((x) => !x.ok).length;
+    return `Clavaste ${detalle.hechos} de ${detalle.total}: un error cortó ${cortados === 1 ? 'un combo' : `${cortados} combos`}.`;
+  }
+  if (detalle.tipo === 'engages') {
+    const fallos = detalle.intentos.filter((x) => !x.ok);
+    const sinTiro = fallos.filter((x) => !x.tiro).length;
+    return `Metiste la R en ${detalle.hechos} de ${detalle.total} engages: ${sinTiro * 2 >= fallos.length ? 'se te pasó uno' : 'los agarraste sueltos'}.`;
+  }
+  if (detalle.tipo === 'oleadas') {
+    const primera = detalle.historial.findIndex((ok) => !ok);
+    return `Esquivaste ${detalle.esquivadas} de ${detalle.total} oleadas${primera >= 0 ? `: la oleada ${primera + 1} te comió` : ''}.`;
+  }
+  if (detalle.tipo === 'cazas') return `Cazaste ${detalle.cazados} de ${detalle.de}: el jungla pasó por el otro lado.`;
+  if (detalle.tipo === 'blancos') return `Pegaste ${detalle.golpes} de ${detalle.total} dummies en ${detalle.disparos} skillshots.`;
+  if (detalle.tipo === 'conteo' && detalle.minions) {
+    const falla = masFrecuente(detalle.minions.filter((x) => !x.cs).map((x) => x.motivo));
+    return `Remataste ${detalle.logrados} de ${detalle.total} minions: ${LAST_HIT_FALLA[falla] ?? 'se te escaparon'}.`;
+  }
+  if (detalle.tipo === 'conteo' && detalle.tiempos) {
+    return `Kiteaste ${detalle.logrados} de ${detalle.total} tiempos: el bruiser te agarró ${unaVez(detalle.total - detalle.logrados)}.`;
+  }
+  if (detalle.tipo === 'conteo' && detalle.tiros) {
+    const falla = masFrecuente(detalle.tiros.filter((x) => !x.acerto).map((x) => x.motivo));
+    return `Enganchaste ${detalle.logrados} de ${detalle.total}: ${GANCHO_FALLA[falla] ?? 'fallaste los otros'}.`;
+  }
+  return '';
 }
 
 // La línea del stat que ya existía ("tu mecánica 71 te abre la ventana"), también para las mecánicas sin dato.
@@ -125,6 +168,8 @@ export function tanCerca(id, resultado, detalle, juicio, state, datos) {
   if (m.tipo === 'conteo') {
     const k = Math.round(resultado * m.total);
     const n = necesarios(vara, m.total);
+    const ficcion = juicio.paso ? '' : cercaDeConteo(detalle);
+    if (ficcion) return ficcion;
     const base = juicio.paso
       ? (k === n ? `${k} de ${m.total}: justo lo que hacía falta.` : `${k} de ${m.total}: te sobró ${k - n}.`)
       : `${k} de ${m.total}: te ${n - k === 1 ? 'faltó 1' : `faltaron ${n - k}`}.`;
@@ -136,10 +181,18 @@ export function tanCerca(id, resultado, detalle, juicio, state, datos) {
   if (m.tipo === 'errores') {
     const e = erroresPermitidos(vara, m.tope);
     const hechos = detalle?.errores ?? Math.round((1 - resultado) * m.tope);
-    return juicio.paso ? `${hechos} ${hechos === 1 ? 'error' : 'errores'}, y podías ${Math.max(0, e)}.` : `${hechos} errores: podías ${Math.max(0, e)}.`;
+    return juicio.paso ? `${hechos} ${hechos === 1 ? 'error' : 'errores'}, y podías ${Math.max(0, e)}.` : `${hechos} ${hechos === 1 ? 'pick mal puesto' : 'picks mal puestos'}: aguantabas ${Math.max(0, e)}.`;
   }
   if (m.tipo === 'distancia') {
     if (detalle?.tipo === 'tarde') return 'Se te pasó la pelea: el TP nunca salió.';
+    if (id === 'el_teleport' && TELEPORT_FALLA[detalle?.tipo]) {
+      const bien = (detalle.fases ?? []).filter((f) => f.tipo === 'distancia').length;
+      return `${TELEPORT_FALLA[detalle.tipo]}: ${bien} de ${(detalle.fases ?? []).length} bien.`;
+    }
+    if (id === 'el_teleport' && detalle?.tipo === 'distancia' && detalle.centro === 0) {
+      const dec = (x) => String(Math.round(x * 10) / 10).replace('.', ',');
+      return `Tu peor TP cayó a ${dec(detalle.pos)} de la pelea: pasaba con ${dec(radioQuePasa(vara, detalle.escala))}.`;
+    }
     // H3k: el Barón son tres smites (pasa si los tres caen en su zona): cuánto erró cada uno y cuánto pedía la zona
     if (detalle?.tipo === 'smites') {
       const decimal = (n) => String(Math.round(n * 10) / 10).replace('.', ',');
@@ -156,7 +209,12 @@ export function tanCerca(id, resultado, detalle, juicio, state, datos) {
   if (m.tipo === 'latencia') {
     if (detalle?.tipo === 'temprano') return 'Cantaste antes de la señal: el equipo fue a ciegas.';
     if (detalle?.tipo !== 'latencia') return '';
-    return `Tenías ${redondo(latenciaQuePasa(vara, detalle.ventanaMs))} ms y llegaste en ${redondo(detalle.ms)}.`;
+    const malas = (detalle.llamadas ?? []).filter((l) => l.motivo !== 'bien');
+    if (!juicio.paso && malas.length) {
+      const motivo = (malas.find((l) => l.motivo === 'mal') ?? malas[0]).motivo;
+      return `${LLAMADA_FALLA[motivo] ?? 'Se te escapó una llamada'}: ${malas.length} de ${detalle.llamadas.length}.`;
+    }
+    return `Te pedían ${redondo(latenciaQuePasa(vara, detalle.ventanaMs))} ms de media y llegaste en ${redondo(detalle.ms)}.`;
   }
   return `Sacaste ${redondo(resultado * 100)}% y la vara era ${redondo(vara * 100)}%.`;
 }

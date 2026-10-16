@@ -87,7 +87,7 @@ fs.mkdirSync(SALIDA, { recursive: true });
 const logf = path.join(SALIDA, 'log.txt');
 fs.writeFileSync(logf, '');
 const L = (s) => fs.appendFileSync(logf, s + '\n');
-const URL_JUEGO = `http://127.0.0.1:${PUERTO}/?seed=${SEED}`;
+const URL_JUEGO = `http://127.0.0.1:${PUERTO}/?seed=${SEED}&bot`;
 
 // ---------- la pieza visible: UN solo lugar ----------
 // Corre dentro de la pagina. Desde V2-B manda `.shell[data-pieza]` (lo escribe solo el director, src/ui/escena.js), traducido
@@ -279,87 +279,13 @@ function puntuarCarta(txt, tierActual) {
 }
 
 // ---------- minijuegos ----------
-// Jugador habil, con reaccion humana (copiado del re-juego de K6).
-async function jugarMinijuegoBien() {
-  return page.evaluate(() => new Promise((resolve) => {
-    const W = document.querySelector('#minijuegoWidget');
-    const panel = document.querySelector('#minijuego');
-    const fin = (r) => { clearInterval(iv); resolve(r); };
-    const q = (s) => W.querySelector(s);
-    let tipo = null, memo = null, ultimo = -1, jugadoEn = -1, t0 = Date.now();
-    // Termina cuando la parada se va (V2-B: `data-pieza` deja de ser 'minijuego'; antes, el panel con `hidden`).
-    const seFue = () => { const sh = document.querySelector('.shell[data-pieza]'); return sh ? sh.dataset.pieza !== 'minijuego' : panel.hidden; };
-    const iv = setInterval(() => {
-      if (seFue() || Date.now() - t0 > 30000) return fin(tipo || 'cerrado');
-      // V2-B: con el veredicto en pantalla el minijuego ya termino (la parada se va 1600 ms despues). Antes de esta guarda,
-      // las ramas de la_llamada, robar_baron y el_teleport leian nodos que el veredicto ya habia borrado: ~107 pageerror
-      // "Cannot read properties of null" por minijuego (1600 ms / 15 ms), que el recorrido se anotaba como errores del juego.
-      if (q('.minijuego-resultado')) return;
-      if (!tipo) {
-        if (q('.mj-pizarra-carta')) tipo = 'la_pizarra'; else if (q('.minijuego-campo')) tipo = 'la_prueba'; else if (q('.minijuego-ola')) tipo = 'last_hit'; else if (q('.minijuego-teclas')) tipo = 'el_combo';
-        else if (q('.minijuego-metronomo')) tipo = 'el_kite'; else if (q('.minijuego-carriles')) tipo = 'dodge'; else if (q('.minijuego-zonas')) tipo = 'la_vision';
-        else if (q('.minijuego-slider')) tipo = 'rueda_de_prensa'; else if (q('.minijuego-barra') && /TP/.test(W.innerText)) tipo = 'el_teleport';
-        else if (q('.minijuego-barra')) tipo = 'robar_baron'; else if (/señal|AHORA/i.test(W.innerText)) tipo = 'la_llamada';
-        if (tipo === 'la_pizarra') {
-          // La pizarra: se memoriza la cara de cada carta mientras estan vistas y despues se arma cada par.
-          const cs = [...W.querySelectorAll('.mj-pizarra-carta')]; const por = {};
-          cs.forEach((c, i) => { const k = c.querySelector('.mj-pizarra-cara')?.textContent ?? ''; (por[k] ||= []).push(i); });
-          memo = Object.values(por).flatMap((ix) => ix);
-        }
-        if (tipo === 'el_combo') memo = [...W.querySelectorAll('.minijuego-tecla')].map((c) => c.textContent);
-        if (tipo === 'la_vision') memo = [...W.querySelectorAll('.minijuego-zona-btn')].map((b) => b.dataset.estado === 'oscura');
-        return;
-      }
-      const ahora = Date.now();
-      if (tipo === 'la_pizarra') {
-        const cs = [...W.querySelectorAll('.mj-pizarra-carta')];
-        if (cs.some((c) => c.dataset.estado === 'error' || c.dataset.estado === 'vista')) return;
-        if (ahora - jugadoEn < 150) return;
-        const i = memo.find((x) => cs[x] && cs[x].dataset.estado === 'tapada');
-        if (i !== undefined) { cs[i].click(); jugadoEn = ahora; }
-      }
-      if (tipo === 'la_prueba') { const b = q('.minijuego-blanco'); if (b) { if (!b.dataset.visto) b.dataset.visto = ahora; else if (ahora - b.dataset.visto > 280) b.click(); } }
-      if (tipo === 'last_hit') { const m = q('.minijuego-minion:not([disabled])'); if (m && m.dataset.zona === 'ejecucion') m.click(); }
-      if (tipo === 'el_combo') { const bs = [...W.querySelectorAll('.minijuego-tecla-btn:not([disabled])')]; if (bs.length && memo.length) { const k = memo.shift(); bs.find((b) => b.textContent === k)?.click(); } }
-      if (tipo === 'el_kite') { const pasos = [...W.querySelectorAll('.minijuego-paso')]; const i = pasos.findIndex((p) => p.dataset.activo === 'si'); if (i >= 0 && i !== jugadoEn) { const av = q('.minijuego-aviso')?.textContent ?? ''; const bs = [...W.querySelectorAll('.minijuego-kite button')]; const b = /Atac/.test(av) ? bs[0] : bs[1]; if (b && !b.disabled) { b.click(); jugadoEn = i; } } }
-      if (tipo === 'dodge') { const cs = [...W.querySelectorAll('.minijuego-carril')]; const yo = cs.findIndex((c) => c.dataset.yo === 'si'); const pel = cs.findIndex((c) => c.dataset.peligro === 'si'); if (yo >= 0 && yo === pel) { const bs = W.querySelectorAll('.minijuego-mover button'); (yo > 0 ? bs[0] : bs[1])?.click(); } }
-      if (tipo === 'la_vision') { const bs = [...W.querySelectorAll('.minijuego-zona-btn')]; if (bs.length && bs[0].dataset.estado === 'tapada') { const i = memo.findIndex((x) => x); if (i >= 0 && !bs[i].disabled) { memo[i] = false; bs[i].click(); } } }
-      if (tipo === 'robar_baron' || tipo === 'el_teleport') {
-        const z = q('.minijuego-zona'), c = q('.minijuego-marcador'), b = q('.minijuego-btn');
-        if (!z || !c) return;
-        const centro = parseFloat(z.style.left) + parseFloat(z.style.width) / 2; const pos = parseFloat(c.style.left || '0');
-        const objetivo = tipo === 'el_teleport' ? centro - 18 : centro;
-        if (b && !b.disabled && Math.abs(pos - objetivo) < 1.6) b.click();
-      }
-      if (tipo === 'la_llamada') { const av = q('.minijuego-aviso'); if (av && /AHORA/.test(av.textContent)) { if (ultimo < 0) ultimo = ahora; else if (ahora - ultimo > 200) q('.minijuego-btn')?.click(); } }
-      if (tipo === 'rueda_de_prensa' && !window.__prensa) {
-        const ps = [...W.querySelectorAll('.minijuego-pistas-lista li')].map((l) => l.textContent);
-        const POS = /al frente|hablar fuerte|es tuya|crédito|carácter|no te achicás|hacerte notar|firmeza/i, NEG = /humildad|bajá el tono|bajar el tono|respeto|grupo adelante|no te metas|divo|no sobra/i;
-        let sum = 0;
-        for (const p of ps) {
-          if (/no te mueve/i.test(p)) continue;
-          const fijo = /crisis/i.test(p) ? -26 : /slump/i.test(p) ? -16 : /en racha/i.test(p) ? 16 : /Ganaste una final/i.test(p) ? 22 : /Ganaste la serie/i.test(p) ? 14 : /Perdiste una final/i.test(p) ? -29 : /Perdiste la serie/i.test(p) ? -18 : /escándalo/i.test(p) ? -8 : /archirrival/i.test(p) ? 16 : /de tu generación/i.test(p) ? 8 : null;
-          if (fijo !== null) { sum += fijo; continue; }
-          const m = /algo|un poco|no sobra/i.test(p) ? 6 : 12;
-          if (NEG.test(p) && !/al frente/i.test(p)) sum -= m; else if (POS.test(p)) sum += m;
-        }
-        const tono = Math.max(5, Math.min(95, 58 + sum));
-        const sl = q('.minijuego-slider'); if (sl) { sl.value = String(Math.round(tono)); sl.dispatchEvent(new Event('input', { bubbles: true })); }
-        window.__prensa = { pistas: ps, tono: Math.round(tono) };
-        q('.minijuego-btn')?.click();
-      }
-    }, 15);
-  }));
-}
-// Jugador apurado: aprieta lo que ve sin leer la consigna.
-async function jugarMinijuegoMal() {
-  for (let k = 0; k < 60 && (await piezaVisible(page)) === 'minijuego'; k++) {
-    const b = page.locator('#minijuegoWidget button:not(.minijuego-espera-boton):not([disabled])');
-    const nb = await b.count();
-    for (let q = 0; q < Math.min(nb, 2); q++) await b.nth(q).click({ timeout: 1500 }).catch(() => {});
-    await page.waitForTimeout(200);
-  }
-  return 'apurado';
+// D145 (H3u): las mecánicas son canvas (la raíz trae `data-arcade=<id>`) y no hay nada que leer en el DOM para jugarlas. El recorrido
+// abre el juego con `?bot` (`URL_JUEGO`): ese gancho de dev (`ui/components/minijuegos/index.js`, `montadorDe`) termina cada
+// mecánica solo, con un resultado del RNG de la interfaz. Acá solo se espera a que la parada se vaya.
+async function jugarMinijuegoBot() {
+  const id = await page.evaluate(() => document.querySelector('#minijuegoWidget [data-arcade]')?.dataset.arcade ?? null).catch(() => null);
+  for (let k = 0; k < 480 && (await piezaVisible(page)) === 'minijuego'; k++) await page.waitForTimeout(250);
+  return id ?? 'bot';
 }
 // Modo capturas: no toca el widget (el resultado no depende del pulso de nadie). Si no termina solo, cae a la politica.
 async function dejarPasarMinijuego() {
@@ -367,7 +293,7 @@ async function dejarPasarMinijuego() {
     if ((await piezaVisible(page)) !== 'minijuego') return 'pasivo';
     await page.waitForTimeout(250);
   }
-  return MALA ? jugarMinijuegoMal() : jugarMinijuegoBien();
+  return jugarMinijuegoBot();
 }
 
 // ---------- lo que se mide en cada parada ----------
@@ -996,7 +922,7 @@ for (let it = 0; it < 3000; it++) {
     await page.waitForTimeout(30);
     if (MODO === 'recorrido' && !teclado.minijuegoJuego && teclado.minijuegoPrevia) await probarTeclasEnJuego();
     if (MODO === 'capturas' && !capturadas.has('minijuego')) { await captura('minijuego-widget', { completa: true }); capturadas.add('minijuego'); }
-    const jugada = MODO === 'capturas' ? await dejarPasarMinijuego() : MALA ? await jugarMinijuegoMal() : await jugarMinijuegoBien();
+    const jugada = MODO === 'capturas' ? await dejarPasarMinijuego() : await jugarMinijuegoBot();
     await page.waitForTimeout(400);
     await page.evaluate(() => { window.__prensa = null; });
     L(`[${step}] ${topbar} | MINIJUEGO(${tipoP}) "${tit}" (${jugada})${charlaTxt} || ${ap.replace(/\n+/g, ' | ').slice(0, 300)}`);
