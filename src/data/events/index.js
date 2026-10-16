@@ -50,6 +50,17 @@ import latam from './latam.json' with { type: 'json' };
 // K4-C2: las bifurcaciones nuevas (cambio de región, streaming, cambio de línea, playoffs infiltrado, conflicto, staff) y
 // los eventos que leen los caminos que dejan.
 import caminos from './caminos.json' with { type: 'json' };
+// Ola H, H5 (PLANUI §0.10): lo raro, por tema. Los raros, épicos y legendarios que cambian la carrera.
+import rarosSoloq from './raros/soloq.json' with { type: 'json' };
+import rarosStream from './raros/stream.json' with { type: 'json' };
+import rarosPlata from './raros/plata.json' with { type: 'json' };
+import rarosFamilia from './raros/familia.json' with { type: 'json' };
+import rarosEscena from './raros/escena.json' with { type: 'json' };
+import rarosLlamado from './raros/llamado.json' with { type: 'json' };
+import rarosParche from './raros/parche.json' with { type: 'json' };
+import rarosSalud from './raros/salud.json' with { type: 'json' };
+import rarosLegado from './raros/legado.json' with { type: 'json' };
+import rarosOscuro from './raros/oscuro.json' with { type: 'json' };
 
 export const TODOS_LOS_EVENTOS = [
   ...soloqPrecarrera,
@@ -77,5 +88,15 @@ export const TODOS_LOS_EVENTOS = [
   ...declive,
   ...tier3,
   ...latam,
-  ...caminos
+  ...caminos,
+  ...rarosSoloq,
+  ...rarosStream,
+  ...rarosPlata,
+  ...rarosFamilia,
+  ...rarosEscena,
+  ...rarosLlamado,
+  ...rarosParche,
+  ...rarosSalud,
+  ...rarosLegado,
+  ...rarosOscuro
 ];

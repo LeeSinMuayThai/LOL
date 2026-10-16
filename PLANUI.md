@@ -1376,6 +1376,8 @@ forma.
   - un cambio de camino: rol, org, región o quedarte sin equipo.
 - Cada legendaria abre un arco (una cadena de 2-3 pasos o una promesa) y tiene su momento en dorado
   (`ui/fx/momento.js`).
+- **La rareza, a la vista** (2026-10-16): hoy la pantalla del evento no lee `rarezaEvento`. Su marco la dice como en las
+  cartas (gris, azul, violeta, dorado), y el legendario sale con `mostrarLegendaria`. Lo hace la pieza de H6.
 - **Los temas:**
   - soloQ;
   - stream y redes;
@@ -1411,7 +1413,7 @@ Las reglas de los workers:
 |---|---|---|
 | **1 · La forma de elegir y el kit** | **H1a**, el sorteo, el cupo, la cola, el piso y VERSION 19 (Opus high) · **H1b**, la temporada sin paradas de partido, las 64 re-alojadas, `--bloque=variedad` y los checks (Sonnet xhigh) · **H2a**, el motor de la mano, el formato, las 30 migradas y 60 semilla (Sonnet xhigh) · **H3k**, el kit, `robar_baron`, `dodge` y `/arcade` (Opus high) · **H4a**, la guía y el check (Sonnet high) | El usuario juega `/arcade` y una carrera |
 | **2 · El arcade y la voz** | **H3e**, el motor: regla en dato, rotación, Play-In y tandas (Opus high) · **H3**, 10 mecánicas: 4 × Opus high · **H4b**, la reescritura de 265: 4 × Sonnet high · **H2b**, la pantalla de cartas y el momento legendario (Sonnet high) | El usuario juega en RÁPIDO |
-| **3 · Lo raro** | **H5**, 5 escritores × ~38 (Sonnet high) más un editor de LoL y tono · **H2c**, 2 × ~90 cartas · **H6**, el álbum (Sonnet high) | El usuario juega 2-3 carreras |
+| **3 · Lo raro** | **H5a-c**, 3 escritores por tema × ~63 (Sonnet high; 2026-10-16, por el consumo: tres en vez de cinco y sin editor aparte, el supervisor mide el alcance y lee una muestra) · **H2c + H6**, ~150 cartas, el álbum y la rareza del evento a la vista (Sonnet high) | El usuario juega 2-3 carreras |
 
 - **Antes del código:**
   - PLANUI §0.10 con estas decisiones y las líneas "reemplaza a" (G2a PLANUI:880, la frecuencia de G1
