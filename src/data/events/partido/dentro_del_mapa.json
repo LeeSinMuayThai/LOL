@@ -2,15 +2,25 @@
   {
     "id": "la_jungla_enemiga_esta_sola",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La jungla enemiga está sola",
     "description": "Ves al jungla de {rivalDeLaFecha} lejos de su lado del mapa. Invadir puede darte la ventaja del partido, o dejarte sin recursos para el resto de la jungla.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "rol": ["jungla"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "rol": [
+        "jungla"
+      ]
     },
     "conditions": [],
     "options": [
@@ -23,20 +33,60 @@
           {
             "weight": 6,
             "modificadores": [
-              { "field": "player.stats.mecanica", "referencia": 55, "factor": 0.02 }
+              {
+                "field": "player.stats.mecanica",
+                "referencia": 55,
+                "factor": 0.02
+              }
             ],
             "texto": "Lo agarrás limpiando su propio buff y le arruinás el arranque del partido a {rivalDeLaFecha}.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.12, "max": 0.22 },
-              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Te estaba esperando. Perdés recursos y llegás al primer objetivo grande sin nivel para pelearlo.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -51,16 +101,52 @@
             "weight": 6,
             "texto": "Terminás la ruta a full recursos y llegás al primer objetivo con margen. Aprendés cómo se mueve su jungla, aunque no le sacás nada.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Jugás tan seguro que {rivalDeLaFecha} te saca ventaja de mapa sin que nadie lo note hasta el minuto quince. De todos modos, te llevás una lectura nueva.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -70,15 +156,25 @@
   {
     "id": "jungla_gank_o_farm",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Nivel 3 y dos líneas pidiendo",
     "description": "Terminás el primer campamento y te escriben del top y del bot: los dos quieren que subas. Uno tiene la línea empujada a torre; el otro, un flash abajo. No llegás a las dos.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "rol": ["jungla"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "rol": [
+        "jungla"
+      ]
     },
     "conditions": [],
     "options": [
@@ -95,16 +191,52 @@
               "Sale limpio: kill, torre en camino, y el jungla de {rivalDeLaFecha} corriendo atrás toda la partida."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.12, "max": 0.22 },
-              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "El gank se va sin nada y el carril que dejaste solo se come un flash por tu ausencia.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.0 },
-              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -119,16 +251,52 @@
             "weight": 6,
             "texto": "Llegás al minuto seis un nivel arriba del jungla rival, con el mapa entero por delante para elegir. El early no lo moviste, pero el ritmo lo leíste mejor.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Mientras vos farmeás, el jungla de {rivalDeLaFecha} hace los dos ganks que vos no hiciste. Igual, queda la lección para la próxima.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -138,15 +306,25 @@
   {
     "id": "top_la_isla",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Solo en tu línea",
     "description": "Te comen la línea contra {rivalDeLaFecha} y del otro lado del mapa nadie se entera hasta que ya es tarde. En top el error es tuyo y la ayuda casi nunca llega a horario.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "rol": ["top"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "rol": [
+        "top"
+      ]
     },
     "conditions": [],
     "options": [
@@ -160,16 +338,52 @@
             "weight": 6,
             "texto": "Sobrevivís la línea con lo justo y con la cabeza en su lugar. No sumaste partido, pero no perdiste más de lo que ya habías perdido.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Te quedás tan atrás que ni de bloqueador servís. La torre cae igual, solo que más despacio. Al menos la cabeza te quedó en su lugar.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -183,20 +397,60 @@
           {
             "weight": 6,
             "modificadores": [
-              { "field": "player.stats.mecanica", "referencia": 55, "factor": 0.02 }
+              {
+                "field": "player.stats.mecanica",
+                "referencia": 55,
+                "factor": 0.02
+              }
             ],
             "texto": "Te sale la jugada arriesgada y la línea vuelve a estar pareja contra {rivalDeLaFecha}.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.12, "max": 0.22 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Sale mal. Perdés la torre y la paciencia, en ese orden.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -206,15 +460,25 @@
   {
     "id": "top_el_tp",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "El TP en la mochila",
     "description": "Abajo se está armando una pelea 5v5 sobre el primer heraldo. Tenés el TP listo. Si bajás, tu línea contra {rivalDeLaFecha} queda sola dos oleadas; si no, la pelea es 4v5 para los tuyos.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "rol": ["top"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "rol": [
+        "top"
+      ]
     },
     "conditions": [],
     "options": [
@@ -228,16 +492,52 @@
             "weight": 6,
             "texto": "Caés por atrás y la pelea se acomoda. Las dos oleadas que perdiste las pagás en el partido, pero la lectura de la pelea te la quedás vos.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.shotcalling", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Para cuando el TP canaliza, la pelea ya se decidió sin vos. Perdiste las oleadas y no cambiaste nada. Ahora sabés cuándo canaliza de verdad el TP y cuándo ya es tarde.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -252,15 +552,42 @@
             "weight": 7,
             "texto": "Tu línea gana ventaja mientras {rivalDeLaFecha} bajó a pelear. Volvés a plantear el 1v1 desde arriba.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.16 }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 3,
             "texto": "Abajo pierden la pelea 4v5 por poco, y todos miran el TP que te quedó sin usar.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 },
-              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -270,15 +597,25 @@
   {
     "id": "mid_el_duelo",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "El duelo de línea",
     "description": "Del otro lado, alguien de {rivalDeLaFecha} te pushea la línea y te invita a una pelea 1v1 en pleno medio del mapa. Todo el chat lo está mirando en vivo.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "rol": ["mid"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "rol": [
+        "mid"
+      ]
     },
     "conditions": [],
     "options": [
@@ -291,21 +628,70 @@
           {
             "weight": 3,
             "modificadores": [
-              { "field": "player.stats.mecanica", "referencia": 55, "factor": 0.025 }
+              {
+                "field": "player.stats.mecanica",
+                "referencia": 55,
+                "factor": 0.025
+              }
             ],
             "texto": "Le ganás el 1v1 en pleno mapa y el clip se corta solo. Ese momento vale más que cualquier estadística de la fecha.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.08, "max": 0.22 },
-              { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 9, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 7,
             "texto": "Perdés el duelo delante de todos. El highlight es tuyo, pero por el motivo equivocado.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.06 },
-              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -320,14 +706,32 @@
             "weight": 7,
             "texto": "Te negás a jugarle el juego y del otro lado se quedan hablando solos en el chat. Ganás la línea sin necesitar el duelo.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.16 }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 3,
             "texto": "Negarte también se lee como que le tuviste miedo a la pelea, y {rivalDeLaFecha} juega más suelto después de eso.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -337,15 +741,25 @@
   {
     "id": "mid_roam_o_lane",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La ola crashea en dos",
     "description": "Tu oleada revienta contra la torre rival en dos segundos y el mid de {rivalDeLaFecha} está sin visión. Podés rotar a bot con ventaja de tempo, o quedarte a no perder ni un CS.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "rol": ["mid"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "rol": [
+        "mid"
+      ]
     },
     "conditions": [],
     "options": [
@@ -358,19 +772,50 @@
           {
             "weight": 6,
             "modificadores": [
-              { "field": "player.stats.macro", "referencia": 55, "factor": 0.02 }
+              {
+                "field": "player.stats.macro",
+                "referencia": 55,
+                "factor": 0.02
+              }
             ],
             "texto": "Llegás justo, el 3v2 convierte y bot queda con torre y doble kill. El roam decidió el early.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.12, "max": 0.22 },
-              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "El mid rival te ve salir, avisa, y para cuando llegás abajo ya está todo replegado. Perdiste CS por nada.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.0 }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -385,17 +830,62 @@
             "weight": 6,
             "texto": "Mantenés la presión de mid y llegás a tu primer ítem antes que nadie en la partida. Lo que ganás es línea; el partido no lo movés.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.laneo", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Te quedás a farmear y el mid de {rivalDeLaFecha} sí rota, y abajo lo pagan los tuyos. Después de esto, sabés cuándo vale rotar y cuándo no.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 3, "clamp": [0, 100] },
-              { "type": "stat", "path": "player.stats.macro", "min": -2, "max": 0, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -405,15 +895,25 @@
   {
     "id": "adc_la_pelea_que_define",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Todo el daño pasa por vos",
     "description": "Llegás a la pelea de mitad de partido siendo la única fuente de daño real del equipo. Si te posicionás mal contra {rivalDeLaFecha}, no hay plan B.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "rol": ["adc"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "rol": [
+        "adc"
+      ]
     },
     "conditions": [],
     "options": [
@@ -426,21 +926,65 @@
           {
             "weight": 6,
             "modificadores": [
-              { "field": "player.stats.teamfight", "referencia": 50, "factor": 0.02 },
-              { "field": "player.stats.mecanica", "referencia": 55, "factor": 0.015 }
+              {
+                "field": "player.stats.teamfight",
+                "referencia": 50,
+                "factor": 0.02
+              },
+              {
+                "field": "player.stats.mecanica",
+                "referencia": 55,
+                "factor": 0.015
+              }
             ],
             "texto": "Te arriesgás, conectás todo el daño, y la pelea se define en tres segundos gracias a vos.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.12, "max": 0.22 },
-              { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Te agarran de entrada y la pelea se pierde antes de que hicieras nada. Sin tu daño, no había pelea que ganar.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -455,17 +999,62 @@
             "weight": 6,
             "texto": "Sobrevivís toda la pelea y terminás limpiando lo que queda. No fue vistoso ni movió el partido, pero salís entero y con la cabeza fría.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Jugás tan atrás que tu daño llega cuando la pelea ya estaba decidida. Vivo, pero inútil. Y aun así llegás entero de cabeza al próximo.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] },
-              { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -475,15 +1064,25 @@
   {
     "id": "adc_el_kite_tardio",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "rara",
     "categoria": "partido",
     "title": "Kitear con las manos temblando",
     "description": "Minuto 34, pelea por el alma en el río. Estás full ítems y el asesino de {rivalDeLaFecha} te va a saltar sí o sí. Toda la pelea se juega en cómo muevas los pies los próximos cuatro segundos.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "rol": ["adc"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "rol": [
+        "adc"
+      ]
     },
     "conditions": [],
     "options": [
@@ -496,24 +1095,73 @@
           {
             "weight": 3,
             "modificadores": [
-              { "field": "player.stats.mecanica", "referencia": 60, "factor": 0.03 }
+              {
+                "field": "player.stats.mecanica",
+                "referencia": 60,
+                "factor": 0.03
+              }
             ],
             "texto": [
               "Esquivás el gancho, girás el ataque y quedás vos parado en un mar de grises. Pelea, alma y probablemente partido.",
               "Cuatro segundos de manos perfectas: sobrevivís el salto con un sliver de vida y borrás a los cinco."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.08, "max": 0.22 },
-              { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 9, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 7,
             "texto": "El salto te agarra un pelo antes de tu dash. Morís primero, sin daño puesto, y la pelea se va con vos. Eso sí, el clip circula igual.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.06 },
-              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -528,14 +1176,32 @@
             "weight": 7,
             "texto": "El asesino no encuentra la ventana y se retira. Das daño constante desde atrás y la pelea se inclina despacio.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.16 }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 3,
             "texto": "Tan atrás jugás que tu daño no alcanza a la primera línea, y la pelea queda en un empate que no te sirve.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -545,15 +1211,25 @@
   {
     "id": "support_el_ward_que_te_costo",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La visión no es gratis",
     "description": "Comprar el control ward en el momento justo te deja sin oro para lo tuyo, otra vez. Contra {rivalDeLaFecha} el mapa lo agradece; tu build, no.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "rol": ["support"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "rol": [
+        "support"
+      ]
     },
     "conditions": [],
     "options": [
@@ -567,16 +1243,52 @@
             "weight": 7,
             "texto": "La visión evita una jugada de {rivalDeLaFecha} en el momento exacto. Nadie te lo va a mencionar, pero funcionó.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.16 },
-              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 3,
             "texto": "El ward no evita nada esta vez, y te quedaste atrás de ítems para el resto del partido por una jugada que no pasó.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -591,17 +1303,62 @@
             "weight": 6,
             "texto": "Con el ítem de más, respondés mejor en la pelea que se arma después. Nadie conecta las dos cosas, pero vos lo sentís en cada pelea.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.teamfight", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.teamfight",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "La falta de visión le cuesta al equipo una jugada evitable de {rivalDeLaFecha}. La próxima vez la ward va antes que el ítem.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.teamfight", "min": 2, "max": 3, "clamp": [0, 100] },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.teamfight",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -611,15 +1368,25 @@
   {
     "id": "support_engage_o_peel",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Vos abrís o vos tapás",
     "description": "La pelea está por estallar y tu campeón hace las dos cosas: podés tirar el engage que empieza todo, o guardarte para tapar al carry cuando salten sobre él. No hay tiempo para las dos.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "rol": ["support"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "rol": [
+        "support"
+      ]
     },
     "conditions": [],
     "options": [
@@ -633,17 +1400,62 @@
             "weight": 6,
             "texto": "Encontrás el ángulo, enganchás a dos y tu equipo cae encima. Pocas veces sale así, pero cada engage te enseña un poco más a leer cuándo pegar.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.shotcalling", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Entrás y atrás tuyo no viene nadie. Morís primero y el 5v4 lo aprovecha {rivalDeLaFecha}. Algo aprendiste igual.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 3, "clamp": [0, 100] },
-              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -658,15 +1470,42 @@
             "weight": 7,
             "texto": "Saltan sobre tu carry y estás ahí: stun, cuerpo, lo que haga falta. Tu ADC sobrevive y limpia la pelea.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.16 },
-              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 3,
             "texto": "Nadie abre la pelea y se hace un baile de treinta segundos que termina cuando {rivalDeLaFecha} encuentra el ángulo primero.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -676,14 +1515,22 @@
   {
     "id": "el_objetivo_que_define_la_fecha",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "El objetivo que define la fecha",
     "description": "El Barón está por spawnear y las dos vanguardias se miran de lejos. Nadie quiere pelear primero, pero alguien tiene que moverse.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ]
     },
     "conditions": [],
     "options": [
@@ -700,7 +1547,16 @@
               "Entrás antes de que agarren visión y la pelea es tuya desde el primer segundo. Barón sin resistencia."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.12, "max": 0.22 }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
@@ -710,7 +1566,16 @@
               "El engage cae en cuatro miembros de {rivalDeLaFecha} agrupados. Se hace un desastre y es el tuyo."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.0 }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -728,16 +1593,52 @@
               "Aguantás la posición y alguien del otro lado se impacienta. Lo castigás, y de paso le leés el reloj al mapa."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Esperar tanto le regala tiempo a {rivalDeLaFecha} para armar la jugada perfecta. De todos modos, te llevás una lectura nueva.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -747,15 +1648,25 @@
   {
     "id": "el_error_ajeno",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Un compañero se mandó solo",
     "description": "Uno del equipo se metió a pelear sin avisar y quedó colgado en el medio del mapa. Todavía se puede hacer algo, o se puede dejar que pase.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "marcas": ["con_vestuario"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "marcas": [
+        "con_vestuario"
+      ]
     },
     "conditions": [],
     "options": [
@@ -772,16 +1683,52 @@
               "Entrás, {companero} sale vivo por poco, y el equipo se acuerda de que fuiste."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "career.sinergia", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Vas a buscarlo y termina siendo una pelea de dos contra el equipo entero de {rivalDeLaFecha}. Eso sí, el vestuario no te lo va a reprochar.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -796,15 +1743,42 @@
             "weight": 7,
             "texto": "Se pierde una vida, pero el resto del equipo convierte esa ventaja en otro lado del mapa.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.16 }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 3,
             "texto": "El equipo lo lee como que lo abandonaste, aunque la decisión fuera la correcta en el mapa.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 },
-              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -814,14 +1788,22 @@
   {
     "id": "la_remontada_posible",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Abajo, pero no afuera",
     "description": "Se les fue el partido temprano y van perdiendo por una diferencia incómoda. Todavía hay tiempo, si alguien se anima a jugarlo distinto.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ]
     },
     "conditions": [],
     "options": [
@@ -838,8 +1820,26 @@
               "Encontrás un pick sobre el carry, y de ese 1-for-0 sale toda la remontada. El oro se empareja en cinco minutos."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.12, "max": 0.22 },
-              { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
@@ -849,8 +1849,26 @@
               "Forzás una pelea que no estaba y {rivalDeLaFecha} la castiga con el Barón y las inhibidoras."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -865,16 +1883,52 @@
             "weight": 7,
             "texto": "No se da la remontada, pero tampoco se convierte en una masacre. Guardás algo para la próxima fecha.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 3,
             "texto": "Jugar para administrar a veces también deja una puerta abierta que nadie esperaba.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -884,14 +1938,22 @@
   {
     "id": "el_early_que_se_pudrio",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Primer sangre en contra al minuto tres",
     "description": "Arranca el partido contra {rivalDeLaFecha} y ya vas 0-2 en el mapa por dos jugadas que no fueron ni tuyas. El chat del equipo se llena de pings y de silencio.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ]
     },
     "conditions": [],
     "options": [
@@ -908,16 +1970,52 @@
               "El equipo suelta el early y vuelve a jugar de cero. La ventaja de {rivalDeLaFecha} se diluye sola."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.16 },
-              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 3,
             "texto": "Decís lo correcto pero el ánimo ya está roto. Los próximos minutos son cinco jugadores en cinco partidas distintas.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -931,20 +2029,60 @@
           {
             "weight": 6,
             "modificadores": [
-              { "field": "player.stats.mentalidad", "referencia": 55, "factor": 0.02 }
+              {
+                "field": "player.stats.mentalidad",
+                "referencia": 55,
+                "factor": 0.02
+              }
             ],
             "texto": "Jugás como si el marcador estuviera 0-0 y pulís cada trade. El resto del equipo queda a la deriva, pero tu partida sale limpia de verdad.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.mecanica", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Vos jugás bien pero el resto no se recupera, y una partida impecable en un equipo tilteado no alcanza. Algo aprendiste igual.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -954,14 +2092,22 @@
   {
     "id": "la_ventaja_que_no_cierra",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Arriba por cinco mil y sin cerrarlo",
     "description": "Le sacaste cinco mil de oro a {rivalDeLaFecha} pero ya van tres intentos de cierre que no terminan en nada. Cada minuto que pasa, la ventaja vale un poco menos.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ]
     },
     "conditions": [],
     "options": [
@@ -975,7 +2121,16 @@
             "weight": 6,
             "texto": "Agarrás Barón, entrás a la base con la ventaja todavía intacta y esta vez sí cae el Nexo.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.12, "max": 0.22 }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
@@ -985,8 +2140,26 @@
               "El Barón se va contestado, un ace en contra, y el partido que tenías ganado ahora es una moneda."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1001,16 +2174,52 @@
             "weight": 6,
             "texto": "Estrangulás el mapa de a poco: visión, picks, objetivos. No es el cierre más rápido, pero lo que aprendés de manejar la ventaja no se te va.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Jugás tan lento que {rivalDeLaFecha} llega a ítems clave, y la ventaja de oro deja de significar ventaja de mapa. Aprendiste cuánto dura una ventaja de oro si no la convertís en mapa.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1020,15 +2229,25 @@
   {
     "id": "la_llamada_de_baron",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Barón con uno menos",
     "description": "Cae un compañero en el río y el Barón queda a la vista, casi sin vida. {rivalDeLaFecha} está a diez segundos. Se puede robar 4v5, o se puede soltar y jugar la pelea después.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "marcas": ["con_vestuario"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "marcas": [
+        "con_vestuario"
+      ]
     },
     "conditions": [],
     "options": [
@@ -1045,16 +2264,52 @@
               "Lo bajan un segundo antes de que llegue {rivalDeLaFecha}. Roban el objetivo y el partido de una."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.12, "max": 0.22 },
-              { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Llegan encima mientras están pegándole al Barón. Lo contestan, se llevan tres kills y el objetivo. Desastre completo.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.0 },
-              { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1069,16 +2324,52 @@
             "weight": 6,
             "texto": "Ceden el Barón pero llegan enteros a la pelea siguiente. Nadie queda colgado y el equipo se acuerda de que le diste el respiro.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "career.sinergia", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "{rivalDeLaFecha} agarra el Barón gratis y lo usa para partir el mapa. Ceder salió más caro de lo previsto. Eso sí, el vestuario no te lo va a reprochar.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1088,14 +2379,22 @@
   {
     "id": "el_flanco_que_viste",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "rara",
     "categoria": "partido",
     "title": "El flanco que solo viste vos",
     "description": "El equipo de {rivalDeLaFecha} está agrupado mirando un objetivo y vos tenés el ángulo perfecto por atrás. Si avisás y esperás, se pierde. Si vas solo y sale, es la pelea.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ]
     },
     "conditions": [],
     "options": [
@@ -1108,24 +2407,73 @@
           {
             "weight": 3,
             "modificadores": [
-              { "field": "player.stats.teamfight", "referencia": 55, "factor": 0.025 }
+              {
+                "field": "player.stats.teamfight",
+                "referencia": 55,
+                "factor": 0.025
+              }
             ],
             "texto": [
               "Entrás perfecto, agarrás a dos y el equipo cae detrás. La pelea dura cuatro segundos y es un ace.",
               "El flanco es letal: para cuando {rivalDeLaFecha} gira, ya perdieron a los dos carries."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.08, "max": 0.22 },
-              { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 9, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 7,
             "texto": "Entrás y atrás tuyo el equipo todavía está procesando lo que hiciste. Te matan solo y la pelea se va 5v4. Igual, de esa jugada se va a hablar.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.06 },
-              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1140,15 +2488,42 @@
             "weight": 7,
             "texto": "Para cuando coordinan, el ángulo sigue ahí y entran los cinco. Más lento, igual de letal.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.16 },
-              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 3,
             "texto": "Los tres segundos de coordinar alcanzan para que {rivalDeLaFecha} rote la visión y el flanco deje de existir.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1158,14 +2533,22 @@
   {
     "id": "la_torre_expuesta",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Splitear o agrupar",
     "description": "Tu campeón parte torres como nadie y hay dos inhibidoras a tiro por el lateral. Pero el equipo quiere agrupar para Alma, y contra {rivalDeLaFecha} no alcanzan cuatro si vos estás en la otra punta.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ]
     },
     "conditions": [],
     "options": [
@@ -1178,21 +2561,70 @@
           {
             "weight": 6,
             "modificadores": [
-              { "field": "player.stats.macro", "referencia": 55, "factor": 0.02 }
+              {
+                "field": "player.stats.macro",
+                "referencia": 55,
+                "factor": 0.02
+              }
             ],
             "texto": "Mandan dos a frenarte, tu equipo aguanta el centro y vos tirás una inhibidora. Aprendés a partir el mapa, aunque el partido queda a medias.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Mandan uno solo a molestarte y agrupan los otros cuatro sobre tus cuatro. Pierden la pelea por tu ausencia. Entendiste que el lateral se presiona solo si el resto aguanta sin vos.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 3, "clamp": [0, 100] },
-              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1207,15 +2639,42 @@
             "weight": 7,
             "texto": "Los cinco juntos ganan la pelea por Alma limpio. Con ese buff, las inhibidoras van a estar ahí en cinco minutos igual.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.16 },
-              { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 3,
             "texto": "Agrupás y la pelea por Alma se hace un empate sin nadie. La presión lateral que resignaste no vuelve.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1225,14 +2684,22 @@
   {
     "id": "el_reloj_corre",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La ventaja se derrite",
     "description": "Ibas quince mil arriba al minuto veinte. Son las 41 y la diferencia es de cuatro mil: {rivalDeLaFecha} llegó a sus power spikes y cada pelea ahora es una moneda.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ]
     },
     "conditions": [],
     "options": [
@@ -1246,17 +2713,62 @@
             "weight": 3,
             "texto": "Encontrás una pelea decente, la ganás por poco, y con el Barón cerrás antes de que el partido termine de darse vuelta.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.08, "max": 0.22 },
-              { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 9, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 7,
             "texto": "La pelea forzada la ganan ellos, y de golpe el partido que tenías controlado hace veinte minutos está perdido. La apuesta, igual, se vio: nadie dice que no fuiste a buscarla.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.06 },
-              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1271,7 +2783,16 @@
             "weight": 7,
             "texto": "La calma paga: en la pelea que sí elegís, la ventaja de ítems todavía alcanza y esa vez cerrás.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.16 }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
@@ -1281,7 +2802,16 @@
               "Cada minuto de espera es oro para el lado que escala mejor. Para el 50 ya no hay ventaja que administrar."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1291,14 +2821,22 @@
   {
     "id": "la_inhibidora_caida",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Inhibidora abajo, ¿entrás o volvés?",
     "description": "Rompés la primera inhibidora de {rivalDeLaFecha} y quedan todos vivos del otro lado, defendiendo con la ventaja de la base. Tenés tempo para un objetivo, no para dos.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ]
     },
     "conditions": [],
     "options": [
@@ -1312,16 +2850,52 @@
             "weight": 6,
             "texto": "Con la inhibidora abajo no pueden despegarse de la base. Agarrás Barón y de paso aprendés lo que vale mantener la presión en el tempo justo.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.macro", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "Te confiás del mapa y {rivalDeLaFecha} encuentra un flanco defendiendo. Un pick, y la presión se te da vuelta. Aprendiste a no dejar de mirar el mapa con la inhibidora ya caída.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1336,14 +2910,32 @@
             "weight": 7,
             "texto": "Volvés full ítems y vida justo cuando la súper oleada llega a la segunda torre. Entrada limpia, sin regalar nada.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.16 }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 3,
             "texto": "El reseteo le da a {rivalDeLaFecha} justo el respiro que necesitaba para armar visión y estabilizar.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1353,14 +2945,22 @@
   {
     "id": "el_2v2_en_el_rio",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Escaramuza en el scuttle",
     "description": "Vas por el cangrejo y aparece alguien de {rivalDeLaFecha} con su jungla. Se arma un 2v2 sucio en el río con las dos vidas al filo.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ]
     },
     "conditions": [],
     "options": [
@@ -1373,18 +2973,40 @@
           {
             "weight": 6,
             "modificadores": [
-              { "field": "player.stats.mecanica", "referencia": 58, "factor": 0.02 }
+              {
+                "field": "player.stats.mecanica",
+                "referencia": 58,
+                "factor": 0.02
+              }
             ],
             "texto": "Ganás la escaramuza limpia, te quedás con el cangrejo y con la mitad del río en visión. Early tuyo.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.12, "max": 0.22 }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "La pelea se alarga, aparece un tercero de {rivalDeLaFecha} y lo que era un 2v2 pareja termina 1-for-2 en contra.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.0 }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1399,16 +3021,52 @@
             "weight": 6,
             "texto": "Cedés visión pero terminás dos campamentos mientras ellos pelearon por el cangrejo. Salís adelante de oro, aunque el early no es tuyo.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.laneo", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "El cangrejo cedido le da a {rivalDeLaFecha} visión de todo tu cuadrante, y el próximo gank te cae a vos. Aprendiste a no ceder el río por un cangrejo.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.laneo", "min": 2, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1418,15 +3076,25 @@
   {
     "id": "la_ejecucion_del_plan",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La ventana del plan es ahora",
     "description": "Toda la semana practicaron una jugada para este matchup contra {rivalDeLaFecha}, y el mapa acaba de dártela: la composición está donde tiene que estar, los cooldowns también. Es ahora o nunca.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"],
-      "marcas": ["con_vestuario"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ],
+      "marcas": [
+        "con_vestuario"
+      ]
     },
     "conditions": [],
     "options": [
@@ -1443,15 +3111,42 @@
               "El plan funciona hasta el último detalle. {companero} cierra la jugada y el partido pega un volantazo."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.12, "max": 0.22 },
-              { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "La jugada se ejecuta bien pero {rivalDeLaFecha} tenía la respuesta preparada. Sale un intercambio parejo y gastaste todo.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.12, "max": 0.0 }
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1466,17 +3161,62 @@
             "weight": 6,
             "texto": "La próxima ventana llega diez minutos después, más limpia. Esperaste con calma y la jugada sale mejor, aunque ya perdiste tempo.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.08, "max": 0.0 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 5, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 4,
             "texto": "La ventana perfecta no vuelve. El plan que practicaron toda la semana se queda sin usar y el partido se define por otro lado. Eso sí, la cabeza no se te rompió.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.1, "max": -0.02 },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 3, "clamp": [0, 100] },
-              { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1486,14 +3226,22 @@
   {
     "id": "el_momento_de_heroe",
     "category": "partido_dentro_del_mapa",
+    "rarezaEvento": "rara",
     "categoria": "partido",
     "title": "El partido te ofrece la jugada",
     "description": "El mapa se alinea para una de esas jugadas que se recuerdan: solo, sin visión, con los cinco de {rivalDeLaFecha} a tiro si entrás perfecto. Salir bien es el clip del año. Salir mal es el meme del año.",
     "weight": 4,
     "cooldown": 5,
     "contexto": {
-      "stakes": ["clasico", "puntero", "define_clasificacion", "revancha", "presion", "rival_de_generacion", "parejo"],
-      "ventana": ["regular"]
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "ventana": [
+        "regular",
+        "playoffs"
+      ]
     },
     "conditions": [],
     "options": [
@@ -1506,24 +3254,73 @@
           {
             "weight": 3,
             "modificadores": [
-              { "field": "player.stats.mecanica", "referencia": 62, "factor": 0.03 }
+              {
+                "field": "player.stats.mecanica",
+                "referencia": 62,
+                "factor": 0.03
+              }
             ],
             "texto": [
               "Entra todo. Ulti perfecta, cuatro de {rivalDeLaFecha} en el piso, y el casteo se le rompe la voz. Ese clip te sobrevive.",
               "La jugada imposible sale. Salís caminando de una pelea que tendría que haberte matado tres veces."
             ],
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.08, "max": 0.22 },
-              { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 10, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 7,
             "texto": "Entrás, la ulti agarra a uno, y los otros cuatro te borran en un segundo. El equipo juega 4v5 la pelea que importaba. Igual, de esa jugada se va a hablar.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.2, "max": -0.06 },
-              { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
-              { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]
@@ -1538,15 +3335,42 @@
             "weight": 7,
             "texto": "Dejás pasar la locura, jugás la pelea 5v5 estándar y la ganás sin sobresaltos. Nadie hace un clip, y está perfecto.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": 0.06, "max": 0.16 },
-              { "type": "stat", "path": "player.stats.shotcalling", "min": 1, "max": 3, "clamp": [0, 100] }
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           },
           {
             "weight": 3,
             "texto": "Jugás la correcta y sale bien, pero por dentro te queda la duda de qué hubiera pasado si te tirabas.",
             "effects": [
-              { "type": "partido", "path": "career.temporada.ajustePartido", "min": -0.04, "max": 0.06 }
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
             ]
           }
         ]

@@ -32,11 +32,13 @@ export const TOKENS = {
   // resuelve cuando el jungla sos vos (tu línea no está entre tus compañeros); este sí, en cualquier rol con vestuario.
   companero: (state) => state.career.companeros[0]?.handle,
   rival: (state) => state.mundo.rivales[0]?.handle,
-  // El rival de ESTA fecha de temporada regular (fase 5) — no confundir con
-  // {rival}, que es el rival de generación. Solo resuelve mientras hay una
-  // fecha marcada en curso, que es el único momento en que este token puede
-  // aparecer en un texto (data/events/partido/*.json).
-  rivalDeLaFecha: (state) => state.career.temporada?.fechaEnCurso?.rival ?? null,
+  // El rival de la fecha de temporada regular (fase 5) — no confundir con {rival}, que es el rival de generación. H1b: la
+  // temporada regular ya no frena en ninguna fecha, así que el rival es el del último partido de la temporada (o el que
+  // viene, si todavía no se jugó ninguno): los eventos de `data/events/partido/` viven en el mazo del split y hablan de él.
+  rivalDeLaFecha: (state) => {
+    const t = state.career.temporada;
+    return t?.fechaEnCurso?.rival ?? t?.calendario?.[Math.max(0, Math.min((t.indice ?? 0) - 1, (t.calendario?.length ?? 1) - 1))]?.rival ?? null;
+  },
   // El campeón que domina el parche en tu línea. Deja escribir "todos pickean
   // {metaTop}" sin cablear un nombre en el JSON.
   metaTop: (state) => campeonesEnMeta(state.meta.weights, campeonesDisponibles(state), 1)[0]?.name,
