@@ -2400,7 +2400,70 @@ export const BALANCE = {
     // total: nunca se pide perfección, siempre podés errar una.
     varaMaxima: 0.85,
     // Cuántos pasos tiene cada mecánica de conteo de un mapa (la UI los lee de acá, y el motor saca su techo).
-    conteo: { last_hit: 5, el_combo: 5, dodge: 4, el_kite: 8, la_vision: 3, la_corrida: 4 },
+    // H3k: el dodge pasó de 4 carriles a 7 oleadas en una arena. Con 4, el techo (n − 1) / n = 0,75 juntaba las varas 0,7
+    // y 0,85 en "3 de 4"; con 7 cada escalón de `varaPorP` pide otro número (4, 5 y 6 de 7).
+    conteo: { last_hit: 5, el_combo: 5, dodge: 7, el_kite: 8, la_vision: 3, la_corrida: 4 },
+    // H3k (PLANUI §0.10, "El kit"): las dos mecánicas del arcade, con la lógica pura en `ui/arcade/<id>.js` (`simular`, que
+    // corre en Node). Todo en segundos y en unidades del mundo de cada mecánica. `pasoFijoS`: el paso de la simulación; el
+    // cuadro del monitor solo decide cuántos pasos se corren (a 60 y a 144 Hz, lo mismo).
+    arcade: {
+      pasoFijoS: 1 / 120,
+      // El Barón: tres objetivos (fases 1, 2 y 3), un smite en cada uno; el resultado es el peor de los tres
+      // `resultadoDeDistancia` (la vida en la escala 0-100 de la barra contra el centro de la zona). La vida baja a
+      // `vInicial` u/s y acelera hasta `vMax` en los `rampa` puntos de arriba del centro, a golpes cada `golpeCadaS`; en las
+      // fases altas hay golpes grandes avisados (`grandes`, de `golpeGrande` puntos, `avisoGrandeS` antes), pausas sin
+      // aviso (`pausas`, de `pausaS`) y amagues del smite rival. El rival smitea cuando la vida baja de
+      // centro − max(radio de la zona, `margenRival`): en la última fase, justo debajo de la zona. El stat divide la
+      // velocidad (`ventanaStat`, por `ventanaPorStat`): la ventana es el tiempo que la vida pasa adentro de la zona.
+      robar_baron: {
+        fases: [
+          { vMax: 17, grandes: 0, pausas: 0, margenRival: 12, amaguesRival: 0 },
+          { vMax: 23, grandes: 1, pausas: 1, margenRival: 9, amaguesRival: 1 },
+          { vMax: 28, grandes: 2, pausas: 2, margenRival: 0, amaguesRival: 2 }
+        ],
+        vInicial: 9,
+        // cuánta gente le pega en cada objetivo: multiplica la velocidad de esa fase (una pelea de cinco contra uno de dos
+        // que tantean). Lo que varía de un objetivo a otro es lo que hace que medir una vez no alcance.
+        intensidad: [0.55, 1.7],
+        rampa: 34,
+        centro: [22, 42],
+        golpeCadaS: [0.07, 0.16],
+        golpeGrande: [3, 5],
+        avisoGrandeS: 0.5,
+        pausaS: [0.3, 0.75],
+        // dónde arrancan (en puntos de vida por encima del centro) los golpes grandes, las pausas y los amagues del rival
+        grandeEn: [2, 20],
+        pausaEn: [3, 34],
+        amagueEn: [8, 34],
+        ventanaStat: [0.78, 1.4],
+        entreFasesS: 1.5,
+        // sin `g1` (un mapa que no es de una final, el arcade sin vara) la zona se dibuja con esta vara
+        varaSinG1: 0.6
+      },
+      // El dodge: `g1.conteo.dodge` oleadas de skillshots en tres fases (`desde` = la oleada, desde 0, donde empieza). El
+      // aviso (`avisoS`, por `ventanaPorStat`) es lo que dura el telegrafiado antes de que el tiro pegue durante `activoS`;
+      // cada fase lo multiplica por `factorAviso` y separa sus tiros `desfaseS`. `lead`: cuánto de tu velocidad adelanta la
+      // puntería del rival (0 = a donde estás). Una oleada cuenta si ningún tiro te tocó. Flash: una vez, `flash.distancia`.
+      // La escalada va en la cantidad de tiros, su forma y la puntería adelantada; el aviso de la fase 3 es más largo porque
+      // esquivar tres tiros a la vez pide más camino (medido con `dev/arcade-humano.js`: así cada oleada pesa parecido).
+      dodge: {
+        mundo: [100, 56],
+        radioJugador: 2,
+        velocidad: 34,
+        avisoS: [0.5, 0.92],
+        activoS: 0.12,
+        entreOleadasS: 0.85,
+        fases: [
+          { desde: 0, tiros: ['linea'], factorAviso: 0.6, desfaseS: 0, lead: 0 },
+          { desde: 2, tiros: ['linea', 'circulo'], factorAviso: 0.95, desfaseS: 0.28, lead: 0.3 },
+          { desde: 5, tiros: ['cono', 'linea', 'circulo'], factorAviso: 1.25, desfaseS: 0.22, lead: 0.6 }
+        ],
+        linea: { ancho: 7 },
+        circulo: { radio: 8.5 },
+        cono: { alcance: 44, apertura: 0.9 },
+        flash: { distancia: 13 }
+      }
+    },
     // El piso humano de las mecánicas analógicas: lo que una persona no puede achicar, y que por eso no se descuenta.
     //   la llamada: resultado = 1 − max(0, latencia − llamadaMs) / (ventana − llamadaMs), con la ventana por encima del
     //   piso (la reacción humana es ~200-250 ms: sin piso, la vara 0,8 pedía menos de 137 ms).

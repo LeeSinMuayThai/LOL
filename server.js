@@ -37,7 +37,8 @@ const mimeTypes = {
 // que no está en la lista (package.json, server.js, los .md, .git,
 // node_modules, dist/...) no sale nunca, exista o no (responde 404).
 // `previa.html` y `previa/` (PLANUI §0.4): la página de las previas y sus partidas de muestra.
-const ARCHIVOS_PUBLICOS = ['index.html', 'previa.html'];
+// `arcade.html` (PLANUI §0.10, H3k): la compuerta del arcade, las mecánicas sueltas para probarlas.
+const ARCHIVOS_PUBLICOS = ['index.html', 'previa.html', 'arcade.html'];
 const CARPETAS_PUBLICAS = ['src', 'assets', 'previa'];
 // Defensa en profundidad: aunque algún día `src/` tuviera uno adentro.
 const CARPETAS_PROHIBIDAS = ['.git', 'node_modules'];
