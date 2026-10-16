@@ -1,10 +1,11 @@
 [
   {
     "id": "pool_estrechez",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
     "title": "Un cuchillo de un solo filo",
-    "description": "Con tres campeones a mano alcanza con que te baneen o te counter-pickeen uno para dejarte sin margen. Cualquiera que te vea jugar seguido te lo va a marcar sin vueltas.",
+    "description": "Con tres campeones a mano alcanza con que te baneen o te counter-pickeen uno para dejarte sin margen. Cualquiera que te vea jugar te lo va a marcar.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -14,13 +15,13 @@
     "options": [
       {
         "id": "ampliar_ahora",
-        "label": "Ampliar el pool ahora",
-        "descripcion": "Metés horas en un campeón nuevo. Vas a jugar con menos maestría un tiempo, pero dejás de ser tan predecible.",
+        "label": "Ampliar el pool ya",
+        "descripcion": "Horas en un campeón nuevo, con maestría baja.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Sumás una opción más al pool. Todavía la manejás con lo justo, pero ya no sos un libro tan abierto en el champ select.",
+            "texto": "Sumás una opción más. La manejás con lo justo, pero ya no sos un libro abierto en el champ select.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -28,7 +29,7 @@
           },
           {
             "weight": 3,
-            "texto": "El campeón nuevo te cuesta más de lo esperado. Sumaste opciones en el papel; en la práctica, todavía no confiás en él.",
+            "texto": "El campeón nuevo cuesta más de lo esperado. Sumaste opciones en el papel; en la práctica, todavía no confiás en él.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
@@ -39,19 +40,19 @@
       {
         "id": "seguir_puliendo",
         "label": "Seguir puliendo lo que tenés",
-        "descripcion": "Apostás a que la profundidad le gana a la amplitud. Si te banean el principal, no tenés plan B.",
+        "descripcion": "Profundidad antes que amplitud.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Le metés horas al que ya dominás y se nota: cada partida que lo jugás, más automática te sale.",
+            "texto": "Le metés horas al que ya dominás y se nota: cada partida te sale más automática.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 5, "max": 9 }
             ]
           },
           {
             "weight": 4,
-            "texto": "Rendimientos decrecientes: ya estabas cerca del techo, y las horas rinden cada vez menos.",
+            "texto": "Rendimientos decrecientes: ya estabas cerca del techo y las horas rinden cada vez menos.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 2, "max": 4 }
             ]
@@ -62,10 +63,11 @@
   },
   {
     "id": "pool_identidad_diluida",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
     "title": "Sabés de todo un poco",
-    "description": "Tenés tantos campeones a mano que nadie sabría decir cuál es tu signature. Un scout comenta que le gustaría verte especializado en uno solo.",
+    "description": "Tenés tantos campeones a mano que nadie sabría decir cuál es tu signature. Un scout comenta que le gustaría verte especializado en uno.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -76,12 +78,12 @@
       {
         "id": "recortar_y_afilar",
         "label": "Recortar el pool y afilar",
-        "descripcion": "Sacás al que menos jugás y le metés esas horas al que más te representa.",
+        "descripcion": "Esas horas, al que más te representa.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Te sacás de encima al que casi no tocabas y esas horas se notan en el que sí te importa.",
+            "texto": "Te sacás al que casi no tocabas y esas horas se notan en el que sí te importa.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "olvidar" },
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 4, "max": 8 }
@@ -100,19 +102,19 @@
       {
         "id": "mantener_amplitud",
         "label": "Mantener la amplitud",
-        "descripcion": "Preferís aguantar sin identidad fija a quedarte corto el día que el meta se dé vuelta.",
+        "descripcion": "Sin identidad fija, pero sin quedarte corto.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Seguís sin un campeón que te defina, pero cualquier champ select que te toque tiene una respuesta.",
+            "texto": "Seguís sin un campeón que te defina, pero cualquier champ select que te toque tiene respuesta.",
             "effects": [
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "El comentario del scout te queda dando vueltas más de lo que admitís.",
+            "texto": "El comentario del scout te da vueltas más de lo que admitís.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -123,10 +125,11 @@
   },
   {
     "id": "pool_viento_a_favor",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
-    "title": "El parche te queda como anillo al dedo",
-    "description": "Tu pool es justo lo que este meta pide. Es el momento de sacarle el jugo antes de que cambie de nuevo.",
+    "title": "El parche te queda como anillo",
+    "description": "Tu pool es justo lo que pide este meta. Es el momento de sacarle el jugo antes de que cambie de nuevo.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -136,14 +139,14 @@
     "options": [
       {
         "id": "forzar_mientras_dure",
-        "label": "Forzar picks arriesgados mientras dura",
-        "descripcion": "Sacás ventaja del momento aunque implique estirar la cuerda más de lo cómodo.",
+        "label": "Forzar picks mientras dure",
+        "descripcion": "Estirás la cuerda más de lo cómodo.",
         "aviso": "Si forzás de más, el desgaste te pasa factura",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Le sacás cada gota al parche a tu favor. Rendís por encima de lo que rendirías en un mes normal.",
+            "texto": "Le sacás cada gota al parche. Rendís por encima de lo que rendirías en un mes normal.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] }
@@ -151,7 +154,7 @@
           },
           {
             "weight": 4,
-            "texto": "Forzás de más y el desgaste te pasa factura antes de lo que esperabas.",
+            "texto": "Forzás de más y el desgaste te pasa factura antes de lo esperado.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -160,13 +163,13 @@
       },
       {
         "id": "consolidar_tranquilo",
-        "label": "Jugarlo tranquilo y consolidar",
-        "descripcion": "Aprovechás el viento a favor sin forzar nada extra.",
+        "label": "Jugarlo tranquilo",
+        "descripcion": "Viento a favor, sin forzar nada extra.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Rendís bien sin sobresaltos. El parche te ayuda, y vos no le pedís más de lo que da.",
+            "texto": "Rendís bien sin sobresaltos. El parche te ayuda y vos no le pedís más de lo que da.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] }
@@ -174,7 +177,7 @@
           },
           {
             "weight": 3,
-            "texto": "Tan tranquilo lo jugás que dejás pasar la ventana sin sacarle todo el provecho posible.",
+            "texto": "Lo jugás tan tranquilo que la ventana pasa sin que le saques todo el provecho.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 0, "max": 1, "clamp": [0, 100] }
             ]
@@ -185,10 +188,11 @@
   },
   {
     "id": "pool_contra_la_corriente",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
     "title": "El meta no te quiere",
-    "description": "Nada de lo que sabés jugar está de moda. Cada partida arranca cuesta arriba, antes incluso de que empiece.",
+    "description": "Nada de lo que sabés jugar está de moda. Cada partida arranca cuesta arriba, antes incluso de empezar.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -199,12 +203,12 @@
       {
         "id": "aprender_lo_que_pide",
         "label": "Aprender lo que pide el meta",
-        "descripcion": "Cortás por lo sano y sumás lo que hoy funciona, aunque entre con maestría baja.",
+        "descripcion": "Sumás lo que hoy funciona, con maestría baja.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Sumás un campeón acorde al momento. No lo dominás todavía, pero al menos el parche deja de jugar en tu contra.",
+            "texto": "Sumás un campeón acorde al momento. No lo dominás, pero al menos el parche deja de jugar en tu contra.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 }
             ]
@@ -222,8 +226,8 @@
       {
         "id": "aguantar_con_lo_tuyo",
         "label": "Aguantar con lo tuyo",
-        "descripcion": "Te plantás en lo que sabés jugar y esperás a que el parche te dé la razón.",
-        "aviso": "Si el meta no rota, cada partida cuesta más cabeza",
+        "descripcion": "Esperás que el parche te dé la razón.",
+        "aviso": "Si el meta no rota, cada partida cuesta más",
         "weight": 5,
         "outcomes": [
           {
@@ -236,7 +240,7 @@
           },
           {
             "weight": 5,
-            "texto": "El parche no da señales de moverse y cada partida se hace más cuesta arriba que la anterior.",
+            "texto": "El parche no se mueve y cada partida se hace más cuesta arriba que la anterior.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
             ]
@@ -247,15 +251,16 @@
   },
   {
     "id": "pool_main_muerto",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
     "title": [
-      "Tu {main} quedó a contramano",
-      "El parche dejó a {main} sin lugar",
+      "{main} quedó a contramano",
+      "El parche dejó sin lugar a {main}",
       "{main} ya no entra en el meta",
       "Se te enfrió {main}"
     ],
-    "description": "El campeón con el que más jugaste este año se cayó a la mitad de abajo de la tier list de tu rol. Seguís teniendo la maestría; el régimen actual ya no te la valora igual.",
+    "description": "Tu campeón más jugado cayó a la mitad de abajo de la tier list de tu rol. Tenés la maestría, pero el meta ya no la valora.",
     "weight": 6,
     "cooldown": 6,
     "bisagra": true,
@@ -268,13 +273,13 @@
       {
         "id": "soltar_al_main",
         "label": "Soltar a {main} y rearmar",
-        "descripcion": "Lo sacás de la rotación del todo y le metés esas horas a uno que el parche sí banca. Duele, pero el pool queda limpio.",
+        "descripcion": "Esas horas, a uno que el parche banque.",
         "aviso": "Soltar al main duele: te cuesta cabeza",
         "weight": 3,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Lo guardás en el cajón y arrancás con uno que el meta sí quiere. Las primeras scrims se sienten raras, como jugar con la mano cambiada.",
+            "texto": "Lo guardás en el cajón y arrancás con uno que el meta quiere. Las primeras scrims se sienten raras, como jugar con la mano cambiada.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "pool", "path": "player.championPool", "accion": "olvidar", "objetivo": "principal" },
@@ -283,7 +288,7 @@
           },
           {
             "weight": 4,
-            "texto": "Lo soltás y el nuevo entra más rápido de lo que pensabas: a las dos semanas ya lo estás pidiendo en el draft.",
+            "texto": "Lo soltás y el nuevo entra más rápido de lo pensado: a las dos semanas ya lo pedís en el draft.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "pool", "path": "player.championPool", "accion": "olvidar", "objetivo": "principal" },
@@ -295,13 +300,13 @@
       {
         "id": "buscar_reemplazo",
         "label": "Buscar un reemplazo ahora",
-        "descripcion": "Aceptás que el ciclo de tu main terminó, al menos por este parche, y arrancás de cero con otro.",
-        "aviso": "El reemplazo entra crudo y te cuesta cabeza",
+        "descripcion": "El ciclo de tu main terminó, por este parche.",
+        "aviso": "El reemplazo entra crudo y cuesta cabeza",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Empezás a construir un nuevo principal. Duele soltar el que te llevó hasta acá, pero el draft lo agradece.",
+            "texto": "Empezás a construir un nuevo principal. Duele soltar al que te trajo hasta acá, pero el draft lo agradece.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -309,7 +314,7 @@
           },
           {
             "weight": 3,
-            "texto": "El reemplazo te sale más caro de lo pensado: entrás con maestría baja justo cuando más necesitabas rendir.",
+            "texto": "El reemplazo sale más caro de lo pensado: entrás con maestría baja justo cuando más necesitabas rendir.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -3, "clamp": [0, 100] }
@@ -320,13 +325,13 @@
       {
         "id": "apostar_que_vuelve",
         "label": "Apostar a que el meta vuelve",
-        "descripcion": "Le seguís metiendo horas a tu main de siempre. O el parche te da la razón, o perdiste el tiempo remando contra todo.",
+        "descripcion": "Más horas al de siempre.",
         "aviso": "Si el meta no vuelve, perdiste el tiempo",
         "weight": 5,
         "outcomes": [
           {
             "weight": 4,
-            "texto": "Insistís y, contra el pronóstico, el próximo sacudón de meta te devuelve al frente. Fue una apuesta que salió.",
+            "texto": "Insistís y, contra el pronóstico, el próximo sacudón de meta te devuelve al frente. La apuesta salió.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 6, "max": 10 },
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -346,15 +351,16 @@
   },
   {
     "id": "pool_main_muerto_soloq",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
     "title": [
-      "Tu {main} quedó a contramano",
-      "El parche dejó a {main} sin lugar",
+      "{main} quedó a contramano",
+      "El parche dejó sin lugar a {main}",
       "{main} ya no entra en el meta",
       "Se te enfrió {main} en la ladder"
     ],
-    "description": "El campeón con el que más jugaste este año se cayó a la mitad de abajo de la tier list de tu rol. Seguís teniendo la maestría; el régimen actual ya no te la valora igual en el champ select.",
+    "description": "Tu campeón más jugado cayó a la mitad de abajo de la tier list de tu rol. Tenés la maestría, pero en el champ select ya no la valoran.",
     "weight": 6,
     "cooldown": 6,
     "bisagra": true,
@@ -367,13 +373,13 @@
       {
         "id": "buscar_reemplazo",
         "label": "Buscar un reemplazo ahora",
-        "descripcion": "Aceptás que el ciclo de tu main terminó, al menos por este parche, y arrancás de cero con otro.",
-        "aviso": "El reemplazo entra crudo y te cuesta cabeza",
+        "descripcion": "El ciclo de tu main terminó, por este parche.",
+        "aviso": "El reemplazo entra crudo y cuesta cabeza",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Empezás a construir un nuevo principal. Duele soltar el que te llevó hasta acá, pero en el champ select se nota rápido.",
+            "texto": "Empezás a construir un nuevo principal. Duele soltar al que te trajo hasta acá, pero en el champ select se nota rápido.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -381,7 +387,7 @@
           },
           {
             "weight": 3,
-            "texto": "El reemplazo te sale más caro de lo pensado: entrás con maestría baja justo cuando más necesitabas rendir.",
+            "texto": "El reemplazo sale más caro de lo pensado: entrás con maestría baja justo cuando más necesitabas rendir.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -3, "clamp": [0, 100] }
@@ -392,13 +398,13 @@
       {
         "id": "apostar_que_vuelve",
         "label": "Apostar a que el meta vuelve",
-        "descripcion": "Le seguís metiendo horas a tu main de siempre. O el parche te da la razón, o perdiste el tiempo remando contra todo.",
+        "descripcion": "Más horas al de siempre.",
         "aviso": "Si el meta no vuelve, perdiste el tiempo",
         "weight": 5,
         "outcomes": [
           {
             "weight": 4,
-            "texto": "Insistís y, contra el pronóstico, el próximo sacudón de meta te devuelve al frente. Fue una apuesta que salió.",
+            "texto": "Insistís y, contra el pronóstico, el próximo sacudón de meta te devuelve al frente. La apuesta salió.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 6, "max": 10 },
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -406,7 +412,7 @@
           },
           {
             "weight": 6,
-            "texto": "Seguís puliendo un campeón que ya nadie banea ni respeta en champ select. Jugás mejor con él y rendís peor igual.",
+            "texto": "Seguís puliendo un campeón que nadie banea ni respeta en champ select. Jugás mejor con él y rendís peor igual.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 3, "max": 6 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -418,15 +424,16 @@
   },
   {
     "id": "pool_campeon_nuevo",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
     "title": [
       "Salió {campeonNuevo}",
       "{campeonNuevo} llegó con el parche",
-      "Hay {campeonNuevo} nuevo para tu línea",
+      "Hay {campeonNuevo} para tu línea",
       "El parche soltó a {campeonNuevo}"
     ],
-    "description": "El parche trajo un campeón nuevo para tu línea. Todavía nadie lo domina: aprenderlo ahora te pone adelante de todos, o te deja desprevenido si no te sale a tiempo para el próximo partido.",
+    "description": "El parche trajo un campeón nuevo para tu línea y nadie lo domina. Aprenderlo ahora te adelanta, o te deja a medias si no llegás al próximo partido.",
     "weight": 7,
     "cooldown": 6,
     "bisagra": true,
@@ -438,9 +445,9 @@
     "options": [
       {
         "id": "practicarlo_a_fondo",
-        "label": "Practicarlo a fondo antes del partido",
-        "descripcion": "Le metés todas las horas disponibles al campeón nuevo. Si sale bien, sos de los primeros en dominarlo; si no llegás a tiempo, vas a la partida con algo a medio cocinar.",
-        "aviso": "Si no llegás a tiempo, jugás con un campeón crudo",
+        "label": "Practicarlo a fondo antes",
+        "descripcion": "Todas las horas al campeón nuevo.",
+        "aviso": "Si no llegás, jugás con un campeón crudo",
         "weight": 5,
         "outcomes": [
           {
@@ -454,7 +461,7 @@
           },
           {
             "weight": 4,
-            "texto": "No te termina de salir a tiempo. Llegás al partido con un campeón que todavía no es tuyo.",
+            "texto": "No te sale a tiempo. Llegás al partido con un campeón que todavía no es tuyo.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "debut", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
@@ -464,20 +471,20 @@
       },
       {
         "id": "pulir_lo_de_ahora",
-        "label": "Pulir lo tuyo y aprenderlo después",
-        "descripcion": "Dejás pasar la novedad. Seguís rindiendo con lo que ya dominás, mientras el resto de la región se pelea por entender al nuevo.",
+        "label": "Pulir lo tuyo y verlo después",
+        "descripcion": "Dejás pasar la novedad.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Seguís firme con lo tuyo mientras medio servidor se rompe la cabeza probando al recién llegado.",
+            "texto": "Seguís firme con lo tuyo mientras medio servidor se rompe la cabeza con el recién llegado.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 4, "max": 8 }
             ]
           },
           {
             "weight": 3,
-            "texto": "Para cuando te decidís a mirarlo, ya está en todos lados y llegás tarde a la novedad.",
+            "texto": "Cuando te decidís a mirarlo, ya está en todos lados y llegás tarde a la novedad.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 2, "max": 4 }
             ]
@@ -488,15 +495,16 @@
   },
   {
     "id": "pool_campeon_nuevo_soloq",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
     "title": [
       "Salió {campeonNuevo}",
       "{campeonNuevo} llegó con el parche",
-      "Hay {campeonNuevo} nuevo para tu línea",
+      "Hay {campeonNuevo} para tu línea",
       "El parche soltó a {campeonNuevo}"
     ],
-    "description": "El parche trajo un campeón nuevo para tu línea. Todavía nadie lo domina: aprenderlo ahora te pone adelante de todos en tu división, o te deja desprevenido si no te sale a tiempo para la próxima seguidilla de rankeds.",
+    "description": "El parche trajo un campeón nuevo para tu línea y nadie lo domina. Aprenderlo ahora te adelanta en tu división, o te deja a medias para las próximas rankeds.",
     "weight": 7,
     "cooldown": 6,
     "bisagra": true,
@@ -509,13 +517,13 @@
       {
         "id": "practicarlo_a_fondo",
         "label": "Practicarlo a fondo ya",
-        "descripcion": "Le metés todas las horas disponibles al campeón nuevo. Si sale bien, sos de los primeros en dominarlo; si no llegás a tiempo, vas a rankeds con algo a medio cocinar.",
-        "aviso": "Si no llegás a tiempo, rankeás con un campeón crudo",
+        "descripcion": "Todas las horas al campeón nuevo.",
+        "aviso": "Si no llegás, rankeás con un campeón crudo",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Le agarrás la mano justo a tiempo. Sos de los primeros de tu división en llevarlo a partidas clasificatorias.",
+            "texto": "Le agarrás la mano justo a tiempo. Sos de los primeros de tu división en llevarlo a clasificatorias.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "debut", "min": 1, "max": 2 },
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "nuevo", "min": 8, "max": 14 },
@@ -524,7 +532,7 @@
           },
           {
             "weight": 4,
-            "texto": "No te termina de salir a tiempo. Entrás a rankeds con un campeón que todavía no es tuyo.",
+            "texto": "No te sale a tiempo. Entrás a rankeds con un campeón que todavía no es tuyo.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "debut", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
@@ -534,20 +542,20 @@
       },
       {
         "id": "pulir_lo_de_ahora",
-        "label": "Pulir lo tuyo y aprenderlo después",
-        "descripcion": "Dejás pasar la novedad. Seguís rindiendo con lo que ya dominás, mientras el resto del servidor se pelea por entender al nuevo.",
+        "label": "Pulir lo tuyo y verlo después",
+        "descripcion": "Dejás pasar la novedad.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Seguís firme con lo tuyo mientras medio servidor se rompe la cabeza probando al recién llegado.",
+            "texto": "Seguís firme con lo tuyo mientras medio servidor se rompe la cabeza con el recién llegado.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 4, "max": 8 }
             ]
           },
           {
             "weight": 3,
-            "texto": "Para cuando te decidís a mirarlo, ya está en todos lados y llegás tarde a la novedad.",
+            "texto": "Cuando te decidís a mirarlo, ya está en todos lados y llegás tarde a la novedad.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 2, "max": 4 }
             ]
@@ -558,10 +566,11 @@
   },
   {
     "id": "pool_cuota_coreana",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
     "title": "La exigencia coreana",
-    "description": "En los servidores surcoreanos subir de rango no alcanza: las academias piden partidas Y amplitud de pool, y la exigencia sube con el rango — Diamante pide cinco campeones, Máster ocho, Gran Máster quince.",
+    "description": "En Corea subir de rango no alcanza: las academias piden partidas y amplitud de pool. Diamante pide cinco campeones, Máster ocho, Gran Máster quince.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -574,12 +583,12 @@
       {
         "id": "cumplir_la_cuota",
         "label": "Cumplir la cuota y abrir pool",
-        "descripcion": "Sumás campeones aunque sea a costa de la maestría en los que ya dominás. Es lo que las academias esperan ver.",
+        "descripcion": "Más campeones, menos maestría en los tuyos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Ampliás el pool como pide la exigencia. Todavía no dominás todo lo nuevo, pero un ojeador coreano ve exactamente lo que quiere ver.",
+            "texto": "Ampliás el pool como pide la exigencia. No dominás lo nuevo, pero un ojeador coreano ve justo lo que quiere ver.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -587,7 +596,7 @@
           },
           {
             "weight": 4,
-            "texto": "Abrís el pool tan rápido que ninguno de los nuevos te sale bien todavía. Cumplís la forma sin tener el fondo.",
+            "texto": "Abrís el pool tan rápido que ninguno de los nuevos te sale bien. Cumplís la forma sin tener el fondo.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -598,8 +607,8 @@
       {
         "id": "especializarte_igual",
         "label": "Ignorar la cuota y especializarte",
-        "descripcion": "Le apostás a la profundidad por sobre lo que piden las academias. Puede que rindas mejor; también puede que no te miren igual.",
-        "aviso": "Si miden por planilla, las academias te descartan",
+        "descripcion": "Profundidad antes que lo que piden las academias.",
+        "aviso": "Si miden por planilla, te descartan",
         "weight": 5,
         "outcomes": [
           {
@@ -623,14 +632,15 @@
   },
   {
     "id": "pool_a_cual_le_metes",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
     "title": [
       "¿A cuál le metés estas semanas?",
-      "¿Dónde ponés las horas de práctica?",
+      "¿Dónde ponés las horas?",
       "El hueco entre partidos: ¿a cuál?"
     ],
-    "description": "¿El main o el meta? Tenés un hueco entre partidos para practicar en serio. Podés pulir al que ya es tu bandera, o meterle horas a uno nuevo que el régimen actual está pidiendo.",
+    "description": "¿El main o el meta? Tenés un hueco entre partidos para practicar en serio: pulir tu bandera o meterle horas a uno que el meta actual pide.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -642,7 +652,7 @@
       {
         "id": "pulir_tu_bandera",
         "label": "Pulir a tu bandera",
-        "descripcion": "Vas a lo seguro: más horas al que mejor conocés, pase lo que pase con el parche.",
+        "descripcion": "Más horas al que mejor conocés.",
         "weight": 5,
         "outcomes": [
           {
@@ -654,7 +664,7 @@
           },
           {
             "weight": 3,
-            "texto": "Rendimientos decrecientes: ya estabas cerca del techo, y las horas rinden cada vez menos.",
+            "texto": "Rendimientos decrecientes: ya estabas cerca del techo y las horas rinden cada vez menos.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 1, "max": 3 }
             ]
@@ -663,20 +673,20 @@
       },
       {
         "id": "meterle_al_del_regimen",
-        "label": "Sumar el que pide el régimen",
-        "descripcion": "Cambiás la comodidad por vigencia. Entra con maestría baja, pero es la única forma de que tu pool no quede clavado en lo que elegiste a los 15.",
+        "label": "Sumar el que pide el meta",
+        "descripcion": "Vigencia antes que comodidad.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Sumás un campeón acorde al régimen vigente. Todavía no lo dominás, pero tu pool ya no es el mismo de hace tres parches.",
+            "texto": "Sumás un campeón acorde al meta. No lo dominás, pero tu pool ya no es el de hace tres parches.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 }
             ]
           },
           {
             "weight": 4,
-            "texto": "El campeón nuevo te cuesta más de lo esperado: sumaste una opción en el papel que todavía no confiás en jugar.",
+            "texto": "El campeón nuevo cuesta más de lo esperado: sumaste una opción en el papel que todavía no confiás en jugar.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -688,10 +698,11 @@
   },
   {
     "id": "pool_el_flex_pick",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
-    "title": "Un pick que se juega en dos roles",
-    "description": "Sale a la luz un campeón que tu equipo puede dibujear como tuyo o como el de otra línea sin que el rival sepa hasta el último pick. Aprenderlo no suma un campeón: suma ambigüedad al draft entero.",
+    "title": "Un pick de dos roles",
+    "description": "Un campeón que el equipo puede dibujear como tuyo o de otra línea, sin que el rival sepa hasta el último pick. Aprenderlo suma ambigüedad al draft entero.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -705,12 +716,12 @@
       {
         "id": "aprender_el_flex",
         "label": "Meterle horas al flex pick",
-        "descripcion": "Practicás un campeón que quizás termine jugando otro. El beneficio es del equipo más que tuyo, y te come tiempo de pulir lo propio.",
+        "descripcion": "Beneficia al equipo más que a vos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Lo incorporás y el coach lo empieza a usar de señuelo en cada draft. El rival banea a ciegas y tu equipo saca ventaja antes de jugar.",
+            "texto": "Lo incorporás y el coach lo usa de señuelo en cada draft. El rival banea a ciegas y tu equipo gana antes de jugar.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -718,7 +729,7 @@
           },
           {
             "weight": 4,
-            "texto": "Le metés horas y el equipo casi no lo usa: el flex quedó de adorno en la pizarra y vos perdiste ese tiempo de tu propio pool.",
+            "texto": "Le metés horas y el equipo casi no lo usa: el flex quedó de adorno en la pizarra y perdiste ese tiempo de tu pool.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -728,20 +739,20 @@
       },
       {
         "id": "dejar_el_flex_a_otro",
-        "label": "Que lo aprenda el que lo va a jugar",
-        "descripcion": "Le pasás la responsabilidad del flex a otra línea y te concentrás en tu identidad. Más simple para vos, menos herramientas para el equipo.",
+        "label": "Que lo aprenda otro",
+        "descripcion": "Vos seguís con lo tuyo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Otro se hace cargo del flex y vos seguís puliendo lo tuyo. El draft pierde una capa de engaño, pero tu nivel individual no se resiente.",
+            "texto": "Otro se hace cargo del flex y vos seguís puliendo lo tuyo. El draft pierde una capa de engaño, pero tu nivel no se resiente.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 3, "max": 6 }
             ]
           },
           {
             "weight": 4,
-            "texto": "El que agarró el flex no le encuentra la mano y el equipo se queda sin esa carta. Cada tanto pensás que deberías haberlo tomado vos.",
+            "texto": "El que agarró el flex no le encuentra la mano y el equipo se queda sin esa carta. A veces pensás que debiste tomarlo vos.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -752,10 +763,11 @@
   },
   {
     "id": "pool_el_one_trick",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
-    "title": "La tentación de hacerte one-trick",
-    "description": "Hay un campeón de tu línea tan por encima del resto que la gente que solo lo juega a él está subiendo como si nada. La idea de tirar todo lo demás por la borda y volverte especialista te da vueltas.",
+    "title": "La tentación del one-trick",
+    "description": "Hay un campeón de tu línea tan por encima del resto que los que solo juegan a ese suben como si nada. La idea de especializarte te da vueltas.",
     "weight": 5,
     "cooldown": 7,
     "contexto": {
@@ -766,14 +778,14 @@
       {
         "id": "abrazar_el_one_trick",
         "label": "Ir all-in con ese campeón",
-        "descripcion": "Todas tus horas a uno solo. Vas a jugarlo mejor que casi nadie, y el día que lo baneen o lo nerfeen no vas a tener a dónde ir.",
-        "aviso": "Si lo nerfean, quedás desnudo sin pool",
+        "descripcion": "Si lo banean o nerfean, no tenés a dónde ir.",
+        "aviso": "Si lo nerfean, quedás sin pool",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
             "texto": [
-              "Te volvés una referencia con él. Cuando lo dejan abierto, ganás la línea sí o sí; se nota en cada partida que lo tenés.",
+              "Te volvés una referencia con él. Cuando lo dejan abierto, ganás la línea sí o sí.",
               "El nivel que alcanzás con él es de otra categoría. Mientras el meta lo banque, sos casi imparable."
             ],
             "effects": [
@@ -784,7 +796,7 @@
           },
           {
             "weight": 5,
-            "texto": "Lo nerfean fuerte al parche siguiente y quedás desnudo: sin él, tu pool es un desierto y tu rendimiento se cae por un barranco.",
+            "texto": "Lo nerfean fuerte al parche siguiente y quedás desnudo: sin él, tu pool es un desierto y tu rendimiento cae por un barranco.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "maestria", "objetivo": "principal", "min": 4, "max": 8 },
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": -4, "max": -2, "clamp": [0, 100] },
@@ -795,13 +807,13 @@
       },
       {
         "id": "resistir_la_tentacion",
-        "label": "Resistir y seguir ampliando el pool",
-        "descripcion": "Lo jugás, pero no dejás de sumar otras opciones. Subís más lento que los one-trick, con una base que no depende de un solo parche.",
+        "label": "Resistir y seguir ampliando",
+        "descripcion": "Subís más lento, sin depender de un parche.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Seguís ampliando despacio. No sos el mejor del servidor con ninguno, pero tampoco estás a un nerfeo de quedarte sin juego.",
+            "texto": "Seguís ampliando despacio. No sos el mejor con ninguno, pero tampoco estás a un nerfeo de quedarte sin juego.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -809,7 +821,7 @@
           },
           {
             "weight": 3,
-            "texto": "Ves a un one-trick de tu misma división pasarte de largo en la ladder mes tras mes. Sabés que hiciste lo correcto y igual te carcome.",
+            "texto": "Ves a un one-trick de tu división pasarte en la ladder mes tras mes. Sabés que hiciste lo correcto y igual te carcome.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -820,10 +832,11 @@
   },
   {
     "id": "pool_pick_de_escenario",
+    "voz": "corta",
     "category": "pool",
     "categoria": "parche",
     "title": "Un pick que solo funciona con equipo",
-    "description": "Hay un campeón que en soloQ es una lotería, pero con cinco personas coordinadas y comunicación por voz se vuelve una máquina. El coach te lo pide para el plan de playoffs; tu ladder va a sufrir mientras lo practicás.",
+    "description": "Un campeón que en soloQ es lotería, pero con cinco coordinados y voz se vuelve una máquina. El coach lo pide para playoffs; tu ladder sufre mientras lo practicás.",
     "weight": 4,
     "cooldown": 8,
     "contexto": {
@@ -836,14 +849,14 @@
     "options": [
       {
         "id": "aprenderlo_para_el_plan",
-        "label": "Aprenderlo para el plan del equipo",
-        "descripcion": "Le metés horas a algo que solo sirve en scrims y oficial. En la ladder vas a perder puntos jugando un campeón que solo no rinde.",
-        "aviso": "Perdés LP en soloQ y el rival puede banearlo",
+        "label": "Aprenderlo para el plan",
+        "descripcion": "Sirve en scrims y oficial; en la ladder, no.",
+        "aviso": "Perdés LP en soloQ y pueden banearlo",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Para playoffs lo tenés listo y en el mapa que importa el equipo lo ejecuta redondo. Fueron horas invertidas donde había que invertirlas.",
+            "texto": "Para playoffs lo tenés listo y en el mapa que importa el equipo lo ejecuta redondo. Horas invertidas donde había que invertirlas.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "stat", "path": "player.stats.teamfight", "min": 2, "max": 5, "clamp": [0, 100] },
@@ -852,7 +865,7 @@
           },
           {
             "weight": 4,
-            "texto": "Lo aprendés, pero el rival lo banea en cada draft que importa y el plan nunca se llega a usar. Perdiste ladder por un pick que quedó en la sala de scrims.",
+            "texto": "Lo aprendés, pero el rival lo banea en cada draft que importa Perdiste ladder por un pick que quedó en la sala de scrims.",
             "effects": [
               { "type": "pool", "path": "player.championPool", "accion": "aprender", "criterio": "meta", "min": 1, "max": 2 },
               { "type": "ladder", "path": "player.ranked", "min": -15, "max": -5 },
@@ -864,8 +877,8 @@
       {
         "id": "decir_que_no_te_convence",
         "label": "Decirle al coach que no",
-        "descripcion": "Le planteás que preferís ir a playoffs con algo que dominás de verdad. Defendés tu criterio y te arriesgás a que el plan salga igual sin vos cómodo.",
-        "aviso": "Si el coach insiste, queda la duda y baja la sinergia",
+        "descripcion": "Preferís llegar con lo que dominás.",
+        "aviso": "Si el coach insiste, baja la sinergia",
         "weight": 5,
         "outcomes": [
           {
@@ -877,7 +890,7 @@
           },
           {
             "weight": 5,
-            "texto": "El coach insiste y lo termina jugando otro. Funciona, y te queda la duda de si tu terquedad le costó al equipo una herramienta.",
+            "texto": "El coach insiste y lo termina jugando otro. Funciona, y te queda la duda de si tu terquedad le costó una herramienta al equipo.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }

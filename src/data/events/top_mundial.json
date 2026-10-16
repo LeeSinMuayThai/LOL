@@ -1,11 +1,12 @@
 [
   {
     "id": "portada_del_ano",
+    "voz": "corta",
     "rarezaEvento": "epica",
     "category": "drama_prensa",
     "categoria": "prensa",
     "title": "Te ponen en la lista",
-    "description": "Sale la lista de los mejores del mundo del año y estás ahí, con foto y todo. El grupo de la organización explota, tu madre te manda una captura, y de golpe cada partido tuyo es 'a ver si lo mantiene'. La atención no es gratis.",
+    "description": "Sale la lista de los mejores del mundo y estás ahí, con foto. Tu madre te manda una captura y de golpe cada partido es «a ver si lo mantiene».",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -15,20 +16,20 @@
     "options": [
       {
         "id": "bancar_el_foco",
-        "label": "Salir a bancar el puesto en público",
-        "descripcion": "Hacés las notas, contestás en redes, te ponés la mochila de ser referencia. Si rendís, la ola te lleva; si pinchás, el mismo micrófono se te da vuelta.",
+        "label": "Bancar el puesto en público",
+        "descripcion": "Notas, redes y la mochila de referente.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La banca la escena y vos respondés en el Rift. Dejás de ser 'uno de la lista' y pasás a ser una cara del split.",
+            "texto": "La escena te banca y respondés en el Rift. Dejás de ser uno de la lista y pasás a ser una cara del split.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "La semana siguiente jugás tenso, midiendo cada movimiento como si te calificaran en vivo. Rinde el ruido, no vos.",
+            "texto": "Jugás tenso la semana siguiente, midiendo cada movimiento como si te puntuaran en vivo. Rinde el ruido, no vos.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -39,19 +40,19 @@
       {
         "id": "cabeza_abajo",
         "label": "Cabeza abajo y a entrenar",
-        "descripcion": "Agradecés la lista en una línea y desaparecés del ruido. La prensa se aburre, pero el equipo ve que no se te subió.",
+        "descripcion": "Agradecés en una línea y desaparecés.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Nadie te escucha hablar del tema y en la práctica estás igual de enfocado que siempre. El respeto interno sube más que cualquier portada.",
+            "texto": "Nadie te escucha hablar del tema y en la práctica seguís igual de enfocado. El respeto interno sube más que cualquier portada.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "Al esquivar la ola también esquivás sponsors y prensa que hubieran empujado tu nombre afuera de la región. La lista pasa sin que la aproveches.",
+            "texto": "Al esquivar la ola también esquivás sponsors y prensa que habrían empujado tu nombre fuera de la región. La lista pasa sin que la aproveches.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -62,11 +63,12 @@
   },
   {
     "id": "el_pibe_que_te_quiere_el_puesto",
+    "voz": "corta",
     "rarezaEvento": "epica",
     "category": "identidad",
     "categoria": "golpe_duro",
     "title": "El que viene por tu silla",
-    "description": "En la liga de tu región hay un pibe de 17 al que ya le dicen 'el próximo vos'. Las cuentas de highlights lo comparan con tu año de debut. Te lo cruzás en un scrim y te mira como si el puesto ya fuera suyo.",
+    "description": "En tu liga hay un pibe de 17 al que le dicen «el próximo vos». En el scrim te mira como si el puesto ya fuera suyo.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -78,12 +80,12 @@
         "id": "tirarle_la_soga",
         "perfil": "leal",
         "label": "Darle un par de consejos",
-        "descripcion": "Le hablás después del scrim, le marcás dos cosas de su lane. No te cuesta nada y algún día jugás en el mismo lado.",
+        "descripcion": "Dos cosas de su lane, después del scrim.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El pibe lo agradece en una entrevista y te nombra como referencia. Ser el que forma, no solo el que gana, te acomoda la cabeza.",
+            "texto": "El pibe lo agradece en una entrevista y te nombra de referencia. Ser el que forma, no solo el que gana, te acomoda la cabeza.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -91,7 +93,7 @@
           },
           {
             "weight": 4,
-            "texto": "Le pasás lo que sabés y a los tres meses te lo ponen enfrente en un Bo5, jugando exactamente lo que le mostraste. Nadie te lo agradece dos veces.",
+            "texto": "Le pasás lo que sabés y a los tres meses lo tenés enfrente en un Bo5, jugando lo tuyo. Nadie lo agradece dos veces.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": 0, "clamp": [0, 100] }
             ]
@@ -101,7 +103,7 @@
       {
         "id": "usarlo_de_combustible",
         "label": "Usarlo de combustible",
-        "descripcion": "No le decís una palabra. Te guardás la comparación para la próxima vez que necesites una razón para levantarte a scrimear a las nueve.",
+        "descripcion": "Ni una palabra: la comparación te levanta a scrimear.",
         "weight": 5,
         "outcomes": [
           {
@@ -113,7 +115,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te obsesionás con un pibe que todavía no jugó un playoff. Gastás cabeza en compararte para abajo en vez de mirar a los que tenés al lado en la lista.",
+            "texto": "Te obsesionás con un pibe que no jugó un playoff. Gastás cabeza en compararte para abajo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
             ]
@@ -124,11 +126,12 @@
   },
   {
     "id": "el_sponsor_bomba",
+    "voz": "corta",
     "rarezaEvento": "epica",
     "category": "negocios",
     "categoria": "mercado",
-    "title": "La marca que solo llama a los de la lista",
-    "description": "Una marca global de consumo masivo —de las que patrocinan Worlds, no solo equipos— te propone ser el rostro de una campaña mundial. Es el tipo de cifra que no entra por tu nivel de juego solo: entra porque estás en el radar de gente que ni sigue la escena.",
+    "title": "La marca que llama a los de la lista",
+    "description": "Una marca global de las que patrocinan Worlds te propone ser el rostro de una campaña mundial. Esa cifra no entra solo por tu nivel.",
     "weight": 4,
     "cooldown": 12,
     "contexto": {
@@ -138,13 +141,13 @@
     "options": [
       {
         "id": "firmar_el_paquete_completo",
-        "label": "Firmar el paquete completo, imagen a largo plazo",
-        "descripcion": "Vas por la cifra grande: años de exclusividad, viajes de prensa, tu cara en la vía pública de medio continente. La plata cambia tu vida; el calendario deja de ser solo tuyo.",
+        "label": "Firmar el paquete completo",
+        "descripcion": "Años de exclusividad y tu cara en media región.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El contrato entra y no se discute más: es la clase de plata que reordena una carrera entera. La marca te trata como a una estrella de verdad, no como a un gamer con suerte.",
+            "texto": "Es plata que reordena una carrera. La marca te trata como a una estrella, no como a un gamer con suerte.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 9, "clamp": [0, 100] },
               { "type": "stat", "path": "career.arraigo", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -152,7 +155,7 @@
           },
           {
             "weight": 5,
-            "texto": "Entre rodajes y viajes de prensa, las semanas de preparación se achican más de lo que calculaste. El sponsor está feliz; tu coach, no tanto.",
+            "texto": "Entre rodajes y viajes de prensa, la preparación se achica más de lo que calculaste. El sponsor está feliz; tu coach, no tanto.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": 0, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -162,20 +165,20 @@
       },
       {
         "id": "negociar_salida_corta",
-        "label": "Negociar una cláusula de salida corta",
-        "descripcion": "Aceptás la campaña, pero con un contrato de un año y letra chica que te deja libre rápido. Menos plata sobre la mesa, pero el calendario sigue siendo tuyo.",
+        "label": "Negociar una salida corta",
+        "descripcion": "Un año y letra chica: menos plata, más libertad.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La marca acepta tus términos sin pelear demasiado —les interesás más a vos de lo que pensabas—, y terminás con la plata y el control al mismo tiempo.",
+            "texto": "La marca acepta tus términos sin pelear: les interesás más de lo que pensabas. Te quedás con la plata y el control.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Con la cláusula corta, la marca invierte menos en promocionarte a vos puntual y más en la campaña genérica. Cobrás bien, pero el envión mediático es menor al que esperabas.",
+            "texto": "Con la cláusula corta, la marca invierte más en la campaña genérica que en vos. Cobrás bien, pero el envión mediático es menor.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
@@ -186,11 +189,12 @@
   },
   {
     "id": "defender_el_trono",
+    "voz": "corta",
     "rarezaEvento": "epica",
     "category": "identidad",
     "categoria": "golpe_duro",
     "title": "Todos vienen por el #1",
-    "description": "Ser el mejor del mundo dura hasta que alguien te saca, y lo sabés. Cada organización rival arma su temporada pensando en cómo pasarte a vos puntual. Pelear por llegar arriba y jugar para no bajarte son dos presiones completamente distintas.",
+    "description": "Ser el mejor del mundo dura hasta que alguien te saca. Cada org rival arma su temporada para pasarte, y llegar arriba pesa distinto que no bajarse.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -200,13 +204,13 @@
     "options": [
       {
         "id": "jugar_sin_nada_que_perder",
-        "label": "Jugar como si no tuvieras nada que perder",
-        "descripcion": "Le das la vuelta a la presión: ya llegaste arriba, así que jugás picks arriesgados y apuestas fuertes, total lo peor que puede pasar es dejar de ser #1 por un rato.",
+        "label": "Jugar sin nada que perder",
+        "descripcion": "Picks arriesgados, total ya llegaste.",
         "weight": 3,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Jugar sin el miedo a caer te devuelve la libertad con la que llegaste hasta acá — el nivel sube cuando dejás de jugar para no perder el puesto.",
+            "texto": "Sin miedo a caer recuperás la libertad con la que llegaste: el nivel sube cuando dejás de jugar para no perder el puesto.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -214,7 +218,7 @@
           },
           {
             "weight": 5,
-            "texto": "La libertad se traduce en errores evitables, y en un ranking tan parejo arriba, un error evitable te cuesta el puesto en serio.",
+            "texto": "La libertad se traduce en errores evitables, y en un ranking tan parejo arriba, un error evitable te cuesta el puesto.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -223,20 +227,20 @@
       },
       {
         "id": "jugar_a_no_perder",
-        "label": "Jugar conservador para no arriesgar el puesto",
-        "descripcion": "Cambiás el enfoque: ya no jugás para ganar más, jugás para no dar ninguna ventaja gratis. El #1 se sostiene tanto por lo que hacés bien como por lo que no regalás.",
+        "label": "Jugar conservador",
+        "descripcion": "No regalar nada: el #1 también se sostiene así.",
         "weight": 3,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El enfoque conservador funciona exactamente como lo pensaste: sostenés el puesto sin sobresaltos, aunque el juego se sienta menos vistoso que antes.",
+            "texto": "El enfoque conservador funciona como pensaste: sostenés el puesto sin sobresaltos, aunque el juego se vea menos vistoso.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Jugar con miedo a perder es, funcionalmente, jugar peor: la prudencia se empieza a sentir como estancamiento, y el resto de arriba no se queda quieto esperándote.",
+            "texto": "Jugar con miedo a perder es jugar peor: la prudencia se siente estancamiento, y el resto de arriba no te espera.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -245,20 +249,20 @@
       },
       {
         "id": "ignorar_el_ranking",
-        "label": "Dejar de mirar el ranking del todo",
-        "descripcion": "Le pedís a tu entorno que no te comente la posición. Tu foco pasa a ser exclusivamente el próximo partido, no el número al lado de tu nombre.",
+        "label": "Dejar de mirar el ranking",
+        "descripcion": "Un partido a la vez.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Sacarte el ranking de la cabeza te devuelve el juego a su forma más simple: un partido a la vez. Es, sin buscarlo, la mejor manera de sostenerte arriba.",
+            "texto": "Sacarte el ranking de la cabeza devuelve el juego a lo simple: un partido a la vez. Sin buscarlo, la mejor forma de sostenerte arriba.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 4, "max": 7, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Por más que no lo mires, el número sigue ahí y la organización sí lo comenta en cada reunión. Ignorarlo del todo no es tan fácil como suena.",
+            "texto": "Aunque no lo mires, el número sigue ahí y la org lo comenta en cada reunión. Ignorarlo no es tan fácil como suena.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -269,11 +273,12 @@
   },
   {
     "id": "la_prensa_te_destrona",
+    "voz": "corta",
     "rarezaEvento": "epica",
     "category": "drama_prensa",
     "categoria": "prensa",
-    "title": "La misma prensa que te subió, te baja",
-    "description": "Hace un mes eras la portada de la lista de los mejores del mundo. Dos semanas de resultados flojos después, el mismo medio publica una nota preguntándose si \"ya se te acabó el momento\". El ciclo de la fama es así de corto cuando el rendimiento afloja.",
+    "title": "La prensa que te subió, te baja",
+    "description": "Hace un mes eras portada. Dos semanas flojas después, una nota pregunta si «ya se te acabó el momento».",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -284,13 +289,13 @@
     "options": [
       {
         "id": "responderle_a_la_nota",
-        "label": "Responder la narrativa en una entrevista",
-        "descripcion": "No dejás pasar el titular: salís a decir que dos semanas flojas no borran el año que veniste haciendo, y que la próxima serie va a hablar por vos.",
+        "label": "Responder en una entrevista",
+        "descripcion": "Que dos semanas flojas no borran un año.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "La respuesta firme corta el ciclo antes de que crezca — algunos medios hasta la citan como ejemplo de que todavía tenés la cabeza puesta donde hay que tenerla.",
+            "texto": "La respuesta firme corta el ciclo antes de que crezca. Algunos medios hasta te citan como ejemplo de cabeza bien puesta.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -298,7 +303,7 @@
           },
           {
             "weight": 5,
-            "texto": "Responder le da más vida a la nota de la que tenía sola: ahora el titular de mañana es tu respuesta, no la racha floja en sí.",
+            "texto": "Responder le da más vida a la nota: mañana el titular es tu respuesta, no la racha.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -307,20 +312,20 @@
       },
       {
         "id": "no_leer_nada",
-        "label": "No leer nada y dejar que el próximo resultado hable",
-        "descripcion": "Le pedís a tu entorno que te filtre las notas por un tiempo. El ciclo de la fama se acelera o se apaga solo; vos preferís no mirarlo de cerca.",
+        "label": "No leer nada",
+        "descripcion": "Que el próximo resultado hable.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Cortar el ruido te deja jugar sin la presión extra del relato ajeno, y cuando el resultado mejora, el mismo medio da vuelta la nota sin que hiciera falta nada de tu parte.",
+            "texto": "Sin ruido jugás sin la presión del relato ajeno, y cuando el resultado mejora, el mismo medio da vuelta la nota sin que hagas nada.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "El silencio no frena nada: sin una voz propia en el medio, la narrativa de que 'se te acabó' circula un buen rato más de lo que te gustaría.",
+            "texto": "El silencio no frena nada: sin voz propia, la idea de que «se te acabó» circula más de lo que te gustaría.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -331,11 +336,12 @@
   },
   {
     "id": "el_rival_que_te_pasa",
+    "voz": "corta",
     "rarezaEvento": "epica",
     "category": "identidad",
     "categoria": "golpe_duro",
     "title": "{rival} te pasó en el ranking",
-    "description": "Chequeás la actualización del ranking mundial y ahí está: {rival} subió justo el puesto que vos bajaste esta semana. Llevan años cruzándose en la misma conversación; esta vez, el que quedó arriba en la lista no fuiste vos.",
+    "description": "Actualiza el ranking mundial y {rival} subió justo el puesto que vos bajaste. Años en la misma conversación, y esta vez el de arriba no sos vos.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -345,13 +351,13 @@
     "options": [
       {
         "id": "buscar_el_cruce_directo",
-        "label": "Buscar el cruce directo cuanto antes",
-        "descripcion": "No esperás a que el calendario los junte solo: movés fichas —soloQ, un showmatch, lo que sea— para medirte contra {rival} lo antes posible.",
+        "label": "Buscar el cruce directo",
+        "descripcion": "Soloq, showmatch, lo que sea, cuanto antes.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El cruce llega y jugás con una intensidad que hacía rato no sentías. Ganes o pierdas esta vez, la rivalidad con {rival} vuelve a ser el motor que era.",
+            "texto": "El cruce llega y jugás con una intensidad que hacía rato no sentías. Ganes o pierdas, la rivalidad con {rival} vuelve a ser el motor.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -359,7 +365,7 @@
           },
           {
             "weight": 5,
-            "texto": "Buscar el cruce a la fuerza te sale caro: llegás con más ansiedad que preparación real, pensando en {rival} en vez de en tu propio juego.",
+            "texto": "Buscar el cruce a la fuerza sale caro: llegás con más ansiedad que preparación, pensando en {rival} y no en tu juego.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -368,20 +374,20 @@
       },
       {
         "id": "dejar_que_el_calendario_decida",
-        "label": "Dejar que el calendario decida cuándo se crucen",
-        "descripcion": "No forzás nada. Si el destino los tiene que juntar de nuevo, va a ser en una serie real, no en un cruce armado para la ocasión.",
+        "label": "Dejar que el calendario decida",
+        "descripcion": "Si toca, será en una serie real.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La paciencia te deja seguir enfocado en lo tuyo, sin gastar energía en algo que todavía no está en tus manos resolver.",
+            "texto": "La paciencia te deja enfocado en lo tuyo, sin gastar energía en algo que todavía no podés resolver.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "El puesto perdido te queda dando vueltas más de lo que esperabas cada vez que revisás el ranking y ves a {rival} un lugar más arriba.",
+            "texto": "El puesto perdido te da vueltas cada vez que revisás el ranking y ves a {rival} un lugar más arriba.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
             ]

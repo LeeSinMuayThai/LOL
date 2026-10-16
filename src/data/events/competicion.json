@@ -1,10 +1,11 @@
 [
   {
     "id": "title_run",
+    "voz": "corta",
     "category": "competicion",
     "categoria": "oportunidad",
     "title": "{org} se prendió arriba",
-    "description": "Cinco jornadas seguidas ganando y la tabla se dio vuelta. En la gaming house nadie lo dice para no romperlo, pero todos lo están pensando.",
+    "description": "Cinco jornadas seguidas ganando y la tabla se dio vuelta. En la gaming house nadie lo dice para no romperlo, pero todos lo piensan.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
@@ -19,13 +20,13 @@
     "options": [
       {
         "id": "jugar_para_ganar",
-        "label": "Ir a matar y que se rompa lo que se rompa",
-        "descripcion": "Jugás cada partida como si fuera la final. Si la racha aguanta te ponés en otro lugar; si se corta, te la comés vos.",
+        "label": "Ir a matar, que se rompa",
+        "descripcion": "Cada partida como si fuera la final.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "La racha aguanta y encima la estirás. Terminás la fase regular con una línea que el año que viene alguien va a citar.",
+            "texto": "La racha aguanta y encima la estirás. Cerrás la fase regular con una línea que el año que viene alguien va a citar.",
             "effects": [
               { "type": "push", "path": "career.hitos", "values": ["Racha histórica en fase regular", "Cinco jornadas invicto como titular", "El split en que nadie los pudo parar"] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] },
@@ -34,7 +35,7 @@
           },
           {
             "weight": 3,
-            "texto": "La racha se corta en la peor jornada posible y quedaste vos como el que forzó la jugada. Nadie te lo dice de frente.",
+            "texto": "La racha se corta en la peor jornada posible y quedás vos como el que forzó la jugada. Nadie te lo dice de frente.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 1, "clamp": [0, 100] }
             ]
@@ -43,20 +44,20 @@
       },
       {
         "id": "jugar_conservador",
-        "label": "Bajar un cambio y cuidar la clasificación",
-        "descripcion": "Jugás a no perder. Menos ruido, menos riesgo, y la sensación de haber dejado algo sobre la mesa.",
+        "label": "Bajar un cambio y asegurar",
+        "descripcion": "Jugás a no perder.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Cerrás la fase sin sobresaltos. No hubo épica y tampoco hubo desastre: llegaron enteros, que era el plan.",
+            "texto": "Cerrás la fase sin sobresaltos. Sin épica ni desastre: llegaron enteros, que era el plan.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Jugando tranquilos ganan igual, y de paso te sale una jornada en la que hiciste todo bien sin arriesgar nada. Es la clase de split que te consolida.",
+            "texto": "Jugando tranquilos ganan igual, y te sale una jornada en la que hiciste todo bien sin arriesgar nada. Así se consolida un split.",
             "effects": [
               { "type": "push", "path": "career.hitos", "values": ["Split sólido sin una sola jornada floja", "Clasificación cómoda como titular"] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -68,10 +69,11 @@
   },
   {
     "id": "international_trip",
+    "voz": "corta",
     "category": "competicion",
     "categoria": "oportunidad",
     "title": "Se viaja",
-    "description": "{org} clasificó y hay que hacer las valijas. Es la primera vez que vas a jugar contra gente que solo viste en VODs.",
+    "description": "{org} clasificó y hay que armar las valijas. Por primera vez vas a jugar contra gente que solo viste en VODs.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -85,8 +87,8 @@
     "options": [
       {
         "id": "aprovechar_la_exposicion",
-        "label": "Aprovechar que te están mirando",
-        "descripcion": "Entrevistas, contenido, redes. Es la ventana más grande que vas a tener en el año, y come horas de preparación.",
+        "label": "Aprovechar que te miran",
+        "descripcion": "Entrevistas, contenido y redes, a costa de scrims.",
         "weight": 5,
         "outcomes": [
           {
@@ -99,7 +101,7 @@
           },
           {
             "weight": 3,
-            "texto": "Un clip tuyo del media day se vuelve viral y te comés dos días de agenda que iban a ser de scrim. Valió, aunque el coach no opine igual.",
+            "texto": "Un clip del media day se hace viral y te comés dos días de scrim. Valió, aunque el coach no opine igual.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 7, "max": 10, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -110,12 +112,12 @@
       {
         "id": "enfocarse_solo_en_el_juego",
         "label": "Encerrarte a jugar",
-        "descripcion": "Hotel, sala de scrim, hotel. Nadie va a hablar de vos y vas a volver siendo mejor jugador.",
+        "descripcion": "Hotel, sala de scrim, hotel.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Dos semanas scrimeando contra gente que hace cosas que vos no habías visto nunca. Volvés con el mapa distinto en la cabeza.",
+            "texto": "Dos semanas de scrims contra gente que hace cosas que nunca habías visto. Volvés con el mapa distinto en la cabeza.",
             "effects": [
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 2, "clamp": [0, 100] }
@@ -123,7 +125,7 @@
           },
           {
             "weight": 3,
-            "texto": "Te llevás una paliza en scrims durante días y en algún momento deja de doler y empieza a enseñar. Volvés distinto.",
+            "texto": "Te dan una paliza en scrims durante días, hasta que deja de doler y empieza a enseñar. Volvés distinto.",
             "effects": [
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 3, "max": 5, "clamp": [0, 100] }
             ]
@@ -134,10 +136,11 @@
   },
   {
     "id": "worlds_dream",
+    "voz": "corta",
     "category": "competicion",
     "categoria": "oportunidad",
     "title": "Esto es Worlds",
-    "description": "Salís al escenario y el estadio no se parece a nada que hayas jugado. Toda la carrera apuntaba acá y ahora hay que jugar igual que siempre.",
+    "description": "Salís al escenario y el estadio no se parece a nada que hayas jugado. Toda la carrera apuntaba acá, y hay que jugar como siempre.",
     "weight": 4,
     "cooldown": 4,
     "contexto": {
@@ -153,12 +156,12 @@
       {
         "id": "jugar_relajado",
         "label": "Soltarlo y disfrutarlo",
-        "descripcion": "Te sacás la mochila y jugás como en tu pieza. Es lo que te va a dejar el mejor recuerdo, no necesariamente el mejor resultado.",
+        "descripcion": "Jugás como en tu pieza.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Jugás sueltísimo y se te nota en la cara. No pasan de la fase que tenían que pasar, pero volvés con la certeza de que pertenecés.",
+            "texto": "Jugás sueltísimo y se te nota en la cara. No pasan de fase, pero volvés con la certeza de que pertenecés.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -166,7 +169,7 @@
           },
           {
             "weight": 3,
-            "texto": "Te sale la jugada del torneo en el peor momento posible para el rival. La repiten todo el año.",
+            "texto": "Te sale la jugada del torneo en el peor momento para el rival. La repiten todo el año.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 8, "clamp": [0, 100] }
             ]
@@ -176,12 +179,12 @@
       {
         "id": "presionar_al_maximo",
         "label": "Apretar por el resultado",
-        "descripcion": "Dormís cinco horas, mirás VODs hasta que se te cierran los ojos y exigís lo mismo al resto. Se puede ganar así, y se paga.",
+        "descripcion": "Dormís poco, VODs hasta el último minuto.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Llegan más lejos de lo que nadie los daba, y vos leíste el torneo mejor que nunca. También terminaste vacío.",
+            "texto": "Llegan más lejos de lo que nadie los daba y leíste el torneo mejor que nunca. También terminaste vacío.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 8, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] },
@@ -190,7 +193,7 @@
           },
           {
             "weight": 4,
-            "texto": "Los exprimís a todos, incluido vos. El torneo termina, la gente habla de la campaña, y vos tardás meses en volver a tener ganas de abrir el cliente.",
+            "texto": "Exprimís a todos, vos incluido. Termina el torneo, la gente habla de la campaña y tardás meses en tener ganas de abrir el cliente.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 8, "max": 12, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
@@ -202,11 +205,12 @@
   },
   {
     "id": "el_invicto_se_corta",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "category": "competicion",
     "categoria": "golpe_duro",
     "title": "Se cortó la racha",
-    "description": "Perdieron. Nada más que eso, pero después de tantas jornadas ganando se siente distinto: el grupo tiene que aprender de nuevo a perder sin que se le venga todo abajo.",
+    "description": "Perdieron. Nada más, pero después de tantas jornadas ganando se siente distinto: el grupo tiene que aprender a perder sin venirse abajo.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -221,9 +225,9 @@
     "options": [
       {
         "id": "bajarle_el_peso",
-        "label": "Bajarle el peso al otro día",
-        "descripcion": "Le decís al grupo que una derrota no borra las jornadas anteriores. Ordena la cabeza colectiva, aunque suene a minimizar lo que pasó.",
-        "aviso": "Si suena a minimizar, el grupo te lo nota",
+        "label": "Bajarle el peso",
+        "descripcion": "Una derrota no borra lo anterior.",
+        "aviso": "Si suena a minimizar, el grupo lo nota",
         "weight": 5,
         "outcomes": [
           {
@@ -235,7 +239,7 @@
           },
           {
             "weight": 4,
-            "texto": "Bajarle el peso suena bien en la charla, pero en la práctica siguiente se nota que algo quedó pegado.",
+            "texto": "Suena bien en la charla, pero en la práctica siguiente se nota que algo quedó pegado.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -244,8 +248,8 @@
       },
       {
         "id": "analizarla_en_frio",
-        "label": "Analizarla en frío, sin filtro",
-        "descripcion": "Revisás el VOD completo buscando qué falló de verdad. Más incómodo en el momento, y con mejor información para la próxima.",
+        "label": "Analizarla en frío",
+        "descripcion": "Revisás el VOD entero, sin filtro.",
         "aviso": "Si el análisis se estira, el grupo sale golpeado",
         "weight": 5,
         "outcomes": [
@@ -258,7 +262,7 @@
           },
           {
             "weight": 4,
-            "texto": "El análisis se estira tanto que el grupo termina más golpeado por la revisión que por la derrota misma.",
+            "texto": "El análisis se estira tanto que el grupo sale más golpeado por la revisión que por la derrota.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -269,11 +273,12 @@
   },
   {
     "id": "el_equipo_ideal_del_split",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "category": "competicion",
     "categoria": "prensa",
-    "title": "Te nombran en el equipo ideal del split",
-    "description": "La liga publica el All-Pro Team de la temporada y tu nombre está ahí, votado entre medios y fanáticos. Es el tipo de reconocimiento que no depende de un título, pero que se siente como uno.",
+    "title": "Equipo ideal del split",
+    "description": "La liga publica el All-Pro Team y tu nombre está ahí, votado por medios y fanáticos. No es un título, pero se siente como uno.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -288,13 +293,13 @@
     "options": [
       {
         "id": "usarlo_para_negociar",
-        "label": "Usarlo como argumento para tu próximo contrato",
-        "descripcion": "Le pedís a tu representante que lo sume a la carpeta de negociación. Convertís un reconocimiento en una herramienta concreta.",
+        "label": "Usarlo para negociar el contrato",
+        "descripcion": "Tu representante lo suma a la carpeta.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El reconocimiento pesa en la mesa de negociación más de lo esperado. Tu representante lo agrega como argumento de peso.",
+            "texto": "El reconocimiento pesa en la mesa más de lo esperado. Tu representante lo usa como argumento fuerte.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "momento", "path": "career.registro.momentos", "tipo": "equipo_ideal", "values": ["El año que entraste al equipo ideal de la liga", "El reconocimiento que usaste para negociar mejor"] }
@@ -312,20 +317,20 @@
       },
       {
         "id": "compartirlo_con_el_equipo",
-        "label": "Compartirlo públicamente con tu equipo",
-        "descripcion": "Decís que el mérito es tan tuyo como de los cuatro que jugaron al lado tuyo. Cede protagonismo individual y suma puertas adentro.",
+        "label": "Compartirlo con el equipo",
+        "descripcion": "El mérito es tan tuyo como de los otros cuatro.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El gesto no pasa desapercibido en el team. Compartir el mérito individual construye algo que un trofeo solo no construye.",
+            "texto": "El gesto no pasa desapercibido en el team. Compartir el mérito construye algo que un trofeo solo no construye.",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "El gesto queda bien, pero puertas afuera nadie discute el equipo ideal: la placa tiene tu nombre y solo el tuyo.",
+            "texto": "Queda lindo, pero puertas afuera nadie discute el equipo ideal: la placa tiene tu nombre y solo el tuyo.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
@@ -336,10 +341,11 @@
   },
   {
     "id": "el_mapa_5_en_casa",
+    "voz": "corta",
     "category": "competicion",
     "categoria": "serie",
-    "title": "Mapa 5, de local, con el estadio lleno",
-    "description": "Se fue a la máxima y el quinto se juega en tu ciudad. El ruido no se parece a nada de las scrims: cada pelea la corea gente que pagó la entrada para verte a vos.",
+    "title": "Mapa 5, de local",
+    "description": "Se fue a la máxima y el quinto se juega en tu ciudad. Cada pelea la corea gente que pagó la entrada para verte a vos.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -355,14 +361,14 @@
       {
         "id": "usar_el_estadio_a_favor",
         "label": "Dejar que el estadio te empuje",
-        "descripcion": "Te prendés del ruido y jugás con la adrenalina arriba. Puede llevarte a otra dimensión o puede hacerte forzar la primera pelea.",
+        "descripcion": "Adrenalina arriba y el ruido a favor.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "El primer teamfight lo ganás y el estadio explota. A partir de ahí jugás cinco centímetros más adelante que el rival.",
-              "La energía del lugar te lleva. Clavás una jugada que hace temblar las tribunas y el mapa se te acomoda solo."
+              "Ganás el primer teamfight y el estadio explota. Desde ahí jugás cinco centímetros adelante del rival.",
+              "La energía te lleva: clavás una jugada que hace temblar las tribunas y el mapa se acomoda solo."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.teamfight", "min": 3, "max": 6, "clamp": [0, 100] },
@@ -371,7 +377,7 @@
           },
           {
             "weight": 4,
-            "texto": "La adrenalina te gana. Buscás la jugada para la tribuna en el minuto seis, te la comés, y el estadio pasa de coro a silencio incómodo.",
+            "texto": "Te gana la adrenalina. Buscás la jugada para la tribuna en el minuto seis, te la comés y el estadio pasa al silencio incómodo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -381,13 +387,13 @@
       },
       {
         "id": "aislarte_del_ruido",
-        "label": "Aislarte y jugar tu partido de siempre",
-        "descripcion": "Auriculares, mirada en la pantalla, cero tribuna. Le sacás emoción al momento a cambio de no cometer un error por euforia.",
+        "label": "Aislarte y jugar lo de siempre",
+        "descripcion": "Auriculares y mirada en la pantalla.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Jugás como si fuera una scrim más. Sin picos ni bajones: la ejecución fría en el mapa que más pesaba de la temporada.",
+            "texto": "Jugás como si fuera una scrim más. Sin picos ni bajones: ejecución fría en el mapa que más pesaba de la temporada.",
             "effects": [
               { "type": "stat", "path": "player.stats.shotcalling", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -407,10 +413,11 @@
   },
   {
     "id": "el_bye_a_semis",
+    "voz": "corta",
     "category": "competicion",
     "categoria": "rutina",
-    "title": "Terminaron arriba y hay semana libre",
-    "description": "Cerraron la fase regular en los dos primeros puestos y les toca bye a semifinales. Una semana entera sin partido oficial mientras el resto se saca chispas en cuartos.",
+    "title": "Bye a semis",
+    "description": "Cerraron la fase regular entre los dos primeros y pasan directo a semis. Una semana sin partido oficial mientras el resto se pelea en cuartos.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -425,13 +432,13 @@
     "options": [
       {
         "id": "usar_la_semana_para_scrimear",
-        "label": "Meterle scrims toda la semana",
-        "descripcion": "Aprovechás para pulir la comp y llegar afiladísimo. Riesgo: llegar a semis con la energía de fin de temporada regular en vez de fresco.",
+        "label": "Scrims toda la semana",
+        "descripcion": "Pulís la comp y llegás afilado.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Una semana de scrims contra sparrings bien elegidos y llegás a semis con tres planes distintos preparados. El bye lo convertiste en ventaja.",
+            "texto": "Una semana de scrims con sparrings bien elegidos y llegás a semis con tres planes. El bye lo convertiste en ventaja.",
             "effects": [
               { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -439,7 +446,7 @@
           },
           {
             "weight": 4,
-            "texto": "Scrimean tanto que llegan a semis sin frescura. El equipo que salió de cuartos con ritmo de partido los pasa por arriba el primer mapa.",
+            "texto": "Scrimean tanto que llegan a semis sin frescura, y el equipo que viene de cuartos los pasa por arriba el primer mapa.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -449,12 +456,12 @@
       {
         "id": "usar_la_semana_para_descansar",
         "label": "Bajar la carga y llegar fresco",
-        "descripcion": "Sesiones cortas, dormir, desconectar. Llegás con la cabeza entera; el riesgo es perder el ritmo de competir.",
+        "descripcion": "Dormir, desconectar, sesiones cortas.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Llegás a semis descansado y con hambre. El primer mapa lo jugás con una claridad que el rival, que viene de una guerra en cuartos, no tiene.",
+            "texto": "Llegás a semis descansado y con hambre. El rival, que viene de una guerra en cuartos, no tiene tu claridad.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.sleep", "min": 3, "max": 7, "clamp": [0, 100] }
@@ -462,7 +469,7 @@
           },
           {
             "weight": 4,
-            "texto": "Descansan de más y el primer mapa de semis lo juegan oxidados: tardan veinte minutos en agarrar el ritmo que el rival ya traía.",
+            "texto": "Descansan de más y juegan el primer mapa oxidados: tardan veinte minutos en agarrar el ritmo que el rival ya traía.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": 0, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -474,10 +481,11 @@
   },
   {
     "id": "la_serie_de_desempate",
+    "voz": "corta",
     "category": "competicion",
     "categoria": "serie",
-    "title": "Un desempate por el último boleto",
-    "description": "Terminaron la fase regular empatados en puntos con otro equipo por el último lugar de playoffs. Un solo partido, a muerte, para definir quién sigue y quién se va de vacaciones antes.",
+    "title": "Desempate por el último boleto",
+    "description": "Terminaron empatados en puntos con otro equipo por el último lugar de playoffs. Un solo partido, a muerte: quién sigue y quién se va de vacaciones.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -492,13 +500,13 @@
     "options": [
       {
         "id": "asumir_que_te_toca_a_vos",
-        "label": "Pedir la responsabilidad de cerrar el partido",
-        "descripcion": "Le decís al equipo que la bola caliente te la tiren a vos. Si sale, sos el que los metió en playoffs; si no, sos el que los dejó afuera.",
+        "label": "Pedir la bola caliente",
+        "descripcion": "Si sale sos el héroe; si no, el culpable.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "La jugada del partido pasa por tus manos y la resolvés. Entran a playoffs por vos, y eso el equipo no lo olvida.",
+            "texto": "La jugada del partido pasa por tus manos y la resolvés. Entran a playoffs por vos, y el equipo no lo olvida.",
             "effects": [
               { "type": "push", "path": "career.hitos", "values": ["El desempate que cerraste vos", "La jugada que los metió en playoffs sobre la hora"] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] }
@@ -506,7 +514,7 @@
           },
           {
             "weight": 5,
-            "texto": "La jugada te queda a vos y no sale. Quedan afuera de playoffs y, aunque nadie lo diga fuerte, la última imagen del split es esa.",
+            "texto": "La jugada te queda a vos y no sale. Quedan afuera, y aunque nadie lo diga fuerte, la última imagen del split es esa.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -6, "max": -3, "clamp": [0, 100] }
             ]
@@ -515,13 +523,13 @@
       },
       {
         "id": "jugar_tu_parte_sin_cargar_con_todo",
-        "label": "Jugar tu parte y confiar en el equipo",
-        "descripcion": "Hacés lo tuyo bien y dejás que la definición sea colectiva. Menos gloria si sale, menos mochila si no.",
+        "label": "Jugar tu parte y confiar",
+        "descripcion": "Menos gloria si sale, menos mochila si no.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Cada uno pone su parte y el partido se gana entre los cinco. Entran a playoffs sin un héroe, que a veces es la mejor forma de entrar.",
+            "texto": "Cada uno pone lo suyo y se gana entre los cinco. Entran a playoffs sin héroe, que a veces es la mejor forma de entrar.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -529,7 +537,7 @@
           },
           {
             "weight": 4,
-            "texto": "El partido se pierde por un error que no fue tuyo, pero quedan afuera igual. Jugaste bien y te vas de vacaciones lo mismo.",
+            "texto": "Se pierde por un error que no fue tuyo, pero quedan afuera igual. Jugaste bien y te vas de vacaciones lo mismo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
@@ -540,10 +548,11 @@
   },
   {
     "id": "el_internacional_de_mitad_de_ano",
+    "voz": "corta",
     "category": "competicion",
     "categoria": "oportunidad",
-    "title": "Clasificaron al torneo de mitad de año",
-    "description": "Terminar el split arriba de todo tiene premio: dos semanas afuera midiéndose con los campeones de las otras regiones, antes de que la mayoría de la gente entienda cómo quedó el meta nuevo.",
+    "title": "Torneo de mitad de año",
+    "description": "Terminar arriba tiene premio: dos semanas afuera midiéndote con los campeones de otras regiones, antes de que la mayoría entienda el meta nuevo.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -559,8 +568,8 @@
     "options": [
       {
         "id": "ir_a_probar_el_meta",
-        "label": "Usarlo de laboratorio del meta nuevo",
-        "descripcion": "Probás picks y estilos que en tu liga nadie se anima todavía. Podés volver tres parches adelantado, o quedar expuesto contra gente que ya lo resolvió.",
+        "label": "Usarlo de laboratorio del meta",
+        "descripcion": "Probás picks que en tu liga nadie se anima.",
         "weight": 5,
         "outcomes": [
           {
@@ -583,13 +592,13 @@
       },
       {
         "id": "ir_a_ganar_con_lo_conocido",
-        "label": "Ir a ganar con lo que ya te sale",
-        "descripcion": "Nada de inventos: llevás tu mejor versión del split que ganaste. Menos aprendizaje, más chances de traerte un título internacional.",
+        "label": "Ir a ganar con lo conocido",
+        "descripcion": "Nada de inventos: tu mejor versión.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Jugás tu identidad a full y funciona lejos de casa también. Llegan a la final y el nombre del equipo pesa distinto de acá en adelante.",
+            "texto": "Jugás tu identidad a full y funciona lejos de casa también. Llegan a la final y el nombre del equipo pesa distinto desde ahora.",
             "effects": [
               { "type": "push", "path": "career.hitos", "values": ["Final de un internacional de mitad de año", "El torneo que jugaste afuera y casi ganás"] },
               { "type": "stat", "path": "player.stats.hype", "min": 4, "max": 8, "clamp": [0, 100] }
@@ -597,7 +606,7 @@
           },
           {
             "weight": 5,
-            "texto": "Lo conocido no alcanza contra las otras regiones. Caen en fase de grupos y volvés con la sensación de que faltó animarse a algo.",
+            "texto": "Lo conocido no alcanza contra otras regiones. Caen en grupos y volvés con la sensación de que faltó animarse a algo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 1, "max": 2, "clamp": [0, 100] }

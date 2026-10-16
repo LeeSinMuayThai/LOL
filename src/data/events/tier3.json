@@ -1,10 +1,11 @@
 [
   {
     "id": "el_sueldo_que_llega_tarde",
+    "voz": "corta",
     "category": "tier3",
     "categoria": "mercado",
-    "title": "El sueldo que llega tarde otra vez",
-    "description": "El depósito de este mes tampoco cayó el día que correspondía. El manager dice que es un tema administrativo, que ya se resuelve — la misma frase del mes pasado. En un equipo de tier 3 la plata no es mucha, pero cuando no llega a horario, importa el doble.",
+    "title": "El sueldo llega tarde otra vez",
+    "description": "El depósito de este mes tampoco cayó a tiempo. El manager dice que es administrativo y que ya se resuelve, la misma frase del mes pasado.",
     "weight": 6,
     "cooldown": 6,
     "contexto": {
@@ -16,13 +17,13 @@
       {
         "id": "reclamarlo_formalmente",
         "label": "Reclamar por escrito con el roster",
-        "descripcion": "Juntás a tus compañeros y mandan un mensaje conjunto pidiendo una fecha concreta. Es incómodo, pero un reclamo de a uno se ignora más fácil que uno de cinco.",
-        "aviso": "Si cae en saco roto, se tensa con el manager",
+        "descripcion": "Un reclamo de cinco no se ignora tan fácil.",
+        "aviso": "Si cae en saco roto, se tensa el manager",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El reclamo conjunto funciona: el pago aparece en 48 horas y el manager promete que no se repite. La próxima vez, va a tardar menos en resolverse.",
+            "texto": "El reclamo conjunto funciona: el pago aparece en 48 horas y el manager promete que no se repite.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -30,7 +31,7 @@
           },
           {
             "weight": 5,
-            "texto": "El reclamo cae en saco roto y la relación con el manager queda más tensa, aunque el pago termina llegando de todos modos, unos días después.",
+            "texto": "El reclamo cae en saco roto y el manager queda tenso, aunque el pago llega igual, unos días después.",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -39,20 +40,20 @@
       },
       {
         "id": "aguantar_por_el_proyecto",
-        "label": "Aguantarlo en silencio, por ahora",
-        "descripcion": "No es la plata de tu vida, y todavía creés en lo que el equipo puede llegar a ser. Preferís no generar fricción por un par de días de demora.",
+        "label": "Aguantar en silencio, por ahora",
+        "descripcion": "Todavía creés en el equipo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El pago aparece un par de días tarde y ahí termina el asunto. La paciencia no te cuesta nada esta vez.",
+            "texto": "El pago llega un par de días tarde y ahí termina el asunto. La paciencia no te cuesta nada esta vez.",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Te tragás la molestia, pero empezás a mirar con otros ojos las promesas del proyecto — la próxima vez que se demore, va a pesar más.",
+            "texto": "Te tragás la molestia, pero empezás a mirar distinto las promesas del proyecto. La próxima demora va a pesar más.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -63,12 +64,13 @@
   },
   {
     "id": "el_coach_que_tambien_es_el_dueno",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "tier3",
     "categoria": "vestuario",
-    "title": "El coach que también es el dueño",
-    "description": "En un equipo de tier 3 no hay departamentos separados: la misma persona que puso la plata para armar el roster es la que decide el draft, arma la práctica y da la charla técnica. Cuando no estás de acuerdo con una decisión, discutirla es discutir con el jefe, no con un empleado más.",
+    "title": "El coach también es el dueño",
+    "description": "En tier 3 no hay departamentos: quien puso la plata decide el draft, arma la práctica y da la charla. Discutirle es discutir con el jefe.",
     "weight": 6,
     "cooldown": 6,
     "contexto": {
@@ -80,20 +82,20 @@
       {
         "id": "cuestionarlo_directo",
         "label": "Cuestionarlo en la cara",
-        "descripcion": "Le decís, sin vueltas, por qué pensás que se equivoca. Es jugado —discutís con quien te paga— pero te sacás la duda de encima.",
+        "descripcion": "Jugado: discutís con quien te paga.",
         "aviso": "Si se lo toma a mal, se resiente el grupo",
         "weight": 3,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Sorprendentemente, lo recibe bien: valora que alguien del roster tenga criterio propio y no le tenga miedo a la conversación difícil.",
+            "texto": "Para tu sorpresa, lo recibe bien: valora que alguien del roster tenga criterio y no le tema a la charla difícil.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Se lo toma como un cuestionamiento a su autoridad completa, no solo a la decisión puntual, y el clima en la próxima práctica se siente más frío.",
+            "texto": "Lo toma como un cuestionamiento a toda su autoridad, no a una decisión, y la próxima práctica se siente helada.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -103,19 +105,19 @@
       {
         "id": "dejarlo_pasar",
         "label": "Dejarlo pasar y jugar",
-        "descripcion": "No es tu batalla. Elegís guardarte el desacuerdo y enfocarte en lo único que controlás de verdad: tu propio nivel en la Grieta.",
+        "descripcion": "No es tu batalla; tu nivel sí.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Guardarte el reclamo te ahorra un conflicto que probablemente no ibas a ganar, y te deja la cabeza libre para jugar.",
+            "texto": "Guardarte el reclamo te ahorra un conflicto que probablemente no ganabas y te deja la cabeza libre para jugar.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Tragarte el desacuerdo una vez más empieza a sumar: la frustración por decisiones que no compartís se va acumulando de a poco.",
+            "texto": "Tragarte el desacuerdo una vez más suma: la frustración por decisiones que no compartís se acumula de a poco.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -125,13 +127,13 @@
       {
         "id": "presion_colectiva",
         "label": "Hablarlo primero con el roster",
-        "descripcion": "Antes de ir directo al dueño-coach, sondeás si tus compañeros piensan lo mismo. Si el reclamo llega en grupo, pesa distinto que si lo llevás solo.",
-        "aviso": "Si nadie te banca, quedás solo y más tenso",
+        "descripcion": "En grupo, el reclamo pesa distinto.",
+        "aviso": "Si nadie te banca, quedás solo",
         "weight": 3,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El resto piensa igual, y la charla en grupo con el coach-dueño termina en un cambio real de criterio para la próxima práctica.",
+            "texto": "El resto piensa igual y la charla en grupo termina en un cambio real de criterio para la próxima práctica.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 3, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -139,7 +141,7 @@
           },
           {
             "weight": 5,
-            "texto": "Nadie más quiere meterse en el tema —dependen del mismo sueldo que vos— y te quedás solo con el reclamo sin haberlo planteado.",
+            "texto": "Nadie quiere meterse (dependen del mismo sueldo que vos) y te quedás solo con un reclamo que ni planteaste.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -150,10 +152,11 @@
   },
   {
     "id": "la_gaming_house_que_es_un_departamento",
+    "voz": "corta",
     "category": "tier3",
     "categoria": "rutina",
-    "title": "La \"gaming house\" es un departamento de dos ambientes",
-    "description": "Cinco jugadores, dos habitaciones, un router que se cuelga cuando todos están en cliente al mismo tiempo. Lo llaman gaming house en las redes del equipo; en la vida real es un departamento alquilado con colchones en el piso.",
+    "title": "La gaming house es un departamento",
+    "description": "Cinco jugadores, dos habitaciones y un router que se cuelga cuando todos entran al cliente. En redes es la gaming house; en la vida real, colchones en el piso.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -166,19 +169,19 @@
       {
         "id": "hacer_comunidad_con_lo_que_hay",
         "label": "Sacarle jugo a la convivencia",
-        "descripcion": "En vez de quejarte por el espacio, usás la cercanía obligada para construir algo con el grupo: cocinar juntos, ver VODs en la única tele.",
+        "descripcion": "Cocinar juntos, ver VODs en la única tele.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La convivencia incómoda termina generando un grupo más unido de lo que la infraestructura hacía pensar. A veces lo precario junta más que lo cómodo.",
+            "texto": "La convivencia incómoda termina uniendo más de lo que la infraestructura prometía. A veces lo precario junta más que lo cómodo.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 3, "max": 6, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "El esfuerzo no alcanza contra el cansancio real de dormir mal cada noche por el espacio reducido.",
+            "texto": "El esfuerzo no alcanza contra el cansancio de dormir mal cada noche por el espacio reducido.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -188,13 +191,13 @@
       {
         "id": "buscar_tu_espacio_afuera",
         "label": "Buscar un lugar propio",
-        "descripcion": "Pagás de tu bolsillo una pieza cerca, aunque eso implique menos horas compartidas con el grupo y algo de plata que no vas a recuperar.",
+        "descripcion": "Una pieza cerca, de tu bolsillo.",
         "aviso": "Si te vas, te perdés la dinámica del grupo",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Dormir bien de verdad se nota enseguida en tu rendimiento, aunque el gasto extra pese en un contrato de tier 3.",
+            "texto": "Dormir bien de verdad se nota enseguida en el rendimiento, aunque el gasto pese en un contrato de tier 3.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -202,7 +205,7 @@
           },
           {
             "weight": 5,
-            "texto": "Al no estar en la casa a toda hora, te empezás a perder parte de la dinámica del grupo, y se nota en la coordinación fina.",
+            "texto": "Al no estar en la casa a toda hora, te perdés parte de la dinámica del grupo, y se nota en la coordinación.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -213,11 +216,12 @@
   },
   {
     "id": "el_lineup_que_se_tambalea",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "category": "tier3",
     "categoria": "golpe_duro",
-    "title": "Rumores de que el roster no llega al año que viene",
-    "description": "Nadie lo dice en la práctica, pero corre en los grupos de WhatsApp: la plata no está alcanzando, y hay charlas de que el proyecto se corta antes de lo planeado. En tier 3 esto pasa todo el tiempo — la pregunta es qué hacés vos mientras todavía no pasó.",
+    "title": "Rumores de que el roster no llega",
+    "description": "Corre en los grupos de WhatsApp: la plata no alcanza y el proyecto se corta antes de lo planeado. En tier 3 pasa seguido.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -229,20 +233,20 @@
       {
         "id": "buscar_equipo_por_tu_cuenta",
         "label": "Mover contactos por tu cuenta",
-        "descripcion": "Sin decírselo al equipo, empezás a tantear otras posibilidades. Si el proyecto se corta, no querés quedarte sin nada de un día para el otro.",
-        "aviso": "Si se enteran, se rompe la confianza del grupo",
+        "descripcion": "Sin avisarle al equipo.",
+        "aviso": "Si se enteran, se rompe la confianza",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Mover fichas con discreción te deja tranquilo: pase lo que pase con este roster, ya sabés que hay gente interesada en vos.",
+            "texto": "Mover fichas con discreción te deja tranquilo: pase lo que pase con este roster, ya hay gente interesada en vos.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Alguien se entera de que estás tanteando salidas y la confianza del grupo con vos se resiente, aunque el equipo termine sosteniéndose.",
+            "texto": "Alguien se entera de que tanteás salidas y la confianza del grupo se resiente, aunque el equipo se sostenga.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -252,13 +256,13 @@
       {
         "id": "quedarte_fiel_al_proyecto",
         "label": "Quedarte y remar con el equipo",
-        "descripcion": "Decidís no buscar nada afuera todavía. Si el proyecto se cae, se cae con vos adentro hasta el final, no mirando para otro lado.",
-        "aviso": "Si el proyecto se cae, te agarra sin plan B",
+        "descripcion": "Si se cae, se cae con vos adentro.",
+        "aviso": "Si el proyecto cae, te agarra sin plan B",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El resto del roster valora que no saliste corriendo ante el primer rumor, y el grupo juega más unido en las semanas siguientes.",
+            "texto": "El roster valora que no saliste corriendo ante el primer rumor y el grupo juega más unido las semanas siguientes.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 3, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "career.arraigo", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -266,7 +270,7 @@
           },
           {
             "weight": 5,
-            "texto": "El rumor termina siendo cierto y te agarra sin ningún plan B armado — la lealtad estuvo bien, pero ahora hay que salir a buscar equipo de urgencia.",
+            "texto": "El rumor era cierto y te agarra sin plan B. La lealtad estuvo bien, pero ahora toca buscar equipo de urgencia.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -277,10 +281,11 @@
   },
   {
     "id": "el_scrim_contra_la_academia_grande",
+    "voz": "corta",
     "category": "tier3",
     "categoria": "oportunidad",
-    "title": "Scrim contra la academia de una organización grande",
-    "description": "Por contactos del manager, consiguen una scrim contra el equipo academy de una organización de tier 1. Es una sola práctica, sin transmisión ni nada oficial, pero del otro lado hay gente con línea directa a un roster de verdad mirando cómo jugás.",
+    "title": "Scrim contra una academy grande",
+    "description": "El manager consigue scrim contra el academy de una org de tier 1. Nada oficial, pero del otro lado hay gente con línea directa a un roster de verdad.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -291,20 +296,20 @@
     "options": [
       {
         "id": "jugar_para_la_vidriera",
-        "label": "Jugar para lucirte, no para ganar",
-        "descripcion": "Priorizás las jugadas que se ven bien y muestran tu techo individual, aunque eso signifique arriesgar el resultado del equipo.",
+        "label": "Jugar para lucirte",
+        "descripcion": "Jugadas que muestren tu techo.",
         "weight": 3,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Un par de jugadas te salen redondas y quedan en la cabeza de la gente de la academia — te enterás semanas después que preguntaron por vos.",
+            "texto": "Un par de jugadas te salen redondas y se les quedan a los de la academy. Semanas después te enterás de que preguntaron por vos.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Forzar el lucimiento te sale mal más de una vez, y la sensación que dejás es la de alguien que juega para la cámara, no para ganar.",
+            "texto": "Forzar el lucimiento te sale mal más de una vez, y dejás la imagen de alguien que juega para la cámara.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -314,12 +319,12 @@
       {
         "id": "jugar_para_el_equipo",
         "label": "Jugar como en cualquier scrim",
-        "descripcion": "No cambiás nada de tu forma de jugar por quién está mirando. Confiás en que el nivel real, sin actuación, es lo que más impresiona.",
+        "descripcion": "El nivel real, sin actuar.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Jugar natural, sin forzar nada, termina siendo justo lo que un scout de academia sabe reconocer — la consistencia pesa más que un highlight.",
+            "texto": "Jugar natural es justo lo que un scout de academy sabe reconocer: la consistencia pesa más que un highlight.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -327,7 +332,7 @@
           },
           {
             "weight": 4,
-            "texto": "Jugás bien, pero sin nada que te distinga demasiado del resto — pasás sin pena ni gloria por la única vidriera que tenías esa semana.",
+            "texto": "Jugás bien, pero nada te distingue del resto. Pasás sin pena ni gloria por la única vidriera de la semana.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
             ]
@@ -336,13 +341,13 @@
       },
       {
         "id": "usarlo_para_hacer_contactos",
-        "label": "Hablar con su staff post-scrim",
-        "descripcion": "Más allá de cómo te salga el juego, te asegurás de cruzar unas palabras con el coach o el manager de la academia cuando termine.",
+        "label": "Hablar con su staff después",
+        "descripcion": "Unas palabras con el coach o el manager.",
         "weight": 3,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "La charla informal después de la scrim deja una impresión más duradera que cualquier jugada individual — te guardan el contacto para el futuro.",
+            "texto": "La charla informal después de la scrim deja una impresión más duradera que cualquier jugada. Te guardan el contacto.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -350,7 +355,7 @@
           },
           {
             "weight": 5,
-            "texto": "El intento de acercamiento se siente forzado y no genera la conexión que buscabas — quedás como alguien que busca el atajo, no el nivel.",
+            "texto": "El acercamiento se siente forzado y no genera conexión. Quedás como alguien que busca el atajo, no el nivel.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -361,10 +366,11 @@
   },
   {
     "id": "el_torneo_regional_como_vidriera",
+    "voz": "corta",
     "category": "tier3",
     "categoria": "oportunidad",
-    "title": "El torneo regional: tu única vidriera del año",
-    "description": "No hay liga oficial que te esté mirando todavía. Lo único parecido a una competencia de verdad este año es un torneo regional presencial, con un puñado de scouts de paso y una transmisión casera. Si algo te va a sacar de tier 3, probablemente sea esto.",
+    "title": "El torneo regional: tu vidriera",
+    "description": "No hay liga oficial mirándote todavía. Lo más parecido este año es un torneo regional presencial, con un puñado de scouts de paso y transmisión casera.",
     "weight": 5,
     "cooldown": 10,
     "contexto": {
@@ -376,21 +382,21 @@
     "options": [
       {
         "id": "jugar_a_lo_seguro",
-        "label": "Jugar seguro, sin arriesgar imagen",
-        "descripcion": "Elegís las jugadas más conservadoras. Preferís no arruinarte frente a los scouts con un error visible antes que ir por un lucimiento arriesgado.",
+        "label": "Jugar seguro",
+        "descripcion": "Cero errores visibles frente a los scouts.",
         "aviso": "Si jugás tan seguro, pasás invisible",
         "weight": 2,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "No cometés ningún error grave y quedás como un jugador confiable, sólido — no el más vistoso, pero tampoco el que se cae en el momento importante.",
+            "texto": "No cometés ningún error grave y quedás como un jugador confiable. No el más vistoso, pero tampoco el que se cae en lo importante.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Jugar tan conservador te vuelve invisible: con tan poco riesgo, ningún scout se lleva algo memorable de vos.",
+            "texto": "Jugar tan conservador te vuelve invisible: con tan poco riesgo, ningún scout se lleva algo memorable.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -400,20 +406,20 @@
       {
         "id": "arriesgar_por_el_highlight",
         "label": "Ir por la jugada del resumen",
-        "descripcion": "Buscás el momento que se comparta en redes, aunque signifique jugadas de alto riesgo que pueden salir mal en cualquier momento.",
-        "aviso": "Si el riesgo no sale, el error queda a la vista",
+        "descripcion": "Alto riesgo, clip compartible.",
+        "aviso": "Si no sale, el error queda a la vista",
         "weight": 3,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Te sale la jugada del torneo: el clip corre por todos lados y de golpe tenés más ojos encima que en el resto del año junto.",
+            "texto": "Te sale la jugada del torneo: el clip corre por todos lados y de golpe tenés más ojos encima que en todo el año.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 5, "max": 9, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "El riesgo no sale, y el error queda tan visible como hubiera quedado el acierto — para peor, en el mismo resumen que ven los scouts.",
+            "texto": "El riesgo no sale, y el error queda tan visible como el acierto, en el mismo resumen que ven los scouts.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] }
             ]
@@ -423,12 +429,12 @@
       {
         "id": "priorizar_el_resultado_del_equipo",
         "label": "Que avance el equipo, no vos",
-        "descripcion": "Tomás las decisiones que más ayudan a ganar la serie, aunque eso implique un rol más discreto y menos vistoso para vos individualmente.",
+        "descripcion": "Rol discreto, decisiones que ganan series.",
         "weight": 3,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El equipo avanza rondas y algún scout con criterio nota que las decisiones inteligentes también son parte del nivel, no solo la mecánica.",
+            "texto": "El equipo avanza rondas y algún scout con criterio nota que las decisiones inteligentes también son nivel.",
             "effects": [
               { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -436,7 +442,7 @@
           },
           {
             "weight": 4,
-            "texto": "El equipo avanza, pero tu actuación discreta pasa completamente desapercibida frente a quienes vinieron a mirar individualidades.",
+            "texto": "El equipo avanza, pero tu actuación discreta pasa desapercibida ante quienes vinieron a mirar individualidades.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -445,20 +451,20 @@
       },
       {
         "id": "trabajar_a_los_scouts_presentes",
-        "label": "Charlar con los scouts presentes",
-        "descripcion": "Entre partidas, te acercás a presentarte con la gente que sabés que está de scouting. No todo pasa en la pantalla.",
+        "label": "Charlar con los scouts",
+        "descripcion": "No todo pasa en la pantalla.",
         "weight": 2,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Una charla breve entre partidas termina siendo lo que te abre la puerta: uno de los scouts se queda tu contacto para el mercado que viene.",
+            "texto": "Una charla breve entre partidas te abre la puerta: un scout se queda con tu contacto para el mercado que viene.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Los scouts están ahí para mirar, no para socializar, y el acercamiento no genera ningún interés real.",
+            "texto": "Los scouts están para mirar, no para socializar, y el acercamiento no genera ningún interés.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -469,10 +475,11 @@
   },
   {
     "id": "el_setup_prestado",
+    "voz": "corta",
     "category": "tier3",
     "categoria": "rutina",
-    "title": "El setup es prestado y se nota",
-    "description": "El teclado que usás en la scrim de hoy no es el tuyo: es el que quedó de un jugador anterior que se fue del equipo. El mouse pierde clicks cada tanto. En tier 3, la infraestructura la resolvés vos mismo o no la resuelve nadie.",
+    "title": "El setup es prestado",
+    "description": "El teclado de la scrim es de un jugador que se fue y el mouse pierde clicks. En tier 3 la infraestructura la resolvés vos o nadie.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -483,20 +490,20 @@
     "options": [
       {
         "id": "comprar_tu_propio_equipo",
-        "label": "Comprarte vos el periférico",
-        "descripcion": "No esperás a que el equipo lo resuelva. Con lo poco que cobrás, invertís en un mouse y un teclado que respondan como corresponde.",
+        "label": "Comprarte el periférico",
+        "descripcion": "Mouse y teclado que respondan, de tu bolsillo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El gasto se siente en un contrato de tier 3, pero jugar con un equipo confiable te devuelve una sensación de control que no tenías hace semanas.",
+            "texto": "El gasto pesa en un contrato de tier 3, pero jugar con equipo confiable te devuelve un control que no tenías hace semanas.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "El gasto pega donde ya venías corto de plata, y aunque el setup mejora, te queda la sensación de estar pagando algo que debería poner el equipo.",
+            "texto": "El gasto pega donde ya andabas corto, y aunque el setup mejora, te queda la sensación de pagar algo que debería poner el equipo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -506,20 +513,20 @@
       {
         "id": "aguantar_con_lo_que_hay",
         "label": "Aguantar con el mouse que falla",
-        "descripcion": "No es el momento de gastar en periféricos. Preferís bancarte el click perdido ocasional antes que sumar un gasto que no está en tus planes.",
-        "aviso": "Si falla en la scrim, te cuesta una jugada clave",
+        "descripcion": "Mejor un click perdido que un gasto.",
+        "aviso": "Si falla en la scrim, te cuesta una jugada",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Te las arreglás y el problema no termina costándote ninguna jugada decisiva esta vez.",
+            "texto": "Te las arreglás y el problema no te cuesta ninguna jugada decisiva esta vez.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "El click fantasma te cuesta una jugada clave en medio de la scrim, justo cuando más rendimiento necesitabas mostrar.",
+            "texto": "El click fantasma te cuesta una jugada clave en plena scrim, justo cuando necesitabas mostrar nivel.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -530,10 +537,11 @@
   },
   {
     "id": "el_stream_del_dueno_del_equipo",
+    "voz": "corta",
     "category": "tier3",
     "categoria": "prensa",
     "title": "El stream que financia al equipo",
-    "description": "El dueño del club transmite todos los días para bancar la operación —el sueldo de ustedes sale, en buena parte, de las donaciones de su chat—. Te pide que aparezcas un rato después de la práctica: 'la gente quiere ver a los jugadores'.",
+    "description": "El dueño transmite todos los días para bancar la operación: el sueldo sale, en buena parte, de las donaciones de su chat. Te pide aparecer después de la práctica.",
     "weight": 4,
     "cooldown": 8,
     "contexto": {
@@ -544,13 +552,13 @@
     "options": [
       {
         "id": "participar_a_fondo",
-        "label": "Meterte de lleno en el stream",
-        "descripcion": "Si de eso sale tu sueldo, le ponés ganas de verdad: contestás preguntas, mostrás algo de tu juego, generás onda con el chat.",
+        "label": "Meterte de lleno",
+        "descripcion": "Preguntas, juego y onda con el chat.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El chat te toma cariño y las donaciones suben las noches que aparecés — le hacés un favor real al proyecto, y el dueño te lo agradece.",
+            "texto": "El chat te toma cariño y las donaciones suben las noches que aparecés. Le hacés un favor real al proyecto, y el dueño lo agradece.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "career.arraigo", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -558,7 +566,7 @@
           },
           {
             "weight": 4,
-            "texto": "Sumar el stream a un día ya largo de práctica te deja con menos energía para lo que de verdad importa: el nivel de juego.",
+            "texto": "Sumar el stream a un día ya largo te deja sin energía para lo que importa: el nivel de juego.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -568,7 +576,7 @@
       {
         "id": "aparecer_lo_minimo",
         "label": "Aparecer lo justo y volver",
-        "descripcion": "Le hacés el favor —diez minutos, un saludo— pero dejás claro, sin decirlo en voz alta, que tu prioridad es entrenar, no entretener.",
+        "descripcion": "Diez minutos y un saludo.",
         "weight": 5,
         "outcomes": [
           {
@@ -580,7 +588,7 @@
           },
           {
             "weight": 5,
-            "texto": "El dueño lo nota y comenta, medio en broma medio en serio, que el resto del roster 'le pone más onda' — el mensaje incómodo queda flotando.",
+            "texto": "El dueño lo nota y comenta, medio en broma, que el resto del roster «le pone más onda». El mensaje queda flotando.",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -591,10 +599,11 @@
   },
   {
     "id": "la_promesa_de_ascenso_que_no_llega",
+    "voz": "corta",
     "category": "tier3",
     "categoria": "mercado",
-    "title": "La promesa de ascenso que no termina de llegar",
-    "description": "El dueño lleva meses hablando de \"el año que viene compramos el cupo de tier 2\", pero cada vez que se acerca el momento aparece una excusa nueva: que si el patrocinador se cayó, que si hay que esperar al próximo mercado. Empezás a preguntarte si el ascenso es un plan real o solo un discurso para retenerte.",
+    "title": "El ascenso que nunca llega",
+    "description": "El dueño habla hace meses de comprar el cupo de tier 2 «el año que viene», pero siempre hay una excusa. ¿Plan real o discurso para retenerte?",
     "weight": 5,
     "cooldown": 10,
     "contexto": {
@@ -605,21 +614,21 @@
     "options": [
       {
         "id": "pedir_un_plazo_concreto",
-        "label": "Pedir un plazo concreto por escrito",
-        "descripcion": "Le pedís algo más que palabras: una fecha, un compromiso que puedas señalar si no se cumple.",
+        "label": "Pedir un plazo por escrito",
+        "descripcion": "Una fecha que puedas señalar después.",
         "aviso": "Si se ofende, se resiente el arraigo",
         "weight": 4,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El dueño respeta el pedido y te da un cronograma con pasos concretos — no garantiza nada, pero al menos ahora hay algo medible.",
+            "texto": "El dueño respeta el pedido y da un cronograma con pasos concretos. No garantiza nada, pero ahora hay algo medible.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Se ofende con el pedido, como si dudaras de su palabra, y la relación queda más tirante que antes de preguntar.",
+            "texto": "Se ofende como si dudaras de su palabra, y la relación queda más tirante que antes de preguntar.",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -629,20 +638,20 @@
       {
         "id": "seguir_confiando",
         "label": "Seguir confiando un tiempo más",
-        "descripcion": "Decidís darle el beneficio de la duda. Armar algo de cero lleva tiempo, y no querés ser vos el que se va justo antes de que las cosas mejoren.",
-        "aviso": "Si el discurso no cambia, la confianza se te gasta",
+        "descripcion": "Armar algo de cero lleva tiempo.",
+        "aviso": "Si el discurso no cambia, la confianza se gasta",
         "weight": 3,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "La paciencia, esta vez, se siente como la decisión correcta: hay señales reales de que el proyecto se está armando en serio.",
+            "texto": "Esta vez la paciencia se siente correcta: hay señales reales de que el proyecto se arma en serio.",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": 2, "max": 5, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Pasan los meses y el discurso no cambia. La confianza que le diste empieza a sentirse ingenua en retrospectiva.",
+            "texto": "Pasan los meses y el discurso no cambia. La confianza que diste empieza a parecer ingenua en retrospectiva.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -652,20 +661,20 @@
       {
         "id": "empezar_a_mirar_otras_puertas",
         "label": "Mirar otras puertas sin cortar esta",
-        "descripcion": "No renunciás ni armás drama, pero dejás de esperar sentado: tanteás si hay otro proyecto de tier 3 con planes más sólidos.",
+        "descripcion": "Sin drama, pero sin esperar sentado.",
         "aviso": "Si el dueño se entera, se rompe la sinergia",
         "weight": 3,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Encontrás un par de opciones reales, y aunque no te vas todavía, jugar sabiendo que tenés alternativas te cambia la cabeza con la que entrenás.",
+            "texto": "Encontrás un par de opciones reales, y aunque todavía no te vas, entrenar con alternativas te cambia la cabeza.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "El dueño se entera de que estás mirando otras puertas y lo toma como una traición al proyecto que armó con vos desde cero.",
+            "texto": "El dueño se entera de que mirás otras puertas y lo toma como una traición al proyecto que armó con vos desde cero.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
