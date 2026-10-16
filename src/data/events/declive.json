@@ -39,7 +39,7 @@
       },
       {
         "id": "dejar_que_hable_la_cancha",
-        "label": "Que hable la cancha",
+        "label": "Que hable el Rift",
         "descripcion": "No contestás: la próxima serie responde.",
         "weight": 3,
         "outcomes": [

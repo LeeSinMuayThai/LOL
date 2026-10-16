@@ -261,7 +261,7 @@
           },
           {
             "weight": 3,
-            "texto": "Lo desmentís y quedás como el que se pone la camiseta. Sirve para la imagen, pero el que iba a llamar no llamó.",
+            "texto": "Lo desmentís y quedás como el que sale a defender al club. Sirve para la imagen, pero el que iba a llamar no llamó.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
