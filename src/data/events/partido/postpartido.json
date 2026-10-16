@@ -1,11 +1,12 @@
 [
   {
     "id": "el_review_de_hoy",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
-    "title": "El review de hoy",
-    "description": "Apenas se corta la transmisión, el coach ya está mandando el link del VOD al grupo. El partido contra {rivalDeLaFecha} todavía no terminó de digerirse y ya hay que analizarlo.",
+    "title": "El review de la fecha",
+    "description": "Apenas se corta la transmisión, el coach manda el link del VOD al grupo. El cruce contra {rivalDeLaFecha} todavía no se digirió y ya hay que analizarlo.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -23,14 +24,14 @@
     "options": [
       {
         "id": "mirar_ahora",
-        "label": "Mirarlo ahora, en caliente",
-        "descripcion": "Todavía tenés el partido fresco en el cuerpo. Puede ser la mejor forma de aprender, o la peor de procesarlo.",
+        "label": "Mirarlo en caliente",
+        "descripcion": "Puede ser la mejor forma de aprender, o la peor.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "Con todo tan fresco, ves detalles que en frío se te iban a escapar. Anotás dos cosas para la próxima fecha.",
+              "Con todo tan fresco ves detalles que en frío se te escaparían. Anotás dos cosas para la próxima fecha.",
               "En caliente reconocés la jugada exacta donde se dio vuelta. Queda anotada para no repetirla."
             ],
             "effects": [
@@ -50,7 +51,7 @@
             "weight": 4,
             "texto": [
               "Mirarlo en caliente solo te hace revivir cada error con la sangre todavía arriba.",
-              "Cada pausa del VOD te devuelve el mismo nudo en el estómago. No se aprende así."
+              "Cada pausa del VOD te devuelve el mismo nudo en el estómago. Así no se aprende."
             ],
             "effects": [
               {
@@ -69,14 +70,14 @@
       },
       {
         "id": "dejarlo_para_mañana",
-        "label": "Dejarlo para mañana con la cabeza fría",
-        "descripcion": "Hoy ya diste lo que tenías. El análisis puede esperar a mañana.",
+        "label": "Dejarlo para mañana, en frío",
+        "descripcion": "El análisis puede esperar a mañana.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
             "texto": [
-              "Descansás la cabeza y al otro día el mismo VOD se lee distinto, sin el peso del partido todavía encima.",
+              "Descansás la cabeza y al otro día el mismo VOD se lee distinto, sin el partido encima.",
               "Dormís primero. A la mañana el review es media hora de trabajo limpio, no una hora de bronca."
             ],
             "effects": [
@@ -114,11 +115,12 @@
   },
   {
     "id": "las_redes_despues_del_partido",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Las redes después del partido",
-    "description": "El clip de la jugada más comentada contra {rivalDeLaFecha} ya está circulando, con opiniones para todos los gustos en los comentarios.",
+    "description": "El clip de la jugada más comentada contra {rivalDeLaFecha} ya circula, con opiniones para todos los gustos.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -137,14 +139,14 @@
       {
         "id": "leer_todo",
         "label": "Leer todos los comentarios",
-        "descripcion": "Un rato de scroll infinito viendo qué dice la gente de tu partido.",
+        "descripcion": "Scroll infinito viendo qué dice la gente.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
             "texto": [
-              "Entre todo el ruido hay algo de reconocimiento genuino que te sube el ánimo.",
-              "Un par de mensajes de gente que sabe te dejan pensando que no jugaste tan mal como sentías."
+              "Entre todo el ruido hay reconocimiento genuino que te sube el ánimo.",
+              "Un par de mensajes de gente que sabe te hacen pensar que no jugaste tan mal como sentías."
             ],
             "effects": [
               {
@@ -162,7 +164,7 @@
           {
             "weight": 5,
             "texto": [
-              "Como siempre, te quedás con los tres comentarios negativos en vez de los cien positivos.",
+              "Como siempre, te quedás con los tres comentarios negativos y no con los cien positivos.",
               "Encontrás el único hilo que te destroza y lo leés entero dos veces. Clásico."
             ],
             "effects": [
@@ -182,13 +184,13 @@
       },
       {
         "id": "cerrar_la_app",
-        "label": "Cerrar la aplicación y listo",
-        "descripcion": "Ya jugaste el partido. Lo que se diga ahora no cambia nada de lo que pasó.",
+        "label": "Cerrar la app y listo",
+        "descripcion": "Lo que se diga ahora no cambia nada.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Te vas a dormir sin el ruido de las redes en la cabeza. Mañana es otra fecha.",
+            "texto": "Te dormís sin el ruido de las redes en la cabeza. Mañana es otra fecha.",
             "effects": [
               {
                 "type": "stat",
@@ -224,11 +226,12 @@
   },
   {
     "id": "la_cena_de_despues",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La cena de después",
-    "description": "Terminado el partido contra {rivalDeLaFecha}, alguien propone pedir algo y comer todos juntos en la gaming house antes de que cada uno se encierre en su cuarto.",
+    "description": "Después del cruce contra {rivalDeLaFecha}, alguien propone pedir algo y comer todos juntos en la gaming house antes de encerrarse cada uno en su cuarto.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -250,7 +253,7 @@
       {
         "id": "quedarse",
         "label": "Quedarte a comer con todos",
-        "descripcion": "Un rato de mesa, sin hablar de LoL si se puede evitar.",
+        "descripcion": "Un rato de mesa, sin hablar de LoL.",
         "weight": 6,
         "outcomes": [
           {
@@ -274,7 +277,7 @@
           },
           {
             "weight": 3,
-            "texto": "La charla deriva igual al partido y termina siendo un review informal que nadie pidió.",
+            "texto": "La charla deriva igual al partido y termina en un review informal que nadie pidió.",
             "effects": [
               {
                 "type": "stat",
@@ -293,12 +296,12 @@
       {
         "id": "encerrarse",
         "label": "Encerrarte en tu cuarto",
-        "descripcion": "Necesitás estar solo un rato después de un partido así.",
+        "descripcion": "Necesitás estar solo un rato.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El silencio te hace bien. Procesás el partido a tu propio ritmo, sin la mesa encima.",
+            "texto": "El silencio te hace bien. Procesás el partido a tu ritmo, sin la mesa encima.",
             "effects": [
               {
                 "type": "stat",
@@ -314,7 +317,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te perdés la mesa una vez más, y alguien lo comenta como al pasar.",
+            "texto": "Te perdés la mesa una vez más y alguien lo comenta como al pasar.",
             "effects": [
               {
                 "type": "stat",
@@ -334,11 +337,12 @@
   },
   {
     "id": "el_mensaje_del_manager",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "El mensaje del manager",
-    "description": "Recibís un mensaje corto de tu manager apenas termina el partido contra {rivalDeLaFecha}: quiere saber cómo estás, o quiere saber qué pasó. A veces es difícil distinguir cuál de las dos.",
+    "description": "Tu manager te escribe apenas termina el cruce contra {rivalDeLaFecha}: quiere saber cómo estás, o qué pasó. A veces es difícil distinguirlo.",
     "weight": 4,
     "cooldown": 5,
     "contexto": {
@@ -362,7 +366,7 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El manager lo agradece y la conversación te deja más liviano de lo que esperabas.",
+            "texto": "El manager lo agradece y la charla te deja más liviano de lo que esperabas.",
             "effects": [
               {
                 "type": "stat",
@@ -397,12 +401,12 @@
       {
         "id": "responder_corto",
         "label": "Responder corto: \"todo bien\"",
-        "descripcion": "Dos palabras y listo. No tenés ganas de analizar nada todavía.",
+        "descripcion": "Dos palabras y listo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "El mensaje corto cierra el tema por hoy, que es exactamente lo que necesitabas.",
+            "texto": "El mensaje corto cierra el tema por ahora, que es justo lo que necesitabas.",
             "effects": [
               {
                 "type": "stat",
@@ -438,11 +442,12 @@
   },
   {
     "id": "el_vuelo_de_vuelta",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "El vuelo de vuelta",
-    "description": "El partido contra {rivalDeLaFecha} fue de visitante y ahora quedan cuatro horas de aeropuerto y avión con el resultado todavía dando vueltas.",
+    "description": "El cruce contra {rivalDeLaFecha} fue de visitante y quedan cuatro horas de aeropuerto y avión con el resultado dando vueltas.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -461,14 +466,14 @@
       {
         "id": "dormir_en_el_avion",
         "label": "Bajar la persiana y dormir",
-        "descripcion": "El cuerpo pide descanso más que cualquier otra cosa. El análisis puede esperar a la gaming house.",
+        "descripcion": "El análisis puede esperar a la gaming house.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
             "texto": [
               "Dormís casi todo el vuelo y llegás con la cabeza en cero, listo para arrancar la semana.",
-              "Te despertás cuando bajan el tren de aterrizaje. El partido quedó a mil kilómetros atrás."
+              "Te despertás con el tren de aterrizaje. El partido quedó a mil kilómetros atrás."
             ],
             "effects": [
               {
@@ -504,12 +509,12 @@
       {
         "id": "repasar_en_la_tablet",
         "label": "Repasar el partido en la tablet",
-        "descripcion": "Aprovechás las horas muertas para adelantar el review vos solo, antes de que lo haga el coach.",
+        "descripcion": "Adelantás el review vos solo, antes que el coach.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Llegás al review del coach con tus propias notas ya hechas. La reunión rinde el doble.",
+            "texto": "Llegás al review del coach con tus propias notas. La reunión rinde el doble.",
             "effects": [
               {
                 "type": "stat",
@@ -525,7 +530,7 @@
           },
           {
             "weight": 4,
-            "texto": "Cuatro horas mirando la misma derrota en una pantalla chica. Bajás del avión fundido.",
+            "texto": "Cuatro horas mirando la misma derrota en pantalla chica. Bajás del avión fundido.",
             "effects": [
               {
                 "type": "stat",
@@ -545,11 +550,12 @@
   },
   {
     "id": "el_clip_que_se_viraliza",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "El clip de la fecha",
-    "description": "Una jugada tuya del partido contra {rivalDeLaFecha} se está compartiendo sola. Para bien o para mal, mañana la va a haber visto todo el mundo.",
+    "description": "Una jugada tuya contra {rivalDeLaFecha} se está compartiendo sola. Para bien o para mal, mañana la habrá visto todo el mundo.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -568,14 +574,14 @@
       {
         "id": "surfear_la_ola",
         "label": "Subirte a la ola y postear",
-        "descripcion": "Le ponés tu propia leyenda al clip antes de que se la pongan otros.",
+        "descripcion": "Le ponés tu leyenda al clip antes que otros.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
               "Tu posteo la rompe y el clip pasa de jugada a momento de la temporada.",
-              "El caption que le ponés se cita más que la jugada misma. Sabés jugar este juego también."
+              "El caption que le ponés se cita más que la jugada. Sabés jugar este juego también."
             ],
             "effects": [
               {
@@ -592,7 +598,7 @@
           },
           {
             "weight": 4,
-            "texto": "El clip envejece mal en dos horas y tu posteo queda ahí, un poco fuera de tiempo.",
+            "texto": "El clip envejece mal en dos horas y tu posteo queda ahí, fuera de tiempo.",
             "effects": [
               {
                 "type": "stat",
@@ -610,13 +616,13 @@
       },
       {
         "id": "dejar_que_hable_solo",
-        "label": "No decir nada y que hable solo",
-        "descripcion": "Si la jugada vale, no necesita que la expliques. Si no vale, mejor no señalarla.",
+        "label": "No decir nada, que hable solo",
+        "descripcion": "Si la jugada vale, no necesita explicación.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El clip circula igual y suma más porque no lo forzaste. Queda como algo que pasó, no como algo que buscaste.",
+            "texto": "El clip circula igual y suma más porque no lo forzaste. Pasó, no lo buscaste.",
             "effects": [
               {
                 "type": "stat",
@@ -652,11 +658,12 @@
   },
   {
     "id": "la_llamada_a_casa",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La llamada a casa",
-    "description": "Después del partido contra {rivalDeLaFecha}, en tu casa están despiertos esperando que llames para contar cómo te fue.",
+    "description": "Después del cruce contra {rivalDeLaFecha}, en tu casa están despiertos esperando que llames para contar cómo te fue.",
     "weight": 4,
     "cooldown": 6,
     "contexto": {
@@ -674,15 +681,15 @@
     "options": [
       {
         "id": "llamar_ahora",
-        "label": "Llamar ahora, aunque estés cansado",
-        "descripcion": "Diez minutos de hablar de cualquier cosa con gente que no te evalúa por el KDA.",
+        "label": "Llamar ya, aunque estés cansado",
+        "descripcion": "Diez minutos con gente que no te evalúa por KDA.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
             "texto": [
-              "Escuchar sus voces te baja las pulsaciones más rápido que cualquier otra cosa. El partido se achica a su tamaño real.",
-              "Terminás hablando del perro y de la comida, no del partido. Colgás mejor de lo que empezaste."
+              "Escuchar sus voces te baja las pulsaciones. El partido se achica a su tamaño real.",
+              "Terminás hablando del perro y la comida, no del partido. Colgás mejor de lo que empezaste."
             ],
             "effects": [
               {
@@ -699,7 +706,7 @@
           },
           {
             "weight": 3,
-            "texto": "Preguntan por el resultado y no lográs que la charla salga de ahí. Cortás con un poco más de bronca.",
+            "texto": "Preguntan por el resultado y la charla no sale de ahí. Cortás con un poco más de bronca.",
             "effects": [
               {
                 "type": "stat",
@@ -717,13 +724,13 @@
       },
       {
         "id": "mandar_un_mensaje",
-        "label": "Mandar un mensaje y llamar mañana",
-        "descripcion": "Hoy no te dan las fuerzas para una llamada. Un texto corto y a dormir.",
+        "label": "Mandar mensaje y llamar mañana",
+        "descripcion": "Un texto corto y a dormir.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Entienden sin drama y quedan para mañana. Guardar la energía también es cuidarse.",
+            "texto": "Entienden sin drama y quedan para mañana. Guardar energía también es cuidarse.",
             "effects": [
               {
                 "type": "stat",
@@ -739,7 +746,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te vas a dormir con la sensación de que les debías la llamada. No es grave, pero está ahí.",
+            "texto": "Te dormís con la sensación de que les debías la llamada. No es grave, pero está ahí.",
             "effects": [
               {
                 "type": "stat",
@@ -759,11 +766,12 @@
   },
   {
     "id": "el_scrim_de_mañana",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Ya hay bloque para mañana",
-    "description": "Todavía estás guardando el equipo y el coach ya avisó que mañana a las 11 hay scrims contra otro equipo de la liga. El partido contra {rivalDeLaFecha} pasó a ser pasado.",
+    "description": "Todavía guardás el equipo y el coach ya avisó que mañana a las 11 hay scrims contra otro equipo de la liga. El cruce con {rivalDeLaFecha} ya es pasado.",
     "weight": 4,
     "cooldown": 6,
     "contexto": {
@@ -781,13 +789,13 @@
     "options": [
       {
         "id": "aceptar_el_ritmo",
-        "label": "Aceptar el ritmo y preparar mañana",
-        "descripcion": "El calendario no espera a que proceses nada. Dejás el partido de hoy donde está y mirás para adelante.",
+        "label": "Aceptar el ritmo, preparar mañana",
+        "descripcion": "El calendario no espera a que proceses nada.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Pasar de página rápido te sale bien: mañana llegás al bloque enchufado y sin arrastrar la fecha de hoy.",
+            "texto": "Pasar de página rápido te sale bien: mañana llegás enchufado al bloque, sin arrastrar la fecha.",
             "effects": [
               {
                 "type": "stat",
@@ -803,7 +811,7 @@
           },
           {
             "weight": 4,
-            "texto": "Forzás el reseteo pero la fecha de hoy sigue ahí, sin digerir. Mañana la vas a arrastrar igual.",
+            "texto": "Forzás el reseteo pero la fecha sigue ahí, sin digerir. Mañana la arrastrás igual.",
             "effects": [
               {
                 "type": "stat",
@@ -822,12 +830,12 @@
       {
         "id": "pedir_la_mañana",
         "label": "Pedir arrancar más tarde",
-        "descripcion": "Le decís al coach que el equipo necesita dormir bien antes que un bloque a las 11.",
+        "descripcion": "Dormir bien antes de un bloque a las 11.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El coach lo piensa y corre el bloque un par de horas. El equipo llega descansado y te lo agradece por lo bajo.",
+            "texto": "El coach corre el bloque un par de horas. El equipo llega descansado y te lo agradece por lo bajo.",
             "effects": [
               {
                 "type": "stat",
@@ -863,11 +871,12 @@
   },
   {
     "id": "la_entrevista_flash",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La nota en el escenario",
-    "description": "Te agarran para la entrevista flash apenas salís del server. Micrófono en la cara, el resultado contra {rivalDeLaFecha} todavía caliente y una cámara en vivo.",
+    "description": "Te agarran para la entrevista flash apenas salís del server: micrófono en la cara, el resultado contra {rivalDeLaFecha} caliente y cámara en vivo.",
     "weight": 4,
     "cooldown": 6,
     "contexto": {
@@ -886,7 +895,7 @@
       {
         "id": "jugar_al_personaje",
         "label": "Jugarla de personaje",
-        "descripcion": "Le das a la gente lo que vino a buscar: una frase, una chicana, un titular.",
+        "descripcion": "Frase, chicana, titular: lo que la gente vino a buscar.",
         "weight": 5,
         "outcomes": [
           {
@@ -910,7 +919,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te pasás de rosca con una chicana y la nota se lee como que faltaste el respeto. Vas a tener que ganar para taparlo.",
+            "texto": "Te pasás de rosca con una chicana y la nota se lee como falta de respeto. Vas a tener que ganar para taparlo.",
             "effects": [
               {
                 "type": "stat",
@@ -939,7 +948,7 @@
       {
         "id": "contestar_sobrio",
         "label": "Contestar sobrio y corto",
-        "descripcion": "Frases de manual, nada que se pueda recortar mal. Sos jugador, no showman.",
+        "descripcion": "Frases de manual, nada que se recorte mal.",
         "weight": 5,
         "outcomes": [
           {
@@ -960,7 +969,7 @@
           },
           {
             "weight": 3,
-            "texto": "Tan de manual contestás que un comentarista bromea con que te programaron. Inofensivo, pero queda.",
+            "texto": "Contestás tan de manual que un comentarista bromea con que te programaron. Inofensivo, pero queda.",
             "effects": [
               {
                 "type": "stat",
@@ -980,11 +989,12 @@
   },
   {
     "id": "el_mvp_de_la_fecha",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "El MVP de la jornada",
-    "description": "La liga publica su elección del mejor jugador de la fecha. Después del partido contra {rivalDeLaFecha}, tu nombre estaba en la conversación.",
+    "description": "La liga publica su elección del mejor jugador de la fecha. Tras el cruce contra {rivalDeLaFecha}, tu nombre estaba en la conversación.",
     "weight": 4,
     "cooldown": 7,
     "contexto": {
@@ -1003,7 +1013,7 @@
       {
         "id": "tomarlo_como_combustible",
         "label": "Tomarlo como combustible",
-        "descripcion": "Salga o no salga tu nombre, lo usás para la próxima. El reconocimiento es una herramienta, no un premio.",
+        "descripcion": "Salga o no tu nombre, lo usás para la próxima.",
         "weight": 5,
         "outcomes": [
           {
@@ -1037,7 +1047,7 @@
           },
           {
             "weight": 4,
-            "texto": "Le das más vueltas de las que querés admitir a por qué lo eligieron a otro. No es sano, pero pasa.",
+            "texto": "Le das más vueltas de las que querés admitir a por qué eligieron a otro. No es sano, pero pasa.",
             "effects": [
               {
                 "type": "stat",
@@ -1056,12 +1066,12 @@
       {
         "id": "no_darle_bola",
         "label": "No darle bola al ranking",
-        "descripcion": "Los premios individuales de temporada regular no ganan títulos. Seguís de largo.",
+        "descripcion": "Los premios individuales no ganan títulos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Ni lo mirás. La cabeza en el equipo y en la tabla, que es lo único que se cobra en playoffs.",
+            "texto": "Ni lo mirás. La cabeza en el equipo y la tabla, que es lo único que se cobra en playoffs.",
             "effects": [
               {
                 "type": "stat",
@@ -1097,11 +1107,12 @@
   },
   {
     "id": "el_grupo_del_equipo",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
-    "title": "El grupo del equipo después",
-    "description": "En el chat del equipo se está armando la conversación del post partido contra {rivalDeLaFecha}: alguien tira un audio largo, alguien manda un sticker, alguien pide hablarlo mañana.",
+    "title": "El grupo del equipo",
+    "description": "En el chat del equipo se arma la charla post cruce con {rivalDeLaFecha}: un audio larguísimo, un sticker, alguien que pide hablarlo mañana.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -1123,13 +1134,13 @@
       {
         "id": "poner_la_cara",
         "label": "Escribir lo que pensás sin filtro",
-        "descripcion": "Si algo no funcionó, lo decís ahora que está fresco, aunque incomode.",
+        "descripcion": "Si algo no funcionó, lo decís ahora.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
             "texto": [
-              "Lo decís bien y {companero} te sigue. La charla se pone honesta y el equipo sale más unido que antes del partido.",
+              "Lo decís bien y {companero} te sigue. La charla se pone honesta y el equipo sale más unido.",
               "Tu mensaje abre la conversación que hacía falta. Nadie se ofende y algo se acomoda."
             ],
             "effects": [
@@ -1166,12 +1177,12 @@
       {
         "id": "dejarlo_para_la_reunion",
         "label": "Proponer hablarlo en la reunión",
-        "descripcion": "El chat en caliente no es el lugar. Pedís bajar un cambio y hablarlo con el coach delante.",
+        "descripcion": "El chat en caliente no es el lugar.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Todos coinciden en que mejor mañana. Se apaga el chat sin que nadie diga una boludez de la que arrepentirse.",
+            "texto": "Todos coinciden en que mejor mañana. El chat se apaga sin que nadie diga una boludez de la que arrepentirse.",
             "effects": [
               {
                 "type": "stat",
@@ -1187,7 +1198,7 @@
           },
           {
             "weight": 3,
-            "texto": "Postergarlo deja a un par con la bronca guardada. En la reunión ya no está tan fresco y se dice a medias.",
+            "texto": "Postergarlo deja a un par con la bronca guardada. En la reunión ya no está fresco y se dice a medias.",
             "effects": [
               {
                 "type": "stat",
@@ -1207,11 +1218,12 @@
   },
   {
     "id": "la_racha_en_tu_cabeza",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Las cuentas propias",
-    "description": "Terminado el partido contra {rivalDeLaFecha}, hacés la cuenta que nadie te pidió: cómo venís, cuántas ganaste de las últimas, si esto es una racha o un bajón.",
+    "description": "Tras el cruce con {rivalDeLaFecha}, hacés la cuenta que nadie te pidió: cuántas ganaste de las últimas, si es una racha o un bajón.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -1230,14 +1242,14 @@
       {
         "id": "cortar_la_cuenta",
         "label": "Cortar la cuenta ahí",
-        "descripcion": "Reconocés el bucle y lo frenás antes de que te coma la noche.",
+        "descripcion": "Reconocés el bucle y lo frenás.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
             "texto": [
               "Te obligás a soltarlo: un partido es un partido. Dormís sin la calculadora en la cabeza.",
-              "Cerrás la libreta mental. Mañana el coach te va a dar los números reales; hoy no hacen falta."
+              "Cerrás la libreta mental. El coach te dará los números reales; ahora no hacen falta."
             ],
             "effects": [
               {
@@ -1272,13 +1284,13 @@
       },
       {
         "id": "anotarlo_para_el_coach",
-        "label": "Anotar lo que sentís y llevárselo al coach",
-        "descripcion": "En vez de rumiarlo solo, lo escribís para hablarlo con alguien que tenga el cuadro completo.",
+        "label": "Anotarlo y llevárselo al coach",
+        "descripcion": "Lo escribís para hablarlo con quien tenga el cuadro completo.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Pasarlo a papel le saca dramatismo. Mañana lo hablás con el coach y resulta que venís mejor de lo que sentías.",
+            "texto": "Pasarlo a papel le saca dramatismo. Lo hablás con el coach y resulta que venís mejor de lo que sentías.",
             "effects": [
               {
                 "type": "stat",
@@ -1324,11 +1336,12 @@
   },
   {
     "id": "el_analista_te_escribe",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
-    "title": "El analista te manda un audio",
-    "description": "El analista del equipo te escribe aparte del grupo: vio algo puntual de tu {rol} en el partido contra {rivalDeLaFecha} y te lo quiere pasar antes de que se le mezcle con el resto.",
+    "title": "Un audio del analista",
+    "description": "El analista te escribe aparte del grupo: vio algo puntual de tu {rol} contra {rivalDeLaFecha} y quiere pasártelo antes de que se le mezcle.",
     "weight": 4,
     "cooldown": 6,
     "contexto": {
@@ -1350,12 +1363,12 @@
       {
         "id": "escucharlo_ahora",
         "label": "Escucharlo ahora y responder",
-        "descripcion": "Le das cinco minutos mientras está fresco, aunque estés cansado.",
+        "descripcion": "Cinco minutos mientras está fresco.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Tiene razón en lo que marca y lo ves al toque en tu cabeza. Mañana ya vas a la práctica con eso resuelto.",
+            "texto": "Tiene razón y lo ves al toque. Mañana vas a la práctica con eso resuelto.",
             "effects": [
               {
                 "type": "stat",
@@ -1371,7 +1384,7 @@
           },
           {
             "weight": 4,
-            "texto": "No terminás de coincidir con lo que dice, pero lo charlan sin pelearse y quedan en revisarlo con VOD.",
+            "texto": "No coincidís del todo, pero lo charlan sin pelearse y quedan en revisarlo con VOD.",
             "effects": [
               {
                 "type": "stat",
@@ -1389,13 +1402,13 @@
       },
       {
         "id": "guardarlo_para_mañana",
-        "label": "Guardarlo para escucharlo con la cabeza fresca",
-        "descripcion": "Le avisás que lo escuchás a primera hora. Ahora no vas a retener nada.",
+        "label": "Escucharlo mañana, con la cabeza fresca",
+        "descripcion": "Ahora no retendrías nada.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "A la mañana lo escuchás con un café y lo aprovechás de verdad, en vez de que te entre por una oreja.",
+            "texto": "A la mañana lo escuchás con un café y lo aprovechás de verdad.",
             "effects": [
               {
                 "type": "stat",
@@ -1411,7 +1424,7 @@
           },
           {
             "weight": 3,
-            "texto": "Se te cruza con mil cosas a la mañana y lo terminás escuchando a las apuradas antes del bloque.",
+            "texto": "Se te cruzan mil cosas a la mañana y lo escuchás a las apuradas antes del bloque.",
             "effects": [
               {
                 "type": "stat",
@@ -1431,11 +1444,12 @@
   },
   {
     "id": "dormir_despues_de_esto",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Bajar la adrenalina",
-    "description": "Son las dos de la mañana, mañana hay práctica y el cuerpo todavía está en modo partido después de lo de {rivalDeLaFecha}. Dormir no va a ser automático.",
+    "description": "Son las dos de la mañana, mañana hay práctica y el cuerpo sigue en modo partido por lo de {rivalDeLaFecha}. Dormir no va a ser automático.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -1453,15 +1467,15 @@
     "options": [
       {
         "id": "rutina_de_bajada",
-        "label": "Hacer la rutina de bajada aunque dé fiaca",
-        "descripcion": "Ducha, pantalla lejos, algo tranquilo. Lo que el preparador te repite siempre.",
+        "label": "Hacer la rutina de bajada",
+        "descripcion": "Ducha, pantalla lejos, algo tranquilo.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
             "texto": [
-              "La rutina funciona: a los cuarenta minutos estás dormido y mañana llegás entero al bloque.",
-              "Cuesta arrancarla, pero a mitad de camino ya sentís que el cuerpo afloja. Dormís bien."
+              "La rutina funciona: a los cuarenta minutos dormís y mañana llegás entero al bloque.",
+              "Cuesta arrancarla, pero a mitad de camino el cuerpo afloja. Dormís bien."
             ],
             "effects": [
               {
@@ -1497,7 +1511,7 @@
       {
         "id": "unas_partidas_para_cortar",
         "label": "Tirar unas partidas para descargar",
-        "descripcion": "Un par de normales tontas para sacarte el partido de encima. Lo que siempre termina mal y siempre volvés a hacer.",
+        "descripcion": "Un par de normales tontas para descargar.",
         "weight": 4,
         "outcomes": [
           {
@@ -1519,8 +1533,8 @@
           {
             "weight": 6,
             "texto": [
-              "Son las cuatro cuando cerrás el cliente. Mañana el bloque va a ser un castigo.",
-              "Una se hace tres, una mala te calienta, y de golpe perdiste la noche entera."
+              "Son las cuatro cuando cerrás el cliente. El bloque de mañana va a ser un castigo.",
+              "Una se hace tres, una mala te calienta y perdiste la noche entera."
             ],
             "effects": [
               {
@@ -1541,11 +1555,12 @@
   },
   {
     "id": "los_numeros_de_la_fecha",
+    "voz": "corta",
     "category": "partido_postpartido",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La planilla de la jornada",
-    "description": "Sale la planilla oficial de la fecha contra {rivalDeLaFecha}: daño, visión, oro por minuto, participación en kills. Los números nunca cuentan todo, pero cuentan algo.",
+    "description": "Sale la planilla oficial del cruce con {rivalDeLaFecha}: daño, visión, oro por minuto, participación. Los números nunca cuentan todo, pero cuentan algo.",
     "weight": 4,
     "cooldown": 7,
     "contexto": {
@@ -1563,8 +1578,8 @@
     "options": [
       {
         "id": "leerlos_con_criterio",
-        "label": "Leerlos con criterio, sin regodearte ni castigarte",
-        "descripcion": "Buscás la tendencia, no el número suelto de un partido.",
+        "label": "Leerlos con criterio",
+        "descripcion": "Buscás la tendencia, no el número suelto.",
         "weight": 5,
         "outcomes": [
           {
@@ -1585,7 +1600,7 @@
           },
           {
             "weight": 4,
-            "texto": "Los números de hoy no dicen nada nuevo. Un partido, ruido estadístico, seguís de largo.",
+            "texto": "Los números no dicen nada nuevo. Un partido, ruido estadístico: seguís de largo.",
             "effects": [
               {
                 "type": "stat",
@@ -1603,13 +1618,13 @@
       },
       {
         "id": "compararte_con_el_rival",
-        "label": "Compararte línea por línea con tu marca",
-        "descripcion": "Vas directo a la columna del jugador que te tocó enfrente y medís todo contra eso.",
+        "label": "Compararte con tu marca",
+        "descripcion": "Medís todo contra el jugador que te tocó enfrente.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Le ganaste casi todas las columnas y eso te da una base sólida para pararte esta semana.",
+            "texto": "Le ganaste casi todas las columnas y eso te da una base sólida para esta semana.",
             "effects": [
               {
                 "type": "stat",

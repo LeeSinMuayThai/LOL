@@ -1,11 +1,12 @@
 [
   {
     "id": "el_clasico_de_siempre",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "rara",
     "categoria": "partido",
     "title": "El clásico de siempre",
-    "description": "Contra {rivalDeLaFecha} no hace falta explicarle a nadie por qué este partido importa más que los otros ocho de la temporada.",
+    "description": "Contra {rivalDeLaFecha} nadie necesita explicar por qué esta fecha pesa más que las otras ocho.",
     "weight": 7,
     "cooldown": 4,
     "contexto": {
@@ -24,14 +25,14 @@
       {
         "id": "jugarlo_con_la_cabeza",
         "label": "Jugarlo con la cabeza fría",
-        "descripcion": "El clásico calienta solo: vos tratás de que no se te suba a la cabeza antes de tiempo.",
+        "descripcion": "El clásico calienta solo; vos lo enfriás.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
             "texto": [
-              "Mientras el resto se calienta con el historial, vos jugás el partido que tenés adelante.",
-              "Le quitás la carga de clásico y lo jugás como una fecha más. Sin la sangre en la cabeza, jugás mejor."
+              "Mientras todos se calientan con el historial, vos jugás la fecha que tenés enfrente.",
+              "Lo jugás como una fecha más y, sin sangre en la cabeza, jugás mejor."
             ],
             "effects": [
               {
@@ -77,12 +78,12 @@
       {
         "id": "dejarse_llevar",
         "label": "Dejarte llevar por el clásico",
-        "descripcion": "Total, para esto se juega: entrás con toda la sangre que pide el partido. Pocas veces sale redondo, pero el hype del clásico se lo lleva el que lo juega así.",
+        "descripcion": "Entrás con toda la sangre que pide.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 3,
-            "texto": "La intensidad te sale rendimiento puro: jugás arriba de lo que jugás normalmente.",
+            "texto": "La intensidad se vuelve rendimiento puro: jugás por encima de lo normal.",
             "effects": [
               {
                 "type": "stat",
@@ -108,7 +109,7 @@
           },
           {
             "weight": 7,
-            "texto": "Te calentás de más y el partido se te va de las manos por decisiones que no tomarías otro día. Pero un clásico así se comenta toda la semana, y vos estuviste en el centro.",
+            "texto": "Te calentás de más y el cruce se te va de las manos. Igual, se comenta toda la semana y estabas en el centro.",
             "effects": [
               {
                 "type": "stat",
@@ -148,11 +149,12 @@
   },
   {
     "id": "la_revancha",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La revancha",
-    "description": "{rivalDeLaFecha} fue el equipo que te sacó de la última serie que jugaste. Hoy es la primera vez que te los volvés a cruzar.",
+    "description": "{rivalDeLaFecha} te sacó de la última serie que jugaste. Es la primera vez que te los cruzás de nuevo.",
     "weight": 7,
     "cooldown": 4,
     "contexto": {
@@ -171,12 +173,12 @@
       {
         "id": "cobrarsela",
         "label": "Ir a cobrártela",
-        "descripcion": "No te olvidaste de esa eliminación. Hoy vas directo a demostrar que fue un accidente.",
+        "descripcion": "No te olvidaste de esa eliminación.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Se las cobrás con intereses. Se nota que veniste a esto desde el día que te eliminaron.",
+            "texto": "Se las cobrás con intereses: se nota que venías esperando esto desde la eliminación.",
             "effects": [
               {
                 "type": "stat",
@@ -202,7 +204,7 @@
           },
           {
             "weight": 4,
-            "texto": "Jugás pensando en la revancha en vez de jugar el partido que tenés enfrente, y se paga caro.",
+            "texto": "Jugás la revancha en vez del partido, y se paga caro.",
             "effects": [
               {
                 "type": "stat",
@@ -230,13 +232,13 @@
       },
       {
         "id": "dejar_el_pasado",
-        "label": "Dejar esa serie en el pasado",
-        "descripcion": "Fue hace un tiempo, era otro equipo, casi otro vos. Te sacás la mochila de encima, pero sin la bronca de combustible el partido queda más parejo.",
+        "label": "Dejar esa serie atrás",
+        "descripcion": "Era otro equipo, casi otro vos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Sin la mochila de esa eliminación jugás liviano y con la cabeza en su lugar. No es el partido de tu vida, pero el pasado no te come.",
+            "texto": "Sin la mochila de esa eliminación jugás liviano y con la cabeza en su lugar. El pasado no te come.",
             "effects": [
               {
                 "type": "stat",
@@ -262,7 +264,7 @@
           },
           {
             "weight": 4,
-            "texto": "Dejarlo atrás no te salva: {rivalDeLaFecha} viene con el mismo plan que la última vez, y funciona otra vez. Perdés otra vez con el mismo plan, pero esa serie vieja ya no te quita el sueño.",
+            "texto": "{rivalDeLaFecha} viene con el mismo plan de la vez pasada y vuelve a funcionar. Perdés, pero esa serie ya no te quita el sueño.",
             "effects": [
               {
                 "type": "stat",
@@ -292,11 +294,12 @@
   },
   {
     "id": "presentarse_ante_los_viejos",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "comun",
     "categoria": "partido",
-    "title": "Presentarte ante los que te dejaron ir",
-    "description": "Del otro lado está {rivalDeLaFecha}, la organización que decidió no renovarte. {companero} te dijo antes del partido que sabe lo que este cruce significa para vos.",
+    "title": "Los que no te renovaron",
+    "description": "Del otro lado está {rivalDeLaFecha}, la org que no te renovó. {companero} sabe lo que este cruce significa para vos.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -317,13 +320,13 @@
     "options": [
       {
         "id": "hacerselo_notar",
-        "label": "Hacerles notar el error que cometieron",
-        "descripcion": "Cada jugada como un mensaje directo a la sala de decisiones que te bajó del roster. Rara vez sale redondo, pero si sale, se habla toda la semana.",
+        "label": "Hacerles notar el error",
+        "descripcion": "Cada jugada es un mensaje a su sala de decisiones.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 3,
-            "texto": "Jugás el partido de tu vida contra la gente que decidió que no valías la pena. El mensaje llega clarísimo.",
+            "texto": "Jugás el partido de tu vida contra los que no apostaron por vos. El mensaje llega clarísimo.",
             "effects": [
               {
                 "type": "stat",
@@ -349,7 +352,7 @@
           },
           {
             "weight": 7,
-            "texto": "Querés demostrar demasiado de una sola vez y el partido se te complica solo. Aun así, hiciste ruido.",
+            "texto": "Querés demostrar todo de una y el partido se te complica solo. Igual, hiciste ruido.",
             "effects": [
               {
                 "type": "stat",
@@ -388,12 +391,12 @@
       {
         "id": "jugarlo_profesional",
         "label": "Jugarlo profesional, sin drama",
-        "descripcion": "Es un partido de liga, no una revancha personal. Al menos en voz alta.",
+        "descripcion": "Es un partido de liga, no una revancha. En voz alta.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Con la cabeza en el partido y no en la vieja organización, jugás liviano.",
+            "texto": "Con la cabeza en el partido y no en la vieja org, jugás liviano.",
             "effects": [
               {
                 "type": "stat",
@@ -419,7 +422,7 @@
           },
           {
             "weight": 3,
-            "texto": "Por más que lo digas tranquilo, algo del cruce se te mete en las decisiones importantes.",
+            "texto": "Lo decís tranquilo, pero el cruce se te mete en las decisiones importantes.",
             "effects": [
               {
                 "type": "stat",
@@ -439,11 +442,12 @@
   },
   {
     "id": "el_cruce_de_generacion",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Cruce de generación",
-    "description": "Del otro lado juega alguien que debutó el mismo año que vos. Todos los que siguen ambas carreras van a comparar esta noche.",
+    "description": "Del otro lado juega alguien que debutó el mismo año que vos. Todos los que siguen ambas carreras van a comparar.",
     "weight": 6,
     "cooldown": 5,
     "contexto": {
@@ -462,12 +466,12 @@
       {
         "id": "medirse_en_su_linea",
         "label": "Buscar el duelo directo",
-        "descripcion": "Que se note quién de los dos llegó más lejos con la misma edad.",
+        "descripcion": "Que se note quién llegó más lejos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Ganás el duelo, y el resto de tu generación lo va a saber al día siguiente.",
+            "texto": "Ganás el duelo y toda tu generación se entera al día siguiente.",
             "effects": [
               {
                 "type": "stat",
@@ -493,7 +497,7 @@
           },
           {
             "weight": 4,
-            "texto": "Buscar el duelo directo te deja parado en un lugar que el resto del equipo no puede tapar.",
+            "texto": "Buscar el duelo te deja parado en un lugar que el equipo no puede tapar.",
             "effects": [
               {
                 "type": "stat",
@@ -511,13 +515,13 @@
       },
       {
         "id": "jugar_para_el_equipo",
-        "label": "Ignorar la comparación y jugar para el equipo",
-        "descripcion": "El duelo individual es una nota de color. Jugás para el equipo: cedés algo de partido a cambio de un grupo que te sigue.",
+        "label": "Ignorar la comparación, jugar en equipo",
+        "descripcion": "El duelo individual es nota de color.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Sin la presión de la comparación, tomás las decisiones que el equipo necesita, no las que quedan mejor en el resumen. Se nota en la sinergia, no en la planilla.",
+            "texto": "Sin la presión de la comparación, tomás las decisiones que necesita el equipo. Se nota en la sinergia, no en la planilla.",
             "effects": [
               {
                 "type": "stat",
@@ -543,7 +547,7 @@
           },
           {
             "weight": 4,
-            "texto": "El otro sí buscó el duelo, y arrastra a su equipo con él. El grupo igual te lo agradece.",
+            "texto": "El otro buscó el duelo y arrastra a su equipo. El grupo igual te lo agradece.",
             "effects": [
               {
                 "type": "stat",
@@ -573,11 +577,12 @@
   },
   {
     "id": "les_prometiste_algo",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Les prometiste algo",
-    "description": "Antes del partido le dijiste a {companero} que hoy no perdían, así, en esos términos. Ahora hay que sostenerlo en la práctica.",
+    "description": "Le dijiste a {companero} que no perdían, así, en esos términos. Ahora hay que sostenerlo.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -598,13 +603,13 @@
     "options": [
       {
         "id": "sostener_la_promesa",
-        "label": "Jugar como si la promesa fuera literal",
-        "descripcion": "Dijiste que no perdían y lo vas a bancar con cada decisión.",
+        "label": "Jugar como si fuera literal",
+        "descripcion": "Dijiste que no perdían y lo bancás.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La palabra empeñada se convierte en el mejor combustible que tuviste en semanas.",
+            "texto": "La palabra empeñada es el mejor combustible que tuviste en semanas.",
             "effects": [
               {
                 "type": "stat",
@@ -658,13 +663,13 @@
       },
       {
         "id": "olvidarse_de_la_frase",
-        "label": "Olvidarte de la frase y jugar normal",
-        "descripcion": "Fue una frase en caliente, no un contrato. Te sacás el peso de encima, aunque sin esa palabra empeñada el partido te cuesta un poco más.",
+        "label": "Olvidarte de la frase",
+        "descripcion": "Fue una frase en caliente, no un contrato.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Soltás la frase y la cabeza te queda liviana. {companero} no dice nada, pero al partido le falta esa chispa extra.",
+            "texto": "Soltás la frase y la cabeza te queda liviana. {companero} no dice nada, pero falta esa chispa.",
             "effects": [
               {
                 "type": "stat",
@@ -690,7 +695,7 @@
           },
           {
             "weight": 4,
-            "texto": "{companero} se acuerda de la frase igual, aunque vos ya la hayas soltado. La frase no se cumplió, pero tampoco te la llevás atragantada a la gaming house.",
+            "texto": "{companero} se acuerda igual. No cumpliste, pero tampoco te la llevás atragantada a la gaming house.",
             "effects": [
               {
                 "type": "stat",
@@ -730,11 +735,12 @@
   },
   {
     "id": "ese_nombre_en_el_otro_lado",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Ese nombre en el otro lado",
-    "description": "Alguien de tu propia generación juega hoy en las filas de {rivalDeLaFecha}, y encima es el equipo que ya te sacó una vez de playoffs.",
+    "description": "Alguien de tu generación juega en {rivalDeLaFecha}, el equipo que ya te sacó una vez de playoffs.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -753,12 +759,12 @@
       {
         "id": "todo_junto",
         "label": "Jugarlo con todo lo que representa",
-        "descripcion": "La revancha y la comparación de generación en el mismo partido. Vas con todo.",
+        "descripcion": "Revancha y comparación en el mismo partido.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Toda esa carga te sale rendimiento en vez de nervios, y el partido queda para el recuerdo.",
+            "texto": "Toda esa carga se vuelve rendimiento y no nervios. El partido queda para el recuerdo.",
             "effects": [
               {
                 "type": "stat",
@@ -784,7 +790,7 @@
           },
           {
             "weight": 4,
-            "texto": "Es demasiado peso para un solo partido, y se te nota en la cabeza fría que te falta.",
+            "texto": "Es demasiado peso para una fecha, y se te nota en la cabeza fría que te falta.",
             "effects": [
               {
                 "type": "stat",
@@ -812,13 +818,13 @@
       },
       {
         "id": "separarlo_en_partes",
-        "label": "Separarlo: es un partido, no una novela",
-        "descripcion": "Le bajás el volumen a todo lo demás y lo jugás como una fecha más de la tabla. Pierde fuego, ganás cabeza fría.",
+        "label": "Es un partido, no una novela",
+        "descripcion": "Le bajás el volumen a todo lo demás.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Bajarle el volumen a la historia te deja la cabeza ordenada. Sin la carga extra, el partido es uno más: ni mejor ni peor de lo que te da la fecha.",
+            "texto": "Bajarle el volumen a la historia te deja la cabeza ordenada. Un partido más: ni mejor ni peor.",
             "effects": [
               {
                 "type": "stat",
@@ -844,7 +850,7 @@
           },
           {
             "weight": 4,
-            "texto": "Por más que lo bajes, el partido igual pesa distinto, y se nota en los primeros minutos. Eso sí, la cabeza no se te rompió.",
+            "texto": "Por más que lo bajes, pesa distinto y se nota en los primeros minutos. La cabeza, intacta.",
             "effects": [
               {
                 "type": "stat",
@@ -874,11 +880,12 @@
   },
   {
     "id": "el_historial_en_contra",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "rara",
     "categoria": "partido",
     "title": "Nunca les ganaste",
-    "description": "Contra {rivalDeLaFecha} tu récord es feo: los cruzaste varias veces y no ganaste ninguna. En la previa alguien lo saca en un gráfico y se hace tendencia.",
+    "description": "Contra {rivalDeLaFecha} tu récord es feo: varios cruces, ninguna victoria. En la previa alguien lo saca en un gráfico.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -896,15 +903,15 @@
     "options": [
       {
         "id": "hacerse_cargo_del_historial",
-        "label": "Hacerte cargo: hoy se corta",
-        "descripcion": "Asumís el fantasma en voz alta y lo convertís en objetivo. Hoy es el día o no es ninguno: pocas veces sale, y cuando sale es la noticia de la semana.",
+        "label": "Hacerte cargo: esta se corta",
+        "descripcion": "Asumís el fantasma en voz alta.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 3,
             "texto": [
-              "Cortás la racha justo cuando todos daban por hecho que no podías. Ese peso menos se siente en el cuerpo.",
-              "Ganás, y el gráfico que era una burla ahora es una anécdota. Nunca más te lo van a poder tirar en la cara igual."
+              "Cortás la racha justo cuando todos daban por hecho que no podías.",
+              "Ganás, y el gráfico que era una burla pasa a ser anécdota."
             ],
             "effects": [
               {
@@ -931,7 +938,7 @@
           },
           {
             "weight": 7,
-            "texto": "Salís con el historial en la cabeza y {rivalDeLaFecha} lo huele. El fantasma pesa y el récord se estira. Nadie te va a decir que no saliste a cortarlo.",
+            "texto": "Salís con el historial en la cabeza y {rivalDeLaFecha} lo huele. El récord se estira, pero saliste a cortarlo.",
             "effects": [
               {
                 "type": "stat",
@@ -970,7 +977,7 @@
       {
         "id": "ignorar_el_historial",
         "label": "El historial no juega: lo ignorás",
-        "descripcion": "Partidos viejos, equipos distintos, metas distintos. Lo tratás como un cruce cualquiera y listo.",
+        "descripcion": "Partidos viejos, equipos distintos: un cruce cualquiera.",
         "weight": 5,
         "outcomes": [
           {
@@ -982,7 +989,7 @@
                 "factor": 0.02
               }
             ],
-            "texto": "Jugás sin la mochila del récord y por primera vez el cruce se siente parejo de verdad. Y esta vez lo ganás.",
+            "texto": "Sin la mochila del récord el cruce se siente parejo de verdad. Y esta vez lo ganás.",
             "effects": [
               {
                 "type": "stat",
@@ -998,7 +1005,7 @@
           },
           {
             "weight": 3,
-            "texto": "Lo ignorás bien, pero {rivalDeLaFecha} de verdad te tiene el número: el plan que siempre les funcionó vuelve a funcionar.",
+            "texto": "Lo ignorás bien, pero {rivalDeLaFecha} te tiene el número: el plan de siempre vuelve a funcionar.",
             "effects": [
               {
                 "type": "stat",
@@ -1018,11 +1025,12 @@
   },
   {
     "id": "el_pique_en_redes",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "El ida y vuelta en redes",
-    "description": "Alguien de {rivalDeLaFecha} tiró una chicana en la previa y te etiquetó. Todo el mundo espera tu respuesta antes del partido.",
+    "description": "Alguien de {rivalDeLaFecha} tiró una chicana en la previa y te etiquetó. Todos esperan tu respuesta.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -1041,12 +1049,12 @@
       {
         "id": "contestar_con_filo",
         "label": "Contestar con filo",
-        "descripcion": "Le devolvés la chicana con una mejor. Ahora el clásico se vende solo y vos tenés que respaldarlo.",
+        "descripcion": "Le devolvés una mejor y tenés que respaldarla.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Tu respuesta la rompe, el partido se hace evento, y encima ganás. La semana entera es tuya.",
+            "texto": "Tu respuesta la rompe, el cruce se hace evento y encima ganás. La semana es tuya.",
             "effects": [
               {
                 "type": "stat",
@@ -1072,7 +1080,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te subiste al pique y perdiste el partido. El recorte de tu chicana ahora es un meme con tu cara.",
+            "texto": "Te subiste al pique y perdiste. Tu chicana ahora es un meme con tu cara.",
             "effects": [
               {
                 "type": "stat",
@@ -1100,13 +1108,13 @@
       },
       {
         "id": "no_engancharse",
-        "label": "No engancharte y contestar en el server",
-        "descripcion": "Le ponés un like para que sepa que lo viste y nada más. La cabeza queda limpia, pero sin el combustible del pique el partido te sale más frío.",
+        "label": "No engancharte",
+        "descripcion": "Un like para que sepa que lo viste.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "No le das el ida y vuelta que buscaba. El silencio te deja la cabeza tranquila, aunque sin el hambre del pique no jugás tan filoso.",
+            "texto": "No le das el ida y vuelta que buscaba. La cabeza queda tranquila, aunque sin el pique jugás menos filoso.",
             "effects": [
               {
                 "type": "stat",
@@ -1132,7 +1140,7 @@
           },
           {
             "weight": 4,
-            "texto": "No contestás, pero la chicana te quedó dando vueltas igual, y en el server jugás más caliente de lo que querías. Por lo menos no te llevaste el tilt a casa.",
+            "texto": "No contestás, pero la chicana te queda dando vueltas y jugás más caliente. Por lo menos no te llevaste el tilt a casa.",
             "effects": [
               {
                 "type": "stat",
@@ -1162,11 +1170,12 @@
   },
   {
     "id": "el_que_te_reemplazo",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "El que ocupó tu silla",
-    "description": "En {rivalDeLaFecha} juega el que trajeron para tu rol cuando a vos te soltaron. Toda la previa gira alrededor de esa comparación.",
+    "description": "En {rivalDeLaFecha} juega el que trajeron para tu rol cuando te soltaron. Toda la previa gira alrededor de esa comparación.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -1184,13 +1193,13 @@
     "options": [
       {
         "id": "ganarle_el_mano_a_mano",
-        "label": "Ir a ganarle el mano a mano",
-        "descripcion": "Que quede clarísimo, en su cara y en la de todos, que la organización se equivocó de nombre. Es una tirada de ego: si sale, mensaje entregado.",
+        "label": "Ganarle el mano a mano",
+        "descripcion": "Que quede claro que se equivocaron de nombre.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 3,
-            "texto": "Le ganás la línea, le ganás el partido y le ganás el titular del día siguiente. Mensaje entregado.",
+            "texto": "Le ganás la línea, el partido y el titular del día siguiente. Mensaje entregado.",
             "effects": [
               {
                 "type": "stat",
@@ -1216,7 +1225,7 @@
           },
           {
             "weight": 7,
-            "texto": "Jugás obsesionado con su columna en la planilla y descuidás el partido. Él hace lo suyo tranquilo y ganan ellos. Aun así, hiciste ruido.",
+            "texto": "Jugás obsesionado con su columna en la planilla y descuidás el partido. Ganan ellos. Igual, hiciste ruido.",
             "effects": [
               {
                 "type": "stat",
@@ -1254,13 +1263,13 @@
       },
       {
         "id": "que_hable_el_equipo",
-        "label": "Dejar que hable el equipo, no el ego",
-        "descripcion": "La mejor respuesta a que te reemplazaron es un equipo que funciona alrededor tuyo mejor que el de ellos alrededor de él.",
+        "label": "Que hable el equipo",
+        "descripcion": "La mejor respuesta es un equipo que funciona.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Jugás para tu equipo, ganan cómodo, y la comparación se resuelve sola: el que mejor juega en equipo sos vos.",
+            "texto": "Jugás para tu equipo, ganan cómodo y la comparación se resuelve sola.",
             "effects": [
               {
                 "type": "stat",
@@ -1286,7 +1295,7 @@
           },
           {
             "weight": 3,
-            "texto": "Jugás desapegado pero la comparación te pica igual cada vez que él hace una jugada. No rinde ni una cosa ni la otra.",
+            "texto": "Jugás desapegado, pero la comparación te pica cada vez que él hace una jugada. No rendís en ninguna de las dos.",
             "effects": [
               {
                 "type": "stat",
@@ -1306,11 +1315,12 @@
   },
   {
     "id": "el_rival_en_su_pico",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "comun",
     "categoria": "partido",
-    "title": "Tu rival de camada, en su mejor momento",
-    "description": "El que debutó tu mismo año viene de dos MVPs seguidos y toda la prensa lo pone por encima tuyo por primera vez. Hoy los cruzás.",
+    "title": "Tu rival, en su pico",
+    "description": "El que debutó tu mismo año viene de dos MVPs seguidos y la prensa lo pone por encima tuyo. Esta semana lo cruzás.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -1328,13 +1338,13 @@
     "options": [
       {
         "id": "aprovechar_para_dar_el_golpe",
-        "label": "Aprovechar: ganarle ahora vale doble",
-        "descripcion": "Está arriba de todos. Bajarlo justo hoy reordena toda la conversación sobre tu generación.",
+        "label": "Ganarle ahora vale doble",
+        "descripcion": "Bajarlo justo ahora reordena la conversación de tu generación.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Le ganás en su mejor momento y eso no se lo saca nadie. La conversación sobre tu camada vuelve a incluirte primero.",
+            "texto": "Le ganás en su mejor momento y eso no se lo saca nadie. Tu camada vuelve a incluirte primero.",
             "effects": [
               {
                 "type": "stat",
@@ -1360,7 +1370,7 @@
           },
           {
             "weight": 4,
-            "texto": "Está en su pico por algo: te pasa por arriba en el duelo y el gráfico que te ponía segundo ahora te pone tercero.",
+            "texto": "Está en su pico por algo: te pasa por arriba y el gráfico que te ponía segundo ahora te pone tercero.",
             "effects": [
               {
                 "type": "stat",
@@ -1388,8 +1398,8 @@
       },
       {
         "id": "no_comerse_la_comparacion",
-        "label": "No comerte la comparación de la prensa",
-        "descripcion": "Su racha es su racha. Jugás tu partido y tu carrera es larga: te cuidás la cabeza, aunque no vas a buscarle la vuelta a este partido.",
+        "label": "No comerte la comparación",
+        "descripcion": "Su racha es su racha; tu carrera es larga.",
         "weight": 5,
         "outcomes": [
           {
@@ -1401,7 +1411,7 @@
                 "factor": 0.02
               }
             ],
-            "texto": "Jugás sin querer probar nada y la cabeza te queda tranquila. Que él esté en racha no te obliga a forzar la tuya, pero tampoco te regala el partido.",
+            "texto": "Jugás sin querer probar nada y la cabeza queda tranquila. Su racha no te obliga a forzar la tuya, pero tampoco te regala el partido.",
             "effects": [
               {
                 "type": "stat",
@@ -1427,7 +1437,7 @@
           },
           {
             "weight": 4,
-            "texto": "Decís que no te importa la comparación y cada vez que él aparece en pantalla se te nota que sí. Igual, no te tiraste abajo por la comparación.",
+            "texto": "Decís que no te importa la comparación, pero cada vez que él aparece en pantalla se nota que sí. Igual, no te hundiste.",
             "effects": [
               {
                 "type": "stat",
@@ -1457,11 +1467,12 @@
   },
   {
     "id": "el_clasico_sin_nada_en_juego",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "comun",
     "categoria": "partido",
-    "title": "Clásico, pero la tabla ya está resuelta",
-    "description": "Contra {rivalDeLaFecha} es siempre especial, pero esta vez ninguno de los dos se juega nada en la tabla. Es orgullo puro, y el orgullo a veces distrae.",
+    "title": "Clásico con la tabla resuelta",
+    "description": "Contra {rivalDeLaFecha} siempre es especial, pero esta vez ninguno se juega nada en la tabla. Es orgullo puro, y el orgullo distrae.",
     "weight": 4,
     "cooldown": 6,
     "contexto": {
@@ -1479,13 +1490,13 @@
     "options": [
       {
         "id": "jugarlo_como_final",
-        "label": "Jugarlo como si fuera una final igual",
-        "descripcion": "Que no valga puntos no significa que no valga. Un clásico se juega a muerte siempre.",
+        "label": "Jugarlo como una final",
+        "descripcion": "Que no valga puntos no significa que no valga.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Le ponés intensidad de playoffs a un partido sin puntos y ganás el que a la gente le importa de verdad.",
+            "texto": "Le ponés intensidad de playoffs a un partido sin puntos y ganás el que a la gente le importa.",
             "effects": [
               {
                 "type": "stat",
@@ -1511,7 +1522,7 @@
           },
           {
             "weight": 4,
-            "texto": "Le ponés todo a un partido que no daba nada y salís gastado para la semana que sí importa.",
+            "texto": "Le ponés todo a un partido que no daba nada y llegás gastado a la semana que sí importa.",
             "effects": [
               {
                 "type": "stat",
@@ -1540,12 +1551,12 @@
       {
         "id": "usarlo_de_ensayo",
         "label": "Usarlo de ensayo para playoffs",
-        "descripcion": "Sin presión de resultado, probás la composición nueva y las jugadas que querés tener listas para la serie que viene. Cedés partido hoy por llegar con recursos a playoffs.",
+        "descripcion": "Probás la composición nueva sin presión de resultado.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Probás cosas sin miedo, la mitad funciona, y llegás a playoffs con un as en la manga que nadie te vio usar. Hoy el resultado queda en segundo plano.",
+            "texto": "Probás cosas sin miedo, la mitad funciona y llegás a playoffs con un as que nadie te vio usar.",
             "effects": [
               {
                 "type": "stat",
@@ -1571,7 +1582,7 @@
           },
           {
             "weight": 4,
-            "texto": "Experimentás tanto que perdés un clásico igual, y a la gente no le explicás con que era un ensayo. Al menos probaste cosas que en playoffs se van a notar.",
+            "texto": "Experimentás tanto que perdés el clásico, y a la gente no le explicás que era un ensayo. Igual, algo servirá en playoffs.",
             "effects": [
               {
                 "type": "stat",
@@ -1611,11 +1622,12 @@
   },
   {
     "id": "revancha_de_la_final",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Los de la final perdida",
-    "description": "{rivalDeLaFecha} te ganó la última final que jugaste, en su casa, con el trofeo en la mesa. Hoy es un partido de fase regular, pero para vos nunca va a ser solo eso.",
+    "description": "{rivalDeLaFecha} te ganó la última final, en su casa, con el trofeo en la mesa. Esto es fase regular, pero para vos no es solo eso.",
     "weight": 5,
     "cooldown": 7,
     "contexto": {
@@ -1633,15 +1645,15 @@
     "options": [
       {
         "id": "canalizar_la_final",
-        "label": "Meter la final perdida adentro del partido",
-        "descripcion": "Cada jugada con la imagen de ellos levantando el trofeo. Es bronca vieja y hoy tiene dónde ir: pocas veces sale como la soñás, pero cuando sale es una declaración.",
+        "label": "Meter la final adentro del partido",
+        "descripcion": "Bronca vieja que por fin tiene dónde ir.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 3,
             "texto": [
-              "La bronca de esa final, bien puesta, es el mejor combustible que tuviste en meses. Los pasás por arriba.",
-              "Jugás con un año de bronca acumulada y sale rendimiento puro. Fase regular, pero se sintió como cobrarse la final."
+              "La bronca de esa final, bien puesta, es el mejor combustible en meses. Los pasás por arriba.",
+              "Jugás con un año de bronca acumulada y sale rendimiento puro. Se sintió como cobrarse la final."
             ],
             "effects": [
               {
@@ -1668,7 +1680,7 @@
           },
           {
             "weight": 7,
-            "texto": "Jugás la final de nuevo en tu cabeza en vez de jugar el partido de hoy, y la historia se repite. La revancha igual dio de qué hablar, aunque no era el tema que querías.",
+            "texto": "Jugás la final de nuevo en tu cabeza en vez del partido, y la historia se repite. Igual, la revancha dio de qué hablar.",
             "effects": [
               {
                 "type": "stat",
@@ -1706,13 +1718,13 @@
       },
       {
         "id": "guardar_la_final_para_playoffs",
-        "label": "Guardar esa bronca para cuando importe",
-        "descripcion": "Hoy no es la revancha de verdad. Jugás normal y reservás toda esa carga para si los cruzás en playoffs.",
+        "label": "Guardar la bronca para cuando importe",
+        "descripcion": "Jugás normal y reservás la carga para playoffs.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Jugás el de hoy sin gastar la bala grande. Ganás igual, y la revancha de verdad sigue esperando entera.",
+            "texto": "No gastás la bala grande. Ganás igual, y la revancha de verdad sigue esperando entera.",
             "effects": [
               {
                 "type": "stat",
@@ -1738,7 +1750,7 @@
           },
           {
             "weight": 3,
-            "texto": "Guardar la bronca te deja jugar sin intensidad, y {rivalDeLaFecha} te vuelve a ganar, esta vez sin trofeo de por medio.",
+            "texto": "Guardar la bronca te deja sin intensidad y {rivalDeLaFecha} vuelve a ganarte, esta vez sin trofeo de por medio.",
             "effects": [
               {
                 "type": "stat",
@@ -1758,11 +1770,12 @@
   },
   {
     "id": "sin_calentar_el_clasico",
+    "voz": "corta",
     "category": "partido_clasico",
     "rarezaEvento": "comun",
     "categoria": "partido",
-    "title": "Bajarle el precio al clásico, de adentro",
-    "description": "La gaming house ya está encendida con el cruce contra {rivalDeLaFecha} tres días antes. {companero} habla de nada más. Vos sabés que llegar así de caliente al viernes cansa.",
+    "title": "Bajarle el precio al clásico",
+    "description": "La gaming house ya vive el cruce contra {rivalDeLaFecha} tres días antes y {companero} no habla de otra cosa. Llegar tan caliente al viernes cansa.",
     "weight": 4,
     "cooldown": 6,
     "contexto": {
@@ -1784,12 +1797,12 @@
       {
         "id": "enfriar_el_vestuario",
         "label": "Enfriar la casa a propósito",
-        "descripcion": "Cortás la charla de clásico en la semana. Rutina normal, foco en el juego, la épica se guarda para el viernes.",
+        "descripcion": "Rutina normal y la épica se guarda para el viernes.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Llegan al viernes con energía en vez de quemados de hablarlo. La intensidad justa aparece sola cuando arranca.",
+            "texto": "Llegan al viernes con energía en vez de quemados de hablarlo. La intensidad aparece sola al arrancar.",
             "effects": [
               {
                 "type": "stat",
@@ -1815,7 +1828,7 @@
           },
           {
             "weight": 3,
-            "texto": "Cortás tanto el clima que el viernes entran fríos, y un clásico frío contra {rivalDeLaFecha} lo agarra el que llegó caliente.",
+            "texto": "Cortás tanto el clima que entran fríos, y un clásico frío contra {rivalDeLaFecha} lo agarra el que llegó caliente.",
             "effects": [
               {
                 "type": "stat",
@@ -1833,13 +1846,13 @@
       },
       {
         "id": "dejar_que_se_encienda",
-        "label": "Dejar que la casa se encienda",
-        "descripcion": "Si el equipo quiere vivir el clásico toda la semana, lo vivís con ellos. La energía compartida une, aunque llegás al viernes más gastado.",
+        "label": "Dejar que se encienda",
+        "descripcion": "Si el equipo quiere vivirlo toda la semana, lo vivís.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Llegan al viernes como una sola cosa, con tres días de hype compartido. La unión es real; las piernas, un poco menos.",
+            "texto": "Llegan al viernes como una sola cosa, con tres días de hype compartido. La unión es real; las piernas, menos.",
             "effects": [
               {
                 "type": "stat",
@@ -1865,7 +1878,7 @@
           },
           {
             "weight": 4,
-            "texto": "Tres días a fuego máximo los deja fundidos para el viernes. La cabeza pide el partido que el cuerpo ya no tiene. El grupo igual te lo agradece.",
+            "texto": "Tres días a fuego máximo los dejan fundidos. La cabeza pide el partido que el cuerpo ya no tiene. El grupo igual te lo agradece.",
             "effects": [
               {
                 "type": "stat",

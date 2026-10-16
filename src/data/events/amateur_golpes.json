@@ -1,11 +1,12 @@
 [
   {
     "id": "amateur_pc_confiscada",
+    "voz": "corta",
     "bifurcacion": true,
     "category": "soloq_precarrera",
     "categoria": "golpe_duro",
     "title": "Te confiscaron la PC",
-    "description": "Llegó el boletín y en casa no hubo charla: la PC se va al placard. Tu vieja tiene la llave y la mirada de alguien que no va a negociar esta noche.",
+    "description": "Llegó el boletín y en casa no hubo charla: la PC se va al placard. Tu vieja tiene la llave y la mirada de quien no va a negociar.",
     "weight": 1,
     "cooldown": 1,
     "contexto": {
@@ -16,7 +17,7 @@
       {
         "id": "aceptarlo",
         "label": "Bancártela sin pelear",
-        "descripcion": "Cumplís el castigo sin hacer ruido. Perdés ranked, pero en casa se nota que lo tomaste en serio.",
+        "descripcion": "Cumplís el castigo sin hacer ruido.",
         "weight": 5,
         "outcomes": [
           {
@@ -29,7 +30,7 @@
           },
           {
             "weight": 3,
-            "texto": "Te la bancás, pero el castigo se estira: en casa quieren ver las notas del próximo boletín antes de devolverte nada.",
+            "texto": "Te la bancás, pero el castigo se estira: quieren ver las notas del próximo boletín antes de devolverte nada.",
             "effects": [
               { "type": "stat", "path": "flags.pcConfiscada", "min": 2, "max": 3, "clamp": [0, 3] },
               { "type": "stat", "path": "player.familyTrust", "min": 1, "max": 4, "clamp": [0, 100] }
@@ -39,8 +40,8 @@
       },
       {
         "id": "negociar_un_periodo",
-        "label": "Negociar: un periodo y un compromiso",
-        "descripcion": "Proponés estudiar a cambio de que el castigo sea corto. Puede salir, o te pueden leer como el que quiere zafar.",
+        "label": "Negociar un periodo y un compromiso",
+        "descripcion": "Estudiás a cambio de un castigo corto.",
         "weight": 4,
         "outcomes": [
           {
@@ -53,7 +54,7 @@
           },
           {
             "weight": 5,
-            "texto": "La negociación sale mal: te dicen que no se negocia, y el castigo queda como estaba o peor.",
+            "texto": "La negociación sale mal: no se negocia, y el castigo queda como estaba o peor.",
             "effects": [
               { "type": "stat", "path": "flags.pcConfiscada", "min": 1, "max": 3, "clamp": [0, 3] },
               { "type": "stat", "path": "player.familyTrust", "min": -6, "max": -2, "clamp": [0, 100] }
@@ -63,8 +64,8 @@
       },
       {
         "id": "jugar_en_lo_de_un_amigo",
-        "label": "Jugar a escondidas en lo de un amigo",
-        "descripcion": "La PC está en el placard, pero la de tu amigo no. Si te descubren, el castigo se alarga y la confianza se rompe.",
+        "label": "Jugar a escondidas donde un amigo",
+        "descripcion": "La del amigo no está en el placard.",
         "weight": 2,
         "outcomes": [
           {
@@ -89,11 +90,12 @@
   },
   {
     "id": "amateur_ultimatum_en_casa",
+    "voz": "corta",
     "bifurcacion": true,
     "category": "soloq_precarrera",
     "categoria": "golpe_duro",
     "title": "El ultimátum",
-    "description": "Sentados en la mesa de la cocina, sin la tele de fondo: en casa dicen que el ranked se terminó. Que el colegio va primero y que esto no es un trabajo. Es la charla que temías.",
+    "description": "Mesa de la cocina, sin la tele de fondo: en casa dicen que el ranked se terminó, que el colegio va primero y que esto no es un trabajo.",
     "weight": 1,
     "cooldown": 1,
     "contexto": {
@@ -104,7 +106,7 @@
       {
         "id": "prometer_el_boletin",
         "label": "Prometer el boletín y aflojar",
-        "descripcion": "Aceptás un tiempo largo sin PC a cambio de no cerrar la puerta. Perdés ranked; ganás tiempo con tu familia.",
+        "descripcion": "Tiempo sin PC a cambio de no cerrar la puerta.",
         "weight": 5,
         "outcomes": [
           {
@@ -129,7 +131,7 @@
       {
         "id": "mostrar_la_ladder",
         "label": "Mostrarles la ladder y defenderlo",
-        "descripcion": "Les abrís el op.gg y les explicás qué es estar arriba. Si lo entienden, ganás aire; si no, la cosa se pone peor.",
+        "descripcion": "Les abrís el op.gg y explicás qué es estar arriba.",
         "weight": 3,
         "outcomes": [
           {
@@ -143,7 +145,7 @@
           },
           {
             "weight": 6,
-            "texto": "Para ellos es un jueguito y vos acabás de confirmarlo. El castigo es largo y la charla queda abierta.",
+            "texto": "Para ellos es un jueguito y acabás de confirmarlo. El castigo es largo y la charla queda abierta.",
             "effects": [
               { "type": "stat", "path": "flags.pcConfiscada", "min": 2, "max": 3, "clamp": [0, 3] },
               { "type": "stat", "path": "player.familyTrust", "min": -10, "max": -4, "clamp": [0, 100] },
@@ -155,7 +157,7 @@
       {
         "id": "portazo",
         "label": "Portazo",
-        "descripcion": "Te encerrás en tu pieza. No negociás nada. Puede que se calme solo; puede que se rompa algo.",
+        "descripcion": "Te encerrás en tu pieza y no negociás nada.",
         "weight": 1,
         "outcomes": [
           {
@@ -168,7 +170,7 @@
           },
           {
             "weight": 7,
-            "texto": "El portazo se escuchó en toda la cuadra. El castigo es el más largo que tuviste y en casa ya no hay confianza que gastar.",
+            "texto": "El portazo se escuchó en toda la cuadra. El castigo más largo que tuviste, y en casa ya no queda confianza que gastar.",
             "effects": [
               { "type": "stat", "path": "flags.pcConfiscada", "min": 2, "max": 3, "clamp": [0, 3] },
               { "type": "stat", "path": "player.familyTrust", "min": -16, "max": -8, "clamp": [0, 100] },
