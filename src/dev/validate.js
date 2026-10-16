@@ -23195,7 +23195,9 @@ check('K5c-E un veterano pasado del pico termina con cada acumulativo, el bonus 
     const con = jugar(true);
     const sin = jugar(false);
     for (const stat of ACUMULATIVOS_K5CE) {
-      if (!(con.player.stats[stat] < sin.player.stats[stat])) {
+      // Un acumulativo que puede bajar (adaptabilidad, shotcalling) puede llegar al veterano ya en el piso: con el apagado en 0 no hay
+      // nada por debajo que medir (con el stream del mazo de H2a la seed 1 trae la adaptabilidad en 0). El macro, que no baja, siempre se compara.
+      if (sin.player.stats[stat] > 0 && !(con.player.stats[stat] < sin.player.stats[stat])) {
         throw new Error(`seed ${seed}: ${stat} con desgaste ${con.player.stats[stat]} no quedó debajo del apagado ${sin.player.stats[stat]}`);
       }
       if (!(con.player.desgaste[stat] > 0)) {
