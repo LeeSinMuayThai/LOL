@@ -326,5 +326,595 @@
       ]
     },
     "plan": "juego"
+  },
+  {
+    "id": "t1_sala_de_prensa",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Sala de prensa",
+    "linea": "Una entrevista y salís entero",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t1_draft_fearless",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Draft Fearless",
+    "linea": "Llegás a la serie con campeones guardados",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t1_reunion_con_el_analista",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Reunión con el analista",
+    "linea": "Tres pizarras de datos, una idea",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_matchups_en_scrim",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Matchups en scrim",
+    "linea": "Cada cruce, repetido hasta que sobra",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_clips_de_tu_ano",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Clips de tu año",
+    "linea": "Mirarte ganar te devuelve el pulso",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t1_mecanica_en_vivo",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Mecánica en vivo",
+    "linea": "Entrenás con la presión del público",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_flash_del_cierre",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Flash del cierre",
+    "linea": "Una salida que nadie vio venir",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_midgame_ordenado",
+    "rareza": "comun",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Midgame ordenado",
+    "linea": "Cada rotación con su motivo",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_rival_de_siempre",
+    "rareza": "rara",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Rival de siempre",
+    "linea": "Lo mirás al otro lado y jugás mejor",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_serie_al_limite",
+    "rareza": "rara",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Serie al límite",
+    "linea": "Un quinto juego y vos con la cabeza fría",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t1_el_draft_perfecto",
+    "rareza": "rara",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "El draft perfecto",
+    "linea": "Todo lo que pediste entró",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t1_playoffs_con_plan",
+    "rareza": "rara",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Playoffs con plan",
+    "linea": "Cada pelea tiene un guion y se cumple",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_bootcamp_en_corea",
+    "rareza": "rara",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Bootcamp en Corea",
+    "linea": "Un mes con los mejores del mundo",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_patrocinador_nuevo",
+    "rareza": "rara",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Patrocinador nuevo",
+    "linea": "Trabajás tranquilo con la plata resuelta",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t1_equipo_unido",
+    "rareza": "rara",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Equipo unido",
+    "linea": "Cinco que juegan como una sola cabeza",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t1_clase_magistral",
+    "rareza": "rara",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Clase magistral",
+    "linea": "Una partida que enseñan en las academias",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_primera_linea",
+    "rareza": "rara",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Primera línea",
+    "linea": "Abrís la pelea y los demás te siguen",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_campeon_de_split",
+    "rareza": "epica",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Campeón de split",
+    "linea": "Levantás el trofeo con el equipo entero",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t1_mvp_de_playoffs",
+    "rareza": "epica",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "MVP de playoffs",
+    "linea": "Cada serie, la mejor del equipo",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "laneo",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_el_cerebro_del_equipo",
+    "rareza": "epica",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "El cerebro del equipo",
+    "linea": "Todo pasa por tu voz",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t1_clinica_de_matchups",
+    "rareza": "epica",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Clínica de matchups",
+    "linea": "No hay campeón que te sorprenda",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_obra_de_macro",
+    "rareza": "epica",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Obra de macro",
+    "linea": "Ganás la partida sin pelear una vez",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_jugada_del_ano",
+    "rareza": "epica",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Jugada del año",
+    "linea": "Una sola partida y ya te recuerdan",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_campeon_del_mundo",
+    "rareza": "legendaria",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Campeón del mundo",
+    "linea": "Levantás la Copa del Invocador",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t1_tres_titulos_seguidos",
+    "rareza": "legendaria",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Tres títulos seguidos",
+    "linea": "Nadie había ganado tres en fila",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "laneo",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "costo": {
+      "stat": "mentalidad",
+      "valor": [
+        -2,
+        -1
+      ]
+    },
+    "plan": "juego"
+  },
+  {
+    "id": "t1_la_jugada_imposible",
+    "rareza": "legendaria",
+    "etapa": [
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "La jugada imposible",
+    "linea": "Un solo clic y se acaba el juego",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          8,
+          9
+        ]
+      }
+    ],
+    "plan": "juego"
   }
 ]
