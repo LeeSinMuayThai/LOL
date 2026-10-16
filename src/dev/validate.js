@@ -25995,7 +25995,8 @@ check('K6a-A sin azar puro: ningún texto del dato ni ninguna carta del lote dic
     const malo = textos.find((t) => typeof t === 'string' && AZAR_PURO_K6aA.test(t));
     if (malo) problemas.push(`${sistemaId} "${decision.titulo}": "${malo.slice(0, 80)}"`);
     if (decision.datos?.evento) {
-      const sinRiesgo = decision.opciones.filter((o) => typeof o.riesgoTexto !== 'string' || o.riesgoTexto.length === 0);
+      // H2a: "Otra mano" (`cambio: true`) no es una apuesta, es el cambio de la mano del año: no tiene resultado que sortear.
+      const sinRiesgo = decision.opciones.filter((o) => !o.cambio && (typeof o.riesgoTexto !== 'string' || o.riesgoTexto.length === 0));
       if (sinRiesgo.length > 0) problemas.push(`${decision.titulo}: opciones sin riesgo dicho (${sinRiesgo.map((o) => o.label).join(', ')})`);
     }
   }
