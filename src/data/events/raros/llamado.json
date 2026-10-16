@@ -1,1 +1,4168 @@
-[]
+[
+  {
+    "id": "llamado_el_mensaje_traducido",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_llamado",
+    "categoria": "mercado",
+    "title": "Mensaje con traductor",
+    "description": "Un scout te escribe en un inglés de traductor automático: \"tu estilo es muy interesante\". No queda claro si es oferta o saludo.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "contestar_con_cuidado",
+        "label": "Contestar con cuidado",
+        "descripcion": "Tres líneas en inglés, revisadas dos veces.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El scout responde con un emoji de pulgar y un nombre de agente. Algo se mueve.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu \"nice to meet you\" sale como \"nice to eat you\". El scout no vuelve a escribir.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_en_visto",
+        "label": "Dejarlo en visto",
+        "descripcion": "Si es oferta, vuelve a insistir.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "No contestás y tu cabeza queda limpia. A los diez días insiste, con más ganas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo dejás en visto y no insiste nunca. Te queda la duda de qué decía el traductor.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_el_analisis_en_youtube",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_llamado",
+    "categoria": "prensa",
+    "title": "El video con subtítulos",
+    "description": "Un analista coreano subió una hora de análisis de tus partidos a YouTube, con subtítulos en inglés. Tiene doscientas mil views.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "compartirlo_con_el_equipo",
+        "label": "Compartirlo con el equipo",
+        "descripcion": "Lo ponés en el Discord con un emoji.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El equipo lo mira junto y aprende más de vos de lo que sabía. La scrim siguiente va afinada.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El analista marca tu error más viejo y el equipo se ríe. Tarda una semana en dejar de bromear.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mirarlo_a_solas",
+        "label": "Mirarlo a solas",
+        "descripcion": "Con auriculares y un mate.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El analista tiene razón en tres cosas y las corregís el mismo día. Cambia tu juego.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo mirás completo a las tres de la mañana y te quedás mal. Te levantás con ojeras.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_la_semana_de_observacion",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_llamado",
+    "categoria": "oportunidad",
+    "title": "Semana de observación",
+    "description": "Un club de la LCK te invita a observar un bootcamp, sin garantías. Pagan el pasaje y un cuarto con vista a la nada.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ir_con_los_ojos_abiertos",
+        "label": "Ir con los ojos abiertos",
+        "descripcion": "Mirás todo, hablás poco.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Volvés con una libreta llena de hábitos de scrim que nadie en tu liga usa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La semana es un blur de horarios y comida picante. Volvés con jet lag y pocas notas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quedarte_donde_estas",
+        "label": "Quedarte donde estás",
+        "descripcion": "Hay un split que jugar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te quedás y el equipo agradece el gesto. Nadie dice nada, pero se nota en el scrim.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te quedás y otro jugador va en tu lugar. Al volver, habla de lo que vio durante un mes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_el_agente_con_acento",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_llamado",
+    "categoria": "mercado",
+    "title": "El agente nuevo",
+    "description": "Un agente que dice conocer a medio mundo te escribe en un español inventado. Promete llamadas de Corea antes del verano.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "darle_una_oportunidad",
+        "label": "Darle una oportunidad",
+        "descripcion": "Una videollamada de media hora.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Habla en serio y tiene contactos reales. La llamada termina con tres nombres y una reunión.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Pide un adelanto \"para los trámites\". Le cortás la llamada con el corazón en la mano.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pasarlo_a_tu_manager",
+        "label": "Pasarlo a tu manager",
+        "descripcion": "Que lo revise quien sabe.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu manager lo investiga y descubre que es legítimo. Lo suma al círculo de contactos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu manager responde con un emoji de vómito. Ya no recibís más mensajes de nadie.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_la_soloq_coreana",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_llamado",
+    "categoria": "rutina",
+    "title": "Cola en el servidor coreano",
+    "description": "Entrás a la cola de Corea a las cuatro de la mañana. Hay un nombre conocido en tu equipo y todos mandan pings.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_serio_la_noche",
+        "label": "Jugar serio la noche",
+        "descripcion": "Cada partida es una prueba.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Subís sin parar y en el lobby te anotan los nombres. Algo de lo que hacés queda registrado.",
+            "effects": [
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 15,
+                "max": 30
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Perdés una racha de diez ante rivales que no saludan. Amanecés frito y con cinco pesos de ping.",
+            "effects": [
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": -25,
+                "max": -10
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_con_humor",
+        "label": "Jugar con humor",
+        "descripcion": "Probás picks raros y te reís.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu pick raro se vuelve meme en el chat coreano. Te sigue gente que ni conocías.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo del pick raro se pasa de rosca y perdés tres seguidas. El chat te manda un \"nice try\".",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_la_prueba_a_las_tres",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_llamado",
+    "categoria": "oportunidad",
+    "title": "Prueba a las tres de la mañana",
+    "description": "Una org de la LPL te pide una prueba en scrim, pero con su horario: las tres de la mañana, la tuya. Aceptan que te sientes en un sillón.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptar_el_horario",
+        "label": "Aceptar el horario",
+        "descripcion": "Una semana sin dormir, con café.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Rendís mejor de lo que esperabas. El coach de la LPL manda un mensaje con tu apellido.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Dormís cuarenta minutos por noche y jugás como zombie. El coach manda un \"gracias\" frío.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_otro_horario",
+        "label": "Pedir otro horario",
+        "descripcion": "Una oferta seria entiende de husos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te mueven la prueba a un horario humano y quedan impresionados por tu actitud.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El horario no se mueve y te quedás sin la prueba. Aprendés a odiar los husos del mundo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_el_cuestionario",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_llamado",
+    "categoria": "oportunidad",
+    "title": "El cuestionario de cuarenta preguntas",
+    "description": "Una org de la LPL te manda un cuestionario de cuarenta preguntas. La número 23 es: \"¿cuántas horas dormís?\"",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "responder_con_honestidad",
+        "label": "Responder con honestidad",
+        "descripcion": "Cuarenta preguntas, cuarenta verdades.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La honestidad cae bien. Te llaman a una segunda ronda y te piden una foto del setup.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Contestás que dormís seis horas. Te mandan un archivo con tips de siesta, y quedás ahí.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "responder_a_lo_pro",
+        "label": "Responder a lo pro",
+        "descripcion": "Todo \"profesional\" y \"enfocado\".",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te ven como alguien que maneja la presión. Pasás la primera ronda sin esfuerzo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tus respuestas son iguales a las de otros treinta. No te llaman más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_el_scout_y_la_foto",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_llamado",
+    "categoria": "prensa",
+    "title": "La foto con el scout",
+    "description": "Un scout coreano se saca una foto con vos en el lobby de un evento y la sube a Twitter. El comentario: \"mirá a este\".",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "compartir_la_foto",
+        "label": "Compartir la foto",
+        "descripcion": "Un retweet con un emoji.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu retweet suma diez mil likes. En los comentarios hay gente que te sigue desde Seúl.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La foto sale con vos mirando la pantalla de tu celular. Todos preguntan quién es el distraído.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mantenerlo_discreto",
+        "label": "Mantenerlo discreto",
+        "descripcion": "No hay nada que anunciar todavía.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Seguís con lo tuyo y el rumor se enfría. Un par de semanas después te siguen igual.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El silencio se lee como falta de ambición. Un streamer lo comenta con tono burlón.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_el_curso_de_idioma",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_llamado",
+    "categoria": "rutina",
+    "title": "Coreano en el celular",
+    "description": "Instalás una app de coreano por si algún día te llaman de allá. A los tres días tenés una racha de quince y ya saludás a tu perro.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "sostener_la_racha",
+        "label": "Sostener la racha",
+        "descripcion": "Quince minutos por día, sin falta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "A las tres semanas te entendés con los scouts del chat. Aprender un idioma no es poca cosa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La racha se corta en el día 23, justo antes de la prueba. Te quedás con \"annyeong\" y poco más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarla_para_despues",
+        "label": "Dejarla para después",
+        "descripcion": "Primero hay un split que ganar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te concentrás en el juego y el split sale mejor. Los idiomas esperan en el celular.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Cuando por fin te llaman, no entendés el contrato. Pedís traductor con la cara roja.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_el_huso_cambiado",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_llamado",
+    "categoria": "rutina",
+    "title": "Una semana con horario de Seúl",
+    "description": "Te piden que scrimees con el huso de Asia durante una semana, para ver si aguantás. Tus compañeros te despiden con un minuto de silencio.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "hacerlo_en_serio",
+        "label": "Hacerlo en serio",
+        "descripcion": "Dormís de día y jugás de noche.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Aguantás el cambio de horario y jugás mejor de lo que esperabas. Los asiáticos lo notan.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu cuerpo no entiende nada. Rendís al 60 por ciento toda la semana y te mareás en el scrim.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hacerlo_a_medias",
+        "label": "Hacerlo a medias",
+        "descripcion": "Una noche sí, una no.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El compromiso a medias funciona: no te sacan de ritmo y quedás bien parado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Medio dormido, medio despierto, no rendís ni acá ni allá. Se nota en el feedback del coach.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_la_prueba_de_cinco_scrims",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_llamado",
+    "categoria": "oportunidad",
+    "title": "Cinco scrims de prueba",
+    "description": "Un club de la LCK te pide cinco scrims remotos en una semana. Todos saben que es la última ronda antes de una oferta.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugarlas_a_tu_manera",
+        "label": "Jugarlas a tu manera",
+        "descripcion": "Sin copiar, con tu draft de siempre.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Ganás cuatro de cinco y el coach pide tu VOD completo. Mandás hasta el que no hacía falta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Ganás dos de cinco. El coach no pide el VOD y te queda la sensación de haber sido tu mejor versión.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "copiar_su_estilo",
+        "label": "Copiar su estilo",
+        "descripcion": "Aprendés su draft en una noche.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Les gustás por adaptarte tan rápido. El coach dice que parecés de la casa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Copiás un estilo que no es el tuyo y te sale cualquier cosa. Perdés cuatro scrims con tu cara.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_el_sponsor_de_shanghai",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_llamado",
+    "categoria": "prensa",
+    "title": "Un sponsor de Shanghái",
+    "description": "Un sponsor de la LPL quiere tu cara en una campaña de bebidas. Prometen un set de rodaje y un guion de dos líneas.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "filmar_la_campana",
+        "label": "Filmar la campaña",
+        "descripcion": "Dos días de rodaje, tres tomas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La campaña sale en todos lados. Tu cara en un cartel de Shanghái es algo que no esperabas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te pasan dos líneas de guion en mandarín que leés mal. El clip circula por las razones equivocadas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rechazar_la_oferta",
+        "label": "Rechazar la oferta",
+        "descripcion": "Sos jugador, no modelo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu respuesta educada gana respeto. El equipo lo toma como compromiso con el juego.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La campaña va con otro jugador y se hace viral. Te enterás con el celular en la mano.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_el_vod_en_rojo",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_llamado",
+    "categoria": "vestuario",
+    "title": "Tu VOD con notas en rojo",
+    "description": "El coach de una org coreana te manda tu propio VOD con notas en rojo. Treinta y siete errores marcados, uno por minuto.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "corregir_todo_en_una_semana",
+        "label": "Corregir todo en una semana",
+        "descripcion": "Treinta y siete cambios, uno por día.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Corregís veinte y notás la diferencia. El coach responde con \"keep going\" y un emoji.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Intentás corregir todo y rendís peor. Te quedás con la mente en blanco frente al scrim.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "elegir_tres_para_atacar",
+        "label": "Elegir tres para atacar",
+        "descripcion": "Los que más pesan, y ya.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Con tres arreglos mejorás más que con los treinta y siete. El coach lo ve y asiente.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Elegís los tres equivocados y el coach te manda otra lista. Con letras más gordas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_la_exhibicion_en_asia",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_llamado",
+    "categoria": "serie",
+    "title": "Una exhibición en Asia",
+    "description": "Te invitan a un 5v5 de exhibición en un estadio de Asia, con jugadores de la LCK y la LPL. Es sábado a la noche.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ir_a_divertirte",
+        "label": "Ir a divertirte",
+        "descripcion": "Es una exhibición, nadie va a mirar tu K/D.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás suelto, sin presión. El estadio entero te aplaude un clutch que no ensayaste.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te divertís tanto que no escuchás el timing del equipo. Perdés el mapa con una sonrisa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ir_a_competir_en_serio",
+        "label": "Ir a competir en serio",
+        "descripcion": "Aunque sea de exhibición, hay un nombre en juego.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás con la cabeza fría y ganás el MVP. Los scouts del palco toman nota.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.teamfight",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te tomás tan en serio la exhibición que discutís con un compañero en vivo. El clip va de meme.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_el_contrato_en_dos_idiomas",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_llamado",
+    "categoria": "mercado",
+    "title": "Cláusulas en dos idiomas",
+    "description": "Te llega un contrato de una org asiática en dos idiomas. Las versiones no dicen exactamente lo mismo, y nadie lo dice en voz alta.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "pedir_un_abogado",
+        "label": "Pedir un abogado",
+        "descripcion": "Una revisión seria antes de firmar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El abogado encuentra tres cláusulas raras y las corrige. Firmás con la cabeza tranquila.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La org tarda y se enfría el interés. Te quedás con un contrato mejor, pero con menos ganas de ambos lados.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "firmar_sin_leer_todo",
+        "label": "Firmar sin leerlo todo",
+        "descripcion": "Si es oferta, es oferta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El contrato sale mejor de lo que parecía. Tuviste suerte y lo sabés.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te enterás tarde de una cláusula sobre horarios de stream. Tus fines de semana ahora tienen dueño.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_la_prensa_te_compara",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_llamado",
+    "categoria": "prensa",
+    "title": "Te comparan con un coreano",
+    "description": "La prensa de la LCK te compara con una estrella local. \"El mismo estilo, pero sin la presión\", dice el titular.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "tomarlo_como_un_honor",
+        "label": "Tomarlo como un honor",
+        "descripcion": "Agradecer y seguir con lo tuyo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu respuesta cae bien en los dos lados. La estrella coreana te manda un saludo por Twitter.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Agradeces tanto que parecés un fan. El titular de la semana siguiente es \"el imitador\".",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "marcar_la_diferencia",
+        "label": "Marcar la diferencia",
+        "descripcion": "Vos no sos copia de nadie.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu declaración suena firme y la gente la comparte. Dejás claro que tenés un estilo propio.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se interpreta como una falta de respeto. Los fans coreanos arman un hilo de cuatrocientas respuestas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_la_lck_te_llama",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "mercado",
+    "title": "La LCK te llama",
+    "description": "Un club grande de la LCK te manda un mensaje corto desde la cuenta oficial: \"Nos interesás. ¿Podemos hablar?\"",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "contestar_esa_misma_noche",
+        "label": "Contestar esa misma noche",
+        "descripcion": "Una respuesta, tres signos de exclamación.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Responden en cinco minutos y agendan una llamada. Te cuesta dormir con el celular en la almohada.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lck"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tardás en contestar tres días por miedo a meter la pata. Te perdonan el silencio, pero te lo cobran.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lck"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hacerte_valer_primero",
+        "label": "Hacerte valer primero",
+        "descripcion": "Que sepan que hay otras ofertas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El juego de interés les gusta. Te suben la oferta antes de que la llamada termine.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lck"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se lo toman a mal y se enfrían. La oferta sigue en pie, pero ahora hay distancia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lck"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_la_semana_en_seul",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "Una semana en Seúl",
+    "description": "Te llevan una semana a Seúl para ver cómo trabajás. Hay un cuarto, un scrim por la mañana y un coach que no habla casi.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.region",
+        "op": "eq",
+        "value": "llamado_lck"
+      }
+    ],
+    "options": [
+      {
+        "id": "entregarte_al_proceso",
+        "label": "Entregarte al proceso",
+        "descripcion": "Hacés todo lo que te piden, sin preguntar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La semana te cambia la cabeza. Volvés con otro nivel de disciplina y una oferta firme en el correo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lck_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "semana_en_seul",
+                "values": [
+                  "La semana en Seúl que te mostró cómo se trabaja de verdad",
+                  "El bootcamp coreano que te cambió la disciplina"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te entregás tanto que te agotás el cuarto día. El coach te manda a dormir, con el ceño fruncido.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lck_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "semana_en_seul",
+                "values": [
+                  "La semana en Seúl en la que aprendiste que hay un límite",
+                  "El bootcamp coreano que te dejó exhausto, pero más fuerte"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mostrar_tu_juego_propio",
+        "label": "Mostrar tu juego propio",
+        "descripcion": "Si te quieren, que sea por lo que sos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El coach te deja jugar tu estilo y se nota que lo disfruta. Se lo cuenta al club con un \"interesting\".",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lck_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "semana_en_seul",
+                "values": [
+                  "La semana en Seúl en la que el coach te dejó ser vos",
+                  "El bootcamp coreano donde tu estilo no se discutió"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu estilo choca con el de la casa y el coach no lo disimula. Volvés con respeto, pero sin oferta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lck_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "semana_en_seul",
+                "values": [
+                  "La semana en Seúl en la que tu estilo no encajó",
+                  "El bootcamp coreano que no terminó en oferta"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_la_lpl_con_el_cheque",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "mercado",
+    "title": "La LPL con el cheque",
+    "description": "Una org de la LPL manda una propuesta con un número que te hace mirar el monitor dos veces. Hay un plazo de una semana.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "negociar_con_calma",
+        "label": "Negociar con calma",
+        "descripcion": "Una contraoferta bien pensada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La contraoferta les cae bien y la suben un diez por ciento. Tu agente te manda un GIF de aplausos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lpl"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se toman la contraoferta como una ofensa y el cheque se achica. Aprendés lo que cuesta pedir de más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lpl"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "aceptar_el_cheque",
+        "label": "Aceptar el cheque",
+        "descripcion": "Un número así no se rechaza.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Firmás el preacuerdo y la plata se siente real. Tu familia no para de mandarte mensajes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lpl"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Firmás rápido y después te enterás de lo que cedías en el contrato. Se te pasa el entusiasmo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lpl"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_el_contrato_en_shanghai",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "mercado",
+    "title": "La firma en Shanghái",
+    "description": "Te reciben en Shanghái con un contrato nuevo y un cuarto con vista al río. Todavía podés cambiar de idea, pero cuesta.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.region",
+        "op": "eq",
+        "value": "llamado_lpl"
+      }
+    ],
+    "options": [
+      {
+        "id": "firmar_con_la_cabeza_fria",
+        "label": "Releerlo todo y firmar",
+        "descripcion": "Leés cada cláusula una vez más.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Firmás tranquilo, sabiendo lo que hacés. Los dueños de la org te dan la mano.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lpl_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "contrato_en_shanghai",
+                "values": [
+                  "El día que firmaste en Shanghái con la cabeza fría",
+                  "La firma que leíste dos veces y valió la pena"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Leer te lleva horas y se enfrían los ánimos. Firmás igual, pero con un clima raro.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lpl_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "contrato_en_shanghai",
+                "values": [
+                  "La firma en Shanghái que se hizo esperar",
+                  "El contrato que firmaste con un silencio incómodo"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "echarte_para_atras",
+        "label": "Echarte para atrás",
+        "descripcion": "No estás seguro de querer mudarte.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo decís con respeto y lo aceptan. Volvés a casa con un nuevo contacto y un respiro.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lpl_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "contrato_en_shanghai",
+                "values": [
+                  "El día que dijiste no a Shanghái y volviste a casa",
+                  "La oferta que rechazaste con una sonrisa"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Les cae mal y el contacto se enfría. Volvés a casa con la sensación de haber soltado algo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_lpl_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "contrato_en_shanghai",
+                "values": [
+                  "El día que dijiste no a Shanghái y la puerta se cerró",
+                  "La oferta que rechazaste y la puerta que no se volvió a abrir"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_el_coach_de_leyenda",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "El coach de leyenda",
+    "description": "Un coach legendario de la LCK, retirado hace años, te manda un mensaje. Dice que vio un clip tuyo y quiere hablar.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "atender_la_llamada",
+        "label": "Atender la llamada",
+        "descripcion": "Cuarenta minutos con un mito.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Hablás de draft, de nervios, de tu vida. Al cortar sabés que ese tipo te va a acompañar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_coach"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La llamada se corta a los diez minutos por un error de conexión. Quedás con medio consejo y una duda.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_coach"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedirle_que_te_mire_jugar",
+        "label": "Pedirle que te mire jugar",
+        "descripcion": "Un scrim con el coach de espectador.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te mira tres partidas y da tres notas. Cada una vale más que un mes de scrim.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_coach"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te mira un solo partido y se va con una sonrisa que no sabés interpretar. Te quedás pensando.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_coach"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_la_charla_con_el_coach",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "vestuario",
+    "title": "La charla con el coach",
+    "description": "El coach de leyenda vuelve a escribirte, esta vez con una invitación: \"Tomemos un café en Seúl. Yo invito.\"",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.region",
+        "op": "eq",
+        "value": "llamado_coach"
+      }
+    ],
+    "options": [
+      {
+        "id": "ir_a_tomar_el_cafe",
+        "label": "Ir a tomar el café",
+        "descripcion": "Un viaje para una charla.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El café dura cuatro horas y cambia tu forma de pensar el juego. Volvés con un cuaderno lleno.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_coach_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_coach_de_leyenda",
+                "values": [
+                  "El café en Seúl con un coach de leyenda que te cambió la cabeza",
+                  "La charla de cuatro horas que ordenó tu juego"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El café es breve: el coach tiene otra reunión. Te deja con un consejo de dos líneas y una taza vacía.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_coach_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_coach_de_leyenda",
+                "values": [
+                  "El café en Seúl con un coach de leyenda que duró veinte minutos",
+                  "El viaje largo para una charla corta"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedirle_que_venga_a_vos",
+        "label": "Pedirle que venga a vos",
+        "descripcion": "Que un mito cruce el mundo no es poco.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Acepta con humor y llega a tu ciudad. Pasan un día entero hablando de LoL en un bar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_coach_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_coach_de_leyenda",
+                "values": [
+                  "El día en que un coach de leyenda cruzó el mundo para hablar con vos",
+                  "La visita que nadie esperaba"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Le queda mal y deja de escribirte. La puerta se cierra con un emoji de saludo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_coach_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_coach_de_leyenda",
+                "values": [
+                  "El mensaje al coach de leyenda que no tuvo respuesta",
+                  "La charla que se perdió por pedir demasiado"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_el_scrim_con_los_campeones",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "serie",
+    "title": "Scrim con los campeones del mundo",
+    "description": "Los campeones del mundo necesitan un sparring y te piden a vos. Un scrim de un día contra el mejor equipo del planeta.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_a_destrozar",
+        "label": "Jugar a destrozar",
+        "descripcion": "Todo lo que tenés, sin guardarte nada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Les ganás un mapa de cinco. El capitán del otro equipo levanta la mano, sorprendido, y te sonríe.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_scrim"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te destrozan en cuatro mapas, pero en el quinto marcás una jugada que les saca una risa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_scrim"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "estudiar_su_estilo",
+        "label": "Estudiar su estilo",
+        "descripcion": "Un scrim es una clase abierta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Salís con una libreta llena de lecturas de mapa que nunca habías visto. Es oro puro.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_scrim"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Mirás tanto que olvidás jugar. Perdés todos los mapas, pero ganás un cuaderno nuevo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_scrim"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_la_revancha_del_scrim",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "serie",
+    "title": "La revancha con los campeones",
+    "description": "Los campeones del mundo te piden otro scrim, esta vez con cámaras. Hay medio millón de personas mirando el stream.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.region",
+        "op": "eq",
+        "value": "llamado_scrim"
+      }
+    ],
+    "options": [
+      {
+        "id": "aceptar_las_camaras",
+        "label": "Aceptar las cámaras",
+        "descripcion": "Si te quieren de sparring, que lo vean.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás como en tu mejor día y el chat se vuelve loco. El clip de tu jugada tiene dos millones de views.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_scrim_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "revancha_con_campeones",
+                "values": [
+                  "El scrim con cámaras en el que le jugaste de igual a los campeones del mundo",
+                  "La revancha que vieron un millón de personas"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Con las cámaras prendidas te congelás y te comés una racha de tres muertes. El clip se hace viral.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_scrim_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "revancha_con_campeones",
+                "values": [
+                  "El scrim con cámaras en el que te congelaste frente a los campeones del mundo",
+                  "La revancha que se viralizó por las razones equivocadas"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_que_sea_privado",
+        "label": "Pedir que sea privado",
+        "descripcion": "Un scrim sin cámaras, por favor.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo aceptan con respeto. Jugás tranquilo y mostrás todo lo que tenías guardado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_scrim_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "revancha_con_campeones",
+                "values": [
+                  "El scrim privado donde le jugaste de igual a los campeones del mundo",
+                  "La revancha sin cámaras que valió más que mil clips"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Les cae mal que pongas condiciones y el scrim se cancela. Se te pasa la oportunidad.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_scrim_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "revancha_con_campeones",
+                "values": [
+                  "El scrim con los campeones del mundo que se canceló por una condición",
+                  "La revancha que se perdió por pedir de más"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_sparring_para_el_mundial",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "Sparring para el Mundial",
+    "description": "Un equipo clasificado al Mundial te pide ir de sparring por dos semanas. Pasaje, hotel y la mitad de un sueldo.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptar_el_viaje",
+        "label": "Aceptar el viaje",
+        "descripcion": "Dos semanas viendo cómo se prepara un Mundial.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Volvés con más de lo que diste. El equipo te agradece con un poster firmado por los cinco.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_sparring"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Pasás dos semanas encerrado en un hotel, jugando poco y mirando mucho. Volvés con ganas de jugar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_sparring"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "negociar_mas_dias",
+        "label": "Negociar más días",
+        "descripcion": "Una semana más y vamos con todo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Aceptan la semana extra y te toca ver una scrim definitiva. Es una clase magistral.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_sparring"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Les cae mal el pedido y te recortan días. Volvés antes de lo previsto con un sabor raro.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_sparring"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "llamado_la_final_vista_de_cerca",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "serie",
+    "title": "La final, desde el palco",
+    "description": "Tu equipo de sparring llega a la final del Mundial y te invitan al palco. Sos el que mejor conoce su draft, y lo saben.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.region",
+        "op": "eq",
+        "value": "llamado_sparring"
+      }
+    ],
+    "options": [
+      {
+        "id": "aconsejar_al_equipo",
+        "label": "Aconsejar al equipo",
+        "descripcion": "Una última charla antes del primer mapa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu consejo cambia el draft del mapa tres y ganan la serie. El capitán te menciona en la copa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_sparring_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "final_desde_el_palco",
+                "values": [
+                  "La final del Mundial en la que tu consejo cambió el mapa tres",
+                  "La charla de palco que valió una copa"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu consejo no cambia nada y pierden. El capitán te agradece igual y te regala la gorra de la final.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_sparring_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "final_desde_el_palco",
+                "values": [
+                  "La final del Mundial que viste desde el palco y se perdió",
+                  "La charla de palco que no alcanzó"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quedarte_callado",
+        "label": "Quedarte callado",
+        "descripcion": "No es tu lugar. Solo mirás.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Mirás la final con la cabeza llena de ideas para tu juego. Volvés con un plan para tu próxima etapa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_sparring_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "final_desde_el_palco",
+                "values": [
+                  "La final del Mundial que viste en silencio y que cambió tu manera de mirar el juego",
+                  "La final vista desde el palco"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Mirás, callado, cómo pierden un mapa que vos habrías jugado distinto. Te queda un nudo en el pecho.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "llamado_sparring_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "final_desde_el_palco",
+                "values": [
+                  "La final del Mundial en la que no dijiste nada y pensaste mil cosas",
+                  "La final del palco, con un nudo en el pecho"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

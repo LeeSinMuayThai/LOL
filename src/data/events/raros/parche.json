@@ -1,1 +1,3980 @@
-[]
+[
+  {
+    "id": "parche_buff_a_tu_main",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Buff a tu main",
+    "description": "Los patch notes traen un buff para tu main. Reddit se llena de gráficos y alguien ya subió el combo \"definitivo\".",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "abusarlo_de_inmediato",
+        "label": "Abusarlo de inmediato",
+        "descripcion": "Lo jugás en toda la soloQ del día.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Subís diez partidas seguidas con una winrate absurda. Los de siempre empiezan a pickearlo también.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo jugás hasta el aburrimiento y el pick se siente raro. Arrancás a olvidarte del resto de tu pool.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "esperar_a_ver_el_meta",
+        "label": "Esperar a ver el meta",
+        "descripcion": "Un par de días de scrim con calma.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Esperás y ves qué se rompe. Cuando lo jugás, sabés exactamente cuándo sí y cuándo no.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Esperás de más y el buff se vuelve ban. Quedás mirando la pantalla de selección.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_nerf_al_rival",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Le pegan al pick rival",
+    "description": "El pick que te hacía la vida imposible recibe un nerf de varios renglones. Tu lane opuesta se te ríe en el chat.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aprovechar_la_ventana",
+        "label": "Aprovechar la ventana",
+        "descripcion": "Jugás agresivo mientras se acomodan.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El rival no sabe cómo jugar su pick nerfeado. Ganás tres lanes seguidas sin sudar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te pasás de agresivo contra un rival que se adaptó el primer día. Perdés una lane fea.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_confiarte",
+        "label": "No confiarte",
+        "descripcion": "Un nerf no hace al jugador.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás como siempre y el rival lo siente. Te ganás un respeto que no pedías.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te cuidás tanto que el rival respira. Perdés la ventana y terminás igual que antes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_el_item_que_rompe",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Un item cambia tu build",
+    "description": "Un item nuevo cambia el build de media plantilla. Tu primer compra de siempre ya no sirve para nada.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "probar_el_item_nuevo",
+        "label": "Probar el item nuevo",
+        "descripcion": "Lo armás en cinco partidas seguidas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El item te viene como anillo al dedo. Encontrás una sinergia que nadie había visto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El item está roto en tu rol, pero no en tu mano. Perdés tres partidas por una compra mal hecha.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_con_tu_build",
+        "label": "Seguir con tu build",
+        "descripcion": "Si funciona, no se toca.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu build clásico funciona, aunque el meta no lo ama. Te lo bancás con estilo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te quedás sin ventaja contra los que ya adoptaron el item. El coach lo nota en el VOD.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_el_campeon_a_tu_medida",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Sale un campeón para vos",
+    "description": "Riot lanza un campeón nuevo con un kit que parece diseñado para tu estilo. Tus compañeros te mandan el tráiler con cinco emojis.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "comprarlo_y_practicarlo",
+        "label": "Comprarlo y practicarlo",
+        "descripcion": "Cien partidas antes del scrim.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo dominás en una semana y el coach te lo mete en el draft. Sos el primero en la liga.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El campeón es tan nuevo que no hay builds. Jugás a ciegas y perdés unas cuantas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "esperar_a_que_lo_prueben",
+        "label": "Esperar a que lo prueben otros",
+        "descripcion": "Que paguen el costo de aprender.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Otros prueban, vos mirás el VOD y entrás con ventaja. Aprendés de sus errores.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Para cuando lo probás, todos lo juegan y ya hay counters. Llegás tarde a tu propio pick.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_las_runas_nuevas",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Runas reformuladas",
+    "description": "Las runas cambian de lugar y tu página de siempre queda inservible. El coach te manda a rearmarla antes del scrim.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "armar_una_pagina_audaz",
+        "label": "Armar una página audaz",
+        "descripcion": "Una combinación que nadie probó.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La página rara resulta ser la mejor del parche. Te copian dos orgs en la semana.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La página rara se queda sin maná en el minuto doce. Perdés un scrim con una explicación creativa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "copiar_la_del_momento",
+        "label": "Copiar la del momento",
+        "descripcion": "La página que usa la mitad de la liga.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Copiás la página y rendís parecido a los mejores. Un cambio cómodo y limpio.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La copiás y queda a medias: la mitad de la liga la usa mal. Te da igual.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_el_bug_que_te_favorece",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Un bug a tu favor",
+    "description": "Descubrís un bug que te da ventaja en tu campeón principal. Lo usaste una vez y ya viste que funciona.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "usarlo_hasta_que_lo_arreglen",
+        "label": "Usarlo hasta que lo arreglen",
+        "descripcion": "Una semana de ventaja injusta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo usás bien y ganás cinco partidas. Cuando lo arreglan, ya te acostumbraste a jugar mejor.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La liga se entera y te recuerda las reglas con un mensaje que preferirías no haber recibido.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "reportarlo_enseguida",
+        "label": "Reportarlo enseguida",
+        "descripcion": "Sos un profesional, no un abusador.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Riot te agradece en Twitter y lo arregla en dos días. Quedás como el que juega limpio.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Reportás y nadie te contesta durante diez días. Vos ya lo sabías, pero quedaste con la duda.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_los_objetivos_cambian",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Los objetivos cambian",
+    "description": "El parche mueve el timing del dragón y el rift. Todo lo que sabías del mapa tiene que reordenarse.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "rehacer_el_plan_de_mapa",
+        "label": "Rehacer el plan de mapa",
+        "descripcion": "Una noche con la pizarra y el coach.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Armás un plan que sorprende. En el scrim siguiente ganás el primer objetivo sin pelear.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Armás un plan sobre un timing que Riot corrige a la semana. Hay que hacerlo de nuevo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "improvisar_sobre_la_marcha",
+        "label": "Improvisar sobre la marcha",
+        "descripcion": "El mapa cambia, vos también.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Improvisás con soltura y los rivales no lo entienden. Parece que ya sabías.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Improvisás y llegás tarde al dragón. El coach te lo marca con voz tranquila.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_se_cae_el_cliente",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "El cliente se cae",
+    "description": "El parche sale con un error y el cliente no abre. La scrim del día queda en suspenso con todos mirando el loading.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aprovechar_para_descansar",
+        "label": "Aprovechar para descansar",
+        "descripcion": "Siesta larga, qué mejor.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Dormís una siesta de tres horas y te sentís otro. Cuando vuelve el cliente, rendís al máximo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Dormís tanto que perdés la scrim cuando vuelve. El coach pregunta dónde estabas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "organizar_una_reunion",
+        "label": "Organizar una reunión",
+        "descripcion": "El equipo revisa el draft sin pantalla.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La reunión sin pantallas es la mejor del mes. Salen con un draft nuevo y buen clima.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Sin pantallas, la reunión se va por las ramas y termina en pelea por pizza. Nada se resuelve.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_las_notas_de_madrugada",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Patch notes a las tres",
+    "description": "Los patch notes salen de madrugada y los leés enteros. Te quedan veinte cambios en la cabeza y ninguna certeza.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "dormir_y_leer_despues",
+        "label": "Dormir y leer después",
+        "descripcion": "Mañana con la cabeza fresca.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Dormís bien y te despertás con un par de ideas claras. Lo importante nunca estuvo en los detalles.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Dormís pero el equipo ya probó todo. Llegás tarde al análisis y te sentís el último.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "estudiar_toda_la_noche",
+        "label": "Estudiar toda la noche",
+        "descripcion": "Una libreta, tres cafés.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Llegás al scrim con planes para cada cambio. Parecés un genio entre los demás.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Estudiás tanto que te saturás. En el scrim no recordás nada de lo que anotaste.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_el_rival_cambia_de_pool",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "El rival cambia de pool",
+    "description": "El parche rompe el main de tu rival habitual. Su coach lo manda a aprender un pool nuevo en una semana.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "estudiar_su_pool_nuevo",
+        "label": "Estudiar su pool nuevo",
+        "descripcion": "Un VOD de cada pick que pruebe.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo leés antes que nadie. Cuando el rival juega su pick nuevo, ya sabés cómo ganarle.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Estudiás el pool equivocado y el rival juega otro. Perdés el draft con una cara de lástima.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_con_lo_tuyo",
+        "label": "Seguir con lo tuyo",
+        "descripcion": "Que se preocupe él.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te concentrás en tu juego y el rival se tropieza con su pool. Ganás sin mirar de reojo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El rival se adapta más rápido de lo previsto. Te sorprende y perdés la serie.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_el_pick_secreto",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Tu pick secreto es meta",
+    "description": "El pick que scrimeás en secreto desde hace meses se vuelve meta con el parche. Ahora lo juegan todos y vos ya no sorprendés a nadie.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "mostrar_que_lo_dominas",
+        "label": "Mostrar que lo dominás",
+        "descripcion": "Que sepan quién llegó primero.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu versión del pick es la mejor de la liga. La prensa te cita como el que lo inventó.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te quedás sin sorpresa y los rivales ya leen tu juego. Todo el trabajo previo se diluye.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardar_otro_secreto",
+        "label": "Guardar otro secreto",
+        "descripcion": "Hay más donde salió ese.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sacás un segundo pick que nadie vio venir. Tu fama de creativo crece.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El segundo pick es peor que el primero y lo notás en pantalla. Volvés al clásico.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_tu_main_a_cero",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Tu main, nerfeado",
+    "description": "El parche le pega a tu main con un nerf de seis puntos. De repente tu campeón estrella queda en la cola.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aprender_otro_main",
+        "label": "Aprender otro main",
+        "descripcion": "Dos semanas sin tocar el viejo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Aprendés al nuevo y te sorprende lo mucho que te gusta. Tu pool se ensancha.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Aprender desde cero te frustra. Perdés tres partidas con el nuevo y te dan ganas de colgar el mouse.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_con_tu_main",
+        "label": "Seguir con tu main",
+        "descripcion": "No se abandona al compañero.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Seguís con tu main y le sacás el jugo. La gente nota que es el único que lo hace con ese nivel.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu main ya no rinde igual y se nota. Perdés bastantes partidas por terquedad.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_el_item_que_lo_rompe_todo",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "El item roto",
+    "description": "Un item nuevo está tan roto que la liga lo cree un error de diseño. Todos lo compran, y todos ganan igual.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "compralo_y_abusalo",
+        "label": "Comprarlo y abusarlo",
+        "descripcion": "Si es meta, es meta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo usás bien y ganás mucho. Cuando lo arreglan, ya cambiaste de estilo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Dependés del item y cuando lo nerfean no sabés jugar sin él. Tu juego se desarma.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rechazarlo_por_principio",
+        "label": "Rechazarlo por principio",
+        "descripcion": "Hay formas más limpias de ganar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Ganás sin el item y la gente lo respeta. Quedás como el puro de la liga.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Perdés una serie por no comprarlo y el chat te lo recuerda hasta el cansancio.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_la_beta_del_pbe",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Te llega el PBE",
+    "description": "Un contacto en Riot te pasa acceso al PBE una semana antes. Podés probar el parche, pero la norma dice que no podés contarlo.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "probarlo_y_callar",
+        "label": "Probarlo y callar",
+        "descripcion": "Una semana de ventaja silenciosa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Entrás al parche con ventaja y nadie lo sabe. Rendís un nivel por encima de todos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se filtra que usaste el PBE y la liga abre una investigación. Terminás en una charla incómoda.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rechazar_el_acceso",
+        "label": "Rechazar el acceso",
+        "descripcion": "No tocás lo que no es tuyo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El contacto te agradece la honestidad y te deja un favor pendiente. Tu reputación sube.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Pasás la oportunidad y otro la usa. Cuando sale el parche, te llevan la delantera.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_la_liga_prohibe_el_pick",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "La liga prohíbe el pick",
+    "description": "La liga prohíbe de golpe un campeón porque su kit rompe una regla de transmisión. Tu pool queda partido al medio.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "reordenar_el_pool",
+        "label": "Reordenar el pool",
+        "descripcion": "Una noche para rearmarlo todo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Reordenás y descubrís un par de picks mejores de lo que creías. El pool sale reforzado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Reordenás a las apuradas y quedás sin un pick sólido para el próximo draft. Te toca improvisar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "apelar_la_decision",
+        "label": "Apelar la decisión",
+        "descripcion": "Con el equipo, por escrito.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La apelación llega a buen puerto y la liga modifica la regla. Quedás como el que defendió el pool.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La apelación se rechaza con un formulario y vos perdés dos semanas peleando con un mostrador.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_el_rework_de_tu_rol",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Rework de tu línea",
+    "description": "Riot anuncia un rework de tu línea para el próximo parche. Los tuits se dividen entre \"adiós al rol\" y \"por fin\".",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "adelantarte_a_la_beta",
+        "label": "Adelantarte a la beta",
+        "descripcion": "Un mes de práctica antes de que salga.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Dominás el rol nuevo antes que nadie. Cuando sale, ya parece el de siempre.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Practicás para un rework que Riot cambia a último momento. Todo ese trabajo queda en la caja.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "esperar_a_ver_como_queda",
+        "label": "Esperar a ver cómo queda",
+        "descripcion": "Primero, el parche en vivo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Esperás y ves cómo les va a los demás. Entrás con información y sin errores tontos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Esperás y todos se te adelantan. Cuando entrás, te toca el rol más difícil de dominar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_la_meta_de_scrim",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_parche",
+    "categoria": "parche",
+    "title": "Tu scrim define el meta",
+    "description": "Lo que probás en scrim se filtra y, de golpe, es el meta del fin de semana. Sos el que lo inventó, aunque nadie lo sepa.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "contarlo_en_una_entrevista",
+        "label": "Contarlo en una entrevista",
+        "descripcion": "Que el crédito lo tenga quien lo merece.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La entrevista sale excelente. El análisis te cita como cerebro táctico del fin de semana.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te pasás de explicativo y regalás tu secreto a los rivales. Te piden \"más discreción\".",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_sin_firma",
+        "label": "Dejarlo sin firma",
+        "descripcion": "El crédito no es lo importante.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Nadie lo sabe, pero el equipo sí. En el vestuario te llaman \"el cerebro\" con cariño.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Otro jugador se lleva el crédito y te quedás en silencio. El dolor se asienta de a poco.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_sos_dios",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "parche",
+    "title": "Sos el que rompe el parche",
+    "description": "El parche nuevo le pega justo donde tu campeón brilla. Los análisis dicen lo mismo en cinco idiomas: con vos, no hay counter.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "liderar_la_ola",
+        "label": "Liderar la ola",
+        "descripcion": "Mostrás el pick en cada partida.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás tu pick todo el día y ganás sin esfuerzo. El chat te canta como si fueras un dios.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_dios"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo jugás tanto que te baneen siempre. Ganás dos veces y después te quedás mirando la pantalla de ban.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_dios"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardarlo_para_el_playoff",
+        "label": "Guardarlo para el playoff",
+        "descripcion": "Una carta que se usa una sola vez.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás otros picks y nadie sospecha. En el playoff lo sacás y ganás con una sorpresa total.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_dios"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo guardás y justo lo nerfean antes del playoff. Te queda una carta que ya no sirve.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_dios"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_la_semana_del_dios",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "parche",
+    "title": "La semana en que sos dios",
+    "description": "Es la semana más injusta de tu carrera: ganás todo, el chat te idolatra y los rivales te banean antes de abrir los ojos.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.contenido",
+        "op": "eq",
+        "value": "parche_dios"
+      }
+    ],
+    "options": [
+      {
+        "id": "disfrutarla_a_pleno",
+        "label": "Disfrutarla a pleno",
+        "descripcion": "Esto no se repite, a disfrutar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Ganás las siete partidas y el chat te nombra \"dios del parche\". Es una semana que nadie olvida.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_dios_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "semana_del_dios",
+                "values": [
+                  "La semana en que el parche te hizo dios de la liga",
+                  "La racha que nadie te va a poder sacar"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Ganás hasta que te confiás y perdés dos seguidas. Igual la semana queda en los libros de la liga.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_dios_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "semana_del_dios",
+                "values": [
+                  "La semana de dios del parche, con un final agridulce",
+                  "La racha que se cortó con las ganas de más"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ensenarle_al_equipo",
+        "label": "Enseñarle al equipo",
+        "descripcion": "Si el pick es bueno, que lo aprendan todos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le enseñás el pick a tu equipo y lo juegan cuatro. Ganan la semana como un solo equipo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_dios_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "semana_del_dios",
+                "values": [
+                  "La semana en que el equipo entero jugó tu pick y dominó el parche",
+                  "El meta que se hizo en tu casa"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se lo enseñás y a los dos días lo juegan mejor que vos. Te quedás sin tu ventaja.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_dios_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "semana_del_dios",
+                "values": [
+                  "La semana en que el equipo aprendió tu pick y te superó",
+                  "El pick que enseñaste y que ya no era solo tuyo"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_el_pick_que_inventaste",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "parche",
+    "title": "El pick que inventaste",
+    "description": "Armás un pick que nadie jugó nunca, con una combinación de runas, items y timings que tu coach llama \"un delirio\". Ganás con él cinco scrims seguidos.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "sacarlo_en_una_serie_oficial",
+        "label": "Sacarlo en una serie oficial",
+        "descripcion": "Si funciona, que se vea en el escenario.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El pick sorprende y ganás la serie. Los comentaristas no paran de nombrarte durante la transmisión.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_pick"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El pick falla el primer día y el chat te llama \"el chistoso\". Quedás con la cara colorada.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_pick"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pulirlo_unas_semanas_mas",
+        "label": "Pulirlo unas semanas más",
+        "descripcion": "Hay mucho que ajustar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo pulís hasta la perfección y lo sacás justo cuando nadie lo espera. Es devastador.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_pick"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo pulís demasiado y alguien lo roba de tu scrim. Sale en una serie de otro equipo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_pick"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_todos_juegan_tu_pick",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "parche",
+    "title": "Todos juegan tu pick",
+    "description": "En dos semanas todos los equipos juegan tu pick. Los casters lo bautizan con tu apodo y Riot lo anota para el próximo parche.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.contenido",
+        "op": "eq",
+        "value": "parche_pick"
+      }
+    ],
+    "options": [
+      {
+        "id": "aceptar_el_apodo",
+        "label": "Aceptar el apodo",
+        "descripcion": "El pick lleva tu nombre. Es todo un honor.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El pick pasa a la historia con tu nombre. Los fans lo usan en la soloQ y te lo agradecen.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_pick_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_pick_que_inventaste",
+                "values": [
+                  "El pick que inventaste y que todos terminaron jugando",
+                  "La jugada con tu nombre que se volvió meta"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El apodo se vuelve chiste y tu pick se nerfea a la semana. Te queda el nombre, sin el efecto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_pick_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_pick_que_inventaste",
+                "values": [
+                  "El pick que inventaste y que Riot nerfeó a los diez días",
+                  "La creación con tu nombre que duró poco"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_innovando",
+        "label": "Seguir innovando",
+        "descripcion": "Mañana sacás otro, y el mundo sigue.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sacás otro pick que nadie esperaba y los rivales no te alcanzan. Te convertís en el creativo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_pick_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_pick_que_inventaste",
+                "values": [
+                  "El pick que inventaste y el siguiente que ya estaba listo",
+                  "El ritmo de creación que nadie igualó"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Intentás otro y no sale. El mundo se acostumbró a lo anterior y te reclama más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_pick_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_pick_que_inventaste",
+                "values": [
+                  "El pick que inventaste y el que ya no pudiste repetir",
+                  "La creatividad que se secó por presión"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_el_main_resucita",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "parche",
+    "title": "Tu main muerto resucita",
+    "description": "Un parche que nadie esperaba resucita al campeón que todos daban por muerto. Es tu main de toda la vida.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "volver_a_jugarlo_de_inmediato",
+        "label": "Volver a jugarlo ya",
+        "descripcion": "Un reencuentro de a ratos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo jugás como antes y es mejor que nunca. El viejo main te devuelve la sonrisa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_main"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo jugás sin práctica y te oxidás frente a todos. Tardás una semana en recuperar el timing.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_main"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "practicarlo_antes_en_secreto",
+        "label": "Practicarlo antes en secreto",
+        "descripcion": "Una semana de scrim a solas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo practicás hasta recuperar cada detalle. En el primer partido oficial parece que nunca se fue.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_main"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo practicás tanto que olvidás practicar otros. Quedás con un pool de un solo pick.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_main"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_el_ban_obligatorio",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "parche",
+    "title": "Te banean todos los días",
+    "description": "Con tu main de vuelta, los rivales te lo banean siempre. Es el primer ban de toda la liga y lo ves en cada draft.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.contenido",
+        "op": "eq",
+        "value": "parche_main"
+      }
+    ],
+    "options": [
+      {
+        "id": "mostrar_un_pool_ancho",
+        "label": "Mostrar un pool ancho",
+        "descripcion": "Si te lo banean, jugás otro igual de bien.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás cinco picks distintos con el mismo nivel y la liga entera lo comenta. Te vuelven el temido.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_main_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_ban_obligatorio",
+                "values": [
+                  "La racha en la que te baneaban el main y ganabas con todo lo demás",
+                  "El pool ancho que hizo famoso a un jugador"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Sin tu main te cuesta, aunque sea de a poco. Tu pool se estira y se nota el cambio.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_main_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_ban_obligatorio",
+                "values": [
+                  "La racha en la que te baneaban el main y se te notaba",
+                  "El pool que se estiró hasta donde pudo"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_que_baneen_otro",
+        "label": "Pedir que baneen otro",
+        "descripcion": "Tu equipo puede forzar un ban en el draft.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu equipo juega con los bans y logra que tu main pase en tres de cinco partidas. Rendís al máximo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_main_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_ban_obligatorio",
+                "values": [
+                  "La racha en la que tu equipo se las ingenió para que jugaras tu main",
+                  "El draft que se armó alrededor de vos"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu equipo prueba bans raros y pierde fases de draft. El coach te mira con cara de reproche.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_main_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_ban_obligatorio",
+                "values": [
+                  "La racha en la que el draft se complicó por tu main",
+                  "Los bans que no salieron como se esperaba"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_el_parche_de_worlds",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "parche",
+    "title": "El parche del Mundial",
+    "description": "Riot saca el parche del Mundial con un cambio enorme en tu rol. Todos los equipos del mundo empiezan de cero, con el mismo mapa.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ser_el_primero_en_dominarlo",
+        "label": "Ser el primero en dominarlo",
+        "descripcion": "Una semana de scrim a fondo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo dominás antes que nadie. Cuando arranca el torneo, vos sos el único que lo entiende.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_worlds"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo dominás, pero tu equipo no te sigue. Te sentís el único que habla otro idioma.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_worlds"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_al_coach",
+        "label": "Seguir al coach",
+        "descripcion": "Que decida el staff, vos ejecutás.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El coach arma un plan sólido y lo seguís al pie de la letra. El equipo parece una máquina.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_worlds"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El plan del coach es del parche anterior y te lo hacen notar los rivales. Cambiás a mitad de serie.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_worlds"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "parche_la_final_del_parche",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "serie",
+    "title": "La final del parche",
+    "description": "Llegás a la final del Mundial con el parche que casi nadie entiende. Sos el que mejor lo juega y se nota en cada draft.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.contenido",
+        "op": "eq",
+        "value": "parche_worlds"
+      }
+    ],
+    "options": [
+      {
+        "id": "jugar_con_la_cabeza_fria",
+        "label": "Jugar con la cabeza fría",
+        "descripcion": "Un mapa a la vez, nada más.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás la serie con una calma que asusta. Ganás y alzás una copa que ni soñabas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_worlds_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_final_del_parche",
+                "values": [
+                  "La final del Mundial que ganaste dominando el parche como nadie",
+                  "La copa que se ganó leyendo el parche mejor que el resto"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Jugás con calma, pero el rival juega mejor. Perdés la final con la sensación de haberlo dado todo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_worlds_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_final_del_parche",
+                "values": [
+                  "La final del Mundial que perdiste jugando el parche como nadie",
+                  "La final perdida con el mejor juego de tu vida"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "apostar_por_lo_arriesgado",
+        "label": "Apostar por lo arriesgado",
+        "descripcion": "Un pick que nadie vio en todo el torneo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sacás el pick sorpresa y los rivales no tienen respuesta. Es la final más recordada del año.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_worlds_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_final_del_parche",
+                "values": [
+                  "La final del Mundial en la que sacaste un pick que nadie vio venir",
+                  "La apuesta que cambió una final"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El pick sorpresa falla y la final se pierde con una jugada. Te la repiten en cada meme del año.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "parche_worlds_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_final_del_parche",
+                "values": [
+                  "La final del Mundial que perdiste con un pick sorpresa",
+                  "La apuesta de la final que no salió"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
