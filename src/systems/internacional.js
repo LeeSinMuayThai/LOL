@@ -421,8 +421,8 @@ function construirParadaPlayIn(state, rng, logs) {
     const p = probabilidadDeCruceSwiss(state, fuerzaPropia, rival.fuerza);
     return { rival: rival.nombre, vara: entrada ? varaDeRonda(p, null, entrada.id) : null, p };
   });
-  if (!entrada) {
-    // Un rol sin mecánica (hoy no pasa): la tanda se tira, partido a partido, con la p de cada uno.
+  if (!entrada || partidos.length < BALANCE.mundial.playIn.victoriasParaPasar) {
+    // Un rol sin mecánica (hoy no pasa) o sin rivales de sobra para la tanda: se tira, partido a partido, con la p de cada uno.
     const ganados = [];
     for (const partido of partidos) {
       if (cortaElPlayIn(ganados.filter(Boolean).length, ganados.filter((g) => !g).length)) break;
@@ -492,6 +492,11 @@ function resolverPlayIn(state, decision, respuesta, rng) {
     const juicio = juzgarMinijuego(resultados[i], tanda.partidos[i].vara - bajaPoder, g1.margenCasi);
     ganados.push(juicio.paso);
     juicios.push(juicio);
+  }
+  // Una respuesta corta no elimina al que va ganando: los partidos que faltan se tiran (la rama sin mecánica).
+  for (let i = ganados.length; i < tanda.partidos.length; i += 1) {
+    if (cortaElPlayIn(ganados.filter(Boolean).length, ganados.filter((g) => !g).length)) break;
+    ganados.push(tirarPartido(tanda.partidos[i].p, rng).gano);
   }
   const jugado = torneoTrasRonda(torneoG1(state, claveDeTorneo(state, 'mundial')), { poderUsado });
   st = { ...st, career: { ...st.career, torneoG1: jugado } };

@@ -265,12 +265,20 @@ export function presentar(lienzo, { linea, demo, reducido = false }) {
       demo(ctx, reducido ? 0.72 : demoS ? Math.min(1, t / demoS) : 1, enDemo);
       ctx.fillStyle = tinte(pal.fondo, enDemo ? 0.25 : 0.55);
       ctx.fillRect(0, 0, lienzo.ancho, lienzo.alto);
+      // la instrucción en hasta 2 renglones (a 390 de ancho una sola línea se corta), y la banda crece con ellos
+      ctx.font = `700 ${lienzo.px(14)}px ${pal.fuente}`;
+      const renglones = [];
+      let actual = '';
+      for (const palabra of linea.split(' ')) {
+        const prueba = actual ? `${actual} ${palabra}` : palabra;
+        if (actual && ctx.measureText(prueba).width > lienzo.ancho - lienzo.px(16)) { renglones.push(actual); actual = palabra; } else { actual = prueba; }
+      }
+      renglones.push(actual);
       ctx.fillStyle = tinte(pal.fondo, 0.82);
-      ctx.fillRect(0, 0, lienzo.ancho, lienzo.px(40));
+      ctx.fillRect(0, 0, lienzo.ancho, lienzo.px(14 + 17 * renglones.length));
       ctx.textAlign = 'center';
-      ctx.font = `700 ${lienzo.px(15)}px ${pal.fuente}`;
       ctx.fillStyle = tinte(pal.tinta);
-      ctx.fillText(linea, lienzo.ancho / 2, lienzo.px(26));
+      renglones.forEach((r, n) => ctx.fillText(r, lienzo.ancho / 2, lienzo.px(19 + 17 * n)));
       if (!enDemo) {
         const k = Math.floor((t - demoS) / CUENTA_S);
         if (k >= 3) {

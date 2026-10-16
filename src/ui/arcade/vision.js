@@ -54,8 +54,8 @@ function armarCaza(i, p, rng, corta = 0) {
   const s = permitidos[Math.floor(rng() * permitidos.length)];
   const quedaCorto = f.corta && rng() < corta;
   const pasos = quedaCorto ? 1 : Math.min(A.pasosMax, dir > 0 ? ULTIMO - s : s);
-  // `variacion`: cada cacería sale más rápida o más lenta que la media de su fase (el mismo jungla no cruza siempre igual)
-  const tc = f.tcS * p.ventana * (f.variacion ? f.variacion[0] + (f.variacion[1] - f.variacion[0]) * rng() : 1);
+  const tc = f.tcS * p.ventana;
+  const origen = s; // (el plural con paréntesis del check de textos no distingue `campDe(s)` de "título(s)")
   const ruta = Array.from({ length: pasos + 1 }, (_, k) => s + k * dir);
   const pistas = f.pistas.map((pi) => {
     const verdad = pi.ok;
@@ -65,7 +65,7 @@ function armarCaza(i, p, rng, corta = 0) {
     if (pi.tipo === 'falta') return { ...base, camp: s - d };
     return { ...base, lado: d < 0 ? 'arriba' : 'abajo' };
   });
-  return { i, fase: faseDe(i), dir, s, pasos, tc, ruta, pistas, wards: [], quedan: A.wards, t: 0, fin: false, cazado: false, tFin: pasos * tc + A.colaS, pos: { ...campDe(s) } };
+  return { i, fase: faseDe(i), dir, s, pasos, tc, ruta, pistas, wards: [], quedan: A.wards, t: 0, fin: false, cazado: false, tFin: pasos * tc + A.colaS, pos: { ...campDe(origen) } };
 }
 
 export function crear(params, rng) {

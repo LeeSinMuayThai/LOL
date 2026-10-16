@@ -2,7 +2,7 @@
 // `avanzar` y `simular`, en Node). Las constantes, en `BALANCE.g1.arcade.la_prueba`.
 //
 // El practice tool con el coach del club mirando: dummies que se mueven en patrones y un skillshot que viaja hasta donde
-// apuntaste. Hay que pegar la mayor cantidad en ~20 s. Regla de CONTEO (la de hoy): resultado = golpes / `blancos`, y la
+// apuntaste. Hay que pegar la mayor cantidad en ~22 s. Regla de CONTEO (la de hoy): resultado = golpes / `blancos`, y la
 // prueba corta apenas llegás a `blancos`. Fases: dummies quietos; en movimiento; con amagues (dan la vuelta sin aviso).
 // Acá se mide velocidad y precisión (adelantar el tiro a un blanco que se mueve), no esperar el hueco entre minions.
 

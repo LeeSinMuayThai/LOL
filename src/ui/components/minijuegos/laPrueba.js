@@ -1,4 +1,5 @@
-import { unaSolaVez, dificultadDe } from './comun.js';
+import { unaSolaVez, dificultadDe, varaEfectivaDe } from './comun.js';
+import { necesariosDe, lineaDeCuenta } from '../../arcade/conteo.js';
 import { mulberry32 } from '../../../core/rng.js';
 import { parametros, crear, avanzar, resultadoDe, detalleDe, faseDeT, BLANCOS as TOTAL } from '../../arcade/prueba.js';
 import { crearMarco, crearEntradas, crearJugo, crearBucle, presentar, retratoDe, motionReducido, tinte, mezcla } from '../../arcade/kit.js';
@@ -8,7 +9,7 @@ import { golpe as sonidoGolpe, tick } from '../../sonido.js';
 
 // La Prueba (rehecha en M3, PLANUI §0.10 "El arcade"; la prueba de ingreso, fase 4). Antes: cinco botones que aparecían y
 // había que clickear. Ahora: el practice tool con el coach del club mirando. Dummies que se mueven en patrones y un skillshot
-// que viaja hasta donde apuntaste (y ahí se apaga): hay que pegar la mayor cantidad en ~20 s. Fases: quietos; en movimiento (hay
+// que viaja hasta donde apuntaste (y ahí se apaga): hay que pegar la mayor cantidad en ~22 s. Fases: quietos; en movimiento (hay
 // que adelantar el tiro); con amagues (dan la vuelta cuando temblaron). Velocidad y precisión, no esperar el hueco entre minions.
 // La lógica vive en `ui/arcade/prueba.js`. Contrato de siempre: `montar(container, state, onDone, rngUi, datos)` y
 // `onDone(resultado 0..1)` una sola vez. Regla de CONTEO (la de siempre): resultado = golpes / BLANCOS.
@@ -27,6 +28,8 @@ const TIRO_VISIBLE = 0.12;
 export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);
   const reducido = motionReducido();
+  const vara = varaEfectivaDe(datos) ?? 0.6;
+  const necesarios = necesariosDe(vara, TOTAL);
   const params = parametros({ stat: state.player.stats.mecanica, dificultad: dificultadDe(state, datos) });
   const azarJuego = mulberry32(Math.floor(rngUi() * SEMILLA));
   const azarFx = mulberry32(Math.floor(rngUi() * SEMILLA));
@@ -136,7 +139,7 @@ export function montar(container, state, onDone, rngUi, datos = null) {
     ctx.fillStyle = tinte(pal.tinta);
     ctx.fillText(`${NOMBRE_FASE[v.fase]} · ${resta.toFixed(1).replace('.', ',')} s`, 5, 10);
     ctx.fillStyle = tinte(pal.tenue);
-    ctx.fillText(`Golpes ${v.golpes} de ${TOTAL} · te faltan ${Math.max(0, TOTAL - v.golpes)}`, 5, 19);
+    ctx.fillText(`${lineaDeCuenta(v.golpes, necesarios)} golpes · salen ${TOTAL}`, 5, 19);
     ctx.fillStyle = tinte(pal.hundido, 0.9);
     ctx.fillRect(5, 23, MUNDO[0] - 10, 1.6);
     ctx.fillStyle = tinte(resta < 4 ? pal.rival : pal.oro);
@@ -218,7 +221,7 @@ export function montar(container, state, onDone, rngUi, datos = null) {
   }
 
   caja.dataset.arcade = 'la_prueba';
-  presentar(lienzo, { linea: `Pegale a ${TOTAL} dummies en ${A.tiempoS} s. Si se mueven, adelantá el tiro.`, demo, reducido }).then(() => {
+  presentar(lienzo, { linea: `Pegale a ${necesarios} de ${TOTAL} dummies en ${A.tiempoS} s. Si se mueven, adelantá el tiro.`, demo, reducido }).then(() => {
     t = 0;
     entradas.sacar();
     bucle = crearBucle({ alPaso: paso, alDibujar: dibujar, jugo });
