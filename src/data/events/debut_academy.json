@@ -1,6 +1,7 @@
 [
   {
     "id": "academy_offer",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "oferta": true,
     "category": "debut_academy",
@@ -136,6 +137,7 @@
   },
   {
     "id": "coach_demands_role",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "debut_academy",
     "categoria": "oportunidad",

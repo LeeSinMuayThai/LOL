@@ -1,6 +1,7 @@
 [
   {
     "id": "portada_del_ano",
+    "rarezaEvento": "epica",
     "category": "drama_prensa",
     "categoria": "prensa",
     "title": "Te ponen en la lista",
@@ -61,6 +62,7 @@
   },
   {
     "id": "el_pibe_que_te_quiere_el_puesto",
+    "rarezaEvento": "epica",
     "category": "identidad",
     "categoria": "golpe_duro",
     "title": "El que viene por tu silla",
@@ -122,6 +124,7 @@
   },
   {
     "id": "el_sponsor_bomba",
+    "rarezaEvento": "epica",
     "category": "negocios",
     "categoria": "mercado",
     "title": "La marca que solo llama a los de la lista",
@@ -183,6 +186,7 @@
   },
   {
     "id": "defender_el_trono",
+    "rarezaEvento": "epica",
     "category": "identidad",
     "categoria": "golpe_duro",
     "title": "Todos vienen por el #1",
@@ -265,6 +269,7 @@
   },
   {
     "id": "la_prensa_te_destrona",
+    "rarezaEvento": "epica",
     "category": "drama_prensa",
     "categoria": "prensa",
     "title": "La misma prensa que te subió, te baja",
@@ -326,6 +331,7 @@
   },
   {
     "id": "el_rival_que_te_pasa",
+    "rarezaEvento": "epica",
     "category": "identidad",
     "categoria": "golpe_duro",
     "title": "{rival} te pasó en el ranking",

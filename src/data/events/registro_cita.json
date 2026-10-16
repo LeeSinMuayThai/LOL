@@ -1,6 +1,7 @@
 [
   {
     "id": "otro_titulo_mas",
+    "rarezaEvento": "epica",
     "category": "identidad",
     "categoria": "prensa",
     "title": "Otro título más",
@@ -184,6 +185,7 @@
   },
   {
     "id": "tercer_club_ya",
+    "rarezaEvento": "rara",
     "category": "identidad",
     "categoria": "prensa",
     "title": "Vas por tu tercera organización",
@@ -245,6 +247,7 @@
   },
   {
     "id": "el_primer_titulo_que_contas",
+    "rarezaEvento": "rara",
     "category": "identidad",
     "categoria": "prensa",
     "title": "Te preguntan por aquel primer título",
@@ -371,6 +374,7 @@
   },
   {
     "id": "el_que_paso_por_todos_los_tiers",
+    "rarezaEvento": "rara",
     "category": "identidad",
     "categoria": "prensa",
     "title": "Jugaste en cada escalón de la pirámide",

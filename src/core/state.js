@@ -73,7 +73,7 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
     // lo fija al arrancar cada split; `core/pipeline.js` descuenta una por
     // pausa. Objeto completo desde el arranque, nunca null (trampa T4).
     // G2a: `eventos`, la parada de evento del split (`BALANCE.eventos.paradasPorSplit`).
-    presupuesto: { total: BALANCE.partida.maxDecisionesPorSplit, gastadas: 0, eventos: 0 },
+    presupuesto: { gastadas: 0, eventos: 0 },
     // Cache de "dónde estás parado". La fuente de verdad es calcularContexto();
     // esto existe para la UI, los logs y para no recalcularlo en cada filtro.
     contexto: null,
@@ -531,7 +531,13 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
       // K6b-C2 (la cola de verdad): por tipo de parada de la cola (`cierre`, el cierre de año; `momento`, el momento de
       // una fecha marcada), la foto (`firmaDeLaCola`, `core/cola.js`) de la última vez que frenó en la cola. Mientras la
       // foto no cambie y no haya un hito ni palanca, esa parada la resuelve tu perfil y se narra. `null` = no frenó todavía.
-      colaFirmas: { cierre: null, momento: null },
+      // H1a: `evento` es el evento del split (en la cola, con su propio tope por año: `BALANCE.cola.eventosPorAnio`).
+      colaFirmas: { cierre: null, momento: null, evento: null },
+      // H1a (PLANUI §0.10, H1.4): sorteos de evento del split seguidos sin una rara o más. Con `BALANCE.eventos.pisoRara` el
+      // próximo sorteo es rara+; vuelve a 0 con una rara+ (`systems/events.js`).
+      sorteosSinRara: 0,
+      // H2a: la mano del cierre de año (las cartas vistas, las manos seguidas sin rara, los cambios usados). La inicializa H1a.
+      cartas: { vistas: {}, manosSinRara: 0, cambiosUsados: 0 },
       // G2a: las paradas de la cola del año calendario (`core/cola.js`, tope `BALANCE.cola.paradasPorAnio`).
       colaAnio: null,
       // Fase 9: "llamar al representante" (PLAN.md §9.6) rebaraja la mano de

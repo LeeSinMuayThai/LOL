@@ -9,7 +9,9 @@ import { registrarMomento } from '../core/registro.js';
 import { conPermanencia, conTechoDeLesion } from '../core/curvas.js';
 import { crearLog, adjuntar } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
-import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
+import { tipoDeSplit } from '../core/presupuesto.js';
+import { esCierreDeTemporada } from '../core/serie.js';
+import { frenaEnLaCola, conFirmaDeLaCola } from '../core/cola.js';
 import { previaDeOpcion, riesgoDeOpcion, gateDeOpcion, textoDeRiesgo, payoffNormalizado } from '../core/previa.js';
 import { rarezaDeOpcionEvento } from '../core/rareza.js';
 import { opcionDelPerfil, afinidadDeOpcion, derivarPerfil, nombreDePerfil } from '../core/perfil.js';
@@ -37,6 +39,40 @@ export const SPLIT_SIN_EVENTO_MSG = 'Un split tranquilo, sin eventos destacados.
 // mientras ese número sea mayor al split actual.
 export function cooldownActivo(state, eventId) {
   return (state.flags.cooldownHasta?.[eventId] ?? -1) > state.player.splitCount;
+}
+
+// H1a (PLANUI §0.10, H1.2): la rareza del evento (`rarezaEvento` en el dato; si falta, común). No es la `rareza` de una opción.
+export function rarezaDeEvento(evento) {
+  return evento.rarezaEvento ?? 'comun';
+}
+
+export function esRaraOMas(evento) {
+  return rarezaDeEvento(evento) !== 'comun';
+}
+
+// H1a (H1.3): cuánto dura el cooldown que estampa `registrarEventoVisto`: el del evento (con el piso de siempre) y, si es una
+// común del split, al menos un año (`edad.splitsPorEdad`). La carta del cierre conserva el suyo.
+function cooldownPropio(evento) {
+  return Math.max(BALANCE.eventos.cooldownMinimoSplits, evento.cooldown ?? 0);
+}
+
+function duracionDeCooldown(evento) {
+  const propio = cooldownPropio(evento);
+  return evento.cierreDeEdad || esRaraOMas(evento) ? propio : Math.max(propio, BALANCE.edad.splitsPorEdad);
+}
+
+// H1a: con el pozo vacío se relaja "común una vez por año" (antes de devolver null): solo cuenta el cooldown propio del evento.
+function cooldownRelajadoActivo(state, evento) {
+  const hasta = state.flags.cooldownHasta?.[evento.id];
+  if (hasta === undefined) {
+    return false;
+  }
+  return hasta - (duracionDeCooldown(evento) - cooldownPropio(evento)) > state.player.splitCount;
+}
+
+// H1a: rara para arriba sale una vez por carrera (`flags.eventosVistos`).
+function yaSalioUnaRara(state, evento) {
+  return esRaraOMas(evento) && (state.flags.eventosVistos?.[evento.id] ?? 0) > 0;
 }
 
 // El gating grueso ("donde estas parado") va en `contexto`; las `conditions`
@@ -80,11 +116,12 @@ export function motivoDePromesaRota(state, opcion) {
 // cuando `conPrioridadDeBisagra` corta el pool a solo bisagras — sin
 // reimplementar el filtro gordo acá y arriesgar que las dos copias diverjan
 // (la misma lección que `disponibleEn`/`opcionesVivas` ya dejan escrita).
-export function candidatos(state) {
+export function candidatos(state, { relajarComunes = false } = {}) {
   const contexto = calcularContexto(state);
   return TODOS_LOS_EVENTOS.filter(
     (event) => !event.cierreDeEdad
-      && !cooldownActivo(state, event.id)
+      && !yaSalioUnaRara(state, event)
+      && !(relajarComunes ? cooldownRelajadoActivo(state, event) : cooldownActivo(state, event.id))
       && disponibleEn(state, event, contexto)
       && opcionesVivas(state, event, contexto).length >= 2
       && textoSinHuecos(state, event)
@@ -280,8 +317,7 @@ function registrarEventoVisto(state, eventoElegido) {
   }
 
   const cooldownHasta = { ...(state.flags.cooldownHasta ?? {}) };
-  const duracion = Math.max(BALANCE.eventos.cooldownMinimoSplits, eventoElegido.cooldown ?? 0);
-  cooldownHasta[eventoElegido.id] = state.player.splitCount + duracion;
+  cooldownHasta[eventoElegido.id] = state.player.splitCount + duracionDeCooldown(eventoElegido);
 
   // Fase 7: cuenta cuántas veces salió cada evento, para que la próxima
   // selección le corra el peso en contra (ver `pesoConMemoria`).
@@ -303,10 +339,11 @@ function registrarEventoVisto(state, eventoElegido) {
 // de novedad. No reemplaza al cooldown (que sigue sacando el evento del todo
 // un tiempo): esto además hace que, aun disponible, un evento visto compita
 // peor contra uno que nunca salió.
-export function pesoConMemoria(state, evento) {
+// H1a: `fatigaPorVista` la elige quien sortea (el sorteo del split usa `eventos.fatigaSplit`).
+export function pesoConMemoria(state, evento, fatigaPorVista = BALANCE.eventos.fatigaPorVista) {
   const e = BALANCE.eventos;
   const vistas = state.flags.eventosVistos?.[evento.id] ?? 0;
-  const fatiga = 1 / (1 + vistas * e.fatigaPorVista);
+  const fatiga = 1 / (1 + vistas * fatigaPorVista);
   const bonus = vistas === 0 ? e.bonusNovedad : 1;
   // J4 (a): la bisagra ya no filtra el pool (antes, con una bisagra candidata el resto ni entraba al sorteo):
   // multiplica su peso. Sigue ganando casi siempre, pero con tirada. (b): la categoría que salió hace poco pesa menos.
@@ -323,50 +360,95 @@ export function elegirEvento(state, rng, { excluirId, filtro = () => true } = {}
   return weightedPick(disponibles, (event) => pesoConMemoria(state, event), rng);
 }
 
-// G2a (PLANUI §0.9): el escalón de un candidato para la única parada de evento del split. Con varios candidatos gana el
-// escalón más alto, sin tirada: la continuación de una cadena (un evento que lee una bandera que dejó otro, `flags.*` en
-// sus `conditions`) > el golpe duro > la bifurcación > el resto. Adentro del escalón, el sorteo de siempre.
-// G-int: continuación es pedir que la bandera YA tenga un valor (`eq` con algo que no es null ni false). Una guarda de
-// "todavía no" (`eq null`, `neq "cubrio"`) es la de un evento que ABRE un camino, no la de uno que lo sigue: antes contaba
-// como cadena y esas aperturas le ganaban siempre a las demás bifurcaciones (el camino "conflicto" no se abría nunca: 0
-// de 200 carreras, 52 en la base).
+// G-int: continuación es pedir que la bandera YA tenga un valor (`eq` con algo que no es null ni false). Una guarda de "todavía
+// no" (`eq null`, `neq "cubrio"`) es la de un evento que ABRE un camino, no la de uno que lo sigue.
 const esContinuacion = (condicion) => String(condicion.field ?? '').startsWith('flags.')
   && condicion.op === 'eq' && condicion.value !== null && condicion.value !== false;
-export function escalonDeEvento(evento) {
-  if (evento.conditions.some(esContinuacion)) {
-    return 3;
+
+// H1a (PLANUI §0.10, H1.1-H1.5): el pozo del sorteo del split. Si queda vacío, se relaja "común una vez por año" antes de rendirse.
+export function pozoDelSplit(state, { excluirId } = {}) {
+  const pozo = candidatos(state).filter((event) => event.id !== excluirId);
+  if (pozo.length > 0) {
+    return pozo;
   }
-  if (evento.categoria === 'golpe_duro') {
-    return 2;
+  return candidatos(state, { relajarComunes: true }).filter((event) => event.id !== excluirId);
+}
+
+// H1a: el peso del sorteo. Cada rareza se lleva `probRareza[r]` del total, repartido entre sus elegibles según su `weight`, y
+// adentro corre la memoria de siempre con la fatiga del split. Una rareza sin elegibles no suma: weightedPick renormaliza.
+function pesoDelSorteo(state, elegibles) {
+  const sumaPorRareza = {};
+  for (const evento of elegibles) {
+    const rareza = rarezaDeEvento(evento);
+    sumaPorRareza[rareza] = (sumaPorRareza[rareza] ?? 0) + evento.weight;
   }
-  return evento.bifurcacion ? 1 : 0;
+  return (evento) => {
+    const rareza = rarezaDeEvento(evento);
+    const suma = sumaPorRareza[rareza];
+    return suma > 0
+      ? (BALANCE.eventos.probRareza[rareza] / suma) * pesoConMemoria(state, evento, BALANCE.eventos.fatigaSplit)
+      : 0;
+  };
+}
+
+// H1a: un solo sorteo con rareza (una sola tirada, T1). Se fue el escalón sin tirada de G2a (`escalonDeEvento`), que dejaba una
+// mediana de 2 candidatos. Quedan dos prioridades duras: el golpe `obligatorio` (cuenta un cambio de estado que ya pasó) y la
+// continuación de una cadena (lee una bandera que dejó otro). Con `pisoRara` sorteos seguidos sin rara+, el sorteo es rara+ si hay.
+export function elegiblesDelSplit(state, pozo) {
+  const obligatorios = pozo.filter((event) => event.obligatorio);
+  if (obligatorios.length > 0) {
+    return obligatorios;
+  }
+  const continuaciones = pozo.filter((event) => event.conditions.some(esContinuacion));
+  if (continuaciones.length > 0) {
+    return continuaciones;
+  }
+  if ((state.flags.sorteosSinRara ?? 0) >= BALANCE.eventos.pisoRara) {
+    const raras = pozo.filter(esRaraOMas);
+    if (raras.length > 0) {
+      return raras;
+    }
+  }
+  return pozo;
 }
 
 export function elegirEventoDelSplit(state, rng, { excluirId } = {}) {
-  const disponibles = candidatos(state).filter((event) => event.id !== excluirId);
-  if (disponibles.length === 0) {
+  const pozo = pozoDelSplit(state, { excluirId });
+  if (pozo.length === 0) {
     return null;
   }
-  const escalon = Math.max(...disponibles.map(escalonDeEvento));
-  return weightedPick(disponibles.filter((event) => escalonDeEvento(event) === escalon), (event) => pesoConMemoria(state, event), rng);
+  const elegibles = elegiblesDelSplit(state, pozo);
+  return weightedPick(elegibles, pesoDelSorteo(state, elegibles), rng);
 }
 
-// G2a: ¿le queda al split su parada de evento? El tope (`BALANCE.eventos.paradasPorSplit`) vale en el amateur y en el pro;
-// en el pro, además, el cupo de interrupciones del split (fase 9Rf). Puro, sin `rng`.
+// H1a: el piso (`flags.sorteosSinRara`) suma uno por cada sorteo sin rara+ y vuelve a 0 con una.
+function conSorteo(state, evento) {
+  const sorteosSinRara = esRaraOMas(evento) ? 0 : (state.flags.sorteosSinRara ?? 0) + 1;
+  return { ...state, flags: { ...state.flags, sorteosSinRara } };
+}
+
+// G2a, H1a: ¿le queda al split su parada de evento? El tope (`BALANCE.eventos.paradasPorSplit`) vale en el amateur y en el pro. En
+// el pro, además (H1a, PLANUI §0.10 H1.5, que reemplaza el cupo de interrupciones de 9Rf): el split del cierre de año no tiene
+// evento (ya tiene la carta y las finales), y en la cola el evento frena con su propio tope por año (`core/cola.js`). Puro.
 export function quedaParadaDeEvento(state) {
   const usadas = state.presupuesto?.eventos ?? 0;
   if (usadas >= BALANCE.eventos.paradasPorSplit) {
     return false;
   }
-  return state.phase !== 'profesional' || hayPresupuesto(state);
+  if (state.phase !== 'profesional') {
+    return true;
+  }
+  return !esCierreDeTemporada(state.player.splitCount) && frenaEnLaCola(state, 'evento', null).frena;
 }
 
-// G2a: el evento que frena gasta la parada del split (`presupuesto.eventos`, que `systems/presupuesto.js` vuelve a cero).
+// G2a: el evento que frena gasta la parada del split (`presupuesto.eventos`, que `systems/presupuesto.js` vuelve a cero). H1a: y,
+// en la cola, la del año (`conFirmaDeLaCola`, que fuera de la cola no toca nada).
 export function conParadaDeEvento(state) {
-  const p = state.presupuesto ?? { total: BALANCE.partida.maxDecisionesPorSplit, gastadas: 0, eventos: 0 };
-  return { ...state, presupuesto: { ...p, eventos: (p.eventos ?? 0) + 1 } };
+  const p = state.presupuesto ?? { gastadas: 0, eventos: 0 };
+  return conFirmaDeLaCola({ ...state, presupuesto: { ...p, eventos: (p.eventos ?? 0) + 1 } }, 'evento');
 }
 
+// H1a: `elegirEventoCierre` se queda sin uso cuando H2a arme la mano del cierre (se borra ahí, T5).
 export function elegirEventoCierre(state, rng) {
   const contexto = calcularContexto(state);
   const disponibles = TODOS_LOS_EVENTOS.filter(
@@ -612,8 +694,8 @@ export function elegirOpcionAutomatica(state, decision, rng) {
 }
 
 export function aplicar(state, rng) {
-  // G2a: el split que ya gastó su parada de evento (o, en el pro, su cupo de interrupciones: una fecha marcada, el
-  // mercado, un cierre de edad) no sortea evento: lo que no entra no pasa. Early return SIN tocar rng (regla de proceso
+  // G2a, H1a: el split que ya gastó su parada de evento (o, en el pro, el split del cierre de año o la cola sin lugar) no sortea
+  // evento: lo que no entra no pasa. Early return SIN tocar rng (regla de proceso
   // 10): el split ya tiene sus líneas de los otros sistemas, así que no queda mudo.
   if (!quedaParadaDeEvento(state)) {
     return { state, logs: [] };
@@ -628,7 +710,7 @@ export function aplicar(state, rng) {
     };
   }
 
-  return presentarOResolver(state, evento, 1, rng);
+  return presentarOResolver(conSorteo(state, evento), evento, 1, rng);
 }
 
 // G2a (PLANUI §0.9, "el perfil no decide nada"): todo evento con dos opciones vivas o más frena —tenga o no `bifurcacion`
@@ -724,6 +806,9 @@ function encadenar(nextState, logs, evento, slot, rng) {
   // pasó, este segundo lo sigue gobernando `probSegundaDecisionPorTipo` como
   // en la fase 2 — el presupuesto no lo pisa.
   // G2a: el segundo evento se pliega al tope de paradas del split: si ya no entra, ni se tira (cero `rng`).
+  // H1a (D141): con `paradasPorSplit` en 1 y todo candidato con dos opciones vivas o más (`candidatos`), el primer evento siempre
+  // gasta la parada: este segundo evento (y `edad.probSegundaDecisionPorTipo`) solo se alcanza llamando a `resolver` con un split
+  // que no gastó su parada (el check del chaining). Anotado en D141; no se borra en H1a.
   if (slot !== 1 || !quedaParadaDeEvento(nextState)) {
     return { state: nextState, logs };
   }
@@ -731,7 +816,7 @@ function encadenar(nextState, logs, evento, slot, rng) {
   if (chance(probabilidad, rng)) {
     const segundoEvento = elegirEventoDelSplit(nextState, rng, { excluirId: evento.id });
     if (segundoEvento) {
-      const segundo = presentarOResolver(nextState, segundoEvento, 2, rng);
+      const segundo = presentarOResolver(conSorteo(nextState, segundoEvento), segundoEvento, 2, rng);
       return { ...segundo, logs: [...logs, ...segundo.logs] };
     }
   }

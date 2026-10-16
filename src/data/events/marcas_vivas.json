@@ -243,6 +243,7 @@
   },
   {
     "id": "el_dia_que_tuviste_signature",
+    "rarezaEvento": "rara",
     "category": "identidad",
     "categoria": "prensa",
     "title": "Ya sos \"el {signature}\" para todos",

@@ -269,6 +269,7 @@
   },
   {
     "id": "el_tweet_borrado",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "escandalo": true,
     "category": "drama_prensa",

@@ -63,6 +63,7 @@
   },
   {
     "id": "el_coach_que_tambien_es_el_dueno",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "tier3",
     "categoria": "vestuario",
@@ -212,6 +213,7 @@
   },
   {
     "id": "el_lineup_que_se_tambalea",
+    "rarezaEvento": "rara",
     "category": "tier3",
     "categoria": "golpe_duro",
     "title": "Rumores de que el roster no llega al año que viene",

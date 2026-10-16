@@ -13,7 +13,9 @@ import { BALANCE } from '../data/balance.js';
 import { calcularContexto } from './contexto.js';
 
 // Los tipos de parada que mira la regla (las claves de `flags.colaFirmas` y de `BALANCE.cola.palancaMedidaPct`).
-export const TIPOS_DE_LA_COLA = ['cierre', 'momento'];
+// H1a (PLANUI §0.10, H1.5): `evento` es el evento del split. Tiene su propio tope por año (`BALANCE.cola.eventosPorAnio`,
+// contado en `flags.colaAnio.eventos`) y no gasta el de las otras paradas (`paradasPorAnio`).
+export const TIPOS_DE_LA_COLA = ['cierre', 'momento', 'evento'];
 
 function enDeclive(state) {
   return calcularContexto(state).etapa === 'declive';
@@ -79,6 +81,18 @@ export function paradasDeLaColaEnElAnio(state) {
   return registro && registro.anio === state.calendario.anio ? registro.paradas : 0;
 }
 
+// H1a: los eventos del split que frenaron en la cola en el año calendario de `state` (su propio tope, aparte de las paradas).
+export function eventosDeLaColaEnElAnio(state) {
+  const registro = state.flags.colaAnio;
+  return registro && registro.anio === state.calendario.anio ? (registro.eventos ?? 0) : 0;
+}
+
+function topeDelAnio(state, tipo) {
+  return tipo === 'evento'
+    ? eventosDeLaColaEnElAnio(state) >= BALANCE.cola.eventosPorAnio
+    : paradasDeLaColaEnElAnio(state) >= BALANCE.cola.paradasPorAnio;
+}
+
 // ¿Frena esta parada de la cola? `hito` es el de `hitoDelCierre`/`hitoDelMomento` (o `null`). Devuelve
 // `{ frena, motivo }`: `motivo` es por qué frena ('fuera de la cola', 'hito', 'cambio', 'palanca') o por qué no
 // ('tope': el año ya gastó su parada) o `null`. Lo que no frena no pasa (G2a).
@@ -89,8 +103,12 @@ export function frenaEnLaCola(state, tipo, hito) {
   if (hito) {
     return { frena: true, motivo: 'hito' };
   }
-  if (paradasDeLaColaEnElAnio(state) >= BALANCE.cola.paradasPorAnio) {
+  if (topeDelAnio(state, tipo)) {
     return { frena: false, motivo: 'tope' };
+  }
+  // H1a: el evento del split no pide cambio ni palanca: su regla en la cola es el tope propio del año (`cola.eventosPorAnio`).
+  if (tipo === 'evento') {
+    return { frena: true, motivo: 'cupo' };
   }
   if ((state.flags.colaFirmas?.[tipo] ?? null) !== firmaDeLaCola(state)) {
     return { frena: true, motivo: 'cambio' };
@@ -113,7 +131,9 @@ export function conFirmaDeLaCola(state, tipo) {
     flags: {
       ...state.flags,
       colaFirmas: { ...(state.flags.colaFirmas ?? {}), [tipo]: firmaDeLaCola(state) },
-      colaAnio: { anio, paradas: paradasDeLaColaEnElAnio(state) + 1 }
+      colaAnio: tipo === 'evento'
+        ? { anio, paradas: paradasDeLaColaEnElAnio(state), eventos: eventosDeLaColaEnElAnio(state) + 1 }
+        : { anio, paradas: paradasDeLaColaEnElAnio(state) + 1, eventos: eventosDeLaColaEnElAnio(state) }
     }
   };
 }
