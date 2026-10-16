@@ -1,1 +1,3844 @@
-[]
+[
+  {
+    "id": "escena_sueldos_atrasados",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_escena",
+    "categoria": "vestuario",
+    "title": "Dos meses sin cobrar",
+    "description": "{org} paga tarde por segundo mes seguido. En el Discord del equipo ya circula la captura de la transferencia que no llegó.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "career.currentOrg",
+        "op": "neq",
+        "value": null
+      }
+    ],
+    "options": [
+      {
+        "id": "reclamar_todos_juntos",
+        "label": "Reclamar todos juntos",
+        "descripcion": "Una carta firmada por los cinco.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El manager aparece con la mitad del pago y una disculpa. El vestuario sale pegado de la pelea.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te marcan de líder del reclamo. Cobrás, pero el manager te mira raro en cada reunión.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "aguantar_y_jugar",
+        "label": "Aguantar y seguir jugando",
+        "descripcion": "Jugás igual, con el estómago medio cerrado.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Cobrás todo junto a las tres semanas. Nadie dice nada, pero el scrim de esa semana fue un trámite.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La plata no aparece y el scrim parece un velorio. Jugás con el celular al lado, mirando el banco.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_leak_de_scrims",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_escena",
+    "categoria": "prensa",
+    "title": "El clip del scrim",
+    "description": "Un clip de tu scrim privada circula en Twitter con el draft completo. Alguien del círculo lo filtró.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "buscar_al_filtrador",
+        "label": "Buscar al filtrador",
+        "descripcion": "Revisás quién tenía el VOD.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Era un analista rival colado en el Discord. Quedás como detective y cerrás el grupo con llave.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Acusás a quien no era. Pedís disculpas con la cara torcida y el grupo queda tenso.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cambiar_todo_el_draft",
+        "label": "Cambiar todo el draft",
+        "descripcion": "Si ya lo vieron, que no sirva.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sacás picks que nadie vio en scrim. El rival llega a ciegas, y vos también, pero te divertís.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Cambiás tanto que ni vos sabés qué vas a jugar. Perdés dos drafts por improvisar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_compilado",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_escena",
+    "categoria": "prensa",
+    "title": "Tus muertes, en compilado",
+    "description": "Un streamer grande armó un compilado de tus muertes con tu nombre en el título. Lleva medio millón de views en un día.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "reirte_con_el_streamer",
+        "label": "Reírte con él",
+        "descripcion": "Subís el clip a tus historias.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El chat te adopta de inmediato. Quedás como el que se ríe de sus propias fallas, que en este juego vale oro.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te ríes, pero la gente toma el chiste en serio. Dos semanas de comentarios sobre tu \"tilteo\".",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ignorarlo_del_todo",
+        "label": "Ignorarlo del todo",
+        "descripcion": "Cerrás Twitter hasta el scrim.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "No lo mirás ni una vez. El scrim sale limpio y el compilado se muere solo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo ignorás, pero un compañero te lo pasa por Discord igual. Quedás con la cabeza en otro lado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_analista_con_planilla",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_escena",
+    "categoria": "vestuario",
+    "title": "El analista y su planilla",
+    "description": "La org suma un analista que llega con una planilla de cuatrocientas filas sobre tus rotaciones. Quiere repasarla antes del scrim.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "dejarte_analizar",
+        "label": "Dejarte analizar",
+        "descripcion": "Una hora de pizarra, sin ego.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Marca tres patrones que ni sabías que tenías. Juntos arman la rotación nueva y funciona.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La planilla te dice cosas que ya sabías, con colores. Perdés la tarde y la paciencia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_a_tu_manera",
+        "label": "Jugar a tu manera",
+        "descripcion": "El mapa lo ves vos, no la planilla.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu instinto le gana a la planilla en el scrim. El analista anota algo, con cara de poker.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El instinto falla justo donde la planilla avisaba. El coach te la muestra sin decir nada.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_pibe_del_academy",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_escena",
+    "categoria": "vestuario",
+    "title": "El pibe del academy",
+    "description": "El academy sube a un pibe de dieciocho a scrimear contra vos. Hace tres kills en diez minutos y se lo cuenta a todo el chat.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "mostrarle_como_se_juega",
+        "label": "Mostrarle cómo se juega",
+        "descripcion": "Le pedís la revancha, sin piedad.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le ganás las próximas tres. El pibe te agradece, con los ojos mirando el piso.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El pibe te gana otra, y esta vez lo escucha el coach. Te toca fingir que no te importa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_ser",
+        "label": "Dejarlo brillar",
+        "descripcion": "Que lo disfrute, hoy es su día.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo felicitás en público y el vestuario te lo agradece. Vos también ganás un amigo en el academy.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo dejás brillar y se lo cree. A la semana ya te corrige el draft frente a todos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_se_cae_una_rival",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_escena",
+    "categoria": "mercado",
+    "title": "Una rival cierra",
+    "description": "Una org de tu liga cierra de golpe y sus titulares salen al mercado. En el vestuario no se habla de otra cosa.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "sondear_a_los_libres",
+        "label": "Sondear a los libres",
+        "descripcion": "Un mensaje privado, nada más.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Hablás con dos de ellos. Te cuentan cómo se manejan por dentro y vos te llevás más de lo que dabas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te ven hablando con ex rivales y empiezan los comentarios. Tu manager te pide que dejes de ser tan sociable.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quedarte_con_lo_tuyo",
+        "label": "Quedarte con lo tuyo",
+        "descripcion": "No es tu problema, aunque duele.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te concentrás en el split. El equipo lo nota y juega más unido que nunca.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Hacés como que no pasó nada. Pero el chat de la liga habla de eso y se te mete en la cabeza.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_sponsor_de_la_liga",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_escena",
+    "categoria": "prensa",
+    "title": "Foto con la lata",
+    "description": "La liga cambia de sponsor y la marca quiere una foto de todo el plantel con una lata gigante. Se grita \"sonrían\" durante una hora.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ponerte_al_centro",
+        "label": "Ponerte al centro",
+        "descripcion": "Si hay foto, hay hype.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La foto da la vuelta. En las redes sos el de la lata, y a nadie le importa que lo digan con humor.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Salís con los ojos cerrados al medio de la lata. Meme garantizado por tres semanas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quedarte_atras",
+        "label": "Quedarte atrás",
+        "descripcion": "Una sonrisa discreta y listo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Salís en la fila de atrás. Perfecto: nadie te molesta y ganás una tarde libre.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tapado por la lata, ni se te ve. El manager dice que perdiste exposición.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_formato_nuevo",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_escena",
+    "categoria": "serie",
+    "title": "Playoffs con otro formato",
+    "description": "La liga cambia el formato de playoffs a mitad de temporada. El manager convoca a una charla con pizarra.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "armar_la_estrategia",
+        "label": "Armar la estrategia nueva",
+        "descripcion": "Dos noches de VODs para entenderlo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Entendés el cruce antes que el resto. Llegás a la serie con un plan en el bolsillo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Armás la estrategia para un formato que cambia otra vez a la semana. Quedás tirado en el sillón.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_con_lo_de_siempre",
+        "label": "Seguir con lo de siempre",
+        "descripcion": "Un cruce es un cruce.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás tu juego sin leer la letra chica. Funciona: los rivales se enredan más que vos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "No leíste que había un repechaje. Te enterás cuando ya estás ahí, mirando el bracket.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_apodo_del_caster",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_escena",
+    "categoria": "prensa",
+    "title": "El apodo del caster",
+    "description": "El caster te bautiza con un apodo en vivo y el chat lo repite durante toda la serie. A los fans les encanta; a vos, medio.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "adoptar_el_apodo",
+        "label": "Adoptar el apodo",
+        "descripcion": "Lo ponés en la bio.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El apodo se vuelve marca. Aparece en remeras de fans que ni conocés y en tu Twitch.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Adoptás el apodo y ya no te lo sacás de encima. Hasta tu abuela te llama así.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_que_no_lo_repita",
+        "label": "Pedir que no lo repita",
+        "descripcion": "Un mensaje cordial al caster.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El caster se disculpa en la próxima transmisión. Esa clase de gestos suman con el entorno.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El caster lo cuenta al aire como anécdota. Ahora el apodo tiene historia y es peor.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_viejo_idolo",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_escena",
+    "categoria": "vestuario",
+    "title": "El campeón en el staff",
+    "description": "Un ex campeón de la liga se suma al staff como coach invitado por dos semanas. Mira tus VODs con cara de póker.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "pedirle_una_review",
+        "label": "Pedirle una review",
+        "descripcion": "Una hora a solas con tu VOD.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te señala un hábito de laneo que arrastrás hace años. Lo corregís en dos días y se nota.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu VOD le da risa y no lo disimula. Te quedás con el comentario clavado como una flecha.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mostrarte_seguro",
+        "label": "Mostrarte seguro",
+        "descripcion": "Jugás normal, como si nadie mirara.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás tu mejor scrim del año y el ex campeón asiente en silencio. Con eso alcanza.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El nervio te hace jugar dormido. El campeón anota algo y no lo mostrás nunca más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_la_fusion",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_escena",
+    "categoria": "mercado",
+    "title": "La org se fusiona",
+    "description": "{org} anuncia que se fusiona con otra de la liga. Los planteles se mezclan y hay un solo lugar por línea.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "career.currentOrg",
+        "op": "neq",
+        "value": null
+      }
+    ],
+    "options": [
+      {
+        "id": "pelear_tu_lugar",
+        "label": "Pelear tu lugar",
+        "descripcion": "Un tryout interno contra el recién llegado.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le ganás el tryout con un draft que no vio venir. El coach te da la titular en su charla de despedida.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Perdés el tryout por un detalle. Te quedás de reserva y el recién llegado te estrecha la mano con piedad.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ofrecerte_de_flex",
+        "label": "Ofrecerte de flex",
+        "descripcion": "Si hay lugar, que sea para dos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Armás una rotación con los dos. La fusión sale mejor de lo previsto y vos quedás como el que unió.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Quedás como el flex que no rinde en ninguna línea. El coach te pide que elijas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_banquillo",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_escena",
+    "categoria": "vestuario",
+    "title": "Cinco minutos antes",
+    "description": "El coach te saca de la titular por una semana para probar al nuevo. Te avisa cinco minutos antes del scrim.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "career.currentOrg",
+        "op": "neq",
+        "value": null
+      }
+    ],
+    "options": [
+      {
+        "id": "aceptarlo_sin_drama",
+        "label": "Aceptarlo sin drama",
+        "descripcion": "Te sentás atrás con el cuaderno.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Mirás la semana desde afuera y ves cosas que ni imaginabas. Volvés con la cabeza afinada.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te sentás atrás con una sonrisa falsa. La semana se hace larga y la cabeza se te va.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_explicaciones",
+        "label": "Pedir explicaciones",
+        "descripcion": "Una charla con el coach, ya.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El coach explica y se queda pensando. Te devuelve el lugar antes de lo previsto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La charla sale mal. Parecés el que no acepta críticas y el coach lo anota.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_las_dos_facciones",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_escena",
+    "categoria": "vestuario",
+    "title": "El equipo se parte",
+    "description": "El equipo se parte en dos por una decisión de draft. Cada bando arma su propia sala de Discord.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "career.currentOrg",
+        "op": "neq",
+        "value": null
+      }
+    ],
+    "options": [
+      {
+        "id": "ponerte_de_mediador",
+        "label": "Ponerte de mediador",
+        "descripcion": "Reunís a los dos con una pizza.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La pizza hace lo que no hicieron las reuniones. Se ríen de la pelea y juegan unidos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te acusan de defender a los dos bandos. Quedás en el medio de una discusión que no es tuya.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "elegir_un_bando",
+        "label": "Elegir un bando",
+        "descripcion": "Te sumás a la sala que mejor suena.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu bando gana la discusión y el draft sale a tu gusto. Por un tiempo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu bando pierde y ahora hay dos salas, una con tu nombre mal visto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_documental",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_escena",
+    "categoria": "prensa",
+    "title": "Cámaras en el bootcamp",
+    "description": "Una productora quiere filmar tu split para un documental. Habría cámaras en el bootcamp y hasta en el desayuno.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptar_las_camaras",
+        "label": "Aceptar las cámaras",
+        "descripcion": "Firmás y sonreís a las seis de la mañana.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Salís humano, divertido y un poco desastre. El tráiler pasa el millón y la gente te adopta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te toman llorando después de una derrota. El clip se hace viral y no por las razones que querías.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_las_camaras_afuera",
+        "label": "Dejar las cámaras afuera",
+        "descripcion": "El bootcamp es sagrado.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te concentrás sin nadie mirando. El mejor split de tu año sale justo ahí.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La productora pasa a otro jugador y el equipo se lleva todo el hype. Vos mirás la serie de lejos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_la_multa_de_la_liga",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_escena",
+    "categoria": "prensa",
+    "title": "La multa de la liga",
+    "description": "La liga te multa por un tweet donde nombrás al árbitro sin querer. La org paga, pero quiere explicaciones.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "career.currentOrg",
+        "op": "neq",
+        "value": null
+      }
+    ],
+    "options": [
+      {
+        "id": "pedir_perdon_publico",
+        "label": "Pedir perdón en público",
+        "descripcion": "Un hilo corto y sin sarcasmo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El hilo cae bien. Hasta los que te criticaban te dan un like y la liga archiva el tema.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Pedís perdón con tanta culpa que parecés culpable. El tema vive una semana más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "defender_tu_tweet",
+        "label": "Defender tu tweet",
+        "descripcion": "Era una opinión, no un ataque.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu defensa tiene argumentos y la gente la comparte. Pagás la multa con orgullo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La liga duplica la multa y la org te cierra el Twitter. Todo por un tweet de catorce palabras.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_rival_de_siempre",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_escena",
+    "categoria": "vestuario",
+    "title": "El rival, de compañero",
+    "description": "Tu rival de toda la carrera firma en tu equipo, en tu misma línea. Hay un solo lugar para los dos.",
+    "weight": 6,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "competir_de_frente",
+        "label": "Competir de frente",
+        "descripcion": "Mejor uno solo, y que sea el mejor.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Los dos se empujan hasta el límite. Ganás el lugar y el rival te respeta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Competís tanto que el scrim parece una pelea. El coach te separa a vos primero.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "aliarte_con_el_rival",
+        "label": "Aliarte con él",
+        "descripcion": "La enemistad tiene fecha de vencimiento.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Se alternan, se cubren, se enseñan. El equipo mejora más con dos que con uno.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La alianza dura hasta el primer fallo. Después cada uno se queda con su lado del Discord.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_la_org_quiebra",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "golpe_duro",
+    "title": "La org anuncia el cierre",
+    "description": "{org} publica un comunicado de tres líneas: cierra al final del split. El Discord explota en capturas y emojis tristes.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "career.currentOrg",
+        "op": "neq",
+        "value": null
+      }
+    ],
+    "options": [
+      {
+        "id": "dar_la_cara_por_el_equipo",
+        "label": "Dar la cara por el equipo",
+        "descripcion": "Hablás por todos, con el micrófono prendido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Hablás con claridad y el equipo te sigue. La prensa te cita como la voz del vestuario.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_quiebra"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Hablás de más y quedás de vocero oficial. La org te pide discreción, pero ya fue.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -8,
+                "max": -6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_quiebra"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "buscar_salida_en_silencio",
+        "label": "Buscar salida en silencio",
+        "descripcion": "Un mensaje a tu agente y nada más.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu agente ya tenía dos llamadas listas. Te asegurás un lugar antes que el resto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_quiebra"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se filtra que buscabas salida. El vestuario te mira con desprecio hasta el último scrim.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -8,
+                "max": -6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_quiebra"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_ultimo_split_de_la_org",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "serie",
+    "title": "El último split de la org",
+    "description": "Es el último split de {org} y nadie cobra. Jugás con el logo del sponsor tapado con cinta.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.conflicto",
+        "op": "eq",
+        "value": "escena_quiebra"
+      }
+    ],
+    "options": [
+      {
+        "id": "jugar_por_el_orgullo",
+        "label": "Jugar por el orgullo",
+        "descripcion": "Sin plata, hay que ganar por lo que queda.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El equipo juega el mejor split de la historia de la org. Se lleva un trofeo y nadie sabe dónde guardarlo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_quiebra_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "ultimo_split_org",
+                "values": [
+                  "El split final de una org que cerró jugando como si no hubiera mañana",
+                  "El año que ganaron con un logo tapado con cinta"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo dan todo y pierden la final. Cantan igual el himno que nadie escribió, abrazados en el escenario.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_quiebra_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "ultimo_split_org",
+                "values": [
+                  "El split final de una org que cerró, con un himno cantado en el escenario",
+                  "El año que perdieron la final y cantaron igual"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardar_las_energias",
+        "label": "Guardar las energías",
+        "descripcion": "Hay un mercado que mirar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás justo lo necesario y te llevás ofertas de dos orgs. Nadie te lo reprocha.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_quiebra_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "ultimo_split_org",
+                "values": [
+                  "El split final de una org que cerró, jugado con los ojos en el mercado",
+                  "El año en que cuidaste tu carrera mientras todo se caía"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te ven apático y el vestuario lo toma a mal. Entrás al mercado con una reputación rara.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -8,
+                "max": -6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_quiebra_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "ultimo_split_org",
+                "values": [
+                  "El split final de una org que cerró, con vos de espectador",
+                  "El año que te guardaste y lo pagaste caro"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_pibe_te_pisa",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "vestuario",
+    "title": "El pibe te saca el puesto",
+    "description": "El coach anuncia titular al pibe del academy, el mismo que te ganó el scrim ayer. A vos te dice \"rotación\".",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "career.currentOrg",
+        "op": "neq",
+        "value": null
+      }
+    ],
+    "options": [
+      {
+        "id": "aceptar_la_rotacion",
+        "label": "Aceptar la rotación",
+        "descripcion": "Profesional hasta el último gesto.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Entrás cada tercer partido y rendís. El coach te agradece en privado y el chat te aplaude.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_rookie"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Entrás pocas veces y no te sale ninguna. El pibe sigue de titular, con los brazos cruzados.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -8,
+                "max": -6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_rookie"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_una_prueba_justa",
+        "label": "Pedir una prueba justa",
+        "descripcion": "Cinco scrims, el mismo draft, a ver.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le ganás tres de cinco y el coach se rasca la cabeza. La titularidad queda en el aire.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_rookie"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Perdés tres de cinco. Te sentás con el pecho apretado y el cuaderno en blanco.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_rookie"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_la_revancha_del_titular",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "serie",
+    "title": "La serie de la revancha",
+    "description": "Hay una serie clave y el coach decide en el último minuto: o vos o el pibe. Los dos están calentando.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.conflicto",
+        "op": "eq",
+        "value": "escena_rookie"
+      }
+    ],
+    "options": [
+      {
+        "id": "jugar_con_el_pecho",
+        "label": "Jugar con el pecho",
+        "descripcion": "Todo en un solo mapa, sin red.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás el mapa de tu vida. El pibe te mira desde el banco con una mezcla de respeto y rabia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_rookie_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "revancha_del_titular",
+                "values": [
+                  "La serie en la que recuperaste el puesto frente a un pibe que prometía",
+                  "El día que el veterano le explicó al pibe cómo se juega"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te sale a medias y el pibe entra en el mapa final. Ganan, pero el crédito no es tuyo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_rookie_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "revancha_del_titular",
+                "values": [
+                  "La serie en la que te quedó claro que el relevo había llegado",
+                  "El día que viste ganar a tu reemplazo desde el banco"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_que_juegue_el_pibe",
+        "label": "Dejar que juegue el pibe",
+        "descripcion": "Es mejor para el equipo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El pibe juega bien y te lo agradece en la entrevista. Cuando él sube, vos subís con él.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_rookie_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "revancha_del_titular",
+                "values": [
+                  "La serie en la que le cediste el lugar a un pibe y valió la pena",
+                  "El gesto que el vestuario recordó por años"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Pierden la serie sin vos en el mapa y la gente pregunta por qué no jugaste. Respondés con una sonrisa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_rookie_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "revancha_del_titular",
+                "values": [
+                  "La serie en la que dejaste jugar al pibe y la perdieron",
+                  "El gesto generoso que salió caro"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_los_descartados",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "Los descartados",
+    "description": "Cuatro jugadores libres te proponen armar un equipo para la Open Series. Sin sponsor, sin coach, sin garantías.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "sumarte_al_proyecto",
+        "label": "Sumarte al proyecto",
+        "descripcion": "Un bootcamp en casa de uno de ellos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Entrenan en un garaje con dos monitores prestados. Hay mística y el chat de Twitch ya los sigue.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_descartados"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El garaje se inunda el segundo día. Terminan scrimeando desde un locutorio y eso también tiene su encanto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_descartados"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decirles_que_no",
+        "label": "Decirles que no",
+        "descripcion": "No es el momento para jugarse.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Les decís que no con respeto y ellos lo toman bien. Seguís en lo tuyo, con la duda de lo que pudo ser.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_descartados"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Aceptás luego, a último momento, y ya armaron el equipo sin vos. Te quedás con el asiento vacío.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_descartados"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_debut_de_los_descartados",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "serie",
+    "title": "El debut del garaje",
+    "description": "Los descartados juegan su primera serie contra una org de verdad. Hay veinte espectadores en la sala y mil en el stream.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.conflicto",
+        "op": "eq",
+        "value": "escena_descartados"
+      }
+    ],
+    "options": [
+      {
+        "id": "jugar_sin_miedo",
+        "label": "Jugar sin miedo",
+        "descripcion": "No tienen nada que perder.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Ganan por un mapa de diferencia, con un draft que nadie entendió. La org rival queda mirando el monitor.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_descartados_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "los_descartados",
+                "values": [
+                  "La serie en la que un equipo de descartados le ganó a una org de verdad",
+                  "El debut del garaje que hizo ruido"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Pierden feo, pero el stream explota igual. Los descartados quedan con un merchandising que no tenían.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_descartados_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "los_descartados",
+                "values": [
+                  "La serie en la que el equipo del garaje perdió, pero se llevó al público",
+                  "El debut que fue una fiesta, aunque perdieran"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardar_el_secreto",
+        "label": "Guardar el secreto",
+        "descripcion": "Una jugada que nadie vio en scrim.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sale la sorpresa y el rival no la lee. Ganan con un plan que ya era leyenda en el garaje.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_descartados_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "los_descartados",
+                "values": [
+                  "La serie en la que el garaje ganó con una jugada secreta",
+                  "El debut con un plan que nadie esperaba"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El secreto se sabía: alguien lo contó por Discord. Pierden en veinte minutos con cara de póker.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_descartados_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "los_descartados",
+                "values": [
+                  "La serie en la que el secreto del garaje dejó de serlo",
+                  "El debut en que el plan se filtró antes de usarse"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_el_bootcamp_del_campeon",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "El bootcamp del campeón",
+    "description": "El campeón vigente te invita una semana a su bootcamp privado. Todos saben que están mirando talento.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ir_a_mostrar_todo",
+        "label": "Ir a mostrar todo",
+        "descripcion": "Llevás tu pool completa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Impresionás en el primer scrim y el coach rival te anota en una libreta negra. Volvés distinto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_campeon"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Mostrás tanto que mañana lo sabe toda la liga. Tu mejor sorpresa dejó de serlo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_campeon"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ir_a_aprender",
+        "label": "Ir a aprender",
+        "descripcion": "Cuaderno y boca cerrada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te llevás un montón de rutinas que nadie te enseñó. Entendés cómo piensa un campeón.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_campeon"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Aprendés tanto que te confunde. Volvés con la cabeza llena y ninguna decisión clara.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_campeon"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escena_la_oferta_del_campeon",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "mercado",
+    "title": "La oferta del campeón",
+    "description": "El coach del campeón te llama una noche con una propuesta concreta. Hay un lugar, pero tendrías que decidirlo ya.",
+    "weight": 10,
+    "cooldown": 8,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier3",
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.conflicto",
+        "op": "eq",
+        "value": "escena_campeon"
+      }
+    ],
+    "options": [
+      {
+        "id": "aceptar_sin_dudar",
+        "label": "Aceptar sin dudar",
+        "descripcion": "Es una chance que no vuelve.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Firmás esa misma noche. Tu cabeza no para de dar vueltas, pero la jugada es redonda.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 6,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_campeon_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "oferta_del_campeon",
+                "values": [
+                  "La noche en que el campeón vigente te ofreció un lugar",
+                  "La oferta que llegó por teléfono, sin vueltas"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Aceptás y al otro día el coach cambia de opinión. Te dejan con la mano extendida.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_campeon_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "oferta_del_campeon",
+                "values": [
+                  "La oferta del campeón que se esfumó a las veinticuatro horas",
+                  "La noche que firmaste y a la mañana ya no valía"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_una_noche",
+        "label": "Pedir una noche para pensar",
+        "descripcion": "No se firma con sueño.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Pensás con calma y decís que sí con condiciones. El coach lo respeta y te ofrece más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_campeon_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "oferta_del_campeon",
+                "values": [
+                  "La noche en que le pediste tiempo al campeón y te lo dio",
+                  "La oferta negociada con la cabeza fría"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Dormís mal, el lugar lo agarra otro y despertás con el mensaje. Se te cae la cara.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "escena_campeon_fin"
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "oferta_del_campeon",
+                "values": [
+                  "La oferta del campeón que dejaste pasar por dormir una noche",
+                  "El lugar que tomó otro mientras pensabas"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
