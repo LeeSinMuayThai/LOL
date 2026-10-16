@@ -2436,12 +2436,63 @@ export const BALANCE = {
     // Cuántos pasos tiene cada mecánica de conteo de un mapa (la UI los lee de acá, y el motor saca su techo).
     // H3k: el dodge pasó de 4 carriles a 7 oleadas en una arena. Con 4, el techo (n − 1) / n = 0,75 juntaba las varas 0,7
     // y 0,85 en "3 de 4"; con 7 cada escalón de `varaPorP` pide otro número (4, 5 y 6 de 7).
-    conteo: { last_hit: 5, el_combo: 5, dodge: 7, el_kite: 8, la_vision: 3, la_corrida: 4 },
+    conteo: { last_hit: 5, el_combo: 5, dodge: 7, el_kite: 8, la_vision: 6, la_corrida: 4 },
     // H3k (PLANUI §0.10, "El kit"): las dos mecánicas del arcade, con la lógica pura en `ui/arcade/<id>.js` (`simular`, que
     // corre en Node). Todo en segundos y en unidades del mundo de cada mecánica. `pasoFijoS`: el paso de la simulación; el
     // cuadro del monitor solo decide cuántos pasos se corren (a 60 y a 144 Hz, lo mismo).
     arcade: {
       pasoFijoS: 1 / 120,
+      // El teleport (ola H, M2): tres fases, un TP en cada una; el resultado es el PEOR de las tres. Reglas de DISTANCIA (G1):
+      // d = (qué tan lejos del centro de la pelea caés, en unidades del minimapa 0-100) + `segundoFuera` por cada segundo lejos
+      // del mejor momento (la mitad de la pelea); `resultadoDeDistancia(d, escala)` con la escala de siempre (`ANCHO_ZONA` por
+      // macro + `MARGEN_DISTANCIA`). Fuera de la pelea (antes de que arranque te ven el TP, después ya terminó), en un cebo, en
+      // la zona rival o en la pelea que se pierde, vale 0. La pelea arranca a los `llegadaS` y dura `ventanaS` (macro).
+      // Sitios (wards y minions) de cada pelea: uno bueno (`buena` del centro, del lado aliado), una trampa (del lado rival, más
+      // cerca) y `lejanos` más lejos. `ventaja`: cuánto se separan las barras (la pelea que se gana lleva +, la que se pierde −).
+      el_teleport: {
+        canalS: 2.2,
+        ventanaS: [1.6, 3.2],
+        segundoFuera: 2.6,
+        llegadaS: [3.2, 4.2],
+        finS: 1,
+        entreFasesS: 1.4,
+        leeS: 1.6,
+        // por fase: `peleas` reales (si son 2, una se gana y la otra no) y `cebos` (pings de nada)
+        fases: [
+          { peleas: 1, cebos: 0 },
+          { peleas: 1, cebos: 2 },
+          { peleas: 2, cebos: 0 }
+        ],
+        // dónde cae el centro de cada pelea (x, y) y qué tan lejos queda un cebo de la pelea real
+        centro: [26, 74],
+        cebosLejosDe: 24,
+        buena: [0.5, 1.9],
+        trampa: [0.4, 1.2],
+        lejanos: [6, 14],
+        cantidadLejanos: 3,
+        ventaja: [0.3, 0.6],
+        varaSinG1: 0.6
+      },
+      // La visión (ola H, M2): `g1.conteo.la_vision` cacerías (el jungla rival cruza su selva y lo tenés que cazar con un ward
+      // antes de que llegue), repartidas en las 3 fases. En cada una arranca visto en un campamento (`pistas`: lo que ves y
+      // cuándo, como fracción del `tcS`), y sigue por la cadena de campamentos `pasosMax` como mucho, un campamento cada
+      // `tcS` (por `ventanaStat`, el stat lo estira). Tenés `wards`; cada uno se coloca en `colocarS` y ve `radioWard`. Si el
+      // jungla entra al radio de un ward ya colocado, cuenta. Una pista falsa (`ok: false`) apunta para el otro lado.
+      la_vision: {
+        ventanaStat: [0.8, 1.6],
+        wards: 2,
+        colocarS: 0.35,
+        radioWard: 8,
+        pasosMax: 3,
+        colaS: 0.1,
+        resultadoS: 1,
+        entreCazasS: 0.5,
+        fases: [
+          { tcS: 1.9, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'falta', ok: true, en: 0.3 }] },
+          { tcS: 0.8, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'falta', ok: false, en: 0.2 }, { tipo: 'empuja', ok: true, en: 0.45 }, { tipo: 'falta', ok: true, en: 0.6 }] },
+          { tcS: 0.4, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'empuja', ok: false, en: 0.2 }, { tipo: 'falta', ok: true, en: 0.4 }, { tipo: 'empuja', ok: true, en: 0.6 }] }
+        ]
+      },
       // El Barón: tres objetivos (fases 1, 2 y 3), un smite en cada uno; el resultado es el peor de los tres
       // `resultadoDeDistancia` (la vida en la escala 0-100 de la barra contra el centro de la zona). La vida baja a
       // `vInicial` u/s y acelera hasta `vMax` en los `rampa` puntos de arriba del centro, a golpes cada `golpeCadaS`; en las
