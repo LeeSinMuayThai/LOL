@@ -1,13 +1,14 @@
 [
   {
     "id": "academy_offer",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "oferta": true,
     "category": "debut_academy",
     "categoria": "oportunidad",
     "title": "Te tantea un proyecto juvenil",
-    "description": "Una estructura chica de {region} está armando roster sub-18 y alguien pasó tu cuenta. Todavía no hay contrato: hay una charla y unas scrims de prueba.",
+    "description": "Una estructura chica de {region} arma un roster sub-18 y alguien pasó tu cuenta. Todavía no hay contrato: hay una charla y scrims de prueba.",
     "weight": 8,
     "cooldown": 3,
     "contexto": {
@@ -22,12 +23,12 @@
       {
         "id": "aceptar_el_contrato",
         "label": "Ir a la prueba",
-        "descripcion": "Dos semanas de scrims con gente que juega en serio. Aprendés cosas que en soloQ no existen, y perdés horas de ladder.",
+        "descripcion": "Dos semanas de scrims con gente que juega en serio.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 8,
-            "texto": "Jugás tus primeras scrims de verdad y descubrís que el juego que vos jugabas era otro juego. No quedás, pero el coach se guarda tu nombre.",
+            "texto": "Jugás tus primeras scrims de verdad y descubrís que tu juego era otro juego. No quedás, pero el coach se guarda tu nombre.",
             "effects": [
               { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 6, "clamp": [0, 100] }
@@ -35,7 +36,7 @@
           },
           {
             "weight": 2,
-            "texto": "Rompés en las pruebas y se corre la voz entre los coaches de la escena chica. No firmás nada, pero ahora hay tres personas que preguntan por vos.",
+            "texto": "Rompés en las pruebas y se corre la voz entre coaches de la escena chica. No firmás nada, pero hay tres personas preguntando por vos.",
             "effects": [
               { "type": "stat", "path": "player.stats.macro", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 10, "clamp": [0, 100] },
@@ -47,7 +48,7 @@
       {
         "id": "rechazar_y_seguir_libre",
         "label": "Pasar y seguir en la ladder",
-        "descripcion": "Los proyectos chicos duran tres meses. Lo único que no se te cae es el rango.",
+        "descripcion": "Los proyectos chicos duran tres meses.",
         "weight": 4,
         "outcomes": [
           {
@@ -59,7 +60,7 @@
           },
           {
             "weight": 3,
-            "texto": "Decís que no y le metés a la cuenta con todo. Subís tanto que el mismo coach te vuelve a escribir dos meses después, con otro tono.",
+            "texto": "Decís que no y le metés a la cuenta. Subís tanto que el mismo coach te escribe dos meses después, con otro tono.",
             "effects": [
               { "type": "ladder", "path": "player.ranked", "min": 30, "max": 50 },
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -71,10 +72,11 @@
   },
   {
     "id": "redemption_game",
+    "voz": "corta",
     "category": "debut_academy",
     "categoria": "oportunidad",
     "title": "El coach te banca una más",
-    "description": "Venís de un tramo feo y el staff podría sentarte. En vez de eso, {org} te pone de titular en la jornada que define la clasificación.",
+    "description": "Venís de un tramo feo y el staff podría sentarte. En vez de eso, {org} te pone de titular en la fecha que define la clasificación.",
     "weight": 8,
     "cooldown": 3,
     "contexto": {
@@ -89,12 +91,12 @@
       {
         "id": "ir_con_todo",
         "label": "Jugarla como si fuera la última",
-        "descripcion": "Buscás la jugada. Si sale, se te acomoda el split entero; si no, le diste la razón al que quería sentarte.",
+        "descripcion": "Si sale, se te acomoda el split entero.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Te tirás a una que no había que tirarse y sale. A partir de esa jugada jugás distinto, y el equipo también.",
+            "texto": "Te tirás a una que no había que tirarse y sale. Desde esa jugada jugás distinto, y el equipo también.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": 4, "max": 8, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -113,12 +115,12 @@
       {
         "id": "jugar_seguro",
         "label": "Jugar sin cometer un error",
-        "descripcion": "Farmeás, no morís, no perdés la partida solo. Nadie va a hablar de vos, y era exactamente lo que hacía falta.",
+        "descripcion": "Farmeás, no morís, no perdés la partida solo.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 8,
-            "texto": "Cero muertes, cero highlights, y el equipo ganó. El coach te lo dice en el review con dos palabras y eso vale más que un clip.",
+            "texto": "Cero muertes, cero highlights, y el equipo ganó. El coach te lo dice en el review con dos palabras: vale más que un clip.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -137,12 +139,13 @@
   },
   {
     "id": "coach_demands_role",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "debut_academy",
     "categoria": "oportunidad",
     "title": "El coach te pide otro jugador",
-    "description": "En el review te dice que lo que hacés bien no es lo que el equipo necesita. Quiere que juegues más para el grupo y menos para tu línea, aunque eso te saque de lo que sabés hacer.",
+    "description": "En el review te dice que lo que hacés bien no es lo que el equipo necesita: quiere que juegues más para el grupo y menos para tu línea.",
     "weight": 7,
     "cooldown": 4,
     "contexto": {
@@ -156,8 +159,8 @@
       {
         "id": "aceptar_el_cambio",
         "label": "Adaptarte a lo que pide",
-        "descripcion": "Reaprendés a jugar tu propia línea. Te hace más completo y por unos meses vas a rendir peor que antes.",
-        "aviso": "Unos meses rendís peor mientras reaprendés la línea",
+        "descripcion": "Reaprendés tu propia línea.",
+        "aviso": "Unos meses rendís peor mientras reaprendés",
         "weight": 6,
         "outcomes": [
           {
@@ -170,7 +173,7 @@
           },
           {
             "weight": 3,
-            "texto": "Te tirás de cabeza al cambio y por un tiempo no sos ni el jugador de antes ni el nuevo. El coach te banca; el resto del equipo no tanto.",
+            "texto": "Te tirás al cambio y por un tiempo no sos ni el de antes ni el nuevo. El coach te banca; el resto no tanto.",
             "effects": [
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 4, "max": 7, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mecanica", "min": -6, "max": -3, "clamp": [0, 100] }
@@ -181,8 +184,8 @@
       {
         "id": "resistirse_y_plantarse",
         "label": "Plantarte en tu estilo",
-        "descripcion": "Defendés tu juego. Si tenías razón, ganás peso; si no, te ganaste un problema con el que decide quién juega.",
-        "aviso": "Si el coach no cede, te quedás con un problema en el staff",
+        "descripcion": "Defendés tu juego; si tenés razón, ganás peso.",
+        "aviso": "Si el coach no cede, hay problema en el staff",
         "weight": 4,
         "outcomes": [
           {
@@ -194,7 +197,7 @@
           },
           {
             "weight": 5,
-            "texto": "No cede y vos tampoco. Seguís jugando a tu manera con el staff mirándote esperando el error, que es la peor forma de jugar.",
+            "texto": "No cede y vos tampoco. Seguís jugando a tu manera con el staff esperando el error, que es la peor forma de jugar.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": -2, "max": 0, "clamp": [0, 100] }

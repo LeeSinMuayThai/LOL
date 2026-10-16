@@ -1,11 +1,12 @@
 [
   {
     "id": "la_jungla_enemiga_esta_sola",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La jungla enemiga está sola",
-    "description": "Ves al jungla de {rivalDeLaFecha} lejos de su lado del mapa. Invadir puede darte la ventaja del partido, o dejarte sin recursos para el resto de la jungla.",
+    "description": "Ves al jungla de {rivalDeLaFecha} lejos de su lado. Invadir puede darte la ventaja del partido o dejarte sin recursos.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -27,7 +28,7 @@
       {
         "id": "invadir",
         "label": "Invadirle la jungla",
-        "descripcion": "Vas a buscar el golpe grande. Si sale bien, quedás muy arriba; si sale mal, empezás el partido en deuda.",
+        "descripcion": "Vas a buscar el golpe grande.",
         "weight": 5,
         "outcomes": [
           {
@@ -39,7 +40,7 @@
                 "factor": 0.02
               }
             ],
-            "texto": "Lo agarrás limpiando su propio buff y le arruinás el arranque del partido a {rivalDeLaFecha}.",
+            "texto": "Lo agarrás limpiando su propio buff y le arruinás el arranque a {rivalDeLaFecha}.",
             "effects": [
               {
                 "type": "stat",
@@ -65,7 +66,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te estaba esperando. Perdés recursos y llegás al primer objetivo grande sin nivel para pelearlo.",
+            "texto": "Te estaba esperando. Perdés recursos y llegás al primer objetivo sin nivel para pelearlo.",
             "effects": [
               {
                 "type": "stat",
@@ -94,12 +95,12 @@
       {
         "id": "jugar_tu_jungla",
         "label": "Farmear tu propio lado",
-        "descripcion": "Dejás pasar la ventana. Llegás a nivel y con recursos, y lo que sumás es lectura de mapa: la ventaja del partido la cedés.",
+        "descripcion": "Dejás pasar la ventana y leés el mapa.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Terminás la ruta a full recursos y llegás al primer objetivo con margen. Aprendés cómo se mueve su jungla, aunque no le sacás nada.",
+            "texto": "Terminás la ruta con recursos y llegás al primer objetivo con margen. Aprendés cómo se mueve su jungla.",
             "effects": [
               {
                 "type": "stat",
@@ -125,7 +126,7 @@
           },
           {
             "weight": 4,
-            "texto": "Jugás tan seguro que {rivalDeLaFecha} te saca ventaja de mapa sin que nadie lo note hasta el minuto quince. De todos modos, te llevás una lectura nueva.",
+            "texto": "Jugás tan seguro que {rivalDeLaFecha} te saca ventaja de mapa sin que nadie lo note hasta el minuto quince.",
             "effects": [
               {
                 "type": "stat",
@@ -155,11 +156,12 @@
   },
   {
     "id": "jungla_gank_o_farm",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
-    "title": "Nivel 3 y dos líneas pidiendo",
-    "description": "Terminás el primer campamento y te escriben del top y del bot: los dos quieren que subas. Uno tiene la línea empujada a torre; el otro, un flash abajo. No llegás a las dos.",
+    "title": "Nivel 3, dos líneas pidiendo",
+    "description": "Terminás el primer campamento y top y bot te piden que subas: uno con la línea empujada a torre, el otro con un flash abajo. No llegás a los dos.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -180,15 +182,15 @@
     "options": [
       {
         "id": "gankear_la_ventana_clara",
-        "label": "Ir a la línea con la ventana más clara",
-        "descripcion": "Vas donde el gank tiene más chances de convertir, aunque el otro carril te lo reproche.",
+        "label": "Ir a la ventana más clara",
+        "descripcion": "Vas donde el gank más convierte.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
               "El gank convierte y esa línea abre el mapa para todo el early.",
-              "Sale limpio: kill, torre en camino, y el jungla de {rivalDeLaFecha} corriendo atrás toda la partida."
+              "Sale limpio: kill, torre en camino y el jungla de {rivalDeLaFecha} corriendo atrás toda la partida."
             ],
             "effects": [
               {
@@ -215,7 +217,7 @@
           },
           {
             "weight": 4,
-            "texto": "El gank se va sin nada y el carril que dejaste solo se come un flash por tu ausencia.",
+            "texto": "El gank no consigue nada y el carril que dejaste solo se come un flash por tu ausencia.",
             "effects": [
               {
                 "type": "stat",
@@ -243,13 +245,13 @@
       },
       {
         "id": "seguir_el_farm",
-        "label": "Seguir tu ruta y no forzar nada",
-        "descripcion": "Ninguna de las dos ventanas te cierra del todo. Farmeás, subís de nivel y elegís mejor la próxima: aprendés el mapa, pero cedés el early.",
+        "label": "Seguir tu ruta",
+        "descripcion": "Farmeás, subís de nivel y elegís mejor la próxima.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Llegás al minuto seis un nivel arriba del jungla rival, con el mapa entero por delante para elegir. El early no lo moviste, pero el ritmo lo leíste mejor.",
+            "texto": "Llegás al minuto seis un nivel arriba del jungla rival. El early no lo moviste, pero leíste mejor el ritmo.",
             "effects": [
               {
                 "type": "stat",
@@ -275,7 +277,7 @@
           },
           {
             "weight": 4,
-            "texto": "Mientras vos farmeás, el jungla de {rivalDeLaFecha} hace los dos ganks que vos no hiciste. Igual, queda la lección para la próxima.",
+            "texto": "Mientras farmeás, el jungla de {rivalDeLaFecha} hace los dos ganks que vos no hiciste. Queda la lección.",
             "effects": [
               {
                 "type": "stat",
@@ -305,11 +307,12 @@
   },
   {
     "id": "top_la_isla",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Solo en tu línea",
-    "description": "Te comen la línea contra {rivalDeLaFecha} y del otro lado del mapa nadie se entera hasta que ya es tarde. En top el error es tuyo y la ayuda casi nunca llega a horario.",
+    "description": "Contra {rivalDeLaFecha} te comen la línea y nadie del otro lado del mapa se entera hasta que es tarde. En top el error es tuyo.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -331,12 +334,12 @@
       {
         "id": "jugar_pasivo",
         "label": "Achicarte y farmear atrás",
-        "descripcion": "No arriesgás nada más. Esperás que el resto del mapa te compre tiempo mientras aguantás con la cabeza fría: no ganás la línea, pero no te rompés.",
+        "descripcion": "Aguantás con la cabeza fría y esperás al mapa.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Sobrevivís la línea con lo justo y con la cabeza en su lugar. No sumaste partido, pero no perdiste más de lo que ya habías perdido.",
+            "texto": "Sobrevivís la línea con lo justo y la cabeza en su lugar. No sumaste, pero tampoco perdiste más.",
             "effects": [
               {
                 "type": "stat",
@@ -362,7 +365,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te quedás tan atrás que ni de bloqueador servís. La torre cae igual, solo que más despacio. Al menos la cabeza te quedó en su lugar.",
+            "texto": "Te quedás tan atrás que ni de bloqueador servís. La torre cae igual, solo que más despacio.",
             "effects": [
               {
                 "type": "stat",
@@ -391,7 +394,7 @@
       {
         "id": "buscar_la_revancha",
         "label": "Ir a buscarla de vuelta",
-        "descripcion": "Arriesgás lo que te queda para recuperar la línea antes de que sea tarde.",
+        "descripcion": "Arriesgás lo que te queda para recuperar la línea.",
         "weight": 5,
         "outcomes": [
           {
@@ -459,11 +462,12 @@
   },
   {
     "id": "top_el_tp",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "El TP en la mochila",
-    "description": "Abajo se está armando una pelea 5v5 sobre el primer heraldo. Tenés el TP listo. Si bajás, tu línea contra {rivalDeLaFecha} queda sola dos oleadas; si no, la pelea es 4v5 para los tuyos.",
+    "description": "Abajo se arma una pelea 5v5 sobre el primer heraldo y tenés el TP listo. Si bajás, tu línea contra {rivalDeLaFecha} queda sola dos oleadas.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -484,13 +488,13 @@
     "options": [
       {
         "id": "bajar_con_tp",
-        "label": "Bajar con el TP a la pelea",
-        "descripcion": "Tu línea se resigna un rato. La pelea de abajo vale más que dos oleadas: cedés la presión del carril y te quedás con la lectura de la pelea.",
+        "label": "Bajar con el TP",
+        "descripcion": "Cedés dos oleadas por llegar a la pelea.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Caés por atrás y la pelea se acomoda. Las dos oleadas que perdiste las pagás en el partido, pero la lectura de la pelea te la quedás vos.",
+            "texto": "Caés por atrás y la pelea se acomoda. Las dos oleadas las pagás, pero la lectura de la pelea es tuya.",
             "effects": [
               {
                 "type": "stat",
@@ -516,7 +520,7 @@
           },
           {
             "weight": 4,
-            "texto": "Para cuando el TP canaliza, la pelea ya se decidió sin vos. Perdiste las oleadas y no cambiaste nada. Ahora sabés cuándo canaliza de verdad el TP y cuándo ya es tarde.",
+            "texto": "Cuando el TP canaliza, la pelea ya se decidió sin vos. Perdiste las oleadas y no cambiaste nada. Ahora sabés cuándo ya es tarde.",
             "effects": [
               {
                 "type": "stat",
@@ -544,8 +548,8 @@
       },
       {
         "id": "guardar_el_tp",
-        "label": "Guardar el TP y seguir en la línea",
-        "descripcion": "No regalás tu carril. Confiás en que los cuatro de abajo se banquen la pelea o la eviten.",
+        "label": "Guardar el TP y farmear",
+        "descripcion": "Confiás en que los cuatro abajo se la bancan.",
         "weight": 5,
         "outcomes": [
           {
@@ -566,7 +570,7 @@
           },
           {
             "weight": 3,
-            "texto": "Abajo pierden la pelea 4v5 por poco, y todos miran el TP que te quedó sin usar.",
+            "texto": "Abajo pierden el 4v5 por poco y todos miran el TP que te quedó sin usar.",
             "effects": [
               {
                 "type": "stat",
@@ -596,11 +600,12 @@
   },
   {
     "id": "mid_el_duelo",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "El duelo de línea",
-    "description": "Del otro lado, alguien de {rivalDeLaFecha} te pushea la línea y te invita a una pelea 1v1 en pleno medio del mapa. Todo el chat lo está mirando en vivo.",
+    "description": "Alguien de {rivalDeLaFecha} te pushea la línea y te invita a un 1v1 en pleno mapa. El chat lo mira en vivo.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -622,7 +627,7 @@
       {
         "id": "aceptar_el_duelo",
         "label": "Aceptar la pelea",
-        "descripcion": "Le entrás de frente. Si ganás, quedás como el mejor mid de la fecha; si perdés, lo va a repetir todo el mundo. Es hype puro, y el partido paga el precio.",
+        "descripcion": "Si ganás, sos el mejor mid de la fecha.",
         "weight": 5,
         "outcomes": [
           {
@@ -634,7 +639,7 @@
                 "factor": 0.025
               }
             ],
-            "texto": "Le ganás el 1v1 en pleno mapa y el clip se corta solo. Ese momento vale más que cualquier estadística de la fecha.",
+            "texto": "Le ganás el 1v1 en pleno mapa y el clip se corta solo. Vale más que cualquier estadística.",
             "effects": [
               {
                 "type": "stat",
@@ -699,12 +704,12 @@
       {
         "id": "no_caer_en_la_provocacion",
         "label": "No caer en la provocación",
-        "descripcion": "Seguís farmeando y le negás el show. Es la jugada aburrida y también la más sólida.",
+        "descripcion": "Seguís farmeando y le negás el show.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Te negás a jugarle el juego y del otro lado se quedan hablando solos en el chat. Ganás la línea sin necesitar el duelo.",
+            "texto": "Te negás a jugarle el juego y del otro lado se quedan hablando solos en el chat. Ganás la línea sin el duelo.",
             "effects": [
               {
                 "type": "stat",
@@ -720,7 +725,7 @@
           },
           {
             "weight": 3,
-            "texto": "Negarte también se lee como que le tuviste miedo a la pelea, y {rivalDeLaFecha} juega más suelto después de eso.",
+            "texto": "Negarte también se lee como miedo, y {rivalDeLaFecha} juega más suelto después de eso.",
             "effects": [
               {
                 "type": "stat",
@@ -740,11 +745,12 @@
   },
   {
     "id": "mid_roam_o_lane",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La ola crashea en dos",
-    "description": "Tu oleada revienta contra la torre rival en dos segundos y el mid de {rivalDeLaFecha} está sin visión. Podés rotar a bot con ventaja de tempo, o quedarte a no perder ni un CS.",
+    "description": "Tu oleada revienta contra la torre rival y el mid de {rivalDeLaFecha} no tiene visión. Podés rotar a bot con tempo o quedarte sin perder un CS.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -765,8 +771,8 @@
     "options": [
       {
         "id": "roam_a_bot",
-        "label": "Rotar a bot con la ventaja de tempo",
-        "descripcion": "Dejás un par de minions y vas a crear una jugada 3v2 abajo antes de que el mapa se reacomode.",
+        "label": "Rotar a bot con tempo",
+        "descripcion": "Dejás minions y armás un 3v2 abajo.",
         "weight": 5,
         "outcomes": [
           {
@@ -778,7 +784,7 @@
                 "factor": 0.02
               }
             ],
-            "texto": "Llegás justo, el 3v2 convierte y bot queda con torre y doble kill. El roam decidió el early.",
+            "texto": "Llegás justo, el 3v2 convierte y bot se lleva torre y doble kill. El roam decidió el early.",
             "effects": [
               {
                 "type": "stat",
@@ -804,7 +810,7 @@
           },
           {
             "weight": 4,
-            "texto": "El mid rival te ve salir, avisa, y para cuando llegás abajo ya está todo replegado. Perdiste CS por nada.",
+            "texto": "El mid rival te ve salir, avisa, y cuando llegás ya está todo replegado. Perdiste CS por nada.",
             "effects": [
               {
                 "type": "stat",
@@ -822,13 +828,13 @@
       },
       {
         "id": "quedarse_en_linea",
-        "label": "Quedarte y no perder tempo propio",
-        "descripcion": "El roam es tentador pero tu línea es lo que mejor controlás. Farmeás, presionás y no regalás nada: cedés el partido por el CS y el nivel.",
+        "label": "Quedarte en línea",
+        "descripcion": "Tu línea es lo que mejor controlás.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Mantenés la presión de mid y llegás a tu primer ítem antes que nadie en la partida. Lo que ganás es línea; el partido no lo movés.",
+            "texto": "Mantenés la presión de mid y sacás tu primer ítem antes que nadie. Ganás línea; el partido no lo movés.",
             "effects": [
               {
                 "type": "stat",
@@ -854,7 +860,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te quedás a farmear y el mid de {rivalDeLaFecha} sí rota, y abajo lo pagan los tuyos. Después de esto, sabés cuándo vale rotar y cuándo no.",
+            "texto": "Te quedás farmeando y el mid de {rivalDeLaFecha} sí rota: lo pagan los tuyos. Ahora sabés cuándo vale rotar.",
             "effects": [
               {
                 "type": "stat",
@@ -894,11 +900,12 @@
   },
   {
     "id": "adc_la_pelea_que_define",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Todo el daño pasa por vos",
-    "description": "Llegás a la pelea de mitad de partido siendo la única fuente de daño real del equipo. Si te posicionás mal contra {rivalDeLaFecha}, no hay plan B.",
+    "description": "Llegás a la pelea de mitad de partido como la única fuente de daño real. Si te posicionás mal contra {rivalDeLaFecha}, no hay plan B.",
     "weight": 6,
     "cooldown": 4,
     "contexto": {
@@ -919,8 +926,8 @@
     "options": [
       {
         "id": "jugar_al_frente",
-        "label": "Meterte adelante a buscar el daño",
-        "descripcion": "Te exponés más de lo cómodo para asegurar que tu daño llegue a tiempo.",
+        "label": "Meterte adelante a buscar daño",
+        "descripcion": "Te exponés para que tu daño llegue a tiempo.",
         "weight": 5,
         "outcomes": [
           {
@@ -937,7 +944,7 @@
                 "factor": 0.015
               }
             ],
-            "texto": "Te arriesgás, conectás todo el daño, y la pelea se define en tres segundos gracias a vos.",
+            "texto": "Te arriesgás, conectás todo el daño y la pelea se define en tres segundos gracias a vos.",
             "effects": [
               {
                 "type": "stat",
@@ -963,7 +970,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te agarran de entrada y la pelea se pierde antes de que hicieras nada. Sin tu daño, no había pelea que ganar.",
+            "texto": "Te agarran de entrada y la pelea se pierde antes de que hagas nada. Sin tu daño no había pelea.",
             "effects": [
               {
                 "type": "stat",
@@ -991,13 +998,13 @@
       },
       {
         "id": "jugar_seguro_atras",
-        "label": "Quedarte atrás y esperar la abertura",
-        "descripcion": "Priorizás sobrevivir la pelea por sobre entrar rápido. Menos daño, menos riesgo de morir primero: la cabeza queda fría y el partido cede.",
+        "label": "Quedarte atrás y esperar",
+        "descripcion": "Sobrevivir primero, entrar después.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Sobrevivís toda la pelea y terminás limpiando lo que queda. No fue vistoso ni movió el partido, pero salís entero y con la cabeza fría.",
+            "texto": "Sobrevivís toda la pelea y limpiás lo que queda. No fue vistoso, pero salís entero y con la cabeza fría.",
             "effects": [
               {
                 "type": "stat",
@@ -1023,7 +1030,7 @@
           },
           {
             "weight": 4,
-            "texto": "Jugás tan atrás que tu daño llega cuando la pelea ya estaba decidida. Vivo, pero inútil. Y aun así llegás entero de cabeza al próximo.",
+            "texto": "Jugás tan atrás que tu daño llega con la pelea ya decidida. Vivo, pero inútil. Igual llegás entero al próximo.",
             "effects": [
               {
                 "type": "stat",
@@ -1063,11 +1070,12 @@
   },
   {
     "id": "adc_el_kite_tardio",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "rara",
     "categoria": "partido",
     "title": "Kitear con las manos temblando",
-    "description": "Minuto 34, pelea por el alma en el río. Estás full ítems y el asesino de {rivalDeLaFecha} te va a saltar sí o sí. Toda la pelea se juega en cómo muevas los pies los próximos cuatro segundos.",
+    "description": "Minuto 34, pelea por el alma. Estás full ítems y el asesino de {rivalDeLaFecha} te va a saltar sí o sí.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -1088,8 +1096,8 @@
     "options": [
       {
         "id": "confiar_en_las_manos",
-        "label": "Confiar en tus manos y quedarte a dar daño",
-        "descripcion": "Te quedás en rango, esquivás lo que puedas y apostás a tu mecánica para sobrevivir el salto. Si te sale, es un clip para toda la temporada; si no, el partido paga.",
+        "label": "Confiar en tus manos",
+        "descripcion": "Te quedás en rango y apostás a tu mecánica.",
         "weight": 5,
         "outcomes": [
           {
@@ -1102,8 +1110,8 @@
               }
             ],
             "texto": [
-              "Esquivás el gancho, girás el ataque y quedás vos parado en un mar de grises. Pelea, alma y probablemente partido.",
-              "Cuatro segundos de manos perfectas: sobrevivís el salto con un sliver de vida y borrás a los cinco."
+              "Esquivás el gancho, girás el ataque y quedás parado en un mar de grises. Pelea, alma y probablemente partido.",
+              "Cuatro segundos de manos perfectas: sobrevivís con un sliver de vida y borrás a los cinco."
             ],
             "effects": [
               {
@@ -1130,7 +1138,7 @@
           },
           {
             "weight": 7,
-            "texto": "El salto te agarra un pelo antes de tu dash. Morís primero, sin daño puesto, y la pelea se va con vos. Eso sí, el clip circula igual.",
+            "texto": "El salto te agarra un pelo antes de tu dash. Morís primero, sin daño puesto. El clip circula igual.",
             "effects": [
               {
                 "type": "stat",
@@ -1169,7 +1177,7 @@
       {
         "id": "posicion_ultra_segura",
         "label": "Jugarla desde atrás de todo",
-        "descripcion": "Cedés daño por seguridad: te quedás tan atrás que el asesino tiene que cruzar a todo tu equipo para llegarte.",
+        "descripcion": "El asesino tiene que cruzar a todo tu equipo.",
         "weight": 5,
         "outcomes": [
           {
@@ -1190,7 +1198,7 @@
           },
           {
             "weight": 3,
-            "texto": "Tan atrás jugás que tu daño no alcanza a la primera línea, y la pelea queda en un empate que no te sirve.",
+            "texto": "Tan atrás jugás que tu daño no llega a la primera línea, y la pelea queda en un empate que no te sirve.",
             "effects": [
               {
                 "type": "stat",
@@ -1210,6 +1218,7 @@
   },
   {
     "id": "support_el_ward_que_te_costo",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
@@ -1236,12 +1245,12 @@
       {
         "id": "comprar_la_vision",
         "label": "Comprar el control ward igual",
-        "descripcion": "El mapa vale más que tu propio ítem. Es la decisión correcta y la que nadie te agradece.",
+        "descripcion": "La decisión correcta y la que nadie agradece.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "La visión evita una jugada de {rivalDeLaFecha} en el momento exacto. Nadie te lo va a mencionar, pero funcionó.",
+            "texto": "La visión evita una jugada de {rivalDeLaFecha} en el momento exacto. Nadie lo va a mencionar, pero funcionó.",
             "effects": [
               {
                 "type": "stat",
@@ -1267,7 +1276,7 @@
           },
           {
             "weight": 3,
-            "texto": "El ward no evita nada esta vez, y te quedaste atrás de ítems para el resto del partido por una jugada que no pasó.",
+            "texto": "El ward no evita nada y te quedás atrás de ítems por una jugada que no pasó.",
             "effects": [
               {
                 "type": "stat",
@@ -1296,12 +1305,12 @@
       {
         "id": "priorizar_tu_build",
         "label": "Priorizar tu propio ítem",
-        "descripcion": "Por una vez jugás para vos. El mapa queda más ciego de lo que debería, pero llegás a la pelea con el ítem que la gana.",
+        "descripcion": "Por una vez jugás para vos.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Con el ítem de más, respondés mejor en la pelea que se arma después. Nadie conecta las dos cosas, pero vos lo sentís en cada pelea.",
+            "texto": "Con el ítem de más respondés mejor en la pelea que se arma. Nadie conecta las dos cosas, pero vos sí.",
             "effects": [
               {
                 "type": "stat",
@@ -1327,7 +1336,7 @@
           },
           {
             "weight": 4,
-            "texto": "La falta de visión le cuesta al equipo una jugada evitable de {rivalDeLaFecha}. La próxima vez la ward va antes que el ítem.",
+            "texto": "La falta de visión le cuesta al equipo una jugada evitable de {rivalDeLaFecha}. La próxima, el ward antes que el ítem.",
             "effects": [
               {
                 "type": "stat",
@@ -1367,11 +1376,12 @@
   },
   {
     "id": "support_engage_o_peel",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Vos abrís o vos tapás",
-    "description": "La pelea está por estallar y tu campeón hace las dos cosas: podés tirar el engage que empieza todo, o guardarte para tapar al carry cuando salten sobre él. No hay tiempo para las dos.",
+    "description": "La pelea está por estallar y tu campeón sirve para abrir o para tapar. No hay tiempo para las dos.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -1392,13 +1402,13 @@
     "options": [
       {
         "id": "tirar_el_engage",
-        "label": "Tirar el engage y empezar la pelea vos",
-        "descripcion": "Elegís el momento en vez de recibirlo. Si tu equipo te sigue, empezás la pelea; si dudan, te vas solo: lo que ganás es lectura de juego, no el partido.",
+        "label": "Tirar el engage",
+        "descripcion": "Elegís el momento en vez de recibirlo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Encontrás el ángulo, enganchás a dos y tu equipo cae encima. Pocas veces sale así, pero cada engage te enseña un poco más a leer cuándo pegar.",
+            "texto": "Encontrás el ángulo, enganchás a dos y tu equipo cae encima. Cada engage te enseña a leer cuándo pegar.",
             "effects": [
               {
                 "type": "stat",
@@ -1424,7 +1434,7 @@
           },
           {
             "weight": 4,
-            "texto": "Entrás y atrás tuyo no viene nadie. Morís primero y el 5v4 lo aprovecha {rivalDeLaFecha}. Algo aprendiste igual.",
+            "texto": "Entrás y atrás tuyo no viene nadie. Morís primero y {rivalDeLaFecha} aprovecha el 5v4. Algo aprendiste.",
             "effects": [
               {
                 "type": "stat",
@@ -1462,8 +1472,8 @@
       },
       {
         "id": "guardarse_para_peel",
-        "label": "Guardarte para proteger al carry",
-        "descripcion": "Dejás que la pelea empiece sola y reservás todo tu kit para el momento en que salten sobre tu ADC.",
+        "label": "Guardarte para el peel",
+        "descripcion": "Reservás todo tu kit para cuando salten al ADC.",
         "weight": 5,
         "outcomes": [
           {
@@ -1494,7 +1504,7 @@
           },
           {
             "weight": 3,
-            "texto": "Nadie abre la pelea y se hace un baile de treinta segundos que termina cuando {rivalDeLaFecha} encuentra el ángulo primero.",
+            "texto": "Nadie abre y se hace un baile de treinta segundos que termina cuando {rivalDeLaFecha} encuentra el ángulo primero.",
             "effects": [
               {
                 "type": "stat",
@@ -1514,10 +1524,11 @@
   },
   {
     "id": "el_objetivo_que_define_la_fecha",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
-    "title": "El objetivo que define la fecha",
+    "title": "El Barón define la fecha",
     "description": "El Barón está por spawnear y las dos vanguardias se miran de lejos. Nadie quiere pelear primero, pero alguien tiene que moverse.",
     "weight": 6,
     "cooldown": 4,
@@ -1536,7 +1547,7 @@
     "options": [
       {
         "id": "forzar_la_pelea",
-        "label": "Forzar la pelea antes de que agarren visión",
+        "label": "Forzar antes de que agarren visión",
         "descripcion": "Vas primero, sin esperar la formación perfecta.",
         "weight": 5,
         "outcomes": [
@@ -1562,8 +1573,8 @@
           {
             "weight": 4,
             "texto": [
-              "Forzás la pelea contra un equipo que ya estaba listo, y la pagás cara.",
-              "El engage cae en cuatro miembros de {rivalDeLaFecha} agrupados. Se hace un desastre y es el tuyo."
+              "Forzás contra un equipo que ya estaba listo, y la pagás cara.",
+              "El engage cae en cuatro de {rivalDeLaFecha} agrupados. Se hace un desastre y es el tuyo."
             ],
             "effects": [
               {
@@ -1582,15 +1593,15 @@
       },
       {
         "id": "esperar_el_error",
-        "label": "Esperar a que se muevan ellos primero",
-        "descripcion": "Jugás la paciencia: dejás que el reloj y la presión trabajen para vos. Lo que ganás es lectura de macro; el partido, no.",
+        "label": "Esperar a que se muevan ellos",
+        "descripcion": "Dejás que el reloj y la presión trabajen.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
               "{rivalDeLaFecha} se apura y salta mal. No lo cobrás todo, pero la espera te enseña cómo se mueve su macro.",
-              "Aguantás la posición y alguien del otro lado se impacienta. Lo castigás, y de paso le leés el reloj al mapa."
+              "Aguantás la posición y alguien del otro lado se impacienta. Lo castigás y de paso le leés el reloj al mapa."
             ],
             "effects": [
               {
@@ -1617,7 +1628,7 @@
           },
           {
             "weight": 4,
-            "texto": "Esperar tanto le regala tiempo a {rivalDeLaFecha} para armar la jugada perfecta. De todos modos, te llevás una lectura nueva.",
+            "texto": "Esperar tanto le regala tiempo a {rivalDeLaFecha} para armar la jugada perfecta. Igual, te llevás una lectura nueva.",
             "effects": [
               {
                 "type": "stat",
@@ -1647,11 +1658,12 @@
   },
   {
     "id": "el_error_ajeno",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Un compañero se mandó solo",
-    "description": "Uno del equipo se metió a pelear sin avisar y quedó colgado en el medio del mapa. Todavía se puede hacer algo, o se puede dejar que pase.",
+    "description": "Uno del equipo se metió a pelear sin avisar y quedó colgado en medio del mapa. Todavía se puede hacer algo, o dejar que pase.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
@@ -1672,15 +1684,15 @@
     "options": [
       {
         "id": "ir_a_salvarlo",
-        "label": "Ir a buscarlo aunque sea arriesgado",
-        "descripcion": "Metés el cuerpo para que la pelea no se convierta en una desventaja de hombres. El equipo lo agradece, aunque el partido paga el riesgo.",
+        "label": "Ir a buscarlo, aunque sea riesgoso",
+        "descripcion": "Metés el cuerpo para que no sea desventaja de hombres.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "Llegás justo a tiempo: lo que iba a ser un desastre queda en una pelea pareja. {companero} no se olvida de quién entró a buscarlo.",
-              "Entrás, {companero} sale vivo por poco, y el equipo se acuerda de que fuiste."
+              "Llegás justo a tiempo: el desastre queda en una pelea pareja. {companero} no se olvida de quién entró a buscarlo.",
+              "Entrás, {companero} sale vivo por poco y el equipo se acuerda de que fuiste."
             ],
             "effects": [
               {
@@ -1707,7 +1719,7 @@
           },
           {
             "weight": 4,
-            "texto": "Vas a buscarlo y termina siendo una pelea de dos contra el equipo entero de {rivalDeLaFecha}. Eso sí, el vestuario no te lo va a reprochar.",
+            "texto": "Vas a buscarlo y terminan dos contra el equipo entero de {rivalDeLaFecha}. Eso sí, el vestuario no te lo reprocha.",
             "effects": [
               {
                 "type": "stat",
@@ -1736,12 +1748,12 @@
       {
         "id": "dejarlo_ir",
         "label": "Dejar que se resuelva solo",
-        "descripcion": "Un hombre abajo duele menos que dos. Seguís con el plan del resto del mapa.",
+        "descripcion": "Un hombre abajo duele menos que dos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Se pierde una vida, pero el resto del equipo convierte esa ventaja en otro lado del mapa.",
+            "texto": "Se pierde una vida, pero el resto convierte esa ventaja en otro lado del mapa.",
             "effects": [
               {
                 "type": "stat",
@@ -1757,7 +1769,7 @@
           },
           {
             "weight": 3,
-            "texto": "El equipo lo lee como que lo abandonaste, aunque la decisión fuera la correcta en el mapa.",
+            "texto": "El equipo lo lee como que lo abandonaste, aunque en el mapa fuera lo correcto.",
             "effects": [
               {
                 "type": "stat",
@@ -1787,6 +1799,7 @@
   },
   {
     "id": "la_remontada_posible",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
@@ -1809,15 +1822,15 @@
     "options": [
       {
         "id": "jugar_todo_o_nada",
-        "label": "Jugar todo o nada por la remontada",
-        "descripcion": "Con esta diferencia, jugar seguro es perder despacio. Vas a buscarla.",
+        "label": "Jugar todo o nada",
+        "descripcion": "Con esta diferencia, jugar seguro es perder despacio.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "La apuesta rinde: {rivalDeLaFecha} no esperaba que jugaras tan arriesgado estando abajo, y el partido se da vuelta.",
-              "Encontrás un pick sobre el carry, y de ese 1-for-0 sale toda la remontada. El oro se empareja en cinco minutos."
+              "La apuesta rinde: {rivalDeLaFecha} no esperaba que arriesgaras estando abajo, y el partido se da vuelta.",
+              "Encontrás un pick sobre el carry y de ese 1-for-0 sale toda la remontada."
             ],
             "effects": [
               {
@@ -1845,8 +1858,8 @@
           {
             "weight": 4,
             "texto": [
-              "El todo o nada no sale, y la diferencia que ya era incómoda se hace definitiva.",
-              "Forzás una pelea que no estaba y {rivalDeLaFecha} la castiga con el Barón y las inhibidoras."
+              "El todo o nada no sale y la diferencia incómoda se hace definitiva.",
+              "Forzás una pelea que no estaba y {rivalDeLaFecha} la castiga con Barón e inhibidoras."
             ],
             "effects": [
               {
@@ -1876,12 +1889,12 @@
       {
         "id": "administrar_la_derrota",
         "label": "Administrar lo que queda",
-        "descripcion": "Aceptás que hoy no sale y jugás para llegar entero al partido siguiente. Resignás casi todo el partido a cambio de la cabeza para lo que viene.",
+        "descripcion": "Jugás para llegar entero a la fecha siguiente.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "No se da la remontada, pero tampoco se convierte en una masacre. Guardás algo para la próxima fecha.",
+            "texto": "No se da la remontada, pero tampoco es una masacre. Guardás algo para la próxima fecha.",
             "effects": [
               {
                 "type": "stat",
@@ -1937,11 +1950,12 @@
   },
   {
     "id": "el_early_que_se_pudrio",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
-    "title": "Primer sangre en contra al minuto tres",
-    "description": "Arranca el partido contra {rivalDeLaFecha} y ya vas 0-2 en el mapa por dos jugadas que no fueron ni tuyas. El chat del equipo se llena de pings y de silencio.",
+    "title": "Early podrido al minuto tres",
+    "description": "Vas 0-2 contra {rivalDeLaFecha} por dos jugadas que ni fueron tuyas. El chat del equipo se llena de pings y de silencio.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
@@ -1959,15 +1973,15 @@
     "options": [
       {
         "id": "resetear_la_cabeza",
-        "label": "Cortar el ruido y resetear la cabeza del equipo",
-        "descripcion": "Hablás vos: un audio corto, sin culpas, para que nadie juegue los próximos diez minutos con bronca.",
+        "label": "Cortar el ruido y resetear",
+        "descripcion": "Un audio corto, sin culpas.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
             "texto": [
-              "Tu voz baja los decibeles. Nadie tira, todos farmean, y a los quince el oro ya está parejo.",
-              "El equipo suelta el early y vuelve a jugar de cero. La ventaja de {rivalDeLaFecha} se diluye sola."
+              "Tu voz baja los decibeles. Nadie tira, todos farmean, y a los quince el oro está parejo.",
+              "El equipo suelta el early y juega de cero. La ventaja de {rivalDeLaFecha} se diluye sola."
             ],
             "effects": [
               {
@@ -1994,7 +2008,7 @@
           },
           {
             "weight": 3,
-            "texto": "Decís lo correcto pero el ánimo ya está roto. Los próximos minutos son cinco jugadores en cinco partidas distintas.",
+            "texto": "Decís lo correcto pero el ánimo ya está roto. Cinco jugadores en cinco partidas distintas.",
             "effects": [
               {
                 "type": "stat",
@@ -2022,8 +2036,8 @@
       },
       {
         "id": "jugar_tu_partida_impecable",
-        "label": "Callarte y jugar tu carril impecable",
-        "descripcion": "No hablás. Bajás la cabeza, farmeás perfecto y confiás en que el nivel arrastra al resto. Lo que ganás es pulirte la mecánica; el equipo, no.",
+        "label": "Callarte y jugar tu carril",
+        "descripcion": "Bajás la cabeza y confiás en que el nivel arrastra.",
         "weight": 5,
         "outcomes": [
           {
@@ -2035,7 +2049,7 @@
                 "factor": 0.02
               }
             ],
-            "texto": "Jugás como si el marcador estuviera 0-0 y pulís cada trade. El resto del equipo queda a la deriva, pero tu partida sale limpia de verdad.",
+            "texto": "Jugás como si fuera 0-0 y pulís cada trade. El resto queda a la deriva, pero tu partida sale limpia.",
             "effects": [
               {
                 "type": "stat",
@@ -2061,7 +2075,7 @@
           },
           {
             "weight": 4,
-            "texto": "Vos jugás bien pero el resto no se recupera, y una partida impecable en un equipo tilteado no alcanza. Algo aprendiste igual.",
+            "texto": "Vos jugás bien pero el resto no se recupera: una partida impecable en un equipo tilteado no alcanza. Algo aprendiste.",
             "effects": [
               {
                 "type": "stat",
@@ -2091,11 +2105,12 @@
   },
   {
     "id": "la_ventaja_que_no_cierra",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
-    "title": "Arriba por cinco mil y sin cerrarlo",
-    "description": "Le sacaste cinco mil de oro a {rivalDeLaFecha} pero ya van tres intentos de cierre que no terminan en nada. Cada minuto que pasa, la ventaja vale un poco menos.",
+    "title": "Ventaja que no cierra",
+    "description": "Le sacaste cinco mil de oro a {rivalDeLaFecha} pero ya van tres cierres que no terminan en nada. Cada minuto, la ventaja vale menos.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
@@ -2113,13 +2128,13 @@
     "options": [
       {
         "id": "forzar_el_cierre_ya",
-        "label": "Forzar el cierre ahora, con lo que hay",
-        "descripcion": "No esperás la jugada perfecta. Barón, presión en las tres líneas y a terminarlo antes de que se empareje.",
+        "label": "Forzar el cierre ya",
+        "descripcion": "Barón, presión en las tres líneas y a terminarlo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Agarrás Barón, entrás a la base con la ventaja todavía intacta y esta vez sí cae el Nexo.",
+            "texto": "Agarrás Barón, entrás a la base con la ventaja intacta y esta vez sí cae el Nexo.",
             "effects": [
               {
                 "type": "stat",
@@ -2136,8 +2151,8 @@
           {
             "weight": 4,
             "texto": [
-              "Forzás con el equipo mal parado, {rivalDeLaFecha} encuentra el pick y de golpe la ventaja es de tres mil.",
-              "El Barón se va contestado, un ace en contra, y el partido que tenías ganado ahora es una moneda."
+              "Forzás mal parado, {rivalDeLaFecha} encuentra el pick y la ventaja baja a tres mil.",
+              "El Barón se va contestado, ace en contra, y el partido ganado ahora es una moneda."
             ],
             "effects": [
               {
@@ -2166,13 +2181,13 @@
       },
       {
         "id": "jugar_la_paciencia",
-        "label": "Bajar un cambio y jugar la paciencia",
-        "descripcion": "Dejás de tirarte a la base. Visión, objetivos neutrales, picks, y cerrás cuando la jugada esté regalada: aprendés a cerrar, pero la ventaja se enfría.",
+        "label": "Bajar un cambio y jugar paciente",
+        "descripcion": "Visión y picks hasta que la jugada esté regalada.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Estrangulás el mapa de a poco: visión, picks, objetivos. No es el cierre más rápido, pero lo que aprendés de manejar la ventaja no se te va.",
+            "texto": "Estrangulás el mapa de a poco: visión, picks, objetivos. No es el cierre más rápido, pero lo que aprendés de manejar la ventaja queda.",
             "effects": [
               {
                 "type": "stat",
@@ -2198,7 +2213,7 @@
           },
           {
             "weight": 4,
-            "texto": "Jugás tan lento que {rivalDeLaFecha} llega a ítems clave, y la ventaja de oro deja de significar ventaja de mapa. Aprendiste cuánto dura una ventaja de oro si no la convertís en mapa.",
+            "texto": "Jugás tan lento que {rivalDeLaFecha} llega a ítems clave y el oro deja de ser ventaja de mapa. Aprendiste cuánto dura una ventaja sin convertir.",
             "effects": [
               {
                 "type": "stat",
@@ -2228,11 +2243,12 @@
   },
   {
     "id": "la_llamada_de_baron",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Barón con uno menos",
-    "description": "Cae un compañero en el río y el Barón queda a la vista, casi sin vida. {rivalDeLaFecha} está a diez segundos. Se puede robar 4v5, o se puede soltar y jugar la pelea después.",
+    "description": "Cae un compañero en el río y el Barón queda a la vista, casi sin vida. {rivalDeLaFecha} está a diez segundos: se puede robar 4v5 o soltarlo.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
@@ -2254,13 +2270,13 @@
       {
         "id": "ir_por_el_baron",
         "label": "Ir por el Barón 4v5",
-        "descripcion": "Se canta el smite y todos entran a pegar. Diez segundos de riesgo total.",
+        "descripcion": "Se canta el smite y entran todos a pegar.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "Smite justo, Barón asegurado, y salís sin muertos. Con ese buff, la ventaja de un hombre menos no importa.",
+              "Smite justo, Barón asegurado y salís sin muertos. Con ese buff, el hombre menos no importa.",
               "Lo bajan un segundo antes de que llegue {rivalDeLaFecha}. Roban el objetivo y el partido de una."
             ],
             "effects": [
@@ -2288,7 +2304,7 @@
           },
           {
             "weight": 4,
-            "texto": "Llegan encima mientras están pegándole al Barón. Lo contestan, se llevan tres kills y el objetivo. Desastre completo.",
+            "texto": "Les caen encima pegándole al Barón. Lo contestan, se llevan tres kills y el objetivo. Desastre completo.",
             "effects": [
               {
                 "type": "stat",
@@ -2316,13 +2332,13 @@
       },
       {
         "id": "soltarlo",
-        "label": "Soltar el Barón y reagruparse",
-        "descripcion": "No vale el riesgo con uno menos. Retroceden, esperan que el compañero reviva y juegan la pelea en igualdad: el equipo lo agradece, el partido cede.",
+        "label": "Soltarlo y reagruparse",
+        "descripcion": "No vale el riesgo con uno menos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Ceden el Barón pero llegan enteros a la pelea siguiente. Nadie queda colgado y el equipo se acuerda de que le diste el respiro.",
+            "texto": "Ceden el Barón pero llegan enteros a la pelea siguiente. El equipo se acuerda del respiro que diste.",
             "effects": [
               {
                 "type": "stat",
@@ -2348,7 +2364,7 @@
           },
           {
             "weight": 4,
-            "texto": "{rivalDeLaFecha} agarra el Barón gratis y lo usa para partir el mapa. Ceder salió más caro de lo previsto. Eso sí, el vestuario no te lo va a reprochar.",
+            "texto": "{rivalDeLaFecha} se lleva el Barón gratis y parte el mapa. Ceder salió más caro. Eso sí, el vestuario no te reprocha nada.",
             "effects": [
               {
                 "type": "stat",
@@ -2378,11 +2394,12 @@
   },
   {
     "id": "el_flanco_que_viste",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "rara",
     "categoria": "partido",
-    "title": "El flanco que solo viste vos",
-    "description": "El equipo de {rivalDeLaFecha} está agrupado mirando un objetivo y vos tenés el ángulo perfecto por atrás. Si avisás y esperás, se pierde. Si vas solo y sale, es la pelea.",
+    "title": "El flanco que viste vos",
+    "description": "{rivalDeLaFecha} está agrupado mirando un objetivo y vos tenés el ángulo perfecto por atrás. Si avisás y esperás, se pierde; si vas solo y sale, es la pelea.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
@@ -2400,8 +2417,8 @@
     "options": [
       {
         "id": "ir_solo_al_flanco",
-        "label": "Ir solo, ya, antes de que se muevan",
-        "descripcion": "La ventana es de dos segundos. Entrás solo y confiás en que el equipo reaccione: si sale es un ace de highlight; si no, te quedás solo.",
+        "label": "Ir solo al flanco, ya",
+        "descripcion": "La ventana es de dos segundos.",
         "weight": 5,
         "outcomes": [
           {
@@ -2415,7 +2432,7 @@
             ],
             "texto": [
               "Entrás perfecto, agarrás a dos y el equipo cae detrás. La pelea dura cuatro segundos y es un ace.",
-              "El flanco es letal: para cuando {rivalDeLaFecha} gira, ya perdieron a los dos carries."
+              "El flanco es letal: cuando {rivalDeLaFecha} gira, ya cayeron los dos carries."
             ],
             "effects": [
               {
@@ -2442,7 +2459,7 @@
           },
           {
             "weight": 7,
-            "texto": "Entrás y atrás tuyo el equipo todavía está procesando lo que hiciste. Te matan solo y la pelea se va 5v4. Igual, de esa jugada se va a hablar.",
+            "texto": "Entrás y el equipo todavía está procesando. Te matan solo y la pelea se va 5v4. Igual, de esa jugada se va a hablar.",
             "effects": [
               {
                 "type": "stat",
@@ -2481,12 +2498,12 @@
       {
         "id": "avisar_y_coordinar",
         "label": "Avisar y coordinar el flanco",
-        "descripcion": "Perdés la ventana inmediata pero ganás que los cinco entren juntos. Si todavía existe el ángulo, vale más.",
+        "descripcion": "Perdés la ventana, pero entran los cinco juntos.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Para cuando coordinan, el ángulo sigue ahí y entran los cinco. Más lento, igual de letal.",
+            "texto": "Cuando coordinan, el ángulo sigue ahí y entran los cinco. Más lento, igual de letal.",
             "effects": [
               {
                 "type": "stat",
@@ -2512,7 +2529,7 @@
           },
           {
             "weight": 3,
-            "texto": "Los tres segundos de coordinar alcanzan para que {rivalDeLaFecha} rote la visión y el flanco deje de existir.",
+            "texto": "Tres segundos de coordinar alcanzan para que {rivalDeLaFecha} rote la visión y el flanco deje de existir.",
             "effects": [
               {
                 "type": "stat",
@@ -2532,11 +2549,12 @@
   },
   {
     "id": "la_torre_expuesta",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Splitear o agrupar",
-    "description": "Tu campeón parte torres como nadie y hay dos inhibidoras a tiro por el lateral. Pero el equipo quiere agrupar para Alma, y contra {rivalDeLaFecha} no alcanzan cuatro si vos estás en la otra punta.",
+    "description": "Tu campeón parte torres como nadie y hay dos inhibidoras a tiro por el lateral. Pero el equipo quiere agrupar para Alma, y sin vos no alcanzan cuatro.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
@@ -2555,7 +2573,7 @@
       {
         "id": "splitear_el_lateral",
         "label": "Irte al lateral a presionar",
-        "descripcion": "Obligás a {rivalDeLaFecha} a mandar gente a defender, y ahí el 4v4 del centro es de los tuyos. Cedés el Alma por aprender a presionar el mapa.",
+        "descripcion": "Obligás a {rivalDeLaFecha} a mandar gente a defender.",
         "weight": 5,
         "outcomes": [
           {
@@ -2567,7 +2585,7 @@
                 "factor": 0.02
               }
             ],
-            "texto": "Mandan dos a frenarte, tu equipo aguanta el centro y vos tirás una inhibidora. Aprendés a partir el mapa, aunque el partido queda a medias.",
+            "texto": "Mandan dos a frenarte, tu equipo aguanta el centro y tirás una inhibidora. Aprendés a partir el mapa.",
             "effects": [
               {
                 "type": "stat",
@@ -2593,7 +2611,7 @@
           },
           {
             "weight": 4,
-            "texto": "Mandan uno solo a molestarte y agrupan los otros cuatro sobre tus cuatro. Pierden la pelea por tu ausencia. Entendiste que el lateral se presiona solo si el resto aguanta sin vos.",
+            "texto": "Mandan uno solo y agrupan cuatro sobre los tuyos. Pierden la pelea por tu ausencia. El lateral se presiona si el resto aguanta.",
             "effects": [
               {
                 "type": "stat",
@@ -2631,13 +2649,13 @@
       },
       {
         "id": "agrupar_para_alma",
-        "label": "Agrupar con el equipo para el Alma",
-        "descripcion": "Resignás el split. Cinco juntos, Alma primero, y el mapa después.",
+        "label": "Agrupar para el Alma",
+        "descripcion": "Cinco juntos, Alma primero, mapa después.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Los cinco juntos ganan la pelea por Alma limpio. Con ese buff, las inhibidoras van a estar ahí en cinco minutos igual.",
+            "texto": "Los cinco juntos ganan la pelea por Alma limpio. Con ese buff, las inhibidoras caen igual en cinco minutos.",
             "effects": [
               {
                 "type": "stat",
@@ -2663,7 +2681,7 @@
           },
           {
             "weight": 3,
-            "texto": "Agrupás y la pelea por Alma se hace un empate sin nadie. La presión lateral que resignaste no vuelve.",
+            "texto": "Agrupás y la pelea por Alma queda en un empate sin nadie. La presión lateral que resignaste no vuelve.",
             "effects": [
               {
                 "type": "stat",
@@ -2683,11 +2701,12 @@
   },
   {
     "id": "el_reloj_corre",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "La ventaja se derrite",
-    "description": "Ibas quince mil arriba al minuto veinte. Son las 41 y la diferencia es de cuatro mil: {rivalDeLaFecha} llegó a sus power spikes y cada pelea ahora es una moneda.",
+    "description": "Ibas quince mil arriba al minuto veinte. Ahora, al 41, son cuatro mil: {rivalDeLaFecha} llegó a sus power spikes y cada pelea es una moneda.",
     "weight": 5,
     "cooldown": 4,
     "contexto": {
@@ -2705,13 +2724,13 @@
     "options": [
       {
         "id": "buscar_el_cierre_desesperado",
-        "label": "Buscar un cierre ya, con lo que quede de ventaja",
-        "descripcion": "Cada minuto juega en contra. Forzás la pelea sobre el próximo objetivo: si sale es el cierre de la noche; si no, la ventaja se esfuma.",
+        "label": "Buscar el cierre desesperado",
+        "descripcion": "Cada minuto juega en contra.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 3,
-            "texto": "Encontrás una pelea decente, la ganás por poco, y con el Barón cerrás antes de que el partido termine de darse vuelta.",
+            "texto": "Encontrás una pelea decente, la ganás por poco, y con el Barón cerrás antes de que se dé vuelta.",
             "effects": [
               {
                 "type": "stat",
@@ -2737,7 +2756,7 @@
           },
           {
             "weight": 7,
-            "texto": "La pelea forzada la ganan ellos, y de golpe el partido que tenías controlado hace veinte minutos está perdido. La apuesta, igual, se vio: nadie dice que no fuiste a buscarla.",
+            "texto": "Perdés la pelea forzada y el partido que controlabas se escapa. Al menos nadie dice que no fuiste a buscarla.",
             "effects": [
               {
                 "type": "stat",
@@ -2775,13 +2794,13 @@
       },
       {
         "id": "confiar_en_la_ventaja_de_items",
-        "label": "Confiar en que todavía tenés más ítems",
-        "descripcion": "Cuatro mil siguen siendo cuatro mil. Jugás visión y objetivos y elegís la pelea cuando de verdad estés mejor parado.",
+        "label": "Confiar en tu ventaja de ítems",
+        "descripcion": "Cuatro mil siguen siendo cuatro mil.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "La calma paga: en la pelea que sí elegís, la ventaja de ítems todavía alcanza y esa vez cerrás.",
+            "texto": "La calma paga: en la pelea que sí elegís, la ventaja de ítems alcanza y cerrás.",
             "effects": [
               {
                 "type": "stat",
@@ -2798,8 +2817,8 @@
           {
             "weight": 3,
             "texto": [
-              "Esperás la pelea perfecta y nunca llega. {rivalDeLaFecha} escala, te pasa por ítems y ahora los que corren son ustedes.",
-              "Cada minuto de espera es oro para el lado que escala mejor. Para el 50 ya no hay ventaja que administrar."
+              "Esperás la pelea perfecta y nunca llega. {rivalDeLaFecha} escala, te pasa por ítems y ahora corren ustedes.",
+              "Cada minuto de espera es oro para el que escala mejor. Al 50 ya no hay ventaja que administrar."
             ],
             "effects": [
               {
@@ -2820,11 +2839,12 @@
   },
   {
     "id": "la_inhibidora_caida",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Inhibidora abajo, ¿entrás o volvés?",
-    "description": "Rompés la primera inhibidora de {rivalDeLaFecha} y quedan todos vivos del otro lado, defendiendo con la ventaja de la base. Tenés tempo para un objetivo, no para dos.",
+    "description": "Rompés la primera inhibidora de {rivalDeLaFecha}, pero quedan todos vivos defendiendo. Tenés tempo para un objetivo, no para dos.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -2842,13 +2862,13 @@
     "options": [
       {
         "id": "seguir_la_presion",
-        "label": "Seguir empujando mientras tienen que quedarse",
-        "descripcion": "Los tenés clavados defendiendo. Girás al Barón o a un segundo lateral antes de que puedan salir: es la lectura de macro más exigente, y si te equivocás el partido paga.",
+        "label": "Seguir empujando mientras defienden",
+        "descripcion": "Girás al Barón antes de que puedan salir.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Con la inhibidora abajo no pueden despegarse de la base. Agarrás Barón y de paso aprendés lo que vale mantener la presión en el tempo justo.",
+            "texto": "Con la inhibidora abajo no pueden despegarse de la base. Agarrás Barón y aprendés lo que vale presionar a tempo.",
             "effects": [
               {
                 "type": "stat",
@@ -2874,7 +2894,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te confiás del mapa y {rivalDeLaFecha} encuentra un flanco defendiendo. Un pick, y la presión se te da vuelta. Aprendiste a no dejar de mirar el mapa con la inhibidora ya caída.",
+            "texto": "Te confiás y {rivalDeLaFecha} encuentra un flanco defendiendo. Un pick y la presión se te da vuelta.",
             "effects": [
               {
                 "type": "stat",
@@ -2902,13 +2922,13 @@
       },
       {
         "id": "resetear_seguro",
-        "label": "Volver a base a comprar y curarse",
-        "descripcion": "No arriesgás la ventaja por un objetivo extra. Reseteás, llegás full y volvés con la súper oleada empujando.",
+        "label": "Volver a base a resetear",
+        "descripcion": "No arriesgás la ventaja por un objetivo extra.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Volvés full ítems y vida justo cuando la súper oleada llega a la segunda torre. Entrada limpia, sin regalar nada.",
+            "texto": "Volvés full ítems y vida justo cuando la súper oleada llega a la segunda torre. Entrada limpia.",
             "effects": [
               {
                 "type": "stat",
@@ -2924,7 +2944,7 @@
           },
           {
             "weight": 3,
-            "texto": "El reseteo le da a {rivalDeLaFecha} justo el respiro que necesitaba para armar visión y estabilizar.",
+            "texto": "El reseteo le da a {rivalDeLaFecha} el respiro justo para armar visión y estabilizar.",
             "effects": [
               {
                 "type": "stat",
@@ -2944,11 +2964,12 @@
   },
   {
     "id": "el_2v2_en_el_rio",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
     "title": "Escaramuza en el scuttle",
-    "description": "Vas por el cangrejo y aparece alguien de {rivalDeLaFecha} con su jungla. Se arma un 2v2 sucio en el río con las dos vidas al filo.",
+    "description": "Vas por el cangrejo y aparece alguien de {rivalDeLaFecha} con su jungla. Se arma un 2v2 sucio en el río, con las vidas al filo.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -2966,8 +2987,8 @@
     "options": [
       {
         "id": "comprometerse_a_la_pelea",
-        "label": "Comprometerse: es tu terreno",
-        "descripcion": "Tenés la visión y el cangrejo del lado tuyo. Peleás el 2v2 a fondo.",
+        "label": "Comprometerte: es tu terreno",
+        "descripcion": "Tenés la visión y el cangrejo de tu lado.",
         "weight": 5,
         "outcomes": [
           {
@@ -2979,7 +3000,7 @@
                 "factor": 0.02
               }
             ],
-            "texto": "Ganás la escaramuza limpia, te quedás con el cangrejo y con la mitad del río en visión. Early tuyo.",
+            "texto": "Ganás la escaramuza limpia, te quedás con el cangrejo y la mitad del río en visión. Early tuyo.",
             "effects": [
               {
                 "type": "stat",
@@ -2995,7 +3016,7 @@
           },
           {
             "weight": 4,
-            "texto": "La pelea se alarga, aparece un tercero de {rivalDeLaFecha} y lo que era un 2v2 pareja termina 1-for-2 en contra.",
+            "texto": "La pelea se alarga, aparece un tercero de {rivalDeLaFecha} y el 2v2 parejo termina 1-for-2 en contra.",
             "effects": [
               {
                 "type": "stat",
@@ -3014,12 +3035,12 @@
       {
         "id": "cederlo_y_farmear",
         "label": "Cederlo y adelantar tu farm",
-        "descripcion": "No vale la vida por un cangrejo. Retrocedés al camp seguro y salís del cambio con más oro: cedés el early por el farm limpio.",
+        "descripcion": "Una vida no vale un cangrejo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Cedés visión pero terminás dos campamentos mientras ellos pelearon por el cangrejo. Salís adelante de oro, aunque el early no es tuyo.",
+            "texto": "Cedés visión pero terminás dos campamentos mientras ellos peleaban. Salís adelante de oro, aunque el early no es tuyo.",
             "effects": [
               {
                 "type": "stat",
@@ -3045,7 +3066,7 @@
           },
           {
             "weight": 4,
-            "texto": "El cangrejo cedido le da a {rivalDeLaFecha} visión de todo tu cuadrante, y el próximo gank te cae a vos. Aprendiste a no ceder el río por un cangrejo.",
+            "texto": "El cangrejo cedido le da a {rivalDeLaFecha} visión de todo tu cuadrante, y el próximo gank te cae a vos. Aprendiste.",
             "effects": [
               {
                 "type": "stat",
@@ -3075,11 +3096,12 @@
   },
   {
     "id": "la_ejecucion_del_plan",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "comun",
     "categoria": "partido",
-    "title": "La ventana del plan es ahora",
-    "description": "Toda la semana practicaron una jugada para este matchup contra {rivalDeLaFecha}, y el mapa acaba de dártela: la composición está donde tiene que estar, los cooldowns también. Es ahora o nunca.",
+    "title": "La ventana del plan",
+    "description": "Toda la semana practicaron una jugada para este matchup contra {rivalDeLaFecha}, y el mapa acaba de dártela. Es ahora o nunca.",
     "weight": 5,
     "cooldown": 5,
     "contexto": {
@@ -3101,7 +3123,7 @@
       {
         "id": "ejecutar_el_plan",
         "label": "Llamar la jugada y ejecutarla",
-        "descripcion": "Confiás en la semana de práctica. Das la orden y los cinco entran a la jugada ensayada.",
+        "descripcion": "Confiás en la semana de práctica.",
         "weight": 5,
         "outcomes": [
           {
@@ -3135,7 +3157,7 @@
           },
           {
             "weight": 4,
-            "texto": "La jugada se ejecuta bien pero {rivalDeLaFecha} tenía la respuesta preparada. Sale un intercambio parejo y gastaste todo.",
+            "texto": "La jugada sale bien pero {rivalDeLaFecha} tenía la respuesta preparada. Intercambio parejo y gastaste todo.",
             "effects": [
               {
                 "type": "stat",
@@ -3154,12 +3176,12 @@
       {
         "id": "esperar_mejor_ventana",
         "label": "Esperar una ventana más limpia",
-        "descripcion": "La jugada está, pero no perfecta. Preferís guardarla para cuando las condiciones sean del todo tuyas: la cabeza fría paga, el partido cede.",
+        "descripcion": "Guardás la jugada para cuando sea del todo tuya.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La próxima ventana llega diez minutos después, más limpia. Esperaste con calma y la jugada sale mejor, aunque ya perdiste tempo.",
+            "texto": "La próxima ventana llega diez minutos después, más limpia. Esperaste con calma y sale mejor, aunque perdiste tempo.",
             "effects": [
               {
                 "type": "stat",
@@ -3185,7 +3207,7 @@
           },
           {
             "weight": 4,
-            "texto": "La ventana perfecta no vuelve. El plan que practicaron toda la semana se queda sin usar y el partido se define por otro lado. Eso sí, la cabeza no se te rompió.",
+            "texto": "La ventana perfecta no vuelve. El plan de la semana queda sin usar y el partido se define por otro lado. La cabeza, intacta.",
             "effects": [
               {
                 "type": "stat",
@@ -3225,11 +3247,12 @@
   },
   {
     "id": "el_momento_de_heroe",
+    "voz": "corta",
     "category": "partido_dentro_del_mapa",
     "rarezaEvento": "rara",
     "categoria": "partido",
     "title": "El partido te ofrece la jugada",
-    "description": "El mapa se alinea para una de esas jugadas que se recuerdan: solo, sin visión, con los cinco de {rivalDeLaFecha} a tiro si entrás perfecto. Salir bien es el clip del año. Salir mal es el meme del año.",
+    "description": "Solo, sin visión, con los cinco de {rivalDeLaFecha} a tiro si entrás perfecto. Sale bien y es el clip del año; sale mal, el meme.",
     "weight": 4,
     "cooldown": 5,
     "contexto": {
@@ -3248,7 +3271,7 @@
       {
         "id": "tirarse_a_la_jugada",
         "label": "Tirarte a la jugada",
-        "descripcion": "Una ventana así no se pide dos veces. Entrás con todo y que decidan tus manos: es el clip del año si sale, y el partido paga si no.",
+        "descripcion": "Una ventana así no se pide dos veces.",
         "weight": 5,
         "outcomes": [
           {
@@ -3261,7 +3284,7 @@
               }
             ],
             "texto": [
-              "Entra todo. Ulti perfecta, cuatro de {rivalDeLaFecha} en el piso, y el casteo se le rompe la voz. Ese clip te sobrevive.",
+              "Entra todo. Ulti perfecta, cuatro de {rivalDeLaFecha} en el piso y al casteo se le rompe la voz. Ese clip te sobrevive.",
               "La jugada imposible sale. Salís caminando de una pelea que tendría que haberte matado tres veces."
             ],
             "effects": [
@@ -3289,7 +3312,7 @@
           },
           {
             "weight": 7,
-            "texto": "Entrás, la ulti agarra a uno, y los otros cuatro te borran en un segundo. El equipo juega 4v5 la pelea que importaba. Igual, de esa jugada se va a hablar.",
+            "texto": "Entrás, la ulti agarra a uno y los otros cuatro te borran. Juegan 4v5 la pelea que importaba. Igual, de esa jugada se habla.",
             "effects": [
               {
                 "type": "stat",
@@ -3328,12 +3351,12 @@
       {
         "id": "jugar_la_correcta",
         "label": "Dejarla pasar y jugar la correcta",
-        "descripcion": "La jugada de highlight tiene 30% de salir. La jugada aburrida tiene 70%. Elegís la aburrida.",
+        "descripcion": "La jugada aburrida es la que de verdad sale.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Dejás pasar la locura, jugás la pelea 5v5 estándar y la ganás sin sobresaltos. Nadie hace un clip, y está perfecto.",
+            "texto": "Dejás pasar la locura, jugás el 5v5 estándar y lo ganás sin sobresaltos. Nadie hace un clip, y está perfecto.",
             "effects": [
               {
                 "type": "stat",
@@ -3359,7 +3382,7 @@
           },
           {
             "weight": 3,
-            "texto": "Jugás la correcta y sale bien, pero por dentro te queda la duda de qué hubiera pasado si te tirabas.",
+            "texto": "Jugás la correcta y sale bien, pero te queda la duda de qué hubiera pasado si te tirabas.",
             "effects": [
               {
                 "type": "stat",
