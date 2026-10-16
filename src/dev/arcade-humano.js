@@ -9,6 +9,10 @@
 import { mulberry32, gauss } from '../core/rng.js';
 import * as baron from '../ui/arcade/baron.js';
 import * as esquive from '../ui/arcade/esquive.js';
+import { BALANCE } from '../data/balance.js';
+import * as combo from '../ui/arcade/combo.js';
+import * as corrida from '../ui/arcade/corrida.js';
+import * as prueba from '../ui/arcade/prueba.js';
 
 const CORRIDAS = Number(process.env.CORRIDAS ?? process.argv[2]) || 1000;
 const STAT = Number(process.argv[3]) || 60;
@@ -109,10 +113,145 @@ function azarDodge(rng) {
   };
 }
 
+// Cada humano tiene su día: un factor de habilidad que multiplica sus errores (1 = el de la media; más, peor). Sin esto todos los
+// jugadores serían iguales y la tabla no mostraría que un día se está mejor que otro.
+const HABILIDAD_DESVIO = 0.45;
+const HABILIDAD_RANGO = [0.4, 2.6];
+const habilidad = (rng) => Math.max(HABILIDAD_RANGO[0], Math.min(HABILIDAD_RANGO[1], gauss(1, HABILIDAD_DESVIO, rng)));
+
+// --- el combo (M3) -------------------------------------------------------------------------------------------------------
+// Ritmo, no reflejo: el humano ve la nota bajar y la aprieta cuando cruza la línea, con un error de timing que crece cuando
+// las notas vienen más juntas, y a veces agarra otra tecla (más seguido cuanto menos tiempo tiene para leerla).
+const HC_SIGMA_S = 0.040;
+const HC_RAPIDEZ = 0.8;
+const HC_GAP_REF = 0.7;
+const HC_ERR_BASE = 0.01;
+const HC_ERR_RAPIDEZ = 0.12;
+function humanoCombo(rng) {
+  const dia = habilidad(rng);
+  let plan = null;
+  return (e) => {
+    if (e.estado !== 'combo') { plan = null; return null; }
+    const c = e.combo;
+    const n = c.notas[c.idx];
+    if (!plan || plan.nota !== n) {
+      const sigma = dia * HC_SIGMA_S * (1 + HC_RAPIDEZ * (HC_GAP_REF / c.gapS - 1));
+      const pErr = dia * HC_ERR_BASE + HC_ERR_RAPIDEZ * Math.max(0, HC_GAP_REF - c.gapS) / HC_GAP_REF;
+      const otras = combo.TECLAS.filter((k) => k !== n.k);
+      plan = { nota: n, en: n.en + gauss(0, sigma, rng), k: rng() < pErr ? otras[Math.floor(rng() * otras.length)] : n.k, hecho: false };
+    }
+    if (!plan.hecho && e.t >= plan.en) { plan.hecho = true; return { tecla: plan.k }; }
+    return null;
+  };
+}
+const AZAR_COMBO_CADA_S = [0.15, 0.4];
+function azarCombo(rng) {
+  let proximo = 0;
+  return (e) => {
+    if (e.t < proximo) return null;
+    proximo = e.t + AZAR_COMBO_CADA_S[0] + rng() * (AZAR_COMBO_CADA_S[1] - AZAR_COMBO_CADA_S[0]);
+    return { tecla: combo.TECLAS[Math.floor(rng() * combo.TECLAS.length)] };
+  };
+}
+
+// --- la corrida (M3) -----------------------------------------------------------------------------------------------------
+// El humano ve que se juntan (reacción de 250 ms desde que arrancan a converger), estima cuándo llegan (con error), elige el
+// centro que más lugares cubre (con error de puntería) y tira la R para que explote cuando ya están juntos. No cuenta con el Flash.
+const CORR = BALANCE.g1.arcade.la_corrida;
+const HR_SIGMA_LLEGADA_S = 0.24;
+const HR_ADELANTO_S = 0.3;
+const HR_RUIDO_PUNTO = 2.8;
+const HR_DESCUIDO = 0.15; // por la habilidad del día: la probabilidad de no ver la primera junta
+function humanoCorrida(rng) {
+  const dia = habilidad(rng);
+  let engage = -1;
+  let vista = -1;
+  let plan = null;
+  return (e) => {
+    if (e.estado !== 'engage') return null;
+    const g = e.engage;
+    if (g.cast) return null;
+    if (g.i !== engage) { engage = g.i; vista = -1; plan = null; }
+    if (g.modo !== 'suelto' && g.junta !== vista) {
+      vista = g.junta;
+      if (g.junta === 1 && rng() < HR_DESCUIDO * dia) return null;
+      const faltan = Math.max(...g.rivales.map((r) => Math.hypot(r.x - r.slot.x, r.y - r.slot.y))) / (g.f.v * CORR.juntaK);
+      const llegada = e.t + faltan + gauss(0, dia * dia * HR_SIGMA_LLEGADA_S, rng);
+      const puntos = g.rivales.map((r) => ({ x: r.slot.x + gauss(0, dia * dia * HR_RUIDO_PUNTO, rng), y: r.slot.y + gauss(0, dia * dia * HR_RUIDO_PUNTO, rng) }));
+      let mejor = null;
+      for (const c of puntos) {
+        const n = puntos.filter((q) => Math.hypot(q.x - c.x, q.y - c.y) <= e.p.radio && !corrida.hayPared(g.paredes, c.x, c.y, q.x, q.y)).length;
+        if (!mejor || n > mejor.n) mejor = { n, x: c.x, y: c.y };
+      }
+      plan = { en: Math.max(g.juntaDesde + rtSegundos(rng), llegada + HR_ADELANTO_S - CORR.castS), x: mejor.x, y: mejor.y };
+    }
+    if (plan && e.t >= plan.en) {
+      const p = plan;
+      plan = null;
+      if (g.modo !== 'suelto') return { r: { x: p.x, y: p.y } };
+    }
+    return null;
+  };
+}
+function azarCorrida(rng) {
+  let en = -1;
+  let engage = -1;
+  let donde = null;
+  return (e) => {
+    if (e.estado !== 'engage') return null;
+    const g = e.engage;
+    if (g.i !== engage) { engage = g.i; en = rng() * CORR.engageMaxS; donde = { x: CORR.arena.x[0] + rng() * (CORR.arena.x[1] - CORR.arena.x[0]), y: CORR.arena.y[0] + rng() * (CORR.arena.y[1] - CORR.arena.y[0]) }; }
+    return !g.cast && g.t >= en ? { r: donde } : null;
+  };
+}
+
+// --- la prueba (M3) ------------------------------------------------------------------------------------------------------
+// El humano ve aparecer un dummy, reacciona (250 ms), calcula el punto de intercepción con la velocidad que le ve (con error) y
+// tira; si el tiro no llega antes de que el dummy se vaya, ni lo intenta. Si el dummy da la vuelta en el aire, se pierde el tiro.
+const PRU = BALANCE.g1.arcade.la_prueba;
+const HP_RUIDO_V = 0.2;
+const HP_RUIDO_PUNTO = 2.0;
+const HP_REAPUNTA = 0.6;
+function humanoPrueba(rng) {
+  const dia = habilidad(rng);
+  const planes = new Map();
+  return (e) => {
+    for (const d of e.dummies) if (!planes.has(d.id)) planes.set(d.id, { en: e.t + rtSegundos(rng) });
+    if (e.recarga > 0) return null;
+    const listo = e.dummies.filter((d) => planes.get(d.id).en <= e.t).sort((a, b) => b.edad - a.edad)[0];
+    if (!listo) return null;
+    const plan = planes.get(listo.id);
+    const vx = listo.vx * (1 + gauss(0, dia * HP_RUIDO_V, rng));
+    const vy = listo.vy * (1 + gauss(0, dia * HP_RUIDO_V, rng));
+    let T = Math.hypot(listo.x - PRU.yo.x, listo.y - PRU.yo.y) / PRU.velTiro;
+    let x = listo.x; let y = listo.y;
+    for (let k = 0; k < 4; k += 1) {
+      x = listo.x + vx * T;
+      y = listo.y + vy * T;
+      T = Math.hypot(x - PRU.yo.x, y - PRU.yo.y) / PRU.velTiro;
+    }
+    if (listo.edad + T > e.p.vida) { plan.en = Infinity; return null; }
+    plan.en = e.t + T + HP_REAPUNTA * RT_MEDIA_MS / 1000;
+    return { tiro: { x: x + gauss(0, dia * HP_RUIDO_PUNTO, rng), y: y + gauss(0, dia * HP_RUIDO_PUNTO, rng) } };
+  };
+}
+const AZAR_PRUEBA_CADA_S = [0.3, 0.7];
+function azarPrueba(rng) {
+  let proximo = 0;
+  return (e) => {
+    if (e.t < proximo) return null;
+    proximo = e.t + AZAR_PRUEBA_CADA_S[0] + rng() * (AZAR_PRUEBA_CADA_S[1] - AZAR_PRUEBA_CADA_S[0]);
+    return { tiro: { x: PRU.campo.x[0] + rng() * (PRU.campo.x[1] - PRU.campo.x[0]), y: PRU.campo.y[0] + rng() * (PRU.campo.y[1] - PRU.campo.y[0]) } };
+  };
+}
+
 // --- la tabla ------------------------------------------------------------------------------------------------------------
 const MECANICAS = [
   { id: 'robar_baron', m: baron, humano: humanoBaron, azar: azarBaron, conVara: true },
-  { id: 'dodge', m: esquive, humano: humanoDodge, azar: azarDodge, conVara: false }
+  { id: 'dodge', m: esquive, humano: humanoDodge, azar: azarDodge, conVara: false },
+  { id: 'el_combo', m: combo, humano: humanoCombo, azar: azarCombo, conVara: false },
+  { id: 'la_corrida', m: corrida, humano: humanoCorrida, azar: azarCorrida, conVara: false },
+  { id: 'la_prueba', m: prueba, humano: humanoPrueba, azar: azarPrueba, conVara: false }
 ];
 
 export { MECANICAS };

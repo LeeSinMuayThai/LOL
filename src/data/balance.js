@@ -2496,6 +2496,85 @@ export const BALANCE = {
         circulo: { radio: 8.5 },
         cono: { alcance: 44, apertura: 0.9 },
         flash: { distancia: 13 }
+      },
+      // M3 (ola H, entrega 2). El combo: `g1.conteo.el_combo` combos de tu campeón en tres fases (`combos` por fase, la suma
+      // es el conteo). Las notas (`teclas`) bajan por el carril a `vel` u/s hasta la línea de golpe; se aprieta la tecla justa
+      // a ±`ventanaS` (por `ventanaPorStat`) de la nota. `capturaK` × la ventana: antes de eso la tecla no cuenta (no se
+      // castiga un dedo nervioso lejos de la línea); adentro de la captura y fuera de la ventana, o con otra tecla, el combo
+      // se corta. `cancelCada`: cada n-ésima nota del combo es una cancelación de animación, con la ventana × `cancelK`.
+      el_combo: {
+        mundo: [160, 90],
+        teclas: ['q', 'w', 'e', 'r', 'f'],
+        lineaX: 30,
+        nacenX: 154,
+        vel: 76,
+        primeraS: 0.35,
+        arrancaS: 0.6,
+        entreS: 1.1,
+        ventanaS: [0.085, 0.16],
+        capturaK: 2.6,
+        cancelK: 0.7,
+        fases: [
+          { combos: 2, largo: 3, gapS: 0.7, cancelCada: 0 },
+          { combos: 2, largo: 4, gapS: 0.52, cancelCada: 0 },
+          { combos: 1, largo: 5, gapS: 0.42, cancelCada: 2 }
+        ]
+      },
+      // La corrida: `g1.conteo.la_corrida` engages en tres fases (`engages`). Cinco rivales (`rivales`) andan sueltos por la
+      // arena (`arena`) a `v` u/s y, cada `sueltoS`, se juntan alrededor de un punto (la junta: cada uno a su lugar dentro de
+      // `spread` del centro, a `juntaK` × `v`) y se quedan `juntosS` (por `ventanaPorStat`: es la ventana). Tu R es un círculo
+      // de `radio` (por stat) que se castea `castS`: caen los rivales adentro, sin pared de por medio, y el engage cuenta si
+      // son `necesarios` o más. Fase 2: al ver el círculo, cada rival adentro hace Flash con probabilidad `flash` (a los
+      // `flashDelayS`, `flashDist` hacia afuera). Fase 3: `paredes` rectángulos que frenan a los rivales y tapan la R.
+      la_corrida: {
+        mundo: [160, 90],
+        arena: { x: [10, 150], y: [18, 82] },
+        rivales: 5,
+        radioRival: 2.4,
+        necesarios: 3,
+        castS: 0.55,
+        radio: [8.5, 11.5],
+        juntosS: [0.45, 0.95],
+        sueltoS: [0.9, 1.7],
+        primeraS: [0.6, 1.2],
+        juntaMaxS: 5,
+        juntaK: 1.6,
+        engageMaxS: 8,
+        pausaS: 1.2,
+        margenJunta: 18,
+        flashDelayS: 0.2,
+        flashDist: 12,
+        pared: { ancho: [4, 6], largo: [22, 32] },
+        fases: [
+          { engages: 1, spread: 7, v: 22, flash: 0, paredes: 0 },
+          { engages: 1, spread: 8, v: 28, flash: 0.33, paredes: 0 },
+          { engages: 2, spread: 8, v: 30, flash: 0.33, paredes: 2 }
+        ]
+      },
+      // La prueba: el practice tool, `tiempoS` segundos y un skillshot que viaja `velTiro` u/s hasta donde apuntaste (y ahí se
+      // apaga); `recargaS` entre tiros. Los dummies (`dummies` a la vez según la fase) duran `vidaS` en pantalla (por stat) y
+      // reaparecen a los `reaparecerS`. Fase 1: quietos; fase 2: se mueven a `v` u/s rebotando en el campo; fase 3: además
+      // amagan (a los `amagueEn` s de aparecer tiemblan `avisoS` y dan la vuelta). El resultado es golpes / `blancos`.
+      la_prueba: {
+        mundo: [160, 90],
+        yo: { x: 14, y: 45 },
+        campo: { x: [58, 150], y: [12, 80] },
+        tiempoS: 20,
+        blancos: 14,
+        velTiro: 140,
+        radioTiro: 1.3,
+        radioDummy: 3.6,
+        recargaS: 0.6,
+        reaparecerS: 0.35,
+        separacion: 14,
+        vidaS: [0.7, 1.35],
+        avisoS: 0.18,
+        amagueEn: [0.45, 1.0],
+        fases: [
+          { hasta: 7, dummies: 1, v: [0, 0], amague: false },
+          { hasta: 14, dummies: 2, v: [26, 40], amague: false },
+          { hasta: 20, dummies: 2, v: [28, 42], amague: true }
+        ]
       }
     },
     // El piso humano de las mecánicas analógicas: lo que una persona no puede achicar, y que por eso no se descuenta.
