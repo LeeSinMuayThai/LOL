@@ -118,6 +118,7 @@ import { VERSION_DDRAGON, BASE_DDRAGON } from '../data/ddragon.js';
 import { crearSplash } from '../ui/components/splash.js';
 import { lineaDePlantelDeOferta } from '../ui/components/mercado.js';
 import METAS from '../data/metas.json' with { type: 'json' };
+import { cargarEventos as cargarEventosVoz, cargarCartas as cargarCartasVoz, revisarEvento as revisarEventoVoz, revisarCarta as revisarCartaVoz } from './voz.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29721,6 +29722,29 @@ check('G1c el Bo1 que frena no tiene tirada (lo decide el paso del minijuego), �
   console.log(`      ${JSON.stringify(cuenta)}`);
   if (cuenta.bo1 < 10 || cuenta.ganados === 0 || cuenta.charlas === 0) mal.push(`muestra vacía: ${JSON.stringify(cuenta)}`);
   if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
+});
+
+// H4a (PLANUI §0.10, H4): la voz corta. Las cartas (src/data/events/cartas/*.json) con título <= 4 y línea <= 10, y los eventos que
+// dicen "voz": "corta" con todos los límites de src/data/events/VOZ.md. Los eventos sin el flag no se miran: este check no puede
+// fallar con el contenido de antes de la reescritura. Los límites viven en src/dev/voz.js (LIMITES_VOZ).
+check('voz-corta: las cartas y los eventos marcados respetan la guía de VOZ.md', () => {
+  const mal = [];
+  const cartas = cargarCartasVoz();
+  if (cartas === null) {
+    console.log('      cartas: n/a (todavía no existe src/data/events/cartas/)');
+  } else {
+    cartas.forEach(({ carta, archivo }) => mal.push(...revisarCartaVoz(carta, archivo)));
+    console.log(`      cartas: ${cartas.length}`);
+  }
+  let marcados = 0;
+  for (const { archivo, eventos } of cargarEventosVoz()) {
+    for (const evento of eventos) {
+      if (evento.voz !== undefined) marcados += 1;
+      mal.push(...revisarEventoVoz(evento).map((m) => `${archivo} ${m}`));
+    }
+  }
+  console.log(`      eventos con voz corta: ${marcados}`);
+  if (mal.length > 0) throw new Error(`${mal.length} falta(s): ${mal.slice(0, 6).join(' | ')}`);
 });
 
 if (errores.length > 0) {
