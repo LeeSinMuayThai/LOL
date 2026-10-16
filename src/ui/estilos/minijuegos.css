@@ -25,11 +25,13 @@
 #minijuego > .titulo-parada { margin: 0; }
 #minijuego > .planteo { margin: 0; font-size: 15px; color: color-mix(in srgb, var(--ink-dim) 70%, var(--ink)); }
 
-/* con el reloj corriendo (o el veredicto a la vista) la consigna y la apuesta ya se leyeron y se pliegan */
+/* con el reloj corriendo (o el veredicto a la vista) la consigna ya se leyó y se pliega. H3k: la apuesta NO se va mientras
+   jugás (lo que te jugás queda a la vista): se achica a su primera línea, sin el "más". Con el veredicto, sí se va. */
 #minijuego[data-fase="juego"] > .planteo,
-#minijuego[data-fase="juego"] > #minijuegoApuesta,
 #minijuego[data-fase="resultado"] > .planteo,
 #minijuego[data-fase="resultado"] > #minijuegoApuesta { display: none; }
+#minijuego[data-fase="juego"] .minijuego-apuesta { padding: 8px 12px; }
+#minijuego[data-fase="juego"] :is(.minijuego-mas, .minijuego-apuesta-plegado, .minijuego-apuesta-stat) { display: none; }
 
 /* ---------- la apuesta: una placa ---------- */
 .minijuego-apuesta {
@@ -459,3 +461,38 @@ button.g1-poder:disabled { cursor: default; }
   :is(.g1-camino, .g1-mesa, .g1-etapas li, .g1-mapas li, .g1-momento, .g1-swiss-pips i, .g1-goles, .g1-veredicto-sello, .g1-cerca, .mj-pizarra-carta) { animation: none !important; }
 }
 html[data-reducido] :is(.g1-camino, .g1-mesa, .g1-etapas li, .g1-mapas li, .g1-momento, .g1-swiss-pips i, .g1-goles, .g1-veredicto-sello, .g1-cerca, .mj-pizarra-carta) { animation: none !important; }
+
+/* ==========================================================================
+   EL ARCADE (H3k, PLANUI §0.10): las mecánicas de canvas. El lienzo ocupa el ancho de la cancha y se dibuja solo (tokens
+   leídos en vivo por `ui/arcade/kit.js`); acá van el marco, los botones grandes para el toque y el suspenso del sello.
+   ========================================================================== */
+.arc { display: grid; gap: 10px; }
+.arc-lienzo {
+  display: block; width: 100%; border-radius: var(--r-control, 6px); background: var(--bg-sunken);
+  box-shadow: inset 0 0 0 1px var(--linea-fuerte), 0 18px 40px -24px var(--sombra);
+  touch-action: none; cursor: crosshair; outline: none;
+}
+.arc-lienzo:focus-visible { box-shadow: inset 0 0 0 2px var(--luz-escenario); }
+.arc-botones { display: flex; justify-content: center; gap: 10px; }
+.arc-boton {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 26px; border: 0; border-radius: 999px;
+  background: var(--bg-raised); color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold-hondo);
+  font: 800 16px / 1 var(--f-display); letter-spacing: 0.08em; cursor: pointer; touch-action: manipulation;
+  transition: transform 120ms var(--expo), box-shadow 120ms;
+}
+.arc-boton:active { transform: scale(0.96); box-shadow: inset 0 0 0 2px var(--gold); }
+.arc-boton[disabled] { color: var(--ink-mute); box-shadow: inset 0 0 0 1px var(--linea); cursor: default; }
+.arc-boton kbd { font: 600 11px / 1 var(--f-mono); color: var(--ink-mute); }
+.arc-pie { margin: 0; text-align: center; font-size: 13px; color: var(--ink-mute); }
+/* con mouse y teclado el botón grande sobra: queda para el toque */
+@media (hover: hover) and (pointer: fine) { .arc-botones { display: none; } }
+
+/* el suspenso antes del sello: la pista que se llena, la vara y el número */
+.mj-suspenso { display: grid; gap: 10px; justify-items: center; padding: 22px 8px; }
+.mj-suspenso-rotulo { font: 600 var(--t-rotulo) / 1 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-mute); }
+.mj-suspenso-pista { position: relative; width: min(100%, 520px); height: 14px; border-radius: 999px; background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--linea-fuerte); overflow: hidden; }
+.mj-suspenso-relleno { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--warn); box-shadow: 0 0 16px var(--warn); }
+.mj-suspenso[data-supera] .mj-suspenso-relleno { background: var(--up); box-shadow: 0 0 18px var(--up); }
+.mj-suspenso-vara { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1px; background: var(--ink); }
+.mj-suspenso-numero { font: 800 44px / 1 var(--f-display); font-variant-numeric: tabular-nums; color: var(--ink); }
+.mj-suspenso[data-supera] .mj-suspenso-numero { color: var(--up); }

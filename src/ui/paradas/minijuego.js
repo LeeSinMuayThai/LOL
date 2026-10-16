@@ -26,6 +26,7 @@ import { narrarContratoFirmado, firmaDeLaPrueba } from '../components/mercado.js
 import { crearCaraACaraDeNarracion } from '../components/caraACara.js';
 import { fundirCuadro } from '../narracion.js';
 import { crearCaminoG1, crearMesaG1, marcarMapaG1, crearVeredictoG1 } from '../components/finales.js';
+import { tension } from '../sonido.js';
 
 // La tecla de "¡Vamos!". Ningún minijuego la usa (Enter y Espacio sí, y un Enter sostenido se contaría como jugada).
 const TECLA_VAMOS = 'V';
@@ -34,6 +35,56 @@ const OPCIONES_CON_ATAJO = 4;
 // G1: lo que el veredicto de una final queda a la vista antes de que la parada se vaya (con el "tan cerca", hay una línea
 // más que leer que en los 1600 ms de siempre).
 const LECTURA_VEREDICTO_G1_MS = 2300;
+
+// H3k (PLANUI §0.10, "La salida"): el suspenso antes del sello. Una pista que se llena despacio (y frena al final) hasta lo que
+// sacaste, con la vara marcada si la hay y el número que sube; recién después, el sello. Con motion reducido, un instante.
+// El cierre corre por reloj además de por cuadros (G-fix G: con cuadros frenados `requestAnimationFrame` no llega).
+const SUSPENSO_MS = 1300;
+const SUSPENSO_REDUCIDO_MS = 300;
+const PORCIENTO = 100;
+function suspenso(widget, resultado, vara, alSellar) {
+  const reducido = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  const caja = nodo('div', 'mj-suspenso');
+  caja.setAttribute('role', 'status');
+  const pista = nodo('div', 'mj-suspenso-pista');
+  const relleno = nodo('div', 'mj-suspenso-relleno');
+  pista.append(relleno);
+  if (vara !== null) {
+    const linea = nodo('div', 'mj-suspenso-vara');
+    linea.style.left = `${Math.min(1, vara) * PORCIENTO}%`;
+    pista.append(linea);
+  }
+  const numero = nodo('div', 'mj-suspenso-numero', '0');
+  caja.append(nodo('div', 'mj-suspenso-rotulo', vara !== null ? 'Midiendo contra la vara…' : 'Midiendo…'), pista, numero);
+  widget.replaceChildren(caja);
+  const dura = reducido ? SUSPENSO_REDUCIDO_MS : SUSPENSO_MS;
+  if (!reducido) tension(dura / 1000);
+  let sellado = false;
+  const sellar = () => {
+    if (sellado) return;
+    sellado = true;
+    alSellar();
+  };
+  const inicio = performance.now();
+  const cuadro = (ahora) => {
+    if (sellado) return;
+    const u = Math.min(1, (ahora - inicio) / dura);
+    const v = resultado * (reducido ? 1 : 1 - (1 - u) ** 3);
+    relleno.style.width = `${v * PORCIENTO}%`;
+    numero.textContent = String(Math.round(v * PORCIENTO));
+    if (vara !== null) caja.toggleAttribute('data-supera', v >= vara);
+    if (u < 1) requestAnimationFrame(cuadro);
+    else sellar();
+  };
+  requestAnimationFrame(cuadro);
+  setTimeout(sellar, dura + SUSPENSO_REDUCIDO_MS);
+}
+
+// H3k: la página del arcade (`arcade.html`, `ui/arcade/pagina.js`) monta la parada con el marco real: esta es su puerta, así
+// el azar de la interfaz sigue entrando solo por acá.
+export function montarEnArcade(contenedor, decision, { estado, azar, responder }) {
+  montarParada(contenedor, decision, { estado, rngUi: azar, responder, renderPrevia: () => null, conCamino: false });
+}
 
 // El acompañante: el minijuego no tiene (§V.4: "inicio, final o minijuego → nada").
 export function acompanante() {
@@ -285,42 +336,48 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
         const respuesta = { resultado, ...(decision.datos.charla?.disponible ? { charla } : {}), ...(g1.poder ? { poder: poderActivo } : {}) };
         // la final con las manos: el juicio al toque, con la cuenta del motor; el mapa queda escrito en la tira
         const juicio = G1.juzgar(resultado, g1, poderActivo, bajaCharla());
-        if (juicio.paso) marcarHit(minijuegoWidget);
-        else if (!juicio.casi) marcarMiss(minijuegoWidget);
-        marcarMapaG1(camino, juicio.clave);
-        mesa?.alTerminar?.(juicio);
-        minijuegoWidget.replaceChildren(crearVeredictoG1(decision, estadoActual, { resultado, detalle, juicio, poderActivo }));
-        setTimeout(() => responder(respuesta), LECTURA_VEREDICTO_G1_MS);
+        // H3k: el suspenso va ANTES del sello (la medida sube hasta lo que sacaste, con la vara marcada)
+        suspenso(minijuegoWidget, resultado, juicio.vara, () => {
+          if (juicio.paso) marcarHit(minijuegoWidget);
+          else if (!juicio.casi) marcarMiss(minijuegoWidget);
+          marcarMapaG1(camino, juicio.clave);
+          mesa?.alTerminar?.(juicio);
+          minijuegoWidget.replaceChildren(crearVeredictoG1(decision, estadoActual, { resultado, detalle, juicio, poderActivo }));
+          setTimeout(() => responder(respuesta), LECTURA_VEREDICTO_G1_MS);
+        });
         return;
       }
-      // K2d: la p final del mapa, ya corrida por el minijuego: la que se tira.
-      const previaFinal = renderPrevia(decision, estadoActual, { resultadoMinijuego: resultado, charla });
-      // K4c-S (regla 15): la prueba decide el contrato, y la pantalla dice con qué probabilidad. K6c: la del amateur trae su vara
-      // (`datos.vara`, de tu nivel contra el del club) y no tira dado: la pantalla dice "Te firman" o por cuánto no llegaste, con
-      // la misma cuenta y la misma vara que el motor (`veredictoDeLaPrueba`). La del mercado sigue con su probabilidad.
-      const conVara = decision.datos.momento === 'tryout' && decision.datos.vara !== undefined;
-      const laPrueba = conVara ? veredictoDeLaPrueba(resultado, decision.datos.vara) : null;
-      const pFirma = decision.datos.momento === 'tryout' && !conVara ? probabilidadDeFirmarTrasPrueba(resultado) : null;
-      // K6c: con la vara el resultado ya está decidido: la frase sale de `veredictosConVara` del dato (sin el "si te firman" de
-      // la prueba del mercado) y, si no llegaste, no hay frase: manda la línea de la vara.
-      const v = veredictoDeMinijuego(decision.datos.minijuego, resultado, estadoActual, laPrueba ? { pasa: laPrueba.pasa } : {});
-      if (resultado >= 0.67) marcarHit(minijuegoWidget);
-      else if (resultado <= 0.33) marcarMiss(minijuegoWidget);
-      minijuegoWidget.innerHTML =
-        '<div class="minijuego-resultado minijuego-resultado--' + v.nivel + '">'
-        + '<div class="minijuego-resultado-titulo">' + v.titulo + '</div>'
-        + '<div class="minijuego-resultado-detalle">' + v.detalle + '</div>'
-        // K2d: la misma p que muestra la tarjeta de la previa (que queda arriba del widget).
-        + (previaFinal ? '<div class="minijuego-resultado-p">Con esto: ' + previaFinal.porcentaje + '% de ganar</div>' : '')
-        + (pFirma !== null ? '<div class="minijuego-resultado-p">Con esto: ' + porcentaje(pFirma) + ' de que te firmen</div>' : '')
-        + (laPrueba ? '<div class="minijuego-resultado-p minijuego-resultado-vara">' + (laPrueba.pasa
-          ? (laPrueba.vara === 0
-            // K6c-fix: con la vara en 0 tu nivel ya alcanzaba (la misma línea que el log de `resolverLaPrueba`).
-            ? 'Te firman: con tu nivel, la vara era 0% (sacaste ' + laPrueba.sacaste + '%).'
-            : 'Te firman: sacaste ' + laPrueba.sacaste + '% y la vara era ' + laPrueba.vara + '%.')
-          : 'No llegaste: te faltó ' + laPrueba.falta + '% (sacaste ' + laPrueba.sacaste + '%, la vara era ' + laPrueba.vara + '%).') + '</div>' : '')
-        + '</div>';
-      setTimeout(() => responder(decision.datos.charla?.disponible ? { resultado, charla } : { resultado }), 1600);
+      // H3k: también acá, el suspenso antes del veredicto
+      suspenso(minijuegoWidget, resultado, null, () => {
+        // K2d: la p final del mapa, ya corrida por el minijuego: la que se tira.
+        const previaFinal = renderPrevia(decision, estadoActual, { resultadoMinijuego: resultado, charla });
+        // K4c-S (regla 15): la prueba decide el contrato, y la pantalla dice con qué probabilidad. K6c: la del amateur trae su vara
+        // (`datos.vara`, de tu nivel contra el del club) y no tira dado: la pantalla dice "Te firman" o por cuánto no llegaste, con
+        // la misma cuenta y la misma vara que el motor (`veredictoDeLaPrueba`). La del mercado sigue con su probabilidad.
+        const conVara = decision.datos.momento === 'tryout' && decision.datos.vara !== undefined;
+        const laPrueba = conVara ? veredictoDeLaPrueba(resultado, decision.datos.vara) : null;
+        const pFirma = decision.datos.momento === 'tryout' && !conVara ? probabilidadDeFirmarTrasPrueba(resultado) : null;
+        // K6c: con la vara el resultado ya está decidido: la frase sale de `veredictosConVara` del dato (sin el "si te firman" de
+        // la prueba del mercado) y, si no llegaste, no hay frase: manda la línea de la vara.
+        const v = veredictoDeMinijuego(decision.datos.minijuego, resultado, estadoActual, laPrueba ? { pasa: laPrueba.pasa } : {});
+        if (resultado >= 0.67) marcarHit(minijuegoWidget);
+        else if (resultado <= 0.33) marcarMiss(minijuegoWidget);
+        minijuegoWidget.innerHTML =
+          '<div class="minijuego-resultado minijuego-resultado--' + v.nivel + '">'
+          + '<div class="minijuego-resultado-titulo">' + v.titulo + '</div>'
+          + '<div class="minijuego-resultado-detalle">' + v.detalle + '</div>'
+          // K2d: la misma p que muestra la tarjeta de la previa (que queda arriba del widget).
+          + (previaFinal ? '<div class="minijuego-resultado-p">Con esto: ' + previaFinal.porcentaje + '% de ganar</div>' : '')
+          + (pFirma !== null ? '<div class="minijuego-resultado-p">Con esto: ' + porcentaje(pFirma) + ' de que te firmen</div>' : '')
+          + (laPrueba ? '<div class="minijuego-resultado-p minijuego-resultado-vara">' + (laPrueba.pasa
+            ? (laPrueba.vara === 0
+              // K6c-fix: con la vara en 0 tu nivel ya alcanzaba (la misma línea que el log de `resolverLaPrueba`).
+              ? 'Te firman: con tu nivel, la vara era 0% (sacaste ' + laPrueba.sacaste + '%).'
+              : 'Te firman: sacaste ' + laPrueba.sacaste + '% y la vara era ' + laPrueba.vara + '%.')
+            : 'No llegaste: te faltó ' + laPrueba.falta + '% (sacaste ' + laPrueba.sacaste + '%, la vara era ' + laPrueba.vara + '%).') + '</div>' : '')
+          + '</div>';
+        setTimeout(() => responder(decision.datos.charla?.disponible ? { resultado, charla } : { resultado }), 1600);
+      });
     }, rngUi, decision.datos);
     jugar(g1 ? { ...decision, datos: { ...decision.datos, poderActivo, charlaActiva: charlaElegida } } : decision);
 

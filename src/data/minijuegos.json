@@ -14,7 +14,7 @@
     },
     "impacto": 0.16,
     "spread": 0.22,
-    "reglaEnFiccion": "Calculá el daño y clavá el smite en la ventana justa para asegurar el objetivo antes que el rival.",
+    "reglaEnFiccion": "Tres objetivos en el pozo y un smite para cada uno: clavalo cuando la vida esté en tu zona, antes de que el jungla rival te lo robe.",
     "nombresPorCompeticion": {
       "internacional": "El Barón de Worlds",
       "LCK": "El Barón del LoL Park",
@@ -329,7 +329,7 @@
     },
     "impacto": 0.11,
     "spread": 0.16,
-    "reglaEnFiccion": "Leé la trayectoria enemiga y salí del carril telegrafiado a tiempo para esquivar el impacto.",
+    "reglaEnFiccion": "Leé los skillshots telegrafiados (línea, círculo, cono) y salí del área antes de que pegue. Flash, una sola vez.",
     "nombresPorCompeticion": {
       "internacional": "Dodge en el internacional",
       "LCK": "El esquive de la LCK",
@@ -346,7 +346,7 @@
       "El baile de skillshots"
     ],
     "descripciones": [
-      "Te tiran todo y estás sin flash: hay que leer y moverse.",
+      "Te tiran todo y tenés un solo flash: hay que leer y moverse.",
       "El mapa está cerrado y cada skillshot que comés es la pelea.",
       "Están buscándote a vos: si no te enganchan, ganan ellos el tiempo."
     ],

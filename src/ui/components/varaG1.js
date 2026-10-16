@@ -24,7 +24,7 @@ import { VENTANA_MS } from './minijuegos/laLlamada.js';
 const CONTEO = {
   last_hit: { total: MINIONS, unidad: 'minions', articulo: 'los' },
   el_combo: { total: TECLAS_COMBO, unidad: 'teclas del combo', articulo: 'las' },
-  dodge: { total: SKILLSHOTS, unidad: 'skillshots', articulo: 'los' },
+  dodge: { total: SKILLSHOTS, unidad: 'oleadas', articulo: 'las' },
   el_kite: { total: TIEMPOS, unidad: 'tiempos de kite', articulo: 'los' },
   la_vision: { total: A_OSCURAS, unidad: 'wards', articulo: 'los' },
   la_prueba: { total: BLANCOS, unidad: 'blancos', articulo: 'los' },
@@ -105,7 +105,9 @@ export function reglaDeVara(id, vara, state, datos) {
   }
   if (m.tipo === 'distancia') {
     const d = redondo(radioQuePasa(vara, m.escala));
-    return id === 'el_teleport' ? `Que el TP caiga a ${d} o menos del centro de la pelea` : `Smite a ${d} o menos del centro de la zona`;
+    // H3k: el Barón, con un decimal (la zona del canvas mide eso, y a la vara alta un punto es media zona)
+    const dBaron = String(Math.round(radioQuePasa(vara, m.escala) * 10) / 10).replace('.', ',');
+    return id === 'el_teleport' ? `Que el TP caiga a ${d} o menos del centro de la pelea` : `Los 3 smites a ${dBaron} o menos del centro de su zona`;
   }
   if (m.tipo === 'latencia') return `Cantala en menos de ${redondo(latenciaQuePasa(vara, m.ventanaMs))} ms`;
   return `Sacá ${Math.ceil(vara * 100)}% o más`;
@@ -143,6 +145,12 @@ export function tanCerca(id, resultado, detalle, juicio, state, datos) {
   }
   if (m.tipo === 'distancia') {
     if (detalle?.tipo === 'tarde') return 'Se te pasó la pelea: el TP nunca salió.';
+    // H3k: el Barón son tres smites (pasa si los tres caen en su zona): cuánto erró cada uno y cuánto pedía la zona
+    if (detalle?.tipo === 'smites') {
+      const decimal = (n) => String(Math.round(n * 10) / 10).replace('.', ',');
+      const cada = detalle.smites.map((x) => (x.robado ? 'robado' : decimal(x.d))).join(' · ');
+      return `Tus smites, del centro: ${cada}. La zona pedía ${decimal(radioQuePasa(vara, detalle.escala))} o menos.`;
+    }
     if (detalle?.tipo !== 'distancia') return '';
     const radio = radioQuePasa(vara, detalle.escala);
     const zona = `${enBarra(detalle.centro - radio)}-${enBarra(detalle.centro + radio)}`;

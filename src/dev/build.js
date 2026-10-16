@@ -41,7 +41,8 @@ const DIST = path.join(RAIZ, 'dist');
 const A_COPIAR = ['index.html', 'src/core', 'src/data', 'src/systems', 'src/ui', 'assets/og-image.png'];
 // La previa (PLANUI §0.4): la página que compara las variantes y las partidas guardadas que abre (`/?previa=<muestra>`).
 // No es el juego: se publica al lado y queda fuera del techo de peso (~1,4 MB de muestras que nadie descarga jugando).
-const A_COPIAR_PREVIA = ['previa.html', 'previa/muestras'];
+// El arcade (PLANUI §0.10, H3k: la compuerta) también va al lado, fuera del techo: `arcade.html` (su script vive en src/ui).
+const A_COPIAR_PREVIA = ['previa.html', 'previa/muestras', 'arcade.html'];
 
 const SEEDS_DE_VERIFICACION = 12;
 const SPLITS_DE_VERIFICACION = 30;
