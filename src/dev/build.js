@@ -167,7 +167,10 @@ const SPLITS_DE_VERIFICACION = 30;
 // las piezas nuevas (el mercado con sus cuatro ejes y etiquetas, la ceremonia con `components/monumento.js` y la tarjeta-palmarés,
 // la fila de stats de la ficha, `systems/promesas.js` y sus datos, los textos de G2c y los titulares de G4a). Subido a 4290: ~100 KB
 // (2,5%) de margen sobre el peso medido ese día.
-const PESO_MAXIMO_KB = 4290;
+// Re-medido en la entrega 2 de la ola H (2026-10-16, `h-e2`, PLANUI §0.10 Riesgos: "se sube el techo"): 4385 KB contra 4290. Crecieron
+// las 12 mecánicas en canvas (`ui/arcade/*`: la lógica pura y los sprites de cada una), la tanda y el Play-In en la parada, la mano
+// nueva y el momento legendario. Subido a 4500: ~115 KB (2,6%) de margen; la entrega 3 (190 eventos, 150 cartas) lo vuelve a medir.
+const PESO_MAXIMO_KB = 4500;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);
