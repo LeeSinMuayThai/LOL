@@ -34,6 +34,39 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-15 — Ola H, entrega 1: la forma de elegir, el mazo de cartas y el arcade
+
+PLANUI §0.10. Cinco workers en worktrees, todos con tope de pasos: H1a y H3k con Opus high, H1b y H2a con Sonnet xhigh, H4a con Sonnet high. Después,
+un revisor Sonnet ("OK con menores") y un worker Sonnet de arreglos (H-fix, 8 commits). El supervisor arregló un `[object Object]` en el rival
+de reserva de `{rivalDeLaFecha}`.
+
+- **H1a, el sorteo.** Un solo sorteo con rareza (`rarezaEvento`, probRareza .62/.26/.09/.03): sale el escalón, las raras salen una vez por carrera, hay piso
+  de rareza y cupo propio por split. Se agrega el tipo `evento` a la cola (uno por año). Hay 50 eventos re-etiquetados (13 épicos y 37 raros).
+  - Guardado VERSION 19 (`migrarDe18`).
+  - Decisión del supervisor: el split del cierre también tiene su evento, porque sin él ~59 eventos de playoffs quedaban fuera.
+- **H1b, la temporada regular** sin paradas de partido: salen F2, la fecha marcada y el Bo1 de D118. Los 64 de `partido/` pasan al mazo del split.
+  - Nuevo `simulate.js --bloque=variedad`.
+- **H2a, el mazo de cartas.** Hay 90 cartas en `data/events/cartas/`, una mano sorteada por rareza (.68/.22/.08/.02) con piso, "Otra mano" ×2 y marco
+  por rareza, sin aviso ni descripción. Sale `cierre_edad.json`.
+- **H3k, el arcade.** El kit en canvas, con paso fijo y jugo; el Barón (tres smites) y el dodge (arena 2-D, 7 oleadas) rehechos; el suspenso antes
+  del sello; `arcade.html`.
+  - Con `arcade-humano.js`: quieto 0%, al azar ≤ 10%, humano de 250 ms 87-89 / 62-64 / 29% a vara .5 / .7 / .85, y lo mismo a 60 que a 144 Hz.
+- **H4a, la voz corta.** `VOZ.md`, el check `voz-corta` y `dev/voz.js`. Hoy el 5% de los eventos cumple, una pantalla de cartas tiene una mediana de
+  100 palabras y la de evento 77; la reescritura es de la entrega 2.
+- **Medido** (300 carreras con `criterio`, 60 splits):
+  - eventos distintos por carrera ~19-24 → 36,8;
+  - los 10 más vistos 44-52% → 17,1% (meta ≤ 15%);
+  - Jaccard 0,41 → 0,18 (meta ≤ 0,15);
+  - nunca vistos del split 37% → 7,3% (14 de 191);
+  - raras o más 0 → 14,7 por carrera, sin ninguna repetida;
+  - paradas de evento 37,7 y paradas totales 137 (D146).
+- **El embudo** (`simulate 1000`): `llegaATier1` 38,5 → 40,3 y `noLlegaAPro` 10,4 → 9,3.
+- **Verificación.** `simulate 1000` dos veces, idéntica y sin crashes. `HUELLA_JUEGO` 423616085 (`VERSION_JUEGO` 'H'), `FORMAS_CONOCIDAS[19]` 39704745419d.
+  - El rápido dio 372 OK y 6 FAIL. Cuatro vienen de la base (K1 puntaje, K4c guardado VERSION 10, K6b-M (b), K6c el mismo club); "K1 D75" está
+    vacío (D147); el sexto se arregló y pasa con `--solo`.
+- **Deudas nuevas:** D143-D147.
+- **Sigue:** el usuario juega `lolero.lol/arcade` y una carrera; después, la entrega 2.
+
 ### 2026-10-15 — Ola H, el plan: "cada carrera, distinta" (el mazo, el arcade y la voz corta)
 
 El usuario jugó la ola G: *"se siente un poco mejor pero no a full, los minijuegos se sienten muy chotos [...] las cartas

@@ -45,7 +45,9 @@ export const TOKENS = {
     // Antes de que arme el calendario (la primera fecha del tier 3, o un estado recién creado) no hay fecha: el rival es el
     // primer equipo de tu competencia que no es el tuyo, el mismo criterio de siempre y sin azar. Así el texto nunca sale crudo.
     const liga = ligaOZonaDeCarrera(state);
-    return (liga?.orgs ?? []).find((org) => org !== state.career.currentOrg) ?? null;
+    // Las ligas guardan nombres; el tier 3 guarda clubes (`{ nombre, … }`, core/tier3.js): el texto lleva siempre el nombre.
+    const nombres = (liga?.orgs ?? []).map((org) => (typeof org === 'string' ? org : org?.nombre)).filter(Boolean);
+    return nombres.find((nombre) => nombre !== state.career.currentOrg) ?? null;
   },
   // El campeón que domina el parche en tu línea. Deja escribir "todos pickean
   // {metaTop}" sin cablear un nombre en el JSON.
