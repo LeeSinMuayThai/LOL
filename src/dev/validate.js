@@ -5655,7 +5655,9 @@ check('Toda mecánica se puede terminar sin mouse y sin animación (9R4c)', () =
   for (const nombre of archivos) {
     const codigo = fs.readFileSync(path.join(dir, nombre), 'utf8');
     const tieneBoton = codigo.includes("'button'") || codigo.includes('minijuego-btn') || codigo.includes('<button');
-    const escuchaTeclas = codigo.includes('escuchaTeclado') || codigo.includes('keydown');
+    // H3k: el kit del arcade (`ui/arcade/kit.js`) trae su propio teclado: `crearEntradas` escucha `keydown` (WASD, flechas, Espacio, F)
+    // y `crearMarco` pone botones de verdad para el toque; una mecánica del arcade que los usa se juega sin mouse.
+    const escuchaTeclas = codigo.includes('escuchaTeclado') || codigo.includes('keydown') || codigo.includes('crearEntradas');
     if (!tieneBoton && !escuchaTeclas) {
       throw new Error(`${nombre}: no se puede terminar sin mouse (ni botones ni teclado)`);
     }

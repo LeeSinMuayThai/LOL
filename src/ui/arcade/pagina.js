@@ -26,14 +26,14 @@ const MECANICAS = [
 const ROL_DE = { robar_baron: 'jungla' };
 const SEMILLA_INICIAL = 20261015;
 
-const $ = (s) => document.querySelector(s);
-const panel = $('#minijuego');
-const salida = $('#arSalida');
+const buscar = (selector) => document.querySelector(selector);
+const panel = buscar('#minijuego');
+const salida = buscar('#arSalida');
 let elegida = 'robar_baron';
 let semilla = SEMILLA_INICIAL;
 
 function pintarLista() {
-  const lista = $('#arLista');
+  const lista = buscar('#arLista');
   lista.replaceChildren(...MECANICAS.map((m) => {
     const b = document.createElement('button');
     b.type = 'button';
@@ -43,7 +43,7 @@ function pintarLista() {
     b.innerHTML = `<span class="ar-rol">${m.rol}</span><b>${m.nombre}</b><small>${m.listo ? m.linea : `${m.linea} · pronto`}</small>`;
     b.addEventListener('click', () => {
       elegida = m.id;
-      if (ROL_DE[m.id]) $('#arRol').value = ROL_DE[m.id];
+      if (ROL_DE[m.id]) buscar('#arRol').value = ROL_DE[m.id];
       pintarLista();
       jugar();
     });
@@ -57,8 +57,8 @@ function vara() {
 
 function jugar() {
   semilla += 1;
-  const estado = createInitialState(semilla, mulberry32(semilla), { rol: $('#arRol').value });
-  estado.player.stats.mecanica = Number($('#arStat').value);
+  const estado = createInitialState(semilla, mulberry32(semilla), { rol: buscar('#arRol').value });
+  estado.player.stats.mecanica = Number(buscar('#arStat').value);
   const entrada = minijuegoPorId(elegida);
   const m = MECANICAS.find((x) => x.id === elegida);
   const decision = {
@@ -78,17 +78,17 @@ function jugar() {
     azar: mulberry32(semilla * 7919),
     responder: ({ resultado }) => {
       salida.hidden = false;
-      $('#arSalidaTexto').textContent = `Sacaste ${Math.round(resultado * 100)} con la vara en ${Math.round(vara() * 100)}.`;
-      $('#arOtra').focus();
+      buscar('#arSalidaTexto').textContent = `Sacaste ${Math.round(resultado * 100)} con la vara en ${Math.round(vara() * 100)}.`;
+      buscar('#arOtra').focus();
     }
   });
   panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
-$('#arStat').addEventListener('input', () => { $('#arStatValor').textContent = $('#arStat').value; });
-$('#arOtra').addEventListener('click', jugar);
+buscar('#arStat').addEventListener('input', () => { buscar('#arStatValor').textContent = buscar('#arStat').value; });
+buscar('#arOtra').addEventListener('click', jugar);
 for (const r of document.querySelectorAll('input[name="vara"], #arRol')) r.addEventListener('change', jugar);
-$('#arStat').addEventListener('change', jugar);
+buscar('#arStat').addEventListener('change', jugar);
 // V es "¡Vamos!", como en el juego
 window.addEventListener('keydown', (ev) => {
   if (ev.key.toLowerCase() === 'v' && panel.dataset.fase === 'previa') document.querySelector('[data-vamos]')?.click();
