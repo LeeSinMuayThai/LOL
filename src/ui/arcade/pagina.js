@@ -25,6 +25,15 @@ const MECANICAS = [
 ];
 const ROL_DE = { robar_baron: 'jungla' };
 const SEMILLA_INICIAL = 20261015;
+// H3u: la tanda de mentira para probar sin carrera: 3 rivales inventados y varas que suben de a un escalón.
+const RIVALES_DE_PRUEBA = ['Pampa Esports', 'Fénix del Sur', 'Los Chicharrones'];
+const SUBE_LA_VARA = 0.08;
+const VARA_TOPE = 0.95;
+const P_DE_PRUEBA = 0.5;
+const REGLAS_DE_TANDA = {
+  swiss: { etapa: 'swiss', victoriasParaPasar: 3, derrotasParaQuedarAfuera: 1 },
+  playin: { etapa: 'playin', victoriasParaPasar: 2, derrotasParaQuedarAfuera: 2 }
+};
 
 const buscar = (selector) => document.querySelector(selector);
 const panel = buscar('#minijuego');
@@ -55,12 +64,24 @@ function vara() {
   return Number(document.querySelector('input[name="vara"]:checked')?.value ?? 0.7);
 }
 
+function modoDeTanda() {
+  return document.querySelector('input[name="tanda"]:checked')?.value ?? 'una';
+}
+
+function tandaDePrueba() {
+  const regla = REGLAS_DE_TANDA[modoDeTanda()];
+  if (!regla) return null;
+  const partidos = RIVALES_DE_PRUEBA.map((rival, i) => ({ rival, vara: Math.min(VARA_TOPE, vara() + SUBE_LA_VARA * i), p: P_DE_PRUEBA }));
+  return { ...regla, partidos, pCampo: P_DE_PRUEBA };
+}
+
 function jugar() {
   semilla += 1;
   const estado = createInitialState(semilla, mulberry32(semilla), { rol: buscar('#arRol').value });
   estado.player.stats.mecanica = Number(buscar('#arStat').value);
   const entrada = minijuegoPorId(elegida);
   const m = MECANICAS.find((x) => x.id === elegida);
+  const tanda = tandaDePrueba();
   const decision = {
     titulo: entrada?.titulos?.[0] ?? m.nombre,
     descripcion: entrada?.descripciones?.[0] ?? m.linea,
@@ -68,7 +89,8 @@ function jugar() {
       minijuego: elegida,
       momento: 'mapa_decisivo',
       apuesta: entrada?.apuesta ?? '',
-      g1: { vara: vara(), margenCasi: BALANCE.g1.margenCasi, factorEscalada: 1, poder: null }
+      g1: { vara: vara(), margenCasi: BALANCE.g1.margenCasi, factorEscalada: 1, poder: null },
+      ...(tanda ? { tanda } : {})
     }
   };
   for (const n of panel.querySelectorAll(':scope > .g1-mesa, :scope > .g1-camino')) n.remove();
@@ -76,9 +98,11 @@ function jugar() {
   montarEnArcade(panel, decision, {
     estado,
     azar: mulberry32(semilla * 7919),
-    responder: ({ resultado }) => {
+    responder: ({ resultado, resultados }) => {
       salida.hidden = false;
-      buscar('#arSalidaTexto').textContent = `Sacaste ${Math.round(resultado * 100)} con la vara en ${Math.round(vara() * 100)}.`;
+      buscar('#arSalidaTexto').textContent = resultados
+        ? `Jugaste ${resultados.length} de ${tanda.partidos.length} partidos: ${resultados.map((r, i) => `${Math.round(r * 100)} (vara ${Math.round(tanda.partidos[i].vara * 100)})`).join(' · ')}.`
+        : `Sacaste ${Math.round(resultado * 100)} con la vara en ${Math.round(vara() * 100)}.`;
       buscar('#arOtra').focus();
     }
   });
@@ -87,7 +111,7 @@ function jugar() {
 
 buscar('#arStat').addEventListener('input', () => { buscar('#arStatValor').textContent = buscar('#arStat').value; });
 buscar('#arOtra').addEventListener('click', jugar);
-for (const r of document.querySelectorAll('input[name="vara"], #arRol')) r.addEventListener('change', jugar);
+for (const r of document.querySelectorAll('input[name="vara"], input[name="tanda"], #arRol')) r.addEventListener('change', jugar);
 buscar('#arStat').addEventListener('change', jugar);
 // V es "¡Vamos!", como en el juego
 window.addEventListener('keydown', (ev) => {

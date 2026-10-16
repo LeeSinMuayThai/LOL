@@ -240,8 +240,15 @@ export function crearBucle({ alPaso, alDibujar, jugo = null }) {
 // saltea la demo (no el 3-2-1). Con motion reducido, la demo queda quieta en su mejor cuadro.
 const DEMO_S = 2;
 const CUENTA_S = 0.55;
+// H3u: en una tanda, la demo sale solo antes del primer partido; los demás van directo al 3-2-1 (`omitirDemoDeLaProxima`, de una sola vez).
+let sinDemoLaProxima = false;
+export function omitirDemoDeLaProxima() {
+  sinDemoLaProxima = true;
+}
 export function presentar(lienzo, { linea, demo, reducido = false }) {
   const { ctx, canvas } = lienzo;
+  const demoS = sinDemoLaProxima ? 0 : DEMO_S;
+  sinDemoLaProxima = false;
   const pal = lienzo.paleta;
   return new Promise((resolver) => {
     const inicio = performance.now();
@@ -252,10 +259,10 @@ export function presentar(lienzo, { linea, demo, reducido = false }) {
     let ultimoNumero = 0;
     const cuadro = (ahora) => {
       let t = (ahora - inicio) / 1000;
-      if (salteado !== null) t = Math.max(t, DEMO_S + (ahora - salteado) / 1000);
+      if (salteado !== null) t = Math.max(t, demoS + (ahora - salteado) / 1000);
       lienzo.empezar();
-      const enDemo = t < DEMO_S;
-      demo(ctx, reducido ? 0.72 : Math.min(1, t / DEMO_S), enDemo);
+      const enDemo = t < demoS;
+      demo(ctx, reducido ? 0.72 : demoS ? Math.min(1, t / demoS) : 1, enDemo);
       ctx.fillStyle = tinte(pal.fondo, enDemo ? 0.25 : 0.55);
       ctx.fillRect(0, 0, lienzo.ancho, lienzo.alto);
       ctx.fillStyle = tinte(pal.fondo, 0.82);
@@ -265,7 +272,7 @@ export function presentar(lienzo, { linea, demo, reducido = false }) {
       ctx.fillStyle = tinte(pal.tinta);
       ctx.fillText(linea, lienzo.ancho / 2, lienzo.px(26));
       if (!enDemo) {
-        const k = Math.floor((t - DEMO_S) / CUENTA_S);
+        const k = Math.floor((t - demoS) / CUENTA_S);
         if (k >= 3) {
           window.removeEventListener('keydown', saltear);
           canvas.removeEventListener('pointerdown', saltear);
@@ -274,7 +281,7 @@ export function presentar(lienzo, { linea, demo, reducido = false }) {
           return;
         }
         if (k + 1 !== ultimoNumero) { ultimoNumero = k + 1; tick(); }
-        const f = ((t - DEMO_S) % CUENTA_S) / CUENTA_S;
+        const f = ((t - demoS) % CUENTA_S) / CUENTA_S;
         const tam = reducido ? 72 : 72 * (1.35 - 0.35 * Math.min(1, f * 3));
         ctx.globalAlpha = reducido ? 1 : 1 - Math.max(0, f - 0.7) * 2.5;
         ctx.font = `800 ${lienzo.px(tam)}px ${pal.display}`;

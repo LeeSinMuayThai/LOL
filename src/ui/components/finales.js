@@ -10,6 +10,7 @@ import { el } from '../fx/util.js';
 import { logoOrg, siglaDe } from '../fx/competicion.js';
 import { BALANCE } from '../../data/balance.js';
 import * as G1 from './varaG1.js';
+import { anotarMarca } from '../mejorMarca.js';
 
 const SWISS = BALANCE.mundial;
 const MARCA = { ganada: '✓', perdida: '✗', actual: '▶', pendiente: '' };
@@ -119,9 +120,60 @@ export function marcarMapaG1(camino, clave) {
   }
 }
 
+// H3u: en la tanda (el Swiss de a varios, el Play-In), cada partido que se decide llena su ranura del récord del camino.
+export function marcarPartidoSwiss(camino, gano) {
+  const swiss = camino?.querySelector('.g1-swiss');
+  if (!swiss) return;
+  const ranura = swiss.querySelector(`i[data-tipo="${gano ? 'v' : 'd'}"]:not([data-llena])`);
+  if (ranura) ranura.dataset.llena = '';
+  const lleno = (tipo) => swiss.querySelectorAll(`i[data-tipo="${tipo}"][data-llena]`).length;
+  const record = swiss.querySelector('.g1-swiss-record');
+  if (record) record.textContent = `${lleno('v')}–${lleno('d')}`;
+}
+
+const NUMEROS = ['cero', 'una', 'dos', 'tres', 'cuatro', 'cinco'];
+
+// H3u: la tanda a la vista: un renglón por partido (el rival y cómo salió) y, en el Play-In, el título y la apuesta dicha.
+// Devuelve el nodo y `actual(i)` / `marcar(i, clave)` (clave: 'paso' | 'casi' | 'no').
+export function crearTandaG1(tanda) {
+  const { etapa, partidos, victoriasParaPasar: gana } = tanda;
+  const rivalDe = (p) => (typeof p.rival === 'object' ? (p.rival?.org ?? p.rival?.nombre ?? '') : (p.rival ?? ''));
+  const apuesta = etapa === 'playin'
+    ? `${NUMEROS[gana] ?? gana} victoria${gana === 1 ? '' : 's'} y entrás al Mundial`
+    : `Tanda de ${partidos.length}: la primera derrota la corta`;
+  const lista = el('ol', { class: 'g1-tanda-partidos', 'aria-label': 'Los partidos de la tanda' }, partidos.map((p, i) => el('li', { 'data-res': '', style: { '--i': String(i) } }, [
+    el('span', { class: 'g1-tanda-n', text: `Partido ${i + 1}` }),
+    el('b', { class: 'g1-tanda-rival', text: rivalDe(p) ? `vs ${rivalDe(p)}` : '' }),
+    el('i', { 'aria-hidden': 'true', text: '' })
+  ])));
+  const nodo = el('section', { class: 'g1-tanda', 'data-etapa': etapa ?? '' }, [
+    etapa === 'playin' ? el('p', { class: 'g1-tanda-titulo', text: 'PLAY-IN' }) : null,
+    el('p', { class: 'g1-tanda-apuesta', text: apuesta.charAt(0).toUpperCase() + apuesta.slice(1) }),
+    lista
+  ]);
+  const fila = (i) => lista.children[i];
+  return {
+    nodo,
+    rivalDe: (i) => rivalDe(partidos[i]),
+    actual(i) {
+      const li = fila(i);
+      if (!li) return;
+      li.dataset.res = 'actual';
+      li.querySelector('i').textContent = '▶';
+    },
+    marcar(i, clave) {
+      const li = fila(i);
+      if (!li) return;
+      const res = clave === 'paso' ? 'W' : clave === 'casi' ? 'casi' : 'L';
+      li.dataset.res = res;
+      li.querySelector('i').textContent = MARCA_MAPA[res];
+    }
+  };
+}
+
 // La mesa: la vara, los chips y el premio. `alCambiarPoder(activo)` avisa a la parada; `alJugar` traba el poder.
 export function crearMesaG1(decision, estado, { alCambiarPoder = () => {} } = {}) {
-  const g1 = decision.datos.g1;
+  let g1 = decision.datos.g1;
   const id = decision.datos.minijuego;
   const poder = g1.poder ?? null;
   const regla = el('p', { class: 'g1-regla-texto' });
@@ -212,6 +264,11 @@ export function crearMesaG1(decision, estado, { alCambiarPoder = () => {} } = {}
       }
       pintarRegla();
     },
+    // H3u: en la tanda, cada partido tiene su vara: la regla se vuelve a decir con la de ese partido.
+    fijarVara(vara) {
+      g1 = { ...g1, vara };
+      pintarRegla();
+    },
     alJugar() {
       nodo.dataset.jugando = '';
       if (botonPoder?.tagName === 'BUTTON') botonPoder.disabled = true;
@@ -226,11 +283,14 @@ export function crearMesaG1(decision, estado, { alCambiarPoder = () => {} } = {}
 export function crearVeredictoG1(decision, estado, { resultado, detalle, juicio, poderActivo }) {
   const id = decision.datos.minijuego;
   const v = G1.lineaDeVeredicto(id, juicio.clave, estado);
-  const cerca = G1.tanCerca(id, resultado, detalle, juicio, estado, { ...decision.datos, poderActivo });
+  const datos = { ...decision.datos, poderActivo };
+  const cerca = G1.tanCerca(id, resultado, detalle, juicio, estado, datos);
+  const marca = anotarMarca(id, resultado, detalle, estado, datos);
   return el('div', { class: `minijuego-resultado minijuego-resultado--${v.nivel} g1-veredicto`, 'data-juicio': juicio.clave, role: 'status' }, [
     el('div', { class: 'g1-veredicto-sello', text: v.titulo }),
     v.detalle ? el('div', { class: 'minijuego-resultado-detalle', text: v.detalle }) : null,
-    cerca ? el('div', { class: 'g1-cerca', text: cerca }) : null
+    cerca ? el('div', { class: 'g1-cerca', text: cerca }) : null,
+    el('div', { class: 'g1-marca', 'data-nueva': marca.nueva ? '' : null, text: marca.texto })
   ]);
 }
 

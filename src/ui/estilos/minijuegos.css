@@ -168,15 +168,12 @@ html[data-reducido] .minijuego-espera-boton::after { animation: none; }
 .minijuego-btn:active:not(:disabled) { transform: scale(0.97); }
 .minijuego-btn:disabled { opacity: 0.45; cursor: default; }
 .minijuego-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-.minijuego-mover .minijuego-btn, .minijuego-kite .minijuego-btn { min-width: 72px; }
+.minijuego-mover .minijuego-btn { min-width: 72px; }
 
 .minijuego-aviso { padding: 22px 0; text-align: center; font: 900 clamp(30px, 3.4vw, 44px) / 1 var(--f-display); font-stretch: var(--ancho-momento); letter-spacing: 0.04em; text-transform: uppercase; color: var(--mj-luz); }
 .minijuego-aim-info { font: 600 var(--t-rotulo) / 1.2 var(--f-mono); letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-dim); }
 
-/* la barra del timing (robar el barón, el teleport) */
-.minijuego-barra { position: relative; height: 28px; margin-bottom: 16px; border-radius: 999px; background: var(--oscuro-total); box-shadow: inset 0 0 0 1px var(--linea); overflow: hidden; }
-.minijuego-zona { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--up) 38%, transparent); box-shadow: inset 0 0 0 1px var(--up); }
-.minijuego-marcador { position: absolute; top: -3px; bottom: -3px; left: 0; width: 3px; background: var(--ink); box-shadow: 0 0 10px var(--luz-fuerte); transform: translateX(-50%); }
+/* la barra de tiempo */
 .minijuego-barra-tiempo { height: 8px; margin-bottom: 16px; border-radius: 999px; background: var(--oscuro-total); overflow: hidden; }
 .minijuego-barra-tiempo-fill { width: 100%; height: 100%; background: linear-gradient(90deg, var(--down), var(--warn)); }
 
@@ -196,35 +193,6 @@ html[data-reducido] .minijuego-espera-boton::after { animation: none; }
 .minijuego-pistas-lista { margin: 0; padding: 0; list-style: none; overflow-wrap: anywhere; }
 .minijuego-pistas-lista li + li { margin-top: 4px; }
 
-/* la prueba: el campo de blancos */
-.minijuego-campo { position: relative; height: 190px; margin-bottom: 12px; border-radius: var(--r-control); background: radial-gradient(80% 90% at 50% 50%, color-mix(in srgb, var(--mj-luz) 6%, transparent), transparent), var(--oscuro-total); box-shadow: inset 0 0 0 1px var(--linea); overflow: hidden; }
-.minijuego-blanco {
-  all: unset; box-sizing: border-box; cursor: crosshair; position: absolute; width: 36px; height: 36px; border-radius: 50%;
-  background: radial-gradient(circle, var(--luz-blanca) 0 18%, var(--gold) 19% 46%, var(--down) 47% 100%);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 60%, transparent), 0 0 20px -2px color-mix(in srgb, var(--gold) 60%, transparent);
-}
-.minijuego-blanco:hover { box-shadow: 0 0 0 3px var(--gold), 0 0 26px 0 color-mix(in srgb, var(--gold) 70%, transparent); }
-
-/* last_hit: la ola de minions */
-.minijuego-ola { display: flex; align-items: flex-end; gap: 12px; margin: 16px 0 12px; }
-.minijuego-minion {
-  all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: flex; align-items: flex-end; justify-content: center; width: 58px; height: 90px; padding-bottom: 8px;
-  overflow: hidden; border-radius: var(--r-control); background: var(--oscuro-total); box-shadow: inset 0 0 0 1px var(--linea); color: var(--ink-dim);
-}
-.minijuego-minion:disabled { opacity: 0.4; cursor: default; }
-.minijuego-minion[data-resultado="bien"] { box-shadow: inset 0 0 0 2px var(--up); }
-.minijuego-minion[data-resultado="mal"] { box-shadow: inset 0 0 0 2px var(--down); }
-.minijuego-minion-hp { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; display: flex; align-items: flex-start; justify-content: center; background: color-mix(in srgb, var(--luz) 24%, var(--panel-hondo)); box-shadow: inset 0 2px 0 var(--luz); font-size: 11px; color: var(--ink-dim); }
-.minijuego-minion[data-zona="ejecucion"] .minijuego-minion-hp { background: color-mix(in srgb, var(--warn) 70%, var(--panel-hondo)); box-shadow: inset 0 2px 0 var(--gold); color: var(--org-tinta); }
-.minijuego-minion-num { position: relative; font: 900 18px / 1 var(--f-display); font-stretch: var(--ancho-numero); color: var(--ink); }
-
-/* el_combo: la secuencia de teclas */
-.minijuego-teclas { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 12px; }
-.minijuego-tecla { display: grid; place-items: center; width: 46px; height: 46px; border-radius: var(--r-control); background: var(--panel); box-shadow: inset 0 0 0 1px var(--linea-fuerte); font: 900 20px / 1 var(--f-display); color: var(--ink); }
-.minijuego-tecla[data-resultado="bien"] { box-shadow: inset 0 0 0 2px var(--up); color: var(--up); }
-.minijuego-tecla[data-resultado="mal"] { box-shadow: inset 0 0 0 2px var(--down); color: var(--down); }
-.minijuego-tecla-btn { min-width: 52px; }
-
 /* dodge: los carriles */
 .minijuego-carriles { display: flex; gap: 8px; height: 100px; margin: 16px 0 12px; }
 .minijuego-carril { position: relative; flex: 1; border-radius: var(--r-control); background: var(--oscuro-total); box-shadow: inset 0 0 0 1px var(--linea); }
@@ -232,25 +200,6 @@ html[data-reducido] .minijuego-espera-boton::after { animation: none; }
 .minijuego-carril[data-yo="si"]::after { content: ""; position: absolute; left: 50%; bottom: 10px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--luz); box-shadow: 0 0 14px var(--luz); }
 .minijuego-carril[data-impacto="acierto"] { background: color-mix(in srgb, var(--down) 55%, var(--oscuro-total)); }
 .minijuego-carril[data-impacto="fallo"] { background: color-mix(in srgb, var(--up) 18%, var(--oscuro-total)); box-shadow: inset 0 0 0 1px var(--up); }
-
-/* la_vision: las zonas del mapa */
-.minijuego-zonas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px 0 12px; }
-.minijuego-zona-btn {
-  all: unset; box-sizing: border-box; cursor: pointer; padding: 14px 8px; text-align: center; border-radius: var(--r-control);
-  background: var(--panel); box-shadow: inset 0 0 0 1px var(--linea); font: 600 11px / 1.2 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-dim);
-}
-.minijuego-zona-btn[data-estado="oscura"] { background: var(--oscuro-total); color: var(--ink-mute); }
-.minijuego-zona-btn[data-estado="tapada"] { background: var(--panel-claro); color: var(--ink); }
-.minijuego-zona-btn[data-resultado="bien"] { box-shadow: inset 0 0 0 2px var(--up); color: var(--up); }
-.minijuego-zona-btn[data-resultado="mal"] { box-shadow: inset 0 0 0 2px var(--down); color: var(--down); }
-.minijuego-zona-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-
-/* el_kite: el metrónomo */
-.minijuego-metronomo { display: flex; gap: 8px; margin: 16px 0 12px; }
-.minijuego-paso { flex: 1; height: 12px; border-radius: 999px; background: var(--oscuro-total); box-shadow: inset 0 0 0 1px var(--linea); }
-.minijuego-paso[data-activo="si"] { background: var(--luz-suave); box-shadow: inset 0 0 0 1px var(--luz); }
-.minijuego-paso[data-resultado="bien"] { background: var(--up); box-shadow: none; }
-.minijuego-paso[data-resultado="mal"] { background: color-mix(in srgb, var(--down) 30%, var(--oscuro-total)); box-shadow: inset 0 0 0 1px var(--down); }
 
 @media (max-width: 640px) {
   .minijuego { padding: 18px 16px 18px; }
@@ -401,32 +350,6 @@ button.g1-poder:disabled { cursor: default; }
 @keyframes g1-sello { 0% { opacity: 0; transform: rotate(-3deg) scale(1.7); } 60% { opacity: 1; } 100% { transform: rotate(-3deg) scale(1); } }
 .g1-cerca { font: 700 13px / 1.4 var(--f-mono); letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--ink); animation: g1-pip 380ms var(--expo) 420ms both; }
 
-/* ---------- la corrida y la pizarra ---------- */
-.mj-corrida-pips { display: flex; justify-content: center; gap: 8px; margin: 0 0 12px; }
-.mj-corrida-pips i { width: 28px; height: 6px; border-radius: 3px; background: var(--linea-fuerte); transition: background-color 200ms ease; }
-.mj-corrida-pips i[data-estado="actual"] { background: var(--gold); }
-.mj-corrida-pips i[data-estado="bien"] { background: var(--up); }
-.mj-corrida-pips i[data-estado="mal"] { background: var(--down); }
-.mj-corrida-barra { height: 40px; }
-.mj-corrida-barra .minijuego-zona[data-resultado="bien"] { background: color-mix(in srgb, var(--up) 70%, transparent); }
-.mj-corrida-barra .minijuego-zona[data-resultado="mal"] { background: color-mix(in srgb, var(--down) 45%, transparent); box-shadow: inset 0 0 0 1px var(--down); }
-.mj-pizarra { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
-.mj-pizarra-carta {
-  all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: grid; place-items: center; min-height: 64px; padding: 8px; border-radius: 8px;
-  text-align: center; font: 700 13px / 1.2 var(--f-cuerpo); color: var(--ink); background: var(--panel-claro); box-shadow: inset 0 0 0 1px var(--linea-fuerte);
-  transition: transform 220ms var(--expo), background-color 160ms ease, box-shadow 160ms ease;
-}
-.mj-pizarra-carta:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.mj-pizarra-carta > span { grid-area: 1 / 1; }
-.mj-pizarra-dorso { font: 800 15px / 1 var(--f-mono); color: var(--ink-mute); }
-.mj-pizarra-carta:is([data-estado="vista"], [data-estado="abierta"], [data-estado="par"], [data-estado="error"]) .mj-pizarra-dorso,
-.mj-pizarra-carta[data-estado="tapada"] .mj-pizarra-cara { visibility: hidden; }
-.mj-pizarra-carta[data-estado="tapada"] { background: radial-gradient(90% 90% at 50% 0%, color-mix(in srgb, var(--gold) 14%, transparent), transparent 70%), var(--panel-hondo); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 30%, var(--linea)); }
-.mj-pizarra-carta[data-estado="tapada"]:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 1px var(--gold); }
-.mj-pizarra-carta[data-estado="abierta"] { box-shadow: inset 0 0 0 2px var(--gold); }
-.mj-pizarra-carta[data-estado="par"] { cursor: default; color: var(--up); box-shadow: inset 0 0 0 2px var(--up); background: color-mix(in srgb, var(--up) 12%, var(--panel-hondo)); }
-.mj-pizarra-carta[data-estado="error"] { color: var(--down); box-shadow: inset 0 0 0 2px var(--down); animation: mj-sacudon 260ms ease-out; }
-
 /* ---------- el sello del Bo1 con riesgo (en la opción del cara a cara) ---------- */
 .g1-sello-riesgo { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-left: 10px; vertical-align: middle; }
 .g1-sello-riesgo b { padding: 3px 7px; border-radius: 4px; font: 800 10px / 1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; }
@@ -454,8 +377,6 @@ button.g1-poder:disabled { cursor: default; }
   .g1-equipo .g1-sigla { font-size: 12px; }
   .g1-mapas li { height: 28px; padding: 0 9px; font-size: 11px; }
   .g1-mapa-palabra { display: none; }
-  .mj-pizarra { gap: 6px; }
-  .mj-pizarra-carta { min-height: 56px; font-size: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   :is(.g1-camino, .g1-mesa, .g1-etapas li, .g1-mapas li, .g1-momento, .g1-swiss-pips i, .g1-goles, .g1-veredicto-sello, .g1-cerca, .mj-pizarra-carta) { animation: none !important; }
@@ -496,3 +417,25 @@ html[data-reducido] :is(.g1-camino, .g1-mesa, .g1-etapas li, .g1-mapas li, .g1-m
 .mj-suspenso-vara { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1px; background: var(--ink); }
 .mj-suspenso-numero { font: 800 44px / 1 var(--f-display); font-variant-numeric: tabular-nums; color: var(--ink); }
 .mj-suspenso[data-supera] .mj-suspenso-numero { color: var(--up); }
+
+/* ---------- H3u: la tanda (el Swiss de a varios, el Play-In), la transición entre partidos y tu mejor marca ---------- */
+.g1-tanda { display: grid; gap: 8px; margin: 0 0 12px; padding: 12px 14px; border-radius: var(--r-control); background: var(--panel); box-shadow: inset 0 0 0 1px var(--linea); }
+.g1-tanda-titulo { margin: 0; font: 800 22px / 1 var(--f-display); font-stretch: 115%; letter-spacing: 0.08em; color: var(--gold); }
+.g1-tanda-apuesta { margin: 0; color: var(--ink-dim); font-size: 14px; line-height: 1.35; }
+.g1-tanda-partidos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; }
+.g1-tanda-partidos li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; padding: 8px 10px; border-radius: var(--r-control); background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--linea); }
+.g1-tanda-n { grid-column: 1; font: 600 10.5px / 1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mute); }
+.g1-tanda-rival { grid-column: 1; font: 700 14px / 1.2 var(--f-cuerpo); overflow-wrap: anywhere; }
+.g1-tanda-partidos li > i { grid-column: 2; grid-row: 1 / 3; font: 800 18px / 1 var(--f-display); font-style: normal; }
+.g1-tanda-partidos li[data-res="actual"] { box-shadow: inset 0 0 0 2px var(--gold); }
+.g1-tanda-partidos li[data-res="W"] > i { color: var(--up); }
+.g1-tanda-partidos li[data-res="L"] > i { color: var(--down); }
+.g1-tanda-partidos li[data-res="casi"] > i { color: var(--warn); }
+.mj-transicion { display: grid; gap: 8px; justify-items: center; padding: 30px 8px; text-align: center; }
+.mj-transicion-previo { font: 800 20px / 1 var(--f-display); font-stretch: 110%; letter-spacing: 0.06em; color: var(--ink-dim); }
+.mj-transicion[data-juicio="paso"] .mj-transicion-previo { color: var(--up); }
+.mj-transicion[data-juicio="no"] .mj-transicion-previo { color: var(--down); }
+.mj-transicion[data-juicio="casi"] .mj-transicion-previo { color: var(--warn); }
+.mj-transicion-sig { font: 600 15px / 1.3 var(--f-mono); color: var(--ink); }
+.g1-marca { margin-top: 6px; font: 600 12px / 1.3 var(--f-mono); letter-spacing: 0.06em; color: var(--ink-mute); }
+.g1-marca[data-nueva] { color: var(--gold); }

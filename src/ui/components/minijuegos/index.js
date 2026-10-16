@@ -40,8 +40,18 @@ export const MONTAR_MINIJUEGO = {
 };
 
 // La mecánica de un id; si el registro no la tiene, la corrida (universal), así una parada nunca queda sin juego.
+// H3u (D145): el gancho de dev del recorrido en navegador (`src/dev/recorrido.mjs`). Solo existe con `?bot` en la URL: la mecánica
+// de canvas se termina sola, un rato después de arrancar, con un resultado del RNG de la interfaz. Sin `?bot`, no hace nada.
+const HAY_BOT = typeof location !== 'undefined' && new URLSearchParams(location.search).has('bot');
+const BOT_ESPERA_MS = 700;
 export function montadorDe(id) {
-  return MONTAR_MINIJUEGO[id] ?? montarLaCorrida;
+  const montar = MONTAR_MINIJUEGO[id] ?? montarLaCorrida;
+  if (!HAY_BOT) return montar;
+  return (widget, state, onDone, rngUi, datos) => {
+    const salida = montar(widget, state, onDone, rngUi, datos);
+    setTimeout(() => onDone(rngUi(), null), BOT_ESPERA_MS);
+    return salida;
+  };
 }
 
 // Fase 9R0b: el motor recibía el `resultado` 0-1 y seguía de largo, así que
