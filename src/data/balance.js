@@ -2496,6 +2496,44 @@ export const BALANCE = {
         circulo: { radio: 8.5 },
         cono: { alcance: 44, apertura: 0.9 },
         flash: { distancia: 13 }
+      },
+      // M4 (ola H, entrega 2). La pizarra: un memotest de draft en tres fases. El coach muestra el plan del rival `vistaPorParS`
+      // segundos por par (por `ventanaPorStat` de macro) × `vista` de la fase; después se tapa y armás los pares (pick con su
+      // línea o con su counter). Cada fase tiene `respondePorParS` segundos por par; los pares que quedan sin armar cuando se
+      // acaba cuentan como errores. En la fase 3 la pizarra se mezcla: `mezclas` cambios de lugar a la vista, entre el
+      // `mezclaDesde` y el `mezclaHasta` de la vista (fracción). Un par que no era queda a la vista `errorS`. El resultado es
+      // `1 − errores / g1.erroresTope.la_pizarra` (la regla de siempre).
+      la_pizarra: {
+        vistaPorParS: [0.9, 1.7],
+        errorS: 0.65,
+        entreFasesS: 1.3,
+        mezclaDesde: 0.35,
+        mezclaHasta: 0.9,
+        fases: [
+          { pares: 2, vista: 1, respondePorParS: 4.5, mezclas: 0 },
+          { pares: 3, vista: 0.8, respondePorParS: 4.5, mezclas: 0 },
+          { pares: 4, vista: 0.62, respondePorParS: 4, mezclas: 3 }
+        ]
+      },
+      // M4. La llamada: tres situaciones (fases). Cada una arma un mapa con 4 objetivos y sus relojes; `setupS` después se
+      // abre el que sale libre (el reloj en cero y sin el jungla rival encima, salvo que su Flash esté gastado) y tenés
+      // `ventanaMs` para cantarlo: el piso humano (`pisoHumano.llamadaMs`) más lo que abre `shotcalling` (`ventanaMs`, por
+      // `ventanaPorStat`). `senuelos`: objetivos que también se abren pero con el jungla rival y el Flash arriba (no van).
+      // `trampa`: el correcto también tiene al jungla, pero con su Flash gastado. `ruido`: marcas de más en el mapa que no
+      // cuentan. `masRapido`: lo que se acorta el mapa (los relojes de los demás van a `entreOtrosS` del cero). Cantar antes
+      // de la señal, otro objetivo o fuera de la ventana vale la ventana entera. El resultado es la latencia MEDIA de las tres
+      // contra la ventana (`resultadoDeLatencia`): lo que ves es lo que pasa.
+      la_llamada: {
+        ventanaMs: [150, 300],
+        feedbackS: 1.15,
+        ruidoJungla: 0.5,
+        inicioS: 0.35,
+        entreOtrosS: [0.9, 2.2],
+        fases: [
+          { setupS: 2.7, senuelos: 0, trampa: false, ruido: 3 },
+          { setupS: 2.4, senuelos: 1, trampa: true, ruido: 1 },
+          { setupS: 1.5, senuelos: 2, trampa: true, ruido: 1 }
+        ]
       }
     },
     // El piso humano de las mecánicas analógicas: lo que una persona no puede achicar, y que por eso no se descuenta.

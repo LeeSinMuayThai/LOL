@@ -9,6 +9,9 @@
 import { mulberry32, gauss } from '../core/rng.js';
 import * as baron from '../ui/arcade/baron.js';
 import * as esquive from '../ui/arcade/esquive.js';
+import * as pizarra from '../ui/arcade/pizarra.js';
+import * as llamada from '../ui/arcade/llamada.js';
+import { BALANCE } from '../data/balance.js';
 
 const CORRIDAS = Number(process.env.CORRIDAS ?? process.argv[2]) || 1000;
 const STAT = Number(process.argv[3]) || 60;
@@ -109,10 +112,110 @@ function azarDodge(rng) {
   };
 }
 
+// --- M4: las dos de cabeza -------------------------------------------------------------------------------------------------
+// Acá el humano no solo reacciona: se equivoca de memoria y de lectura.
+//   la pizarra: fija cada par con probabilidad `1 − exp(−vistaPorPar / MEMORIA_S)` (menos por cada cambio de lugar a la
+//   vista); lo que no fijó lo busca dando vuelta cartas, y lo que ve en cada intento lo aprende (con `SABE_LO_VISTO`).
+//   la llamada: lee bien la situación con la probabilidad de su fase (los señuelos y la prisa confunden) y llama a los
+//   `LLAMADA_MEDIA_MS` ms de la señal, con un sesgo propio de la corrida y un desvío por llamada.
+const MEMORIA_S = 1.1;
+const OLVIDO_POR_MEZCLA = 0.12;
+const PENSAR_S = 0.3;
+const SABE_LO_VISTO = 0.4;
+function humanoPizarra(rng) {
+  let fase = -1;
+  let sabe = null;
+  let proximo = null;
+  const aprende = (f, i) => {
+    const c = f.cartas[i];
+    if (rng() < SABE_LO_VISTO) sabe.get(c.par)[c.lado] = i;
+  };
+  return (e) => {
+    const f = e.fase;
+    if (f.i !== fase) { fase = f.i; sabe = null; proximo = null; }
+    if (f.estado !== 'juega') return null;
+    if (!sabe) {
+      sabe = new Map();
+      const olvido = BALANCE.g1.arcade.la_pizarra.fases[f.i].mezclas * OLVIDO_POR_MEZCLA;
+      const fija = (1 - Math.exp(-(f.vistaS / f.pares) / MEMORIA_S)) * (1 - olvido);
+      const recuerda = Array.from({ length: f.pares }, () => rng() < fija);
+      for (let par = 0; par < f.pares; par += 1) sabe.set(par, [null, null]);
+      f.cartas.forEach((c, i) => { if (recuerda[c.par]) sabe.get(c.par)[c.lado] = i; });
+    }
+    if (proximo === null) proximo = f.t + PENSAR_S + rtSegundos(rng);
+    if (f.t < proximo) return null;
+    proximo = null;
+    const libre = (i) => f.cartas[i].estado === 'tapada';
+    let idx = null;
+    if (f.abiertas.length === 1) {
+      const c = f.cartas[f.abiertas[0]];
+      const otra = sabe.get(c.par)[1 - c.lado];
+      if (otra !== null && libre(otra)) idx = otra;
+    } else {
+      for (const [, [a, b]] of sabe) if (a !== null && b !== null && libre(a) && libre(b)) { idx = a; break; }
+    }
+    if (idx === null) {
+      const conocidas = new Set([...sabe.values()].flat().filter((i) => i !== null));
+      const todas = f.cartas.map((_, i) => i).filter(libre);
+      const desconocidas = todas.filter((i) => !conocidas.has(i));
+      const lista = desconocidas.length ? desconocidas : todas;
+      idx = lista[Math.floor(rng() * lista.length)];
+    }
+    aprende(f, idx);
+    return { voltear: idx };
+  };
+}
+const AZAR_PIZARRA_S = [0.25, 0.6];
+function azarPizarra(rng) {
+  let proximo = 0;
+  return (e) => {
+    const f = e.fase;
+    if (f.estado !== 'juega' || e.t < proximo) return null;
+    proximo = e.t + AZAR_PIZARRA_S[0] + rng() * (AZAR_PIZARRA_S[1] - AZAR_PIZARRA_S[0]);
+    const libres = f.cartas.map((_, i) => i).filter((i) => f.cartas[i].estado === 'tapada');
+    return libres.length ? { voltear: libres[Math.floor(rng() * libres.length)] } : null;
+  };
+}
+
+const LECTURA = [0.98, 0.9, 0.88];
+const LLAMADA_MEDIA_MS = 212;
+const SESGO_MS = 38;
+const DESVIO_LLAMADA_MS = 44;
+function humanoLlamada(rng) {
+  const sesgo = gauss(0, SESGO_MS, rng);
+  let fase = -1;
+  let plan = null;
+  return (e) => {
+    const f = e.fase;
+    if (f.estado === 'entre') return null;
+    if (f.i !== fase) {
+      fase = f.i;
+      const lee = rng() < LECTURA[f.i];
+      const otros = [0, 1, 2, 3].filter((i) => i !== f.correcto);
+      const objetivo = lee ? f.correcto : (f.senuelos[0] ?? otros[Math.floor(rng() * otros.length)]);
+      const ms = Math.max(RT_PISO_MS, LLAMADA_MEDIA_MS + sesgo + gauss(0, DESVIO_LLAMADA_MS, rng));
+      plan = { objetivo, en: f.setupS + ms / 1000 };
+    }
+    return f.t >= plan.en ? { llamar: plan.objetivo } : null;
+  };
+}
+function azarLlamada(rng) {
+  let fase = -1;
+  let plan = null;
+  return (e) => {
+    const f = e.fase;
+    if (f.estado === 'entre') return null;
+    if (f.i !== fase) { fase = f.i; plan = { objetivo: Math.floor(rng() * 4), en: rng() * (f.setupS + e.p.ventanaMs / 1000) }; }
+    return f.t >= plan.en ? { llamar: plan.objetivo } : null;
+  };
+}
+
 // --- la tabla ------------------------------------------------------------------------------------------------------------
 const MECANICAS = [
   { id: 'robar_baron', m: baron, humano: humanoBaron, azar: azarBaron, conVara: true },
-  { id: 'dodge', m: esquive, humano: humanoDodge, azar: azarDodge, conVara: false }
+  { id: 'dodge', m: esquive, humano: humanoDodge, azar: azarDodge, conVara: false },
+  { id: 'la_pizarra', m: pizarra, humano: humanoPizarra, azar: azarPizarra, conVara: false },
+  { id: 'la_llamada', m: llamada, humano: humanoLlamada, azar: azarLlamada, conVara: false }
 ];
 
 export { MECANICAS };
