@@ -10,7 +10,6 @@ import { conPermanencia, conTechoDeLesion } from '../core/curvas.js';
 import { crearLog, adjuntar } from '../core/log.js';
 import { deltaCorto, lista } from '../core/formato.js';
 import { tipoDeSplit } from '../core/presupuesto.js';
-import { esCierreDeTemporada } from '../core/serie.js';
 import { frenaEnLaCola, conFirmaDeLaCola } from '../core/cola.js';
 import { previaDeOpcion, riesgoDeOpcion, gateDeOpcion, textoDeRiesgo, payoffNormalizado } from '../core/previa.js';
 import { rarezaDeOpcionEvento } from '../core/rareza.js';
@@ -438,7 +437,7 @@ export function quedaParadaDeEvento(state) {
   if (state.phase !== 'profesional') {
     return true;
   }
-  return !esCierreDeTemporada(state.player.splitCount) && frenaEnLaCola(state, 'evento', null).frena;
+  return frenaEnLaCola(state, 'evento', null).frena;
 }
 
 // G2a: el evento que frena gasta la parada del split (`presupuesto.eventos`, que `systems/presupuesto.js` vuelve a cero). H1a: y,
@@ -446,21 +445,6 @@ export function quedaParadaDeEvento(state) {
 export function conParadaDeEvento(state) {
   const p = state.presupuesto ?? { gastadas: 0, eventos: 0 };
   return conFirmaDeLaCola({ ...state, presupuesto: { ...p, eventos: (p.eventos ?? 0) + 1 } }, 'evento');
-}
-
-// H1a: `elegirEventoCierre` se queda sin uso cuando H2a arme la mano del cierre (se borra ahí, T5).
-export function elegirEventoCierre(state, rng) {
-  const contexto = calcularContexto(state);
-  const disponibles = TODOS_LOS_EVENTOS.filter(
-    (event) => event.cierreDeEdad
-      && !cooldownActivo(state, event.id)
-      && disponibleEn(state, event, contexto)
-      && opcionesVivas(state, event, contexto).length >= 2
-  );
-  if (disponibles.length === 0) {
-    return null;
-  }
-  return weightedPick(disponibles, (event) => pesoConMemoria(state, event), rng);
 }
 
 // La promesa de CONCEPTO §8: "la opción obviamente correcta sale mal a veces.

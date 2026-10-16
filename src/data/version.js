@@ -79,7 +79,9 @@
 // casa, Final2 con la LPL en 91, el no-pro con piso de soloQ, El GOAT = nuevo Faker). Sin esto, después del merge dos juegos
 // distintos compartirían "v K4c" en el desafío, el historial y el texto compartido. La etiqueta no entra en la huella (la tupla de
 // `calcularHuellaJuego` no la lee): la huella del bloque C es la de abajo. Misma `VERSION` del guardado (12, no salió de la rama).
-export const VERSION_JUEGO = 'G2';
+// H (ola H, entrega 1, PLANUI §0.10): `VERSION_JUEGO` pasa a 'H': el sorteo de eventos con rareza y su cupo propio, la temporada
+// regular sin paradas de partido, el mazo de cartas y el arcade. Re-baseline anunciado de la ola (T1/T6).
+export const VERSION_JUEGO = 'H';
 // K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
