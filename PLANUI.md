@@ -1265,6 +1265,18 @@ forma.
     deja de tener su copia de los conteos.
 - **La rotación.** Nunca más de 5 rondas seguidas de la misma mecánica (`minijuegoDelTorneo`, :323).
 - **Los ids no cambian**, porque los guardados los tienen. Cambian solo los títulos.
+- **Lo que fija H3e** (plan de la pieza, 2026-10-16):
+  - **El Play-In:** lo juega el último sembrado de una liga con ≥ `mundial.playIn.cuposMinimos` (3) cupos, como el 4º de la LCK
+    y la LPL en 2025. Una sola parada y una sola tanda: los rivales son el primer no clasificado de cada otra liga con ≥ 3 cupos
+    (hoy 3), de menor a mayor fuerza; `victoriasParaPasar` 2 y `derrotasParaQuedarAfuera` 2. Si pasás, al Swiss en tu cupo; si
+    no, el Mundial se juega sin vos (tu lugar lo toma el siguiente de tu liga), con hito y sin hype.
+  - **Los umbrales de `g1.tanda`:** la p de tu equipo contra la fuerza media del campo (los otros 15, la misma
+    `probabilidadDeCruceSwiss`): desde .65 la tanda es de 3 partidos, desde .55 de 2, y abajo de 1. Nunca más que las victorias
+    que te faltan para pasar (el 2-2 es siempre de a 1, con su charla).
+  - **El corte de la tanda del Swiss:** corta en la primera derrota (`derrotasParaQuedarAfuera` 1 de la tanda) o al llegar a las
+    victorias de la tanda. Los rivales salen del emparejamiento suponiendo que ganás los anteriores (los cruces ajenos son por
+    hash: el rival es exacto). La derrota pasa por el desempate y la revancha de siempre, en una tanda de 1. Una tanda es una
+    ronda del torneo (un escalón), y la rotación cuenta tandas.
 
 **El kit (`src/ui/arcade/`).**
 - Canvas 2D con paso fijo de tiempo: arregla el bug de 144 Hz.
