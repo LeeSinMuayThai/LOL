@@ -277,6 +277,13 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
     // G1: de esos, los mapas con minijuego (`datos.g1`): la UI los sostiene `ESPERA_VEREDICTO_G1_MS` y no 1600.
     minijuegosG1Count: 0,
     splitsProRitmo: [],
+    // H1b (--bloque=variedad): los eventos del mazo vistos (en orden), las manos de cartas (H2a, `mano_del_anio`), las paradas por
+    // edad y la edad de la que parte y en la que termina la carrera (para contar los años sin ninguna parada).
+    eventosVistos: [],
+    manosDeCartas: [],
+    paradasPorEdad: {},
+    edadInicial: state.age,
+    edadFinal: state.age,
     splitsProData: [],
     temporadasData: [],
     seriesData: [],
@@ -369,6 +376,13 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
 
     const tipo = `${sistema.id}:${decision.datos?.motivo ?? decision.presentacion ?? 'x'}`;
     observacion.decisionesPorTipo[tipo] = (observacion.decisionesPorTipo[tipo] ?? 0) + 1;
+    observacion.paradasPorEdad[st.age] = (observacion.paradasPorEdad[st.age] ?? 0) + 1;
+    if (sistema.id === 'eventos' && decision.datos?.evento?.id) {
+      observacion.eventosVistos.push(decision.datos.evento.id);
+      if (decision.datos.evento.id === 'mano_del_anio') {
+        observacion.manosDeCartas.push((decision.opciones ?? []).map((o) => o.carta).filter(Boolean).map((c) => ({ id: c.id, rareza: c.rareza ?? 'comun' })));
+      }
+    }
     if (st.age >= EDAD_COLA_DE_CARRERA) {
       observacion.frenadasCola += 1;
       observacion.frenadasColaPorTipo[tipo] = (observacion.frenadasColaPorTipo[tipo] ?? 0) + 1;
@@ -447,6 +461,7 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
     const vueltasAntes = state.flags.vueltasUsadas;
     vueltasAlArrancar = vueltasAntes;
     state = avanzarSplitAuto(state, rng, responderInstrumentado).state;
+    observacion.edadFinal = state.age;
     // V4: el split cerró un año (la edad subió una en un cierre de edad y la carrera sigue): es la misma cuenta que hace la UI
     // (`cierreDeSplit`, ui/core/escena.js) para decidir si la tarjeta es "Cierre de …".
     if (!state.terminado && state.age === edadAntes + 1 && esCierreDeEdad(state)) {
@@ -1747,6 +1762,101 @@ function tiempoMaquinaPorFuente(observaciones) {
     }));
 }
 
+// H1b (PLANUI §0.10, H1.7) — la variedad: cuánto se parecen las carreras entre sí y qué parte del mazo se ve. Todo se cuenta
+// por carrera y después se resume sobre las N carreras. Lectura pura de lo que `correrCarrera` anotó (cero `rng`).
+const RAREZAS_RARA_MAS = ['rara', 'epica', 'legendaria'];
+const rarezaDe = (evento) => evento.rarezaEvento ?? 'comun';
+const pozoDe = (evento) => (evento.cierreDeEdad ? 'cierre de edad' : String(evento.category ?? '').startsWith('partido_') ? 'partido (ex fecha marcada)' : 'pozo del split');
+
+function jaccardMediano(conjuntos) {
+  const n = conjuntos.length;
+  const valores = [];
+  for (let i = 0; i < n; i += 1) {
+    for (let paso = 1; paso <= Math.min(10, n - 1); paso += 1) {
+      const a = conjuntos[i];
+      const b = conjuntos[(i + paso) % n];
+      const union = new Set([...a, ...b]).size;
+      if (union > 0) {
+        valores.push([...a].filter((x) => b.has(x)).length / union);
+      }
+    }
+  }
+  return valores.length > 0 ? redondear(mediana(valores), 3) : null;
+}
+
+export function bloqueVariedad(observaciones) {
+  const total = observaciones.length;
+  const porId = new Map(TODOS_LOS_EVENTOS.map((e) => [e.id, e]));
+  const conjuntos = observaciones.map((o) => new Set(o.eventosVistos));
+  const distintos = conjuntos.map((c) => c.size);
+  const vistasTotales = {};
+  const carrerasConEvento = {};
+  for (const o of observaciones) {
+    for (const id of o.eventosVistos) vistasTotales[id] = (vistasTotales[id] ?? 0) + 1;
+    for (const id of new Set(o.eventosVistos)) carrerasConEvento[id] = (carrerasConEvento[id] ?? 0) + 1;
+  }
+  const vistas = Object.values(vistasTotales).reduce((a, b) => a + b, 0);
+  const top10 = Object.entries(vistasTotales).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const deLaCola = TODOS_LOS_EVENTOS.filter((e) => !e.cierreDeEdad);
+  const nunca = deLaCola.filter((e) => !(e.id in vistasTotales));
+  const nuncaPorPozo = {};
+  for (const e of nunca) (nuncaPorPozo[pozoDe(e)] ??= []).push(e.id);
+  const universoPorPozo = {};
+  for (const e of deLaCola) universoPorPozo[pozoDe(e)] = (universoPorPozo[pozoDe(e)] ?? 0) + 1;
+  const cobertura = (e) => (carrerasConEvento[e.id] ?? 0) / total;
+  const bajoLaMeta = deLaCola.filter((e) => cobertura(e) < ({ comun: 0.1, rara: 0.03, epica: 0.03, legendaria: 0.005 }[rarezaDe(e)] ?? 0.1)).length;
+
+  const rarosPorCarrera = (rarezas) => observaciones.map((o) => new Set(o.eventosVistos.filter((id) => rarezas.includes(rarezaDe(porId.get(id) ?? {})))).size);
+  const repeticionesRaras = observaciones.map((o) => {
+    const cuenta = {};
+    for (const id of o.eventosVistos) if (RAREZAS_RARA_MAS.includes(rarezaDe(porId.get(id) ?? {}))) cuenta[id] = (cuenta[id] ?? 0) + 1;
+    return Object.values(cuenta).reduce((suma, n) => suma + Math.max(0, n - 1), 0);
+  });
+  const legendarias = rarosPorCarrera(['legendaria']);
+
+  const porTipo = (o) => Object.entries(o.decisionesPorTipo);
+  const paradasEvento = observaciones.map((o) => porTipo(o).filter(([k]) => k.startsWith('eventos:')).reduce((a, [, v]) => a + v, 0));
+  const paradasTotales = observaciones.map((o) => porTipo(o).reduce((a, [, v]) => a + v, 0));
+  const aniosSinParada = observaciones.map((o) => {
+    let sin = 0;
+    for (let edad = o.edadInicial; edad <= o.edadFinal; edad += 1) if (!(o.paradasPorEdad[edad] > 0)) sin += 1;
+    return sin;
+  });
+
+  const manos = observaciones.map((o) => o.manosDeCartas);
+  const hayCartas = manos.some((m) => m.length > 0);
+  const cartasPorCarrera = manos.map((m) => new Set(m.flat().map((c) => c.id)));
+  const mezcla = {};
+  let mostradas = 0;
+  for (const m of manos) for (const carta of m.flat()) { mezcla[carta.rareza] = (mezcla[carta.rareza] ?? 0) + 1; mostradas += 1; }
+
+  return {
+    carreras: total,
+    eventosDistintosPorCarrera: { media: redondear(promedio(distintos), 1), mediana: mediana(distintos), min: Math.min(...distintos), max: Math.max(...distintos) },
+    top10VistosPct: vistas > 0 ? redondear((100 * top10.reduce((a, [, n]) => a + n, 0)) / vistas, 1) : null,
+    top10: top10.map(([id, n]) => `${id} ${n}`),
+    nuncaVistos: { cantidad: nunca.length, deUnUniverso: deLaCola.length, porPozo: Object.fromEntries(Object.entries(nuncaPorPozo).map(([k, v]) => [k, { cantidad: v.length, de: universoPorPozo[k], ids: v }])) },
+    coberturaPorEvento: { bajoLaMeta, metas: 'comun 10%, rara 3%, legendaria 0,5%', mediana: redondear(mediana(deLaCola.map(cobertura)) * 100, 1), min: redondear(Math.min(...deLaCola.map(cobertura)) * 100, 1) },
+    jaccardMedianoEntreCarreras: jaccardMediano(conjuntos),
+    raraOMasPorCarrera: { media: redondear(promedio(rarosPorCarrera(RAREZAS_RARA_MAS)), 2), mediana: mediana(rarosPorCarrera(RAREZAS_RARA_MAS)) },
+    epicaOMasPorCarrera: { media: redondear(promedio(rarosPorCarrera(['epica', 'legendaria'])), 2) },
+    legendariaPorCarrera: { media: redondear(promedio(legendarias), 2), carrerasConUna: redondear((100 * legendarias.filter((n) => n > 0).length) / total, 1) },
+    repeticionesDeRaraOMas: { porCarrera: redondear(promedio(repeticionesRaras), 2), carrerasConRepeticion: repeticionesRaras.filter((n) => n > 0).length, meta: 0 },
+    paradasDeEventoPorCarrera: { media: redondear(promedio(paradasEvento), 1), mediana: mediana(paradasEvento) },
+    paradasTotalesPorCarrera: { media: redondear(promedio(paradasTotales), 1), mediana: mediana(paradasTotales), p90: percentil(paradasTotales, 0.9) },
+    desglosePorTipo: bloqueRitmo(observaciones).desglosePorTipo.slice(0, 8),
+    aniosSinParada: { porCarrera: redondear(promedio(aniosSinParada), 2), carrerasConAlguno: redondear((100 * aniosSinParada.filter((n) => n > 0).length) / total, 1) },
+    cartas: hayCartas
+      ? {
+        manosPorCarrera: redondear(promedio(manos.map((m) => m.length)), 1),
+        distintasPorCarrera: redondear(promedio(cartasPorCarrera.map((c) => c.size)), 1),
+        mezclaDeRarezasMostrada: Object.fromEntries(Object.entries(mezcla).map(([r, n]) => [r, redondear((100 * n) / mostradas, 1)])),
+        jaccardMediano: jaccardMediano(cartasPorCarrera)
+      }
+      : 'n/a'
+  };
+}
+
 // §K.3c — el ritmo: cuántas veces te frena el juego.
 export function bloqueRitmo(observaciones) {
   const total = observaciones.length;
@@ -2474,6 +2584,7 @@ export function correrLote(corridas, splits, estrategia, { corridasAblacion = MA
     metasK3: metasK3(economia),
     longevidad: bloqueLongevidad(resultados),
     ritmo: bloqueRitmo(observaciones),
+    variedad: bloqueVariedad(observaciones),
     porRegion: bloquePorRegion(resultados, carreras, observaciones),
     // K5c (paso 1): el Mundial real (por región y por nivel pico) y la curva de nivel por edad. Bloques APARTE de `embudo`
     // y de `porRegion`: `validate.js` recuenta esas hojas una por una y no admite hojas que no cubra.

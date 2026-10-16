@@ -1901,14 +1901,6 @@ export const BALANCE = {
   // cada rival) escupiendo una posición sin fechas ni tabla. Ahora es un
   // calendario real, con 2-3 fechas por split que el jugador juega de verdad.
   temporada: {
-    // F2 (PLANUI §0.8, "splits sin parada"): un split profesional con club de tier `paradaGarantizadaHastaTier` o mejor no
-    // pasa sin que el jugador frene. Si al llegar a la última fecha del split regular el split lleva menos de
-    // `paradasMinimasPorSplit` pausas (`state.presupuesto.gastadas`: el mercado, un evento, otra fecha), esa fecha se marca
-    // y frena aunque no decida nada, también en la cola de la carrera. Medido en f8503ce (1000 carreras enteras): el 22,6%
-    // de los splits con club de tier 1 o 2 no tenía ninguna parada (3.804 de 16.801), casi todos (3.496) porque ninguna
-    // fecha tenía motivo para marcarse.
-    paradasMinimasPorSplit: 1,
-    paradaGarantizadaHastaTier: 2,
     // K2b: el ruido de cada fecha se mudó a `partido.sigmaFecha` (lo lee solo
     // `ruidoEfectivo`, `core/partido.js`).
     //
@@ -1921,13 +1913,6 @@ export const BALANCE = {
     // favorito. El σ de fecha no mueve el Bo5 de forma sistemática (es σ de
     // mapa; solo cambia qué cruces se dan), así que no se toca. PLAN.md, K2c.
     vueltas: 2,
-    // Fase 9Re: cuántas fechas del split frenan al jugador. Bajó de "2 a 3"
-    // (roll) a UNA: con 2-3 por split × ~23 splits competitivos la temporada
-    // regular era ~108 de las 248 decisiones de la carrera, casi todas sacadas
-    // del mismo mazo de 24 cartas. K4-A: esa una es la que DECIDE algo (la
-    // clasificación, el archirrival, el clásico, la revancha), no la primera con
-    // cualquier motivo; el resto del split pasa resumido.
-    fechasMarcadasPorSplit: 1,
     // K4-A: en cuántas de las ÚLTIMAS fechas de un split se mira si la fecha
     // define la clasificación (`core/temporada.js`, `defineClasificacion`). Antes
     // de eso la proyección del resto del fixture es una cuenta de esperanzas muy
@@ -1948,28 +1933,14 @@ export const BALANCE = {
     // K4c (integración con el cierre de año): 6 -> 7. Con el contenido nuevo del cierre, 6 dio 975 de 2999 (1 cada 3,1), justo
     // debajo del piso: con ~3000 splits el error es ±0,9 pp y 6 queda sobre la línea. 7 lo pasa con margen.
     ventanaDefineClasificacion: 7,
-    // Fase 9R0a: la fecha marcada dejaba de mentir pero se repetía sola.
-    // `career.ultimoEliminadoPor` no se limpiaba nunca y `career.orgs` sólo
-    // crece, así que "la revancha contra tal" o "el clásico contra tal"
-    // salían idénticos split tras split (medido: hasta 15 seguidos en la
-    // seed 1720243215). Dos topes:
-    //   - `clasicoOrgsRecientes`: sólo tus últimos N ex-equipos cuentan como
-    //     clásico, no toda org por la que pasaste alguna vez.
-    //   - `motivoRivalCooldownSplits`: un par (motivo, rival) recién marcado
-    //     no se vuelve a marcar hasta N splits después. Un split entero sin
-    //     ningún motivo libre pasa resumido, y está bien.
+    // Fase 9R0a: `career.ultimoEliminadoPor` no se limpiaba nunca y `career.orgs` sólo crece, así que "el clásico contra tal"
+    // salía idéntico split tras split. `clasicoOrgsRecientes`: sólo tus últimos N ex-equipos cuentan como clásico, no toda
+    // org por la que pasaste alguna vez.
     clasicoOrgsRecientes: 2,
-    motivoRivalCooldownSplits: 4,
     // Rango del efecto `type: 'partido'`: lo que el momento de la fecha
     // marcada le suma o resta a la fuerza propia de ESE partido puntual.
     partidoMin: -0.18,
-    partidoMax: 0.22,
-    // Con el resultado ya resuelto, a veces hay una reacción — prensa,
-    // vestuario, el clip que se viralizó (`data/events/partido/postpartido.json`).
-    // No mueve el resultado (ya pasó): mueve hype, mentalidad o sinergia.
-    // Probabilístico y no siempre, para que una fecha marcada no sea siempre
-    // tres decisiones seguidas.
-    probReaccion: 0.4
+    partidoMax: 0.22
   },
 
   // La serie de playoffs (fase 4): Bo5 con Fearless draft, jugada mapa a mapa
@@ -2455,20 +2426,6 @@ export const BALANCE = {
     // vive en una grilla de 1/total: la charla la baja hasta el escalón de abajo ("3 de 4" → "2 de 4"), nunca menos que
     // `charlaBajaVara` (que queda para las mecánicas continuas, donde ya mueve los ms o el radio).
     erroresTope: { la_pizarra: 8 },
-    // D118: el Bo1 que frena en la temporada regular. Antes del minijuego se elige cómo encararlo: 🎲 ARRIESGADO (la opción
-    // del momento con más varianza; la vara sube esto) o 🧊 SEGURO (la de menos; la vara baja esto). La vara base sale de
-    // la p de la fecha con el ajuste medio del momento (`varaDeRonda`), con el techo humano de la mecánica.
-    bo1: {
-      arriesgadoSubeVara: 0.1,
-      seguroBajaVara: 0.1,
-      // G-fix C1: más difícil, más premio. El premio sale de los efectos del momento (sin el ajuste del partido): "el mejor"
-      // es lo bueno del outcome que más da entre todas las opciones vivas, "el peor", lo malo del que más quita. Cada rango
-      // se multiplica por su factor (un rango bueno nunca baja de +1; uno malo que redondea a 0 se va).
-      // 🎲 si sale: el mejor × arriesgadoSi y además arriesgadoHype; si no sale: el peor × arriesgadoNo.
-      // 🧊 si sale: el mejor × seguroSi (o seguroHypeSinPremio si el momento no da nada bueno); si no sale: el peor × seguroNo.
-      // El valor esperado de los dos (con la p del bot de cada encare) queda parejo: lo mide r2-bo1 y lo cuida el check G1c.
-      premio: { arriesgadoSi: 0.75, arriesgadoHype: [1, 2], arriesgadoNo: 1, seguroSi: 0.4, seguroHypeSinPremio: [1, 1], seguroNo: 0.5 }
-    },
     // El bot (Node): su resultado es uniforme alrededor de la vara efectiva, con un ancho tal que P(casi) = pCasiBot
     // (ancho = margenCasi / pCasiBot). Así P(paso) = la p del mapa por construcción, y lo que mueve la vara (el
     // escenario, el desempate) mueve su p en vara / ancho.

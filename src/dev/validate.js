@@ -87,7 +87,6 @@ import { rivalClasico } from '../core/clasicos.js';
 import { aplicar as aplicarMercado, construirOferta, ofertaDeImportPosible, academiaDelBanquillo, generarOfertas } from '../systems/mercado.js';
 import { aplicar as aplicarRetiroK4c2, MOTIVOS_DE_RETIRO } from '../systems/retiro.js';
 import { cartaDeRutina, resolverPreparacion } from '../systems/practica.js';
-import { FRASES_MOTIVO, ETIQUETAS_MOTIVO } from '../systems/temporada.js';
 import { EJES, MARCAS, MOMENTOS, MOMENTOS_ACTIVOS, momentoPorId } from '../data/contextos.js';
 import { ARQUETIPOS } from '../data/meta-tags.js';
 import { ROLES, IDS_ROL } from '../data/roles.js';
@@ -6327,69 +6326,6 @@ checkLento('Toda fila de la tabla, en cualquier fecha marcada, jugó tantas fech
   }
 });
 
-checkLento('El jugador ve como mucho una fecha marcada por split, y la ve en una fracción sana de los splits (fase 9Re)', () => {
-  let splitsMedidos = 0;
-  const conteos = {};
-
-  for (let seed = 1; seed <= 300; seed += 1) {
-    const rng = mulberry32(seed);
-    let state = createInitialState(seed, rng);
-
-    for (let i = 0; i < 60 && !state.terminado; i += 1) {
-      state = avanzarSplitAuto(state, rng).state;
-      const t = state.career.temporada;
-      if (state.phase !== 'profesional' || !state.career.currentOrg || state.career.companeros.length === 0 || t.tabla.length === 0) {
-        continue;
-      }
-      splitsMedidos += 1;
-      conteos[t.marcadasHechas] = (conteos[t.marcadasHechas] ?? 0) + 1;
-    }
-  }
-
-  if (splitsMedidos < 100) {
-    throw new Error(`solo ${splitsMedidos} splits competitivos medidos: muestra insuficiente`);
-  }
-
-  // Techo duro: nunca más de una fecha marcada por split competitivo.
-  const conMasDeUna = Object.entries(conteos)
-    .filter(([marcadas]) => Number(marcadas) > 1)
-    .reduce((suma, [, cantidad]) => suma + cantidad, 0);
-  if (conMasDeUna > 0) {
-    throw new Error(`${conMasDeUna} splits competitivos con más de una fecha marcada (conteos: ${JSON.stringify(conteos)})`);
-  }
-
-  // Piso: la temporada regular no puede haber DESAPARECIDO. En la práctica casi
-  // todo split competitivo tiene algún motivo real (un clásico contra una ex
-  // org, el puntero, una racha), así que la fracción con una fecha marcada es
-  // alta — lo que importa es que no sea ~0 (temporada muda) ni que se cuele más
-  // de una. 9Rg puede volverla más selectiva con un puntaje mínimo.
-  const conUna = (conteos[1] ?? 0) / splitsMedidos;
-  if (conUna < 0.35 || conUna > 0.99) {
-    throw new Error(`${(conUna * 100).toFixed(1)}% de los splits competitivos tuvieron exactamente una fecha marcada (banda esperada 35%-99%; conteos: ${JSON.stringify(conteos)})`);
-  }
-});
-
-check('Cada motivo de fecha marcada tiene varias frases y etiquetas (fase 9R0a, anti-repetición)', () => {
-  const motivos = Object.keys(FRASES_MOTIVO);
-  for (const motivo of motivos) {
-    const frases = FRASES_MOTIVO[motivo];
-    const etiquetas = ETIQUETAS_MOTIVO[motivo];
-    if (!Array.isArray(frases) || frases.length < 5) {
-      throw new Error(`el motivo "${motivo}" tiene ${frases?.length ?? 0} frases (mínimo 5)`);
-    }
-    if (!Array.isArray(etiquetas) || etiquetas.length < 3) {
-      throw new Error(`el motivo "${motivo}" tiene ${etiquetas?.length ?? 0} etiquetas (mínimo 3)`);
-    }
-    const renderizadas = new Set(frases.map((fn) => fn('RIVAL')));
-    if (renderizadas.size !== frases.length) {
-      throw new Error(`el motivo "${motivo}" tiene frases duplicadas`);
-    }
-    if (new Set(etiquetas).size !== etiquetas.length) {
-      throw new Error(`el motivo "${motivo}" tiene etiquetas duplicadas`);
-    }
-  }
-});
-
 checkLento('La fecha marcada no se repite palabra por palabra (fase 9R0a)', () => {
   // El bug: `career.ultimoEliminadoPor` no se limpiaba nunca y `career.orgs`
   // sólo crece, así que "la revancha contra tal" o "el clásico contra tal"
@@ -6530,31 +6466,6 @@ check('El momento de una fecha marcada mueve el resultado del partido', () => {
 
   if (diferenciaPuntos < 15) {
     throw new Error(`el peor y el mejor extremo del efecto 'partido' solo mueven ${diferenciaPuntos.toFixed(1)} puntos la tasa de victoria; el mínimo es 15`);
-  }
-});
-
-check('Cobertura: toda combinación de stakes × rol tiene al menos un evento', () => {
-  // `dev/cobertura.js` no puede medir esto (recorre calcularContexto sin
-  // overrides, y `stakes` solo existe con el override que arma
-  // systems/temporada.js — ver la nota en data/contextos.js). Se verifica acá,
-  // directo sobre el catálogo declarado.
-  const pool = TODOS_LOS_EVENTOS.filter((evento) => evento.category?.startsWith('partido_') && evento.category !== 'partido_postpartido');
-  const faltantes = [];
-
-  for (const stake of EJES.stakes) {
-    for (const rol of IDS_ROL) {
-      const hayEvento = pool.some((evento) => (
-        evento.contexto.stakes.includes(stake)
-        && (!evento.contexto.rol || evento.contexto.rol.includes(rol))
-      ));
-      if (!hayEvento) {
-        faltantes.push(`${stake} × ${rol}`);
-      }
-    }
-  }
-
-  if (faltantes.length > 0) {
-    throw new Error(`combinaciones de stakes × rol sin ningún evento: ${faltantes.join(', ')}`);
   }
 });
 
@@ -16833,9 +16744,7 @@ check('K2b una tirada por partido: temporada.aplicar tira exactamente un rng() p
   const vistos = { fechas: 0, cruces: 0, bajas: 0 };
   // Sin fechas marcadas, la temporada entera corre en `aplicar` sin pausar ni sortear contenido: todo `rng()` que
   // consuma es de un partido.
-  const marcadasOriginal = BALANCE.temporada.fechasMarcadasPorSplit;
   try {
-    BALANCE.temporada.fechasMarcadasPorSplit = 0;
     entradas.forEach((entrada, i) => {
       const donde = `temporada ${i} (seed de la carrera ?, split ${entrada.player.splitCount}, ${entrada.career.currentOrg})`;
       const { rng, valores } = rngEspiaK2b(9000 + i);
@@ -16906,7 +16815,6 @@ check('K2b una tirada por partido: temporada.aplicar tira exactamente un rng() p
       }
     });
   } finally {
-    BALANCE.temporada.fechasMarcadasPorSplit = marcadasOriginal;
   }
   if (problemas.length > 0) {
     throw new Error(`${problemas.slice(0, 4).join('; ')}${problemas.length > 4 ? ` (+${problemas.length - 4} más)` : ''}`);
@@ -17153,9 +17061,7 @@ check('K2b una fecha de baja por lesión no cuenta para tu rendimiento: con fech
     throw new Error(`check vacío: solo ${entradas.length} temporadas`);
   }
   const problemas = [];
-  const marcadasOriginal = BALANCE.temporada.fechasMarcadasPorSplit;
   try {
-    BALANCE.temporada.fechasMarcadasPorSplit = 0;
     entradas.forEach((original, i) => {
       const entrada = { ...original, flags: { ...original.flags, fechasBajaLesion: BAJAS_SINTETICAS_K2B } };
       const donde = `temporada ${i} (${entrada.career.currentOrg}, split ${entrada.player.splitCount})`;
@@ -17194,7 +17100,6 @@ check('K2b una fecha de baja por lesión no cuenta para tu rendimiento: con fech
       }
     });
   } finally {
-    BALANCE.temporada.fechasMarcadasPorSplit = marcadasOriginal;
   }
   if (problemas.length > 0) {
     throw new Error(`${problemas.slice(0, 3).join('; ')}${problemas.length > 3 ? ` (+${problemas.length - 3} más)` : ''}`);
@@ -20594,9 +20499,6 @@ check('K3-B la ficha lista solo las marcas cuyo acumulado (por stat, origen y a�
 // ============================================================================
 
 const MOTIVOS_K4A = ['define_clasificacion', 'archirrival', 'clasico', 'revancha'];
-// F2 (PLANUI §0.8): la marca de la parada garantizada (`ultima_fecha`, systems/temporada.js) marca la última fecha de un split que
-// no frenó en ninguna otra parte. No es un motivo de la prioridad, ni puntero ni presión: es "que ningún split pase sin una parada".
-const MARCAS_K4A = [...MOTIVOS_K4A, 'ultima_fecha'];
 
 // Una liga sintética de 10 equipos con el formato de tier 1 (6 clasifican, 2 con bye) y UNA fecha por jugar: la última,
 // contra R9. Las victorias de cada org son las de la tabla de hoy; los demás cruces de la jornada son parejos (p = 0,5).
@@ -20680,145 +20582,6 @@ check('K4-A prioridad: define_clasificacion > archirrival > clásico > revancha,
   esperar('contra el puntero', motivosDe(estado(), [15, 12, 12, 12, 12, 12, 8, 5, 5, 20]), ['parejo']);
   esperar('sin nada en juego', motivosDe(estado(), TABLA_QUE_NO_DEFINE_K4A), ['parejo']);
   esperar('la prioridad es la de la spec', PRIORIDAD_MOTIVOS, MOTIVOS_K4A);
-});
-
-// Carreras reales de `criterio` (seeds 1..100, 60 splits): por split, las fechas marcadas y por qué, las pausas de la
-// temporada y si fue un split de tier 1 con playoffs.
-const CARRERAS_K4A = 100;
-// La meta de "define_clasificacion es alcanzable" (1 de cada 3 splits de cierre de tier 1) y su banda de ruido de muestra.
-const META_DEFINE_K4A = 1 / 3;
-const SIGMAS_RUIDO_DEFINE_K4A = 2;
-let cosechaK4A = null;
-function cosechaDeCarrerasK4A() {
-  if (cosechaK4A) {
-    return cosechaK4A;
-  }
-  const c = { splitsTier1: 0, splitsConDefine: 0, marcadasPorSplit: {}, motivosVistos: new Set(), principales: {}, pausas: {}, casos: [] };
-  for (let seed = 1; seed <= CARRERAS_K4A; seed += 1) {
-    const rng = mulberry32(seed);
-    let state = createInitialState(seed, rng);
-    for (let i = 0; i < 60 && !state.terminado; i += 1) {
-      const antes = state.career.temporada;
-      const splitAntes = state.player.splitCount;
-      const principalesDelSplit = [];
-      const responder = (sistema, st, decision, r) => {
-        if (sistema.id === 'temporada') {
-          const tipo = decision.datos?.motivo ?? 'x';
-          c.pausas[tipo] = (c.pausas[tipo] ?? 0) + 1;
-          const motivos = st.career.temporada.fechaEnCurso?.motivos ?? [];
-          motivos.forEach((m) => c.motivosVistos.add(m));
-          if (tipo === 'momento') {
-            principalesDelSplit.push(motivoPrincipal(motivos));
-            if (c.casos.length < 60) {
-              c.casos.push({ st, decision });
-            }
-          }
-        }
-        return ESTRATEGIAS_K0.criterio(sistema, st, decision, r);
-      };
-      state = avanzarSplitAuto(state, rng, responder).state;
-      const t = state.career.temporada;
-      if (t === antes || !t) {
-        continue;
-      }
-      c.marcadasPorSplit[t.marcadasHechas] = (c.marcadasPorSplit[t.marcadasHechas] ?? 0) + 1;
-      principalesDelSplit.forEach((m) => { c.principales[m] = (c.principales[m] ?? 0) + 1; });
-      const liga = ligaDeCarreraK3A(state);
-      // K6a-M: solo el split de cierre, el único donde una fecha puede definir la clasificación.
-      if (liga?.tier === 1 && liga.formatoPlayoffs && esCierreK6aM(splitAntes)) {
-        c.splitsTier1 += 1;
-        if (principalesDelSplit.includes('define_clasificacion')) {
-          c.splitsConDefine += 1;
-        }
-      }
-    }
-  }
-  cosechaK4A = c;
-  return c;
-}
-
-// K6a-M reemplaza a "al menos 1 de cada 3 splits de tier 1 con playoffs" (con 300 splits de muestra): esa vara contaba los dos
-// splits que no siembran, donde "si ganás, entrás a playoffs" era mentira. Ahora la misma meta, sobre los splits de cierre.
-check(`K4-A define_clasificacion es alcanzable: al menos 1 de cada 3 splits de cierre de tier 1 (criterio, ${CARRERAS_K4A} carreras)`, () => {
-  const { splitsTier1, splitsConDefine } = cosechaDeCarrerasK4A();
-  if (splitsTier1 < 100) {
-    throw new Error(`solo ${splitsTier1} splits de tier 1 con playoffs medidos: muestra insuficiente`);
-  }
-  // K5c paso 3b-2 (regla 17): la meta se lee con el ruido de la muestra (binomial, `SIGMAS_RUIDO_DEFINE_K4A` sigmas). Sin banda, la
-  // vara caía con cualquier corrimiento: con las cartas de cierre del declive (K4c textos) pasó de 214/623 (34,3%) a 208/626 (33,2%),
-  // una diferencia de medio sigma (≈ 1,9 puntos con n ≈ 625). El piso queda en ≈ 29,6%.
-  const ruido = SIGMAS_RUIDO_DEFINE_K4A * Math.sqrt(META_DEFINE_K4A * (1 - META_DEFINE_K4A) / splitsTier1);
-  if (splitsConDefine / splitsTier1 < META_DEFINE_K4A - ruido) {
-    throw new Error(`define_clasificacion marcó ${splitsConDefine} de ${splitsTier1} splits de tier 1 con playoffs (1 cada ${(splitsTier1 / Math.max(1, splitsConDefine)).toFixed(1)}); la meta es 1 cada 3 o mejor, con ${SIGMAS_RUIDO_DEFINE_K4A} sigmas de ruido de muestra (piso ${(100 * (META_DEFINE_K4A - ruido)).toFixed(1)}%)`);
-  }
-});
-
-check('K4-A a lo sumo una fecha marcada por split', () => {
-  const { marcadasPorSplit } = cosechaDeCarrerasK4A();
-  const conMasDeUna = Object.entries(marcadasPorSplit).filter(([n]) => Number(n) > 1).reduce((suma, [, cantidad]) => suma + cantidad, 0);
-  if (conMasDeUna > 0) {
-    throw new Error(`${conMasDeUna} splits con más de una fecha marcada (conteos: ${JSON.stringify(marcadasPorSplit)})`);
-  }
-  if ((marcadasPorSplit[1] ?? 0) < 100) {
-    throw new Error(`solo ${marcadasPorSplit[1] ?? 0} splits con una fecha marcada: muestra insuficiente`);
-  }
-});
-
-check('K4-A puntero y presión nunca marcan: toda fecha marcada lo es por uno de los cuatro motivos', () => {
-  const { motivosVistos, principales } = cosechaDeCarrerasK4A();
-  const fuera = [...motivosVistos].filter((m) => !MARCAS_K4A.includes(m));
-  if (fuera.length > 0) {
-    throw new Error(`fechas marcadas con motivos fuera de los cuatro: ${fuera.join(', ')}`);
-  }
-  const marcadas = Object.values(principales).reduce((suma, n) => suma + n, 0);
-  if (marcadas < 200 || !principales.define_clasificacion || !principales.clasico || !principales.revancha) {
-    throw new Error(`la muestra no pasó por los motivos que se pueden alcanzar: ${JSON.stringify(principales)}`);
-  }
-});
-
-check('K4-A la fecha marcada no tiene draft: frena una sola vez, con el momento', () => {
-  const { pausas, marcadasPorSplit } = cosechaDeCarrerasK4A();
-  if (pausas.draft) {
-    throw new Error(`${pausas.draft} pausas de draft en una fecha marcada (temporada:draft debería haber desaparecido)`);
-  }
-  const marcadas = marcadasPorSplit[1] ?? 0;
-  // G1c: la fecha marcada frena con el momento y, si es un Bo1, otra vez con su minijuego (`bo1`, un solo partido): cada uno, a lo sumo una vez.
-  if ((pausas.momento ?? 0) > marcadas || (pausas.bo1 ?? 0) > marcadas) {
-    throw new Error(`${pausas.momento ?? 0} momentos y ${pausas.bo1 ?? 0} minijuegos de Bo1 para ${marcadas} fechas marcadas: la fecha frena más de una vez`);
-  }
-  const otras = Object.keys(pausas).filter((m) => m !== 'momento' && m !== 'bo1');
-  if (otras.length > 0) {
-    throw new Error(`la temporada pausó con ${otras.join(', ')}: solo debería frenar con el momento (o con el minijuego del Bo1)`);
-  }
-});
-
-check('K4-A la previa de la fecha marcada dice por qué importa, sin ids crudos, y el "porQue" es el del motivo', () => {
-  const { casos } = cosechaDeCarrerasK4A();
-  if (casos.length < 30) {
-    throw new Error(`solo ${casos.length} fechas marcadas cosechadas`);
-  }
-  const problemas = [];
-  casos.forEach(({ st, decision }, i) => {
-    const previa = previaDeDecision(st, decision);
-    const texto = previa?.porQue;
-    if (typeof texto !== 'string' || texto.length < 10) {
-      problemas.push(`fecha ${i}: la previa no trae el porqué (${JSON.stringify(texto)})`);
-      return;
-    }
-    if (/[a-z0-9]+_[a-z0-9_]+|undefined|null|NaN/.test(texto)) {
-      problemas.push(`fecha ${i}: "${texto}" muestra un id crudo`);
-    }
-    const principal = motivoPrincipal(st.career.temporada.fechaEnCurso.motivos);
-    // F2: la parada garantizada sin otro motivo (principal `parejo`) dice que es la última fecha.
-    const esperado = { define_clasificacion: /ganás|playoffs/, archirrival: /archirrival/, clasico: /ex equipo/, revancha: /revancha/, parejo: /última fecha/ }[principal];
-    if (!esperado.test(texto)) {
-      problemas.push(`fecha ${i}: "${texto}" no habla del motivo ${principal}`);
-    }
-    if (!previa.subtitulo) {
-      problemas.push(`fecha ${i}: la previa no trae el rótulo del partido`);
-    }
-  });
-  fallarSiK2d(problemas);
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -24825,105 +24588,6 @@ check('K4c-F c: el instrumento cuenta los mismos beats que el reproductor (conta
   }
 });
 
-// --- K4c-M: la fecha marcada es una decisión (PLAN.md K4c, "La fecha marcada, por contenido") ---
-//
-// Antes, las dos opciones de cada evento de `data/events/partido/*.json` daban un `partido` parecido (+0,04 / +0,18):
-// elegir movía la p del partido 1,4 pp de mediana y solo el 15% de las fechas marcadas tenía una diferencia de 5 pp
-// entre la mejor y la peor opción. Ahora las opciones son intercambios, y este check lo exige sobre el catálogo:
-//   (a) el mayor y el menor punto medio de `partido` (promediando los outcomes por su peso de catálogo) difieren en
-//       al menos `DIFERENCIA_DE_PARTIDO_MINIMA` (0,10 de fuerza: la escala de `fuerzaDeFecha`);
-//   (b) toda opción con menos `partido` que la mejor trae una compensación real en OTRO eje: un efecto de stat cuyo
-//       punto medio ponderado llega a `COMPENSACION_MINIMA` — el corte "alta" de los stats (`magnitudBandas`, el
-//       mismo que le muestra la previa al jugador), no una migaja;
-//   (c) ninguna opción domina a otra en todos los ejes (el partido y cada eje que alguna de las dos mueva).
-// El conjunto es el de las categorías `partido_*` menos la reacción de después (`partido_postpartido`, que no mueve
-// el partido). No puede pasar vacío: si no revisa ningún evento, falla; y un evento con efecto `partido` fuera de
-// ese conjunto también falla (escaparía del check).
-check('K4c-M la fecha marcada es una decisión: la mejor y la peor opción difieren en el partido, la de menos partido compensa y ninguna domina', () => {
-  const DIFERENCIA_DE_PARTIDO_MINIMA = 0.10;
-  const COMPENSACION_MINIMA = BALANCE.eventos.magnitudBandas.stat.p66;
-  const TOLERANCIA = 1e-9;
-  const EJE_PARTIDO = 'partido';
-
-  const esDeFechaMarcada = (evento) => evento.category?.startsWith('partido_') && evento.category !== 'partido_postpartido';
-  const mueveElPartido = (evento) => evento.options.some((opcion) => opcion.outcomes.some((outcome) => (
-    outcome.effects.some((efecto) => efecto.type === 'partido')
-  )));
-
-  const fuera = TODOS_LOS_EVENTOS.filter((evento) => mueveElPartido(evento) && !esDeFechaMarcada(evento)).map((evento) => evento.id);
-  if (fuera.length > 0) {
-    throw new Error(`eventos con efecto 'partido' fuera de las categorías de la fecha marcada (el check no los miraría): ${fuera.join(', ')}`);
-  }
-
-  // El punto medio de cada eje de una opción, ponderado por el peso de catálogo de sus outcomes. Un outcome que no
-  // mueve un eje cuenta 0 en ese eje (así lo aplica el motor: `ajustePartido` arranca en 0 en cada momento).
-  function ejesDeOpcion(opcion) {
-    const pesoTotal = opcion.outcomes.reduce((suma, outcome) => suma + outcome.weight, 0);
-    const ejes = {};
-    for (const outcome of opcion.outcomes) {
-      for (const efecto of outcome.effects) {
-        const eje = efecto.type === 'partido' ? EJE_PARTIDO : efecto.path;
-        ejes[eje] = (ejes[eje] ?? 0) + (outcome.weight / pesoTotal) * ((efecto.min + efecto.max) / 2);
-      }
-    }
-    ejes[EJE_PARTIDO] = ejes[EJE_PARTIDO] ?? 0;
-    return ejes;
-  }
-
-  const domina = (a, b) => {
-    const ejes = new Set([...Object.keys(a), ...Object.keys(b)]);
-    let mejorEnAlguno = false;
-    for (const eje of ejes) {
-      const va = a[eje] ?? 0;
-      const vb = b[eje] ?? 0;
-      if (va < vb - TOLERANCIA) return false;
-      if (va > vb + TOLERANCIA) mejorEnAlguno = true;
-    }
-    return mejorEnAlguno;
-  };
-
-  const eventos = TODOS_LOS_EVENTOS.filter(esDeFechaMarcada);
-  const problemas = [];
-  let revisados = 0;
-
-  for (const evento of eventos) {
-    revisados += 1;
-    if (!mueveElPartido(evento)) {
-      problemas.push(`${evento.id}: es de la fecha marcada (${evento.category}) pero ninguna de sus opciones mueve el partido`);
-      continue;
-    }
-    const opciones = evento.options.map((opcion) => ({ id: opcion.id, ejes: ejesDeOpcion(opcion) }));
-    const partidos = opciones.map((opcion) => opcion.ejes[EJE_PARTIDO]);
-    const mejor = Math.max(...partidos);
-    const peor = Math.min(...partidos);
-
-    if (mejor - peor < DIFERENCIA_DE_PARTIDO_MINIMA - TOLERANCIA) {
-      problemas.push(`${evento.id}: la mejor y la peor opción difieren ${(mejor - peor).toFixed(3)} en el partido (mínimo ${DIFERENCIA_DE_PARTIDO_MINIMA})`);
-    }
-    for (const opcion of opciones) {
-      if (opcion.ejes[EJE_PARTIDO] >= mejor - TOLERANCIA) continue;
-      const compensacion = Math.max(0, ...Object.entries(opcion.ejes).filter(([eje]) => eje !== EJE_PARTIDO).map(([, valor]) => valor));
-      if (compensacion < COMPENSACION_MINIMA - TOLERANCIA) {
-        problemas.push(`${evento.id}/${opcion.id}: cede partido (${opcion.ejes[EJE_PARTIDO].toFixed(3)} contra ${mejor.toFixed(3)}) y su mejor compensación en otro eje es ${compensacion.toFixed(2)} (mínimo ${COMPENSACION_MINIMA})`);
-      }
-    }
-    for (const a of opciones) {
-      for (const b of opciones) {
-        if (a !== b && domina(a.ejes, b.ejes)) {
-          problemas.push(`${evento.id}: ${a.id} domina a ${b.id} en todos los ejes`);
-        }
-      }
-    }
-  }
-
-  if (revisados === 0) {
-    throw new Error('el check no revisó ningún evento de la fecha marcada (el catálogo cambió de categorías o de forma)');
-  }
-  if (problemas.length > 0) {
-    throw new Error(`${problemas.length} problema(s) en ${revisados} eventos revisados:\n  ${problemas.slice(0, 12).join('\n  ')}${problemas.length > 12 ? `\n  ... y ${problemas.length - 12} más` : ''}`);
-  }
-});
-
 // --- K4c: el cierre de año es una decisión (PLAN.md K4c, "El cierre de año, re-medido") ---
 //
 // Antes, los 10 eventos de `data/events/cierre_edad.json` eran reflexiones con efectos chicos: el cierre frena ~14 veces por
@@ -25251,30 +24915,6 @@ check('K4c (revisión) textos: la carta del plan no dice "~+0" para una stat top
   }
   if (practicas < 10) {
     throw new Error(`la muestra no alcanza: ${practicas} líneas de práctica (mínimo 10)`);
-  }
-});
-
-check('K4c (revisión) textos: ninguna frase de consuelo de la fecha marcada se repite más de dos veces', () => {
-  const MAXIMO_DE_REPETICIONES = 2;
-  const veces = new Map();
-  let revisados = 0;
-  for (const evento of TODOS_LOS_EVENTOS.filter((candidato) => Boolean(candidato.contexto?.stakes))) {
-    for (const opcion of evento.options) {
-      for (const outcome of opcion.outcomes) {
-        for (const texto of Array.isArray(outcome.texto) ? outcome.texto : [outcome.texto]) {
-          const ultima = texto.trim().split(/(?<=[.!?])\s+/).pop();
-          veces.set(ultima, (veces.get(ultima) ?? 0) + 1);
-          revisados += 1;
-        }
-      }
-    }
-  }
-  if (revisados < 250) {
-    throw new Error(`la muestra no alcanza: ${revisados} textos de outcome (mínimo 300)`);
-  }
-  const repetidas = [...veces].filter(([, cantidad]) => cantidad > MAXIMO_DE_REPETICIONES);
-  if (repetidas.length > 0) {
-    throw new Error(`${repetidas.length} frase(s) final(es) repetida(s) más de ${MAXIMO_DE_REPETICIONES} veces: ${repetidas.map(([frase, cantidad]) => `${cantidad}× "${frase}"`).join(' | ')}`);
   }
 });
 
@@ -29658,69 +29298,6 @@ check('G4c: toda carrera que termina por decisión o por edad pasa por el últim
   }
   console.log(`      ${elegidos} retiros por decisión o por edad, ${minijuegos} últimos partidos jugados; monumentos: ${[...tipos].map((t) => t ?? 'ninguno').join(', ')}`);
   if (elegidos === 0 || minijuegos < elegidos) mal.push(`muestra corta: ${elegidos} retiros, ${minijuegos} últimos partidos`);
-  if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
-});
-
-// G1c (D118 y D122, PLANUI §0.9): la promesa de la pieza. El Bo1 que frena en la temporada regular no tiene tirada: la
-// fecha sale del `paso` del minijuego (se responde justo en la vara o un punto abajo, y el resultado tiene que seguirlo); y
-// la charla del coach baja la regla visible al menos una unidad en las mecánicas que se cuentan (`unidadesDeLaRegla`).
-// G-fix C1: y la elección es de verdad: en cada parada 🎲 paga más si sale que 🧊, y ningún "si sale" está vacío.
-check('G1c el Bo1 que frena no tiene tirada (lo decide el paso del minijuego), 🎲 paga más que 🧊 si sale y la charla baja la regla al menos una unidad', () => {
-  const necesariosG1c = (vara, total) => { let k = 0; while (k <= total && k / total < vara) k += 1; return k; };
-  const mal = [];
-  const cuenta = { encares: 0, bo1: 0, ganados: 0, charlas: 0 };
-  for (let seed = 1; seed <= 30; seed += 1) {
-    const rng = mulberry32(9100 + seed);
-    let estado = createInitialState(9100 + seed, rng);
-    let esperado = null;
-    const responder = (sistema, st, decision, r) => {
-      const datos = decision.datos ?? {};
-      if (sistema.id === 'temporada' && datos.bo1) {
-        cuenta.encares += 1;
-        const riesgos = decision.opciones.map((o) => o.g1?.riesgo).sort().join(',');
-        if (riesgos !== 'arriesgado,seguro') mal.push(`seed ${seed}: el encare trae ${riesgos}`);
-        // G-fix C1: más difícil, más premio. 🎲 (vara más alta) si sale paga más que 🧊 si sale, y ningún "si sale" está vacío.
-        const encares = Object.values(datos.bo1.porOpcion);
-        const A = encares.find((e) => e.riesgo === 'arriesgado');
-        const S = encares.find((e) => e.riesgo === 'seguro');
-        if (A && S) {
-          if (!(A.efectosSi.length > 0 && S.efectosSi.length > 0)) mal.push(`seed ${seed}: ${datos.eventoId} tiene un "si sale" sin premio`);
-          if (!(A.valorSi > S.valorSi)) mal.push(`seed ${seed}: ${datos.eventoId}: 🎲 si sale (${A.premio.si}) no paga más que 🧊 (${S.premio.si})`);
-          if (!(A.vara > S.vara)) mal.push(`seed ${seed}: ${datos.eventoId}: la vara de 🎲 (${A.vara}) no es más alta que la de 🧊 (${S.vara})`);
-        }
-      }
-      if (sistema.id === 'temporada' && datos.motivo === 'bo1') {
-        cuenta.bo1 += 1;
-        const gana = cuenta.bo1 % 2 === 0;
-        esperado = gana;
-        return { resultado: gana ? datos.g1.vara : Math.max(0, datos.g1.vara - 1 / BALANCE.stats.max) };
-      }
-      if (datos.g1 && datos.charla?.disponible) {
-        const total = unidadesDeLaRegla(datos.minijuego);
-        if (total) {
-          cuenta.charlas += 1;
-          const antes = necesariosG1c(datos.g1.vara, total);
-          const despues = necesariosG1c(datos.g1.vara - datos.charla.bajaVara, total);
-          if (antes > 0 && despues > antes - 1) mal.push(`seed ${seed}: ${datos.minijuego} con la charla pide ${despues} de ${total} (sin ella, ${antes})`);
-        }
-      }
-      return sistema.resolverAuto(st, decision, r);
-    };
-    for (let i = 0; i < 30 && estado.phase !== 'retirado'; i += 1) {
-      const { state, logs } = avanzarSplitAuto(estado, rng, responder);
-      if (esperado !== null) {
-        const linea = logs.find((l) => l.type === 'temporada' && / (Ganan|Pierden)\. Quedan /.test(l.message ?? ''));
-        const texto = linea ? linea.message : '';
-        if (!linea) mal.push(`seed ${seed}: el Bo1 no dejó su línea de resultado`);
-        else if (texto.includes(' Ganan. ') !== esperado) mal.push(`seed ${seed}: el minijuego ${esperado ? 'pasó' : 'no pasó'} y la fecha dice "${texto}"`);
-        if (esperado) cuenta.ganados += 1;
-        esperado = null;
-      }
-      estado = state;
-    }
-  }
-  console.log(`      ${JSON.stringify(cuenta)}`);
-  if (cuenta.bo1 < 10 || cuenta.ganados === 0 || cuenta.charlas === 0) mal.push(`muestra vacía: ${JSON.stringify(cuenta)}`);
   if (mal.length > 0) throw new Error(mal.slice(0, 6).join(' | '));
 });
 
