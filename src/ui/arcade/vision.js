@@ -55,7 +55,7 @@ function armarCaza(i, p, rng, corta = 0) {
   const quedaCorto = f.corta && rng() < corta;
   const pasos = quedaCorto ? 1 : Math.min(A.pasosMax, dir > 0 ? ULTIMO - s : s);
   const tc = f.tcS * p.ventana;
-  const origen = s; // (el plural con paréntesis del check de textos no distingue `campDe(s)` de "título(s)")
+  const origen = s; // con nombre propio: el check de plurales entre paréntesis no distingue una llamada con `s` de un plural
   const ruta = Array.from({ length: pasos + 1 }, (_, k) => s + k * dir);
   const pistas = f.pistas.map((pi) => {
     const verdad = pi.ok;

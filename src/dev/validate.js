@@ -785,19 +785,20 @@ check('Todo Mundial deja su camino guardado en registro.internacionales (PLAN.md
         throw new Error(`seed ${seed}: internacional en ${intl.org} (${intl.anio}) sin camino guardado`);
       }
       // K5-A: el camino del Mundial es partido a partido en el Swiss (con la p que se tiró) y serie a serie en el bracket.
-      const swiss = intl.camino.filter((paso) => paso.etapa === 'swiss');
+      // PLANUI §0.10 H3: afuera en el Play-In, el récord es el del Play-In y el camino, sus partidos.
+      const swiss = intl.camino.filter((paso) => paso.etapa === (intl.resultado === 'playin' ? 'playin' : 'swiss'));
       const [v, d] = String(intl.record).split('-').map(Number);
       if (swiss.length !== v + d || swiss.filter((paso) => paso.gano).length !== v) {
         throw new Error(`seed ${seed}: el Swiss del camino no da el récord ${intl.record}`);
       }
       for (const paso of intl.camino) {
-        if (!['swiss', 'cuartos', 'semis', 'final'].includes(paso.etapa) || typeof paso.rival !== 'string' || !paso.rival || typeof paso.gano !== 'boolean') {
+        if (!['playin', 'swiss', 'cuartos', 'semis', 'final'].includes(paso.etapa) || typeof paso.rival !== 'string' || !paso.rival || typeof paso.gano !== 'boolean') {
           throw new Error(`seed ${seed}: paso inválido en camino: ${JSON.stringify(paso)}`);
         }
-        if (paso.etapa === 'swiss' && !(paso.p > 0 && paso.p < 1 && paso.ronda >= 1 && paso.ronda <= 5)) {
+        if ((paso.etapa === 'swiss' || paso.etapa === 'playin') && !(paso.p > 0 && paso.p < 1 && paso.ronda >= 1 && paso.ronda <= 5)) {
           throw new Error(`seed ${seed}: partido del Swiss sin ronda o sin p: ${JSON.stringify(paso)}`);
         }
-        if (paso.etapa !== 'swiss' && (Math.max(...paso.marcador) !== 3 || (paso.marcador[0] === 3) !== paso.gano)) {
+        if (paso.etapa !== 'swiss' && paso.etapa !== 'playin' && (Math.max(...paso.marcador) !== 3 || (paso.marcador[0] === 3) !== paso.gano)) {
           throw new Error(`seed ${seed}: serie del bracket con marcador inválido: ${JSON.stringify(paso)}`);
         }
       }
@@ -965,7 +966,9 @@ const FORMAS_CONOCIDAS = {
   // la integración de la entrega 1 (H1a-H4a juntas).
   19: '39704745419d',
   // H3e (ola H, entrega 2): `internacional.playIn`, `internacional.partidoEnCurso.tanda` y `career.torneoG1.racha`.
-  20: 'b89b2f265a26'
+  20: 'b89b2f265a26',
+  // PLANUI §0.10 H3 (lo que corrige el usuario): `internacional.playIn.camino` y `playIn` en la fila del Mundial.
+  21: '64ffe12313bc'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que

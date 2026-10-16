@@ -1277,6 +1277,26 @@ forma.
     victorias de la tanda. Los rivales salen del emparejamiento suponiendo que ganás los anteriores (los cruces ajenos son por
     hash: el rival es exacto). La derrota pasa por el desempate y la revancha de siempre, en una tanda de 1. Una tanda es una
     ronda del torneo (un escalón), y la rotación cuenta tandas.
+- **Lo que corrige el usuario** (2026-10-16, textual: *"si vos ves en el potrero hay minijuegos que son simplemente hacer
+  un clic y es como suerte. Tipo, si pasaste o no los partidos y supongo que eso depende de tu skill. Tipo, de la calidad
+  de tu equipo"*; y *"quedar afuera del play-in [...] lo tiene que decir"*). Reemplaza a "cada partido monta la mecánica
+  de nuevo" de H3u (`paradas/minijuego.js`):
+  - **La tanda es un minijuego y después clics.** El primer partido se juega con la mecánica; cada uno de los que siguen es
+    un clic ("Jugar el partido") con un suspenso corto, y sale con la p de ese partido: tu nivel y el de tu equipo contra el
+    rival. La tirada es por hash de la seed, el año, la etapa y la ronda (`ganaElClic`, `core/internacional.js`): la UI la
+    muestra antes de responder y el motor la repite igual al completar la respuesta corta. El bot no cambia (manda todos
+    sus resultados), así que esto no mueve ni la huella ni las bandas. La rotación sigue contando minijuegos: una tanda, una
+    vez.
+  - **El Play-In, también para las ligas chicas.** Arranca ahí el último sembrado de toda liga con ≥
+    `mundial.playIn.cuposParaEntrar` (2) cupos: entran el 2º del CBLOL y el de la LCP. Los rivales siguen siendo el primer no
+    clasificado de cada otra liga grande (≥ `cuposMinimos`, 3), los 3 más flojos.
+  - **Quedar afuera se dice.** El Play-In perdido es una fila de `registro.internacionales` con `resultado: 'playin'`, su
+    récord y sus partidos; el ganado queda en la fila del Mundial (`playIn: '2-1'`, y sus partidos al principio del
+    camino). Cuenta como Mundial jugado y puntúa 0, como el Swiss perdido.
+  - **El color, por lo que se esperaba de tu liga** (grande = ≥ 3 cupos: LCK, LPL, LEC y LCS; `esLigaGrande`):
+    - pasar el Play-In desde una liga chica (CBLOL, LCP) es una hazaña: un color más picado;
+    - quedar afuera desde una liga chica, gris;
+    - quedar afuera desde una liga grande, "medio pinchado".
 
 **El kit (`src/ui/arcade/`).**
 - Canvas 2D con paso fijo de tiempo: arregla el bug de 144 Hz.
@@ -2985,14 +3005,14 @@ Son del **motor**. Van a la etapa "arreglar el juego" que pidió el usuario (§0
 | D140 | **Los 64 eventos de fecha marcada piden `contexto.stakes`**, que `calcularContexto()` nunca emite: `events.js` no los puede sortear, solo `temporada.js` (§0.10, H1.6) | ✅ 2026-10-15 (H1b: sin `stakes`; los 64 entran al mazo del split) |
 | D141 | **Caminos muertos:** con el cupo de 1, `encadenar` (`events.js:714`) y `edad.probSegundaDecisionPorTipo` (`balance.js:699`) nunca dan un segundo evento; `g1.vestuarioCharlas` (`balance.js:2487`) no tiene lector (`core/serie.js:200-206` lo fija a mano); `rueda_de_prensa` declara adaptabilidad y no la lee | ⬜ |
 | D142 | **La meta de rondas de minijuego de G1 (PLANUI:868) nunca se reportó.** Medido 2026-10-15: 69,7 por carrera (mediana 65), ~4,5 por año, y hasta 15 rondas seguidas de la misma mecánica en un torneo (§0.10, H3e) | ⬜ H3e |
-| D143 | **La tarjeta "Cierre de año" (V4) casi no sale:** aparece solo en los años en que el cierre no frena, y ahora la mano de cartas frena todos los años (H-fix: 0 años sin parada contra 4 en master). El usuario decide si sale del producto | ⬜ |
+| D143 | **La tarjeta "Cierre de año" (V4) casi no sale:** aparece solo en los años en que el cierre no frena, y ahora la mano de cartas frena todos los años (H-fix: 0 años sin parada contra 4 en master). El usuario decide si sale del producto | ✅ 2026-10-16: se queda como está (el usuario: *"la tarjeta del cierre de año no me parece mala"*) |
 | D144 | **`--bloque=variedad` imprime `cartas: n/a`:** busca la mano por un id que no coincide con cómo la registra `edadCierre` (`edadCierre:mano`). La medida de cartas de H2a (38 distintas por carrera) salió de su propio script | ✅ 2026-10-16 (H2b: el bloque lee `edadCierre` con `motivo: mano`) |
 | D145 | **`dev/recorrido.mjs` no juega el Barón ni el dodge nuevos:** busca el DOM viejo (`.minijuego-barra`, `.minijuego-carriles`). La raíz del canvas trae `data-arcade=<id>` para un bot | ✅ 2026-10-16 (H3u: `?bot` en `montadorDe` termina cualquier mecánica de canvas; el recorrido abre con `&bot`) |
 | D146 | **Paradas por carrera: 137** (mediana 134,5; p90 189), contra ≤ 100 del plan. Los eventos suben a 37 a propósito. Lo que sobra son partidos: serie con minijuego 27,8, Swiss 13,9 y plan 7,3; las tandas de H3e los compactan | 🔶 2026-10-16 (H3e: con las tandas el Swiss baja de 12,7 a 10,1 paradas, pero el Play-In y las series suben; el total queda en 133,2 (antes 133,4) y la mediana en 126 (antes 132,5). Sigue lejos de ≤ 100) |
 | D147 | **"K1 D75" queda vacío:** en 600 carreras de `malas`, ninguna termina como agente libre de tier 2 sin jugar en tier 2 (G3 y H casi no dejan agentes libres). Es falta de muestra, no un error | ⬜ |
 | D148 | **Dos mecánicas quedan un poco fáciles arriba:** a vara .85, `el_kite` da 22,3 y `el_gancho` 23,0, contra un piso de 25 (Cal, 1000 corridas). El bruiser del kite se dibuja como una dona | ⬜ |
-| D149 | **Detalles de la tanda en pantalla** (revisor):<br>• el HUD de cada mecánica queda tapado por la banda de instrucción durante la demo y el 3-2-1 (`ui/arcade/kit.js`);<br>• "tu mejor" se anota solo con el último partido (`finales.js:288`);<br>• el ✓/✗ del último partido se pinta antes del suspenso (`paradas/minijuego.js:430-442`);<br>• en el Play-In el CASI corta, pero el sello dice "ni ganás ni perdés" | ⬜ |
-| D150 | **Para confirmar con el usuario:**<br>• la rotación (≤ 5 seguidas) cuenta tandas, no partidos;<br>• quedar afuera en el Play-In deja un hito, pero no una fila en `registro.internacionales` | ⬜ |
+| D149 | **Detalles de la tanda en pantalla** (revisor):<br>• el HUD de cada mecánica queda tapado por la banda de instrucción durante la demo y el 3-2-1 (`ui/arcade/kit.js`);<br>• en el Play-In el CASI corta, pero el sello dice "ni ganás ni perdés".<br>"Tu mejor" con un solo partido y el ✓/✗ antes del suspenso se fueron con la tanda de clics (2026-10-16) | 🔶 |
+| D150 | **Para confirmar con el usuario:**<br>• la rotación (≤ 5 seguidas) cuenta tandas, no partidos;<br>• quedar afuera en el Play-In deja un hito, pero no una fila en `registro.internacionales` | ✅ 2026-10-16: la rotación cuenta minijuegos; el Play-In perdido se dice, con color (§0.10 H3, "Lo que corrige el usuario") |
 | D151 | **`PLAN.md:6398`**, la tabla de horizontes por tipo de parada, no tiene `internacional:playin`. Sí la tienen `agencia.js` y el check K4c-H | ⬜ |
 
 ---

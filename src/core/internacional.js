@@ -101,15 +101,18 @@ export function crearMundial(state, anio, jugador) {
 
 // --- H3e (PLANUI §0.10 H3): el Play-In y la tanda del Swiss ---
 
-// ¿Tu cupo juega el Play-In? El último sembrado de una liga con al menos `playIn.cuposMinimos` cupos.
+// ¿Tu cupo juega el Play-In? El último sembrado de una liga con al menos `playIn.cuposParaEntrar` cupos: las grandes y,
+// desde 2026-10-16 (el usuario), también el 2º del CBLOL y el de la LCP.
 export function entraAlPlayIn(liga, cupo) {
   const cupos = liga?.cuposInternacionales ?? 0;
-  return cupos >= M().playIn.cuposMinimos && cupo === cupos;
+  return cupos >= M().playIn.cuposParaEntrar && cupo === cupos;
 }
 
-// Los rivales del Play-In: el primer no clasificado de cada OTRA liga con al menos `playIn.cuposMinimos` cupos, de menor a
-// mayor fuerza (la tanda escala). Puro y sin `rng`: la tabla es la misma de `clasificadosDelMundial`.
+// Los rivales del Play-In: el primer no clasificado de cada OTRA liga con al menos `playIn.cuposMinimos` cupos (las
+// grandes), de menor a mayor fuerza (la tanda escala), y nunca más que los partidos que puede durar: desde una liga chica
+// son cuatro ligas y se juega contra las tres más flojas. Puro y sin `rng`: la tabla es la misma de `clasificadosDelMundial`.
 export function rivalesDelPlayIn(state, anio, jugador) {
+  const m = M().playIn;
   const clave = claveDelMundial(state.seed, anio);
   return state.mundo.ligas
     .filter((liga) => liga.tier === 1 && liga.id !== jugador.liga && (liga.cuposInternacionales ?? 0) >= M().playIn.cuposMinimos)
@@ -118,7 +121,16 @@ export function rivalesDelPlayIn(state, anio, jugador) {
       return org ? { nombre: org.nombre, liga: liga.id, fuerza: org.fuerza } : null;
     })
     .filter(Boolean)
-    .sort((x, y) => x.fuerza - y.fuerza || x.nombre.localeCompare(y.nombre));
+    .sort((x, y) => x.fuerza - y.fuerza || x.nombre.localeCompare(y.nombre))
+    .slice(0, m.victoriasParaPasar + m.derrotasParaQuedarAfuera - 1);
+}
+
+// PLANUI §0.10 H3 (lo que corrige el usuario, 2026-10-16): en una tanda, el primer partido es el minijuego y cada uno de
+// los que siguen es un clic que sale con su p (tu nivel y el de tu equipo contra el rival). Por hash de la seed, el año,
+// la etapa y la ronda: la UI lo muestra antes de responder y el motor lo repite igual al completar la respuesta. Sin `rng`:
+// no corre el stream (el bot manda todos sus resultados y no pasa por acá). La misma `uniformeDeClave` de los partidos ajenos.
+export function ganaElClic(state, etapa, ronda, p) {
+  return uniformeDeClave(`${state.seed}|${state.internacional?.anio}|${etapa}|${ronda}|clic`) < p;
 }
 
 // Cuántos partidos del Swiss se juegan con un minijuego (`g1.tanda`): por la p de tu equipo contra la fuerza media de los

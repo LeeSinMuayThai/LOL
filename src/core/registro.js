@@ -290,8 +290,9 @@ export function registrarTitulo(registro, { nombre, anio, org, liga, tier }) {
 // la `dificultad` que multiplica el internacional en `core/puntaje.js`).
 // K5-A: lo que se registra de un Mundial es hasta dónde llegaste: `eliminado` (afuera en el Swiss), `cuartos`,
 // `semis`, `final` o `campeon`. `buen_papel` es el de los registros anteriores a K5 (una serie internacional ganada).
-// "Buen papel" es pasar de fase: cualquier resultado de bracket.
-export const RESULTADOS_INTERNACIONALES = ['eliminado', 'cuartos', 'semis', 'final', 'campeon', 'buen_papel'];
+// "Buen papel" es pasar de fase: cualquier resultado de bracket. `playin` (PLANUI §0.10 H3, 2026-10-16): afuera en el
+// Play-In, que también se dice; el Play-In ganado queda en la fila del Mundial (`playIn: '2-1'`).
+export const RESULTADOS_INTERNACIONALES = ['playin', 'eliminado', 'cuartos', 'semis', 'final', 'campeon', 'buen_papel'];
 const RESULTADOS_DE_BUEN_PAPEL = ['cuartos', 'semis', 'final', 'campeon', 'buen_papel'];
 
 export function esBuenPapel(entrada) {

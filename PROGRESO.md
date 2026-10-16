@@ -34,6 +34,36 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-16 — Lo que corrigió el usuario tras la entrega 2: la tanda de clics y el Play-In que se dice
+
+PLANUI §0.10 H3, "Lo que corrige el usuario". Lo hizo el supervisor, sin workers.
+- **D143 y D150, cerradas:** la tarjeta "Cierre de año" se queda y la rotación sigue contando minijuegos.
+- **La tanda es un minijuego y después clics, como en el Potrero.**
+  - El primer partido se juega con la mecánica; cada uno de los que siguen es un clic, "Jugar el partido", con un suspenso
+    corto, y sale con la p del partido.
+  - La tirada es `ganaElClic` (`core/internacional.js`, por `uniformeDeClave`, sin stream): la UI la muestra y el motor la
+    repite al completar la respuesta corta (`resolverPlayIn`, `resolverSwissG1`). El bot no cambia.
+  - Medido en 150 carreras del camino humano: lo que muestra la UI es lo que registra el motor (60 pases de 60); el clic gana
+    el 26,4% contra una p media de 26,5%. En Chromium, Play-In y Swiss a 1440 y 390, sin errores.
+  - Se borró `omitirDemoDeLaProxima` (`ui/arcade/kit.js`), que quedó sin lector.
+- **El Play-In, también para las ligas chicas:** entra el último de toda liga con ≥ `playIn.cuposParaEntrar` (2) cupos, o
+  sea el 2º del CBLOL y el de la LCP, contra los 3 más flojos de las grandes. Con el bot, en 150 carreras, las grandes pasan
+  32 de 82 (39%) y las chicas 17 de 54 (31%).
+- **Quedar afuera se dice:**
+  - el Play-In perdido es una fila de `registro.internacionales` (`resultado: 'playin'`, su récord y sus partidos), que
+    cuenta como Mundial jugado y puntúa 0;
+  - el ganado queda en la fila del Mundial (`playIn: '2-1'`, con sus partidos al principio del camino);
+  - en la tarjeta final, por lo que se esperaba de tu liga (`esLigaGrande`, ≥ 3 cupos): pasarlo desde una chica, naranja
+    `--intl-picado`; quedar afuera desde una chica, gris; desde una grande, `--intl-pinchado`.
+- **Guardado VERSION 21** (`migrarDe20`), `FORMAS_CONOCIDAS[21]` 64ffe12313bc, `HUELLA_JUEGO` 1554609563 (el CBLOL y la LCP en
+  el Play-In cambian esas carreras).
+- **Medido:**
+  - el rápido dio 373 OK y 8 FAIL: los tres nuevos (el camino del Play-In en el check del registro, la pureza de
+    `core/internacional.js` y un comentario con plural entre paréntesis) se arreglaron y pasan con `--solo`; quedan los
+    cinco de la base;
+  - `simulate 1000` dos veces, idéntica y sin crashes: `llegaATier1` 40,3 y `noLlegaAPro` 9,3, como antes.
+- **D149** queda con dos detalles: el HUD tapado durante la demo y el CASI del Play-In.
+
 ### 2026-10-16 — Ola H, entrega 2: el arcade completo, el Play-In y las tandas, la voz corta y la mano nueva
 
 PLANUI §0.10. Trabajaron once workers en worktrees, todos con tope de pasos:

@@ -39,6 +39,9 @@
   --danger: #ff5468;
   --gold: #ffd27a;
   --gold-hondo: #b8862e;
+  /* El Play-In en tu historial (PLANUI §0.10 H3): pasarlo desde una liga chica pica; quedar afuera desde una grande pincha */
+  --intl-picado: #ff8f3d;
+  --intl-pinchado: #b48a92;
   /* H2a (el mazo): el marco por rareza de la mano del año. --cv-rz es el color de la carta en curso (lo fija .cv-r-*). */
   --rz-comun: #8a919c;
   --rz-rara: #4aa3ff;

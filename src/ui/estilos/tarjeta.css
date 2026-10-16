@@ -163,6 +163,27 @@
   color: var(--ink-dim);
 }
 
+/* El Play-In, con el color de lo que se esperaba de tu liga (PLANUI §0.10 H3, lo que corrige el usuario) */
+.tarjeta-intl-bloque[data-playin="hazana"] {
+  border-color: var(--intl-picado);
+}
+
+.tarjeta-intl-bloque[data-playin="hazana"] .tarjeta-intl-encabezado {
+  color: var(--intl-picado);
+}
+
+.tarjeta-intl-bloque[data-playin="afuera"] .tarjeta-intl-encabezado {
+  color: var(--ink-dim);
+}
+
+.tarjeta-intl-bloque[data-playin="pinchado"] {
+  opacity: 0.85;
+}
+
+.tarjeta-intl-bloque[data-playin="pinchado"] .tarjeta-intl-encabezado {
+  color: var(--intl-pinchado);
+}
+
 /* --- Las tres acciones de cierre (T7): PNG + link ------------------------- */
 .tarjeta-acciones {
   display: flex;

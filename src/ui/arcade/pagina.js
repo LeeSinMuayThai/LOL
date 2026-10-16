@@ -101,7 +101,7 @@ function jugar() {
     responder: ({ resultado, resultados }) => {
       salida.hidden = false;
       buscar('#arSalidaTexto').textContent = resultados
-        ? `Jugaste ${resultados.length} de ${tanda.partidos.length} partidos: ${resultados.map((r, i) => `${Math.round(r * 100)} (vara ${Math.round(tanda.partidos[i].vara * 100)})`).join(' · ')}.`
+        ? `En el minijuego sacaste ${Math.round(resultados[0] * 100)} (vara ${Math.round(tanda.partidos[0].vara * 100)}); los otros partidos de la tanda fueron de a un clic.`
         : `Sacaste ${Math.round(resultado * 100)} con la vara en ${Math.round(vara() * 100)}.`;
       buscar('#arOtra').focus();
     }

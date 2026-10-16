@@ -2,6 +2,7 @@ import { filaHistoria } from '../components/ficha.js';
 import { descargarTarjeta, copiarTarjeta, copiarTexto } from '../exportar.js';
 import { miles, textoParaCompartir, linkDeEstado } from '../resultado.js';
 import { esBuenPapel } from '../../core/registro.js';
+import { esLigaGrande } from '../../core/ligas.js';
 import { goldenRoadsDeEstado, medallaDeGoldenRoad } from '../core/trayectoria.js';
 import { apodoDeLealtad, arraigoPorOrg, dueloEterno, finalesPerdidas, monumento, premiosConNombre } from '../../core/legado.js';
 
@@ -185,14 +186,21 @@ function bloqueLeyenda(state, puntaje, modulos) {
 // Los registros de antes de K5 traen el camino mapa a mapa y `buen_papel`/`eliminado`.
 const RESULTADO_INTL = {
   campeon: 'Campeón del mundo', final: 'Subcampeón', semis: 'Semifinal', cuartos: 'Cuartos',
-  eliminado: 'Afuera', buen_papel: 'Buen papel'
+  eliminado: 'Afuera', buen_papel: 'Buen papel', playin: 'Afuera en el Play-In'
 };
-const ETAPA_INTL = { swiss: 'Swiss', cuartos: 'Cuartos', semis: 'Semis', final: 'Final' };
+const ETAPA_INTL = { playin: 'Play-In', swiss: 'Swiss', cuartos: 'Cuartos', semis: 'Semis', final: 'Final' };
+
+// PLANUI §0.10 H3 (lo que corrige el usuario): el Play-In, con el color de lo que se esperaba de tu liga. Pasarlo desde una
+// liga chica es una hazaña; quedar afuera, gris desde una chica y "medio pinchado" desde una grande.
+function tonoDelPlayIn(intl) {
+  if (intl.resultado === 'playin') return esLigaGrande(intl.liga) ? 'pinchado' : 'afuera';
+  return intl.playIn && !esLigaGrande(intl.liga) ? 'hazana' : null;
+}
 
 function lineaDeCamino(m) {
   if (m.etapa) {
     const marcador = m.marcador ? ` ${m.marcador[0]}-${m.marcador[1]}` : '';
-    const ronda = m.etapa === 'swiss' ? ` R${m.ronda}` : '';
+    const ronda = m.etapa === 'swiss' || m.etapa === 'playin' ? ` R${m.ronda}` : '';
     return { gano: m.gano, texto: `${ETAPA_INTL[m.etapa]}${ronda} [${m.gano ? 'G' : 'P'}${marcador}] vs ${m.rival}` };
   }
   return { gano: m.resultado === 'W', texto: `M${m.mapa} [${m.resultado} ${m.marcador}] ${m.campeon}${m.cierre ? ` — ${m.cierre}` : ''}` };
@@ -209,11 +217,16 @@ function bloqueInternacionales(internacionales) {
   for (const intl of internacionales) {
     const bloque = document.createElement('div');
     bloque.className = 'tarjeta-intl-bloque';
+    const tono = tonoDelPlayIn(intl);
+    if (tono) bloque.dataset.playin = tono;
 
     const enc = document.createElement('div');
     enc.className = 'tarjeta-intl-encabezado';
     const res = RESULTADO_INTL[intl.resultado] ?? intl.resultado;
-    const record = intl.record ? ` (Swiss ${intl.record})` : '';
+    const tramos = (intl.resultado === 'playin'
+      ? [intl.record]
+      : [intl.playIn ? `Play-In ${intl.playIn}` : null, intl.record ? `Swiss ${intl.record}` : null]).filter(Boolean);
+    const record = tramos.length > 0 ? ` (${tramos.join(' · ')})` : '';
     enc.textContent = `${intl.torneo} (${intl.anio}) · ${intl.org} · ${res}${record}`;
     bloque.appendChild(enc);
 

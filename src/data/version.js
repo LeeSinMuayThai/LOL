@@ -205,4 +205,7 @@ export const VERSION_JUEGO = 'H';
 // H (ola H, entrega 1, PLANUI §0.10, 193370552 → 423616085; corrimiento declarado): ver `VERSION_JUEGO` 'H' arriba (el mazo de rareza, el arcade, la temporada sin paradas de partido, las cartas del cierre). Guardado VERSION 19.
 // H3e (ola H, entrega 2, 423616085 → 850840109; corrimiento declarado): el Play-In del Mundial tira sus partidos (el bot, uno
 // por partido). La tanda del Swiss y la rotación no tiran nada nuevo. Guardado VERSION 20.
-export const HUELLA_JUEGO = 850840109;
+// Lo que corrige el usuario (2026-10-16, 850840109 → 1554609563; corrimiento declarado): el Play-In también es del último de
+// las ligas chicas (el 2º del CBLOL y de la LCP), así que esas carreras cambian. Los clics de la tanda no tiran del stream.
+// Guardado VERSION 21.
+export const HUELLA_JUEGO = 1554609563;

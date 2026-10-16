@@ -84,8 +84,10 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // de año de H2a; `flags.colaFirmas.evento`, el tipo nuevo de la cola). Un guardado de la 18 carga con `migrarDe18`.
 // · 20 (ola H, entrega 2, H3e: `internacional.playIn`, el Play-In del Mundial; `internacional.partidoEnCurso.tanda`, la tanda
 // del Swiss; `career.torneoG1.racha`, la rotación de mecánicas). Un guardado de la 19 carga con `migrarDe19`.
-export const VERSION = 20;
-const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+// · 21 (ola H, lo que corrige el usuario, PLANUI §0.10 H3: `internacional.playIn.camino`, los partidos del Play-In; `playIn`,
+// el récord del Play-In ganado, en la fila del Mundial). Un guardado de la 20 carga con `migrarDe20`.
+export const VERSION = 21;
+const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
 // El marcador de los años pro, reconstruido de lo que la 11 sí guardaba. La fila del registro de la org del primer contrato de tier
 // 2 o 1 la abre `roster.js` el split siguiente al de la firma, así que la firma fue en su `desdeSplit` - 1. Sin esa fila todavía
@@ -300,13 +302,23 @@ function migrar(version, state) {
   if (version === VERSION) {
     return state;
   }
+  if (version === 20) {
+    return migrarDe20(state);
+  }
   if (version === 19) {
-    return migrarDe19(state);
+    return migrarDe20(migrarDe19(state));
   }
   if (version === 18) {
-    return migrarDe19(migrarDe18(state));
+    return migrarDe20(migrarDe19(migrarDe18(state)));
   }
-  return migrarDe19(migrarDe18(version === 17 ? migrarDe17(state) : migrarDe17(migrarHasta17(version, state))));
+  return migrarDe20(migrarDe19(migrarDe18(version === 17 ? migrarDe17(state) : migrarDe17(migrarHasta17(version, state)))));
+}
+
+// PLANUI §0.10 H3 (lo que corrige el usuario, 2026-10-16): el Play-In guardado no trae sus partidos (`camino: []`); si ya lo
+// pasaste, la fila del Mundial abre sin ellos. Las filas de `registro.internacionales` no cambian (`playIn` es opcional).
+export function migrarDe20(state) {
+  const t = state.internacional;
+  return t?.playIn ? { ...state, internacional: { ...t, playIn: { ...t.playIn, camino: t.playIn.camino ?? [] } } } : state;
 }
 
 // H3e (ola H, entrega 2): el Mundial guardado no jugó Play-In (`playIn: null`); un Swiss pausado sigue de a un partido (sin

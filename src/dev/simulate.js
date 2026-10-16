@@ -657,6 +657,16 @@ export function correrCarrera(seed, splits, responder, eleccion = null) {
 // juega igual por hash, pero no es tuyo). `fuerzaRivalMax` es la del mejor de los otros 15 clasificados.
 export function filaDeMundial(torneo) {
   if (!torneo?.jugador) {
+    // PLANUI §0.10 H3 (2026-10-16): afuera en el Play-In también es un Mundial tuyo (tiene su fila en el registro), con la
+    // fuerza que llevaste contra el mejor de los 16 que jugaron sin vos.
+    if (torneo?.playIn?.paso === false) {
+      return {
+        anio: torneo.anio,
+        resultado: 'playin',
+        fuerzaPropia: torneo.playIn.fuerzaPropia,
+        fuerzaRivalMax: Math.max(...torneo.participantes.map((p) => p.fuerza))
+      };
+    }
     return null;
   }
   const propia = torneo.participantes.find((p) => p.esJugador);

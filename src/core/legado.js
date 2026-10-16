@@ -158,7 +158,7 @@ function enumerar(partes) {
 }
 
 // K6b-U: de mejor a peor. El pico de la carrera internacional es el mejor resultado; a igual resultado, el más reciente.
-const ORDEN_DE_RESULTADO = ['campeon', 'final', 'semis', 'cuartos', 'buen_papel', 'eliminado'];
+const ORDEN_DE_RESULTADO = ['campeon', 'final', 'semis', 'cuartos', 'buen_papel', 'eliminado', 'playin'];
 
 function mejorInternacional(registro) {
   return [...registro.internacionales].sort(

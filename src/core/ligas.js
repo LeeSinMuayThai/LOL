@@ -1,4 +1,14 @@
 import LIGAS from '../data/leagues.json' with { type: 'json' };
+import { BALANCE } from '../data/balance.js';
+
+// PLANUI §0.10 H3 (lo que corrige el usuario, 2026-10-16): una liga grande del Mundial es la de ≥
+// `mundial.playIn.cuposMinimos` cupos (LCK, LPL, LEC y LCS). Desde ahí, quedar afuera en el Play-In pincha; desde una
+// chica, pasarlo es una hazaña. Se lee del archivo, como `esLigaFranquiciada`. Puro: sin rng, sin DOM.
+const CUPOS_DE_LIGA = Object.fromEntries(LIGAS.map((liga) => [liga.id, liga.cuposInternacionales ?? 0]));
+
+export function esLigaGrande(ligaId) {
+  return (CUPOS_DE_LIGA[ligaId] ?? 0) >= BALANCE.mundial.playIn.cuposMinimos;
+}
 
 // El nombre que ve el jugador de una liga ("LCK CL", "EMEA Masters"), no su id ("LCK_CL"). Es la única fuente de
 // verdad: el motor la usa en sus logs, titulares y descripciones, y la UI la reexporta (`ui/formatoUi.js`). Un id que

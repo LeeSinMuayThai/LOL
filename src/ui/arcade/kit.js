@@ -240,15 +240,9 @@ export function crearBucle({ alPaso, alDibujar, jugo = null }) {
 // saltea la demo (no el 3-2-1). Con motion reducido, la demo queda quieta en su mejor cuadro.
 const DEMO_S = 2;
 const CUENTA_S = 0.55;
-// H3u: en una tanda, la demo sale solo antes del primer partido; los demás van directo al 3-2-1 (`omitirDemoDeLaProxima`, de una sola vez).
-let sinDemoLaProxima = false;
-export function omitirDemoDeLaProxima() {
-  sinDemoLaProxima = true;
-}
 export function presentar(lienzo, { linea, demo, reducido = false }) {
   const { ctx, canvas } = lienzo;
-  const demoS = sinDemoLaProxima ? 0 : DEMO_S;
-  sinDemoLaProxima = false;
+  const demoS = DEMO_S;
   const pal = lienzo.paleta;
   return new Promise((resolver) => {
     const inicio = performance.now();

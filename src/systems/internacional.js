@@ -12,7 +12,7 @@ import {
   crearMundial, emparejarRondaSwiss, jugarRondaSwiss, swissTerminado, cruceDe, rivalEn, sigueEnSwiss, esVidaOMuerte,
   probabilidadDeCruceSwiss, sembrarBracket, crucesDeEtapa, jugarEtapaBracket, etapaSiguiente, resolverResto,
   resultadoDelJugador, caminoDelJugador, recordDelJugador, resumenDelMundial,
-  entraAlPlayIn, rivalesDelPlayIn, partidosDeLaTanda, pDelCampo
+  entraAlPlayIn, rivalesDelPlayIn, partidosDeLaTanda, pDelCampo, ganaElClic
 } from '../core/internacional.js';
 import {
   arrancarSerieDelMundial, resolver as resolverSerie, resolverAuto as resolverAutoSerie,
@@ -315,8 +315,8 @@ function trasSwiss(state, rng, logs) {
 
 // G1: el Bo1 del Swiss jugado con las manos: el juicio contra la vara decide el partido (o da el desempate o la revancha).
 // H3e: la tanda. Cada resultado juega su partido contra su vara, en orden, hasta la primera derrota (que pasa por el
-// desempate y la revancha de siempre, de a uno) o hasta que se te acaba el Swiss. Un partido sin resultado no se juega:
-// vuelve en la tanda siguiente.
+// desempate y la revancha de siempre, de a uno) o hasta que se te acaba el Swiss. Un partido sin resultado es un clic
+// (`ganaElClic`, abajo): la UI juega el minijuego en el primero y los demás salen con su p.
 function resolverSwissG1(state, decision, respuesta, rng) {
   const { g1 } = decision.datos;
   const t = state.internacional;
@@ -340,6 +340,7 @@ function resolverSwissG1(state, decision, respuesta, rng) {
   const max = BALANCE.stats.max;
   const conTorneo = (s0, torneo) => ({ ...s0, career: { ...s0.career, torneoG1: torneo } });
   let torneo = { ...t, partidoEnCurso: null };
+  let perdio = false;
   for (let i = 0; i < partidos.length && i < resultados.length && sigueEnSwiss(torneo, torneo.jugador); i += 1) {
     const partido = partidos[i];
     const varaEfectiva = varas[i] - baja;
@@ -369,7 +370,20 @@ function resolverSwissG1(state, decision, respuesta, rng) {
     const p = i === 0 ? decision.datos.p : probabilidadDeCruceSwiss(st, e.fuerzaPropia, partido.fuerzaRival);
     torneo = jugarRondaSwiss(torneo, partido.cruces, { gano, p });
     logs.push(logDePartidoSwiss(torneo, participante(t, partido.rival), gano, p, { vara: varaEfectiva, resultado: juicio.resultado }));
-    if (!gano) break;
+    if (!gano) {
+      perdio = true;
+      break;
+    }
+  }
+  // PLANUI §0.10 H3 (lo que corrige el usuario): después del minijuego, cada partido de la tanda es un clic que sale con su
+  // p, la misma tirada que la UI ya mostró (`ganaElClic`). El bot manda todos sus resultados y no llega acá.
+  for (let i = resultados.length; !perdio && i < partidos.length && sigueEnSwiss(torneo, torneo.jugador); i += 1) {
+    const partido = partidos[i];
+    const p = decision.datos.tanda?.partidos[i]?.p ?? probabilidadDeCruceSwiss(st, e.fuerzaPropia, partido.fuerzaRival);
+    const gano = ganaElClic(state, 'swiss', torneo.swiss.rondas.length + 1, p);
+    torneo = jugarRondaSwiss(torneo, partido.cruces, { gano, p });
+    logs.push(logDePartidoSwiss(torneo, participante(t, partido.rival), gano, p));
+    perdio = !gano;
   }
   return avanzarSwiss({ ...conTorneo(st, jugado), internacional: torneo }, rng, logs);
 }
@@ -493,10 +507,11 @@ function resolverPlayIn(state, decision, respuesta, rng) {
     ganados.push(juicio.paso);
     juicios.push(juicio);
   }
-  // Una respuesta corta no elimina al que va ganando: los partidos que faltan se tiran (la rama sin mecánica).
+  // PLANUI §0.10 H3 (lo que corrige el usuario): después del minijuego, cada partido es un clic que sale con su p, la misma
+  // tirada que la UI ya mostró (`ganaElClic`). El bot manda todos sus resultados y no llega acá.
   for (let i = ganados.length; i < tanda.partidos.length; i += 1) {
     if (cortaElPlayIn(ganados.filter(Boolean).length, ganados.filter((g) => !g).length)) break;
-    ganados.push(tirarPartido(tanda.partidos[i].p, rng).gano);
+    ganados.push(ganaElClic(state, 'playin', i + 1, tanda.partidos[i].p));
   }
   const jugado = torneoTrasRonda(torneoG1(state, claveDeTorneo(state, 'mundial')), { poderUsado });
   st = { ...st, career: { ...st.career, torneoG1: jugado } };
@@ -522,7 +537,10 @@ function trasPlayIn(state, partidos, ganados, conMinijuego, rng, logsAcum) {
     ));
   });
   const paso = v >= BALANCE.mundial.playIn.victoriasParaPasar;
-  const playIn = { ...t.playIn, paso, record: `${v}-${d}` };
+  // PLANUI §0.10 H3 (lo que corrige el usuario): el Play-In queda en tu historial, ganado (en la fila del Mundial, al
+  // principio del camino) o perdido (su propia fila).
+  const camino = ganados.map((gano, i) => ({ etapa: 'playin', ronda: i + 1, rival: t.playIn.rivales[i].nombre, gano, p: partidos[i].p }));
+  const playIn = { ...t.playIn, paso, record: `${v}-${d}`, camino };
   if (paso) {
     logs.push(crearLog('internacional', `Pasaste el Play-In ${v}-${d}: al Swiss de 16, tres victorias y pasás, tres derrotas y te volvés.`));
     return avanzarSwiss({ ...state, internacional: { ...t, fase: 'swiss', playIn } }, rng, logs);
@@ -531,11 +549,27 @@ function trasPlayIn(state, partidos, ganados, conMinijuego, rng, logsAcum) {
   logs.push(crearLog('internacional', `Afuera en el Play-In del Mundial ${t.anio} (${v}-${d}). El Swiss se juega sin ustedes.`, {
     torneo: 'mundial', resultado: 'playin'
   }));
+  const registro = registrarInternacional(state.career.registro, {
+    torneo: `Mundial ${t.anio}`,
+    anio: state.calendario.anio,
+    org: state.career.currentOrg,
+    liga: ligaDeCarrera(state).id,
+    resultado: 'playin',
+    record: playIn.record,
+    campeon: sinVos.campeon,
+    camino
+  });
   return {
     state: {
       ...state,
       internacional: sinVos,
-      career: { ...state.career, hitos: [...state.career.hitos, `Afuera en el Play-In del Mundial con ${state.career.currentOrg} a los ${state.age}`] }
+      player: { ...state.player, worlds: state.player.worlds + 1 },
+      career: {
+        ...state.career,
+        internacionales: state.career.internacionales + 1,
+        registro,
+        hitos: [...state.career.hitos, `Afuera en el Play-In del Mundial con ${state.career.currentOrg} a los ${state.age}`]
+      }
     },
     logs
   };
@@ -586,7 +620,9 @@ function cerrarMundial(state, rng, logs) {
       resultado,
       record,
       campeon: t.campeon,
-      camino: caminoDelJugador(t)
+      // PLANUI §0.10 H3: si llegaste desde el Play-In, se dice (y sus partidos abren el camino).
+      ...(t.playIn?.paso ? { playIn: t.playIn.record } : {}),
+      camino: [...(t.playIn?.paso ? (t.playIn.camino ?? []) : []), ...caminoDelJugador(t)]
     }),
     arraigo
   );

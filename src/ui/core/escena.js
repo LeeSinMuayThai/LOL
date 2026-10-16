@@ -152,7 +152,8 @@ const TEXTO_DE_MUNDIAL = {
   semis: 'Semis del Mundial',
   cuartos: 'Cuartos del Mundial',
   eliminado: 'Afuera en el Swiss del Mundial',
-  buen_papel: 'Buen papel en el Mundial'
+  buen_papel: 'Buen papel en el Mundial',
+  playin: 'Afuera en el Play-In del Mundial'
 };
 
 function textoDePosicion(posicion, equipos) {

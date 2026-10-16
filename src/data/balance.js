@@ -2278,7 +2278,9 @@ export const BALANCE = {
     // H3e (PLANUI §0.10 H3): el Play-In, para el último sembrado de una liga con al menos `cuposMinimos` cupos (el 4º de la
     // LCK y la LPL en 2025). Una sola tanda contra el primer no clasificado de cada otra liga con esos cupos, de menor a
     // mayor fuerza: `victoriasParaPasar` y pasás al Swiss en tu cupo; `derrotasParaQuedarAfuera` y te volvés.
-    playIn: { cuposMinimos: 3, victoriasParaPasar: 2, derrotasParaQuedarAfuera: 2 }
+    // 2026-10-16 (el usuario, PLANUI §0.10 H3): también arranca ahí el último de una liga chica, la de `cuposParaEntrar`
+    // (el 2º del CBLOL y el de la LCP); los rivales siguen siendo de las ligas de `cuposMinimos`, las grandes.
+    playIn: { cuposMinimos: 3, cuposParaEntrar: 2, victoriasParaPasar: 2, derrotasParaQuedarAfuera: 2 }
   },
 
   puntaje: {
@@ -2308,7 +2310,7 @@ export const BALANCE = {
       // K5-A: el Mundial dice hasta dónde llegaste. `eliminado` = afuera en el Swiss (0, como antes); `cuartos`
       // vale lo que valía `buen_papel` (pasar de fase); cada ronda más suma, y ser campeón del mundo vale más que
       // cuatro títulos de liga tier 1 (40 c/u). `buen_papel` queda para registros anteriores a K5. Provisorios: K5c.
-      porResultado: { eliminado: 0, cuartos: 50, semis: 80, final: 120, campeon: 180, buen_papel: 50 }
+      porResultado: { playin: 0, eliminado: 0, cuartos: 50, semis: 80, final: 120, campeon: 180, buen_papel: 50 }
     },
     // 4. El mundo: el pico de rank mundial por bandas (#1, hasta `corteTop5`, el
     // resto del Top 20) más cada temporada cerrada adentro del Top 20
