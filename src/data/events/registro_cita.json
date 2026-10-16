@@ -1,11 +1,12 @@
 [
   {
     "id": "otro_titulo_mas",
+    "voz": "corta",
     "rarezaEvento": "epica",
     "category": "identidad",
     "categoria": "prensa",
     "title": "Otro título más",
-    "description": "Ganaron. Hay confeti y la ceremonia de siempre, pero esta vez la sentís distinto: no es la primera, y tu cuerpo ya sabe cómo se festeja esto sin que se lo tengas que explicar.",
+    "description": "Ganaron. Hay confeti y ceremonia, pero esta vez la sentís distinto: no es la primera, y el cuerpo ya sabe cómo se festeja.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -16,13 +17,13 @@
     "options": [
       {
         "id": "festejarlo_como_el_primero",
-        "label": "Festejarlo como si fuera el primero",
-        "descripcion": "Te forzás a sentir la misma euforia que la primera vez. Cuesta un poco de actuación, y también te sostiene con ganas para el que viene.",
+        "label": "Festejarlo como el primero",
+        "descripcion": "Forzás la euforia para seguir con ganas.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Te metés de lleno en el festejo y, a mitad de la noche, la alegría deja de ser actuada. Todavía te importa, y eso también es una respuesta.",
+            "texto": "Te metés de lleno en el festejo y a mitad de noche la alegría deja de ser actuada. Todavía te importa.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -30,7 +31,7 @@
           },
           {
             "weight": 4,
-            "texto": "Lo intentás, pero se nota que ya no es lo mismo. Un compañero más joven te lo hace notar sin querer.",
+            "texto": "Lo intentás, pero ya no es lo mismo. Un compañero más joven te lo hace notar sin querer.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -39,20 +40,20 @@
       },
       {
         "id": "vivirlo_tranquilo",
-        "label": "Vivirlo tranquilo, sin forzar nada",
-        "descripcion": "Lo disfrutás a tu manera, sin la euforia de antes. Ya sabés que hay otro título el año que viene, o no lo hay — y las dos cosas están bien.",
+        "label": "Vivirlo tranquilo",
+        "descripcion": "Sin euforia, a tu manera.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Lo vivís tranquilo, casi con distancia. No es que dejó de importarte: es que aprendiste a que no te desarme.",
+            "texto": "Lo vivís casi con distancia. No es que dejó de importarte: aprendiste a que no te desarme.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Un periodista te pregunta por la emoción del momento y te cuesta encontrar la palabra justa. \"Otro más\", terminás diciendo.",
+            "texto": "Un periodista te pregunta por la emoción y no encontrás la palabra. «Otro más», terminás diciendo.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 0, "clamp": [0, 100] }
             ]
@@ -63,10 +64,11 @@
   },
   {
     "id": "de_donde_venis",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "prensa",
     "title": "¿Cómo era jugar en tier 3?",
-    "description": "Un streamer que arranca te entrevista y te pregunta, en serio, cómo era competir con un equipo inventado que se podía disolver cualquier semana. Te cuesta explicarlo sin sonar a otra vida.",
+    "description": "Un streamer que arranca te pregunta, en serio, cómo era competir en un equipo que se podía disolver cualquier semana. Cuesta explicarlo sin sonar a otra vida.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -79,12 +81,12 @@
       {
         "id": "contarlo_como_fue",
         "label": "Contarlo tal cual fue",
-        "descripcion": "Sin adornar: la precariedad, la incertidumbre, lo que aprendiste ahí. Humaniza tu historia y le da contexto real a tu carrera.",
+        "descripcion": "Sin adornar: la precariedad y lo que aprendiste.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "El clip se comparte más de lo esperado — hay algo genuino en cómo lo contás. La gente te ve distinto: no llegaste de arriba.",
+            "texto": "El clip se comparte más de lo esperado: hay algo genuino en cómo lo contás. La gente te ve distinto, no llegaste de arriba.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "momento", "path": "career.registro.momentos", "tipo": "origen_tier3", "values": ["La entrevista donde contaste de dónde saliste de verdad", "El día que dejaste de esconder el tier 3"] }
@@ -92,7 +94,7 @@
           },
           {
             "weight": 3,
-            "texto": "Lo contás bien, pero pasa sin pena ni gloria: la anécdota es tuya y a nadie más le importa tanto como a vos.",
+            "texto": "Lo contás bien, pero pasa sin pena ni gloria: la anécdota es tuya y a nadie le importa tanto como a vos.",
             "effects": [
               { "type": "momento", "path": "career.registro.momentos", "tipo": "origen_tier3", "values": ["La entrevista que nadie más recordó salvo vos", "El día que contaste de dónde saliste"] }
             ]
@@ -101,20 +103,20 @@
       },
       {
         "id": "restarle_importancia",
-        "label": "Restarle importancia y cambiar de tema",
-        "descripcion": "\"Fue hace mucho, ya no importa.\" Te ahorrás la vulnerabilidad. También cerrás una puerta que a la gente le gusta ver abierta.",
+        "label": "Restarle importancia",
+        "descripcion": "«Fue hace mucho», y cambiás de tema.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Cambiás de tema con soltura y la entrevista sigue por otro lado. Nadie insiste, pero tampoco se queda con nada de vos.",
+            "texto": "Cambiás de tema con soltura y la entrevista sigue por otro lado. Nadie insiste, pero nadie se queda con nada de vos.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 1, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "El streamer nota que esquivaste la pregunta y lo comenta al aire. Por un rato circula la idea de que te avergonzás de dónde saliste.",
+            "texto": "El streamer nota que esquivaste y lo comenta al aire. Circula la idea de que te avergüenza de dónde saliste.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -125,10 +127,11 @@
   },
   {
     "id": "el_que_ya_vio_de_todo",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "prensa",
     "title": "¿Cómo hacés para no quemarte?",
-    "description": "Un rookie del roster te para en el pasillo y te pregunta, casi en confianza, cómo hacés para llevar tantos splits sin romperte. No tiene una respuesta fácil, y vos tampoco la tenías a su edad.",
+    "description": "Un rookie del roster te frena en el pasillo y te pregunta cómo llevás tantos splits sin romperte. Vos tampoco tenías la respuesta a su edad.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -139,20 +142,20 @@
     "options": [
       {
         "id": "contarle_la_verdad",
-        "label": "Contarle la verdad, sin embellecerla",
-        "descripcion": "Le decís que no siempre lo lográs, que hay splits que se sostienen de pura terquedad. Es menos inspirador y más útil.",
+        "label": "Contarle la verdad",
+        "descripcion": "No siempre lo lográs: hay splits de pura terquedad.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Se queda pensando un rato largo. No es la respuesta motivacional que esperaba, pero es la que le va a servir en dos años.",
+            "texto": "Se queda pensando un buen rato. No es la respuesta motivacional que esperaba, pero le va a servir en dos años.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Se va un poco más preocupado de lo que estaba antes de preguntarte.",
+            "texto": "Se va más preocupado de lo que estaba antes de preguntarte.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -161,13 +164,13 @@
       },
       {
         "id": "darle_una_respuesta_corta",
-        "label": "Darle una respuesta corta y seguir de largo",
-        "descripcion": "Le tirás una frase hecha y seguís caminando. No es que no te importe: es que hoy no tenés ganas de abrir esa charla.",
+        "label": "Darle una frase y seguir",
+        "descripcion": "Hoy no tenés ganas de abrir esa charla.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Le decís algo breve y sigue su camino con eso. Suficiente para hoy, para los dos.",
+            "texto": "Le decís algo breve y sigue su camino con eso. Suficiente por hoy, para los dos.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
             ]
@@ -185,11 +188,12 @@
   },
   {
     "id": "tercer_club_ya",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "category": "identidad",
     "categoria": "prensa",
-    "title": "Vas por tu tercera organización",
-    "description": "Firmás con un club nuevo, otra vez. Un periodista lo nota en la nota de presentación: empieza a correr la idea de que sos \"difícil de retener\", aunque cada salida haya tenido su propia razón.",
+    "title": "Tu tercera organización",
+    "description": "Firmás con un club nuevo, otra vez. En la nota de presentación empieza a correr la idea de que sos «difícil de retener», aunque cada salida tuvo su razón.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -200,13 +204,13 @@
     "options": [
       {
         "id": "explicar_cada_salida",
-        "label": "Explicar en la nota por qué te fuiste de cada club",
-        "descripcion": "Le das contexto real a cada salida, una por una. Ordena la historia, y también la mantiene en el centro de la conversación un rato más.",
+        "label": "Explicar cada salida",
+        "descripcion": "Una por una, con contexto.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "La explicación cierra el tema mejor de lo que esperabas: cada salida tenía su lógica y ahora se entiende.",
+            "texto": "La explicación cierra el tema mejor de lo esperado: cada salida tenía su lógica y ahora se entiende.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
@@ -222,8 +226,8 @@
       },
       {
         "id": "dejar_que_hablen",
-        "label": "Dejar que hablen y demostrarlo adentro de la Grieta",
-        "descripcion": "No respondés la etiqueta con palabras. Si este club te dura, la va a desmentir sola; si no, la va a confirmar.",
+        "label": "Dejar que hablen y jugar",
+        "descripcion": "Este club te desmiente o te confirma.",
         "weight": 5,
         "outcomes": [
           {
@@ -235,7 +239,7 @@
           },
           {
             "weight": 5,
-            "texto": "La etiqueta te sigue un tiempo más de lo que esperabas, repetida en cada nota nueva sobre vos.",
+            "texto": "La etiqueta te sigue más de lo esperado, repetida en cada nota nueva sobre vos.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 0, "clamp": [0, 100] },
               { "type": "momento", "path": "career.registro.momentos", "tipo": "tercera_org", "values": ["El club número tres y la etiqueta que se te pegó", "Cuando el periodismo empezó a llamarte difícil de retener"] }
@@ -247,11 +251,12 @@
   },
   {
     "id": "el_primer_titulo_que_contas",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "category": "identidad",
     "categoria": "prensa",
-    "title": "Te preguntan por aquel primer título",
-    "description": "Un pibe que no lo vio en vivo te pregunta cómo fue ganar por primera vez. {haceDeEso}. Te sorprende cuánto de esa noche te acordás y cuánto se te borró.",
+    "title": "Aquel primer título",
+    "description": "{haceDeEso}. Un pibe que no lo vio en vivo te pregunta cómo fue ganar por primera vez, y te sorprende cuánto recordás.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -263,12 +268,12 @@
       {
         "id": "contarlo_con_todo",
         "label": "Contarlo con lujo de detalles",
-        "descripcion": "Le describís la jugada, el confeti, la llamada a tu vieja. Revivís la mejor noche de tu carrera y te das cuenta de cuánto la extrañás.",
+        "descripcion": "La jugada, el confeti, la llamada a tu vieja.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Contarlo te vuelve a encender. Salís de la charla con ganas de sentir eso otra vez, que es el mejor combustible que hay.",
+            "texto": "Contarlo te vuelve a encender. Salís con ganas de sentir eso otra vez, el mejor combustible que hay.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "momento", "path": "career.registro.momentos", "tipo": "primer_titulo_recordado", "values": ["El día que le contaste a un rookie cómo fue ganar la primera", "Cuando te diste cuenta de cuánto extrañabas ganar"] }
@@ -276,7 +281,7 @@
           },
           {
             "weight": 4,
-            "texto": "A mitad del relato caés en que hace mucho que no volvés a esa sensación. La nostalgia te deja algo melancólico el resto del día.",
+            "texto": "A mitad del relato caés en que hace mucho que no volvés a esa sensación. La nostalgia te deja melancólico el resto del día.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 1, "clamp": [0, 100] },
               { "type": "momento", "path": "career.registro.momentos", "tipo": "primer_titulo_recordado", "values": ["La charla sobre el primer título que te dejó nostálgico", "El día que contaste la primera y sonó a hace mucho"] }
@@ -286,8 +291,8 @@
       },
       {
         "id": "restarle_epica",
-        "label": "Contarlo sin épica, como un dato",
-        "descripcion": "\"Ganamos, estuvo bueno, al otro día a entrenar.\" Te protegés de la nostalgia y también le sacás el brillo a lo que fue.",
+        "label": "Contarlo sin épica",
+        "descripcion": "«Ganamos, estuvo bueno, al otro día a entrenar».",
         "weight": 5,
         "outcomes": [
           {
@@ -299,7 +304,7 @@
           },
           {
             "weight": 4,
-            "texto": "El rookie se va con la sensación de que ganar no era para tanto. Más tarde pensás que le mentiste un poco.",
+            "texto": "El rookie se va pensando que ganar no era para tanto. Más tarde sentís que le mentiste un poco.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -310,10 +315,11 @@
   },
   {
     "id": "la_linea_de_tiempo_de_tu_carrera",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "prensa",
-    "title": "Un analista armó la línea de tiempo de tu carrera",
-    "description": "Para un video largo, alguien reconstruyó cada split que jugaste: los equipos, los picos, los pozos, los cambios de región. Verlo todo junto en una barra te pega distinto que vivirlo.",
+    "title": "Tu carrera en una línea de tiempo",
+    "description": "Para un video largo, un analista reconstruyó cada split: equipos, picos, pozos y cambios de región. Verlo todo junto en una barra pega distinto que vivirlo.",
     "weight": 4,
     "cooldown": 12,
     "contexto": {
@@ -325,14 +331,14 @@
       {
         "id": "mirarlo_completo",
         "label": "Mirar el video entero",
-        "descripcion": "Te sentás a ver los cuarenta minutos, incluidos los tramos que preferirías olvidar. Puede ordenarte la cabeza o abrirte viejas heridas.",
+        "descripcion": "Cuarenta minutos, con los tramos que querrías olvidar.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "Verlo entero te da una perspectiva que no tenías: los pozos duraron menos de lo que se sintieron y los picos fueron más de los que recordabas.",
-              "El video te ordena la carrera en una sola historia con sentido. Salís con la sensación de que, mal que mal, valió."
+              "Verlo entero te da perspectiva: los pozos duraron menos de lo que se sintieron y los picos fueron más de los que recordabas.",
+              "El video ordena la carrera en una historia con sentido. Salís sintiendo que, mal que mal, valió."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
@@ -341,7 +347,7 @@
           },
           {
             "weight": 4,
-            "texto": "El tramo del peor año te agarra desprevenido y te arruina la tarde. Algunas cosas todavía no estaban listas para verse en repetición.",
+            "texto": "El tramo del peor año te agarra desprevenido y te arruina la tarde. Algunas cosas no estaban listas para verse en repetición.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -350,20 +356,20 @@
       },
       {
         "id": "no_verlo",
-        "label": "No verlo: preferís seguir para adelante",
-        "descripcion": "Agradecés el laburo y no lo abrís. No querés que un balance ajeno te condicione cómo encarás lo que queda.",
+        "label": "No verlo y seguir",
+        "descripcion": "Que un balance ajeno no te condicione.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "No lo mirás y seguís enfocado en el próximo split. Ya vas a tener tiempo de hacer balances cuando esto termine.",
+            "texto": "No lo mirás y seguís enfocado en el próximo split. Ya habrá tiempo de balances cuando esto termine.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Alguien te spoilea el tono del video en una charla y te quedás con la versión de otro de tu propia carrera. Deberías haberlo visto vos primero.",
+            "texto": "Alguien te spoilea el tono del video y te quedás con la versión de otro de tu carrera. Debiste verlo vos primero.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -374,11 +380,12 @@
   },
   {
     "id": "el_que_paso_por_todos_los_tiers",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "category": "identidad",
     "categoria": "prensa",
-    "title": "Jugaste en cada escalón de la pirámide",
-    "description": "Un periodista lo nota preparando una nota: sos de los poquísimos en actividad que jugó tier 3, tier 2 y tier 1. La mayoría entra directo arriba o se queda abajo para siempre.",
+    "title": "Todos los escalones de la pirámide",
+    "description": "Un periodista lo nota: sos de los poquísimos en actividad que jugó tier 3, tier 2 y tier 1. La mayoría entra directo arriba o se queda abajo para siempre.",
     "weight": 4,
     "cooldown": 12,
     "contexto": {
@@ -390,12 +397,12 @@
       {
         "id": "reivindicar_el_camino_largo",
         "label": "Reivindicar el camino largo",
-        "descripcion": "Contás que subir escalón por escalón te dio una base que los que entraron directo no tienen. Le das identidad a tu historia y sonás, un poco, a viejo.",
+        "descripcion": "Escalón por escalón te dio una base.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La nota pega bien: hay una generación de pibes de tier 3 que te empiezan a ver como la prueba de que se puede. Te escriben para pedirte consejo.",
+            "texto": "La nota pega bien: pibes de tier 3 te ven como prueba de que se puede. Te escriben para pedirte consejo.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "momento", "path": "career.registro.momentos", "tipo": "todos_los_tiers", "values": ["La nota sobre el jugador que pasó por los tres tiers", "El día que tu camino largo se volvió un ejemplo para otros"] }
@@ -403,7 +410,7 @@
           },
           {
             "weight": 4,
-            "texto": "El enfoque \"yo la remé de abajo\" le cae soberbio a una parte de la escena. Te ganás un par de comentarios ácidos que no esperabas.",
+            "texto": "El «yo la remé de abajo» le cae soberbio a parte de la escena. Te ganás un par de comentarios ácidos que no esperabas.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -412,13 +419,13 @@
       },
       {
         "id": "quitarle_dramatismo",
-        "label": "Quitarle dramatismo: fue el camino que había",
-        "descripcion": "Decís que no lo elegiste, que era eso o nada, y que tampoco lo recomendás. Honesto, y menos épico de lo que la nota buscaba.",
+        "label": "Quitarle dramatismo",
+        "descripcion": "Era ese camino o ninguno.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La franqueza le gusta a los que ya la vivieron. \"Es la verdad, no es lindo\", comentan los que pasaron por lo mismo.",
+            "texto": "La franqueza le gusta a los que ya la vivieron. «Es la verdad, no es lindo», comentan los que pasaron por lo mismo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "momento", "path": "career.registro.momentos", "tipo": "todos_los_tiers", "values": ["El día que contaste el camino largo sin adornarlo", "Cuando dijiste en voz alta que subir de abajo no es romántico"] }
@@ -426,7 +433,7 @@
           },
           {
             "weight": 4,
-            "texto": "El periodista se queda sin la historia inspiradora que quería y la nota sale corta y sin gancho. Nadie la comparte.",
+            "texto": "El periodista se queda sin la historia inspiradora y la nota sale corta y sin gancho. Nadie la comparte.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 1, "clamp": [0, 100] }
             ]

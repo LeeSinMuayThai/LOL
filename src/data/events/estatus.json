@@ -1,10 +1,11 @@
 [
   {
     "id": "el_rookie_que_no_opina",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "vestuario",
-    "title": "En la reunión táctica nadie te pregunta nada",
-    "description": "El staff arma el plan de la próxima serie hablando entre ellos y con los titulares de siempre. Vos escuchás desde el costado, con una idea que quizás valga la pena decir en voz alta.",
+    "title": "Nadie te pregunta nada",
+    "description": "El staff arma el plan de la próxima serie entre ellos y los titulares de siempre. Vos escuchás desde el costado, con una idea que quizás valga decir.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -17,8 +18,8 @@
     "options": [
       {
         "id": "hablar_igual",
-        "label": "Decirla igual, aunque no te la pidan",
-        "descripcion": "Levantás la mano en una reunión que no era tuya. Si la idea sirve, ganás lugar rápido; si no, el silencio que sigue es más largo de lo normal.",
+        "label": "Decirla igual",
+        "descripcion": "Levantás la mano en una reunión ajena.",
         "weight": 5,
         "outcomes": [
           {
@@ -26,14 +27,14 @@
             "modificadores": [
               { "field": "career.jerarquia", "referencia": 40, "factor": 0.02 }
             ],
-            "texto": "La idea sirve y el coach la anota sin decir nada más. Es la primera vez que el equipo te escucha de verdad.",
+            "texto": "La idea sirve y el coach la anota sin decir nada. Es la primera vez que el equipo te escucha de verdad.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 5, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Se hace un silencio incómodo y el plan sigue como si no hubieras hablado. Nadie te lo dice, pero quedás como el que se metió de más.",
+            "texto": "Silencio incómodo, y el plan sigue como si nada. Nadie te dice nada, pero quedás como el que se metió de más.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -43,19 +44,19 @@
       {
         "id": "esperar_tu_turno",
         "label": "Esperar a que te pregunten",
-        "descripcion": "Te quedás con la idea guardada. Es lo esperable de un rookie, y también una oportunidad que no vas a recuperar igual.",
+        "descripcion": "Lo esperable de un rookie.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Guardás la idea para otro momento. Nadie te juzga por callarte; tampoco nadie sabe lo que pensabas.",
+            "texto": "Guardás la idea para otro momento. Nadie te juzga por callar; tampoco nadie sabe lo que pensabas.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "El plan sale sin tu idea y en el mapa se nota justo el hueco que vos habías visto.",
+            "texto": "El plan sale sin tu idea y en el mapa se nota justo el hueco que habías visto.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -66,10 +67,11 @@
   },
   {
     "id": "ya_no_sos_la_novedad",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "vestuario",
     "title": "Dejaste de ser el nuevo",
-    "description": "Nadie te felicita más por cosas básicas. El equipo espera de vos lo mismo que de cualquier titular — ni el crédito extra del debutante, ni la paciencia de los primeros meses.",
+    "description": "Nadie te felicita por lo básico. El equipo espera de vos lo mismo que de cualquier titular: ni crédito de debutante, ni paciencia de los primeros meses.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -82,13 +84,13 @@
     "options": [
       {
         "id": "subir_el_nivel_de_exigencia",
-        "label": "Subirte vos mismo el nivel de exigencia",
-        "descripcion": "Dejás de medirte contra el rookie que eras y empezás a medirte contra los mejores de tu rol en la liga.",
+        "label": "Subirte la vara",
+        "descripcion": "Te medís contra los mejores de tu rol.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Te empezás a exigir en serio, y el nivel sube con eso. Deja de alcanzar con jugar bien: ahora buscás jugar mejor que los mejores.",
+            "texto": "Te exigís en serio y el nivel sube. Ya no alcanza con jugar bien: ahora querés jugar mejor que los mejores.",
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -96,7 +98,7 @@
           },
           {
             "weight": 4,
-            "texto": "La vara que te pusiste es más alta de lo que podés sostener todas las semanas, y eso empieza a pesar.",
+            "texto": "La vara que te pusiste es más alta de lo que podés sostener cada semana, y empieza a pesar.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
@@ -105,20 +107,20 @@
       },
       {
         "id": "sostener_el_nivel",
-        "label": "Sostener lo que ya venís haciendo",
-        "descripcion": "No te exigís más de la cuenta: hacés lo mismo que te trajo hasta acá, split tras split.",
+        "label": "Sostener lo que venís haciendo",
+        "descripcion": "Lo que te trajo hasta acá, split tras split.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Sostener lo tuyo, split tras split, es más difícil de lo que parece — y también es exactamente lo que un titular tiene que hacer.",
+            "texto": "Sostener lo tuyo split tras split es más difícil de lo que parece, y es justo lo que debe hacer un titular.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Sin la novedad de ser el nuevo, sostener lo mismo empieza a sentirse a rutina.",
+            "texto": "Sin la novedad de ser el nuevo, repetir lo mismo empieza a sentirse rutina.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 0, "clamp": [0, 100] }
             ]
@@ -129,10 +131,11 @@
   },
   {
     "id": "te_vienen_a_preguntar_a_vos",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "vestuario",
-    "title": "Un pibe del roster te pide consejo",
-    "description": "El más joven del equipo se acerca antes de una decisión importante y te pregunta a vos, no al coach. Sin darte cuenta, te volviste alguien a quien el grupo le pide guía.",
+    "title": "Un pibe te pide consejo",
+    "description": "El más joven se acerca antes de una decisión importante y te pregunta a vos, no al coach. Sin darte cuenta, ya sos el que guía.",
     "weight": 5,
     "cooldown": 10,
     "contexto": {
@@ -145,8 +148,8 @@
     "options": [
       {
         "id": "darle_tu_opinion_franca",
-        "label": "Darle tu opinión franca, sin suavizarla",
-        "descripcion": "Le decís lo que realmente pensás, aunque no sea lo que quiere escuchar. Puede formarlo rápido, o puede pegarle más de lo que calculás.",
+        "label": "Decirle lo que pensás, sin suavizar",
+        "descripcion": "Aunque no sea lo que quiere oír.",
         "weight": 5,
         "outcomes": [
           {
@@ -159,7 +162,7 @@
           },
           {
             "weight": 4,
-            "texto": "La franqueza le pesa más de lo que esperabas y se queda callado el resto de la semana.",
+            "texto": "La franqueza le pesa más de lo esperado y se queda callado el resto de la semana.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -2, "max": 0, "clamp": [0, 100] },
               { "type": "momento", "path": "career.registro.momentos", "tipo": "referente_del_vestuario", "values": ["El consejo que le diste demasiado directo a un rookie", "El día que te empezaron a pedir consejo a vos"] }
@@ -169,20 +172,20 @@
       },
       {
         "id": "acompanarlo_sin_bajar_linea",
-        "label": "Acompañarlo sin bajarle línea",
-        "descripcion": "Le hacés preguntas para que llegue solo a la respuesta, en vez de dársela armada. Más lento, y probablemente le quede más.",
+        "label": "Acompañarlo sin bajar línea",
+        "descripcion": "Preguntas, no respuestas armadas.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Termina llegando a la conclusión por su cuenta, con vos solo empujando un poco. Se va agradecido y algo más seguro.",
+            "texto": "Llega solo a la conclusión, con vos empujando un poco. Se va agradecido y más seguro.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Se queda con más preguntas que respuestas y sale de la charla igual de perdido que como entró.",
+            "texto": "Se queda con más preguntas que respuestas y sale igual de perdido que como entró.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -193,11 +196,12 @@
   },
   {
     "id": "el_peso_de_ser_la_cara",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "category": "identidad",
     "categoria": "prensa",
-    "title": "Todas las notas te buscan a vos primero",
-    "description": "Ganen o pierdan, el club te pone a vos frente a la prensa. Sos la cara del equipo, y eso significa que también sos el primero al que le preguntan qué salió mal.",
+    "title": "Las notas te buscan primero",
+    "description": "Ganen o pierdan, el club te pone frente a la prensa. Sos la cara del equipo, y también el primero al que le preguntan qué salió mal.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -211,13 +215,13 @@
       {
         "id": "asumir_la_responsabilidad_publica",
         "perfil": "showman",
-        "label": "Asumir la responsabilidad en público",
-        "descripcion": "Cuando algo sale mal, hablás vos y no dejás que caiga sobre un compañero. Te expone más a la crítica, pero te gana el respeto del grupo.",
+        "label": "Dar la cara cuando sale mal",
+        "descripcion": "Hablás vos y no caés sobre un compañero.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Te ponés al frente cuando nadie más quiere, y el equipo lo registra: sos vos el que banca la cara fea también.",
+            "texto": "Te ponés al frente cuando nadie quiere y el equipo lo registra: bancás también la cara fea.",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] },
@@ -226,7 +230,7 @@
           },
           {
             "weight": 4,
-            "texto": "Cargar con todo, semana tras semana, te empieza a pasar factura más de lo que dejás ver.",
+            "texto": "Cargar con todo, semana tras semana, te pasa factura más de lo que dejás ver.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
             ]
@@ -235,20 +239,20 @@
       },
       {
         "id": "repartir_el_peso",
-        "label": "Repartir el peso con el resto",
-        "descripcion": "Le pedís al club que rote quién habla con la prensa. Menos desgaste para vos, y una señal de que el equipo es de todos, no solo tuyo.",
+        "label": "Repartir el peso",
+        "descripcion": "Que el club rote quién habla con la prensa.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El club acepta rotar las notas. Respirás un poco, y un compañero descubre que también sabe manejar una cámara.",
+            "texto": "El club acepta rotar las notas. Respirás, y un compañero descubre que también sabe manejarse frente a una cámara.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "Rotan las notas, pero la prensa igual te sigue buscando a vos primero. El pedido ayudó menos de lo que esperabas.",
+            "texto": "Rotan las notas, pero la prensa igual te busca primero a vos. El pedido ayudó menos de lo esperado.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 1, "clamp": [0, 100] }
             ]
@@ -259,10 +263,11 @@
   },
   {
     "id": "el_rookie_que_pidieron_de_arriba",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "vestuario",
     "title": "Te subieron por encima de un veterano",
-    "description": "La directiva decidió que jugás vos y no el titular de los últimos tres años. Nadie te preguntó, y el grupo lo sabe: sos el pibe al que le hicieron lugar sacando a un querido.",
+    "description": "La directiva decidió que jugás vos y no el titular de tres años. El grupo sabe que te hicieron lugar sacando a un querido.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -277,13 +282,13 @@
     "options": [
       {
         "id": "ganarte_el_lugar_jugando",
-        "label": "Callarte y ganártelo en el servidor de scrims",
-        "descripcion": "No das entrevistas, no explicás nada: rendís tanto que la decisión se justifique sola. Es la vía más lenta y la única que no depende de lo que opinen.",
+        "label": "Callarte y ganártelo jugando",
+        "descripcion": "Rendís tanto que la decisión se justifica sola.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Metés dos meses de nivel altísimo y el tema se cierra: ya no sos \"el que entró por decisión de arriba\", sos el que juega.",
+            "texto": "Metés dos meses de nivel altísimo y el tema se cierra: ya no sos el que entró por decisión de arriba, sos el que juega.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -291,7 +296,7 @@
           },
           {
             "weight": 4,
-            "texto": "Rendís bien pero no deslumbrás, y la sombra del veterano sigue ahí en cada derrota. \"Con el otro no perdíamos así\", se escucha.",
+            "texto": "Rendís bien pero no deslumbrás, y la sombra del veterano sigue en cada derrota. «Con el otro no perdíamos así», se escucha.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
             ]
@@ -300,13 +305,13 @@
       },
       {
         "id": "acercarte_al_veterano",
-        "label": "Buscar al veterano y hablar de frente",
-        "descripcion": "Le decís que la decisión no fue tuya y que preferís tenerlo de aliado que de fantasma. Puede abrirte la puerta o cerrártela para siempre.",
+        "label": "Hablarle de frente al veterano",
+        "descripcion": "Aliado en vez de fantasma, si lo toma bien.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Lo aprecia. Termina pasándote lecturas y detalles de la interna que te habrían llevado un año descubrir solo. El grupo ve que lo bancaste.",
+            "texto": "Lo aprecia. Termina pasándote lecturas y detalles de la interna que te hubieran costado un año descubrir. El grupo ve que lo bancaste.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "career.jerarquia", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -314,7 +319,7 @@
           },
           {
             "weight": 5,
-            "texto": "Te escucha frío y te contesta con un \"suerte\". No hay guerra abierta, pero tampoco vas a tener de ese lado nada que te sirva.",
+            "texto": "Te escucha frío y te contesta «suerte». No hay guerra abierta, pero de ese lado no vas a tener nada que te sirva.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -325,12 +330,13 @@
   },
   {
     "id": "el_titular_con_un_rookie_detras",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "identidad",
     "categoria": "golpe_duro",
-    "title": "El club fichó a una promesa para tu puesto",
-    "description": "Anunciaron un rookie con mucho ruido, del mismo rol que vos. Oficialmente es \"para tener profundidad\". Vos entendés lo que significa: tu silla dejó de ser tuya sola.",
+    "title": "Fichan una promesa para tu puesto",
+    "description": "Anunciaron un rookie con mucho ruido, de tu rol. Oficialmente es profundidad de plantel, pero tu silla dejó de ser solo tuya.",
     "weight": 5,
     "cooldown": 8,
     "contexto": {
@@ -345,16 +351,16 @@
     "options": [
       {
         "id": "competirle_de_frente",
-        "label": "Competirle cada scrim al máximo",
-        "descripcion": "Subís tu propia exigencia para no darle un centímetro. Te puede devolver tu mejor nivel, o quemarte antes de que llegue la decisión.",
+        "label": "Competirle cada scrim",
+        "descripcion": "Ni un centímetro de ventaja.",
         "aviso": "Si te obsesionás, jugás tenso y perdés jerarquía",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "La competencia te saca una versión que hacía dos años no mostrabas. El coach lo nota y la silla vuelve a ser tuya, ganada de nuevo.",
-              "Le ganás la pulseada en scrims semana tras semana. Te cuesta un desgaste que no contás, pero seguís siendo el titular."
+              "La competencia te saca una versión que hacía dos años no mostrabas. El coach lo nota y la silla vuelve a ser tuya.",
+              "Le ganás la pulseada en scrims semana tras semana. Te cuesta un desgaste que no contás, pero seguís de titular."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.mecanica", "min": 2, "max": 5, "clamp": [0, 100] },
@@ -373,14 +379,14 @@
       },
       {
         "id": "adoptar_al_rookie",
-        "label": "Ponerte por encima y formarlo vos",
-        "descripcion": "Le enseñás lo que sabés en vez de esconderlo. Si algún día te reemplaza, que sea con tu sello. Cede ventaja a corto plazo, suma peso a largo.",
-        "aviso": "Si el pibe te pasa por arriba, te pega en la cabeza",
+        "label": "Formarlo vos",
+        "descripcion": "Le enseñás lo que sabés, en vez de esconderlo.",
+        "aviso": "Si el pibe te pasa por arriba, duele",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Lo tomás bajo tu ala y el equipo te reubica: dejaste de ser \"el titular en riesgo\" para ser \"el que sostiene el rol del club\".",
+            "texto": "Lo tomás bajo tu ala y el equipo te reubica: ya no sos el titular en riesgo, sos el que sostiene el rol del club.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "career.arraigo", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -400,12 +406,13 @@
   },
   {
     "id": "el_referente_y_el_coach_nuevo",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "identidad",
     "categoria": "vestuario",
-    "title": "Llegó un coach que quiere refundar todo",
-    "description": "El staff nuevo trae ideas fuertes y poca paciencia con \"como se hacían las cosas\". Te busca a vos primero: si el referente del equipo lo respalda, el resto lo sigue.",
+    "title": "Un coach que quiere refundar todo",
+    "description": "El staff nuevo trae ideas fuertes y poca paciencia con «como se hacían las cosas». Te busca primero a vos: si el referente lo respalda, el resto sigue.",
     "weight": 5,
     "cooldown": 10,
     "contexto": {
@@ -420,13 +427,13 @@
     "options": [
       {
         "id": "respaldar_el_cambio",
-        "label": "Respaldar el cambio y bancar el costo",
-        "descripcion": "Le prestás tu peso al proyecto nuevo, aunque implique romper rutinas que a vos te funcionaban. Si el coach acierta, sos parte; si falla, quedaste pegado.",
+        "label": "Respaldar el cambio",
+        "descripcion": "Le prestás tu peso, aunque rompa rutinas tuyas.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Con vos adentro, el grupo se sube. Dos meses incómodos y el equipo juega mejor de lo que jugaba: apostaste bien tu capital.",
+            "texto": "Con vos adentro, el grupo se suma. Dos meses incómodos y el equipo juega mejor que antes: apostaste bien tu capital.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.adaptabilidad", "min": 2, "max": 4, "clamp": [0, 100] }
@@ -434,7 +441,7 @@
           },
           {
             "weight": 4,
-            "texto": "El proyecto del coach no cuaja y el equipo rinde peor. Como fuiste su cara visible, parte de la caída te la cargan a vos.",
+            "texto": "El proyecto del coach no cuaja y el equipo rinde peor. Como fuiste su cara visible, parte de la caída es tuya.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": -3, "max": -1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
@@ -444,13 +451,13 @@
       },
       {
         "id": "frenar_lo_que_no_convence",
-        "label": "Filtrar: bancar lo bueno, frenar lo demás",
-        "descripcion": "Le decís al coach en privado qué ideas te cierran y cuáles vas a resistir. Te ganás su respeto o su desconfianza, según cómo lo tome.",
+        "label": "Bancar lo bueno, frenar el resto",
+        "descripcion": "Se lo decís en privado, sin vueltas.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El coach valora que le hables claro y negocian un punto medio. El equipo ve que hay alguien filtrando por ellos, y eso te suma.",
+            "texto": "El coach valora que le hables claro y negocian un punto medio. El equipo ve que alguien filtra por ellos, y te suma.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "career.sinergia", "min": 1, "max": 3, "clamp": [0, 100] }
@@ -458,7 +465,7 @@
           },
           {
             "weight": 4,
-            "texto": "El coach lo lee como que le estás marcando territorio y arranca una pulseada silenciosa por quién manda en el grupo.",
+            "texto": "El coach lo lee como marcar territorio y arranca una pulseada silenciosa por quién manda en el grupo.",
             "effects": [
               { "type": "stat", "path": "career.sinergia", "min": -3, "max": -1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -470,10 +477,11 @@
   },
   {
     "id": "la_franquicia_y_la_reconstruccion",
+    "voz": "corta",
     "category": "identidad",
     "categoria": "oportunidad",
-    "title": "El club quiere refundar el proyecto sobre vos",
-    "description": "La org te sienta y te lo dice sin vueltas: quieren rearmar el equipo entero alrededor tuyo para los próximos años. Eso incluye dejar ir a dos compañeros con los que ganaste todo.",
+    "title": "Refundan el club sobre vos",
+    "description": "La org te lo dice sin vueltas: quieren rearmar el equipo entero a tu alrededor. Eso incluye dejar ir a dos compañeros con los que ganaste todo.",
     "weight": 4,
     "cooldown": 12,
     "contexto": {
@@ -488,13 +496,13 @@
     "options": [
       {
         "id": "aceptar_la_refundacion",
-        "label": "Aceptar y ser el eje del proyecto nuevo",
-        "descripcion": "Decís que sí a construir de cero con vos en el centro. Ganás poder deportivo real y perdés a la gente con la que compartiste los mejores años.",
+        "label": "Aceptar y ser el eje",
+        "descripcion": "Poder real, a costa de tus mejores años.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El proyecto arranca y sos, oficialmente, la columna del club. También sos el que tuvo que llamar a dos amigos para decirles que no seguían.",
+            "texto": "El proyecto arranca y sos la columna del club. También el que tuvo que llamar a dos amigos para decirles que no seguían.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "career.arraigo", "min": 2, "max": 4, "clamp": [0, 100] },
@@ -503,7 +511,7 @@
           },
           {
             "weight": 5,
-            "texto": "El equipo nuevo tarda en encajar y la prensa te pregunta si valió la pena romper lo que funcionaba. Todavía no tenés una respuesta buena.",
+            "texto": "El equipo nuevo tarda en encajar y la prensa pregunta si valía romper lo que funcionaba. Todavía no tenés buena respuesta.",
             "effects": [
               { "type": "stat", "path": "career.jerarquia", "min": 2, "max": 4, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -5, "max": -2, "clamp": [0, 100] }
@@ -513,8 +521,8 @@
       },
       {
         "id": "defender_al_grupo",
-        "label": "Plantarte para que no toquen al grupo",
-        "descripcion": "Usás tu peso para frenar la limpieza y darle un año más al bloque que ya conocés. Priorizás la lealtad sobre el margen de maniobra.",
+        "label": "Plantarte por el grupo",
+        "descripcion": "Lealtad antes que margen de maniobra.",
         "weight": 5,
         "outcomes": [
           {
@@ -527,7 +535,7 @@
           },
           {
             "weight": 4,
-            "texto": "Los frenás, pero el bloque ya venía de bajada y el año siguiente lo confirma. Te queda la duda de si la lealtad te costó una era.",
+            "texto": "Los frenás, pero el bloque venía de bajada y el año siguiente lo confirma. ¿La lealtad te costó una era?",
             "effects": [
               { "type": "stat", "path": "career.arraigo", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
