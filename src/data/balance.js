@@ -2486,15 +2486,15 @@ export const BALANCE = {
         ventanaStat: [0.8, 1.6],
         wards: 2,
         colocarS: 0.35,
-        radioWard: 8,
-        pasosMax: 3,
+        radioWard: 7,
+        pasosMax: 2,
         colaS: 0.1,
         resultadoS: 1,
         entreCazasS: 0.5,
         fases: [
-          { tcS: 1.9, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'falta', ok: true, en: 0.3 }] },
+          { tcS: 1.6, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'falta', ok: true, en: 0.3 }] },
           { tcS: 0.8, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'falta', ok: false, en: 0.2 }, { tipo: 'empuja', ok: true, en: 0.45 }, { tipo: 'falta', ok: true, en: 0.6 }] },
-          { tcS: 0.4, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'empuja', ok: false, en: 0.2 }, { tipo: 'falta', ok: true, en: 0.4 }, { tipo: 'empuja', ok: true, en: 0.6 }] }
+          { tcS: 0.5, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'empuja', ok: false, en: 0.2 }, { tipo: 'falta', ok: true, en: 0.4 }, { tipo: 'empuja', ok: true, en: 0.6 }] }
         ]
       },
       // El Barón: tres objetivos (fases 1, 2 y 3), un smite en cada uno; el resultado es el peor de los tres
@@ -2639,9 +2639,9 @@ export const BALANCE = {
         flashDist: 12,
         pared: { ancho: [4, 6], largo: [22, 32] },
         fases: [
-          { engages: 1, spread: 7, v: 22, flash: 0, paredes: 0 },
-          { engages: 1, spread: 8, v: 28, flash: 0.33, paredes: 0 },
-          { engages: 2, spread: 8, v: 30, flash: 0.33, paredes: 2 }
+          { engages: 1, spread: 13.5, v: 22, flash: 0, paredes: 0 },
+          { engages: 1, spread: 13.5, v: 28, flash: 0.05, paredes: 0 },
+          { engages: 2, spread: 13.5, v: 30, flash: 0.05, paredes: 2 }
         ]
       },
       // La prueba: el practice tool, `tiempoS` segundos y un skillshot que viaja `velTiro` u/s hasta donde apuntaste (y ahí se
@@ -2652,11 +2652,11 @@ export const BALANCE = {
         mundo: [160, 90],
         yo: { x: 14, y: 45 },
         campo: { x: [58, 150], y: [12, 80] },
-        tiempoS: 20,
+        tiempoS: 22,
         blancos: 14,
         velTiro: 140,
         radioTiro: 1.3,
-        radioDummy: 3.6,
+        radioDummy: 3.1,
         recargaS: 0.6,
         reaparecerS: 0.35,
         separacion: 14,
@@ -2702,17 +2702,17 @@ export const BALANCE = {
         rango: 24,
         cargaS: 0.8,
         penaAnillo: 1,
-        recuperaS: 0.8,
+        recuperaS: 0.15,
         empuje: 14,
-        retroceso: 4,
+        retroceso: 1,
         golpeAturdeS: 0.2,
         ventanaStat: [0.78, 1.4],
-        intensidad: [0.6, 2.2],
+        intensidad: [0.3, 2.4],
         maxS: 90,
         fases: [
-          { desde: 0, v0: 18, v1: 34, rampaS: 2.5 },
-          { desde: 3, v0: 20, v1: 30, rampaS: 3, dash: { cadaS: [2.2, 3.4], avisoS: 0.55, distancia: 38, velocidad: 110, ancho: 9 } },
-          { desde: 6, v0: 22, v1: 30, rampaS: 3, slow: { radio: 19, factor: 0.45 } }
+          { desde: 0, v0: 11.7, v1: 22.1, rampaS: 2.5 },
+          { desde: 3, v0: 13, v1: 19.5, rampaS: 3, dash: { cadaS: [2.2, 3.4], avisoS: 0.55, distancia: 38, velocidad: 110, ancho: 9 } },
+          { desde: 6, v0: 14.3, v1: 19.5, rampaS: 3, slow: { radio: 19, factor: 0.45 } }
         ]
       },
       // El gancho (support): vista de arriba, el ADC y el support rival se mueven entre minions. `g1.conteo.el_gancho` ganchos,
@@ -2728,7 +2728,7 @@ export const BALANCE = {
         cdS: 0.6,
         radioGancho: 1.3,
         radioMinion: 3.6,
-        radioBlanco: 4.4,
+        radioBlanco: 5.0,
         ventanaStat: [0.7, 1.5],
         intensidad: [0.8, 1.5],
         giroRadS: 1.7,
@@ -2742,8 +2742,8 @@ export const BALANCE = {
         maxS: 60,
         fases: [
           { desde: 0, x: 112, vT: 26, juke: null, pared: null },
-          { desde: 2, x: 112, vT: 30, juke: [1.0, 1.8], pared: null },
-          { desde: 4, x: 130, vT: 26, juke: [1.2, 2.0], pared: { x: 98, n: 5, amplitud: 9, omega: 0.9 } }
+          { desde: 2, x: 112, vT: 30, juke: [1.4, 2.2], pared: null },
+          { desde: 4, x: 130, vT: 23, juke: [1.2, 2.0], pared: { x: 98, n: 5, amplitud: 9, omega: 0.9 } }
         ]
       }
     },
