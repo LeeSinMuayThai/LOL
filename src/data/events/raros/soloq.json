@@ -1,1 +1,3243 @@
-[]
+[
+  {
+    "id": "soloq_smurf_de_scrim",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_soloq",
+    "categoria": "rutina",
+    "title": "El smurf que te conoce",
+    "description": "Un rival de scrim te cae en soloQ con cuenta nueva y se sabe tu pool de memoria.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugarle_a_muerte",
+        "label": "Jugarle a muerte",
+        "descripcion": "Lo tomás como scrim con LP.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le ganás la línea y el chat de la partida se queda mudo. Mañana en la scrim ni te saluda.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 12,
+                "max": 25
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te abre el pool entero en doce minutos. Perdés, y él lo cuenta en el Discord.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": -20,
+                "max": -8
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "banearle_el_main",
+        "label": "Banearle el main",
+        "descripcion": "Le sacás lo que mejor sabe.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Se queda sin su campeón y juega con la cabeza en otro lado. Ganás tranquilo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 8,
+                "max": 18
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se banea solo para esconder el pick y juega mejor de lo esperado. Te saca de la partida.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": -10,
+                "max": -3
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hacerte_el_distraido",
+        "label": "Hacerte el distraído",
+        "descripcion": "Cerrás el cliente y listo.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Cerrás el cliente. Nadie gana nada, pero dormís mejor.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te quedás pensando en qué pick te iba a tirar. Dormís peor que si hubieras jugado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_duo_con_un_streamer",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_soloq",
+    "categoria": "oportunidad",
+    "title": "Duo con un streamer",
+    "description": "Un streamer con cinco mil viewers te pide duo. Dice que le gustó cómo jugás el late game.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ],
+      "ladder": [
+        "alto",
+        "apice",
+        "elite"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptar_el_duo",
+        "label": "Aceptar el duo",
+        "descripcion": "Mil ojos mirándote pickear.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Ganan ocho seguidas y el chat te spamea emotes. Te siguen en las redes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 15,
+                "max": 30
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Perdés tres y el chat arma un clip tuyo. Es el chiste del mes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decir_que_no",
+        "label": "Decirle que no",
+        "descripcion": "Preferís jugar sin cámara.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Jugás tranquilo y sin audiencia. Subís despacio, pero subís.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 5,
+                "max": 14
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El streamer arma un clip de \"el que no quiso duo\". Uno de los que lo ve es tu viejo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_el_troll_de_las_tres",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_soloq",
+    "categoria": "golpe_duro",
+    "title": "El troll de las tres",
+    "description": "Son las tres de la mañana y tu jungla trollea con el pick más raro que viste.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "seguirle_el_juego",
+        "label": "Seguirle el juego",
+        "descripcion": "Una partida no se juega sola.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Se hace un meme de la partida. Ganás por tilt del otro lado y no sabés cómo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 10,
+                "max": 20
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Perdés en doce minutos y te comés un reporte por inting.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": -25,
+                "max": -10
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mutearlo_y_jugar",
+        "label": "Mutearlo y jugar",
+        "descripcion": "Aislás el ruido y vas por tu lado.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Con el chat mutado jugás como una máquina. Ganás la línea y pasás el trago.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.laneo",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 8,
+                "max": 16
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te metés tanto en tu mundo que ni ves el dragón. Sale mal.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": -12,
+                "max": -4
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_doce_seguidas",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_soloq",
+    "categoria": "rutina",
+    "title": "Doce seguidas",
+    "description": "Venís con once victorias seguidas en soloQ y el cliente ya te marca la racha.",
+    "weight": 5,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ],
+      "ladder": [
+        "medio",
+        "alto",
+        "apice"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ir_por_la_doce",
+        "label": "Ir por la doce",
+        "descripcion": "No parás ahora que estás prendido.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Doce, trece, catorce. El chat de la ladder te mira de lejos y alguien arma un clip.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 20,
+                "max": 40
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Perdés la doce en el minuto 40, en la semana en que más cansado estabas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": -22,
+                "max": -10
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cortar_y_dormir",
+        "label": "Cortar y dormir",
+        "descripcion": "Guardás la racha para mañana.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Dormís diez horas. Mañana la racha sigue, o no, pero al menos descansaste.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Mañana te toca un smurf tras otro. La racha se rompe sola.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": -15,
+                "max": -5
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_el_pick_de_la_vergüenza",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_soloq",
+    "categoria": "parche",
+    "title": "El pick de la vergüenza",
+    "description": "Un campeón que nadie pickea hace 54% de winrate en tu ladder. Te tienta.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "probarlo_en_ranked",
+        "label": "Probarlo en ranked",
+        "descripcion": "Una apuesta en partidas reales.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Aprendés el pick en cinco partidas. Nadie sabe jugarle en contra y subís.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 15,
+                "max": 30
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te lo pisan en champ select tres veces. Perdés LP y paciencia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": -18,
+                "max": -6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mirar_el_vod",
+        "label": "Mirar el VOD primero",
+        "descripcion": "Estudiás antes de quemar LP.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Entendés el timing y lo pickeás a la semana. Entrás bien parado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Mirás tres horas de VOD y no entendés por qué gana.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_ban_de_catorce_dias",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_soloq",
+    "categoria": "golpe_duro",
+    "title": "Ban de catorce días",
+    "description": "Te llega un mail de Riot: catorce días de ban por inting. Vos juraste que fue el servidor.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "apelar_con_el_vod",
+        "label": "Apelar con el VOD",
+        "descripcion": "Mandás pruebas y esperás.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Riot revisa y te levanta el ban. Pedís perdón por el tono del mail y nada más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Confirman la sanción y tu nombre circula en el foro de la comunidad.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "bancarse_los_catorce",
+        "label": "Bancarte los catorce",
+        "descripcion": "Dos semanas sin cliente.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Salís a caminar, vas al gym, leés. Volvés con la cabeza fresca.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te aburrís tanto que mirás doscientos VODs de streamers. Ganás ideas, perdés ritmo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_la_cuenta_hackeada",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_soloq",
+    "categoria": "golpe_duro",
+    "title": "Te hackearon la cuenta",
+    "description": "Entrás y alguien jugó cuarenta partidas con tu cuenta. Tu Elo parece un electrocardiograma.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "pedir_la_restauracion",
+        "label": "Pedir la restauración",
+        "descripcion": "Soporte de Riot, un clásico.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "En cuatro días te devuelven el Elo y un mail con cara de disculpa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 10,
+                "max": 25
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te devuelven la cuenta pero no el LP. Hay que subir de cero.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": -35,
+                "max": -15
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "arrancar_de_cero",
+        "label": "Arrancar una cuenta nueva",
+        "descripcion": "Tirás la vieja y listo.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La cuenta nueva sube en una semana. Todo lo que perdiste fue un nombre.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 12,
+                "max": 28
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te toca bajo Elo y jugás aburrido. Dos semanas después, el MMR te encuentra.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_el_coach_en_la_cola",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_soloq",
+    "categoria": "oportunidad",
+    "title": "Un coach mira tu partida",
+    "description": "En el chat de la partida un tipo te dice que es coach de tier 2 y que te está viendo jugar.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur"
+      ],
+      "ladder": [
+        "alto",
+        "apice",
+        "elite"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "jugar_a_tope",
+        "label": "Jugar a tope",
+        "descripcion": "La mejor partida de tu mes.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Ganás por quince y el coach te agrega. Te manda un \"seguí así\".",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te ponés nervioso en la primera pelea y perdés la partida. No te agrega.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "tirarle_un_dm",
+        "label": "Preguntarle por el equipo",
+        "descripcion": "Le escribís antes de que se vaya.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Te responde con calma y te manda un tryout. Es un camino abierto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Es un troll con nombre bueno. Te lo comés frío y seguís jugando.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_el_numero_uno_te_reta",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_soloq",
+    "categoria": "oportunidad",
+    "title": "El número uno te reta",
+    "description": "El top 1 de tu servidor te manda un duelo de 1v1 por el chat de la ladder.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ],
+      "ladder": [
+        "apice",
+        "elite"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aceptar_el_duelo",
+        "label": "Aceptar el duelo",
+        "descripcion": "Un 1v1 con el mejor del servidor.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Lo ganás por una torre y las redes arden. Te piden revancha y te quedás con la gloria.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 20,
+                "max": 40
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te gana limpio. Lo reconoce en el chat con una frase que se vuelve meme.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mandarlo_a_la_fila",
+        "label": "Mandarlo a la fila",
+        "descripcion": "Si quiere, que haga la fila.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Se ríe y te sigue. Años después te manda un mensaje por otra cosa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo toma a mal y arma un hilo contra vos en el foro. Dos días de ruido.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_cuarenta_y_ocho_horas",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_soloq",
+    "categoria": "rutina",
+    "title": "Cuarenta y ocho horas",
+    "description": "Un fin de semana largo y una idea: subir un tier jugando sin parar.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "hacer_la_maraton",
+        "label": "Hacer la maratón",
+        "descripcion": "Dos días de soloQ y poco más.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Subís un tier completo y tu nombre sale en la ladder. Cuesta la espalda y el humor.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 40,
+                "max": 70
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -8,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te rompés al tercer tilt y arrancás el lunes peor que el viernes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -7,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -9,
+                "max": -5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": -30,
+                "max": -10
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugar_cinco_horas",
+        "label": "Jugar cinco horas por día",
+        "descripcion": "Con descanso y ritmo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Subís poco, pero tu cabeza llega entera. El ritmo manda.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 12,
+                "max": 25
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Cuatro derrotas seguidas te hacen dudar del plan. Cerrás el domingo con ganas de revancha.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_rework_de_tu_main",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_soloq",
+    "categoria": "parche",
+    "title": "Rework de tu main",
+    "description": "Riot anuncia el rework de tu campeón. Mañana sale en el PBE con otras habilidades.",
+    "weight": 3,
+    "cooldown": 16,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ],
+      "marcas": [
+        "signature"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aprender_el_nuevo",
+        "label": "Aprender el nuevo",
+        "descripcion": "Te anotás en el PBE desde hoy.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Lo dominás antes que nadie en el servidor. La gente copia tus builds.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El rework te queda raro. Te lleva dos splits recuperar la memoria muscular.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cambiar_de_main",
+        "label": "Cambiar de main",
+        "descripcion": "Dejás el campeón antes de que cambie.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El nuevo pick te abre un ángulo. Los rivales no te leen en dos semanas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El nuevo pick se siente ajeno. Perdés confianza antes de agarrarle la mano.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": -15,
+                "max": -5
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_el_anonimo_imbatible",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_soloq",
+    "categoria": "oportunidad",
+    "title": "El anónimo imbatible",
+    "description": "Una cuenta sin nombre ni historial gana setenta y una seguidas. Se rumorea que es un pro.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ],
+      "ladder": [
+        "alto",
+        "apice",
+        "elite"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "buscarlo_en_la_cola",
+        "label": "Buscarlo en la cola",
+        "descripcion": "Le jugás en contra a ver quién es.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Le ganás en un mapa de ida y vuelta. Resulta ser un pro que se escondía. Te sigue.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te baila en veinte minutos. Es un coach retirado y te deja una charla.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mirar_sus_vods",
+        "label": "Mirar sus partidas",
+        "descripcion": "Estudiás cómo juega sin cruzarlo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Copiás su ritmo de rotaciones. En dos semanas tu mapa se ve otro.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "No encontrás el patrón y te quedás con ganas. Al mes borra la cuenta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_torneo_de_streamers",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_soloq",
+    "categoria": "oportunidad",
+    "title": "Torneo de streamers",
+    "description": "Un torneo benéfico de streamers te invita como sorpresa. Hay premio y mucha audiencia.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ir_y_dar_el_show",
+        "label": "Ir y dar el show",
+        "descripcion": "Un público que no es el tuyo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Ganás el torneo y el chat te nombra \"el del late game\". Los clips corren solos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te toca el favorito en cuartos. Perdés, pero la jugada del dragón se vuelve clip.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mandar_a_un_amigo",
+        "label": "Mandar a un amigo",
+        "descripcion": "Evitás la vidriera, le das la entrada.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu amigo la rompe y vos mirás desde el chat con cara de orgullo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu amigo la pasa mal y se pasa semanas diciéndote \"eras vos\".",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_el_cliente_se_cae",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_soloq",
+    "categoria": "golpe_duro",
+    "title": "El cliente se cae",
+    "description": "Servidores caídos en plena promo de división. Los LP de tres horas se esfuman.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "reclamar_los_puntos",
+        "label": "Reclamar los puntos",
+        "descripcion": "Escribís a soporte con capturas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Te devuelven todo y una skin de consuelo. Pasa a ser anécdota.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 20,
+                "max": 35
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Nada: el LP no vuelve. Te queda la bronca y el reloj de pared.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": -30,
+                "max": -15
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "reirte_y_seguir",
+        "label": "Reírte y seguir",
+        "descripcion": "Un día malo no hace un año.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Te reís y volvés a la cola. Ese fin de semana arrancás la mejor racha del mes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 15,
+                "max": 30
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te reís por fuera, pero la bronca se cuela en la siguiente partida.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_la_cuenta_coreana",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "La cuenta coreana",
+    "description": "Un desconocido te pasa una cuenta del servidor coreano, con historial limpio y una nota: \"Jugá, después vemos\".",
+    "weight": 4,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ],
+      "ladder": [
+        "alto",
+        "apice",
+        "elite"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "abrir_la_cuenta",
+        "label": "Abrir la cuenta",
+        "descripcion": "El ping es otro y la ladder también.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Jugás una semana y entendés que el nivel coreano es otro planeta. Aprendés a la fuerza.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "soloq_cuenta_abierta"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Perdés treinta partidas y se te va la risa. Tu cabeza vuelve distinta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "soloq_cuenta_abierta"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "devolverla_sin_abrir",
+        "label": "Devolverla sin abrir",
+        "descripcion": "Lo bueno no se regala.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Devolvés la cuenta y quedás con la duda. A veces la duda también enseña.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Más adelante te enterás de quién era. Preferirías no haberlo sabido.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_challenger_sin_pasaporte",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "Challenger sin pasaporte",
+    "description": "La cuenta coreana llegó a Challenger. Un scout de la LCK ya te escribió en el chat de la partida.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.region",
+        "op": "eq",
+        "value": "soloq_cuenta_abierta"
+      }
+    ],
+    "options": [
+      {
+        "id": "aceptar_la_scrim",
+        "label": "Aceptar la scrim",
+        "descripcion": "Una invitación para probarte.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Les ganás el primer mapa y nadie te contradice. Quedás con el número del scout.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 6,
+                "max": 11,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 11,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "soloq_cuenta_challenger"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te destrozan, con respeto. Aprendés más en un mapa que en un mes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "soloq_cuenta_challenger"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_en_silencio",
+        "label": "Seguir en silencio",
+        "descripcion": "No decís nada y seguís subiendo.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Mantenés el secreto y la cuenta sigue sumando LP. Nadie sabe lo que hacés.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "soloq_cuenta_challenger"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se filtra igual. Te dicen smurf en un foro y se arma un hilo largo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "soloq_cuenta_challenger"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_tu_nombre_en_la_ladder",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "raros_soloq",
+    "categoria": "oportunidad",
+    "title": "Tu nombre en la ladder",
+    "description": "Hoy tu nombre sale en la tabla de Challenger del servidor coreano. Alguien le sacó captura.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.region",
+        "op": "eq",
+        "value": "soloq_cuenta_challenger"
+      }
+    ],
+    "options": [
+      {
+        "id": "mostrarlo_al_mundo",
+        "label": "Mostrarlo al mundo",
+        "descripcion": "La captura corre sola.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu viejo te manda un audio de tres minutos. Un scout de la LCK pide tu historia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 8,
+                "max": 14,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_cuenta_coreana",
+                "values": [
+                  "El día que tu nombre apareció en el Challenger coreano",
+                  "Cuando el scout de la LCK pidió tu historial"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La captura da la vuelta y varios dicen que es trucho. Un mes de discusión.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_cuenta_coreana",
+                "values": [
+                  "El día que tu nombre apareció en el Challenger coreano",
+                  "La polémica por la cuenta coreana"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardarlo_para_vos",
+        "label": "Guardarlo para vos",
+        "descripcion": "Lo sabés vos y alcanza.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Guardás la captura en la carpeta de cosas que no se cuentan. Te hace sentir más grande de lo que sos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_cuenta_coreana",
+                "values": [
+                  "El día que tu nombre apareció en el Challenger coreano",
+                  "La captura que nunca mostraste"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Pasan los años y nadie te cree que lo hiciste. Pero vos sabés.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_cuenta_coreana",
+                "values": [
+                  "El día que tu nombre apareció en el Challenger coreano",
+                  "La captura que nunca mostraste"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_el_duo_fantasma",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "El duo fantasma",
+    "description": "Alguien sin nombre te pide duo, juega support como nadie y desaparece cada noche a las tres.",
+    "weight": 4,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "seguir_jugando_con_el",
+        "label": "Seguir jugando con él",
+        "descripcion": "Cada noche, la misma hora.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Ganan setenta partidas en cuatro semanas. Nunca sabés su nombre, pero conoce tu pool mejor que vos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "soloq_duo_sigue"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Una noche no aparece y sentís que perdés algo más que un duo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "soloq_duo_sigue"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "preguntarle_quien_es",
+        "label": "Preguntarle quién es",
+        "descripcion": "La curiosidad puede más.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "No contesta, pero la próxima noche te deja una captura de su rank. Es de otro mundo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "soloq_duo_sigue"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Se va y no vuelve. Te queda la duda y un inbox vacío.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_el_fantasma_tiene_nombre",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "El fantasma tiene nombre",
+    "description": "El duo te escribe por fin: es un support retirado de una liga que nunca viste.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.contenido",
+        "op": "eq",
+        "value": "soloq_duo_sigue"
+      }
+    ],
+    "options": [
+      {
+        "id": "pedirle_que_te_entrene",
+        "label": "Pedirle que te entrene",
+        "descripcion": "Tiene mil partidas de pro en la espalda.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te arma un plan de tres meses. El primer VOD ya te cambia cómo leés el mapa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 6,
+                "max": 11,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "soloq_duo_mentor"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El plan es duro y lo odiás. Dos semanas después funciona.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "soloq_duo_mentor"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "agradecerle_y_soltarlo",
+        "label": "Agradecerle y soltarlo",
+        "descripcion": "Lo que pasó, pasó.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Se despide con un emote. No lo volvés a ver, pero te queda el estilo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Una semana después ves que jugó en otro servidor. Eso sí duele un poco.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_la_ultima_del_mentor",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "raros_soloq",
+    "categoria": "oportunidad",
+    "title": "Su última partida",
+    "description": "El mentor te propone una última partida juntos: una despedida, sin LP en juego.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.contenido",
+        "op": "eq",
+        "value": "soloq_duo_mentor"
+      }
+    ],
+    "options": [
+      {
+        "id": "jugarla_a_todo_o_nada",
+        "label": "Jugarla a todo o nada",
+        "descripcion": "Sin plan ni guion.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Ganan en un mapa que nadie va a olvidar. Cuando termina, no hay nada más que decir.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 6,
+                "max": 11,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 11,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_duo_fantasma",
+                "values": [
+                  "La última partida con el mentor que nunca viste",
+                  "El mapa que ganaron sin hablar"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Pierden por un error tuyo. Te manda un \"gg\" y te dice que no pasa nada.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_duo_fantasma",
+                "values": [
+                  "La última partida con el mentor que nunca viste",
+                  "El gg que valió más que la victoria"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_ir_en_paz",
+        "label": "Dejarlo ir en paz",
+        "descripcion": "Algunas despedidas no se juegan.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Le mandás un mensaje largo. Responde con una sola palabra y es la correcta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_duo_fantasma",
+                "values": [
+                  "La última partida con el mentor que nunca viste",
+                  "La despedida sin partida"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "No contesta nunca. Pensás que quizás lo mejor era jugar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_duo_fantasma",
+                "values": [
+                  "La última partida con el mentor que nunca viste",
+                  "La despedida sin respuesta"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_el_reto_de_los_cien_dias",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "rutina",
+    "title": "Cien días de soloQ",
+    "description": "Prometés jugar cien días seguidos, una partida de entrenamiento por día, sin saltarte ninguno.",
+    "weight": 4,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "empezar_el_reto",
+        "label": "Empezar el reto",
+        "descripcion": "Una partida por día, cien días.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Los primeros treinta son un paseo. Tu consistencia se vuelve un hábito de hierro.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "soloq_cien_en_marcha"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Al día doce te enfermás y te saltás uno. El reto sigue, pero con una cicatriz.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "soloq_cien_en_marcha"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_para_despues",
+        "label": "Dejarlo para después",
+        "descripcion": "Hay cosas que no se prometen.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Preferís no prometer nada. La libertad también cuenta como disciplina.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Le contás a un amigo y él ya había empezado el suyo. Te queda un poco de envidia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_el_dia_cincuenta",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "rutina",
+    "title": "El día cincuenta",
+    "description": "Mitad del reto. Hoy tenés fiebre, un parcial y la peor racha de la semana.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.rol",
+        "op": "eq",
+        "value": "soloq_cien_en_marcha"
+      }
+    ],
+    "options": [
+      {
+        "id": "jugar_igual",
+        "label": "Jugar igual",
+        "descripcion": "Una partida es una partida.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás una partida corta y la ganás con fiebre. Algo cambia: ya no podés parar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "soloq_cien_al_final"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Jugás y perdés, pero la racha de días se mantiene. Eso también cuenta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "soloq_cien_al_final"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "romper_el_reto",
+        "label": "Romper el reto",
+        "descripcion": "Hoy no.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Descansás y sentís culpa por un día. Después entendés que descansar era el entrenamiento.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Rompés el reto y te queda la sensación del que se rindió.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soloq_el_dia_cien",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "raros_soloq",
+    "categoria": "rutina",
+    "title": "El día cien",
+    "description": "Hoy se cumple el día cien. El cliente tiene un contador y vos tenés una última partida.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.rol",
+        "op": "eq",
+        "value": "soloq_cien_al_final"
+      }
+    ],
+    "options": [
+      {
+        "id": "jugarla_con_amigos",
+        "label": "Jugarla con amigos",
+        "descripcion": "Los cien días merecen testigos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Se juntan cinco de la ladder y festejan con una partida mal jugada. La mejor de las cien.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 11,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "los_cien_dias",
+                "values": [
+                  "El día cien de soloQ sin saltarte uno",
+                  "La partida mal jugada con amigos"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se cuelga el servidor justo ese día. Aun así lo celebran en el chat.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "los_cien_dias",
+                "values": [
+                  "El día cien de soloQ sin saltarte uno",
+                  "La partida que no cargó"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "jugarla_solo",
+        "label": "Jugarla solo",
+        "descripcion": "Un cierre tranquilo.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Ganás en silencio y cerrás el cliente sin avisar a nadie. Te sirve más que un trofeo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 7,
+                "max": 12,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "los_cien_dias",
+                "values": [
+                  "El día cien de soloQ sin saltarte uno",
+                  "El cierre en silencio"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Perdés y te reís. Cien días y la última cuenta igual.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "los_cien_dias",
+                "values": [
+                  "El día cien de soloQ sin saltarte uno",
+                  "La derrota que tampoco importó"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

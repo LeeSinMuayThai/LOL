@@ -1,1 +1,2539 @@
-[]
+[
+  {
+    "id": "familia_el_viejo_no_entiende",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "El viejo no entiende",
+    "description": "Tu viejo te pregunta si lo tuyo es \"un deporte o un videojuego\". Tu hermana se ríe.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "explicarselo_con_calma",
+        "label": "Explicárselo con calma",
+        "descripcion": "Una tarde, el mapa y paciencia.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le mostrás un VOD y entiende el dragón. A los dos días ve tus partidas con un mate.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo mirás explicando y te das cuenta de que ni vos sabés explicarlo bien.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_con_su_duda",
+        "label": "Dejarlo con su duda",
+        "descripcion": "Ya entenderá.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "No hace falta que entienda: te apoya igual con la cena puesta. Con eso alcanza.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La duda se vuelve un reproche en la cena de domingo. Todos se callan.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_la_abuela_mira_el_stream",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "La abuela mira el stream",
+    "description": "Tu abuela instaló Twitch y mira tus partidas con una libreta. Le anota las muertes.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "saludarla_en_vivo",
+        "label": "Saludarla en vivo",
+        "descripcion": "El chat la adopta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El chat se enamora de ella y le arma emotes. Tu abuela pasa a tener más seguidores que vos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te pregunta frente a todos por qué moriste en el minuto cuatro. Un clip eterno.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_que_mire_en_paz",
+        "label": "Dejar que mire en paz",
+        "descripcion": "Un secreto entre vos y ella.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Te manda un mensaje al terminar: \"Jugaste lindo, mi amor\". Ganás la partida más importante.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te distrae y fallás una pelea decisiva. Ella lo anota igual.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_la_novia_y_el_bootcamp",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "Bootcamp o aniversario",
+    "description": "Tu pareja cumple años justo el día en que empieza el bootcamp. Quiere que vengas.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "edadMin": 19
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "viajar_al_aniversario",
+        "label": "Viajar al aniversario",
+        "descripcion": "Un día y volvés.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Pasás el día entero con ella y volvés al bootcamp con el pecho liviano.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Llegás tarde al bootcamp y el entrenador te mira feo. La sinergia se enfría.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quedarte_en_el_bootcamp",
+        "label": "Quedarte en el bootcamp",
+        "descripcion": "Cumplís con el equipo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Ella lo entiende, con un llanto corto. Al volver, te recibe con un abrazo grande.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Se enoja y pasan dos semanas hablando poco. Rendís peor en las scrims.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_la_hermana_y_la_tarea",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "La tarea de tu hermana",
+    "description": "Tu hermana chica necesita ayuda con matemática justo antes de tu scrim más importante.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ayudarla_media_hora",
+        "label": "Ayudarla media hora",
+        "descripcion": "Todo cabe en un horario.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Entre fracciones y un mate, volvés a la scrim relajado. Ganan por una torre.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te quedás dos horas y llegás tarde. El entrenador no dice nada, pero se nota.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decirle_que_despues",
+        "label": "Decirle que después",
+        "descripcion": "La scrim es la scrim.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Ella entiende y se arregla sola. Esa noche te manda una captura con un diez.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Ella se ofende y no te habla en toda la semana. La casa se pone fría.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_el_tio_con_un_contacto",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "El tío con un contacto",
+    "description": "Tu tío jura conocer a alguien \"en Riot\" que te puede conseguir un contrato. Nadie le cree.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "seguirle_el_juego",
+        "label": "Seguirle el juego",
+        "descripcion": "Un llamado no cuesta nada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El contacto era un moderador del foro. Igual te consigue una charla con un analista real.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "No era nada y tu tío queda mal parado en la mesa. Una cena incómoda.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "agradecerle_y_nada_mas",
+        "label": "Agradecerle y nada más",
+        "descripcion": "Con cariño, sin ilusiones.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Tu tío se siente querido y se calma. Desde entonces, te manda memes buenos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Se ofende y deja de hablarte un mes. Te llama en tu cumpleaños igual.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_el_casamiento_en_pleno_split",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "El casamiento en pleno split",
+    "description": "Tu primo se casa el sábado y vos tenés serie. Tu familia ya compró los pasajes.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ir_a_la_fiesta",
+        "label": "Ir a la fiesta",
+        "descripcion": "Una noche de baile.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Bailás hasta las cinco y volvés tranquilo. Ganás la serie con ganas de más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Volvés fundido y perdés el primer mapa. El entrenador mira al piso.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mandar_un_video",
+        "label": "Mandar un video",
+        "descripcion": "Estás en el corazón.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu primo lo entiende y lo muestra en la fiesta. Los viejos lloran en la pantalla.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La mesa se queda tensa y tu tía no te saluda. Un rato incómodo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_el_primo_manager",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_familia",
+    "categoria": "mercado",
+    "title": "El primo quiere ser tu manager",
+    "description": "Tu primo, que estudia administración, se ofrece a manejar tu carrera \"ya que sos de la familia\".",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 25
+      }
+    ],
+    "options": [
+      {
+        "id": "darle_una_prueba",
+        "label": "Darle una prueba",
+        "descripcion": "Un mes y vemos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Cierra un acuerdo chico con una marca y te demuestra que sabe. Sigue.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Se confunde con un contrato y tu agente tiene que arreglarlo. Hay silencio en la mesa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mantener_al_agente",
+        "label": "Mantener al agente",
+        "descripcion": "Cada cosa en su lugar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Tu primo lo entiende y te sigue ayudando con memes. Mejor así.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Se queda dolido y deja de venir a los asados. Te lo cobra en silencio.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_la_pc_del_viejo",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "La PC que pagó tu viejo",
+    "description": "Hojeando fotos viejas ves la factura de tu primera PC. Tu viejo vendió algo para pagarla.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "hablar_con_el",
+        "label": "Hablar con él",
+        "descripcion": "Le agradecés mirándolo a los ojos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Se emociona y te cuenta lo que vendió. Pasan la tarde juntos en el taller.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Se hace el desentendido y cambia de tema. Te queda el nudo para después.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "devolverle_algo",
+        "label": "Devolverle algo",
+        "descripcion": "Un regalo para cerrar el círculo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le regalás un sillón nuevo y se queda callado dos minutos. Después te abraza.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo rechaza con orgullo y casi se enoja. Terminan riéndose juntos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_la_cena_de_navidad",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "La cena de Navidad",
+    "description": "Mesa grande y mucho vino. Todos te preguntan cuándo vas a conseguir un trabajo \"de verdad\".",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "responder_con_humor",
+        "label": "Responder con humor",
+        "descripcion": "Sacás el chiste del año.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La mesa se destruye de risa. Tu tío termina pidiéndote la remera de tu equipo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El chiste cae mal y tu tía se ofende. Pasa la Nochebuena en silencio.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mostrar_los_numeros",
+        "label": "Mostrar los números",
+        "descripcion": "Una captura del contrato.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Dejan de preguntar. Tu vieja guarda la captura en su billetera.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Alguien comenta cuánto ganás y se arma una discusión de plata. La cena se arruina.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_la_reunion_con_el_club",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "Tus viejos conocen al club",
+    "description": "La org invita a tus viejos a una cena en la sede. Tu viejo trajo un traje de 1998.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "presentarlos_con_orgullo",
+        "label": "Presentarlos con orgullo",
+        "descripcion": "Los llevás de la mano.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu viejo le cuenta chistes al manager y tu vieja se hace amiga del cocinero. Fiesta total.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu vieja le dice al manager qué piensa de tu horario. El manager se ríe incómodo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mantenerlos_lejos",
+        "label": "Mantenerlos lejos",
+        "descripcion": "Mejor evitar el show.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La cena sale impecable. Ellos se enteran por la tele y no te hablan una semana.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Les contás todo al volver y se ríen de lo que se perdieron. Se arregla.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_el_viaje_de_tu_vieja",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "Tu vieja viaja a verte",
+    "description": "Tu vieja agarra un micro de doce horas para verte jugar en vivo. Nunca había salido del barrio.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "buscarla_en_la_terminal",
+        "label": "Buscarla en la terminal",
+        "descripcion": "Llegás con un cartel.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Se baja con una bolsa de empanadas y la llevás a todos los lugares. Vuelve al barrio con el corazón más grande.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La terminal es un caos y se pierden una hora. Terminan riéndose en un bar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mandarle_un_remis",
+        "label": "Mandarle un remís",
+        "descripcion": "Tenés scrim.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Llega bien y te espera con la cena. Entendés que fue una macana, pero nadie dice nada.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 1,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Lo toma a mal y se pasa la visita callada. Se va con un abrazo frío.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_el_viejo_quiere_viajar",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "familia",
+    "title": "El viejo quiere viajar",
+    "description": "Tu viejo nunca subió a un avión y quiere verte jugar una final fuera del país. Ya tiene el pasaporte.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "pagarle_el_pasaje",
+        "label": "Pagarle el pasaje",
+        "descripcion": "Tu viejo, en un avión por primera vez.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Se pasa el vuelo con la cara pegada a la ventana. Te manda una foto de las nubes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "familia_viejo_viaja"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El vuelo se demora doce horas y tu viejo llega destruido. Igual se ríe.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "familia_viejo_viaja"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decirle_que_mejor_no",
+        "label": "Decirle que mejor no",
+        "descripcion": "Una final es mucho para él.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo entiende, pero se queda con una tristeza que no dice. Lo ves en su voz.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -4,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se enoja un día y al segundo ya está pidiendo que le prestes el VOD.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_el_viejo_en_la_tribuna",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "familia",
+    "title": "El viejo en la tribuna",
+    "description": "Hoy hay serie y tu viejo está en la tribuna con un cartel hecho a mano. No sabés dónde mirar.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.playoffs",
+        "op": "eq",
+        "value": "familia_viejo_viaja"
+      }
+    ],
+    "options": [
+      {
+        "id": "mirarlo_antes_de_jugar",
+        "label": "Mirarlo antes de jugar",
+        "descripcion": "Un saludo con la mano.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te saluda y se le caen los lentes. Jugás con una sonrisa tonta toda la serie.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "familia_viejo_tribuna"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te distrae y fallás las primeras peleas. Después te acordás de él y remontás.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "familia_viejo_tribuna"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ignorarlo_hasta_el_final",
+        "label": "Ignorarlo hasta el final",
+        "descripcion": "Te concentrás en el mapa.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Cerrás la serie y recién ahí lo mirás. Te sonríe con los ojos rojos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "familia_viejo_tribuna"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Jugás frío y perdés. Cuando lo mirás, ya se fue. Quedás con una espina.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "familia_viejo_tribuna"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_la_foto_del_viejo",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "La foto con tu viejo",
+    "description": "Después de la serie, un fotógrafo te pide la foto de siempre. Tu viejo está ahí, tímido, con el cartel.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.playoffs",
+        "op": "eq",
+        "value": "familia_viejo_tribuna"
+      }
+    ],
+    "options": [
+      {
+        "id": "hacerlo_posar_con_vos",
+        "label": "Hacerlo posar con vos",
+        "descripcion": "Los dos, con el cartel.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La foto sale en la web de la liga. Tu viejo la imprime y la pega en el taller.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 7,
+                "max": 12,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_viejo_en_el_viaje",
+                "values": [
+                  "La foto con tu viejo en la final",
+                  "La foto que se pegó en el taller"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La prensa la usa con el pie equivocado y se arma un meme. Tu viejo lo toma con orgullo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_viejo_en_el_viaje",
+                "values": [
+                  "La foto con tu viejo en la final",
+                  "El meme de la foto con tu viejo"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_que_se_vaya_tranquilo",
+        "label": "Dejar que se vaya",
+        "descripcion": "Es su momento, no el tuyo.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo abrazás un rato largo sin cámaras. Nunca hubo foto, pero tampoco hace falta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_viejo_en_el_viaje",
+                "values": [
+                  "La foto con tu viejo en la final",
+                  "El abrazo sin cámaras"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Nadie sabe que estuvo. Vos sí. Es suficiente.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_viejo_en_el_viaje",
+                "values": [
+                  "La foto con tu viejo en la final",
+                  "El abrazo sin cámaras"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_el_hermano_menor_te_copia",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "familia",
+    "title": "Tu hermano te copia",
+    "description": "Tu hermano menor armó un setup igual al tuyo, elige tu main y te mira con los ojos grandes.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ],
+      "edadMin": 17
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "ensenarle_lo_que_sabes",
+        "label": "Enseñarle lo que sabés",
+        "descripcion": "Un duo de hermanos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le enseñás el pool y a las semanas ya te gana en una partida. Te ríes y le chocás los cinco.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "familia_hermano_aprende"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Aprende mal y se frustra. Le prometés más paciencia y volvés a empezar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "familia_hermano_aprende"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decirle_que_juegue_a_otra_cosa",
+        "label": "Decirle que juegue a otra cosa",
+        "descripcion": "Preferís cuidarlo.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Se enoja, pero termina jugando al rugby. Te manda un video de su primer try.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se pasa meses sin jugar y se aleja de vos. Una distancia rara.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_el_hermano_en_la_ladder",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "El hermano en la ladder",
+    "description": "Tu hermano llegó a Diamante y te desafía a un duo. Cada uno tiene su main, nadie cede.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ],
+      "edadMin": 17
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.conflicto",
+        "op": "eq",
+        "value": "familia_hermano_aprende"
+      }
+    ],
+    "options": [
+      {
+        "id": "aceptar_el_duo_de_hermanos",
+        "label": "Aceptar el duo",
+        "descripcion": "Jugar juntos por primera vez.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Ganan diez seguidas y se burlan de los chats. Tu mamá imprime una captura para la heladera.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_hermano",
+                "values": [
+                  "El duo de hermanos en la ladder",
+                  "La captura en la heladera"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Pierden una partida por una pelea tonta y se pasan una semana sin hablarse. Después se ríen.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_hermano",
+                "values": [
+                  "El duo de hermanos en la ladder",
+                  "La pelea tonta de la ladder"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_que_gane_solo",
+        "label": "Dejarlo ir solo",
+        "descripcion": "Que haga su camino.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Sube solo y te manda un mensaje de gracias. Lo recordás cada vez que subís.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_hermano",
+                "values": [
+                  "El duo de hermanos en la ladder",
+                  "El mensaje de gracias"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se pierde en la ladder y se sale del juego. Te culpás y le escribís.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_hermano",
+                "values": [
+                  "El duo de hermanos en la ladder",
+                  "El mensaje que llegó tarde"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_la_carta_de_mama",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "familia",
+    "title": "La carta de tu vieja",
+    "description": "Tu vieja te manda una carta de papel, con tinta. Dice que la leas cuando estés solo.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "leerla_de_inmediato",
+        "label": "Leerla ahora",
+        "descripcion": "No aguantás la curiosidad.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Dice cosas que nunca te dijo en la cara. La guardás en el bolsillo de la campera.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "familia_cartas_leida"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La leés en el medio de una scrim y te quebrás frente al equipo. Nadie dice nada.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "familia_cartas_leida"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardarla_para_despues",
+        "label": "Guardarla para después",
+        "descripcion": "Esperás el momento justo.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La abrís una noche difícil y es lo que necesitabas. Dormís mejor que en meses.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "familia_cartas_leida"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se pierde entre los papeles del bootcamp y no la encontrás. Te duele un buen rato.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "familia_la_respuesta_a_mama",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "raros_familia",
+    "categoria": "familia",
+    "title": "Responder la carta",
+    "description": "Pasaron semanas y tu vieja todavía espera tu respuesta. Hay un papel en blanco sobre tu escritorio.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.staff",
+        "op": "eq",
+        "value": "familia_cartas_leida"
+      }
+    ],
+    "options": [
+      {
+        "id": "escribirle_a_mano",
+        "label": "Escribirle a mano",
+        "descripcion": "Con tu letra torcida.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le escribís cuatro hojas. Ella la enmarca. Años después la sigue releyendo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 7,
+                "max": 12,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "las_cartas_de_mama",
+                "values": [
+                  "Las cartas que te cruzaste con tu vieja",
+                  "La respuesta de cuatro hojas"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La carta se pierde en el correo y tu vieja se preocupa. La llamás y llorás un rato largo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "las_cartas_de_mama",
+                "values": [
+                  "Las cartas que te cruzaste con tu vieja",
+                  "La llamada que reemplazó la carta"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "llamarla_por_telefono",
+        "label": "Llamarla por teléfono",
+        "descripcion": "Mejor la voz que el papel.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Hablan dos horas. Te cuenta de los vecinos y de los gatos. Es todo lo que querías.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "las_cartas_de_mama",
+                "values": [
+                  "Las cartas que te cruzaste con tu vieja",
+                  "La llamada de dos horas"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "No atiende y la volvés a llamar a la noche. Hablan quince minutos. Es poco, pero alcanza.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "las_cartas_de_mama",
+                "values": [
+                  "Las cartas que te cruzaste con tu vieja",
+                  "La llamada de quince minutos"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

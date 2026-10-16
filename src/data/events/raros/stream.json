@@ -1,1 +1,2569 @@
-[]
+[
+  {
+    "id": "stream_el_raid_de_un_grande",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_stream",
+    "categoria": "prensa",
+    "title": "Te hacen un raid",
+    "description": "Un streamer enorme termina su directo y manda a su audiencia entera a tu canal.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 22
+      }
+    ],
+    "options": [
+      {
+        "id": "hablarle_al_chat",
+        "label": "Hablarle al chat",
+        "descripcion": "Doce mil personas, un micrófono.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te presentás sin guion y el chat se ríe con vos. Cuarenta mil seguidores nuevos antes de dormir.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te tildás frente a la cámara y el chat arma un clip del silencio. Es famoso.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_jugando_normal",
+        "label": "Seguir jugando normal",
+        "descripcion": "Como si no pasara nada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Jugás tu soloQ de siempre y la audiencia se queda mirando un buen partido.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El chat se aburre y se va en veinte minutos. Pasa y se olvida.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_el_clip_fuera_de_contexto",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_stream",
+    "categoria": "prensa",
+    "title": "Clip fuera de contexto",
+    "description": "Una frase tuya, cortada a la mitad, recorre Twitter. Parece lo contrario de lo que dijiste.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 30
+      }
+    ],
+    "options": [
+      {
+        "id": "aclararlo_con_el_vod",
+        "label": "Aclararlo con el VOD",
+        "descripcion": "Subís la parte completa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Subís el VOD y el hilo se da vuelta. Los que armaron el clip se borran.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Nadie ve el VOD. La frase corta sigue ganando y vos te cansás de explicar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hacerte_el_gracioso",
+        "label": "Hacerte el gracioso",
+        "descripcion": "Un meme propio le saca el aire.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Posteás un meme contra el clip y todos se ríen con vos. Pasa de insulto a sticker.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El chiste cae mal en el vestuario y alguien te pide que lo borres.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_directo_con_el_equipo",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_stream",
+    "categoria": "vestuario",
+    "title": "Directo con todo el equipo",
+    "description": "La org organiza un directo con los cinco. Tu compañero se sienta al lado y no dice nada.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ],
+      "marcas": [
+        "con_vestuario"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 28
+      }
+    ],
+    "options": [
+      {
+        "id": "romper_el_hielo",
+        "label": "Romper el hielo",
+        "descripcion": "Le tirás una broma pública.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El chat se ríe, tu compañero se ríe, y el equipo parece un equipo por fin.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La broma cae mal en cámara y el silencio se queda hasta el final del directo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_que_hable_el_igl",
+        "label": "Dejar que hable el capitán",
+        "descripcion": "Vos solo reaccionás.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "El capitán se luce y vos te sacás presión. Ganan simpatía sin esfuerzo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Pasás todo el directo callado y el chat te llena de \"¿está bien?\".",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_la_donacion_enorme",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_stream",
+    "categoria": "oportunidad",
+    "title": "La donación de mil dólares",
+    "description": "En pleno directo, un desconocido manda mil dólares con un mensaje: \"Para que sigas\".",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 25
+      }
+    ],
+    "options": [
+      {
+        "id": "agradecer_en_vivo",
+        "label": "Agradecer en vivo",
+        "descripcion": "Lo decís al aire.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El chat se emociona y te llegan donaciones chicas. La noche termina siendo hermosa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te quebrás un poco y el clip circula con la cara equivocada. Hay memes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "devolverlo_en_silencio",
+        "label": "Devolverlo",
+        "descripcion": "Algo no te cierra.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Era una cuenta con tarjeta robada. Te salvás de un problema legal y de unos pesos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "No era nada raro y quedás como un tonto que rechaza regalos. Un meme.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_el_hater_con_nombre",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_stream",
+    "categoria": "prensa",
+    "title": "Un hater con nombre",
+    "description": "Un analista con nombre propio publica un hilo explicando por qué sos el peor de tu rol.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 35
+      }
+    ],
+    "options": [
+      {
+        "id": "responder_con_numeros",
+        "label": "Responder con números",
+        "descripcion": "Tu CS contra su opinión.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Lo dejás sin argumentos y su audiencia te empieza a seguir. Te agradece por privado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Respondés y le das visibilidad. El hilo duplica su alcance.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ignorarlo_con_estilo",
+        "label": "Ignorarlo con estilo",
+        "descripcion": "Subís otra cosa ese día.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "No le das combustible. En tres días nadie se acuerda del hilo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te ignora el algoritmo y el hilo igual se queda en tendencia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_cuenta_de_parodia",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_stream",
+    "categoria": "prensa",
+    "title": "Una cuenta de parodia",
+    "description": "Alguien abrió una cuenta que te imita y ya tiene más seguidores que la tuya.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 30
+      }
+    ],
+    "options": [
+      {
+        "id": "seguirle_el_juego",
+        "label": "Seguirle el juego",
+        "descripcion": "Te hacés amigo de tu parodia.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo invitás a un directo conjunto y su imitación es perfecta. Se ríen medio millón.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El tipo se pone pesado y empieza a imitarte a tu familia. Se corta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "denunciar_la_cuenta",
+        "label": "Denunciar la cuenta",
+        "descripcion": "Es tu cara, tu nombre.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La cuenta cae y la comunidad te lo recuerda por semanas. Ganás una guerra, perdés la simpatía.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te dan la razón en dos días. Nadie se entera.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_viewer_que_es_scout",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_stream",
+    "categoria": "oportunidad",
+    "title": "El viewer que es scout",
+    "description": "Un viewer silencioso lleva cuarenta directos tuyos. Resulta que es scout de una academia.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "soloq",
+        "tier3",
+        "tier2",
+        "libre"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 18
+      }
+    ],
+    "options": [
+      {
+        "id": "mostrarte_tal_cual",
+        "label": "Mostrarte tal cual",
+        "descripcion": "Un directo normal, sin pose.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Dejás que te vea jugar en un mal día. Le gusta la forma de levantarte.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Justo ese día juegas peor que nunca. Te lo comés, pero sigue mirando.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "prepararle_el_show",
+        "label": "Prepararle el show",
+        "descripcion": "Una noche de gala.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Lo ves sonreír frente a la pantalla. Te manda un mensaje largo y serio.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Se nota que actuás y te lo marca con tacto. Aprendés algo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_el_directo_de_doce_horas",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_stream",
+    "categoria": "rutina",
+    "title": "Doce horas en vivo",
+    "description": "Un maratón benéfico: doce horas de directo seguidas, con cada donación una partida.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 30
+      }
+    ],
+    "options": [
+      {
+        "id": "hacer_las_doce",
+        "label": "Hacer las doce horas",
+        "descripcion": "Hasta que corte el servidor.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Llegás al final con la voz rota y diez mil dólares donados. Nadie te olvida.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 11,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -7,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te caés dormido a las nueve horas y el chat te canta de arrullo. Sale un clip.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -8,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cortar_a_las_seis",
+        "label": "Cortar a las seis",
+        "descripcion": "Cumplís la mitad.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Cortás a tiempo y el chat lo respeta. Las donaciones igual salen.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Alguien dice que dejaste el maratón a medias y se arma un hilo largo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_el_dia_que_se_cae_twitch",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_stream",
+    "categoria": "golpe_duro",
+    "title": "Se cae todo Twitch",
+    "description": "Twitch se cae en plena transmisión y tu directo se queda en negro tres horas.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 25
+      }
+    ],
+    "options": [
+      {
+        "id": "seguir_por_discord",
+        "label": "Seguir por Discord",
+        "descripcion": "El chat te sigue a otra sala.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Armás una sala de voz y cientos se vienen. Es más íntimo y más divertido que el directo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El Discord se llena de spam y tenés que cerrarlo. Al volver, la mitad se fue.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "irte_a_dormir",
+        "label": "Irte a dormir",
+        "descripcion": "El servicio vuelve, vos también.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Dormís nueve horas y nadie se acuerda del apagón. Te levantás fresco.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Cuando vuelve, la audiencia se fue a otro canal. Cuesta recuperarla.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_la_apuesta_con_el_chat",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_stream",
+    "categoria": "oportunidad",
+    "title": "La apuesta con el chat",
+    "description": "El chat te desafía: si llegás a Challenger en el mes, se afeitan la cabeza; si no, vos.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 30
+      }
+    ],
+    "options": [
+      {
+        "id": "aceptar_la_apuesta",
+        "label": "Aceptar la apuesta",
+        "descripcion": "Un mes y todos mirando.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Llegás al día treinta con tres LP de sobra. El chat se rapa y el clip da la vuelta al mundo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 6,
+                "max": 11,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "ladder",
+                "path": "player.ranked",
+                "min": 25,
+                "max": 50
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te quedás a veinte LP y te rapás vos, con el chat cantando la marcha.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "proponer_otra",
+        "label": "Proponer otra apuesta",
+        "descripcion": "Algo menos riesgoso.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Cambian la apuesta por un maratón de duos. Todos ganan y nadie se afeita.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El chat lo toma como miedo y te cargan una semana entera.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_el_streamer_rival",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_stream",
+    "categoria": "oportunidad",
+    "title": "El streamer rival",
+    "description": "Otro jugador de tu servidor empieza a streamear a la misma hora y te roba los viewers.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 28
+      }
+    ],
+    "options": [
+      {
+        "id": "retarlo_a_un_1v1",
+        "label": "Retarlo a un 1v1",
+        "descripcion": "Se resuelve en la grieta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Le ganás en directo y se mezclan las audiencias. Los dos ganan seguidores.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te baila y su audiencia se ríe de vos una semana. Un clip te dura un mes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "proponer_un_duo",
+        "label": "Proponerle un duo",
+        "descripcion": "Mejor juntos que enfrentados.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Hacen una serie de duos y la gente los ama. Se vuelven amigos de verdad.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se pelean por la cuenta de la partida en vivo y se desinvitan.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_abrir_el_canal",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "Abrir tu propio canal",
+    "description": "Tenés la cámara, el micrófono y un nombre. Falta el botón de \"empezar a transmitir\".",
+    "weight": 4,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 26
+      }
+    ],
+    "options": [
+      {
+        "id": "abrir_el_canal",
+        "label": "Abrir el canal",
+        "descripcion": "Una hora por día, sin falta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Abrís el canal y el primer día tenés tres viewers. El tercero es tu mamá.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "stream_canal_abierto"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El primer directo se corta por el internet de tu casa. Igual lo contás como victoria.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "stream_canal_abierto"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "no_abrirlo",
+        "label": "No abrirlo",
+        "descripcion": "Preferís no mostrarte.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Te quedás en tu cuarto y mejorás sin público. A veces eso también es una decisión.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Un compañero abre el suyo y la gente lo aplaude. Te queda una espinita.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_el_canal_despega",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "El canal despega",
+    "description": "Una noche tu canal pasa los dos mil en vivo y no sabés por qué. Alguien te raideó.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.playoffs",
+        "op": "eq",
+        "value": "stream_canal_abierto"
+      }
+    ],
+    "options": [
+      {
+        "id": "aprovechar_la_ola",
+        "label": "Aprovechar la ola",
+        "descripcion": "Te quedás hasta el amanecer.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Cierran con tres mil. Esa noche te hacen partner y se te cae el mate de la emoción.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 7,
+                "max": 12,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "stream_canal_despega"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te agotás al cuarto directo seguido y bajás de golpe. Aun así quedan seguidores.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -8,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "stream_canal_despega"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cortar_para_proteger_la_cabeza",
+        "label": "Cortar para dormir",
+        "descripcion": "La ola vuelve si es buena.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Dormís y al día siguiente seguís siendo tendencia. Parece que no era una ola.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "stream_canal_despega"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La ola se va con vos. Al otro día todo el mundo olvidó tu nombre.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.playoffs",
+                "valor": "stream_canal_despega"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_el_directo_de_los_diez_mil",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "raros_stream",
+    "categoria": "oportunidad",
+    "title": "Los diez mil en vivo",
+    "description": "Hoy el contador marca diez mil. Una org grande ve el directo y pide una videollamada.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.playoffs",
+        "op": "eq",
+        "value": "stream_canal_despega"
+      }
+    ],
+    "options": [
+      {
+        "id": "aceptar_la_videollamada",
+        "label": "Atender la videollamada",
+        "descripcion": "Una oferta, una cámara.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La org te ofrece un contrato de creador y un lugar en su casa. Elegir se vuelve difícil.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 8,
+                "max": 14,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_canal_propio",
+                "values": [
+                  "El día que el contador marcó diez mil en tu canal",
+                  "La videollamada con la org grande"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Era un malentendido: querían a otro. Igual te quedó el momento.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_canal_propio",
+                "values": [
+                  "El día que el contador marcó diez mil en tu canal",
+                  "La videollamada por error"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguir_el_directo",
+        "label": "Seguir el directo",
+        "descripcion": "La org puede esperar.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Terminás el directo con la cámara encendida y el corazón latiendo. Nunca fue una pose.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_canal_propio",
+                "values": [
+                  "El día que el contador marcó diez mil en tu canal",
+                  "El directo que no cortaste"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La org se cansa de esperar y se va por otro. Te queda el recuerdo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_canal_propio",
+                "values": [
+                  "El día que el contador marcó diez mil en tu canal",
+                  "El directo que no cortaste"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_el_directo_maldito",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "golpe_duro",
+    "title": "El directo maldito",
+    "description": "En pleno directo, medio dormido, decís algo sobre un rival que no debías. El chat se va a otro canal.",
+    "weight": 4,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 35
+      }
+    ],
+    "options": [
+      {
+        "id": "pedir_disculpas_al_toque",
+        "label": "Pedir disculpas ya",
+        "descripcion": "Cortás y salís con la cara.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Salís en vivo y pedís perdón sin excusas. El rival responde con un emoji de paz.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "stream_directo_pendiente"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La disculpa suena a guion de comunicado. El clip empeora todo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "stream_directo_disculpa"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "esperar_a_que_pase",
+        "label": "Esperar a que pase",
+        "descripcion": "No decís nada.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La polémica se apaga en tres días. Tu silencio se interpreta como madurez.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "stream_directo_pendiente"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Tu silencio se lee como soberbia y el hilo sigue creciendo una semana.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "stream_directo_silencio"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_la_revancha_del_rival",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "raros_stream",
+    "categoria": "prensa",
+    "title": "La revancha del rival",
+    "description": "Tu rival te invita a un directo juntos para \"dejar todo en el pasado\". Hay cámaras.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.conflicto",
+        "op": "eq",
+        "value": "stream_directo_pendiente"
+      }
+    ],
+    "options": [
+      {
+        "id": "ir_y_dar_la_mano",
+        "label": "Ir y dar la mano",
+        "descripcion": "Una foto, una charla.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Hablan una hora y se ríen del clip. La comunidad lo guarda como un momento.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 7,
+                "max": 12,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_directo_maldito",
+                "values": [
+                  "El directo donde te reconciliaste con tu rival",
+                  "La charla de una hora frente a las cámaras"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Nace una amistad rara. Los dos se tiran indirectas por meses, pero con cariño.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_directo_maldito",
+                "values": [
+                  "El directo donde te reconciliaste con tu rival",
+                  "La amistad rara con tu rival"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "declinar_la_invitacion",
+        "label": "Declinar la invitación",
+        "descripcion": "El pasado queda en el pasado.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "No vas, pero mandás un mensaje amable. El rival lo agradece.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_directo_maldito",
+                "values": [
+                  "El directo donde te reconciliaste con tu rival",
+                  "El mensaje que cerró todo"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "No vas y él cuenta en el directo que no apareciste. Un nuevo meme.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_directo_maldito",
+                "values": [
+                  "El directo donde te reconciliaste con tu rival",
+                  "El plantón del directo"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_clip_que_explota",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "prensa",
+    "title": "Tu clip explota",
+    "description": "Un clip tuyo de seis segundos, con un grito raro, tiene diez millones de vistas. Hay remixes.",
+    "weight": 4,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 25
+      }
+    ],
+    "options": [
+      {
+        "id": "subirte_al_meme",
+        "label": "Subirte al meme",
+        "descripcion": "Hacés el grito en vivo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El grito suena en la ladder, en las bocinas del bar y en tu casa. Es tu firma.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 7,
+                "max": 12,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "stream_clip_meme"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El meme te encasilla y cada directo es la misma pregunta. Cansa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.staff",
+                "valor": "stream_clip_meme"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_morir",
+        "label": "Dejarlo morir",
+        "descripcion": "Un clip no es una carrera.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "En un mes se olvida y volvés a jugar sin presión. Te queda un recuerdo gracioso.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Otro lo usa de plantilla y vos te perdés la fama. Un clásico.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stream_el_meme_es_tu_marca",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "raros_stream",
+    "categoria": "oportunidad",
+    "title": "El meme es tu marca",
+    "description": "Una empresa de periféricos te llama para una edición limitada con el grito. Te quieren ya.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.staff",
+        "op": "eq",
+        "value": "stream_clip_meme"
+      }
+    ],
+    "options": [
+      {
+        "id": "firmar_la_edicion",
+        "label": "Firmar la edición",
+        "descripcion": "Tu grito, impreso en un mouse.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Se agota en veinte minutos. El grito pasa a ser tuyo para siempre.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 7,
+                "max": 12,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_grito",
+                "values": [
+                  "La edición limitada con tu grito",
+                  "El mouse que se agotó en veinte minutos"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Sale con un error de impresión y el mouse es un coleccionable. Más hype.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_grito",
+                "values": [
+                  "La edición limitada con tu grito",
+                  "El mouse con error de imprenta"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "guardar_el_grito",
+        "label": "Guardar el grito",
+        "descripcion": "Lo dejás para vos.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Preferís no venderlo. Cada tanto, en una partida importante, lo soltás.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_grito",
+                "values": [
+                  "La edición limitada con tu grito",
+                  "El grito que no vendiste"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Otro lo copia y lo vende. Te queda la rabia y un cuento.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_grito",
+                "values": [
+                  "La edición limitada con tu grito",
+                  "El grito que no vendiste"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

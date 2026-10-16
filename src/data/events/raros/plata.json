@@ -1,1 +1,2625 @@
-[]
+[
+  {
+    "id": "plata_el_premio_que_no_llega",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_plata",
+    "categoria": "golpe_duro",
+    "title": "El premio que no llega",
+    "description": "Ganaron el torneo hace tres meses y el premio sigue \"en proceso\". Tu parte ya la gastaste en la cabeza.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "reclamarlo_por_mail",
+        "label": "Reclamarlo por mail",
+        "descripcion": "Formal, con copia al manager.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El pago llega en dos semanas con una disculpa genérica. Aprendés a leer contratos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Contestan con un \"estamos revisando\". Pasan dos splits y la plata sigue en el aire.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hablarlo_en_el_vestuario",
+        "label": "Hablarlo en el vestuario",
+        "descripcion": "Pedís que lo reclamen juntos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Los cinco juntos, el pago sale en una semana. La sinergia sube con el reclamo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Alguien te dice que te calles, que va a salir. Se enfría el vestuario.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_el_agente_cobra_de_mas",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_plata",
+    "categoria": "mercado",
+    "title": "El agente cobra de más",
+    "description": "Revisás tu contrato y notás un porcentaje que no habías hablado con tu agente.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "pedir_una_auditoria",
+        "label": "Pedir una auditoría",
+        "descripcion": "Un contador de confianza.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El contador lo arregla y tu agente se disculpa. Te baja el porcentaje en el próximo contrato.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Tenía razón y la pelea te cuesta el agente. Te quedás sin quien te llame.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_pasar",
+        "label": "Dejarlo pasar",
+        "descripcion": "Es poca plata.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Lo dejás y ganás paz. Tu cabeza ya tiene bastantes frentes abiertos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "En la renovación el porcentaje sube sin aviso. Esta vez sí duele.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_el_prestamo_al_companero",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_plata",
+    "categoria": "vestuario",
+    "title": "Un préstamo al compañero",
+    "description": "Tu compañero de línea te pide plata prestada. Dice que es por un tema familiar.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ],
+      "marcas": [
+        "con_vestuario"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "prestarsela",
+        "label": "Prestársela",
+        "descripcion": "Una mano entre colegas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te la devuelve con un asado. El vestuario ve que se puede contar con vos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Nunca la devuelve y se evita en la cocina. La sinergia no vuelve.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decirle_que_no",
+        "label": "Decirle que no",
+        "descripcion": "Mejor evitar mezclar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Te lo agradece, tarde. Después se arregla con otro y nadie se enemista.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Se lo toma a mal y se te enfría en las scrims. La rutina se resiente.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_el_sponsor_de_zapatillas",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_plata",
+    "categoria": "oportunidad",
+    "title": "Zapatillas con tu firma",
+    "description": "Una marca de zapatillas te ofrece una línea chica con tu nombre en la lengüeta.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 45
+      }
+    ],
+    "options": [
+      {
+        "id": "firmar_la_linea",
+        "label": "Firmar la línea",
+        "descripcion": "Tu nombre en un zapato.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Se agotan en una semana. Tu cara está en las vidrieras de la peatonal.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Sale con un diseño horrible y un meme las reemplaza. Aún te llegan regalías.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_mejor_porcentaje",
+        "label": "Pedir mejor porcentaje",
+        "descripcion": "Querés más por tu nombre.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Se lo piensan y mejoran el trato. Te llevás un buen porcentaje.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Les cae mal y se la ofrecen a otro. Tu agente no te habla un día.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_la_skin_de_tu_nombre",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_plata",
+    "categoria": "oportunidad",
+    "title": "Tu skin en la tienda",
+    "description": "Un diseñador de la comunidad hizo una skin con tu apodo. Riot la va a revisar.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 50
+      }
+    ],
+    "options": [
+      {
+        "id": "apoyar_el_diseno",
+        "label": "Apoyar el diseño",
+        "descripcion": "Lo compartís en tus redes.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La skin sale. El diseñador te manda una captura con lágrimas. Tu cara en el cliente.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Riot la rechaza, pero queda el hilo. Una semana después, nadie se acuerda.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejarlo_correr",
+        "label": "Dejarlo correr",
+        "descripcion": "Sin tocar nada.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Sale igual y vos pasás de largo. Todo lo bueno llega sin que lo busques.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Otro diseñador copia la idea y tu apodo queda a medias. Un lío.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_la_org_atrasa_el_sueldo",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_plata",
+    "categoria": "golpe_duro",
+    "title": "El sueldo se atrasa",
+    "description": "Llegó fin de mes y la org te avisa que el pago se atrasa una semana. Otra vez.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "aguantar_en_silencio",
+        "label": "Aguantar en silencio",
+        "descripcion": "Un mes malo lo tiene cualquiera.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Cobrás a los diez días. El manager te agradece que no hayas hecho ruido.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Pasan tres semanas y la cosa sigue. Tu cabeza se va a otro lado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hacer_el_reclamo",
+        "label": "Hacer el reclamo",
+        "descripcion": "Tu agente escribe un mail firme.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Cobrás en dos días y el club te mira con otros ojos. Respeto o resentimiento.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te acusan de problemático y el entrenador se enfría. No era tu culpa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_el_agente_del_casino",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "category": "raros_plata",
+    "categoria": "oportunidad",
+    "title": "Una oferta dudosa",
+    "description": "Una marca de apuestas que nadie conoce te ofrece una cifra absurda por usar su logo en tu perfil.",
+    "weight": 5,
+    "cooldown": 12,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 35
+      }
+    ],
+    "options": [
+      {
+        "id": "aceptar_la_plata",
+        "label": "Aceptar la plata",
+        "descripcion": "Es mucha plata para un logo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El pago es real, pero tu familia te mira raro. La marca desaparece seis meses después.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Cuando la marca cae, te llega una carta del abogado. Pagás una multa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decir_que_no",
+        "label": "Decir que no",
+        "descripcion": "Algo huele mal.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Le avisás a tu agente y se lo cuenta a la liga. Te lo agradecen por privado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Más tarde se descubre que la marca era legal. Te quedás pensando qué perdiste.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_la_org_quiebra_en_meses",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_plata",
+    "categoria": "golpe_duro",
+    "title": "Tres meses sin cobrar",
+    "description": "Llevás tres meses sin cobrar y el staff ya habla de irse. Nadie dice la palabra quiebra.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "quedarte_por_el_proyecto",
+        "label": "Quedarte por el proyecto",
+        "descripcion": "Creés en el equipo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La org consigue un sponsor de último momento y cobrás todo junto. Tu lealtad queda en la historia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La org cierra y te quedás sin deuda cobrada. Te vas con el respeto de todos y la billetera vacía.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "irte_con_aviso",
+        "label": "Irte con aviso",
+        "descripcion": "Tu cabeza primero.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Salís con un contrato corto en otro club y las manos limpias. Tu agente respira.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Nadie te llama a tiempo y tardás un split en conseguir equipo. Duele el bolsillo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_el_bono_del_titulo",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_plata",
+    "categoria": "oportunidad",
+    "title": "El bono del título",
+    "description": "Ganaron la final. El manager te dice que el bono es enorme y quiere repartirlo.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ],
+      "marcas": [
+        "es_campeon"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "repartirlo_parejo",
+        "label": "Repartirlo parejo",
+        "descripcion": "Entre los cinco, sin vueltas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Se arma el mejor asado del año. El vestuario sabe que sos de los que reparten.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 5,
+                "max": 9,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Alguien dice que no es justo y cuestiona la cuenta. Gritos en la cocina.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quedartelo",
+        "label": "Quedártelo",
+        "descripcion": "Sos el que más aportó.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El manager te respalda y te firma una mejora. Vos ganás, el vestuario se enfría.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Se arma un escándalo y la prensa lo cuenta. La org abre una investigación.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_la_inversion_del_companero",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_plata",
+    "categoria": "vestuario",
+    "title": "La inversión del compañero",
+    "description": "Tu compañero invirtió todo en una criptomoneda y ahora te pide que entres, \"esta vez en serio\".",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ],
+      "marcas": [
+        "con_vestuario"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "meter_una_parte",
+        "label": "Meter una parte",
+        "descripcion": "Una apuesta chica.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La moneda sube y le debés a tu compañero el asado de tu vida. Una semana de memes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La moneda cae a cero en dos días. Te reís de tu cara y apagás el cliente.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decir_que_no_gracias",
+        "label": "Decir que no, gracias",
+        "descripcion": "Prefieres jugar a lo que sabés.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Te mira con lástima y a la semana la moneda se cae. Te lo guarda para siempre.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La moneda sube, él te lo recuerda cada día por seis meses.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_la_clausula_rara",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "category": "raros_plata",
+    "categoria": "mercado",
+    "title": "La cláusula escondida",
+    "description": "Releés tu contrato antes de firmar la renovación y encontrás una cláusula que casi nadie vio.",
+    "weight": 3,
+    "cooldown": 14,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ],
+      "ventana": [
+        "pretemporada"
+      ]
+    },
+    "conditions": [],
+    "options": [
+      {
+        "id": "negociarla_con_abogado",
+        "label": "Negociarla con abogado",
+        "descripcion": "Pagás una hora de consulta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El abogado la desactiva y la org la cambia por una mejor. Quedás respetado en la mesa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El abogado cobra caro y la cláusula queda igual. Aprendés lo que cuesta no leer.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "firmar_igual",
+        "label": "Firmar igual",
+        "descripcion": "Confiás en el club.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El club te trata bien y la cláusula nunca se usa. Te ahorrás un mes de dolor de cabeza.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Un año después la usan en tu contra. Esta vez no vas a firmar sin leer.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_el_fondo_del_agente",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "El fondo de un amigo",
+    "description": "Un amigo de tu agente maneja un fondo que dice duplicar el sueldo de un jugador en un año.",
+    "weight": 4,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 30
+      }
+    ],
+    "options": [
+      {
+        "id": "meter_el_sueldo",
+        "label": "Meter el sueldo",
+        "descripcion": "Todo a una carta.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El fondo rinde mejor de lo prometido. Tu agente te mira con orgullo y vos con sospecha.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "plata_fondo_adentro"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Los primeros meses, nada. A los cinco te llega un mail de \"ajustes del mercado\".",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "plata_fondo_adentro"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "probar_con_poco",
+        "label": "Probar con poco",
+        "descripcion": "Un cuarto del sueldo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Un año después, tu cuarto se convirtió en el doble. Aprendés qué tan lejos podés llegar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "plata_fondo_adentro"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Perdés la mitad de lo que pusiste. Era poco, pero duele igual.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.region",
+                "valor": "plata_fondo_adentro"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decir_que_no_al_fondo",
+        "label": "Decir que no",
+        "descripcion": "No mezclás amigos y plata.",
+        "weight": 3,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Tu agente se ofende un día. Nadie vuelve a sacar el tema.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Seis meses después alguien te cuenta cuánto ganaron los que entraron. Un mal rato.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_el_fondo_rinde_o_cae",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "raros_plata",
+    "categoria": "golpe_duro",
+    "title": "El fondo da la cara",
+    "description": "Pasó un año. El fondo te manda un resumen con una sola línea: \"Resultado final\".",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.region",
+        "op": "eq",
+        "value": "plata_fondo_adentro"
+      }
+    ],
+    "options": [
+      {
+        "id": "abrir_el_resumen",
+        "label": "Abrir el resumen",
+        "descripcion": "Es hora de saber.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El fondo duplicó tu plata. Te alcanza para comprar la casa de tus viejos y un asado con testigos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_fondo",
+                "values": [
+                  "El año en que el fondo duplicó tu plata",
+                  "La carta del fondo con una sola línea"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El fondo se quedó con todo y su dueño desapareció. Tu agente pide perdón con la voz rota.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -8,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_fondo",
+                "values": [
+                  "El año en que el fondo se llevó todo",
+                  "La carta del fondo con una sola línea"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "esperar_otro_mes",
+        "label": "Esperar otro mes",
+        "descripcion": "Quizás la noticia mejora.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Al mes siguiente, la noticia es todavía mejor. Aprendés a esperar sin angustia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_fondo",
+                "values": [
+                  "El mes en que decidiste esperar la noticia del fondo",
+                  "La carta del fondo sin abrir"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Al mes siguiente el fondo cae. Te preguntás si abrirlo antes hubiera cambiado algo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_fondo",
+                "values": [
+                  "El mes en que decidiste esperar la noticia del fondo",
+                  "La carta del fondo sin abrir"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_el_sponsor_que_no_existe",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "oportunidad",
+    "title": "Un sponsor demasiado generoso",
+    "description": "Una marca de bebidas energéticas que nunca viste te ofrece un contrato sin letra chica.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 22
+      }
+    ],
+    "options": [
+      {
+        "id": "firmar_con_la_marca",
+        "label": "Aceptar a la marca",
+        "descripcion": "La plata es real.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Cobrás tres meses seguidos. La marca te manda cajas con tu cara y un mensaje de \"bienvenido\".",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "plata_sponsor_firmado"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El primer pago llega tarde. La marca promete arreglarlo con una \"bonificación\".",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "plata_sponsor_firmado"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_que_lo_revisen",
+        "label": "Pedir que lo revisen",
+        "descripcion": "Tu agente lo mira primero.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El agente encuentra tres cosas raras y te aconseja no firmar. Te salva de un lío.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Tu agente la revisa y no ve nada raro. Firmás con su bendición, que ya es algo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "plata_sponsor_firmado"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_la_marca_te_pide_un_favor",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "golpe_duro",
+    "title": "La marca pide un favor",
+    "description": "La marca te escribe: quiere que menciones sus bebidas en la próxima serie, aunque no estén permitidas.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.contenido",
+        "op": "eq",
+        "value": "plata_sponsor_firmado"
+      }
+    ],
+    "options": [
+      {
+        "id": "hacerles_el_favor",
+        "label": "Hacerles el favor",
+        "descripcion": "Una mención en cámara.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Nadie se da cuenta, pero te queda un nudo en el estómago. La marca sube el pago.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "plata_sponsor_favor"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La liga lo detecta y te cae una multa chica. La marca niega todo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -4,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "plata_sponsor_favor"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "negarte_con_estilo",
+        "label": "Negarte con estilo",
+        "descripcion": "No te vendés tan barato.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Les decís que no con una sonrisa y la marca acepta. Te respetan más.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "plata_sponsor_favor"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La marca te corta el pago. Tu agente se enoja con vos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.contenido",
+                "valor": "plata_sponsor_favor"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_la_marca_cae",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "raros_plata",
+    "categoria": "prensa",
+    "title": "La marca cae",
+    "description": "Una investigación periodística destapa que la marca era una pantalla. Tu nombre aparece en la nota.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "nivel": [
+        "tier2",
+        "tier1"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.contenido",
+        "op": "eq",
+        "value": "plata_sponsor_favor"
+      }
+    ],
+    "options": [
+      {
+        "id": "dar_la_cara_en_vivo",
+        "label": "Dar la cara",
+        "descripcion": "Un comunicado, un directo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Pedís disculpas con voz firme. La comunidad respeta que no te escondas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_marca_cae",
+                "values": [
+                  "El día que la marca de tu sponsor cayó y diste la cara",
+                  "El directo de las disculpas"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Tu comunicado suena a abogado y la prensa se ensaña. Un mal mes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_marca_cae",
+                "values": [
+                  "El día que la marca de tu sponsor cayó y diste la cara",
+                  "El comunicado que nadie creyó"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "callarte_y_esperar",
+        "label": "Callarte y esperar",
+        "descripcion": "Que lo resuelva el agente.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El agente lo arregla en silencio y tu nombre sale de la nota. Una cuenta pendiente.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_marca_cae",
+                "values": [
+                  "El día que la marca de tu sponsor cayó y diste la cara",
+                  "El silencio que costó caro"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El silencio se interpreta como culpa. Los patrocinadores serios no te llaman.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": -5,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_marca_cae",
+                "values": [
+                  "El día que la marca de tu sponsor cayó y diste la cara",
+                  "El silencio que costó caro"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_la_casa_de_tus_viejos",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "caminos",
+    "categoria": "familia",
+    "title": "La casa de tus viejos",
+    "description": "Tu viejo te muestra el aviso de la casa donde crecieron: se la quieren vender. Te la podés quedar.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ],
+      "edadMin": 20
+    },
+    "conditions": [
+      {
+        "field": "player.familyTrust",
+        "op": "gt",
+        "value": 10
+      }
+    ],
+    "options": [
+      {
+        "id": "comprarla_ya",
+        "label": "Comprarla ya",
+        "descripcion": "Usás todo lo que ahorraste.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Les devolvés la casa con una escritura a nombre de tu vieja. Tu viejo se queda sin habla.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 6,
+                "max": 11,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "plata_casa_comprada"
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Es más cara de lo que pensabas y quedás pelado. Pero la casa ya es tuya.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "plata_casa_comprada"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "esperar_a_la_renovacion",
+        "label": "Esperar a renovar",
+        "descripcion": "Con más margen sería mejor.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Esperás y ganás un contrato mejor. La casa sigue en venta, por suerte.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.jerarquia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.rol",
+                "valor": "plata_casa_comprada"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se vende a otro. Tu viejo no dice nada, pero se le nota.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "plata_la_llave",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "category": "raros_plata",
+    "categoria": "familia",
+    "title": "La llave",
+    "description": "Fin de año en la casa: tu vieja te da la llave del portón y no dice nada. Lo dice todo.",
+    "weight": 8,
+    "cooldown": 20,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "conditions": [
+      {
+        "field": "flags.caminos.rol",
+        "op": "eq",
+        "value": "plata_casa_comprada"
+      }
+    ],
+    "options": [
+      {
+        "id": "quedarte_a_cenar",
+        "label": "Quedarte a cenar",
+        "descripcion": "Un asado con todos.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La mesa está llena y la cena dura hasta las cuatro. Tu abuela te guarda el último trozo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 6,
+                "max": 10,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_casa",
+                "values": [
+                  "El día que le devolviste la casa a tus viejos",
+                  "La llave del portón"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se cuelgan y es un desastre de platos. Nadie se queja: es el mejor desastre del año.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_casa",
+                "values": [
+                  "El día que le devolviste la casa a tus viejos",
+                  "La cena que duró hasta las cuatro"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "volver_al_bootcamp",
+        "label": "Volver al bootcamp",
+        "descripcion": "Tenés scrim a la mañana.",
+        "weight": 4,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te vas con un abrazo largo y el pecho lleno. Pensás en la llave toda la scrim.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_casa",
+                "values": [
+                  "El día que le devolviste la casa a tus viejos",
+                  "La llave que llevaste al bootcamp"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te quedás con la sensación de haberte ido antes de tiempo. La llave pesa.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.familyTrust",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_casa",
+                "values": [
+                  "El día que le devolviste la casa a tus viejos",
+                  "La llave que llevaste al bootcamp"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
