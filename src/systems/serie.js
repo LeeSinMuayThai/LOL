@@ -307,6 +307,10 @@ export function torneoTrasRonda(torneo, { poderUsado = false, desempate = false 
   return {
     ...torneo,
     escalon: torneo.escalon + 1,
+    // H3e: las rondas seguidas de la mecánica de esta ronda (la rotación de `minijuegoDelTorneo`).
+    racha: torneo.minijuego && torneo.racha?.id === torneo.minijuego
+      ? { id: torneo.minijuego, n: torneo.racha.n + 1 }
+      : (torneo.minijuego ? { id: torneo.minijuego, n: 1 } : null),
     poderUsado: torneo.poderUsado || poderUsado,
     desempateUsado: torneo.desempateUsado || desempate
   };

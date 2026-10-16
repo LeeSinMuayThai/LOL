@@ -203,4 +203,6 @@ export const VERSION_JUEGO = 'H';
 // split, el partido de despedida y el monumento; G1c: el Bo1 que frena se decide con el minijuego (🎲/🧊) y la charla vale una
 // unidad. Guardado VERSION 18.
 // H (ola H, entrega 1, PLANUI §0.10, 193370552 → 423616085; corrimiento declarado): ver `VERSION_JUEGO` 'H' arriba (el mazo de rareza, el arcade, la temporada sin paradas de partido, las cartas del cierre). Guardado VERSION 19.
-export const HUELLA_JUEGO = 423616085;
+// H3e (ola H, entrega 2, 423616085 → 850840109; corrimiento declarado): el Play-In del Mundial tira sus partidos (el bot, uno
+// por partido). La tanda del Swiss y la rotación no tiran nada nuevo. Guardado VERSION 20.
+export const HUELLA_JUEGO = 850840109;

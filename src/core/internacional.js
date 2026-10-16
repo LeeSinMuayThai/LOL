@@ -93,8 +93,48 @@ export function crearMundial(state, anio, jugador) {
     fase: 'swiss',
     // Las pausas que el Mundial ya gastó (T9) y tu partido del 2-2 mientras frena.
     interrupciones: 0,
-    partidoEnCurso: null
+    partidoEnCurso: null,
+    // H3e: el Play-In, si tu cupo lo juega (`systems/internacional.js`): `{ rivales, fuerzaPropia, paso, record }`.
+    playIn: null
   };
+}
+
+// --- H3e (PLANUI §0.10 H3): el Play-In y la tanda del Swiss ---
+
+// ¿Tu cupo juega el Play-In? El último sembrado de una liga con al menos `playIn.cuposMinimos` cupos.
+export function entraAlPlayIn(liga, cupo) {
+  const cupos = liga?.cuposInternacionales ?? 0;
+  return cupos >= M().playIn.cuposMinimos && cupo === cupos;
+}
+
+// Los rivales del Play-In: el primer no clasificado de cada OTRA liga con al menos `playIn.cuposMinimos` cupos, de menor a
+// mayor fuerza (la tanda escala). Puro y sin `rng`: la tabla es la misma de `clasificadosDelMundial`.
+export function rivalesDelPlayIn(state, anio, jugador) {
+  const clave = claveDelMundial(state.seed, anio);
+  return state.mundo.ligas
+    .filter((liga) => liga.tier === 1 && liga.id !== jugador.liga && (liga.cuposInternacionales ?? 0) >= M().playIn.cuposMinimos)
+    .map((liga) => {
+      const org = clasificadosDeLiga(liga, liga.cuposInternacionales + 1, clave, null)[liga.cuposInternacionales];
+      return org ? { nombre: org.nombre, liga: liga.id, fuerza: org.fuerza } : null;
+    })
+    .filter(Boolean)
+    .sort((x, y) => x.fuerza - y.fuerza || x.nombre.localeCompare(y.nombre));
+}
+
+// Cuántos partidos del Swiss se juegan con un minijuego (`g1.tanda`): por la p de tu equipo contra la fuerza media de los
+// otros 15, nunca más que las victorias que te faltan para pasar.
+export function pDelCampo(state, t, fuerzaPropia) {
+  const otros = t.participantes.filter((p) => p.nombre !== t.jugador);
+  const media = otros.reduce((s, p) => s + p.fuerza, 0) / Math.max(1, otros.length);
+  return probabilidadDeCruceSwiss(state, fuerzaPropia, media);
+}
+
+export function partidosDeLaTanda(state, t, fuerzaPropia) {
+  const p = pDelCampo(state, t, fuerzaPropia);
+  const tabla = BALANCE.g1.tanda.partidosPorP;
+  const fila = tabla.find((escalon) => p >= escalon.desde) ?? tabla[tabla.length - 1];
+  const faltan = M().victoriasParaAvanzar - t.swiss.record[t.jugador].v;
+  return Math.max(1, Math.min(fila.partidos, faltan));
 }
 
 function participante(t, nombre) {

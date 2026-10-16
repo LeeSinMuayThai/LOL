@@ -25,6 +25,8 @@ import {
 } from '../ui/core/escena.js';
 import { TONOS_CONOCIDOS as TONOS_DE_GRAFICOS } from '../ui/graficos/comun.js';
 import { correrLote as correrLoteJugabilidad, analizarCatalogo } from './simulate.js';
+import { correrCarrera as correrCarreraH3e } from './simulate.js';
+import { ESTRATEGIAS as ESTRATEGIAS_H3E } from './estrategias.js';
 import { observar as observarCobertura, calcularHuecosPorCategoria } from './cobertura.js';
 import { BALANCE } from '../data/balance.js';
 import { planDeSemana as planDeSemanaH10 } from '../systems/amateur.js';
@@ -961,7 +963,9 @@ const FORMAS_CONOCIDAS = {
   // del cierre de año, de H2a), `flags.colaFirmas.evento` y `flags.colaAnio.eventos` (el evento del split en la cola); se va
   // `presupuesto.total` (el cupo de 9Rf). Un guardado de la 18 carga con `migrarDe18`. Re-registrada (dd1bb37910e2 → 39704745419d) con
   // la integración de la entrega 1 (H1a-H4a juntas).
-  19: '39704745419d'
+  19: '39704745419d',
+  // H3e (ola H, entrega 2): `internacional.playIn`, `internacional.partidoEnCurso.tanda` y `career.torneoG1.racha`.
+  20: 'b89b2f265a26'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -21415,7 +21419,9 @@ check('K5-A si no clasificás, cero tiradas: la huella es la de un árbol sin Mu
   const sinMundial = [];
   for (let seed = 1; seed <= 80 && sinMundial.length < 4; seed += 1) {
     const carrera = seed <= SEEDS_K5 ? carrerasDelMundialK5()[seed - 1] : correrCarreraK5(seed);
-    if (carrera.state.career.registro.internacionales.length === 0) {
+    // H3e: quedar afuera en el Play-In no registra un Mundial pero sí lo jugó (tiró sus partidos): no es "no clasificar".
+    const jugoPlayIn = carrera.state.career.hitos.some((hito) => hito.includes('Play-In'));
+    if (carrera.state.career.registro.internacionales.length === 0 && !jugoPlayIn) {
       sinMundial.push(seed);
     }
   }
@@ -28934,6 +28940,77 @@ const PELO_G1 = 0.001;
 // conteo nunca todos los pasos) y el poder del escenario: una de cada cuatro carreras es del Showman y, con el poder a mano,
 // saca justo la vara bajada (más un pelo, para que no se confunda con otra respuesta). Si el motor ignorara el `bajaVara`,
 // ese mapa saldría L y el check se pone rojo.
+// --- H3e (PLANUI §0.10 H3, "El motor"): la rotación, el Play-In y la tanda del Swiss ---
+// Una sola corrida de 200 carreras con `criterio` (el bot del motor en los minijuegos), compartida por los tres checks.
+const CARRERAS_H3E = 200;
+const SPLITS_H3E = 60;
+let medicionH3eCache = null;
+function medicionH3e() {
+  if (medicionH3eCache) return medicionH3eCache;
+  const tabla = BALANCE.g1.tanda.partidosPorP;
+  const ventana = BALANCE.serie.minijuegoCooldownSplits;
+  const m = { maxRacha: 0, playInPorMundial: {}, fuerte: [], debil: [] };
+  for (let seed = 1; seed <= CARRERAS_H3E; seed += 1) {
+    let ultimo = null;
+    let racha = 0;
+    let splitUltimo = null;
+    correrCarreraH3e(seed, SPLITS_H3E, (sistema, state, decision, rng) => {
+      const d = decision.datos ?? {};
+      if (d.g1 && d.minijuego) {
+        const split = state.player.splitCount;
+        // "seguidas": rondas de mapa sin otra mecánica en el medio y sin más de `minijuegoCooldownSplits` splits de hueco
+        racha = d.minijuego === ultimo && split - splitUltimo <= ventana ? racha + 1 : 1;
+        ultimo = d.minijuego;
+        splitUltimo = split;
+        m.maxRacha = Math.max(m.maxRacha, racha);
+      }
+      if (d.motivo === 'playin') {
+        const clave = `${seed}|${state.calendario.anio}`;
+        m.playInPorMundial[clave] = (m.playInPorMundial[clave] ?? 0) + 1;
+      }
+      if (d.tanda?.etapa === 'swiss') {
+        if (d.tanda.pCampo >= tabla[0].desde) m.fuerte.push(d.tanda.partidos.length);
+        else if (d.tanda.pCampo < tabla[tabla.length - 2].desde) m.debil.push(d.tanda.partidos.length);
+      }
+      return ESTRATEGIAS_H3E.criterio(sistema, state, decision, rng);
+    });
+  }
+  medicionH3eCache = m;
+  return m;
+}
+
+check('H3e rotación: nunca más de g1.rotacionMax rondas de mapa seguidas con la misma mecánica (200 carreras)', () => {
+  const { maxRacha } = medicionH3e();
+  if (maxRacha > BALANCE.g1.rotacionMax) {
+    throw new Error(`racha máxima ${maxRacha} > ${BALANCE.g1.rotacionMax}`);
+  }
+});
+
+check('H3e Play-In: el último sembrado de una liga grande lo juega en UNA sola parada (una tanda)', () => {
+  const porMundial = Object.values(medicionH3e().playInPorMundial);
+  if (porMundial.length === 0) {
+    throw new Error('en 200 carreras nadie jugó el Play-In: el check no prueba nada');
+  }
+  const mas = porMundial.filter((n) => n !== 1).length;
+  if (mas > 0) {
+    throw new Error(`${mas} de ${porMundial.length} Play-In frenaron más de una vez`);
+  }
+});
+
+check('H3e tanda del Swiss: los fuertes promedian >= 2 partidos por minijuego y los débiles juegan de a 1', () => {
+  const { fuerte, debil } = medicionH3e();
+  if (fuerte.length === 0 || debil.length === 0) {
+    throw new Error(`muestra vacía (fuertes ${fuerte.length}, débiles ${debil.length})`);
+  }
+  const media = fuerte.reduce((s, k) => s + k, 0) / fuerte.length;
+  if (media < 2) {
+    throw new Error(`los fuertes promedian ${media.toFixed(2)} partidos por tanda (n = ${fuerte.length})`);
+  }
+  if (debil.some((k) => k !== 1)) {
+    throw new Error(`un débil jugó una tanda de ${Math.max(...debil)} partidos`);
+  }
+});
+
 check('G1: un mapa con minijuego nunca tira: el resultado del mapa es resultado >= vara (series, finales y Swiss)', () => {
   const mal = [];
   let mapas = 0;

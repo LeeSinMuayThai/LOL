@@ -45,8 +45,11 @@ function enCooldown(state, id) {
 // un minijuego recién jugado se saltea mientras haya otro elegible. Si TODOS
 // están en cooldown se juega igual —el cupo del mapa no se puede quedar mudo—,
 // que es lo mismo que hace `fraseDeMotivo` cuando se le agotan las variantes.
-export function elegirMinijuego(state, momento) {
-  const candidatos = minijuegosPara(state, momento);
+export function elegirMinijuego(state, momento, excluir = []) {
+  const todos = minijuegosPara(state, momento);
+  // H3e: la rotación saca la mecánica que ya cumplió `g1.rotacionMax` rondas seguidas (si queda otra).
+  const otros = todos.filter((entrada) => !excluir.includes(entrada.id));
+  const candidatos = otros.length > 0 ? otros : todos;
   if (candidatos.length === 0) {
     return null;
   }
@@ -194,9 +197,9 @@ export function varaDeMapa(p) {
 // G-fix-vara: el techo de la vara del minijuego `id`: `g1.varaMaxima`, y en las mecánicas de conteo además (total − 1) /
 // total, en puntos enteros hacia abajo (con 3 pasos, 0,66: "2 de 3"; redondeado a 0,67 pediría los 3).
 export function techoDeVara(id = null) {
-  const { varaMaxima, conteo } = BALANCE.g1;
+  const { varaMaxima } = BALANCE.g1;
   const max = BALANCE.stats.max;
-  const total = id ? conteo[id] : undefined;
+  const total = id && reglaDe(id)?.tipo === 'conteo' ? BALANCE.g1.conteo[id] : undefined;
   const techo = total > 1 ? Math.min(varaMaxima, (total - 1) / total) : varaMaxima;
   return Math.floor(techo * max + EPSILON_PUNTOS) / max;
 }
@@ -237,7 +240,24 @@ export function juzgarMinijuego(resultado, varaEfectiva, margenCasi = BALANCE.g1
 // 4" pasa a "2 de 4" (y "2 errores como mucho" a 3). Sin grilla (la llamada, el Barón, el TP), `charlaBajaVara`. Si el
 // poder de la ronda puede bajarla (`bajaPoder`, el escenario), vale una unidad también desde ahí: el máximo de las dos.
 export function unidadesDeLaRegla(id) {
+  if (reglaDe(id)?.tipo !== 'conteo') return null;
   return BALANCE.g1.conteo[id] ?? BALANCE.g1.erroresTope[id] ?? null;
+}
+
+// H3e (PLANUI §0.10 H3): la forma de la regla de cada mecánica, en el dato (`minijuegos.json` → `regla`): `tipo`
+// (conteo | latencia | distancia | continuo), lo que se cuenta (`unidad`, `articulo`) y la vara dicha en la ficción
+// (`frase`, con `{n}`). Los números (el N del conteo, la escala) quedan en `BALANCE.g1`: `total` sale de ahí.
+export function reglaDe(id) {
+  const regla = minijuegoPorId(id)?.regla ?? null;
+  if (!regla) return null;
+  const total = regla.tipo === 'conteo' ? (BALANCE.g1.conteo[id] ?? BALANCE.g1.erroresTope[id] ?? null) : null;
+  return { ...regla, total };
+}
+
+// La vara en la ficción: "Cantá el objetivo en menos de 410 ms". `n` ya viene en las unidades de la regla.
+export function fraseDeLaVara(id, n) {
+  const frase = reglaDe(id)?.frase;
+  return frase ? frase.replace('{n}', String(n)) : null;
 }
 
 function unaUnidadDesde(total, vara) {
@@ -316,15 +336,22 @@ export function torneoG1(state, clave) {
   const actual = state.career?.torneoG1 ?? null;
   return actual && actual.clave === clave
     ? actual
-    : { clave, escalon: 0, desempateUsado: false, poderUsado: false, minijuego: null, inicio: null };
+    : { clave, escalon: 0, desempateUsado: false, poderUsado: false, minijuego: null, inicio: null, racha: null };
 }
 
 // La mecánica del torneo: la que ya salió si sigue siendo tuya para este momento; si no, una nueva (`elegirMinijuego`).
 export function minijuegoDelTorneo(state, torneo, momento) {
   const previa = torneo.minijuego ? minijuegoPorId(torneo.minijuego) : null;
-  if (previa && minijuegosPara(state, momento).some((entrada) => entrada.id === previa.id)) {
+  // H3e: nunca más de `g1.rotacionMax` rondas seguidas de la misma mecánica (`torneo.racha`, la cuenta `torneoTrasRonda`).
+  const cansada = previa && torneo.racha?.id === previa.id && torneo.racha.n >= BALANCE.g1.rotacionMax;
+  if (previa && !cansada && minijuegosPara(state, momento).some((entrada) => entrada.id === previa.id)) {
     return { entrada: previa, nueva: false };
   }
-  const entrada = elegirMinijuego(state, momento);
+  // Un torneo nuevo no sigue la racha del anterior ni la del último minijuego de mapa suelto (la final amateur, la copa):
+  // arranca con otra. El último de mapa sale de `flags.minijuegosRecientes` (la prueba y la prensa no cuentan).
+  const ultimoDeMapa = [...(state.flags?.minijuegosRecientes ?? [])].reverse()
+    .find((visto) => minijuegoPorId(visto.id)?.momentos.includes(momento))?.id;
+  const anteriores = torneo.minijuego ? [] : [state.career?.torneoG1?.racha?.id, ultimoDeMapa];
+  const entrada = elegirMinijuego(state, momento, cansada ? [previa.id] : anteriores.filter(Boolean));
   return { entrada, nueva: Boolean(entrada) };
 }

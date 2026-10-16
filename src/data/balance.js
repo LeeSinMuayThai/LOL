@@ -2274,7 +2274,11 @@ export const BALANCE = {
     // factor de jerarquía (`core/fuerza.js:fuerzaDeMundial`), igual que al rival NPC, que vale el promedio de sus niveles.
     // `true` es NEUTRO (el motor de siempre). La previa lo dice cuando está en `false` (regla 12). Se lee en cada llamada.
     // K5c paso 3 (Final2): true → false, tu jerarquía no corre en el Mundial (igual que al NPC).
-    jerarquiaCuenta: false
+    jerarquiaCuenta: false,
+    // H3e (PLANUI §0.10 H3): el Play-In, para el último sembrado de una liga con al menos `cuposMinimos` cupos (el 4º de la
+    // LCK y la LPL en 2025). Una sola tanda contra el primer no clasificado de cada otra liga con esos cupos, de menor a
+    // mayor fuerza: `victoriasParaPasar` y pasás al Swiss en tu cupo; `derrotasParaQuedarAfuera` y te volvés.
+    playIn: { cuposMinimos: 3, victoriasParaPasar: 2, derrotasParaQuedarAfuera: 2 }
   },
 
   puntaje: {
@@ -2539,6 +2543,19 @@ export const BALANCE = {
       escenarioBajaVara: 0.15,
       // El vestuario: charlas del coach por temporada (el resto de las clases tiene una).
       vestuarioCharlas: 2
+    },
+    // H3e (PLANUI §0.10 H3, "El motor"): nunca más de estas rondas seguidas de la misma mecánica en un torneo
+    // (`minijuegoDelTorneo`); la que sigue sale por hash entre las otras, sin tiradas.
+    rotacionMax: 5,
+    // H3e: la tanda del Swiss. Cuántos partidos se juegan con un minijuego, por la p de tu equipo contra la fuerza media del
+    // campo (los otros 15, `probabilidadDeCruceSwiss`): el primer escalón cuyo `desde` es <= p. Nunca más que las
+    // victorias que te faltan para pasar; la tanda corta en la primera derrota.
+    tanda: {
+      partidosPorP: [
+        { desde: 0.65, partidos: 3 },
+        { desde: 0.55, partidos: 2 },
+        { desde: 0, partidos: 1 }
+      ]
     }
   }
 };
