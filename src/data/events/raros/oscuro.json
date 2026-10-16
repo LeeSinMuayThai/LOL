@@ -1,1 +1,3669 @@
-[]
+[
+  {
+    "category": "raros_oscuro",
+    "conditions": [],
+    "id": "oscuro_ban_de_chat",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "golpe_duro",
+    "title": "Ban de chat",
+    "description": "Te cae un ban de chat de catorce días por un \"gg ez\" a destiempo. El clip ya está en Reddit.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "pedir_perdon_en_redes",
+        "label": "Pedir perdón en redes",
+        "descripcion": "Dos líneas, sin excusas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El perdón cae bien: la gente valora que lo asumas. El ban se cumple y nadie lo vuelve a mencionar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Alguien lee el perdón como sarcasmo y arma un hilo. La cola de memes te acompaña dos semanas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "apelar_el_ban",
+        "label": "Apelar el ban",
+        "descripcion": "Un mail con el contexto de la partida.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Soporte levanta el ban a los cuatro días. Ganaste, pero el clip se queda para siempre.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Soporte contesta con una plantilla y te suma una semana por insistir. Aprendiste a callarte.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [],
+    "id": "oscuro_el_dm_del_booster",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "golpe_duro",
+    "title": "El DM del booster",
+    "description": "Un desconocido te escribe por DM: te sube la cuenta a Challenger por una suma módica. Dice que es discreto.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut"
+      ]
+    },
+    "options": [
+      {
+        "id": "denunciarlo",
+        "label": "Denunciarlo",
+        "descripcion": "Captura y mail a soporte.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Soporte lo banea en un día. Te quedás con la cuenta limpia y una fama de incorruptible en el barrio.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El booster te insulta en el cliente y publica tu DM en un servidor. La cosa se pone rara, pero no pasa de ahí.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ignorarlo",
+        "label": "Ignorarlo",
+        "descripcion": "Cerrás el chat y seguís.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El DM queda perdido entre cien. Subís a pulmón y el LP se siente tuyo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Te manda tres mensajes más. Te bloqueás, y a la semana ves su cuenta con tu rank. Qué pena.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [],
+    "id": "oscuro_cuenta_hackeada",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "golpe_duro",
+    "title": "Tu cuenta, en ruso",
+    "description": "Entrás al cliente y tu cuenta principal está en otro idioma, con otro nombre y catorce derrotas seguidas.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "escribirle_a_soporte",
+        "label": "Escribirle a soporte",
+        "descripcion": "Prueba de compra y mucha paciencia.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Soporte tarda cuatro días pero la recupera. Tu historial queda intacto y el LP, dolorido.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La respuesta tarda dos semanas. Cuando llega, la cuenta ya está en Bronce y sin skins.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "empezar_de_cero",
+        "label": "Empezar de cero",
+        "descripcion": "Una cuenta nueva, una cabeza nueva.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La cuenta nueva sube más rápido de lo que pensabas. Sin el peso del historial, jugás libre.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Subir otra vez te agota el doble. Esta vez, con autenticación en dos pasos y rabia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 3
+      }
+    ],
+    "id": "oscuro_scrim_en_el_canal_ajeno",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "vestuario",
+    "title": "Scrim en canal ajeno",
+    "description": "Un clip de un scrim cerrado aparece en un canal ajeno. Alguien del círculo cercano lo filtró.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "confrontar_en_el_voice",
+        "label": "Confrontar en el voice",
+        "descripcion": "Preguntar de frente, sin gritar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El culpable confiesa y pide perdón. El equipo lo sanciona y el clima se limpia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Nadie confiesa y el voice se llena de acusaciones. La semana termina con dos personas sin hablarse.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "investigar_en_silencio",
+        "label": "Investigar en silencio",
+        "descripcion": "Los metadatos no mienten.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Descubrís quién fue sin ruido y se lo contás al manager. El caso se cierra sin escándalo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te equivocás de persona y el acusado se entera. Quedás como el paranoico del equipo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 3
+      }
+    ],
+    "id": "oscuro_el_pozo_del_discord",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "prensa",
+    "title": "El pozo del Discord",
+    "description": "En un Discord de la liga alguien arma un pozo de apuestas sobre tus partidas. Los mods miran para otro lado.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "pedir_que_lo_cierren",
+        "label": "Pedir que lo cierren",
+        "descripcion": "Un mensaje claro al staff del server.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Lo cierran en una hora y el staff te agradece. Quedás como el que cuida la escena.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Lo cierran y abren otro con otro nombre. El chat te lo hace saber con memes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ignorarlo_total",
+        "label": "Ignorarlo del todo",
+        "descripcion": "Tu nombre, sus problemas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Nadie te asocia con el pozo. Seguís jugando concentrado y el tema se apaga.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Un pibe pierde plata en una de tus series y te escribe insultos por todos lados. Te cuesta no leerlos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 4
+      }
+    ],
+    "id": "oscuro_rumor_en_reddit",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "prensa",
+    "title": "El hilo anónimo",
+    "description": "Un hilo anónimo asegura que perdiste a propósito una partida. No hay pruebas, pero va por los dos mil upvotes.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "responder_con_humor",
+        "label": "Responder con humor",
+        "descripcion": "Un chiste y un VOD.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu respuesta con el VOD y una cara de póker corta el rumor. Dos mil upvotes se vuelven ironía.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El chiste no cae bien y el rumor se transforma en tema serio. Mejor un silencio que una broma a destiempo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dejar_que_pase",
+        "label": "Dejar que pase",
+        "descripcion": "No alimentés lo que se muere solo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "A la semana el hilo se archiva. Nadie vuelve a mencionarlo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Un youtuber lo retoma y le da combustible. La sombra del rumor te acompaña tres semanas.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [],
+    "id": "oscuro_el_troll_de_tu_nombre",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "golpe_duro",
+    "title": "El troll de tu nombre",
+    "description": "Un troll te sigue partida tras partida con tu nombre en el chat. Soporte no contesta.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "ignorarlo_y_silenciar",
+        "label": "Silenciar y seguir",
+        "descripcion": "Chat apagado, foco en el mapa.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Con el chat apagado jugás más limpio. El troll se aburre y migra a otra víctima.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Cada vez que apagás un chat, aparece otro. Te quedás sin energía a mitad de semana.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hacer_un_video",
+        "label": "Hacer un video con su caso",
+        "descripcion": "Mostrar todo, con humor.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El video llega a Riot y lo banean en 48 horas. La gente aplaude la cacería.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El troll responde con un video peor. El tema se vuelve guerra de clips y te desgasta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 4
+      }
+    ],
+    "id": "oscuro_el_analista_que_vende",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "vestuario",
+    "title": "Draft filtrado",
+    "description": "Tus picks aparecen en un tuit antes del partido. El único que los vio fue el analista.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "avisar_al_coach",
+        "label": "Avisar al coach",
+        "descripcion": "Con captura y fecha.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El coach lo confronta y el analista renuncia en una semana. Cambian el sistema de drafts.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El analista jura que no fue y el coach no te cree del todo. El clima del staff queda tenso.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "darle_un_draft_falso",
+        "label": "Darle un draft falso",
+        "descripcion": "Una trampa a la medida.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El draft falso aparece en el tuit y el rival se arma contra eso. Ganás con el real en la manga.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El rival no cae y el coach se entera del invento. Te gana la mano de la sospecha.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [],
+    "id": "oscuro_la_denuncia_falsa",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "golpe_duro",
+    "title": "Smurf que no eras",
+    "description": "Te denuncian por smurfing con una cuenta que nunca tuviste. Soporte te manda un mail automático.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "responder_con_pruebas",
+        "label": "Responder con pruebas",
+        "descripcion": "IPs, horarios y un poco de paciencia.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Soporte lo revisa y levanta la denuncia en cuatro días. Te piden perdón con una plantilla.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se pierde el mail y te suspenden una semana por error. Cuando volvés, la gente ya hizo su teoría.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "esperar_la_resolucion",
+        "label": "Esperar la resolución",
+        "descripcion": "Si no hiciste nada, no hay nada.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La denuncia se cae sola. Nadie se acuerda y tampoco te piden perdón.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La resolución tarda tanto que se filtra el rumor. Cuando llega la absolución, ya estás en boca de todos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "player.stats.hype",
+        "op": "gt",
+        "value": 30
+      }
+    ],
+    "id": "oscuro_el_agente_trucho",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "categoria": "mercado",
+    "title": "El agente trucho",
+    "description": "Un agente que no conocés te promete contratos en Corea. Tiene cuenta verificada y una foto con un trofeo.",
+    "weight": 8,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional"
+      ]
+    },
+    "options": [
+      {
+        "id": "pedir_referencias",
+        "label": "Pedir referencias",
+        "descripcion": "Dos nombres y un contrato modelo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "No contesta más: era humo. Tu manager de verdad te agradece la cautela.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "Te manda dos nombres que resultan ser cuentas falsas. El susto te cuesta una tarde de investigación.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "seguirle_la_corriente",
+        "label": "Seguirle la corriente",
+        "descripcion": "Aunque sea un ratito.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 3,
+            "texto": "Te cuenta cosas de Corea que no sabías. Aprendiste algo, aunque no era lo que prometía.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 7,
+            "texto": "Te pide un adelanto \"para los papeles\". Lo cortás a tiempo, pero la tarde ya se fue.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -1,
+                "max": 1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 6
+      }
+    ],
+    "id": "oscuro_la_sancion_de_la_liga",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "golpe_duro",
+    "title": "Multa de la liga",
+    "description": "La liga te multa por un gesto en cámara que se tomó mal. Tenés que decidir cómo respondés.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "pagar_y_pedir_perdon",
+        "label": "Pagar y pedir perdón",
+        "descripcion": "Una nota corta, sin ironías.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La liga lo toma bien y la multa queda en una línea del fixture. El vestuario te cuida la espalda.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El comunicado suena a PR y los fans lo toman a burla. Perdés tracción en las redes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "apelar_la_multa",
+        "label": "Apelar la multa",
+        "descripcion": "Un abogado y un clip a favor.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "La apelación prospera y la liga baja la multa a una advertencia. Un triunfo en voz baja.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "La apelación se pierde y se agrega una suspensión por insistir. El vestuario te mira con cuidado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 6
+      }
+    ],
+    "id": "oscuro_el_tipster",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "mercado",
+    "title": "El tipster",
+    "description": "El dueño de una página de pronósticos te ofrece plata por información de scrims. Nada ilegal, dice.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "rechazar_y_avisar",
+        "label": "Rechazar y avisar al manager",
+        "descripcion": "Que quede por escrito.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "El manager lo agradece y la liga abre un expediente. Tu nombre queda limpio y respetado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El tipster te difama en su página por haberlo expuesto. Una semana de mensajes rarísimos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "aceptar_un_favor_chico",
+        "label": "Aceptar un favor chico",
+        "descripcion": "Total, es un dato suelto.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 3,
+            "texto": "El dato sale y nadie lo conecta. Te quedás con la plata y una molestia que no se va.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 0,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 7,
+            "texto": "El favor se hace público y la liga abre una investigación. Quedás como alguien que vendió datos por poco.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -7,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 8
+      }
+    ],
+    "id": "oscuro_el_testigo",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "golpe_duro",
+    "title": "Testigo de la liga",
+    "description": "La liga investiga a un rival por amaño y te cita como testigo. Compartiste tres scrims con él.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "declarar_todo",
+        "label": "Declarar todo",
+        "descripcion": "Lo que viste y lo que no.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu declaración ayuda a cerrar el caso. El rival recibe una sanción y vos, respeto de la liga.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Contás algo de más y el rival te marca como soplón. La escena te mira de reojo un tiempo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "declarar_lo_justo",
+        "label": "Declarar lo justo",
+        "descripcion": "Solo lo que puedas probar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu declaración es sobria y sin vueltas. La liga la valora y nadie te saca el nombre del caso.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Callás una duda importante y el caso se estanca. Meses después, alguien dice que sabías más de lo que contaste.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 1
+      }
+    ],
+    "id": "oscuro_ban_de_la_cuenta_main",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "golpe_duro",
+    "title": "Ban de la main",
+    "description": "Riot banea tu cuenta main por error. Dos años de ranking desaparecen de un día para otro.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "amateur",
+        "debut",
+        "profesional",
+        "declive"
+      ]
+    },
+    "options": [
+      {
+        "id": "pelear_con_soporte",
+        "label": "Pelear con soporte",
+        "descripcion": "Mails, capturas y amigos con influencia.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Soporte reconoce el error y te devuelve la cuenta con una disculpa. Un lunes de victoria rara.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Los mails se pierden y la cuenta no vuelve. Aprendés a aceptar lo que no controlás, con rabia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "empezar_una_nueva",
+        "label": "Empezar una nueva",
+        "descripcion": "Si no queda otra, a escalar.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La cuenta nueva sube rápido y vos jugás con hambre. A veces el reseteo es un regalo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mecanica",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Escalar de nuevo te agota. A la segunda semana ya no sabés si querés jugar.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.sleep",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 6
+      }
+    ],
+    "id": "oscuro_el_companero_que_apostaba",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "vestuario",
+    "title": "El que apostaba",
+    "description": "Descubrís que un compañero apostaba en partidas de otras ligas. Nada ilegal, pero el vestuario ya lo sabe.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "hablarlo_a_solas",
+        "label": "Hablarlo a solas",
+        "descripcion": "Un café, sin cámaras.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Admite todo y deja de apostar. El vestuario respira y el team se vuelve más unido.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Se ofende y deja de hablarte. El voice se pone raro durante un mes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "avisar_al_manager",
+        "label": "Avisar al manager",
+        "descripcion": "Que lo vea el club.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El manager lo maneja con calma y el caso se cierra sin ruido. Tu compañero te lo agradece más tarde.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "El club lo expone y lo sanciona. Tu compañero queda afuera y la culpa te pesa un tiempo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 6
+      }
+    ],
+    "id": "oscuro_el_scrim_filtrado",
+    "voz": "corta",
+    "rarezaEvento": "epica",
+    "categoria": "vestuario",
+    "title": "Tu estrategia, en sus manos",
+    "description": "El rival te destroza con tu propia estrategia. Alguien le pasó los scrims.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "auditar_al_equipo",
+        "label": "Auditar al equipo",
+        "descripcion": "Revisar quién vio qué y cuándo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La auditoría encuentra una cuenta compartida con una org rival. Se corta el flujo y el equipo se limpia.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.shotcalling",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "No encontrás nada y el clima se envenena. Todos sospechan de todos hasta el final del split.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cambiar_el_sistema",
+        "label": "Cambiar el sistema",
+        "descripcion": "Si ya lo conocen, inventá otro.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Inventan un sistema nuevo en una semana y el rival queda boyando. El equipo se siente más vivo que nunca.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.adaptabilidad",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El sistema nuevo tiene agujeros y perdés tres series seguidas. La cabeza va más rápido que las manos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 8
+      }
+    ],
+    "id": "oscuro_la_oferta_de_perder",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "golpe_duro",
+    "title": "La oferta de perder",
+    "description": "Un tipo de traje te ofrece cincuenta mil por tirar el segundo mapa. Dice ser de Betoro, una casa de apuestas, y que nadie se entera.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "rechazar_y_denunciar",
+        "label": "Rechazar y denunciar",
+        "descripcion": "Directo a la liga, con capturas.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La liga abre un expediente y te agradece en privado. Te quedás con la conciencia limpia y los ojos abiertos.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_oferta"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El tipo desaparece y la liga tarda en reaccionar. Mientras tanto, dormís con un ojo abierto.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_oferta"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "decirle_que_lo_pensas",
+        "label": "Decirle que lo pensás",
+        "descripcion": "Ganar tiempo para armar el caso.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "Le seguís el juego, grabás todo y llevás el caso a la liga. Salís limpio, pero el estómago no se afloja en un mes.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_oferta"
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "La conversación se escapa de las manos y alguien te filma. El clip, sin contexto, parece una aceptación. Qué desastre.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -8,
+                "max": -5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_oferta"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "flags.caminos.conflicto",
+        "op": "eq",
+        "value": "oscuro_oferta"
+      }
+    ],
+    "id": "oscuro_la_declaracion",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "golpe_duro",
+    "title": "La declaración",
+    "description": "La liga te cita: Betoro apareció en otra investigación y tu nombre figura en un chat. Tenés que declarar frente a tres personas.",
+    "weight": 12,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "contar_todo_con_pruebas",
+        "label": "Contar todo con pruebas",
+        "descripcion": "Capturas, fechas y la verdad.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Tus pruebas son impecables. La liga sanciona a Betoro y a dos jugadores, y vos salís como el héroe que no pediste ser.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 4,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_oferta_que_rechazaste",
+                "values": [
+                  "El día que declaraste contra la casa de apuestas",
+                  "La declaración que limpió la escena"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El abogado de Betoro te interroga cuatro horas. Salís exhausto, pero firme. La liga cierra el caso a favor.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -2,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_oferta_que_rechazaste",
+                "values": [
+                  "Las cuatro horas de interrogatorio",
+                  "La declaración que te dejó sin voz"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pedir_un_abogado",
+        "label": "Pedir un abogado",
+        "descripcion": "No decís nada sin él.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El abogado maneja todo y la liga cierra el caso con un comunicado. Tu nombre sale intacto, aunque nadie lo celebre.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_oferta_que_rechazaste",
+                "values": [
+                  "La declaración que dejaste en manos del abogado",
+                  "El caso que se cerró sin vos hablando"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Pedir un abogado se lee como culpa. La prensa se agarra y la sospecha te acompaña dos splits.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_oferta_que_rechazaste",
+                "values": [
+                  "El abogado que sembró sospecha",
+                  "La declaración que se leyó como silencio"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 8
+      }
+    ],
+    "id": "oscuro_el_ban_de_la_liga",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "golpe_duro",
+    "title": "Suspendido por una cuenta",
+    "description": "La liga te suspende un mes por una cuenta secundaria que no es tuya. Mientras investigan, el equipo juega sin vos.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "aceptar_la_suspension",
+        "label": "Aceptar la suspensión",
+        "descripcion": "Un mes de VOD y paciencia.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Aprovechás el mes para estudiar y descansar. Cuando se aclara, volvés sin rencor y con el juego fresco.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.macro",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_ban"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "El mes se hace eterno. La prensa lo cuenta como un escándalo y cuando se aclara, el titular ya se olvidó.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_ban"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "apelar_con_abogado",
+        "label": "Apelar con abogado",
+        "descripcion": "Llevarlo a la mesa de la liga.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "El abogado demuestra que la cuenta no es tuya y la liga te pide perdón. La apelación sale en tiempo récord.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_ban"
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "La apelación se estanca y el mes se estira. El equipo pierde dos series y el clima te señala.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_ban"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "flags.caminos.conflicto",
+        "op": "eq",
+        "value": "oscuro_ban"
+      }
+    ],
+    "id": "oscuro_la_apelacion",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "golpe_duro",
+    "title": "La cuenta que no era tuya",
+    "description": "Aparece el dueño real de la cuenta: un fan que quería jugar \"como vos\". La liga te pide una declaración pública.",
+    "weight": 12,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "perdonar_al_fan",
+        "label": "Perdonar al fan",
+        "descripcion": "Un mensaje breve, sin rencor.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "El perdón se vuelve ejemplo en la escena. El fan se disculpa y la liga cierra el caso con un abrazo digital.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_cuenta_que_no_era_tuya",
+                "values": [
+                  "El fan al que perdonaste",
+                  "El caso de la cuenta que terminó en un abrazo"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "El perdón se interpreta como debilidad. Algunos fans te critican, otros te aplauden: queda un empate raro.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -1,
+                "max": 2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_cuenta_que_no_era_tuya",
+                "values": [
+                  "El perdón que dividió a la escena",
+                  "El fan perdonado y el debate que dejó"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "exigir_una_sancion",
+        "label": "Exigir una sanción",
+        "descripcion": "Lo que hizo tuvo costo.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "La liga banea al fan de por vida. Tu postura queda clara y respetada, aunque dura.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_cuenta_que_no_era_tuya",
+                "values": [
+                  "La sanción que pediste y obtuviste",
+                  "El caso de la cuenta que terminó en un ban"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "La prensa te pinta como vengativo. El fan se hace víctima y las redes se calientan. Tu nombre sale quemado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -7,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_cuenta_que_no_era_tuya",
+                "values": [
+                  "La sanción que se volvió en tu contra",
+                  "El caso en que quedaste de villano"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 10
+      }
+    ],
+    "id": "oscuro_el_escandalo_de_la_org",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "prensa",
+    "title": "El escándalo de la org",
+    "description": "Trasciende que el dueño de la org usó el fondo de salarios para otra cosa. Tus compañeros se miran entre sí.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "hacer_un_comunicado_juntos",
+        "label": "Hacer un comunicado juntos",
+        "descripcion": "Cinco firmas, un texto claro.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "El comunicado se hace viral: cinco jugadores unidos contra un dueño. La liga interviene y el dueño cede.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_escandalo"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Uno de los cinco se baja a último momento y el comunicado sale con cuatro firmas. El mensaje pierde fuerza.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_escandalo"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quedarte_callado",
+        "label": "Quedarte callado",
+        "descripcion": "No es tu pelea.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 3,
+            "texto": "Pasa un mes en silencio y el dueño devuelve el dinero. Te salvaste, pero tus compañeros lo recuerdan.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 1,
+                "max": 3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_escandalo"
+              }
+            ]
+          },
+          {
+            "weight": 7,
+            "texto": "Tu silencio se interpreta como complicidad. En el voice, nadie te habla durante una semana.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -7,
+                "max": -4,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_escandalo"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "flags.caminos.conflicto",
+        "op": "eq",
+        "value": "oscuro_escandalo"
+      }
+    ],
+    "id": "oscuro_el_dia_despues",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "prensa",
+    "title": "El día después",
+    "description": "El dueño renuncia y la org se queda sin dirección. Nueva gente llega al club y todos preguntan quién se queda.",
+    "weight": 12,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "tomar_la_voz_del_equipo",
+        "label": "Tomar la voz del equipo",
+        "descripcion": "Hablar con la nueva gerencia.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 7,
+            "texto": "Negociás condiciones claras para todos. El nuevo manager te respeta y el equipo se siente a salvo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_dia_despues_del_escandalo",
+                "values": [
+                  "El día que hablaste por todo el equipo",
+                  "La negociación que salvó al vestuario"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 3,
+            "texto": "La gerencia nueva te lee como líder demasiado fuerte. Te sacan del círculo de decisiones, pero el equipo te respeta.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -3,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_dia_despues_del_escandalo",
+                "values": [
+                  "La voz que la gerencia no quiso escuchar",
+                  "El día después en que quedaste afuera"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "buscar_otra_org",
+        "label": "Buscar otra org",
+        "descripcion": "Mejor empezar de cero.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "Tu agente consigue tres ofertas en una semana. Elegís con la cabeza fría y salís mejor parado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -5,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_dia_despues_del_escandalo",
+                "values": [
+                  "La salida elegante de una org en crisis",
+                  "El día que dejaste el barco antes del hundimiento"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Las ofertas se enfrían apenas se conoce el escándalo. Te quedás en una org que ya no es tuya.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "el_dia_despues_del_escandalo",
+                "values": [
+                  "La org que se vació y te dejó adentro",
+                  "El día después en que nadie te fue a buscar"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "caminos",
+    "conditions": [
+      {
+        "field": "player.splitCount",
+        "op": "gt",
+        "value": 10
+      }
+    ],
+    "id": "oscuro_el_informante",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "prensa",
+    "title": "El informante",
+    "description": "Facu Ibarra, periodista de un portal, te escribe: tiene un documento sobre un amaño de hace dos años y vos aparecés de testigo.",
+    "weight": 6,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "colaborar_con_la_nota",
+        "label": "Colaborar con la nota",
+        "descripcion": "Una entrevista, off the record.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Tu testimonio ayuda a armar una nota sólida. Te cuidás de no nombrar a nadie y la liga abre una investigación.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 3,
+                "max": 6,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_informante"
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "La nota sale con un título que no te gusta y tu nombre en el subtítulo. Te arrepentís de haberlo hablado.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -3,
+                "max": 0,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_informante"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "negarte_a_hablar",
+        "label": "Negarte a hablar",
+        "descripcion": "Lo que pasó, pasó.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "El periodista respeta tu decisión. La nota sale sin tu nombre y nadie te vincula.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_informante"
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "La nota sale igual con la frase \"el jugador no quiso hablar\". Tu silencio pesa más que cualquier declaración.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -3,
+                "max": -1,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "camino",
+                "path": "flags.caminos.conflicto",
+                "valor": "oscuro_informante"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "raros_oscuro",
+    "conditions": [
+      {
+        "field": "flags.caminos.conflicto",
+        "op": "eq",
+        "value": "oscuro_informante"
+      }
+    ],
+    "id": "oscuro_la_nota_sale",
+    "voz": "corta",
+    "rarezaEvento": "legendaria",
+    "categoria": "prensa",
+    "title": "La nota sale",
+    "description": "La nota de Ibarra sale y la escena la comenta durante una semana. Tu nombre aparece, y la liga te llama a declarar.",
+    "weight": 12,
+    "cooldown": 10,
+    "contexto": {
+      "etapa": [
+        "debut",
+        "profesional",
+        "declive"
+      ],
+      "nivel": [
+        "tier1",
+        "tier2"
+      ]
+    },
+    "options": [
+      {
+        "id": "mantenerte_firme",
+        "label": "Mantenerte firme",
+        "descripcion": "Lo que dijiste, lo sostenés.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "La liga ratifica tu versión y sanciona a dos personas. Quedás como alguien que dice la verdad aunque incomode.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 5,
+                "max": 8,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 4,
+                "max": 7,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.arraigo",
+                "min": 3,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_nota_de_ibarra",
+                "values": [
+                  "La nota que sacó a la luz el amaño",
+                  "El día que tu testimonio movió a la liga"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Sostener tu versión te cuesta dos amistades en la escena. La liga actúa, pero el vestuario ajeno te mira con recelo.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "career.sinergia",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_nota_de_ibarra",
+                "values": [
+                  "El testimonio que costó amistades",
+                  "La nota que cambió cómo te miran en la escena"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "matizar_tus_dichos",
+        "label": "Matizar tus dichos",
+        "descripcion": "Suavizar lo que ya dijiste.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 4,
+            "texto": "La liga acepta tus matices y el caso se cierra con una advertencia general. Nadie queda contento, pero nadie queda mal.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": 2,
+                "max": 5,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_nota_de_ibarra",
+                "values": [
+                  "El testimonio que matizaste a tiempo",
+                  "La nota que cerró sin sangre"
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 6,
+            "texto": "Los matices se leen como marcha atrás. Ibarra publica una segunda nota y tu credibilidad queda tocada.",
+            "effects": [
+              {
+                "type": "stat",
+                "path": "player.stats.hype",
+                "min": -6,
+                "max": -3,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "stat",
+                "path": "player.stats.mentalidad",
+                "min": -4,
+                "max": -2,
+                "clamp": [
+                  0,
+                  100
+                ]
+              },
+              {
+                "type": "momento",
+                "path": "career.registro.momentos",
+                "tipo": "la_nota_de_ibarra",
+                "values": [
+                  "La marcha atrás que pagaste caro",
+                  "La segunda nota que te dejó sin credibilidad"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
