@@ -4,6 +4,7 @@ import { campeonesEnMeta, campeonesMuertos } from './ajusteMeta.js';
 import { campeonesDisponibles, principalDelPool, campeonNuevoPendiente } from './pool.js';
 import { nombreVisibleDeLiga } from './ligas.js';
 import { haceDeEso } from './formato.js';
+import { ligaOZonaDeCarrera } from './competicion.js';
 
 // Tokens para que el contenido nombre TU carrera y no una genérica.
 // "{jungla} no camina más para vos" -> "Zenvex no camina más para vos".
@@ -37,7 +38,14 @@ export const TOKENS = {
   // viene, si todavía no se jugó ninguno): los eventos de `data/events/partido/` viven en el mazo del split y hablan de él.
   rivalDeLaFecha: (state) => {
     const t = state.career.temporada;
-    return t?.fechaEnCurso?.rival ?? t?.calendario?.[Math.max(0, Math.min((t.indice ?? 0) - 1, (t.calendario?.length ?? 1) - 1))]?.rival ?? null;
+    const delCalendario = t?.fechaEnCurso?.rival ?? t?.calendario?.[Math.max(0, Math.min((t.indice ?? 0) - 1, (t.calendario?.length ?? 1) - 1))]?.rival;
+    if (delCalendario) {
+      return delCalendario;
+    }
+    // Antes de que arme el calendario (la primera fecha del tier 3, o un estado recién creado) no hay fecha: el rival es el
+    // primer equipo de tu competencia que no es el tuyo, el mismo criterio de siempre y sin azar. Así el texto nunca sale crudo.
+    const liga = ligaOZonaDeCarrera(state);
+    return (liga?.orgs ?? []).find((org) => org !== state.career.currentOrg) ?? null;
   },
   // El campeón que domina el parche en tu línea. Deja escribir "todos pickean
   // {metaTop}" sin cablear un nombre en el JSON.
