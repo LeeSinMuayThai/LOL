@@ -182,6 +182,7 @@ export const HORIZONTE_POR_TIPO = {
   'serie:decisivo': 'serie',
   'serie:minijuego': 'serie',
   'internacional:swiss': 'serie',
+  'internacional:playin': 'serie',
   'internacional:plan': 'serie',
   'internacional:decisivo': 'serie',
   'internacional:minijuego': 'serie',

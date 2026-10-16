@@ -12615,7 +12615,7 @@ const { hashCadena: hashCadenaH } = await import('../core/numeros.js');
 check('K4c-H horizonte: el mapa tipo -> horizonte es el de PLAN.md y cubre todos los tipos que existen (los de 8 carreras reales y todos los `motivo` de systems/)', () => {
   // El mapa del PLAN (K4c, decisiones del paso 2, 1), escrito a mano: lo que NO esté acá tiene que ser `carrera`.
   const ESPERADO = {
-    serie: ['serie:plan', 'serie:decisivo', 'serie:minijuego', 'internacional:swiss', 'internacional:plan', 'internacional:decisivo', 'internacional:minijuego'],
+    serie: ['serie:plan', 'serie:decisivo', 'serie:minijuego', 'internacional:swiss', 'internacional:playin', 'internacional:plan', 'internacional:decisivo', 'internacional:minijuego'],
     partido: ['temporada:momento', 'temporada:bo1'],
     split: ['eventos:x', 'eventos:minijuego', 'amateur:reparto', 'amateur:nocturno']
   };
@@ -13406,6 +13406,10 @@ const RUIDOS_FUERA_DE_LA_ABLACION_K0 = {
   'practica.ruidoPractica': 'ruido de la ganancia de práctica',
   'plantel.ruidoNivelAnual': 'ruido anual del nivel de los jugadores del mundo (rachas)',
   'topMundial.ruidoSpread': 'ruido determinista del corte del Top 20 mundial',
+  'g1.arcade.la_llamada.ruidoJungla': 'marcas de más en el mapa de La Llamada: es de la pantalla (cuántas pistas falsas dibuja), no el resultado de un partido',
+  'g1.arcade.la_llamada.fases.0.ruido': 'marcas de más en el mapa de La Llamada (fase 1): es de la pantalla, no el resultado',
+  'g1.arcade.la_llamada.fases.1.ruido': 'marcas de más en el mapa de La Llamada (fase 2): es de la pantalla, no el resultado',
+  'g1.arcade.la_llamada.fases.2.ruido': 'marcas de más en el mapa de La Llamada (fase 3): es de la pantalla, no el resultado',
   'prensa.ruidoUi': 'ruido de `rngUi` sobre el tono de la rueda de prensa: es de la pantalla, el motor no lo ve ni lo tira (K6d-P)'
 };
 
@@ -20097,7 +20101,8 @@ check('K4-C2 regla 15: retirarse termina la carrera por el camino del retiro, co
       ...st,
       player: { ...st.player, splitCount: st.player.splitCount + BALANCE.edad.splitsPorEdad },
       // G4c: con el último partido ya jugado (si no, esta parada es la despedida, antes de la ventana).
-      flags: { ...st.flags, splitsEnVentana: BALANCE.edad.splitsPorEdad - 1, cooldownHasta: {}, despedidaPendiente: null }
+      // `la_llamada_del_manager` sale una vez por carrera: la muestra no arrastra la que ya gastó la carrera de partida.
+      flags: { ...st.flags, splitsEnVentana: BALANCE.edad.splitsPorEdad - 1, cooldownHasta: {}, eventosVistos: {}, despedidaPendiente: null }
     };
     const v = aplicarRetiroK4c2(enVentana, mulberry32(s));
     if (v.decision?.datos?.evento?.id === 'la_llamada_del_manager') llamadas += 1;
