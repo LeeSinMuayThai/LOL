@@ -2395,8 +2395,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_quiebra"
+                "path": "flags.caminos.escena_quiebra",
+                "valor": true
               }
             ]
           },
@@ -2426,8 +2426,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_quiebra"
+                "path": "flags.caminos.escena_quiebra",
+                "valor": true
               }
             ]
           }
@@ -2465,8 +2465,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_quiebra"
+                "path": "flags.caminos.escena_quiebra",
+                "valor": true
               }
             ]
           },
@@ -2496,8 +2496,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_quiebra"
+                "path": "flags.caminos.escena_quiebra",
+                "valor": true
               }
             ]
           }
@@ -2529,9 +2529,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.conflicto",
+        "field": "flags.caminos.escena_quiebra",
         "op": "eq",
-        "value": "escena_quiebra"
+        "value": true
       }
     ],
     "options": [
@@ -2567,8 +2567,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_quiebra_fin"
+                "path": "flags.caminos.escena_quiebra_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2607,8 +2607,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_quiebra_fin"
+                "path": "flags.caminos.escena_quiebra_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2655,8 +2655,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_quiebra_fin"
+                "path": "flags.caminos.escena_quiebra_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2695,8 +2695,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_quiebra_fin"
+                "path": "flags.caminos.escena_quiebra_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2775,8 +2775,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_rookie"
+                "path": "flags.caminos.escena_rookie",
+                "valor": true
               }
             ]
           },
@@ -2806,8 +2806,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_rookie"
+                "path": "flags.caminos.escena_rookie",
+                "valor": true
               }
             ]
           }
@@ -2845,8 +2845,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_rookie"
+                "path": "flags.caminos.escena_rookie",
+                "valor": true
               }
             ]
           },
@@ -2876,8 +2876,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_rookie"
+                "path": "flags.caminos.escena_rookie",
+                "valor": true
               }
             ]
           }
@@ -2909,9 +2909,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.conflicto",
+        "field": "flags.caminos.escena_rookie",
         "op": "eq",
-        "value": "escena_rookie"
+        "value": true
       }
     ],
     "options": [
@@ -2947,8 +2947,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_rookie_fin"
+                "path": "flags.caminos.escena_rookie_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2987,8 +2987,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_rookie_fin"
+                "path": "flags.caminos.escena_rookie_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3035,8 +3035,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_rookie_fin"
+                "path": "flags.caminos.escena_rookie_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3075,8 +3075,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_rookie_fin"
+                "path": "flags.caminos.escena_rookie_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3149,8 +3149,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_descartados"
+                "path": "flags.caminos.escena_descartados",
+                "valor": true
               }
             ]
           },
@@ -3180,8 +3180,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_descartados"
+                "path": "flags.caminos.escena_descartados",
+                "valor": true
               }
             ]
           }
@@ -3219,8 +3219,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_descartados"
+                "path": "flags.caminos.escena_descartados",
+                "valor": true
               }
             ]
           },
@@ -3250,8 +3250,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_descartados"
+                "path": "flags.caminos.escena_descartados",
+                "valor": true
               }
             ]
           }
@@ -3283,9 +3283,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.conflicto",
+        "field": "flags.caminos.escena_descartados",
         "op": "eq",
-        "value": "escena_descartados"
+        "value": true
       }
     ],
     "options": [
@@ -3321,8 +3321,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_descartados_fin"
+                "path": "flags.caminos.escena_descartados_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3361,8 +3361,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_descartados_fin"
+                "path": "flags.caminos.escena_descartados_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3409,8 +3409,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_descartados_fin"
+                "path": "flags.caminos.escena_descartados_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3449,8 +3449,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_descartados_fin"
+                "path": "flags.caminos.escena_descartados_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3523,8 +3523,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_campeon"
+                "path": "flags.caminos.escena_campeon",
+                "valor": true
               }
             ]
           },
@@ -3554,8 +3554,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_campeon"
+                "path": "flags.caminos.escena_campeon",
+                "valor": true
               }
             ]
           }
@@ -3593,8 +3593,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_campeon"
+                "path": "flags.caminos.escena_campeon",
+                "valor": true
               }
             ]
           },
@@ -3624,8 +3624,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_campeon"
+                "path": "flags.caminos.escena_campeon",
+                "valor": true
               }
             ]
           }
@@ -3657,9 +3657,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.conflicto",
+        "field": "flags.caminos.escena_campeon",
         "op": "eq",
-        "value": "escena_campeon"
+        "value": true
       }
     ],
     "options": [
@@ -3695,8 +3695,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_campeon_fin"
+                "path": "flags.caminos.escena_campeon_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3735,8 +3735,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_campeon_fin"
+                "path": "flags.caminos.escena_campeon_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3783,8 +3783,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_campeon_fin"
+                "path": "flags.caminos.escena_campeon_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3823,8 +3823,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "escena_campeon_fin"
+                "path": "flags.caminos.escena_campeon_fin",
+                "valor": true
               },
               {
                 "type": "momento",

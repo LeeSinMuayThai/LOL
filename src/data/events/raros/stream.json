@@ -1580,8 +1580,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "stream_canal_abierto"
+                "path": "flags.caminos.stream_canal_abierto",
+                "valor": true
               }
             ]
           },
@@ -1601,8 +1601,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "stream_canal_abierto"
+                "path": "flags.caminos.stream_canal_abierto",
+                "valor": true
               }
             ]
           }
@@ -1669,9 +1669,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.playoffs",
+        "field": "flags.caminos.stream_canal_abierto",
         "op": "eq",
-        "value": "stream_canal_abierto"
+        "value": true
       }
     ],
     "options": [
@@ -1707,8 +1707,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "stream_canal_despega"
+                "path": "flags.caminos.stream_canal_despega",
+                "valor": true
               }
             ]
           },
@@ -1738,8 +1738,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "stream_canal_despega"
+                "path": "flags.caminos.stream_canal_despega",
+                "valor": true
               }
             ]
           }
@@ -1767,8 +1767,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "stream_canal_despega"
+                "path": "flags.caminos.stream_canal_despega",
+                "valor": true
               }
             ]
           },
@@ -1788,8 +1788,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "stream_canal_despega"
+                "path": "flags.caminos.stream_canal_despega",
+                "valor": true
               }
             ]
           }
@@ -1816,9 +1816,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.playoffs",
+        "field": "flags.caminos.stream_canal_despega",
         "op": "eq",
-        "value": "stream_canal_despega"
+        "value": true
       }
     ],
     "options": [
@@ -2030,8 +2030,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "stream_directo_pendiente"
+                "path": "flags.caminos.stream_directo_pendiente",
+                "valor": true
               }
             ]
           },
@@ -2051,8 +2051,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "stream_directo_disculpa"
+                "path": "flags.caminos.stream_directo_disculpa",
+                "valor": true
               }
             ]
           }
@@ -2080,8 +2080,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "stream_directo_pendiente"
+                "path": "flags.caminos.stream_directo_pendiente",
+                "valor": true
               }
             ]
           },
@@ -2101,8 +2101,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "stream_directo_silencio"
+                "path": "flags.caminos.stream_directo_silencio",
+                "valor": true
               }
             ]
           }
@@ -2132,9 +2132,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.conflicto",
+        "field": "flags.caminos.stream_directo_pendiente",
         "op": "eq",
-        "value": "stream_directo_pendiente"
+        "value": true
       }
     ],
     "options": [
@@ -2313,8 +2313,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "stream_clip_meme"
+                "path": "flags.caminos.stream_clip_meme",
+                "valor": true
               }
             ]
           },
@@ -2344,8 +2344,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "stream_clip_meme"
+                "path": "flags.caminos.stream_clip_meme",
+                "valor": true
               }
             ]
           }
@@ -2422,9 +2422,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.staff",
+        "field": "flags.caminos.stream_clip_meme",
         "op": "eq",
-        "value": "stream_clip_meme"
+        "value": true
       }
     ],
     "options": [

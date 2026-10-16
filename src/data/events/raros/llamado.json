@@ -2351,8 +2351,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lck"
+                "path": "flags.caminos.llamado_lck",
+                "valor": true
               }
             ]
           },
@@ -2382,8 +2382,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lck"
+                "path": "flags.caminos.llamado_lck",
+                "valor": true
               }
             ]
           }
@@ -2421,8 +2421,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lck"
+                "path": "flags.caminos.llamado_lck",
+                "valor": true
               }
             ]
           },
@@ -2452,8 +2452,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lck"
+                "path": "flags.caminos.llamado_lck",
+                "valor": true
               }
             ]
           }
@@ -2485,9 +2485,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.region",
+        "field": "flags.caminos.llamado_lck",
         "op": "eq",
-        "value": "llamado_lck"
+        "value": true
       }
     ],
     "options": [
@@ -2523,8 +2523,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lck_fin"
+                "path": "flags.caminos.llamado_lck_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2563,8 +2563,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lck_fin"
+                "path": "flags.caminos.llamado_lck_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2611,8 +2611,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lck_fin"
+                "path": "flags.caminos.llamado_lck_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2651,8 +2651,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lck_fin"
+                "path": "flags.caminos.llamado_lck_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2725,8 +2725,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lpl"
+                "path": "flags.caminos.llamado_lpl",
+                "valor": true
               }
             ]
           },
@@ -2756,8 +2756,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lpl"
+                "path": "flags.caminos.llamado_lpl",
+                "valor": true
               }
             ]
           }
@@ -2795,8 +2795,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lpl"
+                "path": "flags.caminos.llamado_lpl",
+                "valor": true
               }
             ]
           },
@@ -2826,8 +2826,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lpl"
+                "path": "flags.caminos.llamado_lpl",
+                "valor": true
               }
             ]
           }
@@ -2859,9 +2859,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.region",
+        "field": "flags.caminos.llamado_lpl",
         "op": "eq",
-        "value": "llamado_lpl"
+        "value": true
       }
     ],
     "options": [
@@ -2897,8 +2897,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lpl_fin"
+                "path": "flags.caminos.llamado_lpl_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2937,8 +2937,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lpl_fin"
+                "path": "flags.caminos.llamado_lpl_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2985,8 +2985,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lpl_fin"
+                "path": "flags.caminos.llamado_lpl_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3025,8 +3025,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_lpl_fin"
+                "path": "flags.caminos.llamado_lpl_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3099,8 +3099,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_coach"
+                "path": "flags.caminos.llamado_coach",
+                "valor": true
               }
             ]
           },
@@ -3130,8 +3130,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_coach"
+                "path": "flags.caminos.llamado_coach",
+                "valor": true
               }
             ]
           }
@@ -3169,8 +3169,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_coach"
+                "path": "flags.caminos.llamado_coach",
+                "valor": true
               }
             ]
           },
@@ -3200,8 +3200,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_coach"
+                "path": "flags.caminos.llamado_coach",
+                "valor": true
               }
             ]
           }
@@ -3233,9 +3233,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.region",
+        "field": "flags.caminos.llamado_coach",
         "op": "eq",
-        "value": "llamado_coach"
+        "value": true
       }
     ],
     "options": [
@@ -3271,8 +3271,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_coach_fin"
+                "path": "flags.caminos.llamado_coach_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3311,8 +3311,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_coach_fin"
+                "path": "flags.caminos.llamado_coach_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3359,8 +3359,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_coach_fin"
+                "path": "flags.caminos.llamado_coach_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3399,8 +3399,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_coach_fin"
+                "path": "flags.caminos.llamado_coach_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3473,8 +3473,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_scrim"
+                "path": "flags.caminos.llamado_scrim",
+                "valor": true
               }
             ]
           },
@@ -3504,8 +3504,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_scrim"
+                "path": "flags.caminos.llamado_scrim",
+                "valor": true
               }
             ]
           }
@@ -3543,8 +3543,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_scrim"
+                "path": "flags.caminos.llamado_scrim",
+                "valor": true
               }
             ]
           },
@@ -3574,8 +3574,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_scrim"
+                "path": "flags.caminos.llamado_scrim",
+                "valor": true
               }
             ]
           }
@@ -3607,9 +3607,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.region",
+        "field": "flags.caminos.llamado_scrim",
         "op": "eq",
-        "value": "llamado_scrim"
+        "value": true
       }
     ],
     "options": [
@@ -3645,8 +3645,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_scrim_fin"
+                "path": "flags.caminos.llamado_scrim_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3685,8 +3685,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_scrim_fin"
+                "path": "flags.caminos.llamado_scrim_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3733,8 +3733,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_scrim_fin"
+                "path": "flags.caminos.llamado_scrim_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3773,8 +3773,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_scrim_fin"
+                "path": "flags.caminos.llamado_scrim_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3847,8 +3847,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_sparring"
+                "path": "flags.caminos.llamado_sparring",
+                "valor": true
               }
             ]
           },
@@ -3878,8 +3878,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_sparring"
+                "path": "flags.caminos.llamado_sparring",
+                "valor": true
               }
             ]
           }
@@ -3917,8 +3917,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_sparring"
+                "path": "flags.caminos.llamado_sparring",
+                "valor": true
               }
             ]
           },
@@ -3948,8 +3948,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_sparring"
+                "path": "flags.caminos.llamado_sparring",
+                "valor": true
               }
             ]
           }
@@ -3981,9 +3981,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.region",
+        "field": "flags.caminos.llamado_sparring",
         "op": "eq",
-        "value": "llamado_sparring"
+        "value": true
       }
     ],
     "options": [
@@ -4019,8 +4019,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_sparring_fin"
+                "path": "flags.caminos.llamado_sparring_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -4059,8 +4059,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_sparring_fin"
+                "path": "flags.caminos.llamado_sparring_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -4107,8 +4107,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_sparring_fin"
+                "path": "flags.caminos.llamado_sparring_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -4147,8 +4147,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "llamado_sparring_fin"
+                "path": "flags.caminos.llamado_sparring_fin",
+                "valor": true
               },
               {
                 "type": "momento",

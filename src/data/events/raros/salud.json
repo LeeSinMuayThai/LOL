@@ -2345,8 +2345,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_operada"
+                "path": "flags.caminos.salud_operada",
+                "valor": true
               }
             ]
           },
@@ -2376,8 +2376,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_operada"
+                "path": "flags.caminos.salud_operada",
+                "valor": true
               }
             ]
           }
@@ -2405,8 +2405,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_aplazada"
+                "path": "flags.caminos.salud_aplazada",
+                "valor": true
               }
             ]
           },
@@ -2426,8 +2426,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_aplazada"
+                "path": "flags.caminos.salud_aplazada",
+                "valor": true
               }
             ]
           }
@@ -2439,9 +2439,9 @@
     "category": "raros_salud",
     "conditions": [
       {
-        "field": "flags.caminos.playoffs",
+        "field": "flags.caminos.salud_operada",
         "op": "eq",
-        "value": "salud_operada"
+        "value": true
       }
     ],
     "id": "salud_la_cirugia",
@@ -2616,9 +2616,9 @@
     "category": "raros_salud",
     "conditions": [
       {
-        "field": "flags.caminos.playoffs",
+        "field": "flags.caminos.salud_aplazada",
         "op": "eq",
-        "value": "salud_aplazada"
+        "value": true
       }
     ],
     "id": "salud_la_muneca_cobra",
@@ -2860,8 +2860,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_colapso"
+                "path": "flags.caminos.salud_colapso",
+                "valor": true
               }
             ]
           },
@@ -2881,8 +2881,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_colapso"
+                "path": "flags.caminos.salud_colapso",
+                "valor": true
               }
             ]
           }
@@ -2910,8 +2910,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_colapso"
+                "path": "flags.caminos.salud_colapso",
+                "valor": true
               }
             ]
           },
@@ -2941,8 +2941,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_colapso"
+                "path": "flags.caminos.salud_colapso",
+                "valor": true
               }
             ]
           }
@@ -2954,9 +2954,9 @@
     "category": "raros_salud",
     "conditions": [
       {
-        "field": "flags.caminos.playoffs",
+        "field": "flags.caminos.salud_colapso",
         "op": "eq",
-        "value": "salud_colapso"
+        "value": true
       }
     ],
     "id": "salud_la_vuelta_del_colapso",
@@ -3188,8 +3188,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_monje"
+                "path": "flags.caminos.salud_monje",
+                "valor": true
               }
             ]
           },
@@ -3209,8 +3209,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_monje"
+                "path": "flags.caminos.salud_monje",
+                "valor": true
               }
             ]
           }
@@ -3248,8 +3248,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_monje"
+                "path": "flags.caminos.salud_monje",
+                "valor": true
               }
             ]
           },
@@ -3269,8 +3269,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_monje"
+                "path": "flags.caminos.salud_monje",
+                "valor": true
               }
             ]
           }
@@ -3282,9 +3282,9 @@
     "category": "raros_salud",
     "conditions": [
       {
-        "field": "flags.caminos.playoffs",
+        "field": "flags.caminos.salud_monje",
         "op": "eq",
-        "value": "salud_monje"
+        "value": true
       }
     ],
     "id": "salud_el_cuerpo_de_otro_nivel",
@@ -3526,8 +3526,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_voz"
+                "path": "flags.caminos.salud_voz",
+                "valor": true
               }
             ]
           },
@@ -3557,8 +3557,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_voz"
+                "path": "flags.caminos.salud_voz",
+                "valor": true
               }
             ]
           }
@@ -3586,8 +3586,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_voz"
+                "path": "flags.caminos.salud_voz",
+                "valor": true
               }
             ]
           },
@@ -3617,8 +3617,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "salud_voz"
+                "path": "flags.caminos.salud_voz",
+                "valor": true
               }
             ]
           }
@@ -3630,9 +3630,9 @@
     "category": "raros_salud",
     "conditions": [
       {
-        "field": "flags.caminos.playoffs",
+        "field": "flags.caminos.salud_voz",
         "op": "eq",
-        "value": "salud_voz"
+        "value": true
       }
     ],
     "id": "salud_la_charla_que_cambio_todo",

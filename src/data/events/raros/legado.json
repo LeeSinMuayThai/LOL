@@ -2355,8 +2355,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_leyenda"
+                "path": "flags.caminos.legado_leyenda",
+                "valor": true
               }
             ]
           },
@@ -2386,8 +2386,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_leyenda"
+                "path": "flags.caminos.legado_leyenda",
+                "valor": true
               }
             ]
           }
@@ -2425,8 +2425,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_leyenda"
+                "path": "flags.caminos.legado_leyenda",
+                "valor": true
               }
             ]
           },
@@ -2456,8 +2456,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_leyenda"
+                "path": "flags.caminos.legado_leyenda",
+                "valor": true
               }
             ]
           }
@@ -2469,9 +2469,9 @@
     "category": "raros_legado",
     "conditions": [
       {
-        "field": "flags.caminos.staff",
+        "field": "flags.caminos.legado_leyenda",
         "op": "eq",
-        "value": "legado_leyenda"
+        "value": true
       }
     ],
     "id": "legado_el_nombre_en_la_pared",
@@ -2693,8 +2693,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_discipulo"
+                "path": "flags.caminos.legado_discipulo",
+                "valor": true
               }
             ]
           },
@@ -2724,8 +2724,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_discipulo"
+                "path": "flags.caminos.legado_discipulo",
+                "valor": true
               }
             ]
           }
@@ -2753,8 +2753,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_discipulo"
+                "path": "flags.caminos.legado_discipulo",
+                "valor": true
               }
             ]
           },
@@ -2774,8 +2774,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_discipulo"
+                "path": "flags.caminos.legado_discipulo",
+                "valor": true
               }
             ]
           }
@@ -2787,9 +2787,9 @@
     "category": "raros_legado",
     "conditions": [
       {
-        "field": "flags.caminos.staff",
+        "field": "flags.caminos.legado_discipulo",
         "op": "eq",
-        "value": "legado_discipulo"
+        "value": true
       }
     ],
     "id": "legado_el_discipulo_te_supera",
@@ -3027,8 +3027,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_ultimo_baile"
+                "path": "flags.caminos.legado_ultimo_baile",
+                "valor": true
               }
             ]
           },
@@ -3058,8 +3058,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_ultimo_baile"
+                "path": "flags.caminos.legado_ultimo_baile",
+                "valor": true
               }
             ]
           }
@@ -3097,8 +3097,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_ultimo_baile"
+                "path": "flags.caminos.legado_ultimo_baile",
+                "valor": true
               }
             ]
           },
@@ -3128,8 +3128,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_ultimo_baile"
+                "path": "flags.caminos.legado_ultimo_baile",
+                "valor": true
               }
             ]
           }
@@ -3141,9 +3141,9 @@
     "category": "raros_legado",
     "conditions": [
       {
-        "field": "flags.caminos.staff",
+        "field": "flags.caminos.legado_ultimo_baile",
         "op": "eq",
-        "value": "legado_ultimo_baile"
+        "value": true
       }
     ],
     "id": "legado_la_despedida_que_se_estiro",
@@ -3381,8 +3381,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_capitan"
+                "path": "flags.caminos.legado_capitan",
+                "valor": true
               }
             ]
           },
@@ -3412,8 +3412,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_capitan"
+                "path": "flags.caminos.legado_capitan",
+                "valor": true
               }
             ]
           }
@@ -3451,8 +3451,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_capitan"
+                "path": "flags.caminos.legado_capitan",
+                "valor": true
               }
             ]
           },
@@ -3482,8 +3482,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_capitan"
+                "path": "flags.caminos.legado_capitan",
+                "valor": true
               }
             ]
           }
@@ -3495,9 +3495,9 @@
     "category": "raros_legado",
     "conditions": [
       {
-        "field": "flags.caminos.staff",
+        "field": "flags.caminos.legado_capitan",
         "op": "eq",
-        "value": "legado_capitan"
+        "value": true
       }
     ],
     "id": "legado_el_capitan_y_el_vestuario",
@@ -3739,8 +3739,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_academia"
+                "path": "flags.caminos.legado_academia",
+                "valor": true
               }
             ]
           },
@@ -3770,8 +3770,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_academia"
+                "path": "flags.caminos.legado_academia",
+                "valor": true
               }
             ]
           }
@@ -3799,8 +3799,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_academia"
+                "path": "flags.caminos.legado_academia",
+                "valor": true
               }
             ]
           },
@@ -3820,8 +3820,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "legado_academia"
+                "path": "flags.caminos.legado_academia",
+                "valor": true
               }
             ]
           }
@@ -3833,9 +3833,9 @@
     "category": "raros_legado",
     "conditions": [
       {
-        "field": "flags.caminos.staff",
+        "field": "flags.caminos.legado_academia",
         "op": "eq",
-        "value": "legado_academia"
+        "value": true
       }
     ],
     "id": "legado_la_inauguracion",

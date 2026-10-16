@@ -1540,8 +1540,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "plata_fondo_adentro"
+                "path": "flags.caminos.plata_fondo_adentro",
+                "valor": true
               }
             ]
           },
@@ -1561,8 +1561,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "plata_fondo_adentro"
+                "path": "flags.caminos.plata_fondo_adentro",
+                "valor": true
               }
             ]
           }
@@ -1590,8 +1590,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "plata_fondo_adentro"
+                "path": "flags.caminos.plata_fondo_adentro",
+                "valor": true
               }
             ]
           },
@@ -1611,8 +1611,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "plata_fondo_adentro"
+                "path": "flags.caminos.plata_fondo_adentro",
+                "valor": true
               }
             ]
           }
@@ -1682,9 +1682,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.region",
+        "field": "flags.caminos.plata_fondo_adentro",
         "op": "eq",
-        "value": "plata_fondo_adentro"
+        "value": true
       }
     ],
     "options": [
@@ -1896,8 +1896,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "plata_sponsor_firmado"
+                "path": "flags.caminos.plata_sponsor_firmado",
+                "valor": true
               }
             ]
           },
@@ -1917,8 +1917,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "plata_sponsor_firmado"
+                "path": "flags.caminos.plata_sponsor_firmado",
+                "valor": true
               }
             ]
           }
@@ -1972,8 +1972,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "plata_sponsor_firmado"
+                "path": "flags.caminos.plata_sponsor_firmado",
+                "valor": true
               }
             ]
           }
@@ -2003,9 +2003,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.contenido",
+        "field": "flags.caminos.plata_sponsor_firmado",
         "op": "eq",
-        "value": "plata_sponsor_firmado"
+        "value": true
       }
     ],
     "options": [
@@ -2041,8 +2041,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "plata_sponsor_favor"
+                "path": "flags.caminos.plata_sponsor_favor",
+                "valor": true
               }
             ]
           },
@@ -2072,8 +2072,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "plata_sponsor_favor"
+                "path": "flags.caminos.plata_sponsor_favor",
+                "valor": true
               }
             ]
           }
@@ -2101,8 +2101,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "plata_sponsor_favor"
+                "path": "flags.caminos.plata_sponsor_favor",
+                "valor": true
               }
             ]
           },
@@ -2132,8 +2132,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "plata_sponsor_favor"
+                "path": "flags.caminos.plata_sponsor_favor",
+                "valor": true
               }
             ]
           }
@@ -2163,9 +2163,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.contenido",
+        "field": "flags.caminos.plata_sponsor_favor",
         "op": "eq",
-        "value": "plata_sponsor_favor"
+        "value": true
       }
     ],
     "options": [
@@ -2364,8 +2364,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.rol",
-                "valor": "plata_casa_comprada"
+                "path": "flags.caminos.plata_casa_comprada",
+                "valor": true
               }
             ]
           },
@@ -2395,8 +2395,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.rol",
-                "valor": "plata_casa_comprada"
+                "path": "flags.caminos.plata_casa_comprada",
+                "valor": true
               }
             ]
           }
@@ -2424,8 +2424,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.rol",
-                "valor": "plata_casa_comprada"
+                "path": "flags.caminos.plata_casa_comprada",
+                "valor": true
               }
             ]
           },
@@ -2468,9 +2468,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.rol",
+        "field": "flags.caminos.plata_casa_comprada",
         "op": "eq",
-        "value": "plata_casa_comprada"
+        "value": true
       }
     ],
     "options": [

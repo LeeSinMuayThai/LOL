@@ -3,6 +3,7 @@ import { desgasteInicial } from './curvas.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
 import { decisionDeCierre } from '../systems/edadCierre.js';
 import { pausaDeMercadoMigrada } from '../systems/mercado.js';
+import { ARCOS_DE_LO_RARO } from './state.js';
 
 // El guardado de la carrera (fase T8, PLAN.md "T8 — La página como
 // página", P.2). Puro: serializa y deserializa, nada de `localStorage` acá
@@ -86,8 +87,10 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // del Swiss; `career.torneoG1.racha`, la rotación de mecánicas). Un guardado de la 19 carga con `migrarDe19`.
 // · 21 (ola H, lo que corrige el usuario, PLANUI §0.10 H3: `internacional.playIn.camino`, los partidos del Play-In; `playIn`,
 // el récord del Play-In ganado, en la fila del Mundial). Un guardado de la 20 carga con `migrarDe20`.
-export const VERSION = 21;
-const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+// · 22 (ola H, entrega 3, H5: una clave de `flags.caminos` por arco de lo raro, `ARCOS_DE_LO_RARO` de `core/state.js`). Un
+// guardado de la 21 carga con `migrarDe21`.
+export const VERSION = 22;
+const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
 // El marcador de los años pro, reconstruido de lo que la 11 sí guardaba. La fila del registro de la org del primer contrato de tier
 // 2 o 1 la abre `roster.js` el split siguiente al de la firma, así que la firma fue en su `desdeSplit` - 1. Sin esa fila todavía
@@ -302,16 +305,28 @@ function migrar(version, state) {
   if (version === VERSION) {
     return state;
   }
+  if (version === 21) {
+    return migrarDe21(state);
+  }
   if (version === 20) {
-    return migrarDe20(state);
+    return migrarDe21(migrarDe20(state));
   }
   if (version === 19) {
-    return migrarDe20(migrarDe19(state));
+    return migrarDe21(migrarDe20(migrarDe19(state)));
   }
   if (version === 18) {
-    return migrarDe20(migrarDe19(migrarDe18(state)));
+    return migrarDe21(migrarDe20(migrarDe19(migrarDe18(state))));
   }
-  return migrarDe20(migrarDe19(migrarDe18(version === 17 ? migrarDe17(state) : migrarDe17(migrarHasta17(version, state)))));
+  return migrarDe21(migrarDe20(migrarDe19(migrarDe18(version === 17 ? migrarDe17(state) : migrarDe17(migrarHasta17(version, state))))));
+}
+
+// H5 (ola H, entrega 3): los arcos de lo raro todavía no se abrieron (una clave en null por arco, como en `createInitialState`).
+export function migrarDe21(state) {
+  if (!state.flags?.caminos) {
+    return state;
+  }
+  const enNull = Object.fromEntries(ARCOS_DE_LO_RARO.map((clave) => [clave, null]));
+  return { ...state, flags: { ...state.flags, caminos: { ...enNull, ...state.flags.caminos } } };
 }
 
 // PLANUI §0.10 H3 (lo que corrige el usuario, 2026-10-16): el Play-In guardado no trae sus partidos (`camino: []`); si ya lo

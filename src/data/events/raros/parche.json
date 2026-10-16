@@ -2537,8 +2537,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_dios"
+                "path": "flags.caminos.parche_dios",
+                "valor": true
               }
             ]
           },
@@ -2568,8 +2568,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_dios"
+                "path": "flags.caminos.parche_dios",
+                "valor": true
               }
             ]
           }
@@ -2607,8 +2607,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_dios"
+                "path": "flags.caminos.parche_dios",
+                "valor": true
               }
             ]
           },
@@ -2638,8 +2638,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_dios"
+                "path": "flags.caminos.parche_dios",
+                "valor": true
               }
             ]
           }
@@ -2671,9 +2671,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.contenido",
+        "field": "flags.caminos.parche_dios",
         "op": "eq",
-        "value": "parche_dios"
+        "value": true
       }
     ],
     "options": [
@@ -2709,8 +2709,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_dios_fin"
+                "path": "flags.caminos.parche_dios_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2749,8 +2749,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_dios_fin"
+                "path": "flags.caminos.parche_dios_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2797,8 +2797,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_dios_fin"
+                "path": "flags.caminos.parche_dios_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2837,8 +2837,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_dios_fin"
+                "path": "flags.caminos.parche_dios_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -2911,8 +2911,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_pick"
+                "path": "flags.caminos.parche_pick",
+                "valor": true
               }
             ]
           },
@@ -2942,8 +2942,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_pick"
+                "path": "flags.caminos.parche_pick",
+                "valor": true
               }
             ]
           }
@@ -2981,8 +2981,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_pick"
+                "path": "flags.caminos.parche_pick",
+                "valor": true
               }
             ]
           },
@@ -3012,8 +3012,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_pick"
+                "path": "flags.caminos.parche_pick",
+                "valor": true
               }
             ]
           }
@@ -3045,9 +3045,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.contenido",
+        "field": "flags.caminos.parche_pick",
         "op": "eq",
-        "value": "parche_pick"
+        "value": true
       }
     ],
     "options": [
@@ -3083,8 +3083,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_pick_fin"
+                "path": "flags.caminos.parche_pick_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3123,8 +3123,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_pick_fin"
+                "path": "flags.caminos.parche_pick_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3171,8 +3171,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_pick_fin"
+                "path": "flags.caminos.parche_pick_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3211,8 +3211,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_pick_fin"
+                "path": "flags.caminos.parche_pick_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3285,8 +3285,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_main"
+                "path": "flags.caminos.parche_main",
+                "valor": true
               }
             ]
           },
@@ -3316,8 +3316,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_main"
+                "path": "flags.caminos.parche_main",
+                "valor": true
               }
             ]
           }
@@ -3355,8 +3355,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_main"
+                "path": "flags.caminos.parche_main",
+                "valor": true
               }
             ]
           },
@@ -3386,8 +3386,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_main"
+                "path": "flags.caminos.parche_main",
+                "valor": true
               }
             ]
           }
@@ -3419,9 +3419,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.contenido",
+        "field": "flags.caminos.parche_main",
         "op": "eq",
-        "value": "parche_main"
+        "value": true
       }
     ],
     "options": [
@@ -3457,8 +3457,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_main_fin"
+                "path": "flags.caminos.parche_main_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3497,8 +3497,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_main_fin"
+                "path": "flags.caminos.parche_main_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3545,8 +3545,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_main_fin"
+                "path": "flags.caminos.parche_main_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3585,8 +3585,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_main_fin"
+                "path": "flags.caminos.parche_main_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3659,8 +3659,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_worlds"
+                "path": "flags.caminos.parche_worlds",
+                "valor": true
               }
             ]
           },
@@ -3690,8 +3690,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_worlds"
+                "path": "flags.caminos.parche_worlds",
+                "valor": true
               }
             ]
           }
@@ -3729,8 +3729,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_worlds"
+                "path": "flags.caminos.parche_worlds",
+                "valor": true
               }
             ]
           },
@@ -3760,8 +3760,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_worlds"
+                "path": "flags.caminos.parche_worlds",
+                "valor": true
               }
             ]
           }
@@ -3793,9 +3793,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.contenido",
+        "field": "flags.caminos.parche_worlds",
         "op": "eq",
-        "value": "parche_worlds"
+        "value": true
       }
     ],
     "options": [
@@ -3831,8 +3831,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_worlds_fin"
+                "path": "flags.caminos.parche_worlds_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3871,8 +3871,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_worlds_fin"
+                "path": "flags.caminos.parche_worlds_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3919,8 +3919,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_worlds_fin"
+                "path": "flags.caminos.parche_worlds_fin",
+                "valor": true
               },
               {
                 "type": "momento",
@@ -3959,8 +3959,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "parche_worlds_fin"
+                "path": "flags.caminos.parche_worlds_fin",
+                "valor": true
               },
               {
                 "type": "momento",

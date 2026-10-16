@@ -1953,8 +1953,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "soloq_cuenta_abierta"
+                "path": "flags.caminos.soloq_cuenta_abierta",
+                "valor": true
               }
             ]
           },
@@ -1984,8 +1984,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "soloq_cuenta_abierta"
+                "path": "flags.caminos.soloq_cuenta_abierta",
+                "valor": true
               }
             ]
           }
@@ -2052,9 +2052,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.region",
+        "field": "flags.caminos.soloq_cuenta_abierta",
         "op": "eq",
-        "value": "soloq_cuenta_abierta"
+        "value": true
       }
     ],
     "options": [
@@ -2100,8 +2100,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "soloq_cuenta_challenger"
+                "path": "flags.caminos.soloq_cuenta_challenger",
+                "valor": true
               }
             ]
           },
@@ -2131,8 +2131,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "soloq_cuenta_challenger"
+                "path": "flags.caminos.soloq_cuenta_challenger",
+                "valor": true
               }
             ]
           }
@@ -2170,8 +2170,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "soloq_cuenta_challenger"
+                "path": "flags.caminos.soloq_cuenta_challenger",
+                "valor": true
               }
             ]
           },
@@ -2201,8 +2201,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.region",
-                "valor": "soloq_cuenta_challenger"
+                "path": "flags.caminos.soloq_cuenta_challenger",
+                "valor": true
               }
             ]
           }
@@ -2229,9 +2229,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.region",
+        "field": "flags.caminos.soloq_cuenta_challenger",
         "op": "eq",
-        "value": "soloq_cuenta_challenger"
+        "value": true
       }
     ],
     "options": [
@@ -2424,8 +2424,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "soloq_duo_sigue"
+                "path": "flags.caminos.soloq_duo_sigue",
+                "valor": true
               }
             ]
           },
@@ -2455,8 +2455,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "soloq_duo_sigue"
+                "path": "flags.caminos.soloq_duo_sigue",
+                "valor": true
               }
             ]
           }
@@ -2484,8 +2484,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "soloq_duo_sigue"
+                "path": "flags.caminos.soloq_duo_sigue",
+                "valor": true
               }
             ]
           },
@@ -2528,9 +2528,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.contenido",
+        "field": "flags.caminos.soloq_duo_sigue",
         "op": "eq",
-        "value": "soloq_duo_sigue"
+        "value": true
       }
     ],
     "options": [
@@ -2566,8 +2566,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "soloq_duo_mentor"
+                "path": "flags.caminos.soloq_duo_mentor",
+                "valor": true
               }
             ]
           },
@@ -2597,8 +2597,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.contenido",
-                "valor": "soloq_duo_mentor"
+                "path": "flags.caminos.soloq_duo_mentor",
+                "valor": true
               }
             ]
           }
@@ -2675,9 +2675,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.contenido",
+        "field": "flags.caminos.soloq_duo_mentor",
         "op": "eq",
-        "value": "soloq_duo_mentor"
+        "value": true
       }
     ],
     "options": [
@@ -2860,8 +2860,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.rol",
-                "valor": "soloq_cien_en_marcha"
+                "path": "flags.caminos.soloq_cien_en_marcha",
+                "valor": true
               }
             ]
           },
@@ -2881,8 +2881,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.rol",
-                "valor": "soloq_cien_en_marcha"
+                "path": "flags.caminos.soloq_cien_en_marcha",
+                "valor": true
               }
             ]
           }
@@ -2959,9 +2959,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.rol",
+        "field": "flags.caminos.soloq_cien_en_marcha",
         "op": "eq",
-        "value": "soloq_cien_en_marcha"
+        "value": true
       }
     ],
     "options": [
@@ -2997,8 +2997,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.rol",
-                "valor": "soloq_cien_al_final"
+                "path": "flags.caminos.soloq_cien_al_final",
+                "valor": true
               }
             ]
           },
@@ -3018,8 +3018,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.rol",
-                "valor": "soloq_cien_al_final"
+                "path": "flags.caminos.soloq_cien_al_final",
+                "valor": true
               }
             ]
           }
@@ -3096,9 +3096,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.rol",
+        "field": "flags.caminos.soloq_cien_al_final",
         "op": "eq",
-        "value": "soloq_cien_al_final"
+        "value": true
       }
     ],
     "options": [

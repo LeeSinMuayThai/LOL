@@ -29,6 +29,71 @@ const EDAD_INICIAL = 15;
 // `state.desafio`. Para que "misma fecha" garantice "mismo arranque", un
 // desafío exige la seed del día y `eleccion: null` (el handle también entra en
 // el mundo: el ruido del Top 20 lo hashea).
+// H5 (PLANUI §0.10): las claves de `flags.caminos` de los arcos de lo raro (`data/events/raros/`), una por arco o rama:
+// el primer paso la deja en true y el siguiente la lee. La migración de la 21 las completa en null.
+export const ARCOS_DE_LO_RARO = [
+  'escena_campeon',
+  'escena_campeon_fin',
+  'escena_descartados',
+  'escena_descartados_fin',
+  'escena_quiebra',
+  'escena_quiebra_fin',
+  'escena_rookie',
+  'escena_rookie_fin',
+  'familia_cartas_leida',
+  'familia_hermano_aprende',
+  'familia_viejo_tribuna',
+  'familia_viejo_viaja',
+  'legado_academia',
+  'legado_capitan',
+  'legado_discipulo',
+  'legado_leyenda',
+  'legado_ultimo_baile',
+  'llamado_coach',
+  'llamado_coach_fin',
+  'llamado_lck',
+  'llamado_lck_fin',
+  'llamado_lpl',
+  'llamado_lpl_fin',
+  'llamado_scrim',
+  'llamado_scrim_fin',
+  'llamado_sparring',
+  'llamado_sparring_fin',
+  'oscuro_ban',
+  'oscuro_escandalo',
+  'oscuro_informante',
+  'oscuro_oferta',
+  'parche_dios',
+  'parche_dios_fin',
+  'parche_main',
+  'parche_main_fin',
+  'parche_pick',
+  'parche_pick_fin',
+  'parche_worlds',
+  'parche_worlds_fin',
+  'plata_casa_comprada',
+  'plata_fondo_adentro',
+  'plata_sponsor_favor',
+  'plata_sponsor_firmado',
+  'salud_aplazada',
+  'salud_colapso',
+  'salud_monje',
+  'salud_operada',
+  'salud_voz',
+  'soloq_cien_al_final',
+  'soloq_cien_en_marcha',
+  'soloq_cuenta_abierta',
+  'soloq_cuenta_challenger',
+  'soloq_duo_mentor',
+  'soloq_duo_sigue',
+  'stream_canal_abierto',
+  'stream_canal_despega',
+  'stream_clip_meme',
+  'stream_directo_disculpa',
+  'stream_directo_pendiente',
+  'stream_directo_silencio'
+];
+
 export function createInitialState(seed, rng, eleccion = null, desafio = null) {
   if (desafio !== null) {
     if (!esFechaDeDesafio(desafio?.fecha)) {
@@ -436,7 +501,9 @@ export function createInitialState(seed, rng, eleccion = null, desafio = null) {
         rol: null,        // 'cubrio' | 'a_prueba' | 'se_nego' | 'integrado'
         playoffs: null,   // 'infiltrado' | 'paro' | 'sin_infiltrar' | 'recuperado' | 'cronico'
         conflicto: null,  // 'con_la_org' | 'contra_la_org' | 'en_el_medio' | 'resuelto'
-        staff: null       // 'puerta_abierta' | 'en_transicion' | 'cerrada'
+        staff: null,      // 'puerta_abierta' | 'en_transicion' | 'cerrada'
+        // H5 (PLANUI §0.10): un arco de lo raro por clave, en null hasta que se abre (`ARCOS_DE_LO_RARO`).
+        ...Object.fromEntries(ARCOS_DE_LO_RARO.map((clave) => [clave, null]))
       },
       // Rastro de un solo split: qué campeón(es) entró el último efecto `pool`
       // con `accion: 'aprender'` de ESTE outcome. Lo usa el siguiente efecto

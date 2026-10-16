@@ -1518,8 +1518,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "familia_viejo_viaja"
+                "path": "flags.caminos.familia_viejo_viaja",
+                "valor": true
               }
             ]
           },
@@ -1539,8 +1539,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "familia_viejo_viaja"
+                "path": "flags.caminos.familia_viejo_viaja",
+                "valor": true
               }
             ]
           }
@@ -1620,9 +1620,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.playoffs",
+        "field": "flags.caminos.familia_viejo_viaja",
         "op": "eq",
-        "value": "familia_viejo_viaja"
+        "value": true
       }
     ],
     "options": [
@@ -1658,8 +1658,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "familia_viejo_tribuna"
+                "path": "flags.caminos.familia_viejo_tribuna",
+                "valor": true
               }
             ]
           },
@@ -1679,8 +1679,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "familia_viejo_tribuna"
+                "path": "flags.caminos.familia_viejo_tribuna",
+                "valor": true
               }
             ]
           }
@@ -1718,8 +1718,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "familia_viejo_tribuna"
+                "path": "flags.caminos.familia_viejo_tribuna",
+                "valor": true
               }
             ]
           },
@@ -1749,8 +1749,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.playoffs",
-                "valor": "familia_viejo_tribuna"
+                "path": "flags.caminos.familia_viejo_tribuna",
+                "valor": true
               }
             ]
           }
@@ -1777,9 +1777,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.playoffs",
+        "field": "flags.caminos.familia_viejo_tribuna",
         "op": "eq",
-        "value": "familia_viejo_tribuna"
+        "value": true
       }
     ],
     "options": [
@@ -1983,8 +1983,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "familia_hermano_aprende"
+                "path": "flags.caminos.familia_hermano_aprende",
+                "valor": true
               }
             ]
           },
@@ -2004,8 +2004,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.conflicto",
-                "valor": "familia_hermano_aprende"
+                "path": "flags.caminos.familia_hermano_aprende",
+                "valor": true
               }
             ]
           }
@@ -2083,9 +2083,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.conflicto",
+        "field": "flags.caminos.familia_hermano_aprende",
         "op": "eq",
-        "value": "familia_hermano_aprende"
+        "value": true
       }
     ],
     "options": [
@@ -2278,8 +2278,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "familia_cartas_leida"
+                "path": "flags.caminos.familia_cartas_leida",
+                "valor": true
               }
             ]
           },
@@ -2309,8 +2309,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "familia_cartas_leida"
+                "path": "flags.caminos.familia_cartas_leida",
+                "valor": true
               }
             ]
           }
@@ -2348,8 +2348,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.staff",
-                "valor": "familia_cartas_leida"
+                "path": "flags.caminos.familia_cartas_leida",
+                "valor": true
               }
             ]
           },
@@ -2392,9 +2392,9 @@
     },
     "conditions": [
       {
-        "field": "flags.caminos.staff",
+        "field": "flags.caminos.familia_cartas_leida",
         "op": "eq",
-        "value": "familia_cartas_leida"
+        "value": true
       }
     ],
     "options": [
