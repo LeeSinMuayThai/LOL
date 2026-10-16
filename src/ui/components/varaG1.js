@@ -8,30 +8,22 @@
 import { BALANCE } from '../../data/balance.js';
 import { veredictoDeMinijuego, minijuegoPorId, lecturaDeVentana, latenciaQuePasa, radioQuePasa } from '../../core/minijuegos.js';
 import { ventanaPorStat, dificultadDe } from './minijuegos/comun.js';
-import { TOTAL as MINIONS } from './minijuegos/lastHit.js';
-import { LARGO as TECLAS_COMBO } from './minijuegos/elCombo.js';
-import { RONDAS as SKILLSHOTS } from './minijuegos/dodge.js';
-import { TIEMPOS } from './minijuegos/elKite.js';
-import { TIROS } from './minijuegos/elGancho.js';
-import { A_OSCURAS } from './minijuegos/laVision.js';
+import { reglaDe } from '../../core/minijuegos.js';
 import { BLANCOS } from './minijuegos/laPrueba.js';
-import { FRENADAS } from './minijuegos/laCorrida.js';
 import { TOPE_ERRORES, PARES } from './minijuegos/laPizarra.js';
 import { ESCALA_DISTANCIA } from './minijuegos/robarBaron.js';
 import { MARGEN_DISTANCIA, ANCHO_ZONA } from './minijuegos/elTeleport.js';
 import { VENTANA_MS } from './minijuegos/laLlamada.js';
 
 // Las mecánicas que se cuentan de a una: el total y cómo se llama lo que se cuenta.
-const CONTEO = {
-  last_hit: { total: MINIONS, unidad: 'minions', articulo: 'los' },
-  el_combo: { total: TECLAS_COMBO, unidad: 'teclas del combo', articulo: 'las' },
-  dodge: { total: SKILLSHOTS, unidad: 'oleadas', articulo: 'las' },
-  el_kite: { total: TIEMPOS, unidad: 'tiempos de kite', articulo: 'los' },
-  el_gancho: { total: TIROS, unidad: 'ganchos', articulo: 'los' },
-  la_vision: { total: A_OSCURAS, unidad: 'wards', articulo: 'los' },
-  la_prueba: { total: BLANCOS, unidad: 'blancos', articulo: 'los' },
-  la_corrida: { total: FRENADAS, unidad: 'frenadas en la zona', articulo: 'las' }
-};
+// H3e: la forma sale del dato (`minijuegos.json` → `regla`, vía `reglaDe`) y el total, de `BALANCE.g1.conteo`. La
+// prueba de ingreso todavía cuenta sus blancos en la mecánica (no están en el balance).
+const TOTAL_SIN_BALANCE = { la_prueba: BLANCOS };
+function conteoDe(id) {
+  const regla = reglaDe(id);
+  const total = regla?.tipo === 'conteo' ? (regla.total ?? TOTAL_SIN_BALANCE[id]) : null;
+  return total ? { total, unidad: regla.unidad, articulo: regla.articulo } : null;
+}
 // El stat de las dos mecánicas nuevas, por si `data/minijuegos.json` todavía no las trae (la entrada la registra G1a).
 const STAT_SIN_DATO = { la_corrida: 'mecanica', la_pizarra: 'macro' };
 const NOMBRE_STAT = { mecanica: 'mecánica', macro: 'macro', teamfight: 'teamfight', laneo: 'laneo', shotcalling: 'shotcalling', adaptabilidad: 'adaptabilidad' };
@@ -73,8 +65,9 @@ function erroresPermitidos(vara, tope) {
 
 // Cómo se mide el minijuego `id` (con el stat y la dificultad de esta ronda, para las ventanas que dependen de ellos).
 export function medidaDe(id, state, datos) {
-  if (CONTEO[id]) return { tipo: 'conteo', ...CONTEO[id] };
   if (id === 'la_pizarra') return { tipo: 'errores', tope: TOPE_ERRORES, pares: PARES };
+  const conteo = conteoDe(id);
+  if (conteo) return { tipo: 'conteo', ...conteo };
   if (id === 'robar_baron') return { tipo: 'distancia', escala: ESCALA_DISTANCIA };
   if (id === 'el_teleport') {
     const ancho = ventanaPorStat(state?.player?.stats?.macro, ANCHO_ZONA[0], ANCHO_ZONA[1], dificultadDe(state, datos));

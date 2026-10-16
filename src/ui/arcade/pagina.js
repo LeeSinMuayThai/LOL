@@ -13,15 +13,15 @@ const MECANICAS = [
   { id: 'robar_baron', nombre: 'Robar el Barón', rol: 'jungla', listo: true, linea: 'El pozo, tres objetivos y el smite rival que se ve venir.' },
   { id: 'dodge', nombre: 'Dodge', rol: 'todos', listo: true, linea: 'La arena: skillshots telegrafiados, WASD o clic, y Flash una vez.' },
   { id: 'last_hit', nombre: 'Last hit', rol: 'top · mid · adc', listo: true, linea: 'La oleada, el cañón y la torre.' },
-  { id: 'el_kite', nombre: 'El kite', rol: 'adc', listo: true, linea: 'El orbwalk contra un bruiser.' },
+  { id: 'el_kite', nombre: 'El kite', rol: 'adc', listo: true, linea: 'Orbwalk contra un bruiser: pegá y salí.' },
   { id: 'el_gancho', nombre: 'El gancho', rol: 'support', listo: true, linea: 'Gancho con lead entre minions.' },
-  { id: 'el_combo', nombre: 'El combo', rol: 'mid', listo: true, linea: 'Las notas QWER + F.' },
-  { id: 'el_teleport', nombre: 'El teleport', rol: 'top', listo: true, linea: 'La pelea en el minimapa.' },
-  { id: 'la_vision', nombre: 'La visión', rol: 'support · jungla', listo: true, linea: 'La ruta del jungla rival.' },
-  { id: 'la_llamada', nombre: 'La llamada', rol: 'todos', listo: true, linea: 'Cantar el objetivo correcto a tiempo.' },
-  { id: 'la_corrida', nombre: 'La corrida', rol: 'todos', listo: true, linea: 'El engage: la R en el área.' },
-  { id: 'la_pizarra', nombre: 'La pizarra', rol: 'todos', listo: true, linea: 'Memotest de draft.' },
-  { id: 'la_prueba', nombre: 'La prueba', rol: 'prueba de ingreso', listo: true, linea: 'Aim de skillshots.' }
+  { id: 'el_combo', nombre: 'El combo', rol: 'mid', listo: true, linea: 'Las notas QWER+F: un error corta el combo.' },
+  { id: 'el_teleport', nombre: 'El teleport', rol: 'top', listo: true, linea: 'La pelea en el minimapa: tirá el TP a tiempo.' },
+  { id: 'la_vision', nombre: 'La visión', rol: 'support · jungla', listo: true, linea: 'Wardeá la ruta del jungla antes de que llegue.' },
+  { id: 'la_llamada', nombre: 'La llamada', rol: 'todos', listo: true, linea: 'Cantá el objetivo que se abre libre, a tiempo.' },
+  { id: 'la_corrida', nombre: 'La corrida', rol: 'todos', listo: true, linea: 'La teamfight: tu R cuando se juntan.' },
+  { id: 'la_pizarra', nombre: 'La pizarra', rol: 'todos', listo: true, linea: 'Memotest de draft: pick con su línea o su counter.' },
+  { id: 'la_prueba', nombre: 'La prueba', rol: 'prueba de ingreso', listo: true, linea: 'El practice tool: skillshots a dummies que amagan.' }
 ];
 const ROL_DE = { robar_baron: 'jungla' };
 const SEMILLA_INICIAL = 20261015;

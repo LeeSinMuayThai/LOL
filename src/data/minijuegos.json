@@ -49,6 +49,12 @@
         "Te roban el Barón: el mapa se complica.",
         "Tirás el smite temprano y quedás vendido."
       ]
+    },
+    "regla": {
+      "tipo": "distancia",
+      "unidad": "de distancia",
+      "articulo": "",
+      "frase": "Smiteá los tres objetivos adentro de su zona"
     }
   },
   {
@@ -65,7 +71,7 @@
     },
     "impacto": 0.14,
     "spread": 0.2,
-    "reglaEnFiccion": "Leé el posicionamiento y cantá la orden adecuada por voz antes de que la ventana de la jugada se cierre.",
+    "reglaEnFiccion": "El mapa y sus relojes: cantá el objetivo que se abre libre, antes de que se cierre.",
     "nombresPorCompeticion": {
       "internacional": "La llamada en el escenario mundial",
       "LCK": "La llamada de la LCK",
@@ -100,6 +106,12 @@
         "Nadie reacciona a tiempo: el mapa se complica.",
         "La llamás con el equipo partido y se muere solo."
       ]
+    },
+    "regla": {
+      "tipo": "latencia",
+      "unidad": "ms",
+      "articulo": "",
+      "frase": "Cantá las tres en {n} ms de media"
     }
   },
   {
@@ -154,6 +166,12 @@
         "El tono no fue el mejor: la nota sale rara.",
         "Te sale una frase incómoda y se recorta sola."
       ]
+    },
+    "regla": {
+      "tipo": "continuo",
+      "unidad": "puntos",
+      "articulo": "",
+      "frase": "Bancate la rueda de prensa con {n} puntos"
     }
   },
   {
@@ -168,7 +186,7 @@
     },
     "impacto": 6,
     "spread": 0.2,
-    "reglaEnFiccion": "Mostrá consistencia y sangre fría en cada intento bajo la mirada evaluadora del cuerpo técnico.",
+    "reglaEnFiccion": "El practice tool, con el coach mirando: skillshots a dummies que se mueven y amagan.",
     "nombresPorCompeticion": {
       "default": "La prueba de ingreso"
     },
@@ -210,6 +228,12 @@
         "Salió flojo, pero tu nivel alcanzó: firmás y entrás debiendo algo.",
         "No fue tu mejor tryout, pero llegaste a la vara: firmás, y adentro te van a mirar con lupa."
       ]
+    },
+    "regla": {
+      "tipo": "conteo",
+      "unidad": "dummies",
+      "articulo": "los",
+      "frase": "Pegale a {n} dummies del practice tool"
     }
   },
   {
@@ -229,7 +253,7 @@
     },
     "impacto": 0.09,
     "spread": 0.14,
-    "reglaEnFiccion": "Rematá a cada súbdito justo cuando su vida entra en rango de ejecución bajo la torre para asegurar la ventaja en línea.",
+    "reglaEnFiccion": "La oleada pelea sola: rematá cada minion cuando entra en tu daño, antes que la torre.",
     "nombresPorCompeticion": {
       "internacional": "La línea en el internacional",
       "LCK": "El farm de la LCK",
@@ -264,6 +288,12 @@
         "Se te va media ola: quedás atrás en la línea.",
         "Fallás los remates y el farmeo se te complica."
       ]
+    },
+    "regla": {
+      "tipo": "conteo",
+      "unidad": "minions",
+      "articulo": "los",
+      "frase": "Rematá {n} minions antes de que te los roben"
     }
   },
   {
@@ -279,7 +309,7 @@
     },
     "impacto": 0.12,
     "spread": 0.18,
-    "reglaEnFiccion": "Ejecutá la secuencia completa de habilidades en el orden exacto antes de que expire el control sobre el rival.",
+    "reglaEnFiccion": "Tu combo baja nota por nota: la tecla justa en su ventana, sin cortar la cadena.",
     "nombresPorCompeticion": {
       "internacional": "El combo en el escenario mundial",
       "LCK": "La secuencia mecánica de la LCK",
@@ -314,6 +344,12 @@
         "Se te traba el combo y quedás vendido.",
         "Errás el orden y la pelea se da vuelta."
       ]
+    },
+    "regla": {
+      "tipo": "conteo",
+      "unidad": "combos",
+      "articulo": "los",
+      "frase": "Clavá {n} combos completos de tu campeón"
     }
   },
   {
@@ -364,6 +400,12 @@
         "Te enganchan de entrada: la pelea se pierde ahí.",
         "Comés todo lo que te tiran y el mapa se complica."
       ]
+    },
+    "regla": {
+      "tipo": "conteo",
+      "unidad": "oleadas",
+      "articulo": "las",
+      "frase": "Esquivá {n} oleadas de skillshots sin comerte nada"
     }
   },
   {
@@ -382,7 +424,7 @@
     },
     "impacto": 0.1,
     "spread": 0.16,
-    "reglaEnFiccion": "Colocá los centinelas de visión en los arbustos clave antes de que la zona quede a oscuras.",
+    "reglaEnFiccion": "El jungla rival cruza la niebla: leé las pistas y wardeá adonde va, antes de que llegue.",
     "nombresPorCompeticion": {
       "internacional": "Visión en el internacional",
       "LCK": "El mapa de visión de la LCK",
@@ -417,6 +459,12 @@
         "Wardeás para otro lado: te entran por donde no mirabas.",
         "El mapa queda oscuro justo donde se define."
       ]
+    },
+    "regla": {
+      "tipo": "conteo",
+      "unidad": "cacerías",
+      "articulo": "las",
+      "frase": "Cazá al jungla rival {n} veces con tus wards"
     }
   },
   {
@@ -434,7 +482,7 @@
     },
     "impacto": 0.11,
     "spread": 0.16,
-    "reglaEnFiccion": "Intercalá ataques y pasos hacia atrás al compás para desgastar al rival sin permitir que te alcance.",
+    "reglaEnFiccion": "Un bruiser te viene encima: pegá con el anillo lleno y salí antes de que te alcance.",
     "nombresPorCompeticion": {
       "internacional": "El kite del internacional",
       "LCK": "El espaciado de la LCK",
@@ -469,6 +517,12 @@
         "Te alcanzan de entrada y no pegás nada.",
         "Se te va el ritmo y te caés primero."
       ]
+    },
+    "regla": {
+      "tipo": "conteo",
+      "unidad": "tiempos de kite",
+      "articulo": "los",
+      "frase": "Pegá {n} tiempos sin que el bruiser te agarre"
     }
   },
   {
@@ -486,7 +540,7 @@
     },
     "impacto": 0.15,
     "spread": 0.22,
-    "reglaEnFiccion": "Canalizá el teleport con la anticipación exacta para caer a espaldas del rival y definir la pelea.",
+    "reglaEnFiccion": "Se arma una pelea en el minimapa: elegí dónde caer y cuándo tirar el TP.",
     "nombresPorCompeticion": {
       "internacional": "El TP del internacional",
       "LCK": "El flanco con TP de la LCK",
@@ -521,6 +575,12 @@
         "Llegás a mirar: la pelea ya estaba perdida.",
         "Tirás el TP temprano y avisás que bajabas."
       ]
+    },
+    "regla": {
+      "tipo": "distancia",
+      "unidad": "de distancia",
+      "articulo": "",
+      "frase": "Caé con el TP justo en la pelea"
     }
   },
   {
@@ -536,7 +596,7 @@
     },
     "impacto": 0.11,
     "spread": 0.16,
-    "reglaEnFiccion": "La barra corre: frená adentro de la zona, justo cuando el rival gasta el flash. Tu mecánica agranda la zona.",
+    "reglaEnFiccion": "La teamfight se junta a ratos: tirá tu R cuando hay tres o más adentro.",
     "nombresPorCompeticion": {
       "internacional": "La corrida de Worlds",
       "default": "La corrida de {liga}"
@@ -565,6 +625,12 @@
         "Entraste un segundo antes y el rival tenía todo: te comiste el combo entero y el chat ya está haciendo el clip.",
         "Frenaste tarde: cuando llegaste, la pelea ya era un replay y vos eras el que miraba."
       ]
+    },
+    "regla": {
+      "tipo": "conteo",
+      "unidad": "engages",
+      "articulo": "los",
+      "frase": "Metele la R a {n} engages de tres o más"
     }
   },
   {
@@ -580,7 +646,7 @@
     },
     "impacto": 0.11,
     "spread": 0.16,
-    "reglaEnFiccion": "El analista te mostró la pizarra del rival un segundo: memorizá sus rotaciones y repetilas en orden. Tu macro te deja verla más tiempo.",
+    "reglaEnFiccion": "El coach muestra el plan del rival unos segundos: armá cada pick con su línea o su counter.",
     "nombresPorCompeticion": {
       "internacional": "La pizarra de Worlds",
       "default": "La pizarra de {liga}"
@@ -609,6 +675,12 @@
         "Te acordaste de la mitad de la pizarra y justo la otra mitad era la que importaba: te rotaron a bot mientras mirabas el dragón.",
         "Confundiste el plan del rival con el del scrim del martes. El analista no te mira a los ojos."
       ]
+    },
+    "regla": {
+      "tipo": "conteo",
+      "unidad": "errores",
+      "articulo": "los",
+      "frase": "Armá la pizarra con {n} errores como mucho"
     }
   },
   {
@@ -661,6 +733,12 @@
         "Los ganchos mueren en los minions: nunca abrís una pelea.",
         "Les tirás donde estaban, no donde van."
       ]
+    },
+    "regla": {
+      "tipo": "conteo",
+      "unidad": "ganchos",
+      "articulo": "los",
+      "frase": "Enganchá {n} veces al ADC o al support"
     }
   }
 ]
