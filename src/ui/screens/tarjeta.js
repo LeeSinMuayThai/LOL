@@ -4,6 +4,7 @@ import { miles, textoParaCompartir, linkDeEstado } from '../resultado.js';
 import { esBuenPapel } from '../../core/registro.js';
 import { esLigaGrande } from '../../core/ligas.js';
 import { goldenRoadsDeEstado, medallaDeGoldenRoad } from '../core/trayectoria.js';
+import { albumCompartido } from '../core/album.js';
 import { apodoDeLealtad, arraigoPorOrg, dueloEterno, finalesPerdidas, monumento, premiosConNombre } from '../../core/legado.js';
 
 // La tarjeta de legado (fase 9R5b, PLAN.md §10.2/§10.3): la pantalla final.
@@ -86,6 +87,9 @@ function bloqueNumero(state, puntaje, lineaHistorial) {
   if (lineaHistorial) {
     el.appendChild(linea('tarjeta-numero-historial', lineaHistorial));
   }
+  // H6: lo que descubriste en esta carrera ("Descubriste 9 cosas nuevas, 2 legendarias"); nada si no hubo nada nuevo.
+  const album = albumCompartido().textoDeCarrera(state.seed ?? null);
+  if (album) el.appendChild(linea('tarjeta-numero-album', album));
   return el;
 }
 

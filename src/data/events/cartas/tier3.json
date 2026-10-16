@@ -338,5 +338,602 @@
       }
     ],
     "plan": "marca"
+  },
+  {
+    "id": "t3_rutina_de_gimnasio",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Rutina de gimnasio",
+    "linea": "Cuerpo sano, manos que no se cansan",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_la_casa_del_equipo",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "La casa del equipo",
+    "linea": "Comer, dormir y jugar bajo el mismo techo",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t3_scrim_contra_los_grandes",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Scrim contra los grandes",
+    "linea": "Perdés cuatro de cinco y aprendés igual",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_primer_sueldo",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Primer sueldo",
+    "linea": "Te alcanza y la cabeza se ordena",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t3_lane_swap_ensayado",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Lane swap ensayado",
+    "linea": "Lo practicás hasta que sale sin hablar",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_calls_en_scrim",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Calls en scrim",
+    "linea": "Hablás fuerte y el equipo te sigue",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t3_replays_de_madrugada",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Replays de madrugada",
+    "linea": "Cuando todos duermen, vos mirás tus muertes",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_stream_con_publico",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Stream con público",
+    "linea": "Practicás con el chat mirando cada click",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_bootcamp_corto",
+    "rareza": "rara",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Bootcamp corto",
+    "linea": "Una semana encerrado antes de los playoffs",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_el_coach_analista",
+    "rareza": "rara",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "El coach analista",
+    "linea": "Llega con planillas y te cambia la forma",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_serie_larga",
+    "rareza": "rara",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Serie larga",
+    "linea": "Cinco partidas y las ganás con la cabeza",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t3_dominar_la_lane",
+    "rareza": "rara",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Dominar la lane",
+    "linea": "El rival pide ayuda desde el minuto cuatro",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_flash_de_oro",
+    "rareza": "rara",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Flash de oro",
+    "linea": "Una decisión de reflejo que cambia la serie",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_draft_ensayado",
+    "rareza": "rara",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Draft ensayado",
+    "linea": "Tenés tres planes y el rival ninguno",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t3_tryout_de_academy",
+    "rareza": "rara",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Tryout de academy",
+    "linea": "Te prueban una semana y te dejan sufrir",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t3_split_sin_derrotas",
+    "rareza": "rara",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Split sin derrotas",
+    "linea": "Nadie en la liga te ve venir",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_referente_del_chat",
+    "rareza": "rara",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Referente del chat",
+    "linea": "Los fans te copian las builds",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_scrims_con_el_campeon",
+    "rareza": "epica",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Scrims con el campeón",
+    "linea": "Una semana contra el mejor de la región",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_final_en_vivo",
+    "rareza": "epica",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Final en vivo",
+    "linea": "Dos mil personas y vos no temblás",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t3_te_siguen_los_scouts",
+    "rareza": "epica",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Te siguen los scouts",
+    "linea": "Un analista anota cada rotación tuya",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t3_pool_completo",
+    "rareza": "epica",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Pool completo",
+    "linea": "Jugás cualquier campeón del parche",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "laneo",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_laneo_perfecto",
+    "rareza": "epica",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Laneo perfecto",
+    "linea": "Cero daño recibido en tres partidas",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_lider_del_equipo",
+    "rareza": "epica",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Líder del equipo",
+    "linea": "Quien habla en el voice es quien gana",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t3_ascenso_directo",
+    "rareza": "legendaria",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Ascenso directo",
+    "linea": "Ganás la liga y todos te quieren",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "costo": {
+      "stat": "mentalidad",
+      "valor": [
+        -2,
+        -1
+      ]
+    },
+    "plan": "juego"
+  },
+  {
+    "id": "t3_la_jugada_del_split",
+    "rareza": "legendaria",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "La jugada del split",
+    "linea": "La repiten en cada resumen de la liga",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          8,
+          9
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_nace_un_referente",
+    "rareza": "legendaria",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Nace un referente",
+    "linea": "El mejor de la liga, y todos lo saben",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "mecanica",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
   }
 ]

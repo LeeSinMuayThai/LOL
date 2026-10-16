@@ -345,5 +345,568 @@
       }
     ],
     "plan": "marca"
+  },
+  {
+    "id": "t2_dia_libre",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Día libre",
+    "linea": "Apagás la PC y salís a caminar",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t2_vod_del_rival",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "VOD del rival",
+    "linea": "Estudiás sus drafts y sus rutas favoritas",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_entrenar_el_cs",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Entrenar el CS",
+    "linea": "Ochenta a los diez minutos, sin excusas",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_ping_de_ward",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Ping de ward",
+    "linea": "Cada objetivo llamado a tiempo",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t2_pool_de_scrims",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Pool de scrims",
+    "linea": "Probás tres campeones nuevos por semana",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_parche_nuevo",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Parche nuevo",
+    "linea": "Lo leés antes que el resto de la liga",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_respirar_antes_del_baron",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Respirar antes del Barón",
+    "linea": "Contás hasta tres y decidís mejor",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t2_trading_en_lane",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Trading en lane",
+    "linea": "Pegás una y te vas antes del castigo",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_serie_de_playoffs",
+    "rareza": "rara",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Serie de playoffs",
+    "linea": "Tres a dos, y cerrás con la cabeza",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t2_split_de_ensayo",
+    "rareza": "rara",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Split de ensayo",
+    "linea": "Probás lo que el resto no se anima",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_novato_al_lado",
+    "rareza": "rara",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Novato al lado",
+    "linea": "Guiás a un pibe y de paso aprendés",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t2_pelea_imposible",
+    "rareza": "rara",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Pelea imposible",
+    "linea": "Ganás un cuatro contra cinco y cambia todo",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_duo_de_botlane",
+    "rareza": "rara",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Duo de botlane",
+    "linea": "Dos años juntos y ya no hablan",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_maraton_de_scrims",
+    "rareza": "rara",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Maratón de scrims",
+    "linea": "Ocho horas, y las últimas son las mejores",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_ligas_vecinas",
+    "rareza": "rara",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Ligas vecinas",
+    "linea": "Mirás cómo juegan en la LFL y copiás",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_cierre_de_playoffs",
+    "rareza": "rara",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Cierre de playoffs",
+    "linea": "La presión se queda afuera del servidor",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t2_mirada_de_la_mayor",
+    "rareza": "epica",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Mirada de la mayor",
+    "linea": "Una org grande pregunta por vos",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t2_rey_de_las_scrims",
+    "rareza": "epica",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Rey de las scrims",
+    "linea": "Nadie quiere cruzarse con vos",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_bootcamp_de_verdad",
+    "rareza": "epica",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Bootcamp de verdad",
+    "linea": "Tres semanas con coach, psicólogo y cocinero",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t2_final_ganada",
+    "rareza": "epica",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Final ganada",
+    "linea": "El título de segunda se siente enorme",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t2_mecanica_de_elite",
+    "rareza": "epica",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Mecánica de elite",
+    "linea": "Los combos salen sin pensar",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_lectura_de_elite",
+    "rareza": "epica",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Lectura de elite",
+    "linea": "Ves el siguiente dragón antes que ellos",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_el_ascenso",
+    "rareza": "legendaria",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "El ascenso",
+    "linea": "Subís de liga con todo el equipo",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "costo": {
+      "stat": "mentalidad",
+      "valor": [
+        -2,
+        -1
+      ]
+    },
+    "plan": "juego"
+  },
+  {
+    "id": "t2_mvp_de_la_final",
+    "rareza": "legendaria",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "MVP de la final",
+    "linea": "Una actuación que repiten por semanas",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          8,
+          9
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_la_remontada",
+    "rareza": "legendaria",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "La remontada",
+    "linea": "Tres mil de oro abajo y la ganaron",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "marca"
   }
 ]

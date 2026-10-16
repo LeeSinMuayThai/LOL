@@ -205,5 +205,535 @@
       }
     ],
     "plan": "marca"
+  },
+  {
+    "id": "em_visa_resuelta",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Visa resuelta",
+    "linea": "Te sacás un peso de encima",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "em_cocinar_en_casa",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Cocinar en casa",
+    "linea": "Un mate y un guiso, y volvés a ser vos",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "em_llamar_a_casa",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Llamar a casa",
+    "linea": "Una hora con la familia y te recargás",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "em_ranked_en_la_region",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Ranked en la región",
+    "linea": "El soloQ de acá te endurece",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_scrim_de_madrugada",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Scrim de madrugada",
+    "linea": "El horario es otro, el nivel también",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_pizarra_en_ingles",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Pizarra en inglés",
+    "linea": "Las calls ya salen sin traducir",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "em_lane_de_import",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Lane de import",
+    "linea": "Aprendés cómo se pelea acá",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_un_aliado_aca",
+    "rareza": "rara",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Un aliado acá",
+    "linea": "Alguien que te entiende sin traducir",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "em_split_de_adaptacion",
+    "rareza": "rara",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Split de adaptación",
+    "linea": "Primero cuesta, después todo se abre",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_coach_bilingue",
+    "rareza": "rara",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Coach bilingüe",
+    "linea": "Te explica el macro sin perderse nada",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_la_cola_mas_dura",
+    "rareza": "rara",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "La cola más dura",
+    "linea": "Entrar y salir de Challenger todos los días",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_ganar_afuera",
+    "rareza": "rara",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Ganar afuera",
+    "linea": "Primera victoria lejos de casa",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "em_scrims_con_los_mejores",
+    "rareza": "rara",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Scrims con los mejores",
+    "linea": "Cada noche contra un top del mundo",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_hablar_con_todos",
+    "rareza": "rara",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Hablar con todos",
+    "linea": "En cinco idiomas te entienden igual",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "em_estilo_importado",
+    "rareza": "rara",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Estilo importado",
+    "linea": "Traés algo que acá nadie esperaba",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_referente_en_la_liga",
+    "rareza": "epica",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Referente en la liga",
+    "linea": "El equipo local te da las llaves",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "em_ya_sos_de_aca",
+    "rareza": "epica",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Ya sos de acá",
+    "linea": "El idioma, el clima y el juego",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "em_mvp_de_la_region",
+    "rareza": "epica",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "MVP de la región",
+    "linea": "Ganás con una lane que nadie conocía",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "mecanica",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_estilo_nuevo",
+    "rareza": "epica",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Estilo nuevo",
+    "linea": "Juntás lo de allá con lo de acá",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_campeon_afuera",
+    "rareza": "epica",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Campeón afuera",
+    "linea": "Un trofeo que nadie esperaba de vos",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "em_haciendo_historia",
+    "rareza": "legendaria",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Haciendo historia",
+    "linea": "El primero de tu país en ganar acá",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "em_el_mejor_import",
+    "rareza": "legendaria",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "El mejor import",
+    "linea": "Tu nombre en cada ranking de la liga",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          8,
+          9
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_vuelta_triunfal",
+    "rareza": "legendaria",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Vuelta triunfal",
+    "linea": "Volvés a casa con la liga ganada",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "costo": {
+      "stat": "laneo",
+      "valor": [
+        -2,
+        -1
+      ]
+    },
+    "plan": "juego"
   }
 ]

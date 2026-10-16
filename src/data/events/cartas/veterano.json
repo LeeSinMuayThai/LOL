@@ -292,5 +292,548 @@
       }
     ],
     "plan": "marca"
+  },
+  {
+    "id": "vt_cuidar_la_espalda",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Cuidar la espalda",
+    "linea": "Postura nueva y menos horas sentado",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_rutina_de_siempre",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Rutina de siempre",
+    "linea": "Hacés lo mismo que te sirvió diez años",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "vt_vods_viejos",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "VODs viejos",
+    "linea": "Encontrás lo que hacías mejor antes",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_pelea_de_rutina",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Pelea de rutina",
+    "linea": "Conocés cada engage antes de que llegue",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "vt_lane_con_calma",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Lane con calma",
+    "linea": "Ya no necesitás ganar el primer minuto",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_estirar_las_munecas",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Estirar las muñecas",
+    "linea": "Tres rutinas al día, sin falta",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_entrevista_tranquila",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Entrevista tranquila",
+    "linea": "Hablás del juego sin ansiedad",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "vt_ordenar_el_draft",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Ordenar el draft",
+    "linea": "Una frase tuya y el equipo lo ve",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "vt_viejo_zorro",
+    "rareza": "rara",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Viejo zorro",
+    "linea": "Sabés cuándo no pelear",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_ultimo_contrato",
+    "rareza": "rara",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Último contrato",
+    "linea": "Jugás sin miedo a perder el puesto",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "vt_nueva_generacion",
+    "rareza": "rara",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Nueva generación",
+    "linea": "Compartís scrim con pibes de quince",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_oficio_de_lane",
+    "rareza": "rara",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Oficio de lane",
+    "linea": "Pocas cosas te sorprenden ya",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_voz_de_mando",
+    "rareza": "rara",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Voz de mando",
+    "linea": "Cuando hablás, el servidor se calla",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "vt_clase_de_paciencia",
+    "rareza": "rara",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Clase de paciencia",
+    "linea": "Ganás sin gastar un solo flash",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_cabeza_fria",
+    "rareza": "rara",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Cabeza fría",
+    "linea": "Los playoffs ya no te sacan el sueño",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "vt_mecanica_madura",
+    "rareza": "rara",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Mecánica madura",
+    "linea": "Menos clicks, más precisión",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_leyenda_de_la_liga",
+    "rareza": "epica",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Leyenda de la liga",
+    "linea": "Los rookies te piden consejo en el pasillo",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "vt_una_gran_serie_mas",
+    "rareza": "epica",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Una gran serie más",
+    "linea": "El cuerpo duele, la cabeza responde",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "vt_maestro_de_la_lane",
+    "rareza": "epica",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Maestro de la lane",
+    "linea": "Nadie te saca de la torre",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_mapa_en_la_cabeza",
+    "rareza": "epica",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Mapa en la cabeza",
+    "linea": "Predecís dónde va a estar cada uno",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_manos_de_acero",
+    "rareza": "epica",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Manos de acero",
+    "linea": "Los años de práctica se notan",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_gloria_eterna",
+    "rareza": "legendaria",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Gloria eterna",
+    "linea": "Un título más y a la historia",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "vt_el_regreso",
+    "rareza": "legendaria",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "El regreso",
+    "linea": "Todos te daban por retirado",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "costo": {
+      "stat": "laneo",
+      "valor": [
+        -2,
+        -1
+      ]
+    },
+    "plan": "juego"
+  },
+  {
+    "id": "vt_despedida_inolvidable",
+    "rareza": "legendaria",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Despedida inolvidable",
+    "linea": "Los fans cantan tu nombre al final",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          8,
+          9
+        ]
+      }
+    ],
+    "plan": "cabeza"
   }
 ]

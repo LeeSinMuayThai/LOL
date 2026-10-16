@@ -410,5 +410,576 @@
         ]
       }
     ]
+  },
+  {
+    "id": "am_un_solo_main",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Un solo main",
+    "linea": "Mil partidas con el mismo y se nota",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_farmeo_con_metronomo",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Farmeo con metrónomo",
+    "linea": "Contás los súbditos hasta que sale solo",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_wardear_cada_pasillo",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Wardear cada pasillo",
+    "linea": "Cuesta, pero dejás de morir en el río",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_cerrar_la_cola",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Cerrar la cola",
+    "linea": "Dos derrotas seguidas y apagás todo",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_la_voz_del_discord",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "La voz del Discord",
+    "linea": "Alguien tiene que cantar el objetivo",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_modo_practica",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Modo práctica",
+    "linea": "Veinte minutos de combos antes de cada cola",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_leer_a_la_jungla",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Leer a la jungla",
+    "linea": "Ves por dónde pasa antes de que gankee",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_mirar_el_minimapa",
+    "rareza": "comun",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Mirar el minimapa",
+    "linea": "Un vistazo cada cinco segundos, sin falta",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_torneo_de_barrio",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Torneo de barrio",
+    "linea": "Ganás el que nadie transmitió",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_racha_en_diamante",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Racha en Diamante",
+    "linea": "Veinte partidas de fuego y no mirás el LP",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_cuaderno_de_errores",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Cuaderno de errores",
+    "linea": "Un año de notas y por fin patrones",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_el_duo_de_siempre",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "El duo de siempre",
+    "linea": "Se conocen tanto que no hacen falta pings",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_calentar_con_un_ex",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Calentar con un ex",
+    "linea": "Un ex de academy te hace sparring",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_cuenta_prestada",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Cuenta prestada",
+    "linea": "Una semana en la cola de los mejores",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_capitan_del_equipo",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Capitán del equipo",
+    "linea": "Armás los horarios y la estrategia",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_aprender_de_perder",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Aprender de perder",
+    "linea": "Cada derrota, una nota para el VOD",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_ver_las_ligas",
+    "rareza": "rara",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Mirar las ligas",
+    "linea": "Ves el split completo como un analista",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_entrenador_personal",
+    "rareza": "epica",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Entrenador personal",
+    "linea": "Tres meses con alguien que ve todo",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "mecanica",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_racha_de_retador",
+    "rareza": "epica",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Racha de Retador",
+    "linea": "Tocás la cima y te quedás ahí",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_clip_viral",
+    "rareza": "epica",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Clip viral",
+    "linea": "Una jugada tuya da la vuelta al mundo",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_invitacion_a_scrims",
+    "rareza": "epica",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Invitación a scrims",
+    "linea": "Un equipo de verdad te suma al calendario",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_final_en_el_cyber",
+    "rareza": "epica",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Final en el cyber",
+    "linea": "Una LAN apretada y no te tiembla el pulso",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_vods_con_un_analista",
+    "rareza": "epica",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "VODs con analista",
+    "linea": "Te muestra lo que tu cabeza no ve",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_primero_del_servidor",
+    "rareza": "legendaria",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Primero del servidor",
+    "linea": "Tu nombre arriba de todos en la ladder",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  {
+    "id": "am_pentakill_con_scouts",
+    "rareza": "legendaria",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Pentakill con scouts",
+    "linea": "La jugada que te abre las puertas",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "costo": {
+      "stat": "mentalidad",
+      "valor": [
+        -2,
+        -1
+      ]
+    }
+  },
+  {
+    "id": "am_mudarse_al_bootcamp",
+    "rareza": "legendaria",
+    "etapa": [
+      "amateur"
+    ],
+    "contexto": {},
+    "titulo": "Mudarse al bootcamp",
+    "linea": "Dejás todo y vivís solo para esto",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "laneo",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "costo": {
+      "stat": "mentalidad",
+      "valor": [
+        -2,
+        -1
+      ]
+    }
   }
 ]
