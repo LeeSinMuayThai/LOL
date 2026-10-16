@@ -45,14 +45,17 @@ export function implica(pista, s) {
   return 0;
 }
 
-function armarCaza(i, p, rng) {
+// `corta`: la chance de que, en una fase que corta, el jungla se quede en el primer paso (no llega adonde esperabas el ward).
+function armarCaza(i, p, rng, corta = 0) {
   const f = A.fases[faseDe(i)];
   const dir = rng() < 0.5 ? 1 : -1;
   // `s` entre 1 y 4 (siempre hay un campamento detrás de él) y que le queden al menos 2 pasos por delante
   const permitidos = [1, 2, 3, 4].filter((s) => (dir > 0 ? ULTIMO - s : s) >= 2);
   const s = permitidos[Math.floor(rng() * permitidos.length)];
-  const pasos = Math.min(A.pasosMax, dir > 0 ? ULTIMO - s : s);
-  const tc = f.tcS * p.ventana;
+  const quedaCorto = f.corta && rng() < corta;
+  const pasos = quedaCorto ? 1 : Math.min(A.pasosMax, dir > 0 ? ULTIMO - s : s);
+  // `variacion`: cada cacería sale más rápida o más lenta que la media de su fase (el mismo jungla no cruza siempre igual)
+  const tc = f.tcS * p.ventana * (f.variacion ? f.variacion[0] + (f.variacion[1] - f.variacion[0]) * rng() : 1);
   const ruta = Array.from({ length: pasos + 1 }, (_, k) => s + k * dir);
   const pistas = f.pistas.map((pi) => {
     const verdad = pi.ok;
@@ -67,7 +70,9 @@ function armarCaza(i, p, rng) {
 
 export function crear(params, rng) {
   const e = { p: params, rng, t: 0, iCaza: 0, caza: null, espera: 0, cazas: [], terminado: false, eventos: [] };
-  e.caza = armarCaza(0, params, rng);
+  // el estilo del jungla rival de esta partida: con `cortaRival.prob` es de los que cortan la ruta, tanto como `cortaRival.p`
+  e.corta = rng() < A.cortaRival.prob ? A.cortaRival.p[0] + (A.cortaRival.p[1] - A.cortaRival.p[0]) * rng() : 0;
+  e.caza = armarCaza(0, params, rng, e.corta);
   return e;
 }
 
@@ -103,7 +108,7 @@ export function avanzar(e, entrada = null) {
       return;
     }
     e.iCaza += 1;
-    e.caza = armarCaza(e.iCaza, e.p, e.rng);
+    e.caza = armarCaza(e.iCaza, e.p, e.rng, e.corta);
     e.eventos.push({ tipo: 'caza', i: e.iCaza, fase: e.caza.fase });
     return;
   }

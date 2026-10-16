@@ -2486,15 +2486,17 @@ export const BALANCE = {
         ventanaStat: [0.8, 1.6],
         wards: 2,
         colocarS: 0.35,
-        radioWard: 7,
-        pasosMax: 2,
+        radioWard: 8,
+        pasosMax: 3,
+        // el jungla rival de la partida, a veces de los que cortan la ruta: con `prob` corta (en las fases con `corta`) con una chance `p`
+        cortaRival: { prob: 0.2, p: [0.5, 1] },
         colaS: 0.1,
         resultadoS: 1,
         entreCazasS: 0.5,
         fases: [
-          { tcS: 1.6, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'falta', ok: true, en: 0.3 }] },
-          { tcS: 0.8, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'falta', ok: false, en: 0.2 }, { tipo: 'empuja', ok: true, en: 0.45 }, { tipo: 'falta', ok: true, en: 0.6 }] },
-          { tcS: 0.5, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'empuja', ok: false, en: 0.2 }, { tipo: 'falta', ok: true, en: 0.4 }, { tipo: 'empuja', ok: true, en: 0.6 }] }
+          { tcS: 1.9, corta: true, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'falta', ok: true, en: 0.3 }] },
+          { tcS: 0.8, corta: true, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'falta', ok: false, en: 0.2 }, { tipo: 'empuja', ok: true, en: 0.45 }, { tipo: 'falta', ok: true, en: 0.6 }] },
+          { tcS: 0.45, pistas: [{ tipo: 'ward', ok: true, en: 0 }, { tipo: 'empuja', ok: false, en: 0.2 }, { tipo: 'falta', ok: true, en: 0.4 }, { tipo: 'empuja', ok: true, en: 0.6 }] }
         ]
       },
       // El Barón: tres objetivos (fases 1, 2 y 3), un smite en cada uno; el resultado es el peor de los tres
