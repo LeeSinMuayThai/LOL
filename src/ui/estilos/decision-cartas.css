@@ -454,3 +454,28 @@ html[data-reducido] .cv-rara .cv-marco, html[data-reducido] .cv-gemas .on, html[
 }
 .cv-otra:hover, .cv-otra:focus-visible { color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink-dim); }
 .cv-raiz.eligiendo .cv-otra { opacity: 0.4; pointer-events: none; }
+
+/* H2b: la pantalla de la mano, con pocas palabras: sin rótulo ni banda de prosa (el número y el título dicen todo). */
+.cv-raiz[data-mano] .cv-rotulo, .cv-raiz[data-mano] .cv-inspector { display: none; }
+.cv-raiz[data-mano] .cv-seguro { font-size: 13px; }
+.cv-raiz[data-mano] .cv-seguro b { font-size: 34px; }
+.cv-raiz[data-mano] .cv-costo b { font-size: 22px; }
+
+/* El reparto: las cartas llegan boca abajo (el dorso) y se dan vuelta de a una con el brillo de su rareza. */
+.cv-ranura { position: relative; }
+.cv-reverso {
+  position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none; display: grid; place-items: center;
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ink) 7%, var(--bg-void)) 0 10px, color-mix(in srgb, var(--ink) 3%, var(--bg-void)) 10px 20px);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 18%, transparent), 0 18px 40px var(--sombra);
+}
+.cv-reverso i { width: 34%; aspect-ratio: 1; transform: rotate(45deg); border-radius: 12%; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 30%, transparent); }
+.cv-brote {
+  position: absolute; inset: -6px; z-index: 4; border-radius: 22px; pointer-events: none;
+  box-shadow: 0 0 0 2px var(--cv-rz), 0 0 46px 8px color-mix(in srgb, var(--cv-rz) 65%, transparent);
+}
+.cv-r-legendaria .cv-brote { box-shadow: 0 0 0 3px var(--cv-rz), 0 0 70px 16px color-mix(in srgb, var(--cv-rz) 75%, transparent); }
+.cv-chispa {
+  position: absolute; left: 50%; top: 50%; z-index: 5; width: 7px; height: 7px; border-radius: 50%; pointer-events: none;
+  background: var(--gold); box-shadow: 0 0 10px 2px var(--gold);
+}
+@media (prefers-reduced-motion: reduce) { .cv-reverso, .cv-brote, .cv-chispa { display: none; } }

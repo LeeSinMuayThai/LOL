@@ -8,6 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { BALANCE } from '../data/balance.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const DIR_EVENTOS = path.join(__dirname, '..', 'data', 'events');
@@ -204,6 +205,14 @@ function imprimirTabla() {
     const fuera = cartas.flatMap(({ carta, archivo }) => revisarCarta(carta, archivo));
     console.log(`  mano de cartas: ${cartas.length} cartas, promedio ${stats(porCarta).prom.toFixed(1)} palabras (título + línea), máx ${stats(porCarta).max}; `
       + `una mano de ${CARTAS_POR_MANO} ~ ${(CARTAS_POR_MANO * stats(porCarta).prom).toFixed(0)}; fuera de límite: ${fuera.length}`);
+    // H2b: lo que se VE en una mano (decision/cartas.js, `data-mano`): por carta, el título, la línea, el número y el nombre de
+    // cada stat (+5 MECÁNICA = 2), el costo (2) y la rareza si no es común (1); más el título de la mano y "Otra mano (quedan N)".
+    const visibles = cartas.map(({ carta }) => palabras(carta.titulo) + palabras(carta.linea) + 2 * (carta.stats ?? []).length
+      + (carta.costo ? 2 : 0) + (carta.rareza && carta.rareza !== 'comun' ? 1 : 0));
+    const fijas = palabras(BALANCE.cartas.titulo) + palabras(BALANCE.cartas.tituloOtraMano) + 2;
+    console.log(`  pantalla de la mano (visible: ${CARTAS_POR_MANO} x (título + línea + número y stat + costo + rareza) + título + "Otra mano (quedan N)"): `
+      + `mediana ${CARTAS_POR_MANO * percentil(visibles, 0.5) + fijas}, p90 ${CARTAS_POR_MANO * percentil(visibles, 0.9) + fijas}, `
+      + `techo ${CARTAS_POR_MANO * Math.max(...visibles) + fijas}  [meta del plan: <= 70]`);
   }
 }
 

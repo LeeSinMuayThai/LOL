@@ -316,6 +316,62 @@ export function mostrarTitulo(momento, { escala = 1, sonido = null, controlar = 
   });
 }
 
+// H2b: el momento de una carta legendaria elegida (PLANUI §0.10, H2): el apagón, el golpe dorado, el confeti en oro y el
+// número de la carta enorme. `datos`: `{ valor, stat, titulo }` (por ejemplo +8, MECÁNICA). Resuelve al Continuar. Es la
+// versión corta del título: sin copa, a 1× dura ~1,6 s hasta asentarse.
+const T_LEG = { apagon: 240, golpe: 220, golpeDur: 600, kicker: 260, numero: 420, numeroDur: 560, titulo: 820, tituloDur: 420, confeti: 560, seguir: 1500 };
+export function mostrarLegendaria(datos, { escala = 1, sonido = null, controlar = null } = {}) {
+  if (typeof document === 'undefined') return Promise.resolve();
+  const k = sinEscala(escala);
+  const E = (ms) => Math.round(ms * k);
+  return montarCapa({
+    clase: 'mo-legendaria',
+    etiqueta: `Carta legendaria: ${datos.titulo ?? ''}`,
+    controlar,
+    armar(raiz) {
+      const negro = el('div', { class: 'mo-negro', 'aria-hidden': 'true' });
+      const golpe = el('div', { class: 'mo-golpe', 'aria-hidden': 'true' });
+      const confeti = crearConfeti(el('canvas', { class: 'cu-confeti mo-confeti', 'aria-hidden': 'true' }), {
+        colores: ['--gold', '--carta-oro-a', '--luz-blanca'],
+        semilla: `legendaria-${datos.titulo ?? ''}`,
+        cantidad: Math.round(CONFETI.cantidad * 0.6 * (celular() ? CONFETI.celular : 1)),
+        origenes: [
+          { tipo: 'canon', x: 0.15, y: 1.02, angulo: 14, t: E(T_LEG.confeti) },
+          { tipo: 'canon', x: 0.85, y: 1.02, angulo: -14, t: E(T_LEG.confeti) },
+          { tipo: 'cortina', t: E(T_LEG.confeti + 200) }
+        ]
+      });
+      const kicker = el('p', { class: 'mo-leg-kicker', text: 'Legendaria' });
+      const numero = el('h2', { class: 'mo-leg-numero', 'aria-hidden': 'true' }, [el('b', { text: datos.valor ?? '' }), el('span', { text: datos.stat ?? '' })]);
+      const titulo = el('p', { class: 'mo-leg-titulo', text: datos.titulo ?? '' });
+      const bloque = el('div', { class: 'mo-bloque mo-leg-bloque' }, [kicker, numero, titulo]);
+      raiz.prepend(negro, golpe, confeti.nodo, bloque);
+      const corte = E(T_LEG.seguir + 400);
+      const bt = crearBeats({ duracion: corte, asentarse: corte });
+      bt.agregar(confeti);
+      bt.waapi(animar(negro, [{ opacity: 0 }, { opacity: 0.97, offset: 0.4 }, { opacity: 0.95 }], { dur: E(T_LEG.apagon), easing: 'ease-out', fill: 'both' }));
+      const fogonazo = bt.destello(E(T_LEG.golpe));
+      if (fogonazo != null) {
+        bt.waapi(animar(golpe, [{ opacity: 0, transform: 'scale(0.6)' }, { opacity: 1, transform: 'scale(1)', offset: 0.2 }, { opacity: 0.4, transform: 'scale(1.25)' }], { delay: fogonazo, dur: E(T_LEG.golpeDur), easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' }));
+      }
+      bt.waapi(animar(kicker, [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { delay: E(T_LEG.kicker), dur: E(T_LEG.tituloDur), easing: EXPO, fill: 'backwards' }));
+      bt.waapi(animar(numero, [{ opacity: 0, transform: 'scale(1.5)', filter: 'blur(8px) brightness(2.2)' }, { opacity: 1, transform: 'scale(0.96)', filter: 'blur(0px)', offset: 0.65 }, { opacity: 1, transform: 'none', filter: 'none' }], { delay: E(T_LEG.numero), dur: E(T_LEG.numeroDur), easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'backwards' }));
+      bt.waapi(animar(titulo, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: E(T_LEG.titulo), dur: E(T_LEG.tituloDur), easing: EXPO, fill: 'backwards' }));
+      const sonar = (ms, fn) => bt.esperar(ms).then((llego) => llego && fn());
+      sonar(E(T_LEG.golpe), () => sonido?.golpe?.());
+      sonar(E(T_LEG.confeti), () => sonido?.confeti?.());
+      bt.iniciar();
+      return {
+        alAsentarse: bt.esperar(corte),
+        saltar: () => bt.saltar(),
+        pausar: () => bt.pausar(),
+        reanudar: () => bt.reanudar(),
+        destruir: () => bt.destruir()
+      };
+    }
+  });
+}
+
 function bloqueDe(titulo, hijos, clase = '') {
   return el('section', { class: `mo-r-bloque ${clase}`.trim() }, [el('h3', { class: 'mo-r-rotulo', text: titulo }), ...hijos]);
 }

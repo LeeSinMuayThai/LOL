@@ -244,3 +244,13 @@
   .mt-franja { transition: none; }
 }
 html[data-reducido] .mt-cajon[open] { animation: mt-fundido var(--dur-fundido) linear; }
+
+/* H2b: el momento de la carta legendaria: el golpe en oro y el número enorme, centrado. */
+.mo-legendaria { place-items: center; }
+.mo-legendaria .mo-golpe { background: radial-gradient(ellipse 50% 46% at 50% 46%, var(--gold), transparent 72%); }
+.mo-leg-bloque { justify-self: center; justify-items: center; text-align: center; gap: clamp(8px, 1.6vh, 16px); }
+.mo-leg-kicker { margin: 0; font: 700 var(--t-rotulo-g) / 1 var(--f-mono); letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); }
+.mo-leg-numero { margin: 0; display: grid; justify-items: center; gap: 4px; color: var(--gold); text-shadow: 0 0 48px color-mix(in srgb, var(--gold) 55%, transparent); }
+.mo-leg-numero b { font: 800 min(var(--t-momento-l), 30vw) / 0.9 var(--f-display); font-stretch: var(--ancho-titulo); }
+.mo-leg-numero span { font: 700 clamp(16px, 3vw, 28px) / 1 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; }
+.mo-leg-titulo { margin: 0; font: 800 clamp(22px, 3.4vw, 40px) / 1.1 var(--f-display); font-stretch: var(--ancho-titulo); color: var(--ink); }
