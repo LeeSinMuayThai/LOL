@@ -34,6 +34,82 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-16 — Ola H, entrega 2: el arcade completo, el Play-In y las tandas, la voz corta y la mano nueva
+
+PLANUI §0.10. Trabajaron once workers en worktrees, todos con tope de pasos:
+- H3e, el motor, con Opus high;
+- M1-M4, las mecánicas, con Sonnet high;
+- H4b, en tres lotes, con Sonnet high;
+- H2b, Cal y H3u, con Sonnet high;
+- un revisor Sonnet, sin hallazgos altos;
+- H-fix2, Sonnet, con 3 commits.
+
+El supervisor juntó las piezas: `dev/arcade-humano.js` por bloques agregados y `BALANCE.g1.arcade` y `g1.conteo` a mano.
+También pasó al dato las frases de la vara y la regla de `el_gancho`, y le puso el favicon a `arcade.html`.
+
+- **M1-M4, las 10 mecánicas que faltaban, en canvas con el kit de H3k:**
+  - `last_hit`, con la oleada, el cañón y la torre;
+  - `el_kite`, contra un bruiser;
+  - `el_gancho`, nueva, para support;
+  - `el_teleport`, en el minimapa;
+  - `la_vision`, en la niebla;
+  - `el_combo`, con notas QWER+F;
+  - `la_corrida`, la R en la teamfight;
+  - `la_prueba`, en el practice tool;
+  - `la_pizarra`, un memotest de draft;
+  - `la_llamada`, cantar el objetivo con los relojes del mapa.
+  - La lógica es pura (`simular`) y las constantes van en `BALANCE.g1.arcade`.
+  - Cambios de N: `la_vision` pasa de 3 a 6, `la_prueba` de 5 a 14 blancos y `la_pizarra` de 6 a 9 pares.
+  - **Cal** calibró cinco mecánicas.
+  - **La prueba de aceptación** (`arcade-humano.js`):
+    - quieto 0% en las 12 y al azar ≤ 16%;
+    - el humano de 250 ms pasa 72-93% a vara .5, 55-73% a .7 y 20-37% a .85;
+    - de stat 40 a 85, la ventana crece entre 27% y 35%;
+    - a 60 Hz y a 144 Hz da idéntico.
+- **H3e, el motor:**
+  - **La regla en el dato:** `minijuegos.json` lleva `regla {tipo, unidad, articulo, frase}`, y `varaG1.js` borró su copia.
+  - **La rotación:** ≤ 5 rondas seguidas de la misma mecánica, por hash y sin tiradas.
+  - **Las tandas del Swiss:** `g1.tanda.partidosPorP`. Desde p .65 son 3 partidos por minijuego y desde .55 son 2; los
+    fuertes promedian 2,1 y los débiles 1. La tanda corta en la primera derrota.
+  - **El Play-In:** lo juega el último sembrado de una liga con ≥ 3 cupos. Es una sola parada, con 3 rivales, y se
+    juega a 2 victorias o 2 derrotas. En 200 carreras salieron 73, todos de una parada.
+  - **Guardado:** VERSION 20 con `migrarDe19`, y `FORMAS_CONOCIDAS[20]` b89b2f265a26. `HUELLA_JUEGO` 850840109, porque las
+    tiradas del Play-In corren el stream (T1).
+- **H3u, la pantalla de la tanda:**
+  - una mecánica por partido, con una transición "Partido 2 de 3 · vs …";
+  - EL CAMINO, partido por partido;
+  - el título "PLAY-IN";
+  - la vara en la ficción (`fraseDeLaVara`), así que ya no queda "a 4,6 o menos del centro de su zona";
+  - el "tan cerca" de las 12;
+  - tu mejor marca (`ui/mejorMarca.js`, en localStorage);
+  - el selector Una / Tanda / Play-In en `/arcade`;
+  - `?bot` para el recorrido (D145);
+  - las 21 clases de CSS muerto, borradas.
+- **H4b, la voz corta:**
+  - Los 257 eventos llevan `"voz": "corta"`. Ahora el 100% queda dentro de los límites de VOZ.md (antes, el 5%).
+  - La descripción baja de 34,0 a 25,1 palabras de promedio, con un máximo de 30.
+  - El texto se reescribió con `voz-extraer` y `voz-aplicar`: solo texto, por reemplazo, sin tocar el formato.
+  - El revisor comparó con master: cero cambios de opciones, efectos, pesos o signo.
+  - Los 64 de `partido/` ya no dicen "este partido".
+- **H2b, la mano de cartas:**
+  - cada carta muestra el número grande, el título, una línea y el costo;
+  - las cartas se reparten boca abajo y se dan vuelta con el brillo de su rareza;
+  - la legendaria sale última y tiene su momento dorado (`mostrarLegendaria`);
+  - una mano muestra una mediana de 47 palabras (antes, 100);
+  - D144: el bloque de variedad mide las cartas: 38,8 distintas por carrera, con una mezcla 66,4 / 23,9 / 7,8 / 1,9.
+- **H-fix2:**
+  - los 7 FAIL nuevos del rápido;
+  - K4-C2, que era la muestra del check, no el motor: lo bisecó el supervisor y lo diagnosticó el revisor;
+  - el HUD de la prueba contra los necesarios;
+  - el cartel del kit en dos renglones;
+  - el Play-In, que con una respuesta corta completa con `tirarPartido`.
+- **Medido:**
+  - `simulate 1000` dos veces: idéntica y sin crashes. `llegaATier1` queda en 40,3 y `noLlegaAPro` en 9,3.
+  - El rápido da 376 OK y 5 FAIL, los cinco de la base (K1 puntaje, K1 D75, K4c VERSION 10, K6b-M (b), K6c).
+  - Paradas por carrera: 133,4 → 133,2 (D146 sigue).
+- **Deudas nuevas:** D148-D151.
+- **Sigue:** el usuario juega `/arcade` y una carrera en RÁPIDO; después, la entrega 3.
+
 ### 2026-10-15 — Ola H, entrega 1: la forma de elegir, el mazo de cartas y el arcade
 
 PLANUI §0.10. Cinco workers en worktrees, todos con tope de pasos: H1a y H3k con Opus high, H1b y H2a con Sonnet xhigh, H4a con Sonnet high. Después,
