@@ -208,4 +208,7 @@ export const VERSION_JUEGO = 'H';
 // Lo que corrige el usuario (2026-10-16, 850840109 → 1554609563; corrimiento declarado): el Play-In también es del último de
 // las ligas chicas (el 2º del CBLOL y de la LCP), así que esas carreras cambian. Los clics de la tanda no tiran del stream.
 // Guardado VERSION 21.
-export const HUELLA_JUEGO = 1554609563;
+// H5 + H2c (ola H, entrega 3, 1554609563 → 1050936315; corrimiento declarado): 229 eventos raros, épicos y legendarios en
+// el mazo del split (el arco de la LPL de `raros/llamado.json` firma una mudanza de verdad) y 150 cartas más en la mano del
+// cierre (240), así que todos los sorteos cambian. Guardado VERSION 22.
+export const HUELLA_JUEGO = 1050936315;

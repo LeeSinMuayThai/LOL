@@ -54,7 +54,6 @@ export const ARCOS_DE_LO_RARO = [
   'llamado_lck',
   'llamado_lck_fin',
   'llamado_lpl',
-  'llamado_lpl_fin',
   'llamado_scrim',
   'llamado_scrim_fin',
   'llamado_sparring',

@@ -35,7 +35,7 @@ import { CARTAS } from '../data/events/cartas/index.js';
 import { CATEGORIAS_EVENTO } from '../data/categorias.js';
 import { mulberry32, sample } from '../core/rng.js';
 import { unidadesDeLaRegla } from '../core/minijuegos.js';
-import { createInitialState } from '../core/state.js';
+import { createInitialState, ARCOS_DE_LO_RARO } from '../core/state.js';
 import {
   avanzarSplit, avanzarSplitAuto, resolverDecision, ETAPAS_SPLIT, pronosticoDeOxidoEnVivo, splitCountDeLaProximaCorrida
 } from '../core/pipeline.js';
@@ -968,7 +968,9 @@ const FORMAS_CONOCIDAS = {
   // H3e (ola H, entrega 2): `internacional.playIn`, `internacional.partidoEnCurso.tanda` y `career.torneoG1.racha`.
   20: 'b89b2f265a26',
   // PLANUI §0.10 H3 (lo que corrige el usuario): `internacional.playIn.camino` y `playIn` en la fila del Mundial.
-  21: '64ffe12313bc'
+  21: '64ffe12313bc',
+  // H5 (ola H, entrega 3): las claves de los arcos de lo raro en `flags.caminos` (`ARCOS_DE_LO_RARO`, 60). Carga con `migrarDe21`.
+  22: 'f4330d3e59ee'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -19800,7 +19802,9 @@ check('K4-C2 cada bifurcación nueva deja un flag en todos sus resultados, y alg
 
 check('K4-C2 los caminos se abren y los seguimientos se resuelven en carreras reales (40 carreras × 60)', () => {
   const carreras = carrerasK4c();
-  const claves = Object.keys(createInitialState(1, mulberry32(1)).flags.caminos);
+  // H5 (ola H, entrega 3): los arcos de lo raro (`ARCOS_DE_LO_RARO`) no entran: una legendaria sale en ~1% de las carreras y 40
+  // no la ven. Su alcance lo mide `simulate.js --bloque=variedad` (cada rara en >= 3% de las carreras, cada legendaria en >= 0,5%).
+  const claves = Object.keys(createInitialState(1, mulberry32(1)).flags.caminos).filter((clave) => !ARCOS_DE_LO_RARO.includes(clave));
   for (const clave of claves) {
     if (!carreras.some((c) => c.final.flags.caminos[clave] !== null)) {
       throw new Error(`ninguna de las ${carreras.length} carreras dejó el camino "${clave}"`);

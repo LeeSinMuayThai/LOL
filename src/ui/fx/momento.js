@@ -317,7 +317,8 @@ export function mostrarTitulo(momento, { escala = 1, sonido = null, controlar = 
 }
 
 // H2b: el momento de una carta legendaria elegida (PLANUI §0.10, H2): el apagón, el golpe dorado, el confeti en oro y el
-// número de la carta enorme. `datos`: `{ valor, stat, titulo }` (por ejemplo +8, MECÁNICA). Resuelve al Continuar. Es la
+// número de la carta enorme. `datos`: `{ valor, stat, titulo, kicker? }` (por ejemplo +8, MECÁNICA; `kicker` es el rótulo, "Legendaria"
+// si no viene: el evento legendario de H6 dice "Evento legendario" y no trae número). Resuelve al Continuar. Es la
 // versión corta del título: sin copa, a 1× dura ~1,6 s hasta asentarse.
 const T_LEG = { apagon: 240, golpe: 220, golpeDur: 600, kicker: 260, numero: 420, numeroDur: 560, titulo: 820, tituloDur: 420, confeti: 560, seguir: 1500 };
 export function mostrarLegendaria(datos, { escala = 1, sonido = null, controlar = null } = {}) {
@@ -326,7 +327,7 @@ export function mostrarLegendaria(datos, { escala = 1, sonido = null, controlar 
   const E = (ms) => Math.round(ms * k);
   return montarCapa({
     clase: 'mo-legendaria',
-    etiqueta: `Carta legendaria: ${datos.titulo ?? ''}`,
+    etiqueta: `${datos.kicker ?? 'Carta legendaria'}: ${datos.titulo ?? ''}`,
     controlar,
     armar(raiz) {
       const negro = el('div', { class: 'mo-negro', 'aria-hidden': 'true' });
@@ -341,7 +342,7 @@ export function mostrarLegendaria(datos, { escala = 1, sonido = null, controlar 
           { tipo: 'cortina', t: E(T_LEG.confeti + 200) }
         ]
       });
-      const kicker = el('p', { class: 'mo-leg-kicker', text: 'Legendaria' });
+      const kicker = el('p', { class: 'mo-leg-kicker', text: datos.kicker ?? 'Legendaria' });
       const numero = el('h2', { class: 'mo-leg-numero', 'aria-hidden': 'true' }, [el('b', { text: datos.valor ?? '' }), el('span', { text: datos.stat ?? '' })]);
       const titulo = el('p', { class: 'mo-leg-titulo', text: datos.titulo ?? '' });
       const bloque = el('div', { class: 'mo-bloque mo-leg-bloque' }, [kicker, numero, titulo]);

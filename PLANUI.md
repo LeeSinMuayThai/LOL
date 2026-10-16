@@ -43,7 +43,7 @@
 | **W · olas W2-W3** | La carta de pretemporada y ¿gloria o billetera? (motor chico, medido); después, la final sin tirada y la plata (§0.7) | ⬜ el usuario jugó la W1 ("se nota un poquito"); W4 lo reemplaza F4, W5/W7/W8 quedan después de F. Con la ola G: W5 → G3c, W7 → G1, W8 → G5 (§0.9) |
 | **F · ola F** | Lolero jugado seis años (§0.8): el Mundial se juega y se ve (Swiss y bracket con "vos"), ningún año muerto, la consecuencia en el momento y el diario que titula lo que pasó, la carta que mueve un número que ves | ✅ 2026-10-14: el usuario eligió "los 4 juntos"; 2 workers Opus high + 2 Sonnet high + revisor Sonnet (0 bloqueantes, 2 para arreglar + 5 menores, arreglados); huella 433142448 ('F'), guardado VERSION 16; publicada. Falta que el usuario la juegue en RÁPIDO |
 | **G · ola G** | El Ídolo contra Lolero, jugados (§0.9): las finales con las manos y sin tirada, el perfil que no decide, siempre en un equipo, el mercado como dilema, el diario que no se repite y el final como ceremonia. Dos entregas | 🔶 2026-10-15: la auditoría (`AUDITORIA.md`) y el plan, aprobados; **las dos entregas publicadas**: la 1 (el control: G1, G2a, G3a, G3b) y la 2 (lo que se ve y el mundo: G2b, G2c, G3c, G4, más el Bo1 con las manos de D118) (PROGRESO 2026-10-15); falta que el usuario las juegue; G5 queda opcional |
-| **H · ola H** | "Cada carrera, distinta" (§0.10): el mazo de eventos (la forma de elegir y el cupo propio), el mazo de cartas con rareza (solo stats), el arcade (minijuegos de verdad; el Play-In y el Swiss por tandas), la voz corta, lo raro (~190 eventos) y el álbum. Tres entregas | 🔶 2026-10-16: **las entregas 1 y 2 publicadas**. La entrega 2 trae las 12 mecánicas en canvas (10 rehechas, una nueva: `el_gancho`), el Play-In y las tandas del Swiss, la vara dicha en la ficción, los 257 eventos en voz corta y la mano de cartas nueva. Falta la entrega 3: H5 (lo raro), H2c (más cartas) y H6 (el álbum) (PROGRESO 2026-10-16) |
+| **H · ola H** | "Cada carrera, distinta" (§0.10): el mazo de eventos (la forma de elegir y el cupo propio), el mazo de cartas con rareza (solo stats), el arcade (minijuegos de verdad; el Play-In y el Swiss por tandas), la voz corta, lo raro (~190 eventos) y el álbum. Tres entregas | ✅ 2026-10-16: **las tres entregas publicadas**. La 2 trae las 12 mecánicas en canvas (10 rehechas, una nueva: `el_gancho`), el Play-In y las tandas del Swiss, la vara dicha en la ficción, los 257 eventos en voz corta y la mano de cartas nueva. La 3, lo raro (229 eventos, 484 en total), el mazo de 240 cartas y el álbum: 17 raros o más y 2,3 legendarios por carrera, Jaccard 0,09. Queda que juegue el usuario y las deudas D146-D153 (PROGRESO 2026-10-16) |
 | **U3** | El resto de los momentos (banners, ceremonias, primer contrato) + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
@@ -1378,6 +1378,15 @@ forma.
   (`ui/fx/momento.js`).
 - **La rareza, a la vista** (2026-10-16): hoy la pantalla del evento no lee `rarezaEvento`. Su marco la dice como en las
   cartas (gris, azul, violeta, dorado), y el legendario sale con `mostrarLegendaria`. Lo hace la pieza de H6.
+- **Las bifurcaciones no se diluyen** (medido en la integración, 2026-10-16): con los 229 de lo raro en el mazo, las
+  bifurcaciones (mudanza, cambio de línea, retiro: lo que cambia la carrera de verdad) bajaron de 9,0 a 1,9 por carrera,
+  porque comparten el cupo de su rareza con muchos más. `eventos.pesoBifurcacion` multiplica su `weight` en el sorteo del
+  split (`pesoDelSorteo`, `systems/events.js`) hasta volver a la banda de K4c (5-9). Además, el arco de la LPL de
+  `raros/llamado.json` firma una mudanza real (`ofertaDeImport`, regla 15).
+- **Lo raro no regala** (medido en la integración, 2026-10-16): los 229 daban +2,67 de stats netos por opción, contra +1,40
+  de los eventos viejos, y la carrera se ponía más fácil (`llegaATier1` de 40,3 a 43). Los positivos de `player.stats` de
+  `raros/` se escalan por 0,75 (redondeado, mínimo 1; los negativos no se tocan): queda en ~+1,8, lo raro pesa un poco más
+  que lo común sin inflar la carrera. Es una pasada de datos (`escala-raros.mjs`), no una perilla del motor.
 - **Los temas:**
   - soloQ;
   - stream y redes;
@@ -3016,6 +3025,8 @@ Son del **motor**. Van a la etapa "arreglar el juego" que pidió el usuario (§0
 | D149 | **Detalles de la tanda en pantalla** (revisor):<br>• el HUD de cada mecánica queda tapado por la banda de instrucción durante la demo y el 3-2-1 (`ui/arcade/kit.js`);<br>• en el Play-In el CASI corta, pero el sello dice "ni ganás ni perdés".<br>"Tu mejor" con un solo partido y el ✓/✗ antes del suspenso se fueron con la tanda de clics (2026-10-16) | 🔶 |
 | D150 | **Para confirmar con el usuario:**<br>• la rotación (≤ 5 seguidas) cuenta tandas, no partidos;<br>• quedar afuera en el Play-In deja un hito, pero no una fila en `registro.internacionales` | ✅ 2026-10-16: la rotación cuenta minijuegos; el Play-In perdido se dice, con color (§0.10 H3, "Lo que corrige el usuario") |
 | D151 | **`PLAN.md:6398`**, la tabla de horizontes por tipo de parada, no tiene `internacional:playin`. Sí la tienen `agencia.js` y el check K4c-H | ⬜ |
+| D152 | **El aviso automático todavía dice el %** (visto en la integración de la entrega 3): sin `aviso` escrito, `avisoDeOpcion` (`systems/events.js`) cae en la primera oración del peor resultado con su chance ("⚠ 30%: …"), y H4 pedía "solo con riesgo, sin %". No traen `aviso` 259 de las 327 opciones viejas ni ninguna de lo raro | ⬜ |
+| D153 | **El botón del álbum no responde hasta que carga el juego:** es HTML estático y su listener se pega cuando cargan los módulos, así que un clic temprano se pierde (en Chromium no abre recién cargada la página; sí 3 s después) | ⬜ |
 
 ---
 

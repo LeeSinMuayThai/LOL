@@ -644,7 +644,7 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
       raiz.style.visibility = '';
       if (raiz.isConnected) entradaPanel();
     };
-    mostrarLegendaria({ valor: '', stat: '', titulo: decision.titulo }, { sonido }).then(seguir, seguir);
+    mostrarLegendaria({ valor: '', stat: '', titulo: decision.titulo, kicker: 'Evento legendario' }, { sonido }).then(seguir, seguir);
   } else if (!lec.aviso && !quieto()) entradaPanel();
 
   // ------------------------------------------------------------------ elegir: el destello y la quema

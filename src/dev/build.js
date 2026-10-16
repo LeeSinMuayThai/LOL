@@ -170,7 +170,9 @@ const SPLITS_DE_VERIFICACION = 30;
 // Re-medido en la entrega 2 de la ola H (2026-10-16, `h-e2`, PLANUI §0.10 Riesgos: "se sube el techo"): 4385 KB contra 4290. Crecieron
 // las 12 mecánicas en canvas (`ui/arcade/*`: la lógica pura y los sprites de cada una), la tanda y el Play-In en la parada, la mano
 // nueva y el momento legendario. Subido a 4500: ~115 KB (2,6%) de margen; la entrega 3 (190 eventos, 150 cartas) lo vuelve a medir.
-const PESO_MAXIMO_KB = 4500;
+// Re-medido en la entrega 3 de la ola H (2026-10-16, `h-e3`, el mismo riesgo del plan): 4887 KB contra 4500. Son los datos, ya
+// minificados por `inlinearJson`: 229 eventos de `raros/` y 150 cartas. Subido a 5100: ~213 KB (4,2%) de margen.
+const PESO_MAXIMO_KB = 5100;
 
 function copiar(desde, hacia) {
   const stat = fs.statSync(desde);

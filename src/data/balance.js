@@ -114,6 +114,10 @@ export const BALANCE = {
     probRareza: { comun: 0.62, rara: 0.26, epica: 0.09, legendaria: 0.03 },
     pisoRara: 4,
     fatigaSplit: 2,
+    // H5 (ola H, entrega 3, PLANUI §0.10 "Las bifurcaciones no se diluyen"): el `weight` de una bifurcación se multiplica por esto
+    // en el sorteo del split. Con los 229 de lo raro, sin él las bifurcaciones bajaban de 9,0 a 1,9 por carrera (banda de K4c: 5-9);
+    // medido en 400 carreras: 3 → 3,4, 6 → 4,6, 8 → 4,9 (con los raros sin escalar) y ≥ 5 con lo raro escalado (PLANUI §0.10).
+    pesoBifurcacion: 8,
 
     // Fase 12d (PLAN.md §12.3, `core/previa.js`): terciles medidos con una
     // sonda de una sola vez sobre los 1416 efectos reales del catálogo,

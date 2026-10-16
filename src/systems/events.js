@@ -375,17 +375,19 @@ export function pozoDelSplit(state, { excluirId } = {}) {
 
 // H1a: el peso del sorteo. Cada rareza se lleva `probRareza[r]` del total, repartido entre sus elegibles según su `weight`, y
 // adentro corre la memoria de siempre con la fatiga del split. Una rareza sin elegibles no suma: weightedPick renormaliza.
+// Una bifurcación pesa `pesoBifurcacion` veces su `weight` (H5: que lo raro no diluya lo que cambia la carrera).
+const factorDelSorteo = (evento) => (evento.bifurcacion ? BALANCE.eventos.pesoBifurcacion : 1);
 function pesoDelSorteo(state, elegibles) {
   const sumaPorRareza = {};
   for (const evento of elegibles) {
     const rareza = rarezaDeEvento(evento);
-    sumaPorRareza[rareza] = (sumaPorRareza[rareza] ?? 0) + evento.weight;
+    sumaPorRareza[rareza] = (sumaPorRareza[rareza] ?? 0) + evento.weight * factorDelSorteo(evento);
   }
   return (evento) => {
     const rareza = rarezaDeEvento(evento);
     const suma = sumaPorRareza[rareza];
     return suma > 0
-      ? (BALANCE.eventos.probRareza[rareza] / suma) * pesoConMemoria(state, evento, BALANCE.eventos.fatigaSplit)
+      ? (BALANCE.eventos.probRareza[rareza] / suma) * pesoConMemoria(state, evento, BALANCE.eventos.fatigaSplit) * factorDelSorteo(evento)
       : 0;
   };
 }

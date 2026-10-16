@@ -34,6 +34,38 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-16 — Ola H, entrega 3: lo raro, el mazo de 240 cartas y el álbum (H5, H2c, H6)
+
+PLANUI §0.10. Cuatro workers Sonnet (~755K tokens): tres escritores de lo raro por tema (h5a, h5b, h5c) y uno de cartas, álbum y
+rareza a la vista (h2c). El supervisor integró, midió y corrigió.
+- **Lo raro (H5):** 229 eventos en `data/events/raros/` (89 raros, 57 épicos, 83 legendarios, 38 arcos), en 10 temas: soloQ,
+  stream, plata, familia, escena, el llamado, el parche, salud, legado y lo oscuro. El catálogo pasa a 484.
+  - Cada arco tiene su clave en `flags.caminos` (`ARCOS_DE_LO_RARO`, 59, en `core/state.js`): los escritores los habían colgado
+    de las 6 claves de K4-C2 con valores nuevos, y eso pisaba las bifurcaciones.
+  - El arco de la LPL (`llamado_el_contrato_en_shanghai`) firma una mudanza de verdad: `ofertaDeImport` a la LPL, bifurcación
+    y oferta, y escribe `caminos.region` para que siga `la_nueva_liga`. Los arcos de la LCK y la LPL no salen en su propia región.
+  - **Las bifurcaciones no se diluyen:** con lo raro bajaban de 9,0 a 1,9 por carrera. `eventos.pesoBifurcacion` (8) multiplica
+    su `weight` en el sorteo del split; vuelven a la banda de K4c (5-9).
+  - **Lo raro no regala:** daba +2,67 de stats netos por opción contra +1,40 de lo viejo, y rompía tres checks del mercado
+    (K5c-M a2, K6b-M a, la vuelta de K6b) que en master pasan y sin lo raro también. Sus positivos se escalaron por 0,75
+    (~+1,84) y los tres vuelven a pasar.
+  - Una muestra leída: tono y signo bien; se corrigieron dos frases y dos títulos que el check de ofertas leía como oferta.
+- **El mazo (H2c):** 150 cartas más, 240 en total (110 comunes, 70 raras, 40 épicas, 20 legendarias).
+- **El álbum (H6):** `ui/core/album.js` (puro) y `ui/screens/album.js`, desde el inicio; el chip NUEVO; "Descubriste…" en la
+  tarjeta final; el marco de rareza en la pantalla del evento y el momento dorado del evento legendario ("Evento legendario").
+- **Guardado VERSION 22** (`migrarDe21`), `FORMAS_CONOCIDAS[22]` f4330d3e59ee, `HUELLA_JUEGO` 1050936315. El techo del build sube
+  de 4500 a 5100 KB (4887 medido: los datos ya van minificados).
+- **Medido** (300 carreras × 60 splits, `--bloque=variedad`; entre paréntesis, la entrega 2):
+  - rara o más por carrera 17,1 (13,7); épica o más 5,8; legendaria 2,3, en el 69% de las carreras; 0 repeticiones;
+  - Jaccard entre carreras 0,091; los 10 más vistos, 12,3%; nunca vistos, 19 de 484;
+  - cartas: 41,3 distintas por carrera, Jaccard 0,143, una legendaria en el 54% de las carreras;
+  - paradas por carrera 131,5 (D146 sigue abierta);
+  - `alcance.mjs` en 300 carreras: 2 de los 229 no salieron nunca (`plata_la_org_quiebra_en_meses`, `soloq_rework_de_tu_main`);
+  - `simulate 1000` dos veces, idéntica y sin crashes: `llegaATier1` 43,9 (40,3) y `noLlegaAPro` 8,9 (9,3);
+  - el rápido: los cinco FAIL de la base y nada más;
+  - en Chromium, a 1440 y a 390: el evento legendario con su momento, el épico con su marco, NUEVO y el álbum, sin errores.
+- **Deudas nuevas:** D152 (el aviso automático todavía dice el %) y D153 (el botón del álbum no responde hasta que carga el juego).
+
 ### 2026-10-16 — Lo que corrigió el usuario tras la entrega 2: la tanda de clics y el Play-In que se dice
 
 PLANUI §0.10 H3, "Lo que corrige el usuario". Lo hizo el supervisor, sin workers.

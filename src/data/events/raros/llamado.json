@@ -34,8 +34,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -94,8 +94,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -178,8 +178,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.macro",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -238,8 +238,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mecanica",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -249,7 +249,7 @@
                 "type": "stat",
                 "path": "player.stats.macro",
                 "min": 1,
-                "max": 3,
+                "max": 2,
                 "clamp": [
                   0,
                   100
@@ -275,7 +275,7 @@
                 "type": "stat",
                 "path": "player.stats.macro",
                 "min": 1,
-                "max": 3,
+                "max": 2,
                 "clamp": [
                   0,
                   100
@@ -322,8 +322,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.adaptabilidad",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -333,7 +333,7 @@
                 "type": "stat",
                 "path": "player.stats.shotcalling",
                 "min": 1,
-                "max": 3,
+                "max": 2,
                 "clamp": [
                   0,
                   100
@@ -477,7 +477,7 @@
                 "type": "stat",
                 "path": "player.stats.hype",
                 "min": 1,
-                "max": 3,
+                "max": 2,
                 "clamp": [
                   0,
                   100
@@ -617,7 +617,7 @@
                 "type": "stat",
                 "path": "player.stats.mecanica",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -662,8 +662,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -673,7 +673,7 @@
                 "type": "stat",
                 "path": "player.stats.adaptabilidad",
                 "min": 1,
-                "max": 3,
+                "max": 2,
                 "clamp": [
                   0,
                   100
@@ -746,8 +746,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -757,7 +757,7 @@
                 "type": "stat",
                 "path": "player.stats.hype",
                 "min": 1,
-                "max": 3,
+                "max": 2,
                 "clamp": [
                   0,
                   100
@@ -901,7 +901,7 @@
                 "type": "stat",
                 "path": "player.stats.mentalidad",
                 "min": 1,
-                "max": 3,
+                "max": 2,
                 "clamp": [
                   0,
                   100
@@ -950,8 +950,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -1005,7 +1005,7 @@
     "rarezaEvento": "rara",
     "category": "raros_llamado",
     "categoria": "prensa",
-    "title": "La foto con el scout",
+    "title": "La foto que viajó",
     "description": "Un scout coreano se saca una foto con vos en el lobby de un evento y la sube a Twitter. El comentario: \"mirá a este\".",
     "weight": 6,
     "cooldown": 8,
@@ -1034,8 +1034,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -1061,7 +1061,7 @@
                 "type": "stat",
                 "path": "player.stats.hype",
                 "min": 1,
-                "max": 3,
+                "max": 2,
                 "clamp": [
                   0,
                   100
@@ -1094,8 +1094,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -1178,8 +1178,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.adaptabilidad",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -1189,7 +1189,7 @@
                 "type": "stat",
                 "path": "player.stats.mentalidad",
                 "min": 1,
-                "max": 3,
+                "max": 2,
                 "clamp": [
                   0,
                   100
@@ -1238,8 +1238,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mecanica",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -1322,8 +1322,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -1333,7 +1333,7 @@
                 "type": "stat",
                 "path": "player.stats.adaptabilidad",
                 "min": 1,
-                "max": 3,
+                "max": 2,
                 "clamp": [
                   0,
                   100
@@ -1383,7 +1383,7 @@
                 "type": "stat",
                 "path": "player.stats.mentalidad",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -1466,8 +1466,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mecanica",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -1476,8 +1476,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -1503,7 +1503,7 @@
                 "type": "stat",
                 "path": "player.stats.mecanica",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -1526,8 +1526,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.adaptabilidad",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -1537,7 +1537,7 @@
                 "type": "stat",
                 "path": "player.stats.macro",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -1610,8 +1610,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -1637,7 +1637,7 @@
                 "type": "stat",
                 "path": "player.stats.hype",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -1681,7 +1681,7 @@
                 "type": "stat",
                 "path": "player.stats.mentalidad",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -1754,8 +1754,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mecanica",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -1764,8 +1764,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.macro",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -1814,8 +1814,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.macro",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -1825,7 +1825,7 @@
                 "type": "stat",
                 "path": "player.stats.mentalidad",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -1898,8 +1898,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -1909,7 +1909,7 @@
                 "type": "stat",
                 "path": "player.stats.mecanica",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -1924,8 +1924,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -1968,8 +1968,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.teamfight",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -2053,7 +2053,7 @@
                 "type": "stat",
                 "path": "player.stats.mentalidad",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -2079,7 +2079,7 @@
                 "type": "stat",
                 "path": "player.stats.mentalidad",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -2102,8 +2102,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 3,
-                "max": 5,
+                "min": 2,
+                "max": 4,
                 "clamp": [
                   0,
                   100
@@ -2186,8 +2186,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -2257,7 +2257,7 @@
                 "type": "stat",
                 "path": "player.stats.mentalidad",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -2273,7 +2273,7 @@
                 "type": "stat",
                 "path": "player.stats.hype",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -2315,6 +2315,15 @@
         "tier3",
         "tier2",
         "tier1"
+      ],
+      "region": [
+        "CN",
+        "EMEA",
+        "NA",
+        "BR",
+        "APAC",
+        "LAN",
+        "LAS"
       ]
     },
     "conditions": [],
@@ -2332,8 +2341,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -2373,8 +2382,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -2413,7 +2422,7 @@
                 "type": "stat",
                 "path": "player.stats.hype",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -2481,6 +2490,15 @@
         "tier3",
         "tier2",
         "tier1"
+      ],
+      "region": [
+        "CN",
+        "EMEA",
+        "NA",
+        "BR",
+        "APAC",
+        "LAN",
+        "LAS"
       ]
     },
     "conditions": [
@@ -2499,13 +2517,13 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La semana te cambia la cabeza. Volvés con otro nivel de disciplina y una oferta firme en el correo.",
+            "texto": "La semana te cambia la cabeza. Volvés con otro nivel de disciplina y el teléfono del coach agendado.",
             "effects": [
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -2514,8 +2532,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.macro",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -2544,8 +2562,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mecanica",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -2592,8 +2610,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mecanica",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -2602,8 +2620,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -2633,7 +2651,7 @@
                 "type": "stat",
                 "path": "player.stats.hype",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -2689,6 +2707,15 @@
         "tier3",
         "tier2",
         "tier1"
+      ],
+      "region": [
+        "KR",
+        "EMEA",
+        "NA",
+        "BR",
+        "APAC",
+        "LAN",
+        "LAS"
       ]
     },
     "conditions": [],
@@ -2717,7 +2744,7 @@
                 "type": "stat",
                 "path": "player.stats.hype",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -2786,8 +2813,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -2842,7 +2869,7 @@
     "category": "caminos",
     "categoria": "mercado",
     "title": "La firma en Shanghái",
-    "description": "Te reciben en Shanghái con un contrato nuevo y un cuarto con vista al río. Todavía podés cambiar de idea, pero cuesta.",
+    "description": "Te reciben en Shanghái con el contrato impreso y un cuarto con vista al río. Todavía podés echarte atrás.",
     "weight": 10,
     "cooldown": 8,
     "contexto": {
@@ -2855,6 +2882,15 @@
         "tier3",
         "tier2",
         "tier1"
+      ],
+      "region": [
+        "KR",
+        "EMEA",
+        "NA",
+        "BR",
+        "APAC",
+        "LAN",
+        "LAS"
       ]
     },
     "conditions": [
@@ -2862,6 +2898,11 @@
         "field": "flags.caminos.llamado_lpl",
         "op": "eq",
         "value": true
+      },
+      {
+        "field": "flags.ofertaDeImport",
+        "op": "eq",
+        "value": null
       }
     ],
     "options": [
@@ -2873,8 +2914,15 @@
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Firmás tranquilo, sabiendo lo que hacés. Los dueños de la org te dan la mano.",
+            "texto": "Firmás tranquilo, sabiendo lo que hacés. En la pretemporada te mudás a la LPL.",
             "effects": [
+              {
+                "type": "ofertaDeImport",
+                "path": "flags.ofertaDeImport",
+                "liga": [
+                  "LPL"
+                ]
+              },
               {
                 "type": "stat",
                 "path": "career.jerarquia",
@@ -2888,8 +2936,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -2897,8 +2945,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.llamado_lpl_fin",
-                "valor": true
+                "path": "flags.caminos.region",
+                "valor": "abierto"
               },
               {
                 "type": "momento",
@@ -2913,13 +2961,20 @@
           },
           {
             "weight": 4,
-            "texto": "Leer te lleva horas y se enfrían los ánimos. Firmás igual, pero con un clima raro.",
+            "texto": "Leer te lleva horas y se enfrían los ánimos. Firmás igual: en la pretemporada te mudás.",
             "effects": [
+              {
+                "type": "ofertaDeImport",
+                "path": "flags.ofertaDeImport",
+                "liga": [
+                  "LPL"
+                ]
+              },
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -2937,8 +2992,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.llamado_lpl_fin",
-                "valor": true
+                "path": "flags.caminos.region",
+                "valor": "abierto"
               },
               {
                 "type": "momento",
@@ -2951,7 +3006,9 @@
               }
             ]
           }
-        ]
+        ],
+        "aviso": "Otro idioma, otra comida, lejos de casa",
+        "promete": "region"
       },
       {
         "id": "echarte_para_atras",
@@ -2977,7 +3034,7 @@
                 "type": "stat",
                 "path": "player.stats.mentalidad",
                 "min": 2,
-                "max": 4,
+                "max": 3,
                 "clamp": [
                   0,
                   100
@@ -2985,8 +3042,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.llamado_lpl_fin",
-                "valor": true
+                "path": "flags.caminos.region",
+                "valor": "cerrado"
               },
               {
                 "type": "momento",
@@ -3025,8 +3082,8 @@
               },
               {
                 "type": "camino",
-                "path": "flags.caminos.llamado_lpl_fin",
-                "valor": true
+                "path": "flags.caminos.region",
+                "valor": "cerrado"
               },
               {
                 "type": "momento",
@@ -3041,7 +3098,9 @@
           }
         ]
       }
-    ]
+    ],
+    "oferta": true,
+    "bifurcacion": true
   },
   {
     "id": "llamado_el_coach_de_leyenda",
@@ -3080,8 +3139,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.macro",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -3090,8 +3149,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3121,8 +3180,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3150,8 +3209,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mecanica",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -3160,8 +3219,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.shotcalling",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3191,8 +3250,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3252,8 +3311,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.macro",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -3262,8 +3321,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.shotcalling",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3292,8 +3351,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3340,8 +3399,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -3454,8 +3513,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mecanica",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -3464,8 +3523,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3485,8 +3544,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3524,8 +3583,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.macro",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -3534,8 +3593,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.shotcalling",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3555,8 +3614,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.adaptabilidad",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3626,8 +3685,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -3636,8 +3695,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mecanica",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3666,8 +3725,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3714,8 +3773,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -3724,8 +3783,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.macro",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3828,8 +3887,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.macro",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -3859,8 +3918,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.adaptabilidad",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -3898,8 +3957,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.shotcalling",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -3908,8 +3967,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.macro",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -4000,8 +4059,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.hype",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -4088,8 +4147,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.macro",
-                "min": 6,
-                "max": 8,
+                "min": 5,
+                "max": 6,
                 "clamp": [
                   0,
                   100
@@ -4098,8 +4157,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.mentalidad",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
@@ -4138,8 +4197,8 @@
               {
                 "type": "stat",
                 "path": "player.stats.shotcalling",
-                "min": 4,
-                "max": 6,
+                "min": 3,
+                "max": 5,
                 "clamp": [
                   0,
                   100
