@@ -32,6 +32,7 @@ import { emblema } from './emblema.js';
 import { quemar } from '../../fx/ceremonia.js';
 import { campeonesNombrados } from '../../core/mundo.js';
 import { mostrarLegendaria } from '../../fx/momento.js';
+import { albumCompartido, NOMBRE_RAREZA } from '../../core/album.js';
 import { ejeDe } from '../../core/ejes.js';
 import { rotuloDeDecision } from '../../formatoUi.js';
 import { crearCostura, equiposDelMundo } from '../costura.js';
@@ -103,15 +104,29 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
   const lector = leerDecision(decision, { estado, previa });
   const { forma, esMatriz, disponibles, bloqueadas, lec, variante, previas, chipDePrevia, pDe, riesgoDe } = lector;
   const fx = () => mundo?.fx?.() ?? null;
+  // H6 (el álbum): lo que ves por primera vez lleva el chip NUEVO (el evento en el rótulo, las cartas de la mano en su marco).
+  // `registrar` devuelve lo que el álbum no tenía y lo suma; sin storage no pasa nada (queda en memoria).
+  const evento = decision.datos?.evento ?? null;
+  const nuevosAlbum = new Set();
+  if (!esMatriz) {
+    const items = esMano ? disponibles.map((o) => ({ tipo: 'c', id: o.id, rareza: o.rareza })) : evento?.id ? [{ tipo: 'e', id: evento.id, rareza: evento.rarezaEvento ?? 'comun' }] : [];
+    for (const n of albumCompartido().registrar(items, estado?.seed ?? null)) nuevosAlbum.add(`${n.tipo}:${n.id}`);
+  }
+  const eventoNuevo = !esMano && evento?.id ? nuevosAlbum.has(`e:${evento.id}`) : false;
+  // H6 (la rareza del evento a la vista): rara, épica o legendaria. El marco usa los colores de las cartas (`--rz-*`).
+  const rzEvento = !esMano && !esMatriz ? evento?.rarezaEvento ?? 'comun' : 'comun';
+  const rzEventoVisible = rzEvento !== 'comun' && NOMBRE_RAREZA[rzEvento] ? rzEvento : null;
 
   // ------------------------------------------------------------------ la cabecera
-  const raiz = el('section', { class: 'parada parada-decision cv-raiz', 'data-mano': esMano ? '' : null, 'data-forma': forma, 'data-bisagra': lec.bisagra ? '' : null, 'data-costura': variante });
+  const raiz = el('section', { class: `parada parada-decision cv-raiz${rzEventoVisible ? ` cv-ev cv-ev-${rzEventoVisible}` : ''}`, 'data-rareza-evento': rzEventoVisible, 'data-mano': esMano ? '' : null, 'data-forma': forma, 'data-bisagra': lec.bisagra ? '' : null, 'data-costura': variante });
   const col = el('div', { class: 'cv-col' });
   const rotuloCat = rotuloDeDecision(decision, estado);
   const rotuloTexto = el('span', { class: 'cv-rotulo-txt', text: esMatriz ? 'El plan del año' : rotuloDeEvento(decision) ?? rotuloCat.label });
   const rotulo = el('p', { class: 'cv-rotulo' }, [
     el('i', { class: 'cv-rotulo-luz' }),
     rotuloTexto,
+    rzEventoVisible ? el('span', { class: 'cv-tag cv-tag-evento', text: { rara: 'Raro', epica: 'Épico', legendaria: 'Legendario' }[rzEventoVisible] }) : null,
+    eventoNuevo ? el('span', { class: 'cv-tag cv-tag-nuevo', text: 'Nuevo' }) : null,
     lec.bisagra ? el('span', { class: 'cv-bisagra', text: 'Decisión bisagra' }) : null,
     esMatriz ? el('span', { class: 'cv-bisagra', text: 'el plan corre solo' }) : null
   ]);
@@ -195,8 +210,10 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
   ]);
   const tags = (o) => {
     const rara = o.rareza && o.rareza !== 'comun';
-    return o.propuesta || rara ? el('span', { class: 'cv-tags' }, [
+    const nueva = esMano && nuevosAlbum.has(`c:${o.id}`);
+    return o.propuesta || rara || nueva ? el('span', { class: 'cv-tags' }, [
       rara ? el('span', { class: 'cv-tag cv-tag-rara', text: o.rareza === 'epica' ? 'épica' : o.rareza }) : null,
+      nueva ? el('span', { class: 'cv-tag cv-tag-nuevo', text: 'Nueva' }) : null,
       o.propuesta ? el('span', { class: 'cv-tag cv-tag-perfil', text: 'Tu perfil' }) : null
     ]) : null;
   };
@@ -620,7 +637,15 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
     });
   }
   capa?.entrar();
-  if (!lec.aviso && !quieto()) entradaPanel();
+  // H6: un evento legendario tiene su momento dorado antes de que entren las cartas (el mismo de la carta legendaria elegida).
+  if (rzEvento === 'legendaria' && !lec.aviso && !quieto()) {
+    raiz.style.visibility = 'hidden';
+    const seguir = () => {
+      raiz.style.visibility = '';
+      if (raiz.isConnected) entradaPanel();
+    };
+    mostrarLegendaria({ valor: '', stat: '', titulo: decision.titulo }, { sonido }).then(seguir, seguir);
+  } else if (!lec.aviso && !quieto()) entradaPanel();
 
   // ------------------------------------------------------------------ elegir: el destello y la quema
   let respuesta = null;

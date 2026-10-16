@@ -89,6 +89,14 @@ export function iniciar() {
   const continuarArte = document.getElementById('continuarArte');
   const desafioDia = document.getElementById('desafioDia');
   const historialEl = document.getElementById('historial');
+  // H6: el álbum (lo que descubriste): se abre desde el inicio y el catálogo se importa recién al abrirlo.
+  const albumBtn = document.getElementById('albumBtn');
+  const albumCuenta = document.getElementById('albumCuenta');
+  const pintarCuentaDelAlbum = () => import('./screens/album.js').then((m) => { if (albumCuenta) albumCuenta.textContent = m.cuentaDelAlbum(); }, () => {});
+  albumBtn?.addEventListener('click', () => {
+    import('./screens/album.js').then((m) => m.abrirAlbum()).then(pintarCuentaDelAlbum, () => {});
+  });
+  pintarCuentaDelAlbum();
   const toggleVelocidad = document.getElementById('toggleVelocidad');
   const toggleSonido = document.getElementById('toggleSonido');
   // PLANUI §7.5: "Textos: breves | completos" (`html[data-textos]`), una preferencia de la vista.

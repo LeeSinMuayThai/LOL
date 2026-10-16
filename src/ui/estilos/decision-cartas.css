@@ -479,3 +479,18 @@ html[data-reducido] .cv-rara .cv-marco, html[data-reducido] .cv-gemas .on, html[
   background: var(--gold); box-shadow: 0 0 10px 2px var(--gold);
 }
 @media (prefers-reduced-motion: reduce) { .cv-reverso, .cv-brote, .cv-chispa { display: none; } }
+
+/* H6 (la rareza del evento a la vista): el evento raro, épico o legendario lleva el color de las cartas (gris, azul, violeta,
+   dorado; los `--rz-*` de H2a) en la cabecera y en el halo de sus cartas. El común no marca nada. */
+.cv-ev-rara { --cv-rz: var(--rz-rara); }
+.cv-ev-epica { --cv-rz: var(--rz-epica); }
+.cv-ev-legendaria { --cv-rz: var(--rz-legendaria); }
+.cv-ev .cv-cab { padding-left: 14px; box-shadow: inset 3px 0 0 var(--cv-rz); }
+.cv-ev .cv-rotulo-luz { background: var(--cv-rz); box-shadow: 0 0 10px var(--cv-rz); }
+.cv-tag-evento { background: var(--cv-rz); color: var(--bg-void); box-shadow: none; }
+.cv-ev-rara .opcion.cv-carta:not(.cv-rara) { box-shadow: 0 18px 40px var(--sombra), 0 0 22px color-mix(in srgb, var(--cv-rz) 30%, transparent); }
+.cv-ev-epica .opcion.cv-carta:not(.cv-rara) { box-shadow: 0 18px 40px var(--sombra), 0 0 28px color-mix(in srgb, var(--cv-rz) 40%, transparent); }
+.cv-ev-legendaria .opcion.cv-carta:not(.cv-rara) { box-shadow: 0 18px 40px var(--sombra), 0 0 34px color-mix(in srgb, var(--cv-rz) 55%, transparent); }
+.cv-ev .cv-cab .cv-titulo { text-shadow: 0 0 24px color-mix(in srgb, var(--cv-rz) 45%, transparent); }
+/* H6 (el álbum): lo que ves por primera vez. */
+.cv-tag-nuevo { background: var(--luz); color: var(--bg-void); box-shadow: none; }
