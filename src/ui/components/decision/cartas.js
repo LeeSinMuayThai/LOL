@@ -84,7 +84,12 @@ function rotuloDeEvento(decision) {
   return evento.bifurcacion ? 'Decisión difícil' : 'Pasan cosas';
 }
 
-export function crear(contenedor, decision, { estado, previa = null, mundo, sonido = null, responder, arte = null, marca = false, limite = null, lateral = null, margen = () => 0 }) {
+export function crear(contenedor, decisionCompleta, { estado, previa = null, mundo, sonido = null, responder, arte = null, marca = false, limite = null, lateral = null, margen = () => 0 }) {
+  // H2a (el mazo): "Otra mano" (la opción `cambio` del motor) no es una carta: la pantalla la pinta como un botón. La mano del
+  // año (`datos.motivo`) no muestra descripción, situación ni aviso con %: el número de cada carta es seguro.
+  const otra = (decisionCompleta.opciones ?? []).find((o) => o.cambio) ?? null;
+  const decision = otra ? { ...decisionCompleta, opciones: decisionCompleta.opciones.filter((o) => !o.cambio) } : decisionCompleta;
+  const esMano = ['mano', 'otra_mano'].includes(decision.datos?.motivo);
   const lector = leerDecision(decision, { estado, previa });
   const { forma, esMatriz, disponibles, bloqueadas, lec, variante, previas, chipDePrevia, pDe, riesgoDe } = lector;
   const fx = () => mundo?.fx?.() ?? null;
@@ -113,7 +118,8 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
   // G2b (una carta por año): el color de tu situación (la soloQ sin equipo, el bootcamp, la gaming house de tu org). Lo arma el
   // motor (`systems/edadCierre.js:situacionDeLaCarta`).
   const situacion = decision.situacion?.texto ? el('p', { class: 'cv-situacion', 'data-situacion': decision.situacion.id, text: decision.situacion.texto }) : null;
-  const cab = el('header', { class: 'cv-cab' }, [rotulo, titulo, situacion, planteo]);
+  planteo.hidden = esMano || !primera;
+  const cab = el('header', { class: 'cv-cab' }, [rotulo, titulo, esMano ? null : situacion, planteo]);
 
   // ------------------------------------------------------------------ el arte (por prioridad: ver la cabecera)
   const ejesMx = esMatriz ? lector.matriz.ejes : [];
@@ -180,7 +186,7 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
   const tags = (o) => {
     const rara = o.rareza && o.rareza !== 'comun';
     return o.propuesta || rara ? el('span', { class: 'cv-tags' }, [
-      rara ? el('span', { class: 'cv-tag cv-tag-rara', text: o.rareza }) : null,
+      rara ? el('span', { class: 'cv-tag cv-tag-rara', text: o.rareza === 'epica' ? 'épica' : o.rareza }) : null,
       o.propuesta ? el('span', { class: 'cv-tag cv-tag-perfil', text: 'Tu perfil' }) : null
     ]) : null;
   };
@@ -265,12 +271,12 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
       o.descripcion ? el('span', { class: 'cv-desc', text: o.descripcion }) : null,
       esMatriz ? null : seguroDe(o),
       esMatriz ? null : costoDe(o),
-      esMatriz ? barras(o) : (o.previa ?? []).length ? el('span', { class: 'eje-chips cv-chips' }, o.previa.map(chipDePrevia)) : null,
-      esMatriz ? null : avisoDe(o),
+      esMatriz ? barras(o) : (o.previa ?? []).length > (esMano ? 1 : 0) ? el('span', { class: 'eje-chips cv-chips' }, o.previa.map(chipDePrevia)) : null,
+      esMatriz || esMano ? null : avisoDe(o),
       planDe(o),
-      el('span', { class: 'cv-pie' }, [gemas(o), pDe(o) != null ? medidorP(pDe(o)) : null])
+      el('span', { class: 'cv-pie' }, esMano ? [] : [gemas(o), pDe(o) != null ? medidorP(pDe(o)) : null])
     ]);
-    const b = el('button', { type: 'button', class: `opcion cv-carta${rara ? ' cv-rara' : ''}`, 'data-atajo': i < 4 ? String(i + 1) : null, 'data-id': o.id, 'data-eje': eje, 'data-arte': arte.tipo, 'aria-describedby': descId(i), style: estiloEje(eje) }, [
+    const b = el('button', { type: 'button', class: `opcion cv-carta${esMano ? ` cv-r-${o.rareza ?? 'comun'}` : rara ? ' cv-rara' : ''}`, 'data-atajo': i < 4 ? String(i + 1) : null, 'data-id': o.id, 'data-eje': eje, 'data-arte': arte.tipo, 'aria-describedby': descId(i), style: estiloEje(eje) }, [
       el('span', { class: 'cv-marco', 'aria-hidden': 'true' }),
       el('span', { class: 'cv-cara' }, [
         ventana({ ...arte, campo }),
@@ -453,6 +459,18 @@ export function crear(contenedor, decision, { estado, previa = null, mundo, soni
 
   const cuerpoPanel = el('div', { class: 'cv-cuerpo-panel' }, [leyenda, mano, inspector]);
   col.append(cab, cuerpoPanel);
+  // H2a: "Otra mano (quedan N)": vuelve a repartir (el motor encadena la decisión con `motivo: 'otra_mano'`), sin elegir carta.
+  if (otra) {
+    const botonOtra = el('button', { type: 'button', class: 'cv-otra', text: `${otra.label} (quedan ${otra.quedan})` });
+    botonOtra.addEventListener('click', () => {
+      if (elegido) return;
+      elegido = true;
+      raiz.classList.add('eligiendo');
+      sonido?.clic?.();
+      responder({ opcionId: otra.id });
+    });
+    col.append(botonOtra);
+  }
   raiz.append(col);
 
   // ------------------------------------------------------------------ la costura (con destino): el bloque de `crearDecision`

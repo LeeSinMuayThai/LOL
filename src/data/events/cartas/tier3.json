@@ -1,0 +1,342 @@
+[
+  {
+    "id": "t3_quedarte_con_lo_bueno",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Quedarte con lo bueno",
+    "linea": "Del armado chico, solo lo que sirvió",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t3_apuntar_mas_alto",
+    "rareza": "rara",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Apuntar más alto",
+    "linea": "Mecánica en el receso, tryouts en la cabeza",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_stream_clips_tryouts",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Stream, clips y tryouts",
+    "linea": "Te mostrás hasta que alguien llame",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t3_medirte_con_veteranos",
+    "rareza": "comun",
+    "etapa": [
+      "tier3",
+      "tier2",
+      "tier1"
+    ],
+    "contexto": {
+      "edadBanda": [
+        "temprana",
+        "joven"
+      ]
+    },
+    "titulo": "Medirte con los veteranos",
+    "linea": "Les robás cada rotación que hacen",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_medirte_con_vos",
+    "rareza": "rara",
+    "etapa": [
+      "tier3",
+      "tier2",
+      "tier1"
+    ],
+    "contexto": {
+      "edadBanda": [
+        "temprana",
+        "joven"
+      ]
+    },
+    "titulo": "Competir con vos mismo",
+    "linea": "Solo importa el de hace un año",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t3_ser_la_promesa",
+    "rareza": "comun",
+    "etapa": [
+      "tier3",
+      "tier2",
+      "tier1"
+    ],
+    "contexto": {
+      "edadBanda": [
+        "temprana",
+        "joven"
+      ]
+    },
+    "titulo": "Ser la promesa",
+    "linea": "Los medios te quieren y vos hablás",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t3_doble_turno",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Doble turno",
+    "linea": "Ocho horas de cola y la mano afilada",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_el_analista",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "El analista del equipo",
+    "linea": "Te pasa los VODs de los rivales",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_lane_swap",
+    "rareza": "comun",
+    "etapa": [
+      "tier3",
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Lane swap en scrims",
+    "linea": "Probás matchups que nunca habías tocado",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_pelea_final",
+    "rareza": "comun",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Llamar la pelea final",
+    "linea": "Por primera vez te hacen caso",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t3_tilt_ajeno",
+    "rareza": "comun",
+    "etapa": [
+      "tier3",
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Bancar el tilt ajeno",
+    "linea": "Aprendés a no contagiarte de la queja",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t3_lunes_de_revision",
+    "rareza": "comun",
+    "etapa": [
+      "tier3",
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Lunes de revisión",
+    "linea": "El coach repasa cada decisión del finde",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_rival_de_la_zona",
+    "rareza": "rara",
+    "etapa": [
+      "tier3"
+    ],
+    "contexto": {},
+    "titulo": "Rival de la zona",
+    "linea": "Un top de otro club te exige más",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t3_la_final_que_dolio",
+    "rareza": "rara",
+    "etapa": [
+      "tier3",
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "La final que dolió",
+    "linea": "Un mes de bronca y sales más duro",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t3_te_nombran_capitan",
+    "rareza": "epica",
+    "etapa": [
+      "tier3",
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Te nombran capitán",
+    "linea": "El equipo te cede la voz",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      }
+    ],
+    "plan": "marca"
+  }
+]

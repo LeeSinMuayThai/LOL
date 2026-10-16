@@ -1,0 +1,209 @@
+[
+  {
+    "id": "em_cola_coreana",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Cola coreana",
+    "linea": "Jugar en Corea te saca la lane floja",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_idioma_del_scrim",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "El idioma del scrim",
+    "linea": "Aprendés el vocabulario táctico de otra liga",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "em_extranar_el_asado",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Extrañar el asado",
+    "linea": "Lejos de casa, pero con la cabeza firme",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "em_mirar_otra_liga",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Mirar otra liga",
+    "linea": "Copiás lo que funciona en la LEC",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_servidor_con_ping",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Servidor con ping alto",
+    "linea": "Te acostumbrás a jugar con el delay",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_comms_en_ingles",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Comms en inglés",
+    "linea": "Llamás las peleas en otro idioma",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "em_duo_con_el_import",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Duo con el import",
+    "linea": "El otro extranjero te abre el carril",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_scrims_con_la_region",
+    "rareza": "comun",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Scrims con la región",
+    "linea": "Ves meta que en casa llegaba en meses",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "em_vida_en_el_exterior",
+    "rareza": "rara",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Vida en el exterior",
+    "linea": "Cocinás, entrenás y volvés más duro",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "em_capitan_de_los_imports",
+    "rareza": "epica",
+    "etapa": [
+      "emigrado"
+    ],
+    "contexto": {},
+    "titulo": "Capitán de los imports",
+    "linea": "Te siguen aunque hablen otro idioma",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "marca"
+  }
+]

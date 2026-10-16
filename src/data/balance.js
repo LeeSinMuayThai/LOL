@@ -1602,15 +1602,48 @@ export const BALANCE = {
   },
 
   // G2b (PLANUI §0.9, "una carta por año"): la carta del año es la única decisión del arranque del año. Cada opción del
-  // cierre (`data/events/cierre_edad.json`) declara en `carta` su stat principal, uno de estos cinco (los de la ficha), y
+  // cierre (la mano de `data/events/cartas/*.json`, H2a) declara en `carta` su stat principal, uno de estos cinco (los de la ficha), y
   // todos sus outcomes lo suben: el piso es el número seguro que muestra la carta (`systems/edadCierre.js`). La rutina del
   // amateur deja de ser una decisión: la arma el motor con la propuesta de tu perfil (`systems/amateur.js`).
   carta: {
-    stats: ['mecanica', 'macro', 'laneo', 'shotcalling', 'mentalidad'],
-    // Una carta es rara si su número seguro llega a esto (la misma escala del stat, ya con el tope del clamp).
-    rarezaDesde: 4,
-    // El tier del club desde el que la carta se juega en "la gaming house" (debajo, "el bootcamp").
-    tierGamingHouse: 1
+    stats: ['mecanica', 'macro', 'laneo', 'shotcalling', 'mentalidad']
+  },
+
+  // H2a (PLANUI §0.10, "el mazo"): la carta del año deja de ser 1 de 10 manos fijas y pasa a ser un mazo que se sortea por
+  // rareza (`data/events/cartas/*.json`, solo stats: ningún rasgo). `systems/edadCierre.js` arma la mano.
+  cartas: {
+    // El evento sintético de la mano: id estable, y una categoría que ningún otro evento usa (la mano no entra a
+    // `flags.categoriasRecientes`: `edadCierre.resolver` la saca) y su título (la pantalla no suma descripción).
+    idEvento: 'mano_del_anio',
+    categoria: 'mano',
+    titulo: 'La mano del año',
+    idOtraMano: 'otra_mano',
+    tituloOtraMano: 'Otra mano',
+    // Cuántas cartas tiene la mano, y cuántas veces por carrera podés pedir otra (se cuenta en `flags.cartas.cambiosUsados`).
+    cartasPorMano: 3,
+    cambiosDeMano: 2,
+    // Por lugar de la mano: la chance de cada rareza (suma 1) y su orden de menor a mayor valor.
+    probRareza: { comun: 0.68, rara: 0.22, epica: 0.08, legendaria: 0.02 },
+    ordenRareza: ['comun', 'rara', 'epica', 'legendaria'],
+    // El piso: con tantas manos seguidas sin una rara o más (`flags.cartas.manosSinRara`), el último lugar sale rara o más.
+    manosSinRaraParaElPiso: 2,
+    // Una legendaria como máximo por mano.
+    legendariasPorMano: 1,
+    // Las comunes decaen: el peso de una que ya viste es este factor elevado a las veces que la viste. Las raras o más no
+    // se repiten en la carrera.
+    decaimientoComun: 0.35,
+    // Las dos salidas de cada carta: la normal (el rango del dato) y la extra (el mismo rango, corrido en `sumaSalidaExtra`).
+    pesoSalidaNormal: 0.75,
+    pesoSalidaExtra: 0.25,
+    sumaSalidaExtra: 1,
+    textoSalidaExtra: 'Y salió mejor de lo que esperabas.',
+    // El peso mínimo de una carta para el bot (siempre elegible).
+    pesoMinimoDelBot: 1,
+    // De dónde sale la etapa del mazo: el nivel del contexto (el que no es de club cae en tier 3), las residencias fuera de tu
+    // región (emigrado) y las bandas de edad del veterano (el declive también lo es).
+    etapaDeNivel: { tier3: 'tier3', tier2: 'tier2', tier1: 'tier1', libre: 'tier3' },
+    residenciasEmigrado: ['import', 'residente'],
+    bandasVeterano: ['veterana']
   },
 
   // G4b (PLANUI §0.9, "promesas que se pagan"): alguien del entorno te promete algo con plazo (`data/events/promesas.json`, el

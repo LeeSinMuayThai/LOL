@@ -210,7 +210,8 @@ export const HORIZONTE_POR_TIPO = {
   'mercado:traspaso': 'carrera',
   // F2 (PLANUI §0.8): la llamada de un club de tier 2 en el split del salto de tier 3: firmar ahora o esperar el mercado.
   'competitivo:llamada_tier2': 'carrera',
-  'edadCierre:x': 'carrera',
+  'edadCierre:mano': 'carrera',
+  'edadCierre:otra_mano': 'carrera',
   'retiro:retiro_declive': 'carrera',
   'retiro:retiro_vuelta': 'carrera',
   'retiro:evento_ventana': 'carrera',

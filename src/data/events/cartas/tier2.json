@@ -1,0 +1,349 @@
+[
+  {
+    "id": "t2_pedir_mas_peso",
+    "rareza": "comun",
+    "etapa": [
+      "tier2",
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Pedir más peso",
+    "linea": "Que el equipo juegue más para vos",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t2_hacerte_cargo",
+    "rareza": "comun",
+    "etapa": [
+      "tier2",
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Hacerte cargo",
+    "linea": "Lo que salió mal es tuyo, y lo arreglás",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_escuchar_y_callar",
+    "rareza": "rara",
+    "etapa": [
+      "tier2",
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Escuchar y callar",
+    "linea": "Te guardás lo tuyo para el scrim",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t2_sesiones_de_mecanica",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Sesiones de mecánica",
+    "linea": "Una hora diaria de last-hit y kiteo",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_review_con_el_head_coach",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Review del head coach",
+    "linea": "Te marca los errores de mapa",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_scrims_contra_tier1",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Scrims contra tier 1",
+    "linea": "Te pasan por arriba y aprendés",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_comms_sin_gritar",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Comms sin gritar",
+    "linea": "Cortás el ruido y llamás una sola cosa",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "t2_psicologo_del_club",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Psicólogo del club",
+    "linea": "Una hora semanal para ordenar la cabeza",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t2_pool_ajustado",
+    "rareza": "comun",
+    "etapa": [
+      "tier2",
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Pool ajustado",
+    "linea": "Sacás tres picks que el equipo necesita",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_duelo_con_el_titular",
+    "rareza": "comun",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Duelo con el titular",
+    "linea": "Le ganás la lane en práctica",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_tu_mejor_split",
+    "rareza": "rara",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Tu mejor split",
+    "linea": "Todo encaja por primera vez en el año",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t2_entras_por_el_titular",
+    "rareza": "rara",
+    "etapa": [
+      "tier2"
+    ],
+    "contexto": {},
+    "titulo": "Entrás por el titular",
+    "linea": "Te toca jugar y no lo soltás",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t2_ano_de_tu_vida",
+    "rareza": "epica",
+    "etapa": [
+      "tier2",
+      "tier1"
+    ],
+    "contexto": {},
+    "titulo": "Año de tu vida",
+    "linea": "Tu mecánica pasa de buena a temida",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_despedir_a_los_que_se_van",
+    "rareza": "comun",
+    "etapa": [
+      "tier2",
+      "tier1"
+    ],
+    "contexto": {
+      "marcas": [
+        "con_vestuario"
+      ]
+    },
+    "titulo": "Despedida al vestuario",
+    "linea": "El vestuario cierra bien, y vos también",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "t1_cabeza_en_otro_año",
+    "rareza": "comun",
+    "etapa": [
+      "tier2",
+      "tier1"
+    ],
+    "contexto": {
+      "marcas": [
+        "con_vestuario"
+      ]
+    },
+    "titulo": "Mirar al próximo año",
+    "linea": "Ya estás estudiando el nuevo armado",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "t1_voz_en_el_armado",
+    "rareza": "comun",
+    "etapa": [
+      "tier2",
+      "tier1"
+    ],
+    "contexto": {
+      "marcas": [
+        "con_vestuario"
+      ]
+    },
+    "titulo": "Voz en el armado",
+    "linea": "Que te escuchen para armar el plantel",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  }
+]

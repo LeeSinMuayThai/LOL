@@ -1,0 +1,296 @@
+[
+  {
+    "id": "vt_este_es_el_ano",
+    "rareza": "rara",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Este es el año",
+    "linea": "Apostás todo al resultado",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_bajar_las_revoluciones",
+    "rareza": "rara",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Bajar las revoluciones",
+    "linea": "Durar es también ganar",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "vt_construir_para_despues",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Construir para después",
+    "linea": "Stream, negocio y la vida post-pro",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "vt_lo_que_ya_sabes",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Lo que ya sabés",
+    "linea": "Leés el mapa antes que los demás",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_entrenar_con_los_pibes",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Entrenar con los pibes",
+    "linea": "Les enseñás y te acordás cómo se juega",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "vt_cuidar_las_munecas",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Cuidar las muñecas",
+    "linea": "Menos horas, mejor calidad de práctica",
+    "stats": [
+      {
+        "stat": "mecanica",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_el_que_ordena",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Ordenar la pelea",
+    "linea": "Con la experiencia, tu voz pesa más",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "vt_matchup_conocido",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Matchup que conocés",
+    "linea": "Jugás al rival de memoria",
+    "stats": [
+      {
+        "stat": "laneo",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_ano_de_transicion",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Año de transición",
+    "linea": "Decidís cuándo pelear y cuándo esperar",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_el_ultimo_tramo",
+    "rareza": "comun",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "El último tramo",
+    "linea": "Sin nada que probar, jugás suelto",
+    "stats": [
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "cabeza"
+  },
+  {
+    "id": "vt_segunda_juventud",
+    "rareza": "rara",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Segunda juventud",
+    "linea": "El juego te vuelve a hacer ruido",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          3,
+          4
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          2,
+          3
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_mentor_del_plantel",
+    "rareza": "rara",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Mentor del plantel",
+    "linea": "Todo el equipo te mira cuando hablás",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "marca"
+  },
+  {
+    "id": "vt_catedra_de_macro",
+    "rareza": "epica",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "Cátedra de macro",
+    "linea": "Nadie lee mejor el mapa que vos",
+    "stats": [
+      {
+        "stat": "macro",
+        "valor": [
+          6,
+          7
+        ]
+      }
+    ],
+    "plan": "juego"
+  },
+  {
+    "id": "vt_el_ultimo_baile",
+    "rareza": "legendaria",
+    "etapa": [
+      "veterano"
+    ],
+    "contexto": {},
+    "titulo": "El último baile",
+    "linea": "Si es el final, que sea inolvidable",
+    "stats": [
+      {
+        "stat": "shotcalling",
+        "valor": [
+          5,
+          6
+        ]
+      },
+      {
+        "stat": "mentalidad",
+        "valor": [
+          4,
+          5
+        ]
+      }
+    ],
+    "plan": "marca"
+  }
+]

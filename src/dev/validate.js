@@ -29,6 +29,7 @@ import { observar as observarCobertura, calcularHuecosPorCategoria } from './cob
 import { BALANCE } from '../data/balance.js';
 import { planDeSemana as planDeSemanaH10 } from '../systems/amateur.js';
 import { TODOS_LOS_EVENTOS } from '../data/events/index.js';
+import { CARTAS } from '../data/events/cartas/index.js';
 import { CATEGORIAS_EVENTO } from '../data/categorias.js';
 import { mulberry32, sample } from '../core/rng.js';
 import { unidadesDeLaRegla } from '../core/minijuegos.js';
@@ -2947,15 +2948,33 @@ check('Balance coherente', () => {
   }
 });
 
-check('Hay al menos un evento de cierre de edad por fase amateur', () => {
-  const cierres = TODOS_LOS_EVENTOS.filter((evento) => evento.cierreDeEdad);
-  if (cierres.length === 0) {
-    throw new Error('no hay eventos con cierreDeEdad: true');
-  }
-  for (const evento of cierres) {
-    if (!Array.isArray(evento.conditions)) {
-      throw new Error(`${evento.id}: evento de cierre sin conditions`);
+check('H2a el mazo de cartas: cada carta tiene su forma (título y línea cortos, stats de la ficha, valores en rangos, costo en otro stat, plan solo fuera del amateur) y hay cartas para cada etapa', () => {
+  const RAREZAS = BALANCE.cartas.ordenRareza;
+  const ETAPAS = ['amateur', 'tier3', 'tier2', 'tier1', 'emigrado', 'veterano'];
+  const ids = new Set();
+  const porEtapa = Object.fromEntries(ETAPAS.map((etapa) => [etapa, 0]));
+  const palabras = (texto) => texto.trim().split(/\s+/).length;
+  for (const carta of CARTAS) {
+    if (ids.has(carta.id)) throw new Error(`carta repetida: ${carta.id}`);
+    ids.add(carta.id);
+    if (!RAREZAS.includes(carta.rareza)) throw new Error(`${carta.id}: rareza "${carta.rareza}"`);
+    if (!carta.etapa?.length || carta.etapa.some((etapa) => !ETAPAS.includes(etapa))) throw new Error(`${carta.id}: etapa inválida (${carta.etapa})`);
+    for (const etapa of carta.etapa) porEtapa[etapa] += 1;
+    if (palabras(carta.titulo) > 4 || palabras(carta.linea) > 10) throw new Error(`${carta.id}: título de ${palabras(carta.titulo)} o línea de ${palabras(carta.linea)} palabras (máx 4 y 10)`);
+    if (carta.stats.length < 1 || carta.stats.length > 2 || new Set(carta.stats.map((s) => s.stat)).size !== carta.stats.length) throw new Error(`${carta.id}: stats mal armados`);
+    for (const { stat, valor } of [...carta.stats, ...(carta.costo ? [carta.costo] : [])]) {
+      if (!BALANCE.carta.stats.includes(stat)) throw new Error(`${carta.id}: "${stat}" no es un stat de la ficha`);
+      if (!Array.isArray(valor) || valor.length !== 2 || valor[0] > valor[1]) throw new Error(`${carta.id}: el valor de ${stat} no es un rango [min, max]`);
     }
+    if (carta.stats.some((s) => s.valor[0] <= 0) || (carta.costo && (carta.costo.valor[1] >= 0 || carta.stats.some((s) => s.stat === carta.costo.stat)))) throw new Error(`${carta.id}: valor o costo mal firmado`);
+    const soloAmateur = carta.etapa.length === 1 && carta.etapa[0] === 'amateur';
+    if (soloAmateur ? carta.plan !== undefined : typeof carta.plan !== 'string') throw new Error(`${carta.id}: plan "${carta.plan}" (el amateur no fija plan, el resto sí)`);
+  }
+  for (const [etapa, cuantas] of Object.entries(porEtapa)) {
+    if (cuantas < 8) throw new Error(`la etapa ${etapa} tiene ${cuantas} cartas (mínimo 8)`);
+  }
+  for (const rareza of RAREZAS) {
+    if (!CARTAS.some((carta) => carta.rareza === rareza)) throw new Error(`no hay ninguna carta ${rareza}`);
   }
 });
 
@@ -20975,21 +20994,22 @@ check('K4c-P (c) el plan del año cambia solo en el cierre: cada cierre fija el 
 // fuera de `profesional`; con `criterio`, seeds 1-150, 520 cierres amateur con plan y el 79% sin un split pro el año siguiente).
 // Protege, desde la revisión de K4c, que el cierre amateur no fije ni muestre plan y que al debutar valga el del perfil.
 check('K4c-P (d) el dato y el arranque: los cierres pro traen un plan válido en cada opción y los tres planes; los amateur, ninguno (ni lo muestran ni lo fijan); el primer plan sale del perfil (T4), el inicio lo dice y vale hasta el primer cierre pro', () => {
-  const eventos = TODOS_LOS_EVENTOS.filter((evento) => evento.cierreDeEdad);
-  if (eventos.length === 0) throw new Error('no hay eventos de cierre');
+  // H2a: el dato son las cartas del mazo (`data/events/cartas/*.json`): las que son solo del amateur no traen plan; el resto, uno
+  // válido, y entre todas están los tres planes.
+  if (CARTAS.length === 0) throw new Error('no hay cartas');
   let amateurDelDato = 0;
-  for (const evento of eventos) {
-    const planes = evento.options.map((opcion) => opcion.plan);
-    if ((evento.contexto?.etapa ?? []).includes('amateur')) {
-      if (planes.some((plan) => plan !== undefined)) throw new Error(`${evento.id}: un cierre amateur trae plan (${planes.join(', ')})`);
+  const planesDelMazo = new Set();
+  for (const carta of CARTAS) {
+    if (carta.etapa.length === 1 && carta.etapa[0] === 'amateur') {
+      if (carta.plan !== undefined) throw new Error(`${carta.id}: una carta amateur trae plan (${carta.plan})`);
       amateurDelDato += 1;
       continue;
     }
-    if (planes.some((plan) => !IDS_PLAN_K4cP.includes(plan))) throw new Error(`${evento.id}: una opción sin plan válido (${planes.join(', ')})`);
-    const distintos = new Set(planes).size;
-    if (distintos < IDS_PLAN_K4cP.length) throw new Error(`${evento.id}: ofrece ${distintos} planes distintos`);
+    if (!IDS_PLAN_K4cP.includes(carta.plan)) throw new Error(`${carta.id}: sin plan válido (${carta.plan})`);
+    planesDelMazo.add(carta.plan);
   }
-  if (amateurDelDato === 0) throw new Error('no hay cierres amateur en el dato');
+  if (planesDelMazo.size < IDS_PLAN_K4cP.length) throw new Error(`el mazo ofrece ${planesDelMazo.size} planes distintos`);
+  if (amateurDelDato === 0) throw new Error('no hay cartas amateur en el dato');
   // En las carreras: un cierre con la fase amateur no muestra plan en ninguna opción ni lo cambia, y el plan del primer split pro
   // es el del arranque (el del perfil) hasta que un cierre pro fije otro.
   let amateurJugados = 0;
@@ -21028,7 +21048,7 @@ check('K4c-P (d) el dato y el arranque: los cierres pro traen un plan válido en
 check('K4c-P regla 15: cada opción del cierre dice el plan que fija, en cristiano y con la misma cuenta del motor, y la carta (components/decision/cartas.js) la pinta sin calcular nada', () => {
   let opciones = 0;
   for (const paso of corridasK4cP().pasos.filter((p) => p.sistemaId === 'edadCierre')) {
-    for (const opcion of paso.decision.opciones) {
+    for (const opcion of paso.decision.opciones.filter((o) => !o.cambio)) {
       // El cierre amateur no fija plan, y no lo dice (check (d)).
       if (paso.antes.phase === 'amateur') continue;
       const planId = paso.decision.datos.evento.options.find((o) => o.id === opcion.id)?.plan;
@@ -23130,11 +23150,19 @@ check('K4c (revisión) guardado VERSION 10 parado en la prueba del mercado o en 
   for (const paso of corridasK4cP().pasos) {
     const donde = `seed ${paso.seed}, split ${paso.split} (${paso.sistemaId})`;
     if (paso.sistemaId === 'edadCierre' && paso.antes.phase === 'profesional' && paso.antes.player.planAnual === planInicialK4cG(paso.antes.player.perfil.actual)) {
-      const migrado = aLa10(paso, (decision) => {
-        for (const opcion of [...decision.opciones, ...decision.datos.evento.options]) delete opcion.plan;
-      });
+      // H2a: la mano es un evento sintético que no está en `TODOS_LOS_EVENTOS`; una pausa de la 10 tenía su cierre en el dato, así que
+      // acá la mano se anota un rato como si lo estuviera (la migración lo busca por id).
+      TODOS_LOS_EVENTOS.push(paso.decision.datos.evento);
+      let migrado;
+      try {
+        migrado = aLa10(paso, (decision) => {
+          for (const opcion of [...decision.opciones, ...decision.datos.evento.options]) delete opcion.plan;
+        });
+      } finally {
+        TODOS_LOS_EVENTOS.pop();
+      }
       const decision = migrado.pendiente.decision;
-      for (const opcion of decision.opciones) {
+      for (const opcion of decision.opciones.filter((o) => !o.cambio)) {
         const planId = decision.datos.evento.options.find((o) => o.id === opcion.id)?.plan;
         if (!IDS_PLAN_K4cG.includes(planId) || opcion.plan?.texto !== lineaDePlanK4cG(migrado, planId)?.texto) {
           throw new Error(`${donde}: la opción "${opcion.label}" del cierre migrado no dice su plan (${JSON.stringify(opcion.plan)})`);
@@ -24940,109 +24968,67 @@ check('K4c-M la fecha marcada es una decisión: la mejor y la peor opción difie
 //       un outcome (cualquiera: es el riesgo) cuyo punto medio en algún eje llegue a ese mismo corte en contra;
 //   (e) y ninguna opción es una trampa: toda opción trae un beneficio (un eje a favor de al menos la "media").
 // No puede pasar vacío: sin eventos de cierre, o con uno de menos de dos opciones, falla.
-check('K4c el cierre de año es una decisión: las opciones mueven ejes distintos, alguna pesa como una bifurcación, ninguna domina y cada beneficio cuesta', () => {
-  const UMBRAL_DE_MAGNITUD = 1.25;
-  const TOLERANCIA = 1e-9;
-
-  const familiaDe = (efecto) => (efecto.type === 'pool' ? `pool_${efecto.accion}` : efecto.type);
-  const ejeDe = (efecto) => (efecto.type === 'pool' ? `${efecto.path}:${efecto.accion}` : efecto.path);
-  // Los efectos con rango numérico: `stat`, `ladder` y el pool que aprende o sube maestría ("olvidar" no tiene rango).
-  const tieneMagnitud = (efecto) => ['stat', 'ladder', 'pool'].includes(efecto.type) && typeof efecto.min === 'number';
-
-  function ejesDeOpcion(opcion) {
-    const pesoTotal = opcion.outcomes.reduce((suma, outcome) => suma + outcome.weight, 0);
-    const ejes = {};
-    const peorOutcome = {};
-    for (const outcome of opcion.outcomes) {
-      for (const efecto of outcome.effects.filter(tieneMagnitud)) {
-        const eje = ejeDe(efecto);
-        const medio = (efecto.min + efecto.max) / 2;
-        ejes[eje] = (ejes[eje] ?? 0) + (outcome.weight / pesoTotal) * medio;
-        peorOutcome[eje] = Math.min(peorOutcome[eje] ?? Infinity, medio);
-        ejes[`${eje}#familia`] = familiaDe(efecto);
-      }
+// H2a (PLANUI §0.10): la mano del año. En una misma rareza ninguna carta domina a otra (cada stat de una, al menos igual en la
+// otra, y algo más en alguna) y el orden de rareza es el orden de valor: el piso de las stats (con la mitad del costo) de cada rareza
+// queda por encima del techo de la de abajo. El bot elige por ese valor (`weight`), así que el orden también lo ven los pesos.
+check('H2a el mazo es una decisión: en una misma rareza ninguna carta domina a otra, y el orden de rareza es el orden de valor (en el dato y en las manos)', () => {
+  const RAREZAS = BALANCE.cartas.ordenRareza;
+  const valorDe = (carta) => carta.stats.reduce((suma, s) => suma + s.valor[0], 0) + (carta.costo ? (carta.costo.valor[0] + carta.costo.valor[1]) / 2 : 0);
+  const efectoDe = (carta) => {
+    const m = new Map(carta.stats.map((s) => [s.stat, s.valor]));
+    if (carta.costo) m.set(carta.costo.stat, carta.costo.valor);
+    return m;
+  };
+  const domina = (a, b) => {
+    const ea = efectoDe(a);
+    const eb = efectoDe(b);
+    let mayor = false;
+    for (const stat of new Set([...ea.keys(), ...eb.keys()])) {
+      const [amin, amax] = ea.get(stat) ?? [0, 0];
+      const [bmin, bmax] = eb.get(stat) ?? [0, 0];
+      if (amin < bmin || amax < bmax) return false;
+      if (amin > bmin || amax > bmax) mayor = true;
     }
-    return { ejes, peorOutcome };
-  }
-
-  const eventos = TODOS_LOS_EVENTOS.filter((evento) => evento.cierreDeEdad);
-  if (eventos.length === 0) {
-    throw new Error('el check no revisó ningún evento de cierre (no hay eventos con cierreDeEdad: true)');
-  }
-
+    return mayor;
+  };
   const problemas = [];
-  for (const evento of eventos) {
-    if (evento.options.length < 2) {
-      problemas.push(`${evento.id}: una decisión necesita al menos dos opciones (tiene ${evento.options.length})`);
-      continue;
-    }
-    const opciones = evento.options.map((opcion) => ({ id: opcion.id, ...ejesDeOpcion(opcion) }));
-    const familias = {};
-    for (const opcion of opciones) {
-      for (const clave of Object.keys(opcion.ejes).filter((c) => c.endsWith('#familia'))) {
-        familias[clave.slice(0, -'#familia'.length)] = opcion.ejes[clave];
-        delete opcion.ejes[clave];
+  for (let i = 0; i < RAREZAS.length; i += 1) {
+    const deRareza = CARTAS.filter((carta) => carta.rareza === RAREZAS[i]);
+    for (const a of deRareza) {
+      for (const b of deRareza) {
+        if (a.id !== b.id && domina(a, b)) problemas.push(`${a.id} domina a ${b.id} (misma rareza ${RAREZAS[i]})`);
       }
     }
-    const banda = (eje) => BALANCE.eventos.magnitudBandas[familias[eje]];
-    const cortesDe = (eje, valor) => valor / banda(eje).p66;
-
-    // (a) los ejes y signos que cada opción mueve de verdad.
-    const firma = (opcion) => Object.keys(familias).sort().map((eje) => {
-      const valor = opcion.ejes[eje] ?? 0;
-      return Math.abs(valor) >= banda(eje).p33 ? `${eje}${valor > 0 ? '+' : '-'}` : null;
-    }).filter(Boolean).join(' ');
-    const firmas = opciones.map(firma);
-    for (let i = 0; i < opciones.length; i += 1) {
-      for (let j = i + 1; j < opciones.length; j += 1) {
-        if (firmas[i] === firmas[j]) {
-          problemas.push(`${evento.id}: ${opciones[i].id} y ${opciones[j].id} mueven los mismos ejes con los mismos signos (${firmas[i] || 'ninguno'})`);
+    if (i > 0) {
+      const debajo = Math.max(...CARTAS.filter((carta) => carta.rareza === RAREZAS[i - 1]).map(valorDe));
+      const aca = Math.min(...deRareza.map(valorDe));
+      if (aca <= debajo) problemas.push(`la rareza ${RAREZAS[i]} arranca en valor ${aca} y la de abajo llega a ${debajo}`);
+    }
+  }
+  // En las manos de carreras de verdad: tres cartas, de stats principales distintos, y el peso del bot sigue el orden de rareza.
+  let manos = 0;
+  for (let seed = 1; seed <= 12; seed += 1) {
+    const rng = mulberry32(seed);
+    let state = createInitialState(seed, rng);
+    const responder = (sistema, st, decision, r) => {
+      if (sistema.id === 'edadCierre') {
+        const opciones = decision.datos.evento.options;
+        manos += 1;
+        if (opciones.length !== BALANCE.cartas.cartasPorMano) problemas.push(`seed ${seed}: una mano de ${opciones.length} cartas`);
+        if (new Set(opciones.map((o) => o.carta)).size !== opciones.length) problemas.push(`seed ${seed}: la mano repite el stat principal`);
+        if (opciones.filter((o) => o.rareza === RAREZAS[RAREZAS.length - 1]).length > BALANCE.cartas.legendariasPorMano) problemas.push(`seed ${seed}: más de una legendaria en la mano`);
+        for (const x of opciones) {
+          for (const y of opciones) {
+            if (RAREZAS.indexOf(x.rareza) < RAREZAS.indexOf(y.rareza) && x.weight >= y.weight) problemas.push(`seed ${seed}: "${x.id}" (${x.rareza}) pesa ${x.weight} y "${y.id}" (${y.rareza}) ${y.weight}`);
+          }
         }
       }
-    }
-
-    // (b) la opción que más pesa.
-    const mayor = Math.max(...opciones.map((opcion) => Math.max(0, ...Object.entries(opcion.ejes).map(([eje, valor]) => Math.abs(cortesDe(eje, valor))))));
-    if (mayor < UMBRAL_DE_MAGNITUD - TOLERANCIA) {
-      problemas.push(`${evento.id}: su eje más fuerte mueve ${mayor.toFixed(2)} cortes "alta" (mínimo ${UMBRAL_DE_MAGNITUD}, la escala de las bifurcaciones)`);
-    }
-
-    // (c) ninguna domina.
-    const domina = (a, b) => {
-      let mejorEnAlguno = false;
-      for (const eje of Object.keys(familias)) {
-        const va = a.ejes[eje] ?? 0;
-        const vb = b.ejes[eje] ?? 0;
-        if (va < vb - TOLERANCIA) return false;
-        if (va > vb + TOLERANCIA) mejorEnAlguno = true;
-      }
-      return mejorEnAlguno;
+      return sistema.resolverAuto(st, decision, r);
     };
-    for (const a of opciones) {
-      for (const b of opciones) {
-        if (a !== b && domina(a, b)) {
-          problemas.push(`${evento.id}: ${a.id} domina a ${b.id} en todos los ejes`);
-        }
-      }
-    }
-
-    // (d) cada beneficio cuesta y (e) ninguna es una trampa.
-    for (const opcion of opciones) {
-      const ejes = Object.keys(opcion.ejes);
-      const beneficio = ejes.some((eje) => opcion.ejes[eje] >= banda(eje).p33 - TOLERANCIA);
-      const costo = ejes.some((eje) => opcion.ejes[eje] <= -banda(eje).p33 + TOLERANCIA || opcion.peorOutcome[eje] <= -banda(eje).p33 + TOLERANCIA);
-      if (!beneficio) {
-        problemas.push(`${evento.id}/${opcion.id}: no trae ningún beneficio (ningún eje a favor de la "media"): es una trampa`);
-      }
-      if (beneficio && !costo) {
-        problemas.push(`${evento.id}/${opcion.id}: trae un beneficio y ningún costo (ni un eje en contra ni un outcome que lo pague)`);
-      }
-    }
+    for (let i = 0; i < 70 && !state.terminado; i += 1) state = avanzarSplitAuto(state, rng, responder).state;
   }
-
-  if (problemas.length > 0) {
-    throw new Error(`${problemas.length} problema(s) en ${eventos.length} eventos de cierre:\n  ${problemas.slice(0, 40).join('\n  ')}${problemas.length > 40 ? `\n  ... y ${problemas.length - 40} más` : ''}`);
-  }
+  if (manos < 60) problemas.push(`muestra corta: ${manos} manos`);
+  if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 5).join(' | ')}`);
 });
 
 // --- FASE K, K4c (revisión, textos) ----------------------------------------------------------------------------------
@@ -25168,47 +25154,49 @@ check('K4c (revisión) el titular del año pesa el papel internacional por hasta
   }
 });
 
-check('K4c (revisión) textos: ningún evento de cierre sale dos años seguidos, "el primer balance" sale una vez por carrera y el cierre casi nunca queda sin carta', () => {
+// H2a (PLANUI §0.10): ninguna carta rara o más se repite en una carrera (`flags.cartas.vistas`), toda mano tiene sus cartas, y el
+// cierre casi nunca queda sin mano (reemplaza a "ningún evento de cierre sale dos años seguidos", de las 10 manos fijas).
+check('H2a el mazo no repite: ninguna carta rara o más se ve dos veces en una carrera y el cierre casi nunca queda sin mano', () => {
   const SEEDS_POR_ROL = 10;
   const SPLITS = 80;
   const MAXIMO_DE_ANIOS_SIN_CARTA = 0.15;
+  const rarezaDe = Object.fromEntries(CARTAS.map((carta) => [carta.id, carta.rareza]));
   let anios = 0;
   let cierres = 0;
   const repetidos = [];
-  const primerBalanceDoble = [];
   for (const rol of IDS_ROL) {
     for (let seed = 1; seed <= SEEDS_POR_ROL; seed += 1) {
       const rng = mulberry32(seed * 104729 + 7);
       let state = createInitialState(seed, rng, { rol });
-      const ids = [];
+      const vistas = new Set();
       const responder = (sistema, st, decision, r) => {
-        if (st.pendiente.sistemaId === 'edadCierre') ids.push({ split: st.player.splitCount, id: decision.datos.evento.id });
+        if (st.pendiente.sistemaId === 'edadCierre') {
+          cierres += 1;
+          for (const opcion of decision.datos.evento.options) {
+            if (rarezaDe[opcion.id] === undefined) continue;
+            if (rarezaDe[opcion.id] !== BALANCE.cartas.ordenRareza[0]) {
+              if (vistas.has(opcion.id)) repetidos.push(`${rol}/${seed}: ${opcion.id}`);
+              vistas.add(opcion.id);
+            }
+          }
+        }
         return sistema.resolverAuto(st, decision, r);
       };
       for (let i = 0; i < SPLITS && !state.terminado; i += 1) {
         state = avanzarSplitAuto(state, rng, responder).state;
       }
       anios += Math.floor(state.player.splitCount / BALANCE.edad.splitsPorEdad);
-      cierres += ids.length;
-      // "Años seguidos": dos cierres a un año de distancia (un año sin carta en el medio no cuenta como seguido).
-      for (let i = 1; i < ids.length; i += 1) {
-        if (ids[i].id === ids[i - 1].id && ids[i].split - ids[i - 1].split === BALANCE.edad.splitsPorEdad) repetidos.push(`${rol}/${seed}: ${ids[i].id}`);
-      }
-      if (ids.filter((cierre) => cierre.id === 'joven_el_primer_balance').length > 1) primerBalanceDoble.push(`${rol}/${seed}`);
     }
   }
   if (cierres < 300) {
     throw new Error(`la muestra no alcanza: ${cierres} cierres (mínimo 300)`);
   }
   if (repetidos.length > 0) {
-    throw new Error(`${repetidos.length} cierre(s) repiten el evento del año anterior, sobre ${cierres}: ${repetidos.slice(0, 6).join(', ')}`);
-  }
-  if (primerBalanceDoble.length > 0) {
-    throw new Error(`"El primer balance en serio" salió más de una vez en ${primerBalanceDoble.length} carrera(s): ${primerBalanceDoble.slice(0, 6).join(', ')}`);
+    throw new Error(`${repetidos.length} carta(s) rara(s) o más se repiten en una carrera, sobre ${cierres} manos: ${repetidos.slice(0, 6).join(', ')}`);
   }
   const sinCarta = (anios - cierres) / anios;
   if (sinCarta > MAXIMO_DE_ANIOS_SIN_CARTA) {
-    throw new Error(`${anios - cierres} de ${anios} años quedan sin carta de cierre (${(sinCarta * 100).toFixed(1)}%, máximo ${MAXIMO_DE_ANIOS_SIN_CARTA * 100}%)`);
+    throw new Error(`${anios - cierres} de ${anios} años quedan sin mano de cierre (${(sinCarta * 100).toFixed(1)}%, máximo ${MAXIMO_DE_ANIOS_SIN_CARTA * 100}%)`);
   }
 });
 
@@ -27739,7 +27727,7 @@ check(`Revisión de K6b, la vuelta: se pregunta en la pretemporada, de free agen
 const { EDAD_COLA_DE_CARRERA: EDAD_COLA_K6BC2 } = await import('./simulate.js');
 const SEEDS_K6BC2 = 24;
 const { frenaEnLaCola: frenaEnLaColaK6BC2, firmaDeLaCola: firmaDeLaColaK6BC2, tienePalanca: tienePalancaK6BC2 } = await import('../core/cola.js');
-const TIPO_K6BC2 = { 'edadCierre:x': 'cierre', 'temporada:momento': 'momento' };
+const TIPO_K6BC2 = { 'edadCierre:mano': 'cierre', 'temporada:momento': 'momento' };
 
 // La foto y el hito, escritos de nuevo (no se importan de `core/cola.js`). `st` es el estado en la pausa: en el cierre ya
 // cumpliste (`st.age` es la de después) y el año que cierra sigue en `st.calendario.anio`.
@@ -29504,11 +29492,14 @@ check('G2b una carta por año: una sola decisión de carta por año jugado, 3 ca
     const porEdad = new Map();
     const responder = (sistema, s, decision, r) => {
       if (decision.datos?.motivo === 'plan_amateur') mal.push(`seed ${seed}: el plan del amateur volvió a ser una decisión`);
-      if (sistema.id === 'edadCierre') {
+      // H2a: una mano por año, contada por `datos.motivo` ('mano'; `otra_mano` es la misma carta del año repartida de nuevo); la opción
+      // "Otra mano" (`cambio`) no es una carta.
+      if (sistema.id === 'edadCierre' && decision.datos?.motivo === 'mano') {
         porEdad.set(s.age, (porEdad.get(s.age) ?? 0) + 1);
         cartas += 1;
-        if (decision.opciones.length !== 3) mal.push(`seed ${seed} a los ${s.age}: ${decision.opciones.length} cartas`);
-        decision.opciones.forEach((opcion, i) => {
+        const cartasDeLaMano = decision.opciones.filter((o) => !o.cambio);
+        if (cartasDeLaMano.length !== 3) mal.push(`seed ${seed} a los ${s.age}: ${cartasDeLaMano.length} cartas`);
+        cartasDeLaMano.forEach((opcion, i) => {
           const seguro = opcion.seguro;
           if (!seguro || !CAMPOS.has(seguro.campo) || !(seguro.valor >= 0)) {
             mal.push(`seed ${seed} a los ${s.age}: "${opcion.id}" no declara un número seguro de la ficha (${seguro?.campo})`);
