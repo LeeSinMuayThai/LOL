@@ -34,6 +34,30 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-15 — Ola H, el plan: "cada carrera, distinta" (el mazo, el arcade y la voz corta)
+
+El usuario jugó la ola G: *"se siente un poco mejor pero no a full, los minijuegos se sienten muy chotos [...] las cartas
+tienen descripciones muy largas [...] siempre salen las mismas [...] no hay eventos unicos ni raros [...] simple, facil,
+poco divertido"*. Y agregó: *"fijate que no se quede en sumar cartas y eventos. Tiene que cambiar también ese tope o esa
+forma de elegir"*. Sin código: tres exploradores Sonnet de solo lectura (150 carreras sin pantalla) y un crítico de diseño
+contra el código.
+
+- **Medido sobre `6f2773a`:**
+  - Eventos: el escalón sin tirada deja una mediana de 2 candidatos por sorteo pro, y el cupo que sobra saca el evento del 57%
+    de los splits pro. El 37% del pozo no salió nunca, 48 eventos se llevan el 58% de las vistas y el Jaccard entre carreras
+    es 0,41.
+  - Cartas: son 10 manos fijas; tres se llevan el 67% de las vistas y el 90% dice +3.
+  - Minijuegos: 12 widgets de DOM de 41-134 líneas; el dodge pasa el 82% sin tocar nada; a 144 Hz van 2,4× más rápido;
+    ~70 rondas por carrera.
+  - Texto: una pantalla de cartas muestra ~190 palabras.
+- **Decisiones del usuario:** minijuegos también en cuartos, semis, final, Play-In y Swiss del Mundial (por tandas según la
+  fuerza del equipo), nunca en la temporada regular; las cartas, solo stats; ~455 eventos y ~240 cartas; sin tienda por ahora.
+- **El plan (PLANUI §0.10):** H1 la forma de elegir y el cupo propio · H2 el mazo de cartas · H3 el arcade (12 mecánicas en
+  canvas, Play-In y tandas) · H4 la voz corta · H5 lo raro (~190 eventos) · H6 el álbum. Son tres entregas; la compuerta de
+  la primera es `lolero.lol/arcade`.
+- **Documentos:** PLANUI §0.10, la fila H del estado y las deudas D136-D142; PLAN §K.1 y la nota en "Minijuegos"; CLAUDE.md.
+- **Sigue:** la entrega 1 (H1a, H1b, H2a, H3k, H4a), cuando el usuario baje el effort y diga.
+
 ### 2026-10-15 — Ola G, entrega 2: "lo que se ve y el mundo" (la carta del año, el mercado como dilema, el Bo1 con las manos, el diario, las promesas y la ceremonia)
 
 PLANUI §0.9, entrega 2. Método WF-001 con las reglas de workers austeros: piezas de ≤55 llamadas, nadie espera el validate

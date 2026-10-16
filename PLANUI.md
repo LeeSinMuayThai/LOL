@@ -43,6 +43,7 @@
 | **W · olas W2-W3** | La carta de pretemporada y ¿gloria o billetera? (motor chico, medido); después, la final sin tirada y la plata (§0.7) | ⬜ el usuario jugó la W1 ("se nota un poquito"); W4 lo reemplaza F4, W5/W7/W8 quedan después de F. Con la ola G: W5 → G3c, W7 → G1, W8 → G5 (§0.9) |
 | **F · ola F** | Lolero jugado seis años (§0.8): el Mundial se juega y se ve (Swiss y bracket con "vos"), ningún año muerto, la consecuencia en el momento y el diario que titula lo que pasó, la carta que mueve un número que ves | ✅ 2026-10-14: el usuario eligió "los 4 juntos"; 2 workers Opus high + 2 Sonnet high + revisor Sonnet (0 bloqueantes, 2 para arreglar + 5 menores, arreglados); huella 433142448 ('F'), guardado VERSION 16; publicada. Falta que el usuario la juegue en RÁPIDO |
 | **G · ola G** | El Ídolo contra Lolero, jugados (§0.9): las finales con las manos y sin tirada, el perfil que no decide, siempre en un equipo, el mercado como dilema, el diario que no se repite y el final como ceremonia. Dos entregas | 🔶 2026-10-15: la auditoría (`AUDITORIA.md`) y el plan, aprobados; **las dos entregas publicadas**: la 1 (el control: G1, G2a, G3a, G3b) y la 2 (lo que se ve y el mundo: G2b, G2c, G3c, G4, más el Bo1 con las manos de D118) (PROGRESO 2026-10-15); falta que el usuario las juegue; G5 queda opcional |
+| **H · ola H** | "Cada carrera, distinta" (§0.10): el mazo de eventos (la forma de elegir y el cupo propio), el mazo de cartas con rareza (solo stats), el arcade (minijuegos de verdad; el Play-In y el Swiss por tandas), la voz corta, lo raro (~190 eventos) y el álbum. Tres entregas | 🔶 2026-10-15: el plan, aprobado; documentos escritos, sin código. La entrega 1 arranca cuando el usuario diga |
 | **U3** | El resto de los momentos (banners, ceremonias, primer contrato) + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
@@ -1085,6 +1086,333 @@ Base `749b5cf` contra cada entrega, con `simulate.js` y jugando:
 
 
 **Las deudas nuevas** (D111-D117) están en la tabla del final de este documento.
+
+### 0.10 H · "Cada carrera, distinta": el mazo, el arcade y la voz corta (2026-10-15, el usuario textual + 150 carreras medidas)
+
+#### Lo que dijo el usuario
+
+El usuario jugó la ola G (master `6f2773a`) y dijo (2026-10-15, textual):
+
+> "los minijuegos se sienten muy chotos, me sorprende que puedas hacer juegos enteros pero solo esos minijuegos, el
+> juego te dice todo osea las cartas tienen descripciones muy largas [...] no existen las 'normales' o 'raras' porque
+> siempre salen las mismas [...] yo lo que dije que queria es que tenga muchisimas cartas distintas y muchisimos eventos
+> raros y unicos que influyan en la carrera para que esta se sienta distinta [...] todavia se siente simple, facil,
+> poco divertido, y poco parecido al juego de ejemplo"
+
+Y después: *"fijate que no se quede en sumar cartas y eventos. Tiene que cambiar también ese tope o esa forma de
+elegir"*.
+
+El pedido es viejo. `CONCEPTO.md` §8 hace de la rejugabilidad "el requisito número uno": "una partida ve unos 25
+eventos de más de 200". Las olas W, F y G se hicieron sin agregar contenido.
+
+#### Diagnóstico (medido sobre `6f2773a`: 150 carreras sin pantalla, código y una crítica contra el código)
+
+**Eventos.** Son 265, sin rareza, y 239 pesan entre 4 y 8.
+- **El cupo.** El evento corre último y usa la parada que sobra: el 57% de los splits pro lo pierde.
+- **El escalón** (`events.js:335`, cadena > golpe > bifurcación > resto, sin tirada) deja una mediana de 2 candidatos
+  por sorteo.
+- **El resultado:**
+  - 48 eventos se llevan el 58% de lo que se ve;
+  - el 37% del pozo no apareció nunca;
+  - dos carreras comparten el 41% de sus eventos.
+
+**Cartas.** Son 10 manos fijas de 3 (`cierre_edad.json`).
+- Tres manos se llevan el 67% de las vistas.
+- El 90% de las cartas dice +3.
+- La "rara" es una etiqueta fija en 3 cartas.
+
+**Minijuegos.** Son 12 widgets de DOM de 41 a 134 líneas, sin dibujo de LoL ni sonido.
+- El dodge pasa el 82% sin tocar nada.
+- A 144 Hz van 2,4 veces más rápido.
+- El suspenso llega después del sello.
+- Hay ~70 rondas por carrera, con la misma mecánica hasta 15 veces seguidas.
+- Un humano pasa ~75-80% a la vara mediana, contra el 50% del bot: por eso se siente fácil.
+
+**Texto.** Una pantalla de cartas muestra ~190 palabras. El aviso automático suma ~17 palabras más un %.
+
+**Ritmo.** Hay ~148 paradas por carrera y solo 22 son eventos. La temporada regular frena ~38 veces con la misma
+forma.
+
+#### Lo que decidió el usuario (2026-10-15, textual; no volver a preguntar)
+
+| Tema | Decisión |
+|---|---|
+| **Minijuegos** | *"tambien cuartos, semis, final, swiss cuando es worlds, o si jugas desde el play IN, pero el playin puede ser como esos minijuegos del potrero que vas haciendo click y pasando de ronda por cada uno de los partidos osea con 1 minijuego podes pasar del play in, ahora depende del equipo si es bueno o malo que pase lo mismo en el swiss, que podes pasar varios partidos con un minijuego si tu equipo es bueno, y si no lo es tanto entonces que sea unico por partido, a partir de cuartos se juegan todos"* |
+| **Rasgos** | *"No, solo stats"*: las cartas solo mueven stats |
+| **Volumen** | ~455 eventos (+190 raros, épicos y legendarios) y ~240 cartas |
+| **Tienda** | *"No por ahora"* |
+
+#### El plan: seis piezas (H1 primero: sin la forma de elegir, el contenido nuevo no se ve)
+
+#### H1 · El mazo de eventos: la forma de elegir y el cupo (motor)
+
+1. **Un solo sorteo con rareza.**
+   - El peso de cada elegible es `probRareza[r] / Σpeso(rareza r) × pesoConMemoria`. Es una sola llamada a `rng()`
+     (T1), y las rarezas vacías se renormalizan.
+   - Punto de partida para `probRareza`: común .62 / rara .26 / épica .09 / legendaria .03.
+   - El filtro `escalonDeEvento` (`events.js:335`) se va.
+   - Quedan dos prioridades duras:
+     - la continuación de cadena que vence (check `validate:19873`);
+     - un flag de dato `obligatorio` para los golpes que cuentan un cambio de estado (`lesionado`, `lesion_cronica`).
+2. **El campo `rarezaEvento`** (comun/rara/epica/legendaria) es distinto de la `rareza` de opción.
+   - Los 265 de hoy arrancan como comunes.
+   - Una pasada de datos re-etiqueta ~50 (caminos, golpes, top mundial). El servicio militar es un sistema y no entra.
+3. **Sin repetición.**
+   - Rara para arriba sale una vez por carrera: se lee de `flags.eventosVistos`.
+   - Una común tiene un cooldown mínimo de `splitsPorEdad`.
+   - El decaimiento nuevo es una perilla solo del split. No se toca `fatigaPorVista`, que comparten la fecha marcada y la
+     carta.
+4. **El piso.**
+   - `flags.sorteosSinRara` ≥ `eventos.pisoRara` (~4) → el próximo sorteo es rara+.
+   - Es el único estado nuevo de H1.
+5. **El cupo propio** (reemplaza G2a, PLANUI:880: "si el split ya gastó su parada, el evento no se sortea").
+   - Se borra `|| hayPresupuesto(state)` (`events.js:361`).
+   - Se borran las perillas muertas `total`, `interrupcionesPorSplit` y `hayPresupuesto` (T5), y `validate:4771` pasa
+     a leer `eventos.paradasPorSplit`.
+   - **La cola:**
+     - se agrega `'evento'` a `TIPOS_DE_LA_COLA` (`core/cola.js:16`), con `cola.eventosPorAnio`;
+     - se frena con `frenaEnLaCola(state,'evento',null)`;
+     - se firma con `conFirmaDeLaCola` dentro de `conParadaDeEvento`.
+   - No hay evento en el split del cierre de edad, que ya tiene la carta y las finales. Quedan ~2 por año, ~30 por
+     carrera.
+   - Con el pozo vacío se relaja "común una vez por año" antes de devolver null. D135 sigue abierta.
+6. **Temporada regular sin paradas de partido** (el usuario no la puso entre los lugares con minijuego).
+   - Salen:
+     - la parada garantizada de F2 (`temporada.js:117-133`, `balance.js:1904-1911`);
+     - el Bo1 🎲/🧊 con minijuego (D118, `temporada.js:302-534`);
+     - las fechas marcadas.
+   - Las 64 de fecha marcada pasan al mazo del split con contexto de partido. H1b adapta los efectos que tocaban la p del
+     Bo1 a forma, hype o cabeza.
+   - Checks a reescribir: 6329, 29667, 20766 y los KPI de ritmo 11379, 14087 y 14314.
+   - Meta: ningún año sin parada (lo asegura el evento) y ≤ 100 paradas por carrera.
+7. **`simulate.js --bloque=variedad`**, sobre 1000 carreras:
+
+   | Medida | Hoy | Meta |
+   |---|---|---|
+   | Pozo nunca visto | 37% | 0, salvo marcas raras documentadas |
+   | Lo que se llevan los 10 más vistos | 44% | ≤ 15% |
+   | Jaccard entre carreras | 0,41 | ≤ 0,15 |
+   | Rara o más por carrera | 0 | ≥ 8, después de H5 |
+   | Carreras con una legendaria o más | 0 | 60-80% |
+
+   Contra "escrito y nunca visto": cada común aparece en ≥ 10% de las carreras elegibles, cada rara en ≥ 3% y cada
+   legendaria en ≥ 0,5%.
+
+#### H2 · El mazo de cartas, solo stats (motor, datos y pantalla)
+
+- **El dato.** Va en `src/data/events/cartas/*.json` (regla 4; fuera de `TODOS_LOS_EVENTOS`, como `promesas.json`), por
+  etapa: amateur, tier 3, tier 2, tier 1, emigrado y veterano.
+  - Cada carta tiene id, `rareza`, contexto, `titulo` (≤ 4 palabras), `linea` (≤ 10), `stats` [{stat, valor
+    [min,max]}], `costo` opcional y `plan`.
+  - Tiene dos salidas, normal y extra, y el stat es ≥ min en las dos (reglas 7 y 8). El número es seguro: no hay aviso.
+- **Los valores:**
+
+  | Rareza | Valor |
+  |---|---|
+  | Común | +2/+3 en un stat |
+  | Rara | +4/+5, o +3/+2 en dos stats |
+  | Épica | +6, o +4/+3 |
+  | Legendaria | +8, o +5/+4, a veces con costo |
+
+- **La mano se arma sorteando.** `edadCierre.js` deja de elegir 1 de 10.
+  - Arma un evento sintético con id estable `mano_del_anio` y `categoria` neutra.
+  - Cada opción lleva `weight` (el bot, T7), `conditions: []`, `carta`, `plan` (sin él se congela `planAnual`,
+    `validate:20895`), `rareza` y outcomes con rangos.
+  - **El sorteo:** cada lugar sortea rareza (.68/.22/.08/.02):
+    - piso: dos manos sin rara → el lugar 3 es rara+;
+    - una legendaria como máximo por mano;
+    - tres stats distintos;
+    - rara para arriba no se repite en la carrera.
+  - **"Otra mano"**: 2 por carrera.
+  - **Los checks:**
+    - 29495 cuenta por `datos.motivo`;
+    - 24943 se reescribe: en una mano, misma rareza → ninguna domina, y el orden de rareza es el orden de valor.
+  - **La migración:**
+    - `cierre_edad.json` se retira y sus 30 cartas pasan al formato nuevo;
+    - un guardado pausado en una mano vieja sigue resolviendo, porque la decisión guarda su evento;
+    - VERSION 19, con `migrarDe18` (`core/guardado.js:83-84,295-322`) y las rutas nuevas en `createInitialState` (T4).
+- **La pantalla** (`decision/cartas.js` y su CSS):
+  - el marco por rareza: gris, azul, violeta, dorado;
+  - el número grande, el título, una línea y el chip de costo;
+  - se sacan la descripción, la situación, "(fin de temporada)" y el aviso con %.
+- **Las metas:**
+  - ~240 cartas: 110 comunes, 70 raras, 40 épicas, 20 legendarias;
+  - ≥ 35 cartas distintas de las ~42 que ve una carrera;
+  - Jaccard ≤ 0,15;
+  - una legendaria en ~25% de las carreras.
+
+#### H3 · El arcade: minijuegos de verdad (pantalla y una pieza de motor)
+
+**El motor (H3e).**
+- **Dónde hay minijuego** (la decisión del usuario):
+
+  | Momento | Cómo se juega |
+  |---|---|
+  | Cuartos, semis y final domésticos | La regla de G1: en cuartos y semis, cada mapa que puede cerrar la serie; en la final, cada mapa |
+  | **Play-In del Mundial** (etapa nueva, para los sembrados bajos) | Se resuelve con **una sola tanda** |
+  | **Swiss** | En tandas cuyo tamaño sale de la fuerza del equipo, `g1.tanda`: un equipo fuerte pasa hasta 3 partidos con un minijuego; uno débil, 1 por partido |
+  | Desde los cuartos del Mundial | Se juegan todos |
+  | Temporada regular | Nunca |
+
+- **La tanda:**
+  - `datos.tanda` trae k partidos, cada uno con su vara;
+  - la mecánica juega k fases que escalan, y cada fase es un partido (`onEtapa(i, resultado)`);
+  - "EL CAMINO" escribe cada resultado;
+  - el bot resuelve cada partido con su p, así que las bandas no se mueven por construcción.
+- **La forma de la regla, en el dato.** `minijuegos.json` declara `regla: conteo{pasos} | latencia | distancia{escala} |
+  continuo`.
+  - La leen `techoDeVara`, `unidadesDeLaRegla` y `bajaDeCharla` (`core/minijuegos.js:196-255`), y `varaG1.js`, que
+    deja de tener su copia de los conteos.
+- **La rotación.** Nunca más de 5 rondas seguidas de la misma mecánica (`minijuegoDelTorneo`, :323).
+- **Los ids no cambian**, porque los guardados los tienen. Cambian solo los títulos.
+
+**El kit (`src/ui/arcade/`).**
+- Canvas 2D con paso fijo de tiempo: arregla el bug de 144 Hz.
+- Teclado, mouse y toque.
+- **Jugo**: partículas, sacudida, hit-stop, cámara lenta en el momento decisivo, números que saltan, combo. El azar sale
+  de `rngUi`.
+- LoL dibujado por código: minions, torre, skillshots, Barón, wards, y el retrato de tu main (`fx/arte.js`).
+- Efectos con `sonido.js`.
+- **La entrada:** una línea, una demostración animada de 2 s y 3-2-1.
+- **La salida:** el suspenso **antes** del sello, "tan cerca" con la medida y tu mejor marca.
+- La apuesta a la vista mientras jugás.
+- La lógica separada del dibujo, en `simular(params, humano, rng)`, con las constantes en `minijuegos.json` o
+  `BALANCE.g1`.
+- **La vara de calidad:** "si la sacás del juego, se juega sola", 15-40 s.
+
+**Las mecánicas.**
+
+| Mecánica | Rol | Qué se juega |
+|---|---|---|
+| `robar_baron` | jungla | El pozo del Barón y el smite rival que se ve venir |
+| `last_hit` | top / mid / adc | La oleada, el cañón y la torre |
+| `el_kite` | adc | El orbwalk contra un bruiser |
+| `el_gancho` *(nueva)* | support | Gancho con lead entre minions |
+| `dodge` | todos | Arena 2-D, skillshots y Flash una vez |
+| `el_combo` | mid | Notas QWER+F |
+| `el_teleport` | top | La pelea en el minimapa |
+| `la_vision` | support / jungla | La ruta del jungla rival |
+| `la_llamada` | todos | Cantar el objetivo correcto a tiempo |
+| `la_corrida` | todos | El engage: la R en el área |
+| `la_pizarra` | todos | Memotest de draft |
+| `la_prueba` | prueba de ingreso | Aim de skillshots |
+
+- `rueda_de_prensa` queda igual.
+- `el_gancho` se registra en:
+  - `minijuegos.json`;
+  - `MONTAR_MINIJUEGO`;
+  - el mapa de `varaG1`;
+  - `g1.conteo`;
+  - el CSS;
+  - `dev/recorrido.mjs`;
+  - las listas de validate.
+
+**Las pruebas de aceptación**, en cada brief, contra `src/dev/arcade-humano.js`:
+- sin tocar nada pasa ≤ 5% a vara .6, y tocando al azar ≤ 20%;
+- un humano de 250 ± 60 ms pasa ~80% a .5, ~60% a .7 y ~35% a .85;
+- de stat 40 a 85 la ventana crece ≥ 25%;
+- a la vara mediana el humano queda a ±10 puntos de la p del bot;
+- a 60 Hz y a 144 Hz da lo mismo.
+
+**La compuerta.** `lolero.lol/arcade` (`arcade.html` en `A_COPIAR_PREVIA`, fuera del techo). El usuario juega el kit con
+`robar_baron` y `dodge` antes de que se hagan las otras diez.
+
+#### H4 · La voz corta (datos y pantalla)
+
+| Texto | Largo máximo |
+|---|---|
+| Descripción | 30 palabras, 2 oraciones |
+| Opción | 6 palabras |
+| Pista | 10 palabras |
+| Aviso ⚠ | 10 palabras, solo con riesgo, sin % |
+| Título de carta | 4 palabras |
+| Línea de carta | 10 palabras |
+| Resultado | 25 palabras, gracioso si sale mal |
+
+- El aviso automático (`events.js:530`) usa el `aviso` escrito a mano o un `titular` corto.
+- Se reescriben los 265 eventos: solo el texto, con ids y efectos intactos.
+- Se saca el "más".
+- Metas: la pantalla de cartas muestra ≤ 70 palabras y la de evento ≤ 60.
+- Check `validate --solo=voz-corta`.
+
+#### H5 · Lo raro: eventos que cambian la carrera (datos)
+
+- **~190 nuevos**: ~90 raros, ~60 épicos y ~40 legendarios.
+- Todo evento de rara para arriba deja algo que dura:
+  - una bandera que abre otros eventos;
+  - stats;
+  - un cambio de camino: rol, org, región o quedarte sin equipo.
+- Cada legendaria abre un arco (una cadena de 2-3 pasos o una promesa) y tiene su momento en dorado
+  (`ui/fx/momento.js`).
+- **Los temas:**
+  - soloQ;
+  - stream y redes;
+  - la escena (la org que quiebra, el rookie que te saca el puesto);
+  - la LCK o la LPL que te llama;
+  - el parche que te hace dios;
+  - la salud;
+  - la familia;
+  - la plata;
+  - el legado;
+  - lo oscuro (el amaño, el ban).
+- Las personas son inventadas.
+- **La meta por carrera:** ≥ 8 raras o más, ≥ 2 épicas o más, y ~1 legendaria.
+
+#### H6 · El álbum (solo pantalla)
+
+- Guarda en `localStorage` las cartas y los eventos descubiertos.
+- El chip "NUEVO" marca lo que ves por primera vez.
+- Tiene una pantalla por rareza.
+- La tarjeta final dice "descubriste 9 cosas nuevas, 2 legendarias".
+- El motor no lo lee (regla 1).
+
+**Fuera:** los rasgos y la tienda (decisión del usuario).
+
+#### Entregas y workers (frugal: WF-001)
+
+Las reglas de los workers:
+- piezas de ≤ 50-70 pasos, con la prueba de aceptación en el brief;
+- los workers corren solo `--solo`, y el supervisor corre `--rapido` y `simulate 1000` una vez;
+- un revisor Sonnet por entrega.
+
+| Entrega | Workers | Compuerta |
+|---|---|---|
+| **1 · La forma de elegir y el kit** | **H1a**, el sorteo, el cupo, la cola, el piso y VERSION 19 (Opus high) · **H1b**, la temporada sin paradas de partido, las 64 re-alojadas, `--bloque=variedad` y los checks (Sonnet xhigh) · **H2a**, el motor de la mano, el formato, las 30 migradas y 60 semilla (Sonnet xhigh) · **H3k**, el kit, `robar_baron`, `dodge` y `/arcade` (Opus high) · **H4a**, la guía y el check (Sonnet high) | El usuario juega `/arcade` y una carrera |
+| **2 · El arcade y la voz** | **H3e**, el motor: regla en dato, rotación, Play-In y tandas (Opus high) · **H3**, 10 mecánicas: 4 × Opus high · **H4b**, la reescritura de 265: 4 × Sonnet high · **H2b**, la pantalla de cartas y el momento legendario (Sonnet high) | El usuario juega en RÁPIDO |
+| **3 · Lo raro** | **H5**, 5 escritores × ~38 (Sonnet high) más un editor de LoL y tono · **H2c**, 2 × ~90 cartas · **H6**, el álbum (Sonnet high) | El usuario juega 2-3 carreras |
+
+- **Antes del código:**
+  - PLANUI §0.10 con estas decisiones y las líneas "reemplaza a" (G2a PLANUI:880, la frecuencia de G1
+    `core/serie.js:215-218`, F2 y D118);
+  - las deudas D136+;
+  - PROGRESO;
+  - la fila de PLAN §K.1;
+  - el commit.
+- Después se para, para que el usuario baje el effort.
+- La huella pasa a `'H'` con un solo re-baseline anunciado (T1/T6). Las bandas D-D se reportan, no se persiguen.
+
+#### Verificación
+
+- **La definición de terminado:**
+  - el validate: los workers corren `--solo`; el supervisor, `--rapido` y el completo en segundo plano;
+  - la misma seed dos veces, idéntica;
+  - `simulate.js 1000` sin crash;
+  - el commit y PROGRESO.
+- `--bloque=variedad`, base contra cambio: las tablas de H1 y H2 y las metas de H5.
+- `arcade-humano.js` con todas las pruebas de aceptación. El supervisor juega las 12 mecánicas en el Chromium con GPU,
+  a 60 y a 144 Hz.
+- Una carrera jugada por entrega. Después, el deploy (merge → push → build → `npx wrangler deploy` → md5) y juega el
+  usuario.
+
+#### Riesgos
+
+- **La calidad del contenido a escala.** Se cubre con la guía, el editor y la cobertura medida: lo que nadie ve se
+  arregla o se borra.
+- **El peso del build.** Suma ~+500 KB: se sube el techo, porque `import()` no baja lo que se mide.
+- **La temporada sin paradas de partido.** El evento de cada split la cubre; se mide "años sin parada" = 0.
+- **El Play-In y las tandas son motor nuevo.** El bot por partido mantiene las bandas.
+
+**Las deudas nuevas** (D136-D142) están en la tabla del final de este documento.
 
 ## 1. Por qué un tercer plan
 
@@ -2638,6 +2966,13 @@ Son del **motor**. Van a la etapa "arreglar el juego" que pidió el usuario (§0
 | D133 | **El validate completo después de la ola G (las dos entregas; el de la entrega 1 nunca corrió): 50 FAIL** (`6d74c01`). G-fix E cerró 6 (la promesa del manager que no tenés era bug; el resto, checks del mundo de antes de G). Quedan, sin perseguir: **metas y bandas que movió el diseño elegido** — K4c meta del ritmo (160 interrupciones por carrera contra ≤90; 66 minijuegos por carrera contra 3-8, que por año son ~5, dentro de la meta nueva de §0.9; 11,7 bifurcaciones contra 5-9), K5c embudo/estancados/Mundial/longevidad (carrera pro mediana 11,3 años), K6c región fija, el retiro (edad mediana 30, 89,7% antes de la línea Faker, r potencial-duración 0,25), el burnout con aviso 75%, el impacto de los minijuegos (+679%: es la decisión del usuario de que las finales se ganen con las manos), 9Wd Top 20 18,4%, la densidad de un split (29 contra 28), el mundo NPC (+0,06 años); **checks que codifican el mundo de antes** — el segundo evento encadenado y `pool_a_cual_le_metes` (el tope de 1 parada por split de G2a), "lesionado" y `lesion_cronica` en 0 de 1200 (los eventos que el tope saca), K0 cierre de año (la carta frena todos los años), K0 KPIs y K0 delegación (las paradas nuevas y "no llega a pro" redefinido), K2a Bo5 y K4-B (cada mapa que cierra abre minijuego), K4 guardado (ya no existe la salida amateur), K6b-fix y K6d-B (vacíos: nunca más sin equipo), la oferta lateral rechazada y 9Mi-2 (el piso de ofertas A LA BAJA), el cooldown de un evento (el respaldo de G2b para que no falte la carta), V5 carrera dibujada (falta una carrera de muestra con curva, título de tier 2/3, Mundial y Golden Road a la vez); **y los de la base** (D123/D128). Se re-basan cuando el usuario juegue y fije los números | ⬜ |
 | D134 | **La cola frena mucho más:** desde los 28, el promedio de frenadas es 33,6 (meta vieja de K6b ≤14,1; el terco, 53,6 contra ≤10,9). Lo suman la carta del año, el Bo1 que frena de cada split, el "¿la seguís?" y las finales con minijuego. Va en la dirección que pidió el usuario (que la temporada no pase volando), pero la cola de K6b se pensó rápida. Se calibra jugando | ⬜ |
 | D135 | **El split del salto de tier 3 a tier 2 se juega sin temporada:** con el agente libre que firma en ese split, `systems/temporada.js` corre con los compañeros vacíos y salta; el plantel aparece recién al cierre, así que `career.temporada` queda con la foto del club anterior (G-fix E lo encontró en la seed 20; el check de la tabla ahora lo saltea). Es el resto del "año muerto" de F2 (169 de 1000 carreras con un split sin parada) | ⬜ |
+| D136 | **El mazo de eventos escondía el catálogo:** el escalón sin tirada (`events.js:335`) dejaba una mediana de 2 candidatos por sorteo pro, y el cupo que sobra sacaba el evento del 57% de los splits pro. En 150 carreras, el 37% del pozo no salió nunca, 48 eventos se llevaron el 58% de las vistas y el Jaccard entre carreras fue 0,41 (§0.10, H1) | ⬜ H1a |
+| D137 | **La carta del año eran 10 manos fijas:** tres se llevaban el 67% de las vistas, el 90% de las cartas decía +3 y la "rara" era una etiqueta fija en 3 cartas (`edadCierre.js:135`, `carta.rarezaDesde`) (§0.10, H2) | ⬜ H2a |
+| D138 | **Minijuegos que se pasan solos y que dependen del monitor:** el dodge sin tocar nada pasa el 82%, `la_vision` al azar el 50%, el kite no mide el timing y la escalada de `last_hit` es código muerto (`lastHit.js:43`, pisado en :91). El Barón y la corrida avanzan por cuadro (`robarBaron.js:75-80`, `laCorrida.js:88-93`): a 144 Hz van 2,4× más rápido (§0.10, H3) | ⬜ H3k/H3 |
+| D139 | **El suspenso del minijuego llega después del sello** (`paradas/minijuego.js:292-293`), y la apuesta se esconde mientras jugás (`data-fase="juego"` en `minijuegos.css`) (§0.10, H3) | ⬜ H3k |
+| D140 | **Los 64 eventos de fecha marcada piden `contexto.stakes`**, que `calcularContexto()` nunca emite: `events.js` no los puede sortear, solo `temporada.js` (§0.10, H1.6) | ⬜ H1b |
+| D141 | **Caminos muertos:** con el cupo de 1, `encadenar` (`events.js:714`) y `edad.probSegundaDecisionPorTipo` (`balance.js:699`) nunca dan un segundo evento; `g1.vestuarioCharlas` (`balance.js:2487`) no tiene lector (`core/serie.js:200-206` lo fija a mano); `rueda_de_prensa` declara adaptabilidad y no la lee | ⬜ |
+| D142 | **La meta de rondas de minijuego de G1 (PLANUI:868) nunca se reportó.** Medido 2026-10-15: 69,7 por carrera (mediana 65), ~4,5 por año, y hasta 15 rondas seguidas de la misma mecánica en un torneo (§0.10, H3e) | ⬜ H3e |
 
 ---
 
