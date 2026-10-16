@@ -435,10 +435,10 @@ html[data-reducido] .cv-rara .cv-marco, html[data-reducido] .cv-gemas .on, html[
 }
 
 /* H2a (el mazo): el marco por rareza de la mano del año: gris, azul, violeta, dorado. */
-.cv-r-comun { --cv-rz: #8a919c; }
-.cv-r-rara { --cv-rz: #4aa3ff; }
-.cv-r-epica { --cv-rz: #a96bff; }
-.cv-r-legendaria { --cv-rz: var(--gold, #e8b84a); }
+.cv-r-comun { --cv-rz: var(--rz-comun); }
+.cv-r-rara { --cv-rz: var(--rz-rara); }
+.cv-r-epica { --cv-rz: var(--rz-epica); }
+.cv-r-legendaria { --cv-rz: var(--rz-legendaria); }
 .cv-r-comun .cv-marco, .cv-r-rara .cv-marco, .cv-r-epica .cv-marco, .cv-r-legendaria .cv-marco {
   background: linear-gradient(165deg, var(--cv-rz) 0%, color-mix(in srgb, var(--cv-rz) 38%, transparent) 45%, color-mix(in srgb, var(--cv-rz) 16%, transparent) 100%);
 }

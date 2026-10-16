@@ -39,6 +39,12 @@
   --danger: #ff5468;
   --gold: #ffd27a;
   --gold-hondo: #b8862e;
+  /* H2a (el mazo): el marco por rareza de la mano del año. --cv-rz es el color de la carta en curso (lo fija .cv-r-*). */
+  --rz-comun: #8a919c;
+  --rz-rara: #4aa3ff;
+  --rz-epica: #a96bff;
+  --rz-legendaria: var(--gold);
+  --cv-rz: var(--rz-comun);
 
   /* ---- equipos de luz por era: luz principal + luz de contra (el unico acento) ---- */
   --luz-pieza: #2f6bff;
