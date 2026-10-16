@@ -106,6 +106,14 @@ export const BALANCE = {
     // G2a (PLANUI §0.9, "el perfil no decide nada"): todo evento con dos opciones o más frena, y el split frena por
     // evento a lo sumo estas veces, en el amateur y en el pro. Lo que no entra no se sortea (`systems/events.js`).
     paradasPorSplit: 1,
+    // H1a (PLANUI §0.10, H1.1-H1.4): el sorteo del split es uno solo, con rareza. El peso de cada elegible es
+    // `probRareza[r] / Σ weight(elegibles de rareza r) × pesoConMemoria`; una rareza sin elegibles se renormaliza. Rara para
+    // arriba sale una vez por carrera; una común vuelve a salir recién a los `edad.splitsPorEdad` splits. Con `pisoRara`
+    // sorteos seguidos sin una rara o más (`flags.sorteosSinRara`) el próximo se restringe a rara+ (si hay). `fatigaSplit`
+    // reemplaza a `fatigaPorVista` SOLO en este sorteo (la fecha marcada y la carta siguen con la de siempre).
+    probRareza: { comun: 0.62, rara: 0.26, epica: 0.09, legendaria: 0.03 },
+    pisoRara: 4,
+    fatigaSplit: 2,
 
     // Fase 12d (PLAN.md §12.3, `core/previa.js`): terciles medidos con una
     // sonda de una sola vez sobre los 1416 efectos reales del catálogo,
@@ -699,18 +707,8 @@ export const BALANCE = {
     probSegundaDecisionPorTipo: { denso: 0.85, normal: 0.4, comprimido: 0.12 }
   },
 
-  // Fase 9Rf: el presupuesto de interrupción. `events.js` pausaba una vez por
-  // split siempre que hubiera candidato (más una segunda por probabilidad), y
-  // eso nunca tuvo techo — era la fuente más grande de decisiones que quedaba
-  // tras 9Re (~68 de las ~173 de la carrera). Ahora cada split tiene un cupo:
-  // uno EVENTFUL (debutás, cambiás de tier, se te murió el main, o es un split
-  // de playoffs) te puede frenar `eventful` veces; uno de rutina, `rutina`.
-  // Todas las pausas cuentan contra el cupo —incluidas las de mercado, cierre
-  // de edad y serie—, pero solo `events` lo consulta antes de frenar; el resto
-  // son decisiones obligatorias o ya gateadas por su propio sistema.
-  presupuesto: {
-    interrupcionesPorSplit: { eventful: 2, rutina: 1 }
-  },
+  // H1a (T5): se fue `presupuesto.interrupcionesPorSplit` (el cupo de interrupciones de la fase 9Rf). El evento del split tiene
+  // su cupo propio, `eventos.paradasPorSplit`.
 
   // El año calendario (fase 8, PLAN.md §8.2): no existía. `anio` sale de
   // `anioBase + floor(splitCount / splitsPorEdad)`, calculado en
@@ -1640,7 +1638,10 @@ export const BALANCE = {
     },
     // G2a (PLANUI §0.9): la cola ya no resuelve por el perfil. Una parada que no frena no pasa, y fuera de los hitos frenan a
     // lo sumo estas por año calendario (`core/cola.js`).
-    paradasPorAnio: 1
+    paradasPorAnio: 1,
+    // H1a (PLANUI §0.10, H1.5): el evento del split, en la cola, frena a lo sumo estas veces por año calendario, con su propio
+    // tope (no gasta el de `paradasPorAnio`).
+    eventosPorAnio: 1
   },
 
   // Fase 9R5a: la carrera termina. Fase 10a la reescribe (PLAN.md §10.1):

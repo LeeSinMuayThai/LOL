@@ -1,6 +1,7 @@
 [
   {
     "id": "scout_call",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "oferta": true,
     "category": "soloq_precarrera",

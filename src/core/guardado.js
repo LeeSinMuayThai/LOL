@@ -80,8 +80,10 @@ import { pausaDeMercadoMigrada } from '../systems/mercado.js';
 // · 18 (ola G, entrega 2, G3c: `career.arraigoPorOrg`, el arraigo que dejaste en cada org; `flags.fichajeEtiquetado`, lo que la
 // firma le deja a `roster.js`; y `etiqueta`/`traicionA` en cada fila de `registro.porOrg`). Un guardado de la 17 carga con
 // `migrarDe17`: el arraigo por org sale de las filas cerradas que lo tienen (la última de cada org); si no, `{}`.
-export const VERSION = 18;
-const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16, 17];
+// · 19 (ola H, entrega 1, H1a: `flags.sorteosSinRara`, el piso de rareza del sorteo del split; `flags.cartas`, la mano del cierre
+// de año de H2a; `flags.colaFirmas.evento`, el tipo nuevo de la cola). Un guardado de la 18 carga con `migrarDe18`.
+export const VERSION = 19;
+const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16, 17, 18];
 
 // El marcador de los años pro, reconstruido de lo que la 11 sí guardaba. La fila del registro de la org del primer contrato de tier
 // 2 o 1 la abre `roster.js` el split siguiente al de la firma, así que la firma fue en su `desdeSplit` - 1. Sin esa fila todavía
@@ -293,10 +295,30 @@ export function migrarDe17(state) {
 // De la versión del guardado a la función que lo deja en la actual (la 10 pasa por `migrarDe10` … `migrarDe15`; cada versión
 // siguiente, por las que le faltan).
 function migrar(version, state) {
-  if (version !== VERSION && version !== 17) {
-    return migrarDe17(migrarHasta17(version, state));
+  if (version === VERSION) {
+    return state;
   }
-  return version === 17 ? migrarDe17(state) : state;
+  if (version === 18) {
+    return migrarDe18(state);
+  }
+  return migrarDe18(version === 17 ? migrarDe17(state) : migrarDe17(migrarHasta17(version, state)));
+}
+
+// H1a (ola H, entrega 1): el piso de rareza del sorteo del split (`systems/events.js`) arranca en 0, como una carrera nueva; la
+// mano del cierre de año (H2a), vacía; y la foto del tipo nuevo de la cola (`evento`, `core/cola.js`), sin frenar todavía.
+export function migrarDe18(state) {
+  if (!state.flags) {
+    return state;
+  }
+  return {
+    ...state,
+    flags: {
+      ...state.flags,
+      sorteosSinRara: state.flags.sorteosSinRara ?? 0,
+      cartas: state.flags.cartas ?? { vistas: {}, manosSinRara: 0, cambiosUsados: 0 },
+      colaFirmas: { ...(state.flags.colaFirmas ?? {}), evento: state.flags.colaFirmas?.evento ?? null }
+    }
+  };
 }
 
 function migrarHasta17(version, state) {

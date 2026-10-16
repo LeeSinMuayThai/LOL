@@ -138,6 +138,8 @@
   },
   {
     "id": "la_camada_que_se_retira",
+    "rarezaEvento": "rara",
+    "obligatorio": true,
     "category": "declive",
     "categoria": "golpe_duro",
     "title": "Se retira toda una generación",

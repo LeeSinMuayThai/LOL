@@ -53,7 +53,7 @@ import { elegirOutcome, elegirEvento, decisionDesdeEvento, resolver as resolverE
 import PERFILES_K4C from '../data/perfiles.json' with { type: 'json' };
 import { previaDeOpcion, riesgoDeOpcion, payoffNormalizado } from '../core/previa.js';
 import { rarezaDeRutina, payoffDeRutina } from '../core/rareza.js';
-import { tipoDeSplit, hayPresupuesto } from '../core/presupuesto.js';
+import { tipoDeSplit } from '../core/presupuesto.js';
 import { aplicar as aplicarPresupuesto } from '../systems/presupuesto.js';
 import {
   objetivoDelRival, disponiblesDelPool, jugadaDelPlan, conPlan, mapaDelPlan, estadoDelProximoMapa, fuerzaRivalDeMapa,
@@ -955,7 +955,11 @@ const FORMAS_CONOCIDAS = {
   // Ola G, entrega 2 (PLANUI §0.9): G3c (career.arraigoPorOrg, la etiqueta de la fila de porOrg, flags.fichajeEtiquetado), G4c
   // (career.dorsalPorOrg, registro.despedidas, flags.ultimoSplitEdad/despedidaPendiente/ultimoSplitFoto) y G4b (career.promesas).
   // Un guardado de la 17 carga con `migrarDe17`, que los suma a todos.
-  18: 'a189ab780b40'
+  18: 'a189ab780b40',
+  // Ola H, entrega 1 (PLANUI §0.10), H1a: `flags.sorteosSinRara` (el piso de rareza del sorteo del split), `flags.cartas` (la mano
+  // del cierre de año, de H2a), `flags.colaFirmas.evento` y `flags.colaAnio.eventos` (el evento del split en la cola); se va
+  // `presupuesto.total` (el cupo de 9Rf). Un guardado de la 18 carga con `migrarDe18`.
+  19: 'dd1bb37910e2'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -3578,8 +3582,8 @@ checkLento('T10: ninguna celda alcanzable pasa el 25% de splits sin evento', () 
   // Se mide sobre los LOGS reales de `avanzarSplitAuto` (el camino que juega
   // `simulate.js`/el navegador), no llamando a `elegirEvento` de nuevo — eso
   // consumiría una tirada extra y correría el stream de RNG del resto del
-  // split (T1). El silencio por presupuesto agotado (`hayPresupuesto`, fase
-  // 9Rf) es un mecanismo DISTINTO y deliberado —no imprime este mensaje, así
+  // split (T1). El silencio por cupo agotado (`quedaParadaDeEvento`, G2a y
+  // H1a) es un mecanismo DISTINTO y deliberado —no imprime este mensaje, así
   // que no contamina la medición.
   const MUESTRA_MINIMA = 30;
   const UMBRAL = 0.25;
@@ -3914,6 +3918,8 @@ checkLento('El chaining de un segundo evento de verdad usa tipoDeSplit', () => {
       if (
         candidato.phase === 'profesional' && candidato.career.companeros.length > 0 && !candidato.pendiente
         && calcularContexto(candidato).ventana !== 'playoffs'
+        // H1a: el split del cierre de año no tiene evento (`quedaParadaDeEvento`).
+        && (candidato.player.splitCount + 1) % BALANCE.edad.splitsPorEdad !== 0
       ) {
         estadoPro = candidato;
         break busqueda;
@@ -3937,7 +3943,10 @@ checkLento('El chaining de un segundo evento de verdad usa tipoDeSplit', () => {
     let veces = 0;
     for (let i = 0; i < repeticiones; i += 1) {
       const rng = mulberry32(50000 + i);
-      const estadoForzado = { ...estadoPro, contexto: contextoAntes };
+      // H1a (D141): con el evento de cupo propio casi todo split pro gasta su parada, y el segundo evento solo se alcanza con un
+      // split que no la gastó: se fuerza la parada sin gastar para seguir midiendo el mecanismo (con `paradasPorSplit` en 1 el
+      // juego real no llega acá).
+      const estadoForzado = { ...estadoPro, contexto: contextoAntes, presupuesto: { ...estadoPro.presupuesto, eventos: 0 } };
       const resultado = resolverEventos(estadoForzado, decision, respuesta, rng);
       // K4-C: el segundo evento puede frenar (bifurcación) o resolverse por perfil y dejar su línea de crónica:
       // las dos cosas son "se amontonó un segundo evento".
@@ -4759,7 +4768,8 @@ check('El sistema de presupuesto no consume RNG (regla de proceso 10)', () => {
   for (let seed = 1; seed <= 20; seed += 1) {
     const state = createInitialState(seed, mulberry32(seed));
     const { state: conPresupuesto } = aplicarPresupuesto(state, rngQueRevienta);
-    if (!conPresupuesto.presupuesto || typeof conPresupuesto.presupuesto.total !== 'number') {
+    // H1a: el `total` (el cupo de interrupciones de 9Rf) se fue; queda la parada de evento del split, en cero.
+    if (!conPresupuesto.presupuesto || conPresupuesto.presupuesto.eventos !== 0) {
       throw new Error(`seed ${seed}: presupuesto.aplicar no dejó un presupuesto válido`);
     }
     if (conPresupuesto.presupuesto.gastadas !== 0) {
@@ -4768,11 +4778,10 @@ check('El sistema de presupuesto no consume RNG (regla de proceso 10)', () => {
   }
 });
 
-checkLento('El evento de ambiente respeta el cupo de interrupciones del split (fase 9Rf)', () => {
-  // En un split profesional, `eventos` no puede aportar más decisiones que el
-  // cupo `eventful` — es el único sistema que consulta `hayPresupuesto` antes
-  // de frenar, y como mucho encadena un segundo evento.
-  const tope = BALANCE.presupuesto.interrupcionesPorSplit.eventful;
+checkLento('El evento de ambiente respeta el cupo de eventos del split (fase 9Rf, H1a)', () => {
+  // En un split profesional, `eventos` no puede aportar más decisiones que su cupo propio (H1a: `eventos.paradasPorSplit`; el
+  // cupo de interrupciones de 9Rf, `hayPresupuesto`, se fue).
+  const tope = BALANCE.eventos.paradasPorSplit;
   let peor = 0;
 
   for (let seed = 1; seed <= 120; seed += 1) {
@@ -22073,7 +22082,8 @@ check('K5c-R guardado VERSION 12: la forma de la 11 sigue registrada, y un guard
 const { migrarDe12: migrarDe12K6B } = await import('../core/guardado.js');
 const SEEDS_GUARDADO_12_K6B = [1, 2, 3, 4];
 const SPLITS_GUARDADO_12_K6B = 60;
-const FOTOS_VACIAS_K6B = { seguisFirma: null, finMercadoFirma: null, vueltaFirma: null, colaFirmas: { cierre: null, momento: null } };
+// H1a: `colaFirmas.evento` (VERSION 19) también arranca sin foto.
+const FOTOS_VACIAS_K6B = { seguisFirma: null, finMercadoFirma: null, vueltaFirma: null, colaFirmas: { cierre: null, momento: null, evento: null } };
 const MINIMO_CON_FOTO_K6B = 5;
 function guardadoDeLaVersion12K6B(state, rng) {
   const datos = JSON.parse(serializarGuardado(state, rng));

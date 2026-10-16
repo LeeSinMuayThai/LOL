@@ -1,6 +1,7 @@
 [
   {
     "id": "visa_delay",
+    "rarezaEvento": "rara",
     "category": "salud_vida",
     "categoria": "golpe_duro",
     "title": "La visa no sale",
@@ -65,6 +66,7 @@
   },
   {
     "id": "tendinitis",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
@@ -131,6 +133,7 @@
   },
   {
     "id": "burnout",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
@@ -260,6 +263,7 @@
   },
   {
     "id": "tunel_carpiano",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
@@ -326,6 +330,7 @@
   },
   {
     "id": "hombro_cronico",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
@@ -524,6 +529,7 @@
   },
   {
     "id": "el_pico_de_ansiedad",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "salud",
@@ -792,6 +798,7 @@
   },
   {
     "id": "el_rookie_que_te_ocupo_el_asiento",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "salud_vida",
     "categoria": "vestuario",

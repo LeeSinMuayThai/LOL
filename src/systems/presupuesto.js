@@ -1,25 +1,14 @@
-import { esSplitEventful } from '../core/presupuesto.js';
-import { BALANCE } from '../data/balance.js';
-
 export const id = 'presupuesto';
 
-// Fase 9Rf: fija el cupo de interrupciones del split y lo pone en cero de
-// gastadas. Va PRIMERO en `ETAPAS_SPLIT` —antes de `contexto`— porque
-// `esSplitEventful` compara el `state.contexto` del split anterior contra el
-// contexto en vivo, y `systems/contexto.js` está por pisar ese cache.
+// Fase 9Rf, H1a: pone en cero lo que el split lleva gastado al arrancar. `gastadas` son las pausas del split (las cuenta
+// `core/pipeline.js` en cada pausa; las leen la fecha marcada y la serie) y `eventos` la parada de evento del split
+// (`BALANCE.eventos.paradasPorSplit`, `systems/events.js`). H1a: se fue el `total` (el cupo de interrupciones de la fase
+// 9Rf, `BALANCE.presupuesto`): el evento tiene su cupo propio y nadie más lo leía (T5).
 //
-// No toca `rng` (regla de proceso 10): el cupo es determinista dado el estado.
-// `core/pipeline.js` descuenta uno por cada pausa; `core/presupuesto.js`
-// expone `hayPresupuesto`, que solo consulta `events.js` antes de frenar.
+// No toca `rng` (regla de proceso 10).
 export function aplicar(state, rng) {
-  const p = BALANCE.presupuesto.interrupcionesPorSplit;
-  const total = state.phase !== 'profesional'
-    ? BALANCE.partida.maxDecisionesPorSplit
-    : (esSplitEventful(state) ? p.eventful : p.rutina);
-
   return {
-    // G2a: `eventos` es la parada de evento del split (`BALANCE.eventos.paradasPorSplit`, `systems/events.js`).
-    state: { ...state, presupuesto: { total, gastadas: 0, eventos: 0 } },
+    state: { ...state, presupuesto: { gastadas: 0, eventos: 0 } },
     logs: []
   };
 }

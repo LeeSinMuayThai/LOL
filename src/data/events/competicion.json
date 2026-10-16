@@ -202,6 +202,7 @@
   },
   {
     "id": "el_invicto_se_corta",
+    "rarezaEvento": "rara",
     "category": "competicion",
     "categoria": "golpe_duro",
     "title": "Se cortó la racha",
@@ -268,6 +269,7 @@
   },
   {
     "id": "el_equipo_ideal_del_split",
+    "rarezaEvento": "rara",
     "category": "competicion",
     "categoria": "prensa",
     "title": "Te nombran en el equipo ideal del split",

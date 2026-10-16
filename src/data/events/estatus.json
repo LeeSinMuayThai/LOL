@@ -193,6 +193,7 @@
   },
   {
     "id": "el_peso_de_ser_la_cara",
+    "rarezaEvento": "rara",
     "category": "identidad",
     "categoria": "prensa",
     "title": "Todas las notas te buscan a vos primero",
@@ -324,6 +325,7 @@
   },
   {
     "id": "el_titular_con_un_rookie_detras",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "identidad",
     "categoria": "golpe_duro",
@@ -398,6 +400,7 @@
   },
   {
     "id": "el_referente_y_el_coach_nuevo",
+    "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "identidad",
     "categoria": "vestuario",

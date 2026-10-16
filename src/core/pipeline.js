@@ -51,7 +51,7 @@ function conTarjeta(resultado) {
 // pausan por acá. `events.js` es el único que consulta el saldo antes de
 // frenar; el resto (mercado, cierre de edad, serie) igual descuenta.
 function pausar(state, sistema, decision) {
-  const p = state.presupuesto ?? { total: BALANCE.partida.maxDecisionesPorSplit, gastadas: 0 };
+  const p = state.presupuesto ?? { gastadas: 0, eventos: 0 };
   return {
     ...state,
     pendiente: { sistemaId: sistema.id, decision },
