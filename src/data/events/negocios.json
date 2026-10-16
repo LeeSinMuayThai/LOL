@@ -1,10 +1,11 @@
 [
   {
     "id": "sponsor_offer",
+    "voz": "corta",
     "category": "negocios",
     "categoria": "mercado",
     "title": "Te quiere una marca",
-    "description": "Una marca de periféricos te ofrece contrato de imagen. La plata está bien; la letra chica pide cuatro publicaciones por mes y aparecer en lo que te digan.",
+    "description": "Una marca de periféricos te ofrece contrato de imagen. La plata está bien, pero la letra chica pide cuatro posteos por mes y presencia a demanda.",
     "weight": 7,
     "cooldown": 4,
     "contexto": {
@@ -17,19 +18,19 @@
       {
         "id": "firmar_el_contrato",
         "label": "Firmarlo",
-        "descripcion": "Plata tuya, no del club, y una vidriera que no depende de los resultados. A cambio, tu tiempo deja de ser del todo tuyo.",
+        "descripcion": "Plata tuya y vidriera, a cambio de tiempo.",
         "weight": 6,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Firmás y en dos meses ya es rutina: una sesión de fotos, cuatro posteos, y una plata que no dependía de si ganabas.",
+            "texto": "Firmás y en dos meses es rutina: sesión de fotos, cuatro posteos y plata que no depende de si ganás.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "La campaña pega más de lo que nadie esperaba y de golpe sos la cara de la marca en tu región. También son tres días de agenda que no elegiste.",
+            "texto": "La campaña pega fuerte y sos la cara de la marca en tu región. También son tres días de agenda que no elegiste.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 6, "max": 9, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -39,20 +40,20 @@
       },
       {
         "id": "rechazar_por_las_condiciones",
-        "label": "Decir que no por la letra chica",
-        "descripcion": "Te quedás con tu tiempo y tu cara. Dejás pasar plata y exposición que quizás no vuelvan.",
+        "label": "Rechazar por la letra chica",
+        "descripcion": "Te quedás con tu tiempo y tu cara.",
         "weight": 4,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Decís que no y te sacás un peso de encima que no sabías que tenías. Tu agenda sigue siendo tuya.",
+            "texto": "Decís que no y te sacás un peso de encima. Tu agenda sigue siendo tuya.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "La marca firma con otro de tu liga y le va bien. Lo ves en todos lados durante meses y algo te queda dando vueltas.",
+            "texto": "La marca firma con otro de tu liga y le va bien. Lo ves en todos lados durante meses.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": -1, "clamp": [0, 100] }
             ]
@@ -63,12 +64,13 @@
   },
   {
     "id": "streaming_paralelo",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "negocios",
     "categoria": "mercado",
-    "title": "El streaming te deja más que el sueldo base",
-    "description": "Entre donaciones y suscriptores, el canal te está dejando una plata que hace un año ni soñabas. El problema es que las horas de stream y las horas de práctica compiten por el mismo espacio del día.",
+    "title": "El stream te paga más",
+    "description": "Entre donaciones y subs, el canal te deja una plata que hace un año ni soñabas. Pero las horas de stream compiten con las de práctica.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -81,13 +83,13 @@
       {
         "id": "meterle_mas_horas_al_stream",
         "label": "Meterle más horas al stream",
-        "descripcion": "Subís la frecuencia y la plata sube con ella. Cada hora en vivo es una hora que no scrimeás.",
-        "aviso": "Si el coach se entera, te hace elegir entre stream y scrims",
+        "descripcion": "Cada hora en vivo es una hora sin scrim.",
+        "aviso": "Si el coach se entera, te hace elegir",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Los números del canal crecen en serio: ya no es plata extra, es un ingreso que compite con el sueldo del club.",
+            "texto": "El canal crece en serio: ya no es plata extra, es un ingreso que compite con el sueldo del club.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mecanica", "min": -2, "max": -1, "clamp": [0, 100] }
@@ -95,7 +97,7 @@
           },
           {
             "weight": 5,
-            "texto": "El coach te frena en seco: te pide elegir entre el canal y las scrims de la tarde. No te lo pide dos veces.",
+            "texto": "El coach te frena en seco y te pide elegir entre el canal y las scrims. No te lo pide dos veces.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
             ]
@@ -104,20 +106,20 @@
       },
       {
         "id": "poner_un_techo",
-        "label": "Ponerle un techo fijo de horas",
-        "descripcion": "Cortás el stream siempre a la misma hora, pase lo que pase con el chat. Menos plata extra, cero roce con el club.",
+        "label": "Ponerle un techo de horas",
+        "descripcion": "Cortás siempre a la misma hora, pase lo que pase.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El techo se respeta y el equilibrio se sostiene. El canal crece más lento, pero crece sin pelearte con nadie.",
+            "texto": "El techo se respeta y el equilibrio se sostiene. El canal crece más lento, pero sin pelearte con nadie.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Cumplís el horario, pero ves crecer canales de gente que arriesga más que vos y te preguntás si no estás siendo demasiado prudente.",
+            "texto": "Cumplís el horario, pero ves crecer a los que arriesgan más y te preguntás si sos demasiado prudente.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 0, "clamp": [0, 100] }
             ]
@@ -128,10 +130,11 @@
   },
   {
     "id": "el_agente_te_llama",
+    "voz": "corta",
     "category": "negocios",
     "categoria": "mercado",
-    "title": "Tu representante te propone adelantar la renegociación",
-    "description": "Todavía te queda contrato, pero tu representante te llama con un plan: abrir la charla ahora, con el mercado a tu favor, en vez de esperar al último año como haría cualquiera.",
+    "title": "Tu representante quiere adelantarse",
+    "description": "Todavía te queda contrato, pero tu representante propone abrir la charla ahora, con el mercado a tu favor, en vez de esperar al último año.",
     "weight": 4,
     "cooldown": 8,
     "contexto": {
@@ -145,20 +148,20 @@
     "options": [
       {
         "id": "adelantar_la_charla",
-        "label": "Darle luz verde para que la abra ya",
-        "descripcion": "Confiás en el timing de tu representante. Si el club muerde, mejorás tu situación antes de tiempo; si no, quedás pidiendo algo que todavía no te ganaste del todo.",
+        "label": "Darle luz verde",
+        "descripcion": "Confiás en su timing.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "El club escucha la propuesta con más apertura de la esperada. No cierran nada todavía, pero la conversación quedó abierta en tus términos.",
+            "texto": "El club escucha con más apertura de la esperada. No cierran nada, pero la charla quedó abierta en tus términos.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 5,
-            "texto": "El club corta la charla en seco: \"hablamos cuando corresponda\". Queda la sensación de haber jugado una carta antes de tiempo.",
+            "texto": "El club corta en seco: hablamos cuando corresponda. Te queda la sensación de haber jugado la carta antes de tiempo.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -167,20 +170,20 @@
       },
       {
         "id": "esperar_el_momento_normal",
-        "label": "Decirle que espere al último año",
-        "descripcion": "Preferís jugar tus cartas cuando el contrato realmente se venza. Menos riesgo de sonar ansioso, y el mercado puede cambiar para entonces.",
+        "label": "Que espere al último año",
+        "descripcion": "Jugás tus cartas cuando el contrato venza.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Tu representante respeta el plan y guarda la jugada para más adelante. Seguís jugando sin esa conversación pendiente.",
+            "texto": "Tu representante respeta el plan y guarda la jugada. Seguís jugando sin esa conversación pendiente.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Un compañero de tu nivel firma una mejora en otro club mientras vos esperás tu turno. Te preguntás si dejaste pasar el momento.",
+            "texto": "Un compañero de tu nivel firma una mejora en otro club mientras vos esperás tu turno. Te preguntás si se te pasó el momento.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 0, "clamp": [0, 100] }
             ]
@@ -191,10 +194,11 @@
   },
   {
     "id": "el_regalo_del_sponsor",
+    "voz": "corta",
     "category": "negocios",
     "categoria": "mercado",
-    "title": "Todo el setup gratis, con una condición",
-    "description": "Una marca de periféricos te ofrece renovar todo tu equipo sin costo — mouse, teclado, silla — a cambio de exclusividad: nada de otras marcas en cámara, ni siquiera las que ya usabas por gusto.",
+    "title": "Setup gratis, con una condición",
+    "description": "Una marca te renueva todo el equipo sin costo, mouse, teclado y silla, a cambio de exclusividad: ni una marca más en cámara.",
     "weight": 4,
     "cooldown": 6,
     "contexto": {
@@ -207,19 +211,19 @@
       {
         "id": "aceptar_la_exclusividad",
         "label": "Aceptar la exclusividad",
-        "descripcion": "Todo el setup nuevo, a cambio de no volver a mostrar nada de otra marca. Ahorrás plata; perdés margen de maniobra con lo que ya usabas.",
+        "descripcion": "Setup nuevo a cambio de no mostrar otra marca.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "El setup nuevo llega completo y funciona mejor de lo esperado. La exclusividad no te pesa tanto como pensabas.",
+            "texto": "El setup llega completo y funciona mejor de lo esperado. La exclusividad pesa menos de lo que pensabas.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Extrañás el mouse que usabas antes de firmar. Nada grave, pero cada tanto te acordás de que ya no podés elegir.",
+            "texto": "Extrañás el mouse de antes de firmar. Nada grave, pero cada tanto recordás que ya no elegís.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 0, "clamp": [0, 100] }
             ]
@@ -228,20 +232,20 @@
       },
       {
         "id": "quedarte_con_lo_tuyo",
-        "label": "Quedarte con lo que ya elegiste vos",
-        "descripcion": "Rechazás la exclusividad. Seguís pagando tu propio equipo, con la ventaja de que sigue siendo exactamente el que vos querés.",
+        "label": "Quedarte con lo tuyo",
+        "descripcion": "Seguís pagando tu equipo, pero es el que querés.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Seguís con el setup que ya conocés perfecto. La plata que dejás sobre la mesa se siente menos importante de lo que pensabas.",
+            "texto": "Seguís con el setup que conocés perfecto. La plata que dejaste sobre la mesa pesa menos de lo que pensabas.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "El sponsor firma con un compañero tuyo, que ahora aparece en cámara con equipo nuevo mientras vos seguís con el de siempre.",
+            "texto": "El sponsor firma con un compañero tuyo, que aparece en cámara con equipo nuevo mientras vos seguís con lo de siempre.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -1, "max": 0, "clamp": [0, 100] }
             ]
@@ -252,10 +256,11 @@
   },
   {
     "id": "la_marca_propia",
+    "voz": "corta",
     "category": "negocios",
     "categoria": "mercado",
-    "title": "Te ofrecen sacar tu propia línea de merch",
-    "description": "Una empresa de indumentaria te propone una cápsula con tu nombre y tu logo: remeras, buzos, una gorra. Vos ponés la cara y aprobás diseños; ellos ponen la fábrica y se llevan la mayor parte.",
+    "title": "Tu propia línea de merch",
+    "description": "Una empresa de indumentaria te propone una cápsula con tu nombre y logo. Vos ponés la cara y aprobás diseños; ellos ponen la fábrica y se llevan casi todo.",
     "weight": 4,
     "cooldown": 8,
     "contexto": {
@@ -267,14 +272,14 @@
     "options": [
       {
         "id": "meterte_de_lleno",
-        "label": "Meterte de lleno en el proyecto",
-        "descripcion": "Revisás cada diseño, opinás del corte de la tela, respondés comentarios. Puede volverse una marca de verdad, y te come tardes de práctica.",
+        "label": "Meterte de lleno",
+        "descripcion": "Opinás de cada diseño, a costa de tardes de práctica.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
             "texto": [
-              "La primera tanda se agota en un día. De golpe hay pibes en la tribuna con tu logo puesto.",
+              "La primera tanda se agota en un día. De golpe hay pibes en la tribuna con tu logo.",
               "El drop funciona mejor de lo que nadie calculó. Ya hablan de una segunda cápsula y una colaboración."
             ],
             "effects": [
@@ -284,7 +289,7 @@
           },
           {
             "weight": 4,
-            "texto": "Te enredás en decisiones de logística que no te interesan y para la semana de playoffs todavía estás discutiendo colores de etiqueta.",
+            "texto": "Te enredás en logística que no te interesa y en playoffs todavía discutís colores de etiqueta.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 1, "max": 3, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -2, "clamp": [0, 100] }
@@ -294,20 +299,20 @@
       },
       {
         "id": "prestar_solo_la_cara",
-        "label": "Prestar el nombre y nada más",
-        "descripcion": "Firmás, cobrás un fijo, y que se encarguen ellos de todo. Menos plata si explota, cero tiempo tuyo invertido.",
+        "label": "Prestar solo el nombre",
+        "descripcion": "Firmás, cobrás un fijo y listo.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "La marca sale sin que le dediques una hora. Vende moderado, te deja una plata pasiva y ni te enterás del día a día.",
+            "texto": "La marca sale sin que le dediques una hora. Vende moderado y te deja plata pasiva.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 4, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "Sacan un diseño que no habrías aprobado y te toca bancar en redes una remera que te parece fea. El fijo lo cobraste igual.",
+            "texto": "Sacan un diseño que no habrías aprobado y te toca bancar en redes una remera fea. El fijo lo cobraste igual.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -319,10 +324,11 @@
   },
   {
     "id": "el_showmatch_de_exhibicion",
+    "voz": "corta",
     "category": "negocios",
     "categoria": "oportunidad",
     "title": "Te invitan a un showmatch",
-    "description": "Un evento de una marca junta ex jugadores, streamers y un par de pros en activo para un show a beneficio. Pagan bien por un día, se transmite a mucha gente, y no cuenta para nada competitivo.",
+    "description": "Un evento de marca junta ex jugadores, streamers y pros en activo para un show a beneficio. Pagan bien, lo ve mucha gente y no cuenta para nada.",
     "weight": 5,
     "cooldown": 6,
     "contexto": {
@@ -335,12 +341,12 @@
       {
         "id": "ir_a_divertirse",
         "label": "Ir y jugarla suelto",
-        "descripcion": "Picks raros, riesgos que en oficial no tomarías, hablar con el casteo mientras jugás. Un día liviano que te recuerda por qué empezaste.",
+        "descripcion": "Picks raros y riesgos que en oficial no tomarías.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Te reís todo el día, clavás una jugada de circo para la cámara y volvés con la cabeza más liviana de lo que la tenías en meses.",
+            "texto": "Te reís todo el día, clavás una jugada de circo y volvés con la cabeza más liviana en meses.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 3, "max": 6, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] }
@@ -348,7 +354,7 @@
           },
           {
             "weight": 3,
-            "texto": "El día libre te sienta tan bien que el coach te lo marca: volviste a scrims jugando mejor que antes de irte.",
+            "texto": "El día libre te sienta tan bien que el coach lo nota: volviste a scrims jugando mejor.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 5, "max": 9, "clamp": [0, 100] }
             ]
@@ -357,20 +363,20 @@
       },
       {
         "id": "declinar_por_el_calendario",
-        "label": "Decir que no: estás en plena competencia",
-        "descripcion": "Un día de viaje y show es un día menos de preparación real. Dejás pasar la plata y la exposición para no romper la rutina.",
+        "label": "Decir que no: hay competencia",
+        "descripcion": "Un día de show es un día menos de preparación.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Te quedás en la rutina y la semana rinde. Nadie te va a aplaudir por la scrim que no te salteaste, pero vos sabés que sirvió.",
+            "texto": "Te quedás en la rutina y la semana rinde. Nadie aplaude la scrim que no te salteaste, pero vos sabés que sirvió.",
             "effects": [
               { "type": "stat", "path": "player.stats.macro", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Ves el show por stream desde la gaming house. Se lo pasaron bomba y te queda la sensación de haber sido más profesional de lo necesario.",
+            "texto": "Mirás el show por stream desde la gaming house. Se lo pasaron bomba y te sentís profesional de más.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -381,12 +387,13 @@
   },
   {
     "id": "el_sponsor_de_cripto",
+    "voz": "corta",
     "rarezaEvento": "rara",
     "bifurcacion": true,
     "category": "negocios",
     "categoria": "mercado",
-    "title": "Una plataforma de cripto te ofrece una fortuna",
-    "description": "El número que ponen sobre la mesa es más de lo que ganás en un año con el club. La plataforma tiene mala prensa, un par de influencers que la promocionaron quedaron escrachados, y a nadie le consta que sea del todo legal.",
+    "title": "Cripto te ofrece una fortuna",
+    "description": "El número es más de lo que ganás en un año con el club. La plataforma tiene mala prensa y a nadie le consta que sea legal.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -399,13 +406,13 @@
       {
         "id": "agarrar_la_plata",
         "label": "Firmar y cobrar",
-        "descripcion": "Plata que te cambia la vida por unos posteos. Si la plataforma revienta, tu cara queda pegada al escándalo para siempre.",
-        "aviso": "Si la plataforma revienta, tu cara queda en el escándalo",
+        "descripcion": "Plata que te cambia la vida por unos posteos.",
+        "aviso": "Si revienta, tu cara queda en el escándalo",
         "weight": 5,
         "outcomes": [
           {
             "weight": 5,
-            "texto": "Cobrás y no pasa nada grave: la plataforma sigue en pie y tus posteos envejecen sin escándalo. La plata ya está en tu cuenta.",
+            "texto": "Cobrás y no pasa nada grave: la plataforma sigue en pie y tus posteos envejecen sin escándalo.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": 2, "max": 5, "clamp": [0, 100] },
               { "type": "stat", "path": "player.familyTrust", "min": -3, "max": 0, "clamp": [0, 100] }
@@ -414,8 +421,8 @@
           {
             "weight": 5,
             "texto": [
-              "Seis meses después la plataforma se cae y arrastra a un montón de usuarios chicos. Tu cara está en cada nota sobre la estafa.",
-              "El escándalo estalla en pleno split. Te pasás las conferencias respondiendo por un sponsor en vez de por tu juego."
+              "Seis meses después la plataforma se cae. Tu cara está en cada nota sobre la estafa.",
+              "El escándalo estalla en pleno split y te pasás las conferencias respondiendo por un sponsor, no por tu juego."
             ],
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -10, "max": -5, "clamp": [0, 100] },
@@ -428,20 +435,20 @@
       {
         "id": "rechazarlo_por_las_dudas",
         "label": "Rechazarlo",
-        "descripcion": "Dejás pasar el mejor cheque de tu carrera hasta ahora. Dormís tranquilo y te preguntás, cada tanto, qué habrías hecho con esa plata.",
-        "aviso": "Si nunca revienta, te quedás sin el mejor cheque",
+        "descripcion": "Dejás pasar el mejor cheque de tu carrera.",
+        "aviso": "Si nunca revienta, te quedás sin el cheque",
         "weight": 5,
         "outcomes": [
           {
             "weight": 7,
-            "texto": "Decís que no y a los meses ves la noticia del colapso con el nombre de otro pro pegado. El alivio vale casi tanto como valía el cheque.",
+            "texto": "Decís que no y a los meses ves el colapso con el nombre de otro pro pegado. El alivio vale casi lo que el cheque.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 3,
-            "texto": "La plataforma nunca revienta y el que firmó cobró una millonada sin consecuencias. Te queda el gusto amargo de haber sido prudente de más.",
+            "texto": "La plataforma nunca revienta y el que firmó cobró una millonada. Te queda el gusto amargo de haber sido prudente de más.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
             ]
@@ -452,10 +459,11 @@
   },
   {
     "id": "la_clausula_de_imagen_larga",
+    "voz": "corta",
     "category": "negocios",
     "categoria": "mercado",
-    "title": "El contrato de imagen a cuatro años",
-    "description": "Una marca grande te ofrece un acuerdo de imagen largo: cuatro años, plata muy buena, estabilidad. La letra chica te ata la cara a esa marca aunque cambies de club, de región o de rumbo.",
+    "title": "Contrato de imagen a cuatro años",
+    "description": "Una marca grande ofrece un acuerdo de imagen de cuatro años: plata muy buena y estabilidad. La letra chica te ata la cara aunque cambies de club.",
     "weight": 4,
     "cooldown": 10,
     "contexto": {
@@ -470,19 +478,19 @@
       {
         "id": "firmar_el_largo",
         "label": "Firmar el acuerdo largo",
-        "descripcion": "Cuatro años de ingreso asegurado por fuera del club. A cambio, tu imagen deja de ser una carta que puedas volver a jugar en ese plazo.",
+        "descripcion": "Cuatro años de ingreso asegurado fuera del club.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "La estabilidad se siente bien: pase lo que pase con tu carrera deportiva, hay un piso. Dejás de mirar cada oferta chica que llega.",
+            "texto": "La estabilidad se siente bien: pase lo que pase con tu carrera hay un piso. Dejás de mirar cada oferta chica.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 2, "max": 5, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "Dos años después explotás de nivel y llega una marca mucho más grande que ya no podés tomar. El contrato largo que te dio paz ahora te aprieta.",
+            "texto": "Dos años después explotás de nivel y llega una marca mucho más grande que ya no podés tomar. La paz ahora te aprieta.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -4, "max": -1, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] }
@@ -492,20 +500,20 @@
       },
       {
         "id": "pedir_un_contrato_corto",
-        "label": "Pedir uno corto aunque paguen menos",
-        "descripcion": "Contraofertás un año con opción. Menos plata garantizada, pero te dejás la puerta abierta para renegociar si tu valor sube.",
+        "label": "Pedir uno corto, aunque paguen menos",
+        "descripcion": "Contraofertás un año con opción.",
         "weight": 5,
         "outcomes": [
           {
             "weight": 6,
-            "texto": "Aceptan el corto a regañadientes. Ganás menos hoy y te quedás con el control de tu imagen para el año que viene.",
+            "texto": "Aceptan el corto a regañadientes. Ganás menos hoy, pero controlás tu imagen el año que viene.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": 1, "max": 3, "clamp": [0, 100] }
             ]
           },
           {
             "weight": 4,
-            "texto": "La marca no acepta el corto y se retira de la mesa. Te quedaste sin el acuerdo y con la sensación de haber pedido de más.",
+            "texto": "La marca no acepta el corto y se levanta de la mesa. Te quedás sin acuerdo y con ganas de no haber pedido de más.",
             "effects": [
               { "type": "stat", "path": "player.stats.hype", "min": -2, "max": 0, "clamp": [0, 100] },
               { "type": "stat", "path": "player.stats.mentalidad", "min": -2, "max": 0, "clamp": [0, 100] }
