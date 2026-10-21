@@ -603,5 +603,70 @@
         ]
       }
     ]
+  },
+  {
+    "id": "te_mandan_al_banco",
+    "voz": "corta",
+    "rarezaEvento": "rara",
+    "obligatorio": true,
+    "category": "declive",
+    "categoria": "golpe_duro",
+    "title": "Te sientan en el banco",
+    "description": "Tu nivel quedó por debajo del suplente y el split fue flojo: el staff te saca de la titular. Si el año no mejora, en la próxima ventana {org} te cede a su academia.",
+    "weight": 4,
+    "cooldown": 6,
+    "contexto": {
+      "etapa": ["profesional"]
+    },
+    "conditions": [
+      { "field": "flags.banquilloPendiente", "op": "eq", "value": true }
+    ],
+    "options": [
+      {
+        "id": "pedir_la_chance",
+        "label": "Pedir que te den otra chance",
+        "descripcion": "Vas a hablar con el coach: querés seguir de titular.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 5,
+            "texto": "El coach te escucha y te promete minutos si rendís en los scrims. Sentís que todavía hay una puerta.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": 0, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 5,
+            "texto": "Te dicen que lo van a evaluar, con la cara de quien ya decidió. Te vas con más dudas que respuestas.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ponerte_a_trabajar",
+        "label": "Agachar la cabeza y meterle scrims",
+        "descripcion": "Sin discutir: el nivel se discute en el server.",
+        "weight": 5,
+        "outcomes": [
+          {
+            "weight": 6,
+            "texto": "Te encerrás a pulir lo tuyo. Duele, pero la práctica se nota en la ladder.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] },
+              { "type": "stat", "path": "player.stats.consistencia", "min": 1, "max": 2, "clamp": [0, 100] }
+            ]
+          },
+          {
+            "weight": 4,
+            "texto": "Rendís lo mismo de siempre. El banco pesa más de lo que admitís.",
+            "effects": [
+              { "type": "stat", "path": "player.stats.mentalidad", "min": -3, "max": -1, "clamp": [0, 100] }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

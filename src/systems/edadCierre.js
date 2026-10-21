@@ -79,16 +79,22 @@ function nivelesDeRelajo(state, contexto, etapas) {
 function sortearCarta(state, contexto, etapas, rareza, enMano, vistas, rng) {
   const niveles = nivelesDeRelajo(state, contexto, etapas);
   const usados = new Set(enMano.map(principalDe));
-  for (const distintos of [true, false]) {
-    for (let i = BALANCE.cartas.ordenRareza.indexOf(rareza); i >= 0; i -= 1) {
-      for (const aplica of niveles) {
-        const candidatas = CARTAS.filter((carta) => carta.rareza === BALANCE.cartas.ordenRareza[i]
-          && !enMano.some((elegida) => elegida.id === carta.id)
-          && !(esRaraOMas(carta.rareza) && (vistas[carta.id] ?? 0) > 0)
-          && (!distintos || !usados.has(principalDe(carta)))
-          && aplica(carta));
-        if (candidatas.length > 0) {
-          return weightedPick(candidatas, (carta) => (esRaraOMas(carta.rareza) ? 1 : BALANCE.cartas.decaimientoComun ** (vistas[carta.id] ?? 0)), rng);
+  // D162: una carta cuyo stat principal ya está topado diría "+0" (`seguroDeCarta`, la misma cuenta que la pantalla): no se
+  // ofrece, la reemplaza otra. Solo si no queda ninguna que sume se vuelve a aceptar una topada (el mazo nunca se queda sin mano).
+  const topada = (carta) => (seguroDeCarta(state, opcionDeCarta(carta))?.valor ?? 1) <= 0;
+  for (const sinTopadas of [true, false]) {
+    for (const distintos of [true, false]) {
+      for (let i = BALANCE.cartas.ordenRareza.indexOf(rareza); i >= 0; i -= 1) {
+        for (const aplica of niveles) {
+          const candidatas = CARTAS.filter((carta) => carta.rareza === BALANCE.cartas.ordenRareza[i]
+            && !enMano.some((elegida) => elegida.id === carta.id)
+            && !(esRaraOMas(carta.rareza) && (vistas[carta.id] ?? 0) > 0)
+            && (!distintos || !usados.has(principalDe(carta)))
+            && (!sinTopadas || !topada(carta))
+            && aplica(carta));
+          if (candidatas.length > 0) {
+            return weightedPick(candidatas, (carta) => (esRaraOMas(carta.rareza) ? 1 : BALANCE.cartas.decaimientoComun ** (vistas[carta.id] ?? 0)), rng);
+          }
         }
       }
     }
@@ -119,10 +125,9 @@ function sortearMano(state, memoria, rng) {
 export function repartirMano(state, rng, { cambio = false } = {}) {
   const memoria = memoriaDeCartas(state);
   const cartas = sortearMano(state, memoria, rng);
+  // D162: repartir NO gasta las cartas. Solo cuenta como usada la que elegís (`conCartaUsada`, al resolver): las raras de una
+  // "Otra mano" que no tomaste pueden volver en esta carrera.
   const vistas = { ...memoria.vistas };
-  for (const carta of cartas) {
-    vistas[carta.id] = (vistas[carta.id] ?? 0) + 1;
-  }
   const conRara = cartas.some((carta) => esRaraOMas(carta.rareza));
   const flagsCartas = {
     vistas,
@@ -133,6 +138,13 @@ export function repartirMano(state, rng, { cambio = false } = {}) {
 }
 
 const cambiosQuedan = (state) => Math.max(0, BALANCE.cartas.cambiosDeMano - memoriaDeCartas(state).cambiosUsados);
+
+// D162: la carta elegida es la única que se anota en `flags.cartas.vistas` (las raras o más no se repiten; las comunes decaen).
+function conCartaUsada(state, cartaId) {
+  const memoria = memoriaDeCartas(state);
+  const vistas = { ...memoria.vistas, [cartaId]: (memoria.vistas[cartaId] ?? 0) + 1 };
+  return { ...state, flags: { ...state.flags, cartas: { ...state.flags.cartas, vistas } } };
+}
 
 // El evento sintético de la mano (id estable, categoría que ningún otro evento usa). Cada carta es una opción: dos salidas,
 // la normal (el rango del dato) y la extra (el mismo rango corrido), y el stat principal sube en las dos al menos su mínimo
@@ -307,7 +319,7 @@ function resolverConCronica(state, decision, opcionId, rng, cronica = state.play
   const plan = decision.datos.evento.options.find((opcion) => opcion.id === opcionId)?.plan;
   // La mano no entra en la ventana de categorías recientes (`flags.categoriasRecientes`): no le quita lugar a los eventos.
   const sinMano = decision.datos.evento.id === BALANCE.cartas.idEvento
-    ? { ...resultado.state, flags: { ...resultado.state.flags, categoriasRecientes: state.flags.categoriasRecientes ?? [] } }
+    ? conCartaUsada({ ...resultado.state, flags: { ...resultado.state.flags, categoriasRecientes: state.flags.categoriasRecientes ?? [] } }, opcionId)
     : resultado.state;
   if (!fijaPlan(state) || !esPlanValido(plan)) {
     return { ...resultado, state: sinMano };

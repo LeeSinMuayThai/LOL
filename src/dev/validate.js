@@ -19181,10 +19181,15 @@ check('K4-C la rueda de prensa sale solo después de una final o de un escándal
   }
 });
 
-check('K4-C la prueba en cada salto grande: primer fichaje en tier 2, en tier 1 y como import', () => {
-  // Recuento independiente: los tiers en los que ya tuviste club y si ya fuiste import, leídos del estado en cada
-  // pausa. Firmar por el mercado en un tier ≤ 2 que nunca tuviste (y que no está por debajo de uno que sí), o como
-  // import por primera vez, tiene que frenar con la prueba ANTES de firmar.
+const minijuegosD156 = await import('../core/minijuegos.js');
+check('D156 sin tryouts desde tier 2: el primer tier 2, el primer tier 1 y el primer import firman directo, sin pausa de prueba ni flag de salto (y el sello no dice "A prueba")', () => {
+  // Antes (K4-C) cada salto grande frenaba con la prueba del salto. Regla del usuario (2026-10-21): "a partir de tier 2 no tiene
+  // que haber más tryouts de ingreso. Eso no existe en el LoL". Queda solo la prueba del amateur (la entrada al circuito).
+  // Recuento independiente: los tiers en los que ya tuviste club y si ya fuiste import, leídos del estado en cada pausa; cada
+  // firma de un salto grande tiene que cerrarse sin que la pausa siguiente sea un tryout del mercado.
+  if (minijuegosD156.saltosDeFichaje(createInitialState(1, mulberry32(1)), { tier: 2, org: 'X', datos: { tipo: 'import' } }).length !== 0) {
+    throw new Error('saltosDeFichaje devuelve saltos: el mercado frenaría con una prueba');
+  }
   let saltos = 0;
   for (const { seed, pausas } of carrerasK4c()) {
     const tiers = new Set();
@@ -19194,6 +19199,9 @@ check('K4-C la prueba en cada salto grande: primer fichaje en tier 2, en tier 1 
         tiers.add(st.career.tier);
         if (st.career.contrato?.tipo === 'import') fuiImport = true;
       }
+      if (sistema === 'mercado' && decision.datos?.momento === 'tryout') {
+        throw new Error(`seed ${seed}: el mercado frenó con un tryout (${decision.datos.oferta?.org})`);
+      }
       if (sistema !== 'mercado' || decision.datos?.motivo === 'minijuego' || decision.datos?.motivo === 'traspaso' || !respuesta.opcionId || respuesta.negociar) return;
       const oferta = decision.opciones.find((o) => o.id === respuesta.opcionId);
       if (!oferta || oferta.tag === 'renovacion') return;
@@ -19202,13 +19210,17 @@ check('K4-C la prueba en cada salto grande: primer fichaje en tier 2, en tier 1 
       if (!nuevoTier && !nuevoImport) return;
       saltos += 1;
       const siguiente = pausas[i + 1];
-      if (siguiente?.sistema !== 'mercado' || siguiente.decision.datos?.momento !== 'tryout') {
-        throw new Error(`seed ${seed}: firmó con ${oferta.org} (tier ${oferta.tier}${nuevoImport ? ', import' : ''}) sin la prueba del salto`);
+      if (siguiente?.sistema === 'mercado' && siguiente.decision.datos?.momento === 'tryout') {
+        throw new Error(`seed ${seed}: firmó con ${oferta.org} (tier ${oferta.tier}${nuevoImport ? ', import' : ''}) y frenó con una prueba`);
       }
     });
   }
   if (saltos === 0) {
     throw new Error('ningún salto grande por el mercado en 40 carreras');
+  }
+  const fuente = fs.readFileSync(new URL('../ui/components/mercado.js', import.meta.url), 'utf8');
+  if (/A prueba/.test(fuente)) {
+    throw new Error('el sello de la firma todavía dice "A prueba" en ui/components/mercado.js');
   }
 });
 
@@ -19298,7 +19310,8 @@ function sondaDeLaPrueba() {
 
 check('K4c-S la prueba decide el contrato: P(firmar | resultado 1) > P(firmar | resultado 0) en el tryout del mercado y en el del amateur (mismo rng, tryouts reales)', () => {
   const filas = sondaDeLaPrueba();
-  for (const sistemaId of ['mercado', 'amateur']) {
+  // D156 (Ola I): la prueba del mercado ya no existe; queda la del amateur (la entrada al circuito).
+  for (const sistemaId of ['amateur']) {
     const fs = filas.filter((f) => f.sistemaId === sistemaId);
     if (fs.length < 20) {
       throw new Error(`check vacío: ${fs.length} tryouts de ${sistemaId} en 60 carreras (hacen falta 20)`);
@@ -19339,97 +19352,9 @@ function sinFirmarNadaK6bf(antes, estado) {
   return estado.career.currentOrg === null && sinAviso(estado.career.contrato) === sinAviso(antes.contrato);
 }
 
-check('K4c-S un tryout fallido del mercado se cae solo esa oferta: sin crédito, y la parada cierra ahí mismo con el respaldo que anunció la prueba (o por el camino de "sin ofertas"), sin re-abrir el mercado', () => {
-  // K4c (revisión): con y sin club (antes solo con club; con el plan del amateur arreglado quedaban 3 en la muestra): lo que se
-  // mira vale igual para un free agent, y el lado "sin otras ofertas" armado sigue siendo solo con club.
-  const fallidos = sondaDeLaPrueba().filter((f) => f.sistemaId === 'mercado' && !f.bajo.ficho);
-  if (fallidos.length < 5) {
-    throw new Error(`check vacío: ${fallidos.length} tryouts fallidos del mercado (hacen falta 5)`);
-  }
-  let conRespaldo = 0;
-  let sinNada = 0;
-  const esRepresentada = (estado) => estado.pendiente?.sistemaId === 'mercado' && estado.pendiente.decision.datos?.motivo === 'oferta';
-  const sinCredito = (f, estado, donde) => {
-    if ((estado.flags.bonusJerarquiaTryout ?? 0) !== f.antes.bonus) {
-      throw new Error(`${donde}: el tryout fallido dejó crédito de jerarquía (${estado.flags.bonusJerarquiaTryout})`);
-    }
-  };
-  // Sin respaldo no se firma nada (K4c, revisión: tampoco por la racha sin ofertas, que la prueba fallida ya no mueve). K6b-F: con
-  // el contrato vencido te vas del club (`sinFirmarNadaK6bf`).
-  const sinRomperNada = (f, estado, donde) => {
-    if (!sinFirmarNadaK6bf(f.antes, estado)) {
-      throw new Error(`${donde}: el tryout fallido sin respaldo dejó el club o el contrato distinto (${f.antes.currentOrg} → ${estado.career.currentOrg})`);
-    }
-  };
-  // El lado "sin nada" con club casi no sale solo (los tryouts fallidos con club traen siempre otra oferta: la renovación
-  // u otras de afuera), así que también se prueba con la pausa real de cada tryout fallido con club sin las otras ofertas
-  // (`bajoSinOtras` de la sonda: `datos.otras` vacío y sin respaldo, mismo resultado, mismo rng).
-  let sinNadaArmadas = 0;
-  for (const f of fallidos) {
-    const { estado } = f.bajo;
-    const donde = `seed ${f.seed} (${f.oferta})`;
-    if (esRepresentada(estado)) {
-      throw new Error(`${donde}: la prueba fallida re-abrió el mercado (una segunda parada en la misma pretemporada, contra K4-D)`);
-    }
-    sinCredito(f, estado, donde);
-    if (f.bajoSinOtras && !f.bajoSinOtras.ficho) {
-      if (esRepresentada(f.bajoSinOtras.estado)) {
-        throw new Error(`${donde}, sin otras ofertas: la parada se re-presentó sin nada que ofrecer`);
-      }
-      sinCredito(f, f.bajoSinOtras.estado, `${donde}, sin otras ofertas`);
-      sinRomperNada(f, f.bajoSinOtras.estado, `${donde}, sin otras ofertas`);
-      sinNadaArmadas += 1;
-    }
-    if (f.respaldo) {
-      conRespaldo += 1;
-      // Regla 15: lo que anuncia la apuesta es lo que aplica el motor.
-      if (!f.apuesta.includes(`Si no alcanza`) || !f.apuesta.includes(f.respaldo)) {
-        throw new Error(`${donde}: la apuesta no anuncia el respaldo (${f.respaldo}): "${f.apuesta}"`);
-      }
-      if (estado.career.currentOrg !== f.respaldo) {
-        throw new Error(`${donde}: la prueba anunció el respaldo ${f.respaldo} y el motor dejó ${estado.career.currentOrg}`);
-      }
-    } else {
-      if (!f.apuesta.includes('Si no alcanza, esta ventana no firmás con nadie.')) {
-        throw new Error(`${donde}: sin respaldo, la apuesta no dice que no firmás con nadie: "${f.apuesta}"`);
-      }
-      sinRomperNada(f, estado, donde);
-      sinNada += 1;
-    }
-  }
-  if (conRespaldo === 0 || sinNada + sinNadaArmadas === 0) {
-    throw new Error(`check vacío: ${conRespaldo} pruebas fallidas que siguieron con el respaldo y ${sinNada} que se quedaron sin nada `
-      + `(más ${sinNadaArmadas} armadas sin las otras ofertas; hacen falta de las dos)`);
-  }
-});
 
 // K4c (revisión): el check de arriba tomaba el respaldo de `decision.datos.respaldo`, el mismo número que escribe el motor: con el
 // mutante "cualquier oferta sirve de respaldo" (`const sinPrueba = otras;` en `respaldoDePrueba`) seguía verde. Este recalcula la regla.
-check('K4c (revisión) el respaldo de la prueba del mercado es el de la regla, recalculado a mano: lo anuncia la apuesta y, si la prueba no alcanza, es con quien seguís', () => {
-  let conRespaldo = 0;
-  let sinRespaldo = 0;
-  let distintoDeLaMejorPagada = 0;
-  for (const f of sondaDeLaPrueba().filter((fila) => fila.sistemaId === 'mercado')) {
-    const donde = `seed ${f.seed} (${f.oferta})`;
-    if (f.respaldo !== f.respaldoALaMano) {
-      throw new Error(`${donde}: la prueba anuncia el respaldo ${f.respaldo}; con la regla (renovación, si no la mejor pagada sin prueba) es ${f.respaldoALaMano}`);
-    }
-    // G3b: en la segunda ventana seguida sin club, sin respaldo, la apuesta dice que firmás igual (`TEXTO_FIRMAS_IGUAL`).
-    if (f.respaldoALaMano === null
-      ? !f.apuesta.includes('Si no alcanza, esta ventana no firmás con nadie.') && !f.apuesta.includes('Si no alcanza, firmás igual')
-      : !f.apuesta.includes(f.respaldoALaMano)) {
-      throw new Error(`${donde}: la apuesta no dice el respaldo de la regla (${f.respaldoALaMano}): "${f.apuesta}"`);
-    }
-    if (!f.bajo.ficho && f.respaldoALaMano !== null && f.bajo.estado.career.currentOrg !== f.respaldoALaMano) {
-      throw new Error(`${donde}: la prueba no alcanzó y seguís en ${f.bajo.estado.career.currentOrg}, no en el respaldo de la regla (${f.respaldoALaMano})`);
-    }
-    if (f.respaldoALaMano === null) sinRespaldo += 1; else conRespaldo += 1;
-    if (f.respaldoALaMano === null && f.hayOtras) distintoDeLaMejorPagada += 1;
-  }
-  if (conRespaldo === 0 || sinRespaldo === 0 || distintoDeLaMejorPagada === 0) {
-    throw new Error(`check vacío: ${conRespaldo} pruebas con respaldo, ${sinRespaldo} sin, ${distintoDeLaMejorPagada} sin respaldo aunque había otras ofertas (las que pedían prueba)`);
-  }
-});
 
 // K4c (revisión): "probaste y no alcanzó" es un caso propio. Antes la prueba fallida sin respaldo iba por `resolverEspera`: sumaba a
 // `splitsSinOfertaConsecutivos` (azar seed 11: con seis ofertas en la mesa, "Nadie te ofrece nada hace 3 pretemporadas seguidas. Te
@@ -19439,80 +19364,6 @@ const PRUEBA_FALLIDA_K4cR = 'Probaste y no alcanzó: esta ventana no firmás con
 const SILENCIO_K4cR = /Nadie te ofrece nada|El teléfono no suena|No queda nada que firmar/;
 const DECLIVES_K4cR = 2;
 const TOPE_SEEDS_DECLIVE_K4cR = 120;
-check('K4c (revisión) probaste y no alcanzó: la prueba del mercado fallida sin respaldo no suma a la racha sin ofertas, no te deja libre por silencio y lo dice', () => {
-  let reales = 0;
-  let armadas = 0;
-  for (const f of sondaDeLaPrueba().filter((fila) => fila.sistemaId === 'mercado')) {
-    const casos = [];
-    if (!f.bajo.ficho && !f.respaldo) casos.push(['real', f.bajo.estado]);
-    if (f.bajoSinOtras && !f.bajoSinOtras.ficho) casos.push(['sin otras ofertas', f.bajoSinOtras.estado]);
-    for (const [cual, estado] of casos) {
-      const donde = `seed ${f.seed} (${f.oferta}, ${cual})`;
-      const nuevos = estado.logs.slice(f.antes.nLogs).map((log) => log.message);
-      if (estado.flags.splitsSinOfertaConsecutivos !== f.antes.racha) {
-        throw new Error(`${donde}: la prueba fallida movió la racha sin ofertas (${f.antes.racha} → ${estado.flags.splitsSinOfertaConsecutivos})`);
-      }
-      if (!sinFirmarNadaK6bf(f.antes, estado)) {
-        throw new Error(`${donde}: la prueba fallida sin respaldo tocó el club o el contrato (${f.antes.currentOrg} → ${estado.career.currentOrg})`);
-      }
-      if (!nuevos.some((m) => m.includes(`La prueba en ${f.oferta} no alcanza`) && m.includes(PRUEBA_FALLIDA_K4cR)) || nuevos.some((m) => SILENCIO_K4cR.test(m))) {
-        throw new Error(`${donde}: el log no dice que probaste y no alcanzó, o lo cuenta como silencio: ${JSON.stringify(nuevos)}`);
-      }
-      if ((estado.flags.pruebasFallidas ?? []).at(-1) !== f.oferta) {
-        throw new Error(`${donde}: la prueba fallida no quedó anotada (${JSON.stringify(estado.flags.pruebasFallidas)})`);
-      }
-      if (cual === 'real') reales += 1; else armadas += 1;
-    }
-  }
-  // Los dos casos de la revisión, con `azar`: después de una prueba fallida sin respaldo ese split no dice "nadie te ofrece nada", y la
-  // pregunta del declive (y el motivo, si te retirás) dicen que probaste y no alcanzó.
-  let declives = 0;
-  // K6a-M: [11, 16] -> [7, 8] (el stream cambió; buscadas igual que antes: `azar` con un declive después de una prueba fallida).
-  // K6a (integración, regla 17): con el stream integrado [7, 8] quedaron sin declive. Ya no se fijan: se recorren seeds de `azar` en
-  // ronda hasta ver `DECLIVES_K4cR` declives después de una prueba fallida, con tope `TOPE_SEEDS_DECLIVE_K4cR` (check vacío si no
-  // llegan). Cada seed recorrida suma también a la otra mitad (ningún split dice silencio después de una prueba fallida).
-  let seedsDeclive = 0;
-  for (let seed = 1; seed <= TOPE_SEEDS_DECLIVE_K4cR && declives < DECLIVES_K4cR; seed += 1) {
-    seedsDeclive = seed;
-    const rng = mulberry32(seed);
-    let st = createInitialState(seed, rng);
-    for (let i = 0; i < 45 && !st.terminado; i += 1) {
-      const nLogs = st.logs.length;
-      st = avanzarSplit(st, rng).state;
-      while (st.pendiente) {
-        const { sistemaId, decision } = st.pendiente;
-        if (sistemaId === 'retiro' && decision.datos.motivo === 'retiro_declive' && (st.flags.pruebasFallidas ?? []).length > 0) {
-          const ultima = st.flags.pruebasFallidas.at(-1);
-          // G4c: colgarla frena en el último partido; el motivo del retiro viaja en la decisión hasta que se juega.
-          const alColgarla = resolverDecision(structuredClone(st), { opcionId: 'retirarse' }, mulberry32(seed)).state;
-          const retirado = { ...alColgarla, motivoRetiro: alColgarla.motivoRetiro ?? alColgarla.pendiente?.decision.datos.retiro?.motivo };
-          // K5c paso 3b-2 (regla 17): con dos pruebas fallidas el texto las nombra a las dos ("probaste con A y con B y no alcanzó",
-          // `probasteCon` en `systems/retiro.js`); el check pedía "probaste con <la última>" y daba rojo con el texto correcto. Ahora:
-          // la frase empieza en "probaste con", nombra cada org probada y cierra con la última y "no alcanzó".
-          const probadas = [...new Set(st.flags.pruebasFallidas)];
-          const diceLaPrueba = (texto, inicio) => texto.includes(`${inicio} con `) && texto.includes(`con ${ultima} y no alcanzó`)
-            && probadas.every((org) => texto.includes(org));
-          if (!diceLaPrueba(decision.descripcion, 'probaste') || !diceLaPrueba(retirado.motivoRetiro ?? '', 'Probaste')
-            || /te está diciendo que no|te venía diciendo que no|teléfono dejó de sonar/.test(`${decision.descripcion} ${retirado.motivoRetiro} ${retirado.logs.at(-1).message}`)) {
-            throw new Error(`azar seed ${seed}, split ${i}: el declive cuenta la prueba fallida como silencio: "${decision.descripcion}" / "${retirado.motivoRetiro}" / "${retirado.logs.at(-1).message}"`);
-          }
-          declives += 1;
-        }
-        st = resolverDecision(st, ESTRATEGIAS_K0.azar(sistemaPorId(sistemaId), st, decision, rng), rng).state;
-      }
-      const delSplit = st.logs.slice(nLogs).map((log) => log.message);
-      const fallo = delSplit.findIndex((m) => m.includes(PRUEBA_FALLIDA_K4cR) || /no alcanza: se cae la oferta\. No queda nada/.test(m));
-      if (fallo >= 0 && delSplit.slice(fallo).some((m) => SILENCIO_K4cR.test(m))) {
-        throw new Error(`azar seed ${seed}, split ${i}: la prueba fallida se cuenta como silencio: ${JSON.stringify(delSplit.slice(fallo))}`);
-      }
-    }
-  }
-  if (reales + armadas < 5 || declives < DECLIVES_K4cR) {
-    throw new Error(`check vacío: ${reales} pruebas fallidas sin respaldo reales, ${armadas} armadas sin otras ofertas, ${declives} declives con pruebas fallidas `
-      + `(azar, seeds 1-${seedsDeclive}, tope ${TOPE_SEEDS_DECLIVE_K4cR}; hacen falta ${DECLIVES_K4cR})`);
-  }
-  console.log(`      ${reales} reales y ${armadas} armadas; ${declives} declives con pruebas fallidas en las seeds 1-${seedsDeclive} de azar`);
-});
 
 check('K4c-S un tryout fallido del amateur posterga la firma: seguís en la escalera, sin crédito, y después puede llegar otra oferta', () => {
   const fallidos = sondaDeLaPrueba().filter((f) => f.sistemaId === 'amateur' && !f.bajo.ficho);
@@ -21734,6 +21585,54 @@ check('K5 (revisión) banquillo: la org que te sienta nunca es la que te toma en
   }
 });
 
+// D154 (Ola I): el banquillo no es una condena de por vida. `flags.banquilloPendiente` se marcaba tras un split flojo y solo se
+// limpiaba en la pretemporada: un campeón de la LCS terminó en la academia más débil. Ahora, al cierre del año, si rendiste (campeón,
+// o la mitad de arriba de la tabla) el flag se borra; y si igual te bajan, el evento obligatorio `te_mandan_al_banco` (dato, en
+// `data/events/escena_2026.json`) frena con la razón dicha antes de la pretemporada. Sonda sobre estados reales de carreras: se
+// fuerza el flag y la posición de la tabla del split y se corre `rendimiento.aplicar` (sin tocar el rng del pipeline).
+const { aplicar: aplicarRendimientoD154 } = await import('../systems/rendimiento.js');
+const { esCierreDeTemporada: esCierreD154 } = await import('../core/serie.js');
+const { elegirEventoDelSplit: elegirEventoD154 } = await import('../systems/events.js');
+check('D154 el banquillo se levanta al cierre si rendiste (mitad de arriba) y sigue si no; fuera del cierre no se toca; con el flag sale el evento que lo explica', () => {
+  let cierres = 0;
+  let intermedios = 0;
+  let conEvento = 0;
+  for (let seed = 1; seed <= 40 && (cierres < 3 || intermedios < 3 || conEvento < 1); seed += 1) {
+    const rng = mulberry32(seed);
+    let estado = createInitialState(seed, rng);
+    for (let split = 0; split < 40 && !estado.terminado; split += 1) {
+      estado = avanzarSplitAuto(estado, rng).state;
+      const t = estado.career?.temporada;
+      if (estado.phase !== 'profesional' || estado.pendiente || !estado.career.currentOrg || !t?.tabla?.length || estado.career.companeros.length === 0) {
+        continue;
+      }
+      const equipos = t.tabla.length;
+      const con = (posicion, flag) => ({
+        ...estado,
+        flags: { ...estado.flags, banquilloPendiente: flag },
+        career: { ...estado.career, temporada: { ...t, posicion } }
+      });
+      const corre = (posicion) => aplicarRendimientoD154(con(posicion, true), mulberry32(seed * 7 + split)).state.flags.banquilloPendiente;
+      if (esCierreD154(estado.player.splitCount)) {
+        const mitad = Math.ceil(equipos * BALANCE.mercado.banquilloSeLevantaFraccionTabla);
+        if (corre(mitad) !== false) throw new Error(`seed ${seed}, split ${split}: cerró ${mitad}º de ${equipos} y el banco sigue`);
+        if (corre(equipos) !== true) throw new Error(`seed ${seed}, split ${split}: cerró último y el banco se levantó`);
+        cierres += 1;
+      } else {
+        if (corre(1) !== true) throw new Error(`seed ${seed}, split ${split}: un split intermedio levantó el banco`);
+        intermedios += 1;
+      }
+      const idConFlag = elegirEventoD154(con(equipos, true), mulberry32(seed + split))?.id;
+      const idSinFlag = elegirEventoD154(con(equipos, false), mulberry32(seed + split))?.id;
+      if (idSinFlag === 'te_mandan_al_banco') throw new Error(`seed ${seed}, split ${split}: el evento del banco sale sin el flag`);
+      if (idConFlag === 'te_mandan_al_banco') conEvento += 1;
+    }
+  }
+  if (cierres < 3 || intermedios < 3 || conEvento < 1) {
+    throw new Error(`check vacío: ${cierres} cierres, ${intermedios} intermedios, ${conEvento} eventos del banco`);
+  }
+});
+
 // --- K4c (paso 3b): las metas del bloque B (el ritmo), como checks duros (PLAN.md K4c, "Las metas de §K.3c, fijadas en lo medido") ---
 //
 // Hasta K4c eran la PROPUESTA de §K.3c (≤ 80 interrupciones por carrera, ≤ 2 por split y ≤ 4 en playoffs/internacional, minijuegos
@@ -22968,7 +22867,8 @@ check('K4c (revisión) guardado VERSION 10 parado en la prueba del mercado o en 
       pruebas += 1;
     }
   }
-  if (cierres < 3 || pruebas < 1) throw new Error(`check vacío: ${cierres} cierres pro y ${pruebas} pruebas del mercado`);
+  // D156 (Ola I): el mercado ya no tiene pruebas de ingreso, así que no hay una pausa del mercado donde pararse: solo cuentan los cierres.
+  if (cierres < 3) throw new Error(`check vacío: ${cierres} cierres pro`);
 });
 
 check('K4c guardado VERSION 11: un guardado de la 10 parado en la pausa de la práctica (que ya no existe) se reemplaza por un botón y sigue igual que un split sin pausa', () => {
@@ -24875,6 +24775,36 @@ check('H2a el mazo no repite: ninguna carta rara o más se ve dos veces en una c
   const sinCarta = (anios - cierres) / anios;
   if (sinCarta > MAXIMO_DE_ANIOS_SIN_CARTA) {
     throw new Error(`${anios - cierres} de ${anios} años quedan sin mano de cierre (${(sinCarta * 100).toFixed(1)}%, máximo ${MAXIMO_DE_ANIOS_SIN_CARTA * 100}%)`);
+  }
+});
+
+// D162 (Ola I): `repartirMano` daba por vistas las 3 cartas de cada reparto, así que las raras de "Otra mano" no volvían en toda la
+// carrera. Ahora solo cuenta como usada la carta elegida, y una carta cuyo stat principal ya está topado ("+0") no se ofrece.
+const { repartirMano: repartirD162, resolver: resolverCierreD162, decisionDeCierre: decisionD162, seguroDeCarta: seguroD162 } = await import('../systems/edadCierre.js');
+check('D162 la mano: repartir no gasta cartas, solo la elegida cuenta como usada, y ninguna carta ofrecida dice "+0" mientras haya otra que sume', () => {
+  const max = BALANCE.stats.max;
+  for (let seed = 1; seed <= 40; seed += 1) {
+    const rng = mulberry32(seed);
+    const base = createInitialState(seed, rng);
+    const antes = base.flags.cartas.vistas;
+    const { state: conMano, evento } = repartirD162(base, rng);
+    if (JSON.stringify(conMano.flags.cartas.vistas) !== JSON.stringify(antes)) {
+      throw new Error(`seed ${seed}: repartir la mano gastó cartas (${JSON.stringify(conMano.flags.cartas.vistas)})`);
+    }
+    const elegida = evento.options[seed % evento.options.length].id;
+    const res = resolverCierreD162(conMano, decisionD162(conMano, evento, 'mano'), { opcionId: elegida }, rng);
+    const cambiadas = Object.keys(res.state.flags.cartas.vistas).filter((id) => res.state.flags.cartas.vistas[id] !== (antes[id] ?? 0));
+    if (cambiadas.length !== 1 || cambiadas[0] !== elegida) {
+      throw new Error(`seed ${seed}: elegir ${elegida} anotó ${JSON.stringify(cambiadas)}`);
+    }
+    // Con dos stats topados, ninguna carta de la mano trae un seguro de 0.
+    const [a, b] = BALANCE.carta.stats;
+    const topado = { ...base, player: { ...base.player, stats: { ...base.player.stats, [a]: max, [b]: max } } };
+    for (const opcion of repartirD162(topado, mulberry32(seed)).evento.options) {
+      if ((seguroD162(topado, opcion)?.valor ?? 1) <= 0) {
+        throw new Error(`seed ${seed}: la mano ofrece "${opcion.label}" con ${opcion.carta} topado (+0)`);
+      }
+    }
   }
 });
 
@@ -27811,6 +27741,36 @@ check('K6c la vara: la oferta, la previa de la prueba y la pantalla muestran la 
   }
   if (!/laPrueba\.falta/.test(app) || !/laPrueba\.vara/.test(app)) problemas.push('la pantalla no dice la vara y por cuánto no llegaste');
   if (problemas.length > 0) throw new Error(`${problemas.length} problema(s): ${problemas.slice(0, 4).join(' | ')}`);
+});
+
+// D155 (Ola I): la instrucción de La Prueba mostraba siempre "9 de 14" (`varaEfectivaDe(datos) ?? 0.6`, y la prueba de ingreso no
+// trae `g1`). Ahora pide `golpesQuePasan(datos.vara)`: los golpes que de verdad pasan con la cuenta del motor
+// (`veredictoDeLaPrueba`). Y el pedido del usuario, "un 15% más de balas": sin munición, dispara 15% más rápido.
+const pruebaD155 = await import('../ui/arcade/prueba.js');
+const { veredictoDeLaPrueba: veredictoD155 } = await import('../core/serie.js');
+const { PASO_FIJO: pasoD155 } = await import('../ui/arcade/reloj.js');
+check('D155 la prueba pide lo que dice la vara real (el mismo número que exige el motor, para toda vara) y dispara 15% más rápido', () => {
+  const total = pruebaD155.BLANCOS;
+  for (let vara = 0; vara <= BALANCE.stats.max; vara += 1) {
+    const n = pruebaD155.golpesQuePasan(vara);
+    if (!veredictoD155(n / total, vara).pasa) throw new Error(`vara ${vara}: pide ${n} golpes y el motor no los pasa`);
+    if (n > 0 && veredictoD155((n - 1) / total, vara).pasa) throw new Error(`vara ${vara}: pide ${n} golpes y con ${n - 1} el motor ya pasa`);
+  }
+  if (pruebaD155.golpesQuePasan(36) !== 5 || pruebaD155.golpesQuePasan(0) !== 0 || pruebaD155.golpesQuePasan(100) !== total) {
+    throw new Error('golpesQuePasan: 36% debe pedir 5 de 14, 0% ninguno y 100% todos');
+  }
+  const e = pruebaD155.crear({ stat: 50, dificultad: 1, vida: 1 }, mulberry32(1));
+  pruebaD155.avanzar(e, { tiro: { x: 100, y: 45 } });
+  let pasos = 0;
+  while (e.disparos < 2 && pasos < 600) {
+    pasos += 1;
+    pruebaD155.avanzar(e, { tiro: { x: 100, y: 45 } });
+  }
+  const recarga = BALANCE.g1.arcade.la_prueba.recargaS;
+  const esperada = recarga / (1 + BALANCE.g1.arcade.la_prueba.cadenciaExtra);
+  if (e.disparos < 2 || pasos * pasoD155 >= recarga || Math.abs(pasos * pasoD155 - esperada) > 2 * pasoD155) {
+    throw new Error(`el segundo tiro salió a los ${(pasos * pasoD155).toFixed(3)} s: esperaba ~${esperada.toFixed(3)} (recarga ${recarga} / 1,15)`);
+  }
 });
 
 check(`K6c el mismo club no vuelve a ofrecer en la misma ventana (el año del plan): ninguna oferta repetida en ${SEEDS_K6C} carreras que aceptan todo y fallan toda prueba`, () => {

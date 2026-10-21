@@ -1597,6 +1597,9 @@ export const BALANCE = {
     // gatillar (`probBanquilloPorBrecha`).
     umbralBanquillo: 16,
     probBanquilloPorBrecha: 0.55,
+    // D154: el banquillo se levanta al cierre del año si rendiste: campeón, o en la mitad de arriba de la tabla
+    // (posición <= ceil(equipos * esta fracción)). Si no, la pretemporada te cede igual.
+    banquilloSeLevantaFraccionTabla: 0.5,
     // Al sentarte: la jerarquía se derrumba a esta fracción, el arraigo cae a
     // esta otra, y la pretemporada te cede a la liga de desarrollo de tu región.
     banquilloJerarquiaFactor: 0.4,
@@ -2666,6 +2669,9 @@ export const BALANCE = {
         radioTiro: 1.3,
         radioDummy: 3.1,
         recargaS: 0.6,
+        // D155 (pedido del usuario): "un 15% más de balas en este tryout". No hay munición que contar (el skillshot solo espera la
+        // recarga), así que el 15% es de cadencia: dispara 15% más rápido (la recarga se divide por 1 + esto).
+        cadenciaExtra: 0.15,
         reaparecerS: 0.35,
         separacion: 14,
         vidaS: [0.7, 1.35],

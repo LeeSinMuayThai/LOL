@@ -13,7 +13,7 @@
 //     negociación (pedir más, pedir cláusula); abajo, el representante y no firmar. FIRMAR es el BLOQUEAR del inicio.
 //   - LA FIRMA AL FRENTE (`narrar`, con la respuesta del motor; PLANUI §0.6 punto 1): el papel de arriba de la pila se
 //     despega y viaja al centro, grande, sobre un velo; tu firma se traza en tu línea y cae el sello al pie (Firmado,
-//     Renovado o, si la org pide una prueba, A prueba). Si firmaste con un club nuevo, la escena sigue en el fichaje
+//     Renovado; desde tier 2 no hay pruebas, D156). Si firmaste con un club nuevo, la escena sigue en el fichaje
 //     (`components/fichaje.js`): el mapa cae encima del papel, tu línea cae, y el mapa viaja y se vuelve el escudo del
 //     walkout. Si no, el papel vuelve a la pila sellado y la hoja sellada queda en el panel. En rápido, la misma secuencia
 //     con la escala de la narración; Espacio salta al walkout; con movimiento reducido, cuadros fijos.
@@ -221,7 +221,7 @@ export function firmaDeLaPrueba(estado, org) {
 
 // ================================================================================================= la hoja del contrato
 // La hoja que se firma: la usan la firma del mercado y la firma suelta después de la prueba. `sello`: Firmado, Renovado
-// o A prueba; `sigue` y `texto`: la línea del resultado (adónde vas) y la del motor.
+//; `sigue` y `texto`: la línea del resultado (adónde vas) y la del motor.
 function hojaDeContrato({ org, liga, tono, handle, ventana, anio, anios, sueldo, tipo, clausula, traspaso = false, sello, sigue, texto }) {
   const firma = firmaTrazada(handle, 'ms-ct-firma');
   const onda = el('i', { class: 'ms-onda', 'aria-hidden': 'true' });
@@ -1109,7 +1109,7 @@ export function crearMercado(contenedor, decision, { estado, mundo = null, sonid
     const o = ofertas[i];
     const x = norm[i];
     const tono = tonos[i];
-    const sello = f ? (f.renovacion ? 'Renovado' : 'Firmado') : 'A prueba';
+    const sello = f?.renovacion ? 'Renovado' : 'Firmado';
     const conFichaje = Boolean(f && !f.renovacion);
     raiz.classList.add('ms-firmando');
     panel.style.setProperty('--ms-cierre', `${cierre.offsetHeight}px`);

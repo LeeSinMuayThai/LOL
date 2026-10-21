@@ -1,5 +1,5 @@
 // Los sprites del arcade (H3k): LoL dibujado por código, sin un solo archivo de arte. El Barón (y sus primos: el dragón y
-// Atakhan, la misma bestia con otro color y otro tamaño), los campeones como fichas con el retrato adentro, los minions,
+// el Heraldo, la misma bestia con otro color y otro tamaño), los campeones como fichas con el retrato adentro, los minions,
 // el rayo del smite y los skillshots telegrafiados (línea, círculo, cono) como los pinta el cliente. Todo en unidades del
 // mundo de la mecánica; los colores llegan de la paleta (`kit.js`, de los tokens).
 

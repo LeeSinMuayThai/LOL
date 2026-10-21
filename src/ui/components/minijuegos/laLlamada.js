@@ -7,7 +7,7 @@ import { campeon } from '../../arcade/sprites.js';
 import { ding, golpe as sonidoGolpe, derrota, tick, flash as sonidoFlash } from '../../sonido.js';
 
 // La Llamada (rehecha en M4, ola H entrega 2). Antes era un botón "¡Ahora!" que se prendía a los 2 segundos. Ahora sos el que
-// canta la jugada: el mapa con sus relojes (dragón, Barón, Atakhan, torre), el jungla rival visto en alguno y el Flash del
+// canta la jugada: el mapa con sus relojes (dragón, Barón, Heraldo, torre), el jungla rival visto en alguno y el Flash del
 // rival gastado o no. Se abre el objetivo que sale libre y lo cantás (1-4 o un clic) antes de que se cierre la ventana. Tres
 // situaciones: más información, señuelos, más rápido. La lógica vive en `ui/arcade/llamada.js` (pura).
 //
@@ -27,7 +27,7 @@ const MAPA = { x: 6, y: 13, lado: 66 };
 const OBJ = [
   { nombre: 'DRAGÓN', x: 49, y: 54, color: 'dragon' },
   { nombre: 'BARÓN', x: 21, y: 31, color: 'baron' },
-  { nombre: 'ATAKHAN', x: 51, y: 28, color: 'atakhan' },
+  { nombre: 'HERALDO', x: 51, y: 28, color: 'heraldo' },
   { nombre: 'TORRE', x: 36, y: 42, color: 'aliado' }
 ];
 const ALIADOS = [[12, 66], [17, 69], [22, 64], [10, 60], [26, 70]];

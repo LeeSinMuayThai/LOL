@@ -14,6 +14,14 @@ const A = BALANCE.g1.arcade.la_prueba;
 export const BLANCOS = A.blancos;
 export const FASES = A.fases.length;
 
+// D155: cuántos golpes de `BLANCOS` pasan una vara en puntos de porcentaje enteros, con la cuenta del motor
+// (`core/serie.js:veredictoDeLaPrueba`: `round(golpes / blancos × 100) >= vara`). La instrucción de la pantalla pide ESTE número.
+export function golpesQuePasan(vara) {
+  let n = 0;
+  while (n < BLANCOS && Math.round((n / BLANCOS) * BALANCE.stats.max) < vara) n += 1;
+  return n;
+}
+
 const entre = (rng, [a, b]) => a + (b - a) * rng();
 const limitar = (x, a, b) => Math.max(a, Math.min(b, x));
 
@@ -60,7 +68,7 @@ export function avanzar(e, entrada = null) {
     const dy = entrada.tiro.y - A.yo.y;
     const d = Math.hypot(dx, dy) || 1;
     e.tiros.push({ x: A.yo.x, y: A.yo.y, vx: (dx / d) * A.velTiro, vy: (dy / d) * A.velTiro, resta: d, dest: { x: entrada.tiro.x, y: entrada.tiro.y } });
-    e.recarga = A.recargaS;
+    e.recarga = A.recargaS / (1 + A.cadenciaExtra);
     e.disparos += 1;
     e.eventos.push({ tipo: 'tiro', x: entrada.tiro.x, y: entrada.tiro.y });
   }

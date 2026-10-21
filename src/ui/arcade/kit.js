@@ -22,7 +22,7 @@ const TOKENS = {
   fondo: '--bg-void', superficie: '--bg-surface', elevado: '--bg-raised', hundido: '--bg-sunken',
   tinta: '--ink', tenue: '--ink-dim', mudo: '--ink-mute',
   aliado: '--luz-escenario', rival: '--danger', oro: '--gold', bien: '--up', aviso: '--warn',
-  baron: '--rank-master', dragon: '--luz-leyenda', atakhan: '--contra-leyenda', rio: '--luz-academia', blanco: '--luz-blanca'
+  baron: '--rank-master', dragon: '--luz-leyenda', heraldo: '--contra-leyenda', rio: '--luz-academia', blanco: '--luz-blanca'
 };
 const BLANCO_DE_RESPALDO = { r: 255, g: 255, b: 255 };
 

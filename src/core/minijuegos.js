@@ -163,20 +163,12 @@ export function lecturaDeVentana(entrada, state) {
   return { stat: entrada.statRelevante, valor, frase };
 }
 
-// K4-C: la prueba en cada salto grande — el primer fichaje en tier 2, el primero en tier 1 y el primero como
-// import (PLAN.md K4: "la prueba, en cada salto grande"). Devuelve las claves de salto que este fichaje estrena
-// (`[]` si no estrena ninguno); `flags.saltosConPrueba` guarda las que ya tuvieron su prueba. Puro, sin `rng`.
-export function saltosDeFichaje(state, oferta) {
-  if (!oferta || oferta.tag === 'renovacion') {
-    return [];
-  }
-  const hechos = state.flags.saltosConPrueba ?? [];
-  const claves = [];
-  // Tier 2 no es salto si ya jugaste en tier 1 (bajar y volver a subir no es estrenar nada).
-  if (oferta.tier === 2 && !hechos.includes('tier1')) claves.push('tier2');
-  if (oferta.tier === 1) claves.push('tier1');
-  if (oferta.datos?.tipo === 'import') claves.push('import');
-  return claves.filter((clave) => !hechos.includes(clave));
+// D156 (Ola I): desde tier 2 no hay más pruebas de ingreso, "eso no existe en el LoL" (el usuario, 2026-10-21). Los saltos
+// a tier 2, a tier 1 y a un import firman directo. La única prueba que queda es la de la entrada al circuito, la del
+// amateur (`systems/amateur.js`, la anterior a tier 2). Antes (K4-C) devolvía las claves de salto que el fichaje estrenaba;
+// el mercado sigue preguntando (`mercado.js`) y ahora siempre recibe `[]`. Puro, sin `rng`.
+export function saltosDeFichaje(_state, _oferta) {
+  return [];
 }
 
 // --- G1 (PLANUI §0.9, "Las finales se juegan con las manos") ---

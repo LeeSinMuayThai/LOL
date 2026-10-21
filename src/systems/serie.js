@@ -670,6 +670,8 @@ function aplicarTitulo(state, liga, rng) {
 
   return {
     ...state,
+    // D154: salir campeón levanta el banco (`rendimiento.js` lo marcó antes, tras un split flojo).
+    flags: { ...state.flags, banquilloPendiente: false },
     player: {
       ...state.player,
       stats: {

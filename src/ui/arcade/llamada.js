@@ -2,7 +2,7 @@
 // `avanzar`) y `simular`, en Node (`dev/arcade-humano.js`). Las constantes, en `BALANCE.g1.arcade.la_llamada`.
 //
 // Sos el que canta la jugada. Tres situaciones (fases). Cada una arma un mapa con cuatro objetivos y sus relojes (dragón,
-// Barón, Atakhan, torre), el jungla rival visto en alguno y el Flash del rival gastado o no. Se abre el que sale libre: el
+// Barón, Heraldo, torre), el jungla rival visto en alguno y el Flash del rival gastado o no. Se abre el que sale libre: el
 // reloj en cero y sin el jungla rival encima (salvo que su Flash esté gastado). Cantás el objetivo (1-4 o un clic) antes de
 // que se cierre la ventana. La fase 1 trae más información (marcas de más que no cuentan), la 2 señuelos (otro objetivo se
 // abre, pero con el jungla y el Flash arriba) y la 3 es más rápida. La regla es de LATENCIA (contrato de G1): el resultado es
