@@ -1537,8 +1537,8 @@ skillshots aunque sea difícil, y `la_pizarra` ("este de armar").
 | D158 | "Te muestran dos veces que ganaste el mapa" | El sello PASÓ queda 2,3 s (`paradas/minijuego.js:357-364`). Después `narrarElDecisivo` monta la transmisión con otro suspenso y VICTORIA, y dice "tenías {p}%" (`components/caraACara.js:565-586`), una probabilidad que ya no decide nada. Pasa en cada mapa con minijuego (`systems/serie.js:216`) |
 | D159 | "Siempre jugando a Aurelion Sol" | El retrato del minijuego es tu main (`retratoDe` → `mainDe`, `ui/core/mundo.js:20-27`). En Fearless ignora `datos.campeonElegido`. Las fechas de temporada usan el campeón del split (D103) |
 | D160 | "No te dice si es split 1, 2 o 3" | El rótulo es "<liga> <año>" (`components/transmisionComun.js:127-130`). El split está en `splitCount % splitsPorEdad` |
-| D161 | "El rango queda full tapado" | La ficha fija no encoge a ≥ 1600 px y recorta en seco lo de la derecha ("GANAD…", `estilos/hud.css:139-160`). El soloQ solo se ve en el amateur (`ui/franja.js:76-82`, `ui/core/escena.js:114-127`). **A confirmar** qué es "el rango" |
-| D162 | "La mano del año […] está re bugueada" | `repartirMano` (`systems/edadCierre.js:119-133`) da por vistas las 3 cartas de cada reparto: las raras de "Otra mano" no vuelven en toda la carrera. Con el stat topado, la carta dice "+0" (`:210`). Frena todos los años, también en la cola. **A confirmar** qué vio el usuario |
+| D161 | "El rango queda full tapado" | La ficha fija no encoge a ≥ 1600 px y recorta en seco lo de la derecha ("GANAD…", `estilos/hud.css:139-160`). El soloQ solo se ve en el amateur (`ui/franja.js:76-82`, `ui/core/escena.js:114-127`). **Confirmado:** "el rango" es ese soloQ del amateur; se muestra, "pero está muy escondido" |
+| D162 | "La mano del año […] está re bugueada" | `repartirMano` (`systems/edadCierre.js:119-133`) da por vistas las 3 cartas de cada reparto: las raras de "Otra mano" no vuelven en toda la carrera. Con el stat topado, la carta dice "+0" (`:210`). Frena todos los años, también en la cola. **Lo que vio el usuario:** la mano "primero como que aparece tapado y después se muestra todo" |
 | D163 | "Cabeza de piso. ¿Qué carajo es de piso?" | `components/decision/cartas.js:229`: `${nombre} ${valor > 0 ? 'seguro' : 'de piso'}`. El peor caso de una opción sale como "−2 Cabeza de piso" |
 | D164 | "Sigue la ventana esa con una banda de texto […] Que dije que la saquemos" | No es la de §0.6 (esa se escondió): es la tarjeta "Lo que pasó" (`components/decision/cartas.js:698-789`). En rápido se sostiene 1,4 s ((340 + 300 + 160 + 3200) × 0,35), pero sus animaciones no se escalan: tarda ~1,06 s en abrirse y el odómetro arranca a los 1,2 s. Queda menos de 0,4 s legible. A 1×, la captura a los 3 s muestra la respuesta encimada con el relato del split. **Lo pedido el 2026-10-14 no se cumplió** |
 | D165 | "Atakhan no existe más" | Está en `la_llamada`, `robar_baron`, `arcade/sprites.js:2` y `arcade/kit.js:25` |
@@ -1606,8 +1606,8 @@ Cada una trajo su recuadro y su texto, y no se sacó nada. Así quedó:
   sin suspenso ni "tenías X%".
 - **El retrato** (D159) es el campeón de ese mapa.
 - **El rótulo** (D160): "LCS · SPLIT 2 · PLAYOFFS".
-- **La ficha** (D161) no recorta a ningún ancho.
-- **La mano** (D162): "Otra mano" no quema cartas, y fuera el "+0".
+- **La ficha** (D161) no recorta a ningún ancho, y en el amateur el rango de soloQ es lo primero que se ve.
+- **La mano** (D162) aparece de una, sin el paso tapado. "Otra mano" no quema cartas, y fuera el "+0".
 - **Atakhan** (D165) sale de los minijuegos: quedan los objetivos que existen hoy (la lista la confirma el usuario).
 - **"De piso"** (D163) sale.
 - **La banda** (D164) se saca: la consecuencia va a la ficha (los números ruedan ahí, ▲▼, como en El Ídolo) y una
@@ -1687,6 +1687,8 @@ Unos 12-14 workers, ~2,5-3M tokens en total.
 | **El sonido** (D176) | Sonidos del LoL, con la política de Riot para proyectos de fans (la misma del arte). Si algún día se cobra, salen |
 | **Las cartas** (D166) | *"algunas te tienen que dar una de cal y sacar una de arena tambien, pero la 1"*: la rareza da más número **y** más costo, y además algunas cartas dan algo y sacan otra cosa |
 | **La cara** (I4) | Vitrina primero, en paralelo con la entrega 1 |
+| **"El rango"** (D161) | *"El rango de solo que un amateur es lo que no se muestra […] Me refiero a que se muestra, pero está muy escondido."* Es el rango de soloQ en el amateur: está en pantalla, pero no se encuentra. En el amateur es el número que importa, y tiene que verse primero |
+| **La mano del año** (D162) | *"primero como que aparece tapado y después se muestra todo"*: la mano aparece tapada y después se destapa entera de golpe. Ese paso es lo que se ve roto |
 
 **Cómo se lee la serie.** El "a partir de cuartos se juegan todos" de §0.10 se implementó como **todos los mapas** con
 minijuego (`mapaConMinijuego`, `systems/serie.js:219`). El usuario quería decir **todas las series**, cada una con un
@@ -1698,9 +1700,6 @@ minijuego. Ahora queda así:
 - **Entre series**, la mecánica cambia.
 - **El marcador** sale del margen sobre la vara: holgado 3-0, justo 3-2. Es una propuesta del supervisor.
 - **Después del minijuego**, la serie se cuenta mapa por mapa como resumen, sin suspenso (D158).
-
-**Siguen sin respuesta:** qué es "el rango" que queda tapado (D161) y qué se ve roto en la mano del año (D162). No
-frenan nada.
 
 **Las deudas nuevas** (D154-D177) están en la tabla del final de este documento.
 
@@ -3281,8 +3280,8 @@ Son del **motor**. Van a la etapa "arreglar el juego" que pidió el usuario (§0
 | D158 | **"Ganaste" dos veces:** el sello PASÓ (`paradas/minijuego.js:357-364`) y después la transmisión con otro suspenso, VICTORIA y "tenías {p}%" (`caraACara.js:565-586`), en cada mapa con minijuego (§0.11, I1) | ⬜ |
 | D159 | **El retrato del minijuego es siempre tu main:** `retratoDe` → `mainDe` (`ui/core/mundo.js:20-27`) ignora `datos.campeonElegido` en Fearless (§0.11, I1) | ⬜ |
 | D160 | **El rótulo de la serie no dice el split:** "<liga> <año>" (`components/transmisionComun.js:127-130`) (§0.11, I1) | ⬜ |
-| D161 | **La ficha fija recorta a ≥ 1600 px** (`estilos/hud.css:139-160`: sin shrink, sin wrap, sin ellipsis). A confirmar qué es "el rango" que el usuario ve tapado; el soloQ solo se ve en el amateur (§0.11, I1) | ⬜ |
-| D162 | **"Otra mano" quema raras de toda la carrera** (`systems/edadCierre.js:119-133`) y la carta topada dice "+0" (`:210`). A confirmar qué vio roto el usuario (§0.11, I1) | ⬜ |
+| D161 | **La ficha fija recorta a ≥ 1600 px** (`estilos/hud.css:139-160`: sin shrink, sin wrap, sin ellipsis). Además, en el amateur el rango de soloQ se muestra pero "está muy escondido": tiene que ser lo primero que se ve (§0.11, I1) | ⬜ |
+| D162 | **"Otra mano" quema raras de toda la carrera** (`systems/edadCierre.js:119-133`) y la carta topada dice "+0" (`:210`). Lo que vio el usuario: la mano aparece tapada y después se destapa entera de golpe; tiene que aparecer de una (§0.11, I1) | ⬜ |
 | D163 | **"Cabeza de piso":** `components/decision/cartas.js:229` rotula el peor caso como "de piso" (§0.11, I1) | ⬜ |
 | D164 | **La banda de §0.6 sigue, con otro elemento:** la tarjeta "Lo que pasó" (`cartas.js:698-789`) se sostiene 1,4 s en rápido con animaciones sin escalar: < 0,4 s legible (§0.11, I1) | ⬜ |
 | D165 | **Atakhan en los minijuegos** (`la_llamada`, `robar_baron`, `arcade/sprites.js:2`, `arcade/kit.js:25`). El usuario: "no existe más" (§0.11, I1) | ⬜ |
