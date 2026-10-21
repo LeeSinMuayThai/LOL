@@ -34,6 +34,38 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-21 — Ola I, el diagnóstico: "que tenga sentido" (el usuario jugó la ola H)
+
+PLANUI §0.11. Solo documentos; no se tocó código.
+- **Lo que pasó:** el usuario jugó una carrera de tier 3 a campeón de la LCS y el Swiss. La encontró aburrida, incoherente,
+  con mucho texto y con la UI "full HTML", y dijo que no se siente como El Ídolo.
+- **Cómo se midió:** tres scouts de solo lectura (Sonnet, ~375K, con tope) verificaron cada queja en el código, y hubo
+  capturas de `/previa` en Chromium con GPU.
+- **Lo verificado:**
+  - **Bugs y regresiones:**
+    - la academia después de salir campeón (`banquilloPendiente` sin revisar);
+    - la prueba que pide "9 de 14" fijo;
+    - el tablero del Swiss que la tanda de H3e dejó de mostrar;
+    - "ganaste" dos veces, con un suspenso falso;
+    - el retrato siempre del main;
+    - el rótulo sin split;
+    - la ficha que recorta;
+    - "Otra mano" que quema raras;
+    - "Cabeza de piso";
+    - la tarjeta de resultado legible menos de 0,4 s (la banda de §0.6, con otro elemento).
+  - **Diseño:**
+    - la rareza de las cartas es poder gratis: 8 de 240 cartas con costo, y 13-17% de manos con una carta dominada;
+    - la opción muestra su peor caso;
+    - la charla domina a guardarla;
+    - 355 palabras en la decisión y 247 en la previa del minijuego;
+    - `rotacionMax` 5 es el largo de un Bo5;
+    - solo existe el Mundial, y clasifica por la tabla regular.
+- **El plan:** cinco piezas (I1 lo roto, I2 elegir es cambiar algo por algo, I3 el minijuego como en El Ídolo, I4 una
+  sola cara con vitrina, I5 el calendario real) en cuatro entregas más la vitrina.
+- **Deudas:** D154-D177. La decisión del usuario sobre las pruebas va a la fila de minijuegos de las decisiones de
+  `PLAN.md`.
+- **Pendiente:** las cinco preguntas al usuario (§0.11).
+
 ### 2026-10-16 — Ola H, entrega 3: lo raro, el mazo de 240 cartas y el álbum (H5, H2c, H6)
 
 PLANUI §0.10. Cuatro workers Sonnet (~755K tokens): tres escritores de lo raro por tema (h5a, h5b, h5c) y uno de cartas, álbum y

@@ -44,6 +44,7 @@
 | **F · ola F** | Lolero jugado seis años (§0.8): el Mundial se juega y se ve (Swiss y bracket con "vos"), ningún año muerto, la consecuencia en el momento y el diario que titula lo que pasó, la carta que mueve un número que ves | ✅ 2026-10-14: el usuario eligió "los 4 juntos"; 2 workers Opus high + 2 Sonnet high + revisor Sonnet (0 bloqueantes, 2 para arreglar + 5 menores, arreglados); huella 433142448 ('F'), guardado VERSION 16; publicada. Falta que el usuario la juegue en RÁPIDO |
 | **G · ola G** | El Ídolo contra Lolero, jugados (§0.9): las finales con las manos y sin tirada, el perfil que no decide, siempre en un equipo, el mercado como dilema, el diario que no se repite y el final como ceremonia. Dos entregas | 🔶 2026-10-15: la auditoría (`AUDITORIA.md`) y el plan, aprobados; **las dos entregas publicadas**: la 1 (el control: G1, G2a, G3a, G3b) y la 2 (lo que se ve y el mundo: G2b, G2c, G3c, G4, más el Bo1 con las manos de D118) (PROGRESO 2026-10-15); falta que el usuario las juegue; G5 queda opcional |
 | **H · ola H** | "Cada carrera, distinta" (§0.10): el mazo de eventos (la forma de elegir y el cupo propio), el mazo de cartas con rareza (solo stats), el arcade (minijuegos de verdad; el Play-In y el Swiss por tandas), la voz corta, lo raro (~190 eventos) y el álbum. Tres entregas | ✅ 2026-10-16: **las tres entregas publicadas**. La 2 trae las 12 mecánicas en canvas (10 rehechas, una nueva: `el_gancho`), el Play-In y las tandas del Swiss, la vara dicha en la ficción, los 257 eventos en voz corta y la mano de cartas nueva. La 3, lo raro (229 eventos, 484 en total), el mazo de 240 cartas y el álbum: 17 raros o más y 2,3 legendarios por carrera, Jaccard 0,09. Queda que juegue el usuario y las deudas D146-D153 (PROGRESO 2026-10-16) |
+| **I · ola I** | "Que tenga sentido" (§0.11): el usuario jugó H (2026-10-21) y la encontró aburrida, incoherente, con mucho texto y la UI "full HTML". Lo roto (I1), elegir es cambiar algo por algo (I2), el minijuego como en El Ídolo (I3), una sola cara con vitrina (I4) y el calendario real (I5) | 🔶 2026-10-21: diagnóstico medido (tres scouts + capturas) y plan escrito; esperando las respuestas del usuario (§0.11, "Preguntas") |
 | **U3** | El resto de los momentos (banners, ceremonias, primer contrato) + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
@@ -1456,6 +1457,238 @@ Las reglas de los workers:
 - **El Play-In y las tandas son motor nuevo.** El bot por partido mantiene las bandas.
 
 **Las deudas nuevas** (D136-D142) están en la tabla del final de este documento.
+
+### 0.11 I · "Que tenga sentido": lo roto, elegir de verdad y el minijuego como en El Ídolo (2026-10-21, el usuario textual + tres scouts + capturas)
+
+#### Lo que dijo el usuario
+
+El usuario jugó la ola H (master `ba23604`, lolero.lol) una carrera de tier 3 a campeón de la LCS y el Swiss del
+Mundial, y dijo (2026-10-21, textual, dictado; con una captura de la previa del mapa decisivo "Dodge en la LCS", la
+del cuarto mapa de cuartos, SEN 1-2 CK):
+
+> "Ok, voy a ser el primero que jugar para que ya tengas una idea. Primero sigue la ventana esa con una banda de texto
+> después de tomar una decisión que te muestra todos los cambios por un segundo que no se puede ni leer. Que dije que
+> la saquemos, pero bueno. Después de eso, hay mucho texto, todo tiene 1000 descripciones. Habría que reducir esto un
+> poquito. Okay. Una cosa que noto es que no existe la rareza de las cartas y que no hay una carta. Las cartas siempre
+> son una mejor que otra. O sea, no hay algo que vos digas, estoy tradeando algo por algo. Después, esta parte de
+> elegir las cosas, donde elegís las decisiones y eso, es muy básica, muy HTML, la UI, nada especial como queríamos.
+> El rango queda full tapado. La mayoría de la gente no lo va a llegar ni a ver. El minijuego este está más o menos,
+> o sea, está bien este de que te vienen las teclas hacia vos. Creo que está bien. Dentro de todo. Campeones, ok.
+> Mirá. Por ejemplo, por darte un ejemplo, DM del booster. Un desconocido te escribe por DM y no sé si lo rechazás o
+> qué. Cuestión. Dice denunciarlo o ignorarlo. Y uno te baja menos 2 de cabeza y el otro menos 3 de cabeza. Obvio que
+> siempre vas a elegir el de menos 2. ¿Me entendés? O sea. Y me dio más 2 de cabeza. No sé por qué. Es medio difícil
+> el minijuego este de disparar las cosas con el campeón, pero bueno, siento que está bueno que sea difícil. Solo que
+> todo está muy básico, la UI. El fondo, todo eso se hizo muy bien, pero después todo lo otro es como full HTML
+> simple, ¿me entendés? O sea, así simple, un borde con letras de colores, ¿me explico? Nada avanzado, nada, es full
+> simple todo lo otro. Y como que no tiene una consistencia entre sí tampoco. Después, o sea, los equipos como que no
+> sé, siento que no hay, no se juega el, a ver si puedo subir a tier 2 para ver cómo es al menos. Ok, ventana de
+> pases. Y a partir de tier 2 no tiene que haber más tryouts de ingreso. Eso no existe en el LoL. Lo que al menos
+> deberías poner es tipo que, bueno, no está, que se dispare un poquito más rápido. Tipo que puedes disparar un
+> poquito más de balas. Un 15% más de balas en este tryout de pegarle a los blancos. Lo que sí te muestra firmado,
+> después te hacen un tryout, eso no tiene sentido. Por eso después de tier 3 hay que sacar los tryouts. Cabeza de
+> piso. ¿Qué carajo es de piso en la cabeza? No tiene sentido. Algunas cosas están muy alucinadas. ¿Me entendés?
+> Esto, por ejemplo, es la captura 1 que te estoy por mostrar. Es lo más, la captura 1, la imagen 1, es lo más pésimo
+> que jamás vi en mi vida. Primero todo choto y después no se entiende nada. ¿Me entendés?"
+>
+> "O sea, ahora después de jugarlo entiendo, pero ¿qué es lo que era? Pero antes no se entendía un carajo qué mierda
+> estaba por pasar. ¿Me explico? Y en el minijuego ni te das cuenta que tenía flash. Ahora sigo con lo del Dodge en
+> la LSS. Ya lo jugué por tercera vez, boludo. O sea, tres veces seguidas voy a jugarlo. Se supone que era un
+> minijuego con el que podés pasar varias cosas. No pasar varias cosas con el mismo minijuego, pero bueno. Me parece
+> que no me entendés nunca. Y mirá que lo vengo haciendo hace meses este proyecto. Ahora lo voy a jugar por cuarta
+> vez seguida. En vez de tener los puntos arriba de esquivado o no esquivado, deberías tener una barra de vida para
+> cuando te pega un skill shot. ¿Me explico? Y que vaya bajando. Ahora lo vuelvo a jugar por quinta vez seguida. Y
+> siempre jugando a Aurelion Sol. Tampoco tiene sentido. A ver, la final. Pues hay uno que tiene más chance y otro que
+> tiene menos chance. Siempre la gente va a elegir el que tiene más chance. No se entiende cómo jugar este juego que
+> te sale el mapa y eso. No, no se entiende, la verdad. Pero no se entiende un carajo cómo se juega ese minijuego.
+> Creo que está bugueadísimo y el atakhan no existe más. No sé por qué está en el minijuego."
+>
+> "No sé qué carajo viste en el potrero porque me parece que no viste nada. O sea, se supone que... que tenías que ver
+> cómo era el gameplay y no se siente para nada como el gameplay del potrero. Los sonidos son una mierda. Siento que
+> deberíamos quizás poner alguno del LOL. Ahora, playoff de la LCS. Pero no te dice si es split 1, 2 o 3. Pero bueno.
+> Este de armar. Estaba bueno dentro de todo. El minijuego. Te muestran que ganaste el minijuego y después te hacen
+> la animación, lo que no tiene mucho sentido. O sea, como que te muestran dos veces que ganaste el mapa. Otra cosa,
+> yo perdí la final y no fui a ningún internacional y se supone que debería haber clasificado en el split anterior.
+> Vamos a ver ahora si gano la final. Bueno, gané la final 3-0. Vamos a ver qué pasa. Ok, gané la LCS, a ver. Swiss
+> del Mundial. Vamos a jugar. Ok, es minijuego, pero no te muestran, que vengo diciendo hace un montón, que te
+> muestren... cómo está el Swiss Stage y todo eso, tipo ver los otros equipos y todo eso, pero a ver, no sé. Parece
+> que yo digo una cosa y hacéis lo que querés. A ver, Katie Rolster, un equipo de la LCS contra Katie, debería ser más
+> difícil. Ok, me voy al 1-1. No sé si fue más difícil o yo no entendí el minijuego, pero no, siempre va a ser el
+> mismo minijuego, parece. Me voy al 1-2. No te deja pegarle dos hits a un minion. Sí o sí tenés que esperar a que
+> baje. A ver en el 2-2. El 2-2 siempre es mejor de 5. Vamos a ver. Perdí, pero maté más minion de los que tenía que
+> matar. No sé. Bueno. La mano del año siempre la terminás viendo. Está re bugueada. Campeones de la LCS. Bueno, todo.
+> Con esto ya sabes. De la nada me iba a Rasgo Academy. No sé por qué. De la nada me salió con Rasgo Academy. Pero ya
+> creo que con esto te das cuenta del estado del juego y la poca coherencia que tiene y lo aburrido que es. Y el poco
+> sentido que tiene y cómo está todo mezclado. Y lo aburrido que es, básicamente. Parece que en esa mirada del
+> gameplay de potrero no entendiste nada."
+
+Lo que **le gustó**: el fondo y el arte, los campeones, `el_combo` ("te vienen las teclas hacia vos"), la prueba de
+skillshots aunque sea difícil, y `la_pizarra` ("este de armar").
+
+#### Lo medido (tres scouts de solo lectura, ~375K, y capturas de `/previa` en Chromium con GPU)
+
+**Lo roto** (bugs y regresiones; el número de la izquierda es la deuda):
+
+| | Lo que dijo | Qué pasa |
+|---|---|---|
+| D154 | "De la nada me iba a [algo] Academy", campeón de la LCS | `flags.banquilloPendiente` (`systems/rendimiento.js:172-184`): un split malo (5.º o peor y nivel < equipo − 16) lo marca con 55%, y solo se limpia en la pretemporada (`systems/mercado.js:1580-1627`), sin mirar que después saliste campeón. `academiaDelBanquillo` te manda a la org de tier 2 **más débil** de tu región. Es un log, no una decisión |
+| D155 | La prueba de los blancos, "difícil" | El lienzo lee `varaEfectivaDe(datos) ?? 0.6` (`components/minijuegos/laPrueba.js:31`): sin `g1` siempre pide "9 de 14", y la vara real (`datos.vara`, 0-80) es otra. La instrucción miente |
+| D156 | "Te muestra firmado, después te hacen un tryout"; "a partir de tier 2 no tiene que haber más tryouts" | Es diseño (K4-C, "la prueba en cada salto"): el primer club de tier 2, el primer tier 1 y el primer import (`core/minijuegos.js:169-180`, `systems/mercado.js:2041-2048`). El papel se sella "A prueba" (`components/mercado.js:1112`). El usuario corrige el diseño |
+| D157 | "Vengo diciendo hace un montón que te muestren cómo está el Swiss" | **Regresión de H.** El tablero (`components/swiss.js`) lo monta solo `stream.js`, que quedó de respaldo; la tanda de H3e pasa por `paradas/minijuego.js`, que no lo importa (`:203`). Lo que F1 hizo visible, H3e lo escondió |
+| D158 | "Te muestran dos veces que ganaste el mapa" | El sello PASÓ queda 2,3 s (`paradas/minijuego.js:357-364`). Después `narrarElDecisivo` monta la transmisión con otro suspenso y VICTORIA, y dice "tenías {p}%" (`components/caraACara.js:565-586`), una probabilidad que ya no decide nada. Pasa en cada mapa con minijuego (`systems/serie.js:216`) |
+| D159 | "Siempre jugando a Aurelion Sol" | El retrato del minijuego es tu main (`retratoDe` → `mainDe`, `ui/core/mundo.js:20-27`). En Fearless ignora `datos.campeonElegido`. Las fechas de temporada usan el campeón del split (D103) |
+| D160 | "No te dice si es split 1, 2 o 3" | El rótulo es "<liga> <año>" (`components/transmisionComun.js:127-130`). El split está en `splitCount % splitsPorEdad` |
+| D161 | "El rango queda full tapado" | La ficha fija no encoge a ≥ 1600 px y recorta en seco lo de la derecha ("GANAD…", `estilos/hud.css:139-160`). El soloQ solo se ve en el amateur (`ui/franja.js:76-82`, `ui/core/escena.js:114-127`). **A confirmar** qué es "el rango" |
+| D162 | "La mano del año […] está re bugueada" | `repartirMano` (`systems/edadCierre.js:119-133`) da por vistas las 3 cartas de cada reparto: las raras de "Otra mano" no vuelven en toda la carrera. Con el stat topado, la carta dice "+0" (`:210`). Frena todos los años, también en la cola. **A confirmar** qué vio el usuario |
+| D163 | "Cabeza de piso. ¿Qué carajo es de piso?" | `components/decision/cartas.js:229`: `${nombre} ${valor > 0 ? 'seguro' : 'de piso'}`. El peor caso de una opción sale como "−2 Cabeza de piso" |
+| D164 | "Sigue la ventana esa con una banda de texto […] Que dije que la saquemos" | No es la de §0.6 (esa se escondió): es la tarjeta "Lo que pasó" (`components/decision/cartas.js:698-789`). En rápido se sostiene 1,4 s ((340 + 300 + 160 + 3200) × 0,35), pero sus animaciones no se escalan: tarda ~1,06 s en abrirse y el odómetro arranca a los 1,2 s. Queda menos de 0,4 s legible. A 1×, la captura a los 3 s muestra la respuesta encimada con el relato del split. **Lo pedido el 2026-10-14 no se cumplió** |
+| D165 | "Atakhan no existe más" | Está en `la_llamada`, `robar_baron`, `arcade/sprites.js:2` y `arcade/kit.js:25` |
+
+**Elegir sin elegir** (diseño):
+
+| | Lo que dijo | Qué pasa |
+|---|---|---|
+| D166 | "Las cartas siempre son una mejor que otra […] no hay algo que vos digas, estoy tradeando algo por algo" | La rareza se ve (marco y etiqueta; la común sin etiqueta), pero **ordena el poder**: suma mínima común 2, rara 4-5, épica 6-7, legendaria 8-9. Solo 8 de 240 cartas tienen costo, todas legendarias. En el 13-17% de las manos una carta domina a otra (40k manos por pozo). El Ídolo: "INVIERNO DE PESAS: +4 Gambeta −2 Velocidad" |
+| D167 | DM del booster: "uno te baja −2 de cabeza y el otro −3 […] Y me dio +2" | `oscuro_el_dm_del_booster` (`data/events/raros/oscuro.json:134-263`): las dos opciones suben cabeza el 60% de las veces; la carta muestra el **peor caso** (`systems/events.js:568-594`). El +2 fue el resultado bueno. Las dos mueven lo mismo, así que una parece dominada |
+| D168 | "Hay uno que tiene más chance y otro que tiene menos. Siempre la gente va a elegir el que tiene más chance" | La charla del coach: "con la charla: esquivá 5" contra "sin la charla: esquivá 6" (`paradas/minijuego.js:263-300`). El costo (es la única de la temporada) está en la pregunta, no en la opción. Igual en `systems/serie.js:127-128` e `internacional.js:255-256` |
+| D169 | "Hay mucho texto, todo tiene 1000 descripciones" | Palabras en pantalla (Playwright sobre `/previa`): la decisión 355, la previa del minijuego 247 en siete recuadros (la captura del usuario), el cierre de año 499. El Ídolo: evento de ~30 palabras, opciones de 4-6 |
+
+**El minijuego** (diseño):
+
+| | Lo que dijo | Qué pasa |
+|---|---|---|
+| D170 | Dodge cinco veces seguidas; "se supone que era un minijuego con el que podés pasar varias cosas" | La mecánica se elige una vez por torneo (`minijuegoDelTorneo`, `core/minijuegos.js:343-357`) y rota recién a las 5 seguidas (`rotacionMax: 5`, `balance.js:2802`): un Bo5 nunca rota. En la final juega todos los mapas (`systems/serie.js:219`), y cada uno arranca con su previa de siete recuadros |
+| D171 | "Barra de vida […] que vaya bajando"; "ni te das cuenta que tenía flash" | El HUD son 7 puntos. El Flash es un texto de 10 px arriba a la derecha (`components/minijuegos/dodge.js:105-127`). La regla cuenta oleadas, no vida |
+| D172 | "No se entiende cómo jugar este juego que te sale el mapa" | Lo más probable es `la_llamada`. La instrucción no define "libre", la regla real está en el pie chico (`laLlamada.js:49`) y la demo son 2 s de relojes quietos. D149 sigue abierta |
+| D173 | last_hit: "No te deja pegarle dos hits"; "perdí, pero maté más minion de los que tenía que matar" | Un golpe temprano te deja 2,1 s sin pegar (`arcade/lastHit.js:130-156`); en LoL autoatacás cuando querés. La cuenta del HUD y la del motor coinciden: lo más probable es que contaran los que se llevó la oleada o la torre, y el juego no lo deja claro |
+| D174 | "KT […] debería ser más difícil" | La fuerza del rival sí mueve la vara (`systems/internacional.js:118-123`), pero la previa no dice que es por el rival |
+| D175 | "El 2-2 siempre es mejor de 5" | Todo el Swiss es Bo1 en el motor (`balance.js:2259`). En el Worlds real, los cruces que clasifican o eliminan son Bo3 |
+| D176 | "Los sonidos son una mierda. […] poner alguno del LOL" | WebAudio sintetizado, sin archivos y apagado por defecto (`ui/sonido.js`). En el minijuego no suena la victoria |
+
+**El mundo:**
+
+| | Lo que dijo | Qué pasa |
+|---|---|---|
+| D177 (con D119) | "Perdí la final y no fui a ningún internacional y se supone que debería haber clasificado en el split anterior" | Solo existe el Mundial, y clasifica por el puesto de la **tabla regular** del split 3 (`systems/internacional.js:65-76`), no por playoffs. Lo real en 2026: First Stand (marzo, 8 equipos), MSI (junio-julio, 11) y Worlds (19) (`CONCEPTO.md` §12.3) |
+
+#### Por qué no se siente El Ídolo
+
+`AUDITORIA.md` §B anotó bien los principios:
+- el clímax se juega y el resultado es lo que hiciste (B.1);
+- cada elección mueve un número que ves en el acto (B.3);
+- pocos números por decisión (B.4);
+- el mundo es coherente (B.8).
+
+Las olas G y H los tradujeron **sumando** piezas: la vara, el poder, la charla, el desempate, la rareza y las tandas.
+Cada una trajo su recuadro y su texto, y no se sacó nada. Así quedó:
+
+| El Ídolo | Lolero hoy |
+|---|---|
+| La final: una línea y a jugar ("Tocá Frenar justo cuando esté sobre la zona verde. Con más Definición, la zona es más grande.") | Siete recuadros y 247 palabras antes de jugar |
+| Un torneo es un minijuego de corrido: la barra GRUPOS → … → FINAL en la misma pantalla, cada partido más difícil (zona 34% → 16%) | Cada mapa es una parada aparte con su previa: el mismo minijuego cinco veces, todas iguales |
+| El resultado es lo que hiciste, dicho una vez | PASÓ, y después una transmisión lo repite con un suspenso falso y "tenías X%" |
+| La carta: un número grande, a veces con costo | La rareza decide la mano; casi ninguna cuesta nada |
+| El final: 🎲 ARRIESGADO +10 contra 🧊 SEGURO +8 | "Con la charla: 5" contra "sin la charla: 6" |
+| La consecuencia, en la ficha y en el acto (▲) | Una tarjeta legible menos de medio segundo |
+| El mundo se acuerda (TRAICIÓN → el clásico es contra ese club) | Campeón y a la academia; firmado y después la prueba; "Cabeza de piso" |
+
+**La ola I resta.** No entra nada nuevo hasta que lo que hay tenga sentido.
+
+#### El plan: cinco piezas
+
+**I1 · Lo roto** (motor y pantalla; ya decidido, sin preguntas)
+- **El banquillo** (D154) se revisa al cierre de cada split: si después rendiste (campeón o mitad de arriba), se
+  borra. Si igual te bajan a la academia, es una parada con la razón dicha, no un log.
+- **La prueba de ingreso** (D155, D156), con la regla del usuario: desde tier 2 no hay pruebas, la firma es directa
+  (el salto a tier 2, el primer tier 1 y el primer import). La que quede antes (la entrada al circuito) pide lo que dice
+  la vara real y dispara un 15% más rápido.
+- **El tablero del Swiss** (D157) entre las rondas de la tanda: los cruces, los otros equipos y tu récord.
+- **Una sola vez "ganaste"** (D158): con minijuego, el sello es el resultado. La transmisión queda como placa de cierre,
+  sin suspenso ni "tenías X%".
+- **El retrato** (D159) es el campeón de ese mapa.
+- **El rótulo** (D160): "LCS · SPLIT 2 · PLAYOFFS".
+- **La ficha** (D161) no recorta a ningún ancho.
+- **La mano** (D162): "Otra mano" no quema cartas, y fuera el "+0".
+- **Atakhan** (D165) sale de los minijuegos: quedan los objetivos que existen hoy (la lista la confirma el usuario).
+- **"De piso"** (D163) sale.
+- **La banda** (D164) se saca: la consecuencia va a la ficha (los números ruedan ahí, ▲▼, como en El Ídolo) y una
+  línea queda bajo la opción elegida hasta la parada siguiente. Ninguna tarjeta que aparece y se va sola.
+
+**I2 · Elegir es cambiar algo por algo** (motor, datos y pantalla)
+- **Las cartas** (D166): la rareza trae más número **y** más costo, no más poder gratis (pregunta 3). Un check: ninguna
+  mano trae una carta que le gane a otra en todo.
+- **Las opciones de evento** (D167):
+  - el titular es lo que más probablemente pasa, con ⚠ y el riesgo en palabras si puede salir mal; nunca el peor caso;
+  - un check: dos opciones del mismo evento no pueden mover solo el mismo stat;
+  - los eventos que marque el check se reescriben con scripts extract/apply.
+- **La charla** (D168): guardarla vale a la vista ("guardala: en la final pesa el doble"), y todo par de más o menos
+  chance lleva su premio distinto escrito, como 🎲/🧊.
+- **El texto** (D169): un tope por pantalla con check (Playwright sobre `/previa`):
+  - el evento, ≤ 40 palabras;
+  - la opción, ≤ 6 palabras más una línea;
+  - la carta, el nombre y el número;
+  - la previa del minijuego, ≤ 25 palabras.
+
+**I3 · El minijuego como en El Ídolo** (pantalla y una pieza de motor)
+- **La previa** (captura del usuario): una línea de qué hacer, la vara en un número con su porqué ("KT te pide 7",
+  D174) y la barra de la serie. El poder, la charla y el desempate van como íconos dentro del HUD del minijuego.
+- **La serie de corrido** (D170, pregunta 1).
+- **Dodge con barra de vida** (D171), y el Flash como botón grande con su ícono sobre el campeón.
+- **last_hit con autoataques** (D173): pegás cuando querés, cuenta el golpe final, y el que se lleva la oleada se marca
+  en el acto.
+- **`la_llamada`** (D172) se rehace para que se entienda en 5 s, o sale.
+- **El sonido** (D176, pregunta 2).
+
+**I4 · Una sola cara** (vitrina primero, pregunta 4)
+- El fondo y el arte quedan. Se rediseñan como una familia, en el lenguaje del cliente de LoL:
+  - la carta de decisión y la opción;
+  - la previa y el HUD del minijuego;
+  - la mano de cartas;
+  - la consecuencia y la ficha.
+  Hoy son "un borde con letras de colores", cada una distinta.
+- **El proceso**, el que funcionó en octubre (WF-012): dos direcciones sobre esas pantallas, con el contenido ya
+  recortado de I2 e I3; el usuario elige; después se migra. Corre en paralelo con I1.
+
+**I5 · El calendario real** (motor; va última)
+- First Stand (split 1) y MSI (split 2), con su clasificación. El Mundial por el split 3 con playoffs, no por la tabla
+  regular (D177, D119).
+- El Swiss con Bo3 en los cruces que clasifican o eliminan (D175).
+- Antes, un scout corto con fuentes del formato 2026.
+
+#### Entregas (frugal: WF-001 y WF-012)
+
+| Entrega | Qué | Workers | Compuerta |
+|---|---|---|---|
+| **1 · Lo roto** | I1 entero | 2 Sonnet high (motor / pantalla) + revisor Sonnet | El supervisor juega en Chromium cada camino de la queja; deploy; juega el usuario |
+| **V · La vitrina** | I4: dos direcciones sobre la decisión, la previa y el HUD del minijuego y la mano | 2 Opus high en `vitrina/`, en paralelo con la 1 | El usuario elige |
+| **2 · Elegir y jugar** | I2 + I3, con la cara elegida | 3-4 workers (Opus high para la serie de corrido; Sonnet el resto) + revisor | Deploy; juega el usuario |
+| **3 · El resto de la cara** | I4 en las demás pantallas | 2 Sonnet + revisor | Deploy; juega el usuario |
+| **4 · El calendario** | I5 | scout + 1 Opus high + revisor | Deploy; juega el usuario |
+
+Unos 12-14 workers, ~2,5-3M tokens en total.
+
+#### Para que no vuelva a pasar "yo digo una cosa y hacéis lo que querés"
+
+- **Lo pedido que no está, con fecha:**
+  - la banda (§0.6, 2026-10-14);
+  - el tablero del Swiss (F1, §0.8);
+  - "un minijuego con el que pasás varias cosas" (§0.10);
+  - lo de El Ídolo (§0.9).
+  Cada entrega cierra contra esta lista.
+- **Antes de cada deploy**, el supervisor juega en Chromium con GPU cada camino que el usuario nombró: la decisión, el
+  DM, la serie, el Swiss, la prueba y la academia. La entrega lleva esas capturas.
+- **El revisor** recibe el texto textual de arriba y lo marca punto por punto.
+
+#### Preguntas para el usuario (antes de la entrega 2; la 1 y la vitrina no las necesitan)
+
+1. **El minijuego en una serie** (D170): ¿un minijuego de corrido que define varios mapas, con la dificultad que sube
+   adentro, o uno por mapa sin repetir?
+2. **El sonido** (D176): ¿sonidos reales del LoL, con la misma política de Riot para proyectos de fans que ya usamos
+   con el arte, o sintetizados mejores?
+3. **Las cartas** (D166): ¿la rareza da más número y más costo, o toda carta cambia algo por algo, también la común?
+4. **La cara** (I4): ¿vitrina primero, o directo en el juego?
+5. Dos cosas para entender: qué es "el rango" que queda tapado (D161) y qué se ve roto en la mano del año (D162).
+
+**Las deudas nuevas** (D154-D177) están en la tabla del final de este documento.
 
 ## 1. Por qué un tercer plan
 
@@ -3027,6 +3260,30 @@ Son del **motor**. Van a la etapa "arreglar el juego" que pidió el usuario (§0
 | D151 | **`PLAN.md:6398`**, la tabla de horizontes por tipo de parada, no tiene `internacional:playin`. Sí la tienen `agencia.js` y el check K4c-H | ⬜ |
 | D152 | **El aviso automático todavía dice el %** (visto en la integración de la entrega 3): sin `aviso` escrito, `avisoDeOpcion` (`systems/events.js`) cae en la primera oración del peor resultado con su chance ("⚠ 30%: …"), y H4 pedía "solo con riesgo, sin %". No traen `aviso` 259 de las 327 opciones viejas ni ninguna de lo raro | ⬜ |
 | D153 | **El botón del álbum no responde hasta que carga el juego:** es HTML estático y su listener se pega cuando cargan los módulos, así que un clic temprano se pierde (en Chromium no abre recién cargada la página; sí 3 s después) | ⬜ |
+| D154 | **Campeón y a la academia:** `flags.banquilloPendiente` (`systems/rendimiento.js:172-184`) se marca en un split malo y solo se limpia en la pretemporada (`systems/mercado.js:1580-1627`), sin mirar que después saliste campeón; `academiaDelBanquillo` elige la org de tier 2 más débil. Es un log, no una decisión (§0.11, I1) | ⬜ |
+| D155 | **La prueba miente:** `laPrueba.js:31` lee `varaEfectivaDe(datos) ?? 0.6` y sin `g1` siempre pide "9 de 14"; la vara real es `datos.vara` (0-80) (§0.11, I1) | ⬜ |
+| D156 | **Pruebas de ingreso desde tier 2:** K4-C las pone en el primer tier 2, el primer tier 1 y el primer import (`core/minijuegos.js:169-180`, `systems/mercado.js:2041-2048`). El usuario: "a partir de tier 2 no tiene que haber más tryouts"; la que quede, 15% más rápida (§0.11, I1) | ⬜ |
+| D157 | **Regresión de H3e: la tanda del Swiss no muestra el tablero.** Solo lo monta `stream.js`, que quedó de respaldo; `paradas/minijuego.js` no importa `swiss.js` (`:203`) (§0.11, I1) | ⬜ |
+| D158 | **"Ganaste" dos veces:** el sello PASÓ (`paradas/minijuego.js:357-364`) y después la transmisión con otro suspenso, VICTORIA y "tenías {p}%" (`caraACara.js:565-586`), en cada mapa con minijuego (§0.11, I1) | ⬜ |
+| D159 | **El retrato del minijuego es siempre tu main:** `retratoDe` → `mainDe` (`ui/core/mundo.js:20-27`) ignora `datos.campeonElegido` en Fearless (§0.11, I1) | ⬜ |
+| D160 | **El rótulo de la serie no dice el split:** "<liga> <año>" (`components/transmisionComun.js:127-130`) (§0.11, I1) | ⬜ |
+| D161 | **La ficha fija recorta a ≥ 1600 px** (`estilos/hud.css:139-160`: sin shrink, sin wrap, sin ellipsis). A confirmar qué es "el rango" que el usuario ve tapado; el soloQ solo se ve en el amateur (§0.11, I1) | ⬜ |
+| D162 | **"Otra mano" quema raras de toda la carrera** (`systems/edadCierre.js:119-133`) y la carta topada dice "+0" (`:210`). A confirmar qué vio roto el usuario (§0.11, I1) | ⬜ |
+| D163 | **"Cabeza de piso":** `components/decision/cartas.js:229` rotula el peor caso como "de piso" (§0.11, I1) | ⬜ |
+| D164 | **La banda de §0.6 sigue, con otro elemento:** la tarjeta "Lo que pasó" (`cartas.js:698-789`) se sostiene 1,4 s en rápido con animaciones sin escalar: < 0,4 s legible (§0.11, I1) | ⬜ |
+| D165 | **Atakhan en los minijuegos** (`la_llamada`, `robar_baron`, `arcade/sprites.js:2`, `arcade/kit.js:25`). El usuario: "no existe más" (§0.11, I1) | ⬜ |
+| D166 | **La rareza de las cartas es poder gratis:** suma mínima 2 / 4-5 / 6-7 / 8-9; 8 de 240 con costo, todas legendarias; 13-17% de manos con una carta dominada (§0.11, I2) | ⬜ |
+| D167 | **El titular de la opción es el peor caso:** `systems/events.js:568-594`; el DM del booster muestra −2/−3 de cabeza en opciones que suben cabeza el 60%, y las dos mueven lo mismo (§0.11, I2) | ⬜ |
+| D168 | **La charla domina a guardarla a la vista** (`paradas/minijuego.js:263-300`, `systems/serie.js:127-128`, `internacional.js:255-256`) (§0.11, I2) | ⬜ |
+| D169 | **Texto por pantalla:** la decisión 355 palabras, la previa del minijuego 247 (siete recuadros), el cierre de año 499 (§0.11, I2) | ⬜ |
+| D170 | **El mismo minijuego en toda la serie:** `rotacionMax: 5` (`balance.js:2802`) es el largo de un Bo5; la final juega todos los mapas, cada uno con su previa (§0.11, I3) | ⬜ |
+| D171 | **Dodge sin vida y con el Flash invisible** (`components/minijuegos/dodge.js:105-127`); el usuario pide una barra de vida (§0.11, I3) | ⬜ |
+| D172 | **`la_llamada` no se entiende:** "libre" sin definir, la regla en el pie chico (`laLlamada.js:49`), la demo quieta (§0.11, I3) | ⬜ |
+| D173 | **last_hit castiga pegar:** el golpe temprano da 2,1 s sin pegar (`arcade/lastHit.js:130-156`), y el robado no se marca claro (§0.11, I3) | ⬜ |
+| D174 | **La vara del rival no se explica** (`systems/internacional.js:118-123`) (§0.11, I3) | ⬜ |
+| D175 | **Todo el Swiss es Bo1** (`balance.js:2259`); en el Worlds real, los cruces que clasifican o eliminan son Bo3 (§0.11, I5) | ⬜ |
+| D176 | **El sonido:** WebAudio sintetizado, sin archivos, apagado por defecto (`ui/sonido.js`) (§0.11, I3) | ⬜ |
+| D177 | **Un solo internacional, por tabla regular:** el Mundial clasifica por el puesto regular del split 3 (`systems/internacional.js:65-76`); no hay First Stand ni MSI (con D119) (§0.11, I5) | ⬜ |
 
 ---
 
