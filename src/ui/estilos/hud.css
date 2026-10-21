@@ -160,20 +160,24 @@
 .fj-item { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; min-width: 0; }
 .fj-item + .fj-item { padding-left: var(--s-4); box-shadow: inset 1px 0 0 var(--linea); }
 .fj-item[data-oculto] { display: none; }
+/* el "→ próximo" de jerarquía y hype es lo primero que se saca cuando la tira no entra (`ajustar()`); sigue en la hoja. */
+.fj-tira[data-sin-prox] .fj-jer .fj-prox, .fj-tira[data-sin-prox] .fj-hype .fj-prox { display: none; }
+/* el ▲▼ de una decisión que rueda en la ficha se ve a cualquier ancho (hasta `soltar()`) */
+.fj-item .fj-delta[data-flash] { display: inline-flex; }
 /* I1c (D161): el rango de soloQ del amateur, lo primero de la ficha y lo más grande, con el color de su escalón. */
-.fj-rango { --rango: var(--ink); gap: 10px; }
-.fj-rango-escalon { font: 800 28px / 1 var(--f-display); font-stretch: var(--ancho-numero); letter-spacing: 0; text-transform: none; color: var(--rango); }
+.fj-rango { gap: 10px; }
+.fj-rango-escalon { font: 800 28px / 1 var(--f-display); font-stretch: var(--ancho-numero); letter-spacing: 0; text-transform: none; color: var(--rango, var(--ink)); }
 .fj-rango-lp { font: 600 13px / 1 var(--f-mono); letter-spacing: 0; color: var(--ink-dim); }
-.fj-rango[data-tier="iron"] { --rango: #8a8a93; }
-.fj-rango[data-tier="bronze"] { --rango: #b8794a; }
-.fj-rango[data-tier="silver"] { --rango: #aeb9c6; }
-.fj-rango[data-tier="gold"] { --rango: #e6b84a; }
-.fj-rango[data-tier="platinum"] { --rango: #4fc3b0; }
-.fj-rango[data-tier="emerald"] { --rango: #3fcf7a; }
-.fj-rango[data-tier="diamond"] { --rango: #6aa7ff; }
-.fj-rango[data-tier="master"] { --rango: #c06cf0; }
-.fj-rango[data-tier="grandmaster"] { --rango: #f0615a; }
-.fj-rango[data-tier="challenger"] { --rango: #f5d572; }
+.fj-rango[data-tier="iron"] { --rango: var(--rank-iron); }
+.fj-rango[data-tier="bronze"] { --rango: var(--rank-bronze); }
+.fj-rango[data-tier="silver"] { --rango: var(--rank-silver); }
+.fj-rango[data-tier="gold"] { --rango: var(--rank-gold); }
+.fj-rango[data-tier="platinum"] { --rango: var(--rank-platinum); }
+.fj-rango[data-tier="emerald"] { --rango: var(--rank-emerald); }
+.fj-rango[data-tier="diamond"] { --rango: var(--rank-diamond); }
+.fj-rango[data-tier="master"] { --rango: var(--rank-master); }
+.fj-rango[data-tier="grandmaster"] { --rango: var(--rank-grandmaster); }
+.fj-rango[data-tier="challenger"] { --rango: var(--rank-challenger); }
 .fj-rot { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-mute); }
 .fj-rot .ln-ico { width: 12px; height: 12px; }
 .fj-num {
@@ -294,10 +298,10 @@
 .fj-grupo-rot { flex: 0 0 100%; font: 500 10px / 1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute); }
 .fj-titulo { display: inline-flex; align-items: center; gap: 5px; color: var(--ink); }
 
-/* El escritorio angosto (hasta 1599): los rótulos de jerarquía, hype e internacional quedan en su glifo, y la carrera dice
+/* El escritorio angosto (hasta 2199: con todo en rótulos completos la tira pide ~2100 px y a 1920 escondía los títulos y lo ganado): los rótulos de jerarquía, hype e internacional quedan en su glifo, y la carrera dice
    su número y el próximo escalón (el actual, en la hoja). Entre 641 y 1279, además, sin plata ni internacional ni los
    próximos de jerarquía y hype (siguen en la hoja). */
-@media (min-width: 641px) and (max-width: 1599px) {
+@media (min-width: 641px) and (max-width: 2199px) {
   .fj-tira { gap: var(--s-2); letter-spacing: 0.06em; }
   .fj-item { gap: 6px; }
   .fj-item + .fj-item { padding-left: var(--s-2); }

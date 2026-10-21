@@ -355,7 +355,12 @@ html[data-textos='completos'] .cv-raiz .cv-pista { display: none; }
   font: 500 15px/1.4 var(--f-texto, inherit); color: var(--ink); text-align: center; text-wrap: balance;
 }
 .cv-consecuencia-sigue { font: 600 11px/1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
-.cv-raiz.eligiendo .cv-mano { padding-bottom: 96px; }
+.cv-raiz.eligiendo .cv-mano { padding-bottom: 64px; position: relative; }
+/* en el escritorio la consecuencia cruza toda la mano, bajo las cartas, con el "Enter para seguir" en la misma línea */
+.cv-mano > .cv-consecuencia {
+  top: calc(100% - 64px + 10px); display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 2px 14px;
+  max-width: 920px; margin: 0 auto; padding: 0 12px;
+}
 
 /* --- el celular: un carrusel con scroll-snap, la carta al 78% --- */
 @media (max-width: 640px) {
@@ -389,36 +394,18 @@ html[data-textos='completos'] .cv-raiz .cv-pista { display: none; }
 html[data-reducido] .cv-rara .cv-marco, html[data-reducido] .cv-gemas .on, html[data-reducido] .cv-mano[data-activa] .opcion.cv-carta.apuntada .cv-brillo { animation: none; }
 
 /* --- G-fix C2: la carta del año se ve sin scrollear ---------------------------------------------------------------
-   Lo que viene antes de las cartas ("Lo que elegiste" y "Mientras tanto") se pliega a una línea cada uno: el resultado
-   de lo que elegiste corta con "…" (entero en la crónica y en el cajón L), y la franja deja solo la cuenta y los chips.
+   Lo que viene antes de las cartas ("Mientras tanto") se pliega a una línea: la franja deja solo la cuenta y los chips.
    Así las tres cartas con su número grande entran a 1440×900 y a 390×844 sin scrollear. */
-.shell-cuerpo:has(.cv-raiz) #paradaAntes:has(.mt-eleccion) { gap: 6px; }
 .shell-cuerpo:has(.cv-raiz) #paradaAntes:has(.mt-franja) { margin-bottom: 8px; }
-.shell-cuerpo:has(.cv-raiz) .mt-eleccion {
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; padding: 8px 14px;
-}
-.shell-cuerpo:has(.cv-raiz) .mt-eleccion-titulo { font-size: 15px; }
-.shell-cuerpo:has(.cv-raiz) .mt-eleccion-opcion { font-size: 13px; }
-.shell-cuerpo:has(.cv-raiz) .mt-eleccion-salio {
-  flex: 1 1 100%; margin: 0; font-size: 13.5px; line-height: 1.35; color: var(--ink-dim);
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-}
-.shell-cuerpo:has(.cv-raiz) .mt-eleccion-ejes { margin: 0 0 0 auto; gap: 6px; }
-.shell-cuerpo:has(.cv-raiz) .mt-eleccion-ejes .eje-chip { transform: scale(0.92); transform-origin: right center; }
 .shell-cuerpo:has(.cv-raiz) .mt-franja { padding: 8px 14px; gap: 4px 12px; }
 .shell-cuerpo:has(.cv-raiz) .mt-titulares { display: none; }
 .shell-cuerpo:has(.cv-raiz) .mt-abrir { grid-row: 1; }
 @media (max-width: 560px) {
-  .shell-cuerpo:has(.cv-raiz) .mt-eleccion { padding: 6px 12px; }
-  .shell-cuerpo:has(.cv-raiz) .mt-eleccion-ejes { display: none; }
   .shell-cuerpo:has(.cv-raiz) .mt-franja { padding: 6px 12px; }
   .shell-cuerpo:has(.cv-raiz) .mt-ejes { display: none; }
 }
 /* La línea del resultado corta con "…": sin esto el nowrap ensancha la columna y el celular scrollea de costado. */
 .shell-cuerpo:has(.cv-raiz) #paradaAntes { min-width: 0; }
-.shell-cuerpo:has(.cv-raiz) #paradaAntes:has(.mt-eleccion) { grid-template-columns: minmax(0, 1fr); }
-.shell-cuerpo:has(.cv-raiz) .mt-eleccion { min-width: 0; }
-.shell-cuerpo:has(.cv-raiz) .mt-eleccion-opcion { min-width: 0; }
 /* En una pantalla baja las cartas achican el arte (el número y las líneas de riesgo son lo que importa a primera vista). */
 @media (max-height: 960px) {
   .cv-raiz:not([data-forma='matriz']) .cv-ranura { --cv-arte: calc(var(--cv-ancho, 260px) * 0.4); }

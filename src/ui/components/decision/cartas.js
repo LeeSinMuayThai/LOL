@@ -23,6 +23,9 @@
 // banda (el inspector) y, para los lectores, en la descripción de cada carta; con `html[data-textos="completos"]` la
 // descripción va también en la carta.
 import { el, animar, quieto, celular, EXPO, RESORTE, DUR } from '../../fx/util.js';
+
+// La separación entre la carta elegida y la línea de su consecuencia (px).
+const AIRE_DE_LA_CONSECUENCIA = 8;
 import { entrar, esperar, lineasConMascara, num } from '../../fx/movimiento.js';
 import { icono, glifoDeCampo } from '../../fx/iconos.js';
 import { urlCentrada } from '../../fx/arte.js';
@@ -667,7 +670,14 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
           el('span', { class: 'cv-consecuencia-texto', text: linea }),
           el('small', { class: 'cv-consecuencia-sigue', 'aria-hidden': 'true', text: 'Enter para seguir' })
         ]);
-        ranuras[i].append(texto);
+        // en el escritorio la línea cruza toda la mano (la hora de leerla: una columna de 232 px la partía en cuatro); en el
+        // celular, el carrusel la lleva pegada a su carta
+        if (celular()) ranuras[i].append(texto);
+        else {
+          // bajo la carta de verdad (en una pantalla baja las cartas se salen de la mano y un `top` fijo las pisaba)
+          mano.append(texto);
+          texto.style.top = `${Math.round(cartas[i].getBoundingClientRect().bottom - mano.getBoundingClientRect().top + mano.scrollTop + AIRE_DE_LA_CONSECUENCIA)}px`;
+        }
         if (!quieto()) animar(texto, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { dur: DUR.entra, easing: EXPO });
         texto.scrollIntoView?.({ block: 'nearest' });
       }

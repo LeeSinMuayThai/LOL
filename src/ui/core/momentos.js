@@ -97,7 +97,6 @@ function pesoDe(log) {
 // "Última hora" del diario): un log `event` con título "Nombre · Opción" y cuerpo. Las del perfil automático ("Como
 // hambriento…") vienen con `cronica` y NO son del jugador: no entran. Va aparte de `eventoDe` para no tocar el diario (F4).
 const LARGO_DE_ELECCION = 220;
-const ELECCIONES_DE_FRANJA = 2;
 const EJES_DE_ELECCION = 4;
 export function eleccionDelJugador(log) {
   if (log?.type !== 'event' || log.cronica || !log.titulo || !log.cuerpo) return null;
@@ -112,14 +111,12 @@ export function eleccionDelJugador(log) {
 }
 
 // "Mientras tanto" (PLANUI §0.6, punto 3): lo narrativo del tramo `[desde, logs.length)` en una franja. `{ cuantas, ejes,
-// titulares, elecciones }`: cuántas cosas pasaron (los beats narrativos), los ejes sumados y hasta `TITULARES_DE_FRANJA`
+// titulares }`: cuántas cosas pasaron (los beats narrativos), los ejes sumados y hasta `TITULARES_DE_FRANJA`
 // titulares — primero tus resultados y los eventos con elección, el mundo al final; dentro de cada peso, el más nuevo
-// primero. F3 (§0.8, punto 6): `elecciones` son los resultados de lo que decidiste vos en el tramo (hasta
-// `ELECCIONES_DE_FRANJA`, la más nueva primero): van arriba y aparte, y no se repiten en los titulares.
+// primero. Lo que decidiste vos no se cuenta acá (ya se mostró al elegir).
 export function franjaDelTramo(logs, desde = 0) {
   const narrativos = (logs ?? []).slice(Math.max(0, desde)).filter((log) => formaBeat(log) && !log.tecnico);
   const propias = narrativos.map((log) => ({ log, eleccion: eleccionDelJugador(log) })).filter((x) => x.eleccion);
-  const elecciones = propias.map((x) => x.eleccion).reverse().slice(0, ELECCIONES_DE_FRANJA);
   // G2a (PLANUI §0.9): "Mientras tanto" queda para el mundo. Lo que elegiste vos —las que salen arriba y las que no
   // entran en el bloque— no cuenta en la franja, ni suma sus chips, ni repite su titular.
   const mostradas = new Set(propias.map((x) => x.log));
@@ -130,7 +127,7 @@ export function franjaDelTramo(logs, desde = 0) {
     .slice(0, TITULARES_DE_FRANJA)
     .map(({ log }) => ({ type: log.type ?? null, texto: String(log.titulo ?? log.message ?? '').replace(/\s+/g, ' ').trim() }))
     .filter((t) => t.texto);
-  return { cuantas: restantes.length, ejes: ejesSumados(restantes).slice(0, EJES_DE_FRANJA), titulares, elecciones };
+  return { cuantas: restantes.length, ejes: ejesSumados(restantes).slice(0, EJES_DE_FRANJA), titulares };
 }
 
 // El resumen de la temporada (PLANUI §0.6, punto 2): `null` si el tramo no trae el log `edad` con su nota. `fotoAnio` es
