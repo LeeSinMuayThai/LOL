@@ -25,6 +25,7 @@ import { bajaDeCharla } from '../core/minijuegos.js';
 import { BALANCE } from '../data/balance.js';
 import { nombreVisibleDeLiga, nombreVisibleDeLigaOZona } from '../core/ligas.js';
 import { datosDePrensa } from '../core/prensa.js';
+import { deLaLiga } from '../core/formato.js';
 
 export const id = 'serie';
 
@@ -251,7 +252,7 @@ export function caminoDeSerie(state, torneo) {
   const actual = rondas.indexOf(serie.ronda);
   const liga = ligaDeCarrera(state);
   const nombre = serie.nombreTorneo
-    ?? `${rondas.length === 1 ? 'Final' : 'Playoffs'} de la ${liga ? nombreLigaDe(liga) : 'copa'} ${anio}`;
+    ?? `${rondas.length === 1 ? 'Final' : 'Playoffs'} ${liga ? deLaLiga(nombreLigaDe(liga)) : 'de la copa'} ${anio}`;
   return {
     torneo: nombre,
     etapas: rondas.map((ronda, i) => ({ id: ronda, nombre: etiquetaDeRonda(ronda), estado: estadoDeEtapa(i, actual) })),

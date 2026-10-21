@@ -179,7 +179,9 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
     banquilloPendiente = false;
     logs.push(crearLog('mercado', `Cerraste el año ${posicion}º de ${equipos}: el banco queda atrás y seguís de titular en ${state.career.currentOrg}.`));
   }
-  if (enTierConPlantel && !banquilloPendiente && fracaso
+  // Ola I: el banco no se marca en el split del cierre. Ahí no hay parada de evento y la pretemporada te cedería sin aviso
+  // ("de la nada me iba a la Academy"); marcado durante el año, el aviso sale y queda el resto del año para levantarlo.
+  if (enTierConPlantel && !banquilloPendiente && !esCierre && fracaso
     && nivelDelJugador(state) < nivelEquipo - mkt.umbralBanquillo
     && chance(mkt.probBanquilloPorBrecha, rng)) {
     banquilloPendiente = true;

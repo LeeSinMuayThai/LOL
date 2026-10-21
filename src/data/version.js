@@ -213,5 +213,5 @@ export const VERSION_JUEGO = 'I';
 // H5 + H2c (ola H, entrega 3, 1554609563 → 1050936315; corrimiento declarado): 229 eventos raros, épicos y legendarios en
 // el mazo del split (el arco de la LPL de `raros/llamado.json` firma una mudanza de verdad) y 150 cartas más en la mano del
 // cierre (240), así que todos los sorteos cambian. Guardado VERSION 22.
-// I (ola I, entrega 1 y su revisión, 1050936315 → 1368216916; corrimiento declarado): ver `VERSION_JUEGO` 'I' arriba. Guardado VERSION 23.
-export const HUELLA_JUEGO = 1368216916;
+// I (ola I, entrega 1 y su revisión, 1050936315 → 797996517; corrimiento declarado: el banco ya no se marca en el split del cierre): ver `VERSION_JUEGO` 'I' arriba. Guardado VERSION 23.
+export const HUELLA_JUEGO = 797996517;
