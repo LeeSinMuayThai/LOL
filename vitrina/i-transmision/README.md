@@ -1,7 +1,6 @@
 # B · Transmisión (vitrina de la ola I)
 
-**La idea:** la carrera se ve como si la estuviera pasando la transmisión de LCK, LEC o Worlds. Son placas planas y opacas, sin un solo borde de 1 px, con cortes en diagonal, Archivo condensada en mayúsculas y barras de color de equipo. Vos sos el azul.
-El contrato está en `../ola-i/CONTRATO.md`. El fondo y el arte son los de la fusión, reutilizados tal cual: `../fusion/js/ambiente.js` y `../fusion/estilos/ambiente.css`.
+**La idea:** la carrera se ve como si la estuviera pasando la transmisión de LCK, LEC o Worlds. Son placas planas y opacas, sin un solo borde de 1 px, con cortes en diagonal, Archivo condensada en mayúsculas y barras de color de equipo. Vos sos el azul. El contrato está en `../ola-i/CONTRATO.md`. El fondo y el arte son los de la fusión, reutilizados tal cual: `../fusion/js/ambiente.js` y `../fusion/estilos/ambiente.css`.
 
 Servir: `node vitrina/servir.mjs --puerto 8142` y abrir `http://127.0.0.1:8142/i-transmision/index.html`.
 `?pantalla=decision|consecuencia|minijuego|mano`, `&paso=previa|hud|resultado` (minijuego), `&t=<ms>` congela la línea de tiempo.
