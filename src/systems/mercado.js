@@ -756,7 +756,8 @@ function quedarLibre(state, racha, rng) {
 // decía "De free agent" y descendías con un club que ya no te había renovado. Sin rng; la racha sin oferta sigue
 // contando igual (como free agent el mercado te sigue llamando o no). `motivoFila`: 'retiro' si colgás el mouse en esta
 // misma parada (la bifurcación del mercado).
-function teVasDelClub(state, motivoFila = 'libre') {
+// Exportada para el juez (D156, revisión): arma el estado de quien se retira sin club con el mismo camino del motor.
+export function teVasDelClub(state, motivoFila = 'libre') {
   const org = state.career.currentOrg;
   if (!org) {
     return { state, logs: [] };

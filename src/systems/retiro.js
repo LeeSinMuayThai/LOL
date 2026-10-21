@@ -428,7 +428,8 @@ export function chanceDeQueTeLlamen(state) {
   return { clubes, pct: clubes > 0 ? v.pctLlamadoConDemanda : v.pctLlamadoSinDemanda };
 }
 
-function decisionVuelta(state) {
+// Exportada para el juez (D156, revisión): arma el "¿Volvés?" de un estado sin club, que ya no sale solo en las carreras.
+export function decisionVuelta(state) {
   const llamada = chanceDeQueTeLlamen(state);
   return {
     tipo: 'opciones',

@@ -81,7 +81,9 @@
 // `calcularHuellaJuego` no la lee): la huella del bloque C es la de abajo. Misma `VERSION` del guardado (12, no salió de la rama).
 // H (ola H, entrega 1, PLANUI §0.10): `VERSION_JUEGO` pasa a 'H': el sorteo de eventos con rareza y su cupo propio, la temporada
 // regular sin paradas de partido, el mazo de cartas y el arcade. Re-baseline anunciado de la ola (T1/T6).
-export const VERSION_JUEGO = 'H';
+// I (ola I, entrega 1, PLANUI §0.11; corrimiento declarado): `VERSION_JUEGO` pasa a 'I'. D154: el banco se levanta al rendir y lo explica un evento
+// (`te_mandan_al_banco`); D156: desde tier 2 no hay pruebas de ingreso; D162: no se ofrecen cartas topadas ("+0"); D165: sin Atakhan.
+export const VERSION_JUEGO = 'I';
 // K4c (cierre de año, 2044679379): los 10 eventos de cierre_edad.json pasan a ser decisiones con intercambio (tres opciones, efectos
 // del orden de las bifurcaciones, un pool que aprende, riesgos en los outcomes): cambian las tiradas del cierre y con ellas las carreras
 // enteras. Misma versión (el paso 3b la pasa a 'K4c'): reemplaza a 922534647.
@@ -211,4 +213,5 @@ export const VERSION_JUEGO = 'H';
 // H5 + H2c (ola H, entrega 3, 1554609563 → 1050936315; corrimiento declarado): 229 eventos raros, épicos y legendarios en
 // el mazo del split (el arco de la LPL de `raros/llamado.json` firma una mudanza de verdad) y 150 cartas más en la mano del
 // cierre (240), así que todos los sorteos cambian. Guardado VERSION 22.
-export const HUELLA_JUEGO = 1050936315;
+// I (ola I, entrega 1 y su revisión, 1050936315 → 1368216916; corrimiento declarado): ver `VERSION_JUEGO` 'I' arriba. Guardado VERSION 23.
+export const HUELLA_JUEGO = 1368216916;

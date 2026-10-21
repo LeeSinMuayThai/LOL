@@ -185,9 +185,7 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
     banquilloPendiente = true;
     jerarquia = clampStat(jerarquia * mkt.banquilloJerarquiaFactor);
     arraigo = clampStat(arraigo * mkt.banquilloArraigoFactor);
-    logs.push(crearLog('mercado',
-      `Te mandan al banco: tu nivel quedó por debajo del suplente. `
-      + `En la próxima ventana ${state.career.currentOrg} te cede a su academia.`));
+    // El aviso lo da el evento obligatorio `te_mandan_al_banco` (dato): un solo aviso por episodio (Ola I, revisión).
   }
 
   // `nombreLiga` cubre el tier 3: ahí no hay una liga real que nombrar (fase 3).

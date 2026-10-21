@@ -612,14 +612,16 @@
     "category": "declive",
     "categoria": "golpe_duro",
     "title": "Te sientan en el banco",
-    "description": "Tu nivel quedó por debajo del suplente y el split fue flojo: el staff te saca de la titular. Si el año no mejora, en la próxima ventana {org} te cede a su academia.",
+    "description": "Tu nivel quedó por debajo del suplente y el split fue flojo: el staff te saca de la titular. Si el año no mejora, {org} te cede a la academia.",
     "weight": 4,
     "cooldown": 6,
     "contexto": {
-      "etapa": ["profesional"]
+      "etapa": ["profesional", "declive"]
     },
     "conditions": [
-      { "field": "flags.banquilloPendiente", "op": "eq", "value": true }
+      { "field": "flags.banquilloPendiente", "op": "eq", "value": true },
+      { "field": "flags.caminos.conflicto", "op": "neq", "value": "contra_la_org" },
+      { "field": "flags.caminos.conflicto", "op": "neq", "value": "en_el_medio" }
     ],
     "options": [
       {
@@ -655,7 +657,7 @@
             "texto": "Te encerrás a pulir lo tuyo. Duele, pero la práctica se nota en la ladder.",
             "effects": [
               { "type": "stat", "path": "player.stats.mentalidad", "min": -1, "max": 1, "clamp": [0, 100] },
-              { "type": "stat", "path": "player.stats.consistencia", "min": 1, "max": 2, "clamp": [0, 100] }
+              { "type": "stat", "path": "player.stats.mecanica", "min": 1, "max": 2, "clamp": [0, 100] }
             ]
           },
           {

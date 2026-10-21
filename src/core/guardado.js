@@ -89,8 +89,10 @@ import { ARCOS_DE_LO_RARO } from './state.js';
 // el récord del Play-In ganado, en la fila del Mundial). Un guardado de la 20 carga con `migrarDe20`.
 // · 22 (ola H, entrega 3, H5: una clave de `flags.caminos` por arco de lo raro, `ARCOS_DE_LO_RARO` de `core/state.js`). Un
 // guardado de la 21 carga con `migrarDe21`.
-export const VERSION = 22;
-const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+// · 23 (ola I, entrega 1, D156: desde tier 2 no hay pruebas de ingreso, así que `flags.saltosConPrueba` ya no se llena y los
+// estados jugados dejan de traer esas rutas). Ningún campo nuevo que completar: un guardado de la 22 carga con `migrarDe22`.
+export const VERSION = 23;
+const VERSIONES_MIGRABLES = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
 
 // El marcador de los años pro, reconstruido de lo que la 11 sí guardaba. La fila del registro de la org del primer contrato de tier
 // 2 o 1 la abre `roster.js` el split siguiente al de la firma, así que la firma fue en su `desdeSplit` - 1. Sin esa fila todavía
@@ -305,19 +307,28 @@ function migrar(version, state) {
   if (version === VERSION) {
     return state;
   }
+  if (version === 22) {
+    return migrarDe22(state);
+  }
   if (version === 21) {
-    return migrarDe21(state);
+    return migrarDe22(migrarDe21(state));
   }
   if (version === 20) {
-    return migrarDe21(migrarDe20(state));
+    return migrarDe22(migrarDe21(migrarDe20(state)));
   }
   if (version === 19) {
-    return migrarDe21(migrarDe20(migrarDe19(state)));
+    return migrarDe22(migrarDe21(migrarDe20(migrarDe19(state))));
   }
   if (version === 18) {
-    return migrarDe21(migrarDe20(migrarDe19(migrarDe18(state))));
+    return migrarDe22(migrarDe21(migrarDe20(migrarDe19(migrarDe18(state)))));
   }
-  return migrarDe21(migrarDe20(migrarDe19(migrarDe18(version === 17 ? migrarDe17(state) : migrarDe17(migrarHasta17(version, state))))));
+  return migrarDe22(migrarDe21(migrarDe20(migrarDe19(migrarDe18(version === 17 ? migrarDe17(state) : migrarDe17(migrarHasta17(version, state)))))));
+}
+
+// D156 (ola I, entrega 1): nada que completar. `flags.saltosConPrueba` de un guardado viejo queda de resto inofensivo (el motor ya
+// no lo lee para pedir pruebas); lo único que cambia es qué rutas trae un estado jugado desde ahora.
+export function migrarDe22(state) {
+  return state;
 }
 
 // H5 (ola H, entrega 3): los arcos de lo raro todavía no se abrieron (una clave en null por arco, como en `createInitialState`).

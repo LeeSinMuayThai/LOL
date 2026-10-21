@@ -970,7 +970,9 @@ const FORMAS_CONOCIDAS = {
   // PLANUI §0.10 H3 (lo que corrige el usuario): `internacional.playIn.camino` y `playIn` en la fila del Mundial.
   21: '64ffe12313bc',
   // H5 (ola H, entrega 3): las claves de los arcos de lo raro en `flags.caminos` (`ARCOS_DE_LO_RARO`, 60). Carga con `migrarDe21`.
-  22: 'f4330d3e59ee'
+  22: 'f4330d3e59ee',
+  // Ola I (entrega 1, D156): desde tier 2 no hay pruebas de ingreso, `flags.saltosConPrueba` ya no se llena. Carga con `migrarDe22`.
+  23: '361854898a8f'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
@@ -21633,6 +21635,54 @@ check('D154 el banquillo se levanta al cierre si rendiste (mitad de arriba) y si
   }
 });
 
+// D154 (revisión): un solo aviso por episodio de banco. Carreras enteras jugadas por el bot: un episodio es una racha con el flag
+// prendido. Si lo prendió `rendimiento` (no un evento de `caminos`, que cuentan su propia razón y dejan `conflicto` en contra_la_org o
+// en_el_medio), el evento `te_mandan_al_banco` sale en la mayoría y el log viejo ("Te mandan al banco") ya no existe; si lo prendió un
+// camino, el evento no sale detrás. Nunca dos avisos para el mismo episodio. Un banco que se prende en el split del cierre de año no
+// puede traer el evento (el split del cierre no tiene parada de evento, H1.5) y la pretemporada lo cobra con su propio log: esos
+// episodios se cuentan aparte y la mayoría se pide sobre los que sí podían.
+check('D154 el banco avisa una sola vez por episodio: te_mandan_al_banco sale en la mayoría de los que no vienen de caminos (ni del cierre de año) y nunca después de uno que sí', () => {
+  const CAMINO = ['contra_la_org', 'en_el_medio'];
+  let rendimiento = 0;
+  let rendimientoConEvento = 0;
+  let caminos = 0;
+  for (let seed = 1; seed <= 100; seed += 1) {
+    const rng = mulberry32(seed);
+    let estado = createInitialState(seed, rng);
+    let racha = null;
+    for (let split = 0; split < 60 && !estado.terminado; split += 1) {
+      const antes = estado;
+      const res = avanzarSplitAuto(estado, rng);
+      estado = res.state;
+      const flag = estado.flags.banquilloPendiente === true;
+      const vistoAntes = antes.flags.cooldownHasta?.te_mandan_al_banco;
+      const visto = estado.flags.cooldownHasta?.te_mandan_al_banco !== vistoAntes;
+      const logViejo = res.logs.some((log) => /Te mandan al banco/.test(log.texto ?? log.text ?? ''));
+      if (logViejo) throw new Error(`seed ${seed}, split ${split}: sigue el log viejo "Te mandan al banco" de rendimiento`);
+      if (flag && !racha) {
+        racha = { camino: CAMINO.includes(estado.flags.caminos?.conflicto), cierre: esCierreD154(antes.player.splitCount), eventos: 0 };
+        if (!racha.camino && antes.flags.banquilloPendiente === true) racha = null;
+      }
+      if (racha) {
+        if (visto) racha.eventos += 1;
+        if (racha.eventos > 1) throw new Error(`seed ${seed}, split ${split}: dos avisos del banco en el mismo episodio`);
+        if (racha.camino && racha.eventos > 0) throw new Error(`seed ${seed}, split ${split}: el banco viene de un camino y te_mandan_al_banco avisa de nuevo`);
+      }
+      if (racha && !flag) {
+        if (racha.camino) caminos += 1;
+        else if (!racha.cierre) { rendimiento += 1; rendimientoConEvento += racha.eventos; }
+        racha = null;
+      }
+    }
+  }
+  if (rendimiento < 10) {
+    throw new Error(`check vacío: ${rendimiento} episodios de banco por rendimiento fuera del cierre en 100 carreras (${caminos} de caminos)`);
+  }
+  if (rendimientoConEvento * 2 <= rendimiento) {
+    throw new Error(`te_mandan_al_banco sale en ${rendimientoConEvento} de ${rendimiento} episodios de banco por rendimiento: tiene que ser la mayoría`);
+  }
+});
+
 // --- K4c (paso 3b): las metas del bloque B (el ritmo), como checks duros (PLAN.md K4c, "Las metas de §K.3c, fijadas en lo medido") ---
 //
 // Hasta K4c eran la PROPUESTA de §K.3c (≤ 80 interrupciones por carrera, ≤ 2 por split y ≤ 4 en playoffs/internacional, minijuegos
@@ -24778,24 +24828,19 @@ check('H2a el mazo no repite: ninguna carta rara o más se ve dos veces en una c
   }
 });
 
-// D162 (Ola I): `repartirMano` daba por vistas las 3 cartas de cada reparto, así que las raras de "Otra mano" no volvían en toda la
-// carrera. Ahora solo cuenta como usada la carta elegida, y una carta cuyo stat principal ya está topado ("+0") no se ofrece.
-const { repartirMano: repartirD162, resolver: resolverCierreD162, decisionDeCierre: decisionD162, seguroDeCarta: seguroD162 } = await import('../systems/edadCierre.js');
-check('D162 la mano: repartir no gasta cartas, solo la elegida cuenta como usada, y ninguna carta ofrecida dice "+0" mientras haya otra que sume', () => {
+// D162 (Ola I, revisión): se mantiene solo "no se ofrecen cartas topadas" (el "+0"). Repartir SIGUE marcando vistas las cartas de la
+// mano (como antes de la ola I): volver atrás "solo la elegida se gasta" rompía `H2a el mazo no repite`.
+const { repartirMano: repartirD162, seguroDeCarta: seguroD162 } = await import('../systems/edadCierre.js');
+check('D162 la mano: ninguna carta ofrecida dice "+0" mientras haya otra que sume, y repartir marca vistas las cartas de la mano', () => {
   const max = BALANCE.stats.max;
   for (let seed = 1; seed <= 40; seed += 1) {
     const rng = mulberry32(seed);
     const base = createInitialState(seed, rng);
-    const antes = base.flags.cartas.vistas;
     const { state: conMano, evento } = repartirD162(base, rng);
-    if (JSON.stringify(conMano.flags.cartas.vistas) !== JSON.stringify(antes)) {
-      throw new Error(`seed ${seed}: repartir la mano gastó cartas (${JSON.stringify(conMano.flags.cartas.vistas)})`);
-    }
-    const elegida = evento.options[seed % evento.options.length].id;
-    const res = resolverCierreD162(conMano, decisionD162(conMano, evento, 'mano'), { opcionId: elegida }, rng);
-    const cambiadas = Object.keys(res.state.flags.cartas.vistas).filter((id) => res.state.flags.cartas.vistas[id] !== (antes[id] ?? 0));
-    if (cambiadas.length !== 1 || cambiadas[0] !== elegida) {
-      throw new Error(`seed ${seed}: elegir ${elegida} anotó ${JSON.stringify(cambiadas)}`);
+    for (const opcion of evento.options) {
+      if ((conMano.flags.cartas.vistas[opcion.id] ?? 0) < 1) {
+        throw new Error(`seed ${seed}: repartir no marcó vista la carta ${opcion.id}`);
+      }
     }
     // Con dos stats topados, ninguna carta de la mano trae un seguro de 0.
     const [a, b] = BALANCE.carta.stats;
@@ -26922,6 +26967,7 @@ const LOG_FREE_AGENT_K6BF = /free agent/i;
 const LOG_CONTRATO_VIAJA_K6BF = /el contrato viaja/;
 const LOG_TE_VAS_K6BF = /no van a renovarte|te vas del club/;
 const SISTEMAS_DEL_CONTRATO_K6BF = new Set(['mercado', 'retiro', 'competitivo']);
+const { decisionVuelta: decisionVueltaK6BF } = await import('../systems/retiro.js');
 
 check('K6b-F contrato: "No te renovaron" y "free agent" nunca mientras jugás con el club, y "el contrato viaja" solo con el contrato vigente', () => {
   const cuenta = { vencidos: 0, renovados: 0, teFuiste: 0, otroClub: 0, retirados: 0, descensosQueViajan: 0, vueltasConClub: 0, vueltasSinClub: 0 };
@@ -26945,6 +26991,17 @@ check('K6b-F contrato: "No te renovaron" y "free agent" nunca mientras jugás co
           const texto = decision.opciones.find((opcion) => opcion.id === 'volver')?.descripcion ?? '';
           if (LOG_FREE_AGENT_K6BF.test(texto) === conClub) {
             problemas.push(`${bot} seed ${seed} split ${i}: el "Volvés" dice "${texto}" y ${conClub ? `tenés club (${st.career.currentOrg})` : 'no tenés club'}`);
+          }
+          // D156 (revisión): sin pruebas de ingreso desde tier 2 casi nadie se retira sin club en las carreras. El mismo "¿Volvés?"
+          // de este retiro real, armado por el motor (`decisionVuelta`) para un estado al que se le sacó el club (como tras un corte o
+          // una no-renovación), tiene que decir free agent: el texto de la opción sigue la regla 15.
+          if (conClub) {
+            const sinClub = { ...st, career: { ...st.career, currentOrg: null } };
+            const textoSinClub = decisionVueltaK6BF(sinClub).opciones.find((opcion) => opcion.id === 'volver')?.descripcion ?? '';
+            cuenta.vueltasSinClub += 1;
+            if (!LOG_FREE_AGENT_K6BF.test(textoSinClub)) {
+              problemas.push(`${bot} seed ${seed} split ${i}: sin club el "Volvés" dice "${textoSinClub}" y no habla de free agent`);
+            }
           }
         }
         return ESTRATEGIAS_K0[bot](sistema, st, decision, r);
@@ -26992,7 +27049,11 @@ check('K6b-F contrato: "No te renovaron" y "free agent" nunca mientras jugás co
   if (cuenta.vueltasConClub === 0 || cuenta.vueltasSinClub === 0) {
     throw new Error(`check vacío: "¿Volvés?" con club ${cuenta.vueltasConClub} y sin club ${cuenta.vueltasSinClub}`);
   }
-  if (cuenta.teFuiste < MINIMO_SALIDAS_K6BF || cuenta.renovados < MINIMO_SALIDAS_K6BF) {
+  // D156 (revisión): "salidas del club" son las dos, otro club y sin club. Sin pruebas de ingreso desde tier 2 (y con el piso de
+  // ofertas del mercado) nadie termina el contrato vencido sin club en las carreras: `teFuiste` es 0, pero el vencido que se va a
+  // otro club cuenta igual como salida (la mutación `teVasDelClub` que no hace nada lo deja con el club y el contrato viejo, y
+  // el chequeo (3) de arriba lo marca).
+  if (cuenta.teFuiste + cuenta.otroClub < MINIMO_SALIDAS_K6BF || cuenta.renovados < MINIMO_SALIDAS_K6BF) {
     throw new Error(`muestra chica: ${JSON.stringify(cuenta)} en ${SEEDS_K6BF} seeds de ${BOTS_K6BF.join(" y ")}`);
   }
   console.log(`      ${cuenta.vencidos} pretemporadas con el contrato vencido: ${cuenta.renovados} renovás, ${cuenta.otroClub} otro club, `
@@ -27224,7 +27285,7 @@ check(`K6b-C la cola: el "¿la seguís?", "El mercado ya habló" sin ofertas y e
 // `mercado`); (b) la previa dice la chance de que te llame alguien, con la demanda de hoy y sin `rng`; (c) el automático (y
 // `criterio`, que le delega la vuelta) no vuelve de free agent con la chance debajo del umbral. Mutantes: sin `reanudarEn`
 // (el mercado no corre en la vuelta), la vuelta preguntada al punto del año del retiro, el automático que vuelve siempre.
-const { chanceDeQueTeLlamen: chanceDeQueTeLlamenK6BR, resolverAuto: resolverAutoRetiroK6BR } = await import('../systems/retiro.js');
+const { chanceDeQueTeLlamen: chanceDeQueTeLlamenK6BR, resolverAuto: resolverAutoRetiroK6BR, decisionVuelta: decisionVueltaK6BR } = await import('../systems/retiro.js');
 const { orgsQueTeFicharian: orgsQueTeFicharianK6BR } = await import('../core/demanda.js');
 const SEEDS_K6BR = 40;
 // K6c (regla 17): con el plan del año y la vara por nivel las carreras de `resolverAuto` cambiaron de camino y las seeds 1-40 ya
@@ -27233,14 +27294,53 @@ const SEEDS_K6BR = 40;
 // F2 (PLANUI §0.8): con la llamada de tier 2 la primera vuelta de free agent cae en la seed 219 (medido con la misma cosecha: 9
 // vueltas en 600 seeds, contra 5 en 200 en f8503ce; el camino sigue, las carreras cambiaron de seeds). El tope sube a 400.
 const SEEDS_EN_RONDA_K6BR = 400;
+const { teVasDelClub: teVasDelClubK6BR } = await import('../systems/mercado.js');
+const RAMAS_SIN_CLUB_K6BR = 40;
+// D156 (revisión): la rama sin club de un "¿Volvés?" real. Al estado en la pausa se le saca el club (como tras un corte o una
+// no-renovación), el motor arma su pregunta (`decisionVuelta`) y el jugador vuelve (`resolverDecision`): el resto del split corre
+// con el pipeline y los resolverAuto de siempre. Lo que se mide es lo mismo que de las carreras: la ventana de la pregunta, la chance
+// en el texto y que la vuelta de free agent corra el mercado de esa pretemporada.
+function ramaSinClubK6BR(cosecha, seed, st) {
+  const sinClub = { ...teVasDelClubK6BR(st, 'retiro').state, pendiente: null };
+  const decision = decisionVueltaK6BR(sinClub);
+  cosecha.preguntas.push({
+    seed, ventana: calcularContexto({ ...sinClub, player: { ...sinClub.player, splitCount: sinClub.player.splitCount + sinClub.flags.splitsEnVentana } }).ventana,
+    sinClub: true, pct: decision.datos.chanceDeQueTeLlamenPct, texto: decision.opciones.find((o) => o.id === 'volver').descripcion
+  });
+  const rng = mulberry32(seed * 31 + cosecha.ramas);
+  // Responde el automático (`resolverAuto`, el que usa `criterio`): con la chance baja se queda y no hay vuelta que medir.
+  const respuesta = sistemaPorId(st.pendiente.sistemaId).resolverAuto(sinClub, decision, rng);
+  if (respuesta.opcionId !== 'volver') {
+    return;
+  }
+  let res = resolverDecision({ ...sinClub, pendiente: { sistemaId: st.pendiente.sistemaId, decision } }, respuesta, rng);
+  const logs = [...res.logs];
+  for (let n = 0; res.state.pendiente && n < BALANCE.partida.maxDecisionesPorSplit; n += 1) {
+    const { sistemaId, decision: d } = res.state.pendiente;
+    res = resolverDecision(res.state, sistemaPorId(sistemaId).resolverAuto(res.state, d, rng), rng);
+    logs.push(...res.logs);
+  }
+  const i = logs.findIndex((log) => /^Volvés a competir. De free agent/.test(log.message ?? ''));
+  if (i >= 0) {
+    cosecha.vueltas.push({ seed, pct: decision.datos.chanceDeQueTeLlamenPct, mercado: logs.slice(i + 1).some((log) => log.type === 'mercado'), firmo: Boolean(res.state.career.currentOrg) });
+  }
+}
 function cosechaVueltaK6BR() {
-  const cosecha = { vueltas: [], preguntas: [], seeds: 0 };
+  const cosecha = { vueltas: [], preguntas: [], seeds: 0, ramas: 0 };
   for (let seed = 1; seed <= SEEDS_EN_RONDA_K6BR && (seed <= SEEDS_K6BR || cosecha.vueltas.length === 0); seed += 1) {
     cosecha.seeds = seed;
     const rngV = mulberry32(seed);
     let state = createInitialState(seed, rngV);
     let pregunta = null;
     const responder = (sistema, st, decision, r) => {
+      if (decision.datos?.motivo === 'retiro_vuelta' && st.career.currentOrg && cosecha.ramas < RAMAS_SIN_CLUB_K6BR) {
+        // D156 (revisión): sin pruebas de ingreso desde tier 2 casi nadie llega al retiro sin club. Del "¿Volvés?" real de este retiro
+        // se arma la rama de quien lo hizo sin club (se le saca el club, como tras un corte o una no-renovación): la pregunta de esa
+        // rama (`decisionVuelta`) y su vuelta de free agent (`resolverDecision`, el mismo camino del motor) se miden igual que las de
+        // las carreras. La carrera real sigue por su lado, con su club.
+        cosecha.ramas += 1;
+        ramaSinClubK6BR(cosecha, seed, st);
+      }
       if (decision.datos?.motivo === 'retiro_vuelta') {
         pregunta = { seed, ventana: calcularContexto({ ...st, player: { ...st.player, splitCount: st.player.splitCount + st.flags.splitsEnVentana } }).ventana, sinClub: !st.career.currentOrg, pct: decision.datos.chanceDeQueTeLlamenPct, texto: decision.opciones.find((o) => o.id === 'volver').descripcion };
         cosecha.preguntas.push(pregunta);
@@ -27610,6 +27710,7 @@ const SPLITS_K6C = 40;
 const TEXTO_VARA_CERO_K6C = 'te firman aunque la prueba salga mal';
 // Lo mínimo para que los checks del lote no pasen vacíos.
 const ANIOS_CON_DOS_OFERTAS_MINIMO_K6C = 5;
+const SEEDS_EN_RONDA_K6C = 400;
 const SEMANAS_CON_PLAN_MINIMO_K6C = 200;
 
 function anioAmateurK6C(st, rutinaId) {
@@ -27632,48 +27733,53 @@ function pausaDeLaPruebaK6C(seed) {
 // plan del año por índice (`seed % opciones`), no la propuesta del perfil: así "las semanas siguen el plan elegido" no se
 // confunde con "siguen la propuesta". Todo lo demás, `resolverAuto`.
 let loteK6C = null;
+function correrSeedK6C(seed, lote) {
+  const rng = mulberry32K6C(seed);
+  let st = estadoInicialK6C(seed, rng);
+  const responder = (sistema, s, decision, r) => {
+    const motivo = decision.datos?.motivo;
+    if (sistema.id === 'amateur' && motivo === 'plan_amateur') {
+      const elegida = decision.opciones[seed % decision.opciones.length];
+      lote.planes.push({ seed, edad: s.age, splitCount: s.player.splitCount, decision, elegida: elegida.id, anioPrevio: s.flags.anioAmateur });
+      return { opcionId: elegida.id };
+    }
+    if (sistema.id === 'amateur' && motivo === 'oferta') {
+      lote.ofertas.push({ seed, anio: s.flags.anioAmateur?.edad ?? null, org: decision.datos.org.nombre, decision, nivel: nivelDelJugadorK6C(s) });
+      return { opcionId: 'firmar' };
+    }
+    // G-fix-copa: la final de la copa también es un minijuego del amateur (`datos.finalJugada`), pero no es la prueba.
+    if (sistema.id === 'amateur' && motivo === 'minijuego' && !decision.datos.finalJugada) {
+      lote.pruebas.push({ seed, decision, nivel: nivelDelJugadorK6C(s) });
+      return { resultado: 0 };
+    }
+    return sistema.resolverAuto(s, decision, r);
+  };
+  for (let i = 0; i < SPLITS_K6C && !st.terminado && st.phase === 'amateur'; i += 1) {
+    const antes = st.logs.length;
+    const anio = st.flags.anioAmateur;
+    // La semana se vive en `amateur`, antes de que `edadCierre` sume el año: su edad es la de antes del split.
+    const edad = st.age;
+    // G2b: el plan del año ya no es una pausa, lo arma el perfil al arrancar el año: el estado de justo antes (con el que lo
+    // armó) y la rutina que quedó en `flags.anioAmateur` son lo que se puede medir.
+    const inicioDeAnio = !anio || anio.edad !== st.age ? st : null;
+    st = avanzarSplitAutoK6C(st, rng, responder).state;
+    if (inicioDeAnio && st.flags.anioAmateur?.edad === edad) {
+      lote.anios.push({ seed, edad, antes: inicioDeAnio, rutinaId: st.flags.anioAmateur.rutinaId });
+    }
+    for (const log of st.logs.slice(antes)) {
+      if (log.titulo === 'La semana') {
+        lote.semanas.push({ seed, edad, plan: log.plan ?? null, cronica: Boolean(log.cronica), rutinaDelAnio: st.flags.anioAmateur?.rutinaId ?? anio?.rutinaId ?? null });
+      }
+    }
+  }
+
+}
+
 function loteDeK6C() {
   if (loteK6C !== null) return loteK6C;
   const lote = { planes: [], anios: [], ofertas: [], pruebas: [], semanas: [], cronicasConPlan: 0 };
   for (let seed = 1; seed <= SEEDS_K6C; seed += 1) {
-    const rng = mulberry32K6C(seed);
-    let st = estadoInicialK6C(seed, rng);
-    const responder = (sistema, s, decision, r) => {
-      const motivo = decision.datos?.motivo;
-      if (sistema.id === 'amateur' && motivo === 'plan_amateur') {
-        const elegida = decision.opciones[seed % decision.opciones.length];
-        lote.planes.push({ seed, edad: s.age, splitCount: s.player.splitCount, decision, elegida: elegida.id, anioPrevio: s.flags.anioAmateur });
-        return { opcionId: elegida.id };
-      }
-      if (sistema.id === 'amateur' && motivo === 'oferta') {
-        lote.ofertas.push({ seed, anio: s.flags.anioAmateur?.edad ?? null, org: decision.datos.org.nombre, decision, nivel: nivelDelJugadorK6C(s) });
-        return { opcionId: 'firmar' };
-      }
-      // G-fix-copa: la final de la copa también es un minijuego del amateur (`datos.finalJugada`), pero no es la prueba.
-      if (sistema.id === 'amateur' && motivo === 'minijuego' && !decision.datos.finalJugada) {
-        lote.pruebas.push({ seed, decision, nivel: nivelDelJugadorK6C(s) });
-        return { resultado: 0 };
-      }
-      return sistema.resolverAuto(s, decision, r);
-    };
-    for (let i = 0; i < SPLITS_K6C && !st.terminado && st.phase === 'amateur'; i += 1) {
-      const antes = st.logs.length;
-      const anio = st.flags.anioAmateur;
-      // La semana se vive en `amateur`, antes de que `edadCierre` sume el año: su edad es la de antes del split.
-      const edad = st.age;
-      // G2b: el plan del año ya no es una pausa, lo arma el perfil al arrancar el año: el estado de justo antes (con el que lo
-      // armó) y la rutina que quedó en `flags.anioAmateur` son lo que se puede medir.
-      const inicioDeAnio = !anio || anio.edad !== st.age ? st : null;
-      st = avanzarSplitAutoK6C(st, rng, responder).state;
-      if (inicioDeAnio && st.flags.anioAmateur?.edad === edad) {
-        lote.anios.push({ seed, edad, antes: inicioDeAnio, rutinaId: st.flags.anioAmateur.rutinaId });
-      }
-      for (const log of st.logs.slice(antes)) {
-        if (log.titulo === 'La semana') {
-          lote.semanas.push({ seed, edad, plan: log.plan ?? null, cronica: Boolean(log.cronica), rutinaDelAnio: st.flags.anioAmateur?.rutinaId ?? anio?.rutinaId ?? null });
-        }
-      }
-    }
+    correrSeedK6C(seed, lote);
   }
   loteK6C = lote;
   return lote;
@@ -27774,7 +27880,15 @@ check('D155 la prueba pide lo que dice la vara real (el mismo número que exige 
 });
 
 check(`K6c el mismo club no vuelve a ofrecer en la misma ventana (el año del plan): ninguna oferta repetida en ${SEEDS_K6C} carreras que aceptan todo y fallan toda prueba`, () => {
-  const { ofertas } = loteDeK6C();
+  // D156 (revisión): sin pruebas de ingreso desde tier 2 hay menos años con dos ofertas (el camino que falla pruebas sigue en el
+  // amateur). Si las `SEEDS_K6C` del lote no alcanzan, la cosecha sigue en ronda (seeds `SEEDS_K6C`+1, ...) con el mismo juego de
+  // reglas hasta juntar los años que pide el check: se mide lo mismo, solo en más carreras.
+  const { ofertas: delLote } = loteDeK6C();
+  const ofertas = [...delLote];
+  const aniosConDos = () => [...ofertas.reduce((m, o) => m.set(`${o.seed}|${o.anio}`, (m.get(`${o.seed}|${o.anio}`) ?? 0) + 1), new Map()).values()].filter((n) => n >= 2).length;
+  for (let seed = SEEDS_K6C + 1; seed <= SEEDS_EN_RONDA_K6C && aniosConDos() < ANIOS_CON_DOS_OFERTAS_MINIMO_K6C; seed += 1) {
+    correrSeedK6C(seed, { planes: [], anios: [], ofertas, pruebas: [], semanas: [], cronicasConPlan: 0 });
+  }
   const porAnio = new Map();
   for (const oferta of ofertas) {
     const clave = `${oferta.seed}|${oferta.anio}`;
