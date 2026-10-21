@@ -1608,7 +1608,8 @@ Cada una trajo su recuadro y su texto, y no se sacó nada. Así quedó:
 - **El rótulo** (D160): "LCS · SPLIT 2 · PLAYOFFS".
 - **La ficha** (D161) no recorta a ningún ancho, y en el amateur el rango de soloQ es lo primero que se ve.
 - **La mano** (D162) aparece de una, sin el paso tapado. "Otra mano" no quema cartas, y fuera el "+0".
-- **Atakhan** (D165) sale de los minijuegos: quedan los objetivos que existen hoy (la lista la confirma el usuario).
+- **Atakhan** (D165) sale de los minijuegos. Riot lo sacó en la temporada 2026, y quedan los dragones (y el Ancestral),
+  el Barón, el Heraldo y las larvas del Vacío. En `robar_baron` y `la_llamada`, su lugar lo toma el Heraldo.
 - **"De piso"** (D163) sale.
 - **La banda** (D164) se saca: la consecuencia va a la ficha (los números ruedan ahí, ▲▼, como en El Ídolo) y una
   línea queda bajo la opción elegida hasta la parada siguiente. Ninguna tarjeta que aparece y se va sola.
@@ -1659,8 +1660,8 @@ Cada una trajo su recuadro y su texto, y no se sacó nada. Así quedó:
 
 | Entrega | Qué | Workers | Compuerta |
 |---|---|---|---|
-| **1 · Lo roto** | I1 entero | 2 Sonnet high (motor / pantalla) + revisor Sonnet | El supervisor juega en Chromium cada camino de la queja; deploy; juega el usuario |
-| **V · La vitrina** | I4: dos direcciones sobre la decisión, la previa y el HUD del minijuego y la mano | 2 Opus high en `vitrina/`, en paralelo con la 1 | El usuario elige |
+| **1 · Lo roto** | I1 entero | 3 Sonnet high con tope de 50 (i1a la carrera: D154-D156, D162 motor, D165 · i1b la serie: D157-D160 · i1c la decisión, la ficha y la mano: D161-D164) + revisor Sonnet. Se partió en tres, en vez de dos, porque la pantalla no entraba en 50 pasos | El supervisor juega en Chromium cada camino de la queja; deploy; juega el usuario |
+| **V · La vitrina** | I4: dos direcciones sobre la decisión, la previa y el HUD del minijuego y la mano | 2 Opus high con tope de 75, en paralelo con la 1: A · Cliente (`vitrina/i-cliente/`) y B · Transmisión (`vitrina/i-transmision/`), sobre el contrato `vitrina/ola-i/CONTRATO.md` | El usuario elige |
 | **2 · Elegir y jugar** | I2 + I3, con la cara elegida | 3-4 workers (Opus high para el minijuego por serie; Sonnet el resto) + revisor | Deploy; juega el usuario |
 | **3 · El resto de la cara** | I4 en las demás pantallas | 2 Sonnet + revisor | Deploy; juega el usuario |
 | **4 · El calendario** | I5 | scout + 1 Opus high + revisor | Deploy; juega el usuario |
