@@ -1,0 +1,372 @@
+/* A · CLIENTE — una sola familia, sacada del cliente de LoL. Solo var(--token): los literales viven en tokens.css.
+   El marco: biselado, filete de material, dos esquinas cortadas. Los estados: reposo, apuntado (brillo hextech),
+   elegido (trabado en oro), apagado. Tipografia: titulos en mayusculas espaciadas (Fraunces, el lugar de Beaufort),
+   cuerpo en Geist (el de Spiegel). */
+:root {
+  --f-titulo: 'Fraunces', Georgia, serif;
+  --f-titulo-ejes: 'SOFT' 0, 'WONK' 0, 'opsz' 144;
+  --f-cuerpo: 'Geist', system-ui, sans-serif;
+  --filete-oro: linear-gradient(180deg, var(--c-oro) 0%, var(--c-oro-oscuro) 48%, var(--c-oro-medio) 100%);
+  --filete-hex: linear-gradient(180deg, var(--c-hex-claro) 0%, var(--c-hex) 40%, var(--c-hex-oscuro) 100%);
+  --filete-trabado: linear-gradient(180deg, var(--c-oro-claro) 0%, var(--c-oro-medio) 50%, var(--c-oro-claro) 100%);
+  --fondo-marco: linear-gradient(180deg, var(--c-noche-2) 0%, var(--c-noche-1) 55%, var(--c-noche-0) 100%);
+  --expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { box-sizing: border-box; }
+/* la forma se calcula en cada nodo, con su --corte (una variable en :root no veria el --corte del marco) */
+.marco, .marco-in, .boton, .boton-in, .opcion-retrato, .fantasma {
+  --forma: polygon(var(--corte) 0, 100% 0, 100% calc(100% - var(--corte)), calc(100% - var(--corte)) 100%, 0 100%, 0 var(--corte));
+  --forma-in: polygon(calc(var(--corte) - 1px) 0, 100% 0, 100% calc(100% - var(--corte) + 1px), calc(100% - var(--corte) + 1px) 100%, 0 100%, 0 calc(var(--corte) - 1px));
+}
+html, body { margin: 0; }
+body {
+  font-synthesis: none;
+  background: var(--c-noche-0); color: var(--c-texto); font: 400 16px/1.45 var(--f-cuerpo);
+  min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased;
+}
+p { margin: 0; }
+button { font: inherit; color: inherit; }
+[class*='titulo'], .rango-nombre, .carta-mas, .carta-nombre, .carta-costo-num, .equipo-tag, .vara-num, .sello-txt, .sello-num, .serie-marcador, .oleadas, .boton-in, .hechizo-cd { font-variation-settings: var(--f-titulo-ejes); }
+.ico { display: inline-flex; width: 1em; height: 1em; flex: none; }
+.ico svg { width: 100%; height: 100%; display: block; }
+
+/* ---------- el mundo: el de la fusion ---------- */
+.ambiente { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+.luz-gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.velo { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, var(--c-velo-fuerte) 0%, var(--c-velo-fuerte) 22%, var(--c-velo-medio) 58%, var(--c-velo-nada) 82%); }
+html[data-paso='hud'] .velo { display: none; }
+
+/* ---------- la escena ---------- */
+.escena {
+  position: relative; z-index: 2; display: grid; grid-template-columns: 280px minmax(0, 640px); gap: 56px;
+  padding: 56px 72px 72px; min-height: 100vh; align-items: center;
+}
+.lado { position: sticky; top: 56px; }
+html[data-paso='hud'] .lado { display: none; }
+html[data-paso='hud'] .escena { display: block; padding: 0; }
+.columna { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.pie { display: flex; justify-content: flex-end; gap: 16px; align-items: center; min-height: 52px; }
+
+/* ======================================================================================================================
+   EL MARCO (la familia)
+   ==================================================================================================================== */
+.marco { --corte: 14px; --filo: 2px; --filete: var(--filete-oro); position: relative; padding: var(--filo); clip-path: var(--forma); background: var(--filete); }
+.marco-in { position: relative; height: 100%; clip-path: var(--forma-in); background: var(--fondo-marco); }
+/* el bisel: un canto de luz arriba y la sombra abajo, adentro del filete */
+.marco-in::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c-oro) 16%, transparent) 0, transparent 26px), linear-gradient(0deg, color-mix(in srgb, var(--c-noche-0) 70%, transparent) 0, transparent 30px);
+}
+.marco-in > * { position: relative; z-index: 1; }
+.marco[data-material='hex'] { --filete: var(--filete-hex); }
+
+/* los estados, iguales para la opcion, la carta y los botones */
+.opcion, .carta { all: unset; display: block; cursor: pointer; position: relative; transition: filter 180ms ease, translate 180ms var(--expo); -webkit-tap-highlight-color: transparent; }
+.opcion[data-estado='apuntado'], .carta[data-estado='apuntado'] { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--c-hex) 55%, transparent)); translate: 0 -2px; }
+.opcion[data-estado='apuntado'] .marco { --filete: var(--filete-hex); }
+.opcion[data-estado='elegido'], .carta[data-estado='elegido'] { filter: drop-shadow(0 0 18px color-mix(in srgb, var(--c-oro-medio) 55%, transparent)); cursor: default; }
+.opcion[data-estado='elegido'] .marco, .carta[data-estado='elegido'] .marco { --filo: 3px; --filete: var(--filete-trabado); }
+.opcion[data-estado='apagado'], .carta[data-estado='apagado'] { filter: grayscale(0.85) brightness(0.75); cursor: default; }
+.opcion:focus-visible, .carta:focus-visible { outline: none; }
+
+/* la tecla: el hexagono con el numero */
+.tecla { --hex: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); display: inline-grid; place-items: center; width: 28px; height: 24px; clip-path: var(--hex); background: var(--c-oro-oscuro); flex: none; }
+.tecla > span { display: grid; place-items: center; width: calc(100% - 3px); height: calc(100% - 3px); clip-path: var(--hex); background: var(--c-noche-0); font: 700 12px/1 var(--f-cuerpo); color: var(--c-oro); }
+[data-estado='apuntado'] .tecla { background: var(--c-hex); }
+[data-estado='apuntado'] .tecla > span { color: var(--c-hex-claro); }
+[data-estado='elegido'] .tecla { background: var(--c-oro-claro); }
+
+/* el separador del cliente: el filete con el rombo */
+.separador { position: relative; display: block; height: 12px; }
+.separador::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: linear-gradient(90deg, transparent, var(--c-oro-oscuro) 20%, var(--c-oro) 50%, var(--c-oro-oscuro) 80%, transparent); }
+.separador i { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; translate: -50% -50%; rotate: 45deg; background: var(--c-noche-0); box-shadow: 0 0 0 1.5px var(--c-oro); }
+
+/* el boton del cliente */
+.boton {
+  --corte: 10px; all: unset; position: relative; display: inline-block; cursor: pointer; padding: 2px;
+  clip-path: var(--forma); background: var(--filete-hex); transition: filter 160ms ease, opacity 160ms ease;
+}
+.boton-in {
+  display: inline-flex; align-items: center; gap: 12px; padding: 13px 34px; clip-path: var(--forma-in);
+  background: linear-gradient(180deg, var(--c-hex-hondo) 0%, var(--c-noche-1) 100%);
+  font: 800 18px/1 var(--f-titulo); letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-hex-claro);
+}
+.boton:hover, .boton:focus-visible { filter: brightness(1.25) drop-shadow(0 0 12px color-mix(in srgb, var(--c-hex) 60%, transparent)); outline: none; }
+.boton-secundario { background: var(--filete-oro); }
+.boton-secundario .boton-in { background: var(--fondo-marco); color: var(--c-oro-claro); }
+.boton[data-estado='apagado'], .boton:disabled { filter: grayscale(0.9) brightness(0.6); cursor: default; }
+.boton-ico { width: 16px; height: 16px; }
+.seguir { opacity: 0; pointer-events: none; visibility: hidden; }
+.seguir[data-visible='1'] { pointer-events: auto; visibility: visible; }
+
+/* ======================================================================================================================
+   LA FICHA
+   ==================================================================================================================== */
+.ficha .marco-in { display: flex; flex-direction: column; gap: 14px; padding: 22px 20px 18px; }
+.rango { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.emblema { flex: none; display: block; width: 104px; height: 104px; filter: drop-shadow(0 0 14px color-mix(in srgb, var(--c-diamante) 55%, transparent)); }
+.emblema svg { width: 100%; height: 100%; display: block; }
+.rango-txt { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.rango-nombre {
+  font: 700 30px/1 var(--f-titulo); letter-spacing: 0.04em; white-space: nowrap;
+  background: linear-gradient(180deg, var(--c-diamante-claro) 20%, var(--c-diamante) 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.rango-lp { font: 700 15px/1 var(--f-cuerpo); letter-spacing: 0.1em; color: var(--c-diamante); }
+.lp { height: 5px; background: var(--c-noche-0); box-shadow: 0 0 0 1px var(--c-oro-hondo); }
+.lp i { display: block; height: 100%; width: calc(var(--lp) * 100%); background: linear-gradient(90deg, var(--c-diamante-oscuro), var(--c-diamante-claro)); box-shadow: 0 0 10px var(--c-diamante); }
+.stats { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.stat {
+  --brillo: 0; display: grid; grid-template-columns: 1fr auto 42px; align-items: center; gap: 8px; padding: 6px 8px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c-sube) calc(var(--brillo) * 26%), transparent), transparent 85%);
+}
+.stat-nombre { font: 600 12px/1 var(--f-cuerpo); letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-texto-2); }
+.stat-num { font: 700 15px/1 var(--f-cuerpo); font-variant-numeric: tabular-nums; color: var(--c-oro-claro); min-width: 2ch; text-align: right; }
+.stat-delta { display: inline-flex; align-items: center; justify-content: flex-start; gap: 3px; font: 700 12px/1 var(--f-cuerpo); color: var(--c-sube); opacity: 0; transform-origin: left center; }
+.delta-ico { width: 10px; height: 10px; filter: drop-shadow(0 0 4px currentColor); }
+.stat[data-cambio] { box-shadow: inset 3px 0 0 var(--c-sube); }
+.stat[data-cambio='baja'] { box-shadow: inset 3px 0 0 var(--c-baja); }
+.stat[data-cambio=''] { box-shadow: none; }
+.stat[data-cambio='sube'] .stat-num { color: var(--c-hex-claro); text-shadow: 0 0 calc(var(--brillo) * 14px) var(--c-sube); }
+.stat[data-cambio='baja'] { background: linear-gradient(90deg, color-mix(in srgb, var(--c-baja) calc(var(--brillo) * 22%), transparent), transparent 85%); }
+.stat[data-cambio='baja'] .stat-delta { color: var(--c-baja); }
+.ficha-pie { font: 500 12px/1 var(--f-cuerpo); letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-texto-3); padding: 2px 8px 0; }
+
+/* ======================================================================================================================
+   LA DECISION
+   ==================================================================================================================== */
+.evento { display: flex; flex-direction: column; gap: 14px; }
+.kicker { display: flex; align-items: center; gap: 10px; font: 700 12px/1 var(--f-cuerpo); letter-spacing: 0.24em; color: var(--c-hex); }
+.gema { width: 9px; height: 9px; rotate: 45deg; background: var(--c-hex); box-shadow: 0 0 10px var(--c-hex); }
+.evento-texto { font: 400 21px/1.5 var(--f-cuerpo); color: var(--c-texto); text-wrap: pretty; max-width: 620px; }
+.opciones { display: grid; gap: 16px; }
+.opcion-marco .marco-in { display: grid; grid-template-columns: 84px 1fr; gap: 20px; padding: 16px 22px 16px 16px; }
+.opcion-retrato {
+  --corte: 10px; width: 84px; height: 84px; display: grid; place-items: center; clip-path: var(--forma);
+  background: radial-gradient(circle at 50% 35%, var(--c-noche-3), var(--c-noche-0) 75%); box-shadow: inset 0 0 0 2px var(--c-oro-oscuro);
+  color: var(--c-oro); transition: color 160ms ease;
+}
+.retrato-ico { width: 46px; height: 46px; }
+[data-estado='apuntado'] .opcion-retrato { color: var(--c-hex-claro); background: radial-gradient(circle at 50% 35%, var(--c-hex-hondo), var(--c-noche-0) 75%); box-shadow: inset 0 0 0 2px var(--c-hex); }
+[data-estado='elegido'] .opcion-retrato { color: var(--c-oro-claro); background: radial-gradient(circle at 50% 35%, var(--c-oro-hondo), var(--c-noche-0) 80%); box-shadow: inset 0 0 0 2px var(--c-oro-claro); }
+.opcion-cuerpo { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding-top: 2px; }
+.opcion-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.opcion-titulo { font: 800 20px/1.1 var(--f-titulo); letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-oro-claro); }
+.opcion-efectos { display: flex; flex-wrap: wrap; gap: 4px 18px; font: 600 15px/1.3 var(--f-cuerpo); color: var(--c-sube); }
+.efecto { display: inline-flex; align-items: center; gap: 6px; }
+.efecto-ico { width: 10px; height: 10px; }
+.efecto-aviso { color: var(--c-aviso); }
+.efecto-aviso .efecto-ico { width: 15px; height: 15px; }
+.opcion-linea { font: 400 15px/1.4 var(--f-cuerpo); color: var(--c-texto-2); }
+.opcion-consecuencia { display: none; grid-template-rows: 0fr; opacity: 0; }
+.cons-in { overflow: hidden; min-height: 0; }
+.cons-in .separador { margin: 6px 0 8px; }
+.cons-in p { font: 600 15px/1.4 var(--f-cuerpo); color: var(--c-oro-claro); }
+.opcion-candado { position: absolute; right: 12px; bottom: 10px; width: 14px; height: 14px; color: var(--c-oro-claro); opacity: 0; }
+[data-estado='elegido'] .opcion-candado { opacity: 1; }
+[data-estado='elegido'] .opcion-cabeza .tecla { visibility: hidden; }
+
+/* ======================================================================================================================
+   EL MINIJUEGO · la previa
+   ==================================================================================================================== */
+.previa .marco-in { display: flex; flex-direction: column; gap: 22px; padding: 26px 30px 28px; background: radial-gradient(90% 60% at 50% 0%, color-mix(in srgb, var(--c-hex-hondo) 70%, transparent), transparent 70%), var(--fondo-marco); }
+.previa-rotulo { display: flex; align-items: center; justify-content: center; gap: 12px; font: 700 13px/1 var(--f-cuerpo); letter-spacing: 0.24em; color: var(--c-oro); }
+.logo-liga { height: 22px; width: auto; display: block; }
+.cruce { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px; }
+.equipo { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.logo-equipo { width: 76px; height: 76px; object-fit: contain; display: block; filter: drop-shadow(0 4px 14px var(--c-sombra)); }
+.escudo { display: block; }
+.escudo svg { width: 100%; height: 100%; display: block; }
+.equipo-tag { font: 800 40px/1 var(--f-titulo); letter-spacing: 0.06em; color: var(--c-oro-claro); }
+.vs { font: 700 13px/1 var(--f-cuerpo); letter-spacing: 0.24em; text-transform: uppercase; color: var(--c-texto-2); }
+.serie-bo { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.bo { font: 700 13px/1 var(--f-cuerpo); letter-spacing: 0.2em; text-transform: uppercase; color: var(--c-texto-2); }
+.bo-casilleros { display: flex; gap: 10px; }
+.bo-casilleros i { width: 18px; height: 18px; rotate: 45deg; background: var(--c-noche-0); box-shadow: inset 0 0 0 2px var(--c-oro-oscuro); }
+.previa-fila { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 24px; }
+.previa-que { font: 400 16px/1.4 var(--f-cuerpo); color: var(--c-texto); }
+.vara { display: grid; grid-template-columns: auto auto; align-items: baseline; gap: 2px 10px; text-align: left; }
+.vara-num { font: 800 40px/1 var(--f-titulo); color: var(--c-hex-claro); text-shadow: 0 0 18px color-mix(in srgb, var(--c-hex) 50%, transparent); }
+.vara-que { font: 400 16px/1 var(--f-cuerpo); color: var(--c-texto); }
+.vara-porque { grid-column: 1 / -1; font: 700 13px/1.2 var(--f-cuerpo); letter-spacing: 0.06em; color: var(--c-texto-2); }
+.previa-pie { display: flex; justify-content: center; }
+.jugar .boton-in { padding: 16px 64px; font-size: 22px; }
+
+/* ======================================================================================================================
+   EL MINIJUEGO · el HUD (una captura quieta del juego)
+   ==================================================================================================================== */
+.hud { position: fixed; inset: 0; overflow: hidden; cursor: pointer; }
+.campo { position: absolute; inset: 0; }
+.campo svg { width: 100%; height: 100%; display: block; }
+.unidad { position: absolute; left: 50.56%; top: 45.33%; width: 74px; height: 74px; translate: -50% -50%; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 3px var(--c-oro-medio), 0 8px 30px var(--c-sombra); }
+.unidad img { width: 100%; height: 100%; display: block; }
+.unidad[data-golpe='1'] { box-shadow: 0 0 0 3px var(--c-skill), 0 0 34px var(--c-skill); }
+.golpe { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50.5% 45%, transparent 35%, color-mix(in srgb, var(--c-skill) 45%, transparent) 100%); }
+.hud-marcador { position: absolute; top: 18px; left: 50%; translate: -50% 0; --corte: 12px; }
+.hud-marcador .marco-in { display: flex; align-items: center; gap: 22px; padding: 8px 22px; }
+.logo-mini { width: 30px; height: 30px; object-fit: contain; display: block; }
+.oleadas { display: inline-flex; align-items: center; gap: 10px; font: 800 22px/1 var(--f-titulo); color: var(--c-oro-claro); font-variant-numeric: tabular-nums; }
+.oleada-ico { width: 22px; height: 22px; color: var(--c-oro); }
+.hud-panel { position: absolute; bottom: 18px; left: 50%; translate: -50% 0; --corte: 16px; }
+.hud-panel .marco-in { display: flex; align-items: center; gap: 20px; padding: 12px 22px 12px 14px; }
+.hud-retrato { position: relative; width: 84px; height: 84px; border-radius: 50%; box-shadow: 0 0 0 3px var(--c-oro), 0 0 0 5px var(--c-noche-0); flex: none; }
+.hud-retrato-img { width: 100%; height: 100%; border-radius: 50%; display: block; }
+.hud-nivel { position: absolute; bottom: -6px; left: 50%; translate: -50% 0; min-width: 24px; padding: 3px 5px; text-align: center; background: var(--c-noche-0); box-shadow: 0 0 0 1.5px var(--c-oro); font: 700 12px/1 var(--f-cuerpo); color: var(--c-oro-claro); }
+.hud-barras { width: 380px; display: flex; flex-direction: column; gap: 4px; }
+.barra { position: relative; height: 22px; background: var(--c-noche-0); overflow: hidden; box-shadow: inset 0 0 0 1px var(--c-oro-hondo); }
+.vida-relleno, .vida-rastro { position: absolute; left: 0; top: 0; bottom: 0; }
+.vida-rastro { background: var(--c-vida-rastro); }
+.vida-relleno { background: linear-gradient(180deg, var(--c-vida-claro) 0%, var(--c-vida) 42%, var(--c-vida-oscuro) 100%); }
+/* las marcas: una cada 100 de vida (1100 -> 11 tramos), cortas, como sobre la cabeza; la de 1000, entera */
+.vida-marcas {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, transparent calc(100% * 10 / 11 - 2px), var(--c-marca) calc(100% * 10 / 11 - 2px) calc(100% * 10 / 11), transparent calc(100% * 10 / 11)),
+    repeating-linear-gradient(90deg, transparent 0 calc(100% / 11 - 1.5px), var(--c-marca) calc(100% / 11 - 1.5px) calc(100% / 11)) top / 100% 55% no-repeat;
+}
+.barra-num { position: absolute; inset: 0; display: grid; place-items: center; font: 700 13px/1 var(--f-cuerpo); color: var(--c-oro-claro); text-shadow: 0 1px 2px var(--c-noche-0), 0 0 4px var(--c-noche-0); font-variant-numeric: tabular-nums; }
+.barra-mana { height: 9px; }
+.mana-relleno { position: absolute; left: 0; top: 0; bottom: 0; width: 62%; background: linear-gradient(180deg, var(--c-mana) 0%, var(--c-mana-oscuro) 100%); }
+.hud-hechizos { display: flex; align-items: center; gap: 12px; }
+.hechizo { position: relative; width: 54px; height: 54px; box-shadow: 0 0 0 2px var(--c-oro), 0 0 0 4px var(--c-noche-0); }
+.hechizo-img { width: 100%; height: 100%; display: block; }
+.barrido { position: absolute; inset: 0; background: conic-gradient(transparent 0 calc((1 - var(--cd)) * 360deg), var(--c-velo-fuerte) calc((1 - var(--cd)) * 360deg) 360deg); }
+.barrido::after { content: ''; position: absolute; inset: 0; background: conic-gradient(transparent 0 calc((1 - var(--cd)) * 360deg - 2deg), var(--c-hex-claro) calc((1 - var(--cd)) * 360deg - 2deg) calc((1 - var(--cd)) * 360deg), transparent 0); opacity: 0.7; }
+.hechizo-cd { position: absolute; inset: 0; display: grid; place-items: center; font: 800 18px/1 var(--f-titulo); color: var(--c-oro-claro); text-shadow: 0 1px 3px var(--c-noche-0); }
+.hechizo-tecla { position: absolute; right: -6px; bottom: -6px; width: 18px; height: 18px; display: grid; place-items: center; background: var(--c-noche-0); box-shadow: 0 0 0 1.5px var(--c-oro); font: 700 12px/1 var(--f-cuerpo); color: var(--c-oro-claro); }
+.hud-icono { width: 40px; height: 40px; display: grid; place-items: center; background: radial-gradient(circle, var(--c-noche-3), var(--c-noche-0)); box-shadow: 0 0 0 2px var(--c-oro-oscuro); }
+.hud-icono .ico { width: 24px; height: 24px; }
+.hud-icono[data-estado='guardada'] { color: var(--c-oro-claro); box-shadow: 0 0 0 2px var(--c-oro), 0 0 12px color-mix(in srgb, var(--c-oro) 50%, transparent); }
+.hud-icono[data-estado='usada'] { color: var(--c-texto-3); }
+.hud-icono[data-estado='listo'] { color: var(--c-hex-claro); box-shadow: 0 0 0 2px var(--c-hex), 0 0 12px color-mix(in srgb, var(--c-hex) 55%, transparent); }
+
+/* ======================================================================================================================
+   EL MINIJUEGO · el resultado
+   ==================================================================================================================== */
+.resultado { display: flex; flex-direction: column; align-items: center; gap: 30px; padding-top: 24px; }
+.sello { --escala: 1; --sube: 1; position: relative; display: grid; place-items: center; transform: translateY(calc((1 - var(--sube)) * 170px)) scale(var(--escala)); }
+.sello-alas { position: absolute; left: 50%; top: 50%; width: 780px; translate: -50% -50%; pointer-events: none; filter: drop-shadow(0 0 16px color-mix(in srgb, var(--c-oro-medio) 50%, transparent)); }
+.sello-alas svg { width: 100%; display: block; }
+.sello-marco { --corte: 16px; --filo: 3px; --filete: var(--filete-trabado); }
+.sello-marco .marco-in { display: flex; align-items: baseline; gap: 16px; padding: 18px 44px; background: radial-gradient(80% 120% at 50% 0%, var(--c-oro-hondo), var(--c-noche-0) 80%); }
+.sello-txt, .sello-num {
+  font: 800 54px/1 var(--f-titulo); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;
+  background: linear-gradient(180deg, var(--c-oro-claro) 30%, var(--c-oro-medio) 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.serie { width: min(100%, 480px); }
+.serie .marco-in { padding: 18px 20px 14px; display: flex; flex-direction: column; gap: 12px; }
+.serie-cabeza { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.serie-cabeza .logo-equipo { width: 40px; height: 40px; }
+.serie-cabeza .equipo-tag { font-size: 22px; }
+.serie-marcador { font: 800 40px/1 var(--f-titulo); color: var(--c-oro-claro); padding: 0 8px; letter-spacing: 0.04em; }
+.mapas { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.mapa { display: grid; grid-template-columns: 34px 22px 1fr; align-items: center; gap: 12px; padding: 9px 16px; font: 700 15px/1 var(--f-cuerpo); color: var(--c-texto); box-shadow: inset 3px 0 0 var(--c-gana); background: linear-gradient(90deg, color-mix(in srgb, var(--c-gana) 20%, transparent), transparent 75%); }
+.mapa[data-r='pierde'] { box-shadow: inset 3px 0 0 var(--c-pierde); background: linear-gradient(90deg, color-mix(in srgb, var(--c-pierde) 18%, transparent), transparent 75%); }
+.mapa-n { color: var(--c-texto-2); }
+.mapa-ico { width: 18px; height: 18px; color: var(--c-gana); }
+.mapa[data-r='pierde'] .mapa-ico { color: var(--c-pierde); }
+.mapa-marcador { text-align: right; font-variant-numeric: tabular-nums; color: var(--c-oro-claro); }
+
+/* ======================================================================================================================
+   LA MANO · el loot hextech: el material del marco y la gema dicen la rareza
+   ==================================================================================================================== */
+.cartas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.carta[data-material='acero'] { --m-claro: var(--c-acero-claro); --m: var(--c-acero); --m-oscuro: var(--c-acero-oscuro); --gema: 16px; --halo: 0px; }
+.carta[data-material='raro'] { --m-claro: var(--c-raro-claro); --m: var(--c-raro); --m-oscuro: var(--c-raro-oscuro); --gema: 20px; --halo: 14px; }
+.carta[data-material='epico'] { --m-claro: var(--c-epico-claro); --m: var(--c-epico); --m-oscuro: var(--c-epico-oscuro); --gema: 24px; --halo: 22px; }
+.carta-marco, .fantasma { --corte: 20px; --filo: 4px; --filete: linear-gradient(160deg, var(--m-claro) 0%, var(--m-oscuro) 30%, var(--m) 55%, var(--m-oscuro) 78%, var(--m-claro) 100%); height: 380px; }
+.fantasma[data-material='acero'] { --m-claro: var(--c-acero-claro); --m: var(--c-acero); --m-oscuro: var(--c-acero-oscuro); }
+.fantasma[data-material='raro'] { --m-claro: var(--c-raro-claro); --m: var(--c-raro); --m-oscuro: var(--c-raro-oscuro); }
+.fantasma[data-material='epico'] { --m-claro: var(--c-epico-claro); --m: var(--c-epico); --m-oscuro: var(--c-epico-oscuro); }
+.carta-marco .marco-in, .fantasma .marco-in {
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; padding: 46px 16px 18px;
+  background:
+    radial-gradient(90% 55% at 50% 38%, color-mix(in srgb, var(--m) 30%, transparent), transparent 75%),
+    repeating-linear-gradient(135deg, color-mix(in srgb, var(--m) 7%, transparent) 0 2px, transparent 2px 12px),
+    var(--fondo-marco);
+}
+.carta { filter: drop-shadow(0 0 var(--halo) color-mix(in srgb, var(--m) 45%, transparent)); }
+.carta[data-estado='apuntado'] { filter: drop-shadow(0 0 calc(var(--halo) + 10px) color-mix(in srgb, var(--m) 70%, transparent)) brightness(1.08); }
+.carta-gema {
+  position: absolute; top: 14px; left: 50%; width: var(--gema); height: var(--gema); translate: -50% 0; rotate: 45deg;
+  background: radial-gradient(circle at 30% 30%, var(--m-claro), var(--m) 45%, var(--m-oscuro)); box-shadow: 0 0 0 2px var(--c-oro-oscuro), 0 0 var(--halo) var(--m);
+}
+.carta-num { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 18px; }
+.carta-mas {
+  font: 800 64px/0.9 var(--f-titulo); font-variant-numeric: lining-nums;
+  background: linear-gradient(180deg, var(--c-oro-claro) 10%, var(--m-claro) 50%, var(--m) 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.carta-stat { font: 700 13px/1 var(--f-cuerpo); letter-spacing: 0.18em; text-transform: uppercase; color: var(--c-texto-2); }
+.carta-costo { display: flex; align-items: baseline; gap: 8px; color: var(--c-baja); min-height: 16px; }
+.carta-costo .carta-stat { color: var(--c-baja); }
+.carta-costo-num { font: 800 16px/1 var(--f-titulo); }
+.carta-nombre { font: 800 16px/1.2 var(--f-titulo); letter-spacing: 0.1em; color: var(--c-oro-claro); text-wrap: balance; min-height: 2.4em; display: grid; place-items: center; }
+.carta .tecla { margin-top: 2px; }
+.carta[data-material='epico'] .marco::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2; mix-blend-mode: screen;
+  background: linear-gradient(115deg, transparent 35%, color-mix(in srgb, var(--m-claro) 30%, transparent) 50%, transparent 65%) -150% 0 / 250% 100% no-repeat;
+  animation: brillo-epico 3.6s ease-in-out infinite;
+}
+@keyframes brillo-epico { 0%, 55% { background-position: 150% 0; } 100% { background-position: -150% 0; } }
+.fantasma { position: fixed; z-index: 50; pointer-events: none; transform-origin: center; opacity: 0; }
+.pie-mano { justify-content: space-between; }
+
+/* ---------- la navegacion de la vitrina (fuera del juego): cuatro rombos, sin texto ---------- */
+.vitrina-nav { position: fixed; right: 18px; bottom: 16px; z-index: 60; display: flex; gap: 6px; }
+html[data-paso='hud'] .vitrina-nav { bottom: auto; top: 16px; }
+.nav-punto { all: unset; cursor: pointer; width: 22px; height: 22px; display: grid; place-items: center; }
+.nav-punto i { width: 8px; height: 8px; rotate: 45deg; box-shadow: 0 0 0 1.5px var(--c-oro-oscuro); }
+.nav-punto[data-activo='1'] i { background: var(--c-oro); box-shadow: 0 0 0 1.5px var(--c-oro), 0 0 8px var(--c-oro); }
+
+/* ======================================================================================================================
+   CELULAR (390 px)
+   ==================================================================================================================== */
+@media (max-width: 640px) {
+  .velo { background: linear-gradient(180deg, var(--c-velo-medio) 0%, var(--c-velo-fuerte) 40%, var(--c-velo-fuerte) 100%); }
+  .escena { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 16px 16px 72px; align-items: start; align-content: start; }
+  .sello-alas { width: 380px; }
+  .lado { position: static; }
+  .ficha .marco-in { padding: 14px 12px 12px; gap: 10px; }
+  .emblema { width: 52px; height: 52px; }
+  .rango-nombre { font-size: 24px; }
+  .stats { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .stat { grid-template-columns: 1fr; justify-items: center; gap: 4px; padding: 6px 2px; text-align: center; }
+  .stat-nombre { font-size: 10px; letter-spacing: 0.04em; }
+  .stat-num { text-align: center; }
+  .stat-delta { justify-content: center; min-height: 12px; transform-origin: center; }
+  .ficha-pie { font-size: 10px; text-align: center; }
+  .evento-texto { font-size: 17px; }
+  .opcion-marco .marco-in { grid-template-columns: 52px 1fr; gap: 12px; padding: 12px 14px 12px 12px; }
+  .opcion-retrato { width: 52px; height: 52px; }
+  .retrato-ico { width: 30px; height: 30px; }
+  .opcion-titulo { font-size: 17px; }
+  .opcion-efectos, .opcion-linea, .cons-in p { font-size: 14px; }
+  .cartas { gap: 8px; }
+  .carta-marco, .fantasma { --corte: 12px; --filo: 3px; height: 260px; }
+  .carta-marco .marco-in { padding: 34px 6px 12px; }
+  .carta-gema { top: 10px; }
+  .carta-mas { font-size: 40px; }
+  .carta-stat { font-size: 10px; letter-spacing: 0.08em; }
+  .carta-nombre { font-size: 11px; letter-spacing: 0.04em; }
+  .carta-costo-num { font-size: 13px; }
+  .pie-mano { flex-wrap: wrap; }
+  .boton-in { padding: 12px 22px; font-size: 15px; }
+  .cruce { gap: 12px; }
+  .logo-equipo { width: 56px; height: 56px; }
+  .equipo-tag { font-size: 30px; }
+  .previa .marco-in { padding: 20px 16px; }
+  .previa-fila { grid-template-columns: 1fr; }
+  .previa-rotulo { letter-spacing: 0.12em; font-size: 11px; }
+  .jugar .boton-in { padding: 14px 48px; font-size: 18px; }
+  .sello-marco .marco-in { padding: 12px 18px; gap: 10px; }
+  .sello-txt, .sello-num { font-size: 30px; }
+  .hud-panel { bottom: 12px; width: calc(100% - 24px); }
+  .hud-panel .marco-in { gap: 10px; padding: 10px; flex-wrap: wrap; justify-content: center; }
+  .hud-retrato { width: 56px; height: 56px; }
+  .hud-barras { width: calc(100% - 76px); }
+  .hud-marcador .marco-in { gap: 12px; padding: 6px 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carta[data-material='epico'] .marco::after { animation: none; }
+  .opcion, .carta, .boton { transition: none; }
+}

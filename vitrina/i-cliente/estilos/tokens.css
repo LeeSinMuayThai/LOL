@@ -1,0 +1,69 @@
+/* A · CLIENTE — todos los colores literales de la direccion, y solo aca. Salen de la paleta del cliente de LoL:
+   el azul noche, el oro del filete, el celeste hextech de lo interactivo y los materiales del loot. */
+:root {
+  /* noche del cliente */
+  --c-noche-0: #010a13;
+  --c-noche-1: #061220;
+  --c-noche-2: #0a1a2c;
+  --c-noche-3: #102438;
+  --c-velo-fuerte: rgba(1, 10, 19, 0.92);
+  --c-velo-medio: rgba(1, 10, 19, 0.62);
+  --c-velo-nada: rgba(1, 10, 19, 0);
+  --c-sombra: rgba(0, 0, 0, 0.55);
+
+  /* oro del filete y del texto */
+  --c-oro-claro: #f0e6d2;
+  --c-oro: #c8aa6e;
+  --c-oro-medio: #c89b3c;
+  --c-oro-oscuro: #785a28;
+  --c-oro-hondo: #3a2c12;
+  --c-texto: #f0e6d2;
+  --c-texto-2: #a09b8c;
+  --c-texto-3: #5b5a56;
+
+  /* hextech: lo interactivo */
+  --c-hex-claro: #cdfafa;
+  --c-hex: #0ac8b9;
+  --c-hex-medio: #0397ab;
+  --c-hex-oscuro: #005a82;
+  --c-hex-hondo: #0a323c;
+
+  /* semanticos */
+  --c-sube: #3fe0c6;
+  --c-baja: #e84057;
+  --c-aviso: #f0b232;
+  --c-gana: #0ac8b9;
+  --c-pierde: #e84057;
+
+  /* el rango */
+  --c-diamante-claro: #d6e2ff;
+  --c-diamante: #8ea8ff;
+  --c-diamante-oscuro: #3b4fb8;
+
+  /* el juego */
+  --c-vida: #33b03a;
+  --c-vida-claro: #7fe07a;
+  --c-vida-oscuro: #145a1c;
+  --c-vida-rastro: #f3e6b0;
+  --c-mana: #2f8ae0;
+  --c-mana-oscuro: #10386a;
+  --c-marca: #050806;
+  --c-campo-1: #1b2a24;
+  --c-campo-2: #0c1613;
+  --c-campo-linea: rgba(205, 250, 250, 0.06);
+  --c-skill: #ff3c3c;
+  --c-skill-borde: #ffd0c8;
+  --c-skill-fondo: rgba(255, 60, 60, 0.18);
+  --c-bola: #ffe28a;
+
+  /* el loot: materiales del marco y gemas */
+  --c-acero-claro: #dfe6ec;
+  --c-acero: #8d99a6;
+  --c-acero-oscuro: #3a434c;
+  --c-raro-claro: #bff4ff;
+  --c-raro: #2fb6f0;
+  --c-raro-oscuro: #0b4a7a;
+  --c-epico-claro: #f0d2ff;
+  --c-epico: #b468f0;
+  --c-epico-oscuro: #4a1c86;
+}
