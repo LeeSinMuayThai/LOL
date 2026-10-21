@@ -44,7 +44,7 @@
 | **F · ola F** | Lolero jugado seis años (§0.8): el Mundial se juega y se ve (Swiss y bracket con "vos"), ningún año muerto, la consecuencia en el momento y el diario que titula lo que pasó, la carta que mueve un número que ves | ✅ 2026-10-14: el usuario eligió "los 4 juntos"; 2 workers Opus high + 2 Sonnet high + revisor Sonnet (0 bloqueantes, 2 para arreglar + 5 menores, arreglados); huella 433142448 ('F'), guardado VERSION 16; publicada. Falta que el usuario la juegue en RÁPIDO |
 | **G · ola G** | El Ídolo contra Lolero, jugados (§0.9): las finales con las manos y sin tirada, el perfil que no decide, siempre en un equipo, el mercado como dilema, el diario que no se repite y el final como ceremonia. Dos entregas | 🔶 2026-10-15: la auditoría (`AUDITORIA.md`) y el plan, aprobados; **las dos entregas publicadas**: la 1 (el control: G1, G2a, G3a, G3b) y la 2 (lo que se ve y el mundo: G2b, G2c, G3c, G4, más el Bo1 con las manos de D118) (PROGRESO 2026-10-15); falta que el usuario las juegue; G5 queda opcional |
 | **H · ola H** | "Cada carrera, distinta" (§0.10): el mazo de eventos (la forma de elegir y el cupo propio), el mazo de cartas con rareza (solo stats), el arcade (minijuegos de verdad; el Play-In y el Swiss por tandas), la voz corta, lo raro (~190 eventos) y el álbum. Tres entregas | ✅ 2026-10-16: **las tres entregas publicadas**. La 2 trae las 12 mecánicas en canvas (10 rehechas, una nueva: `el_gancho`), el Play-In y las tandas del Swiss, la vara dicha en la ficción, los 257 eventos en voz corta y la mano de cartas nueva. La 3, lo raro (229 eventos, 484 en total), el mazo de 240 cartas y el álbum: 17 raros o más y 2,3 legendarios por carrera, Jaccard 0,09. Queda que juegue el usuario y las deudas D146-D153 (PROGRESO 2026-10-16) |
-| **I · ola I** | "Que tenga sentido" (§0.11): el usuario jugó H (2026-10-21) y la encontró aburrida, incoherente, con mucho texto y la UI "full HTML". Lo roto (I1), elegir es cambiar algo por algo (I2), el minijuego como en El Ídolo (I3), una sola cara con vitrina (I4) y el calendario real (I5) | 🔶 2026-10-21: diagnóstico medido (tres scouts + capturas) y plan escrito; esperando las respuestas del usuario (§0.11, "Preguntas") |
+| **I · ola I** | "Que tenga sentido" (§0.11): el usuario jugó H (2026-10-21) y la encontró aburrida, incoherente, con mucho texto y la UI "full HTML". Lo roto (I1), elegir es cambiar algo por algo (I2), el minijuego como en El Ídolo (I3), una sola cara con vitrina (I4) y el calendario real (I5) | 🔶 2026-10-21: diagnóstico medido (tres scouts + capturas), plan escrito y respondido (un minijuego por serie, sonidos del LoL, cartas con costo, vitrina primero). Sigue: la entrega 1 y la vitrina, en paralelo |
 | **U3** | El resto de los momentos (banners, ceremonias, primer contrato) + la carta, el PNG y la trayectoria | ⬜ |
 | **C2** | El usuario juega una carrera completa | ⬜ |
 | **U4** | Pulido y cierre (D98, D99, contraste, celular, rendimiento, docs) | ⬜ |
@@ -1614,8 +1614,8 @@ Cada una trajo su recuadro y su texto, y no se sacó nada. Así quedó:
   línea queda bajo la opción elegida hasta la parada siguiente. Ninguna tarjeta que aparece y se va sola.
 
 **I2 · Elegir es cambiar algo por algo** (motor, datos y pantalla)
-- **Las cartas** (D166): la rareza trae más número **y** más costo, no más poder gratis (pregunta 3). Un check: ninguna
-  mano trae una carta que le gane a otra en todo.
+- **Las cartas** (D166): la rareza trae más número **y** más costo, no más poder gratis, y algunas cartas dan algo y
+  sacan otra cosa ("una de cal y una de arena"). Un check: ninguna mano trae una carta que le gane a otra en todo.
 - **Las opciones de evento** (D167):
   - el titular es lo que más probablemente pasa, con ⚠ y el riesgo en palabras si puede salir mal; nunca el peor caso;
   - un check: dos opciones del mismo evento no pueden mover solo el mismo stat;
@@ -1631,14 +1631,15 @@ Cada una trajo su recuadro y su texto, y no se sacó nada. Así quedó:
 **I3 · El minijuego como en El Ídolo** (pantalla y una pieza de motor)
 - **La previa** (captura del usuario): una línea de qué hacer, la vara en un número con su porqué ("KT te pide 7",
   D174) y la barra de la serie. El poder, la charla y el desempate van como íconos dentro del HUD del minijuego.
-- **La serie de corrido** (D170, pregunta 1).
+- **Un minijuego por serie** (D170; "Lo que contestó el usuario", abajo): ya no uno por mapa. La mecánica cambia
+  entre series, el margen da el marcador, y el Swiss y el Play-In quedan con las tandas de H.
 - **Dodge con barra de vida** (D171), y el Flash como botón grande con su ícono sobre el campeón.
 - **last_hit con autoataques** (D173): pegás cuando querés, cuenta el golpe final, y el que se lleva la oleada se marca
   en el acto.
 - **`la_llamada`** (D172) se rehace para que se entienda en 5 s, o sale.
-- **El sonido** (D176, pregunta 2).
+- **El sonido** (D176): sonidos del LoL (golpe, Flash, skillshot, victoria y derrota), prendido desde el primer clic.
 
-**I4 · Una sola cara** (vitrina primero, pregunta 4)
+**I4 · Una sola cara** (vitrina primero, decidido)
 - El fondo y el arte quedan. Se rediseñan como una familia, en el lenguaje del cliente de LoL:
   - la carta de decisión y la opción;
   - la previa y el HUD del minijuego;
@@ -1660,7 +1661,7 @@ Cada una trajo su recuadro y su texto, y no se sacó nada. Así quedó:
 |---|---|---|---|
 | **1 · Lo roto** | I1 entero | 2 Sonnet high (motor / pantalla) + revisor Sonnet | El supervisor juega en Chromium cada camino de la queja; deploy; juega el usuario |
 | **V · La vitrina** | I4: dos direcciones sobre la decisión, la previa y el HUD del minijuego y la mano | 2 Opus high en `vitrina/`, en paralelo con la 1 | El usuario elige |
-| **2 · Elegir y jugar** | I2 + I3, con la cara elegida | 3-4 workers (Opus high para la serie de corrido; Sonnet el resto) + revisor | Deploy; juega el usuario |
+| **2 · Elegir y jugar** | I2 + I3, con la cara elegida | 3-4 workers (Opus high para el minijuego por serie; Sonnet el resto) + revisor | Deploy; juega el usuario |
 | **3 · El resto de la cara** | I4 en las demás pantallas | 2 Sonnet + revisor | Deploy; juega el usuario |
 | **4 · El calendario** | I5 | scout + 1 Opus high + revisor | Deploy; juega el usuario |
 
@@ -1678,15 +1679,28 @@ Unos 12-14 workers, ~2,5-3M tokens en total.
   DM, la serie, el Swiss, la prueba y la academia. La entrega lleva esas capturas.
 - **El revisor** recibe el texto textual de arriba y lo marca punto por punto.
 
-#### Preguntas para el usuario (antes de la entrega 2; la 1 y la vitrina no las necesitan)
+#### Lo que contestó el usuario (2026-10-21, textual; no volver a preguntar)
 
-1. **El minijuego en una serie** (D170): ¿un minijuego de corrido que define varios mapas, con la dificultad que sube
-   adentro, o uno por mapa sin repetir?
-2. **El sonido** (D176): ¿sonidos reales del LoL, con la misma política de Riot para proyectos de fans que ya usamos
-   con el arte, o sintetizados mejores?
-3. **Las cartas** (D166): ¿la rareza da más número y más costo, o toda carta cambia algo por algo, también la común?
-4. **La cara** (I4): ¿vitrina primero, o directo en el juego?
-5. Dos cosas para entender: qué es "el rango" que queda tapado (D161) y qué se ve roto en la mano del año (D162).
+| Tema | Decisión |
+|---|---|
+| **El minijuego en una serie** (D170) | *"yo ya te habia dicho que depende la importancia, Si sos un equipo chotísimo que le cuesta salir del play-in, obviamente que para el Swiss Stage vas a tener que jugar un minijuego por ronda. Ahora, si sos T1, no. Lo mismo. Pero a partir de cuartos de Worlds, todos juegan minijuegos por serie."* |
+| **El sonido** (D176) | Sonidos del LoL, con la política de Riot para proyectos de fans (la misma del arte). Si algún día se cobra, salen |
+| **Las cartas** (D166) | *"algunas te tienen que dar una de cal y sacar una de arena tambien, pero la 1"*: la rareza da más número **y** más costo, y además algunas cartas dan algo y sacan otra cosa |
+| **La cara** (I4) | Vitrina primero, en paralelo con la entrega 1 |
+
+**Cómo se lee la serie.** El "a partir de cuartos se juegan todos" de §0.10 se implementó como **todos los mapas** con
+minijuego (`mapaConMinijuego`, `systems/serie.js:219`). El usuario quería decir **todas las series**, cada una con un
+minijuego. Ahora queda así:
+- **Play-In:** una corrida, como en H.
+- **Swiss:** por tandas según la fuerza del equipo, como en H. El equipo débil juega un minijuego por ronda; T1, no.
+- **Cuartos, semis y final del Mundial:** un minijuego por serie, para todos.
+- **Cuartos, semis y final de tu liga:** "lo mismo", un minijuego por serie.
+- **Entre series**, la mecánica cambia.
+- **El marcador** sale del margen sobre la vara: holgado 3-0, justo 3-2. Es una propuesta del supervisor.
+- **Después del minijuego**, la serie se cuenta mapa por mapa como resumen, sin suspenso (D158).
+
+**Siguen sin respuesta:** qué es "el rango" que queda tapado (D161) y qué se ve roto en la mano del año (D162). No
+frenan nada.
 
 **Las deudas nuevas** (D154-D177) están en la tabla del final de este documento.
 

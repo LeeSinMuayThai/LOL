@@ -64,7 +64,13 @@ PLANUI §0.11. Solo documentos; no se tocó código.
   sola cara con vitrina, I5 el calendario real) en cuatro entregas más la vitrina.
 - **Deudas:** D154-D177. La decisión del usuario sobre las pruebas va a la fila de minijuegos de las decisiones de
   `PLAN.md`.
-- **Pendiente:** las cinco preguntas al usuario (§0.11).
+- **Las respuestas del usuario** (textuales en §0.11):
+  - un minijuego por serie (el "se juegan todos" de H se había leído como todos los mapas);
+  - sonidos del LoL;
+  - cartas en las que la rareza da más número y más costo, y algunas "de cal y de arena";
+  - vitrina primero.
+- **Siguen abiertos:** "el rango" (D161) y la mano rota (D162).
+- **Sigue:** la entrega 1 y la vitrina, en paralelo.
 
 ### 2026-10-16 — Ola H, entrega 3: lo raro, el mazo de 240 cartas y el álbum (H5, H2c, H6)
 
