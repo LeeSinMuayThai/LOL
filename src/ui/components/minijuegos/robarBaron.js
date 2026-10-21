@@ -6,7 +6,7 @@ import { bestia, campeon, rayo, minion } from '../../arcade/sprites.js';
 import { golpe as sonidoGolpe, flash as sonidoFlash, latido, derrota } from '../../sonido.js';
 
 // Robar el Barón (fase 4; rehecho en H3k, PLANUI §0.10 "El arcade"). Antes era una barrita con un botón "¡Smite ya!". Ahora es
-// el pozo: tres objetivos en fila (el dragón, Atakhan y el Barón), los dos equipos pegándole, la vida que acelera cerca de
+// el pozo: tres objetivos en fila (el dragón, el Heraldo y el Barón), los dos equipos pegándole, la vida que acelera cerca de
 // la zona, golpes grandes que se ven venir, pausas sin aviso y el jungla rival con su smite cargando. Un smite por
 // objetivo, con Espacio, F o un toque. La lógica vive en `ui/arcade/baron.js` (pura: la corre `dev/arcade-humano.js`).
 //
@@ -17,8 +17,8 @@ export { ESCALA_DISTANCIA } from '../../arcade/baron.js';
 
 const MUNDO = [160, 90];
 const SEMILLA = 2 ** 32;
-const NOMBRES = ['EL DRAGÓN', 'ATAKHAN', 'EL BARÓN'];
-const COLOR_FASE = ['dragon', 'atakhan', 'baron'];
+const NOMBRES = ['EL DRAGÓN', 'EL HERALDO', 'EL BARÓN'];
+const COLOR_FASE = ['dragon', 'heraldo', 'baron'];
 const TAMANO_FASE = [11, 12.5, 14];
 const CUERNOS_FASE = [2, 3, 5];
 const POZO = { x: 80, y: 56 };

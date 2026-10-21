@@ -172,6 +172,13 @@ function consecuencias(state, rendimiento, resultado, esCierre, rng) {
   const mkt = BALANCE.mercado;
   let banquilloPendiente = state.flags.banquilloPendiente ?? false;
   const enTierConPlantel = state.career.tier === 1 || state.career.tier === 2;
+  // D154: el flag no es una condena de por vida. Si al cierre del año rendiste (campeón, o la mitad de arriba de la
+  // tabla), el banco se cae: la pretemporada ya no te cede. (El título por serie lo levanta `serie.js`.)
+  if (banquilloPendiente && esCierre
+    && (campeon || posicion <= Math.ceil(equipos * mkt.banquilloSeLevantaFraccionTabla))) {
+    banquilloPendiente = false;
+    logs.push(crearLog('mercado', `Cerraste el año ${posicion}º de ${equipos}: el banco queda atrás y seguís de titular en ${state.career.currentOrg}.`));
+  }
   if (enTierConPlantel && !banquilloPendiente && fracaso
     && nivelDelJugador(state) < nivelEquipo - mkt.umbralBanquillo
     && chance(mkt.probBanquilloPorBrecha, rng)) {

@@ -1,7 +1,7 @@
 import { unaSolaVez, dificultadDe, varaEfectivaDe } from './comun.js';
-import { necesariosDe, lineaDeCuenta } from '../../arcade/conteo.js';
+import { lineaDeCuenta } from '../../arcade/conteo.js';
 import { mulberry32 } from '../../../core/rng.js';
-import { parametros, crear, avanzar, resultadoDe, detalleDe, faseDeT, BLANCOS as TOTAL } from '../../arcade/prueba.js';
+import { parametros, crear, avanzar, resultadoDe, detalleDe, faseDeT, golpesQuePasan, BLANCOS as TOTAL } from '../../arcade/prueba.js';
 import { crearMarco, crearEntradas, crearJugo, crearBucle, presentar, retratoDe, motionReducido, tinte, mezcla } from '../../arcade/kit.js';
 import { campeon } from '../../arcade/sprites.js';
 import { BALANCE } from '../../../data/balance.js';
@@ -28,8 +28,11 @@ const TIRO_VISIBLE = 0.12;
 export function montar(container, state, onDone, rngUi, datos = null) {
   const terminar = unaSolaVez(onDone);
   const reducido = motionReducido();
-  const vara = varaEfectivaDe(datos) ?? 0.6;
-  const necesarios = necesariosDe(vara, TOTAL);
+  // D155: la vara de la prueba de ingreso viaja en `datos.vara` en puntos de porcentaje enteros (la que juzga el motor con
+  // `veredictoDeLaPrueba`: `round(golpes / blancos × 100) >= vara`). La instrucción pide los golpes que de verdad pasan: el
+  // mismo número que exige el motor. Sin `datos.vara` (la prueba suelta de la vitrina o de un test) vale la de siempre.
+  const vara = Number.isFinite(datos?.vara) ? datos.vara : Math.round((varaEfectivaDe(datos) ?? 0.6) * BALANCE.stats.max);
+  const necesarios = golpesQuePasan(vara);
   const params = parametros({ stat: state.player.stats.mecanica, dificultad: dificultadDe(state, datos) });
   const azarJuego = mulberry32(Math.floor(rngUi() * SEMILLA));
   const azarFx = mulberry32(Math.floor(rngUi() * SEMILLA));
