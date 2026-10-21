@@ -27,6 +27,14 @@ export function mainDe(vista) {
   return claveDe(mejor.name);
 }
 
+// D159 (PLANUI §0.11): el retrato del minijuego es el campeón de ESE mapa, no el main. En Fearless cada mapa es otro y el motor
+// lo dice en `datos.campeonElegido`; `mainDe` ya prefiere `player.campeonDelSplit`, así que el juego recibe una copia de la
+// vista con ese campeón (sin tocar el state). Sin campeón elegido (o uno que el catálogo no conoce), la vista tal cual.
+export function vistaConCampeon(vista, nombre) {
+  if (!nombre || !claveDe(nombre) || !vista?.player) return vista;
+  return { ...vista, player: { ...vista.player, campeonDelSplit: nombre } };
+}
+
 // Tu campeón en la luz del mundo ahora (P1, PLANUI §0.4): justo después de una serie (`serie.postSerie`, hasta que la
 // etapa siguiente lo baja) es el del último mapa que jugaste, no el del split: con Fearless cada mapa fue otro y el relato
 // de después tiene que verse como el final de la serie. Si no, el de `mainDe`.

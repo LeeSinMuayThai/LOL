@@ -782,3 +782,7 @@ html[data-reducido] :is(.tx-pr, .tx-pr-estado, .tx-rl-punto) { animation: none; 
 .sw:not(.sw--compacto) .sw-ronda[data-encurso] { flex-grow: 1.4; }
 /* revisión de F1: el escudo que no tiene imagen es texto (`ln-tv-mono`): al lado de la sigla se leía "WG WG" */
 .sw-logo:has(.ln-tv-mono), .mundial-equipo-logo:has(.ln-tv-mono) { display: none; }
+
+/* D157 (PLANUI §0.11): el tablero del Swiss entre las rondas de la tanda (paradas/minijuego.js), en la columna de la parada */
+.mj-swiss { margin-top: 10px; max-width: 100%; overflow-x: auto; }
+.mj-swiss .sw { overflow: visible; }
