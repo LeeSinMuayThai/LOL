@@ -1,0 +1,119 @@
+/* B · TRANSMISION — el unico archivo con colores literales y la unica escala. El resto de las hojas usa var(--x). */
+:root {
+  /* el mundo (los lee el ambiente de la fusion, que se reutiliza tal cual) */
+  --bg-void: #04050a;
+  --bg-surface: #0a0d16;
+  --gold: #ffd27a;
+  --luz-pieza: #2f6bff;
+  --contra-pieza: #ffb45a;
+  --luz-academia: #43e6c3;
+  --contra-academia: #e8f6ff;
+  --luz-escenario: #7fa8ff;
+  --contra-escenario: #ff3da8;
+  --luz-mundial: #ffc94d;
+  --contra-mundial: #fff3d6;
+  --luz-leyenda: #ff9a5a;
+  --contra-leyenda: #ff4f7a;
+  --luz-blanca: #ffffff;
+  --luz: var(--luz-pieza);
+  --contra: var(--contra-pieza);
+  --velo-lectura: #04050af0;
+  --velo-medio: #04050aa8;
+  --velo-suave: #04050a66;
+  --velo-nada: #04050a00;
+  --mascara: #000000;
+  --dur-era: 1300ms;
+
+  /* el paquete grafico: placas opacas, sin bordes */
+  --placa: #090c14f5;
+  --placa-alta: #151b2a;
+  --placa-baja: #1b2233f2;
+  --placa-tecla: #232b3d;
+  --casilla: #3a4560;
+  --tinta: #f6f8fc;
+  --tinta-2: #b4bccc;
+  --tinta-3: #7f8aa0;
+  --tinta-oscura: #06080d;
+
+  /* los dos lados de la transmision: vos sos el azul */
+  --acento: #1f6bff;
+  --acento-claro: #6ea2ff;
+  --acento-osc: #0b2f7a;
+  --rival: #e8323f;
+  --rival-osc: #5c0d16;
+
+  --sube: #2fe08a;
+  --baja: #ff4a5c;
+  --aviso: #ffb21f;
+
+  /* el rango: diamante */
+  --rango: #a9b8ff;
+  --rango-claro: #e3e8ff;
+  --rango-osc: #4152c9;
+
+  /* el material del marco de cada carta (la rareza, sin etiqueta) */
+  --mat-comun-a: #9aa3b2;
+  --mat-comun-b: #4a5160;
+  --mat-rara-a: #4aa8ff;
+  --mat-rara-b: #123fae;
+  --mat-rara-brillo: #e2f2ff;
+  --mat-epica-a: #b45cff;
+  --mat-epica-b: #4a1496;
+  --mat-epica-c: #ffd06a;
+  --mat-brillo: #ffffff8c;
+  --mat-sombra-rara: #2f7dff73;
+  --mat-sombra-epica: #b45cff80;
+
+  /* el minijuego: el campo, la vida, el enfriamiento */
+  --campo-a: #14261d;
+  --campo-b: #070d0a;
+  --campo-piedra: #2a3b31;
+  --telegrafo: #ff3a4a40;
+  --telegrafo-filo: #ff5a66;
+  --proyectil: #ffd9a0;
+  --vida: #39c25a;
+  --vida-alta: #6ef08a;
+  --vida-golpe: #f4f1e6;
+  --vida-fondo: #0b120e;
+  --enfriamiento: #050709c4;
+  --fantasma: #8fb8ffa0;
+
+  --sombra: #00000099;
+
+  /* tipografia: una sola familia, Archivo (comun/fuentes), condensada para todo lo que grita */
+  --f: 'Archivo', system-ui, sans-serif;
+  --ancho-grita: 66%;
+  --ancho-lee: 88%;
+  --t-xxl: 120px;
+  --t-xl: 156px;
+  --t-l: 40px;
+  --t-num: 30px;
+  --t-m: 22px;
+  --t-s: 18px;
+  --t-xs: 12px;
+
+  /* forma: todo es plano y corta en diagonal */
+  --corte: 18px;
+  --corte-s: 10px;
+  --tecla: 64px;
+  --margen: 56px;
+
+  --expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-micro: 140ms;
+}
+html[data-era='pieza'] { --luz: var(--luz-pieza); --contra: var(--contra-pieza); }
+html[data-era='escenario'] { --luz: var(--luz-escenario); --contra: var(--contra-escenario); }
+
+@media (max-width: 640px) {
+  :root {
+    --t-xxl: 44px;
+    --t-xl: 60px;
+    --t-l: 26px;
+    --t-m: 16px;
+    --t-s: 15px;
+    --t-xs: 10px;
+    --corte: 12px;
+    --tecla: 44px;
+    --margen: 16px;
+  }
+}
