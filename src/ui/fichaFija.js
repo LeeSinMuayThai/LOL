@@ -40,6 +40,9 @@ const COPA_PASO_MS = 120;
 // pulso. En TODAS las velocidades (RÁPIDO con las duraciones cortas); con movimiento reducido, directo (lo resuelven
 // `moverNumero` y `animar` del kit). Las duraciones son tokens (`--fj-dur-*`, bloque W1-H de tokens.css).
 const PULSO_DESDE = 'scale(1.8)';
+// Orden en que la tira se achica (D161): primero la plata, el internacional, el "→ próximo" de jerarquía y hype; recién después
+// esos dos, los títulos, la carrera y el arraigo. `data-prio` mayor se esconde antes.
+const PRIO_PROXIMOS = 5;
 const PULSO_RETARDO = 0.45; // el pulso entra cuando el número ya va rodando (fracción de su duración)
 
 function duracionDeToken(nombre) {
@@ -241,7 +244,7 @@ function tiraInternacional(estadoInt) {
 }
 
 function tiraTitulos(v) {
-  const caja = item('fj-titulos', 6, 'Títulos', null);
+  const caja = item('fj-titulos', 3.5, 'Títulos', null);
   const copas = nodo('span', 'fj-vitrina');
   copas.setAttribute('aria-hidden', 'true');
   const todas = v.grupos.flatMap((g) => g.titulos.map((t) => ({ ...t, tier: g.tier })));
@@ -452,38 +455,65 @@ export function crearFichaFija(seccion) {
   }
   // I1c: rueda lo que cambió una decisión y deja el ▲▼ a la vista hasta `soltar()`; lo que ya mostró no vuelve a rodar cuando la
   // `vista` se repinte (`antes` queda en el valor nuevo).
+  // Dónde cae cada campo de la decisión en la ficha: el número que rueda (si lo tiene), la caja que muestra el ▲▼ y, para los
+  // stats del juego, la celda con su flash. Todo lo que la ficha muestra rueda: stats, hype, arraigo, jerarquía, nivel y LP.
+  const itemDe = (campo) => tira.querySelector(`.fj-item[data-campo="${campo}"]`);
+  function blancoDe(campo, id) {
+    if (campo.startsWith('player.stats.')) {
+      const celda = seccion.querySelector(`.fj-stat[data-stat="${id}"]`);
+      const caja = id === 'hype' ? itemDe('hype') : null;
+      return { valor: celda?.querySelector('.fj-stat-valor') ?? caja?.querySelector('.fj-num') ?? null, flash: celda?.querySelector('.fj-stat-flash') ?? null, caja, previo: id };
+    }
+    if (campo === 'nivel') return { valor: tira.querySelector('.fj-num[data-campo="nivel"]'), flash: null, caja: tira.querySelector('.fj-nivel'), previo: 'nivel' };
+    if (campo === 'career.jerarquia') { const caja = itemDe('jerarquia'); return { valor: caja?.querySelector('.fj-num') ?? null, flash: null, caja, previo: 'jerarquia' }; }
+    if (campo === 'career.arraigo') return { valor: null, flash: null, caja: itemDe('arraigo'), previo: null };
+    if (campo === 'player.ranked.lp') return { valor: tira.querySelector('.fj-rango-lp'), flash: null, caja: itemDe('ranked'), previo: null, formato: true };
+    return { valor: null, flash: null, caja: null, previo: null };
+  }
   document.addEventListener(EVENTO_RODAR, (e) => {
     const flashes = [];
+    const escondidos = [];
     if (seccion.hidden) { e.detail.soltar = () => {}; return; }
     for (const c of e.detail.cambios ?? []) {
       const a = Math.round(c.antes);
       const b = Math.round(c.despues);
       if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) continue;
       const id = c.campo.split('.').pop();
-      let valor = null;
-      let flash = null;
-      if (c.campo.startsWith('player.stats.')) {
-        const celda = seccion.querySelector(`.fj-stat[data-stat="${id}"]`);
-        valor = celda?.querySelector('.fj-stat-valor') ?? null;
-        flash = celda?.querySelector('.fj-stat-flash') ?? null;
-        if (antes?.juego && id in antes.juego) antes.juego[id] = b;
-      } else if (c.campo === 'career.jerarquia' || c.campo === 'nivel') {
-        valor = c.campo === 'nivel' ? tira.querySelector('.fj-num[data-campo="nivel"]') : tira.querySelector('.fj-item[data-campo="jerarquia"] .fj-num');
-        if (antes && valor) antes[id] = b;
+      const d = b - a;
+      const t = blancoDe(c.campo, id);
+      if (antes && t.previo) {
+        if (t.previo in (antes.juego ?? {})) antes.juego[t.previo] = b;
+        else if (t.previo in antes) antes[t.previo] = b;
       }
-      if (!valor) continue;
-      countUp(valor, a, b, { dur: RODAR_MS, format: num });
-      if (flash) {
-        const d = b - a;
-        flash.replaceChildren(triangulos('baja', d > 0 ? '+' : '-'), document.createTextNode(String(Math.abs(d))));
-        flash.dataset.signo = d > 0 ? 'sube' : 'baja';
-        flash.setAttribute('aria-label', `${id} ${d > 0 ? 'subió' : 'bajó'} ${Math.abs(d)}`);
-        animarNodo(flash, [{ opacity: 0.25, transform: PULSO_DESDE }, { opacity: 1, transform: 'none' }], { dur: DUR.entra, easing: RESORTE });
+      if (t.valor) {
+        const resto = t.formato ? (t.valor.textContent.match(/^\d+(.*)$/)?.[1] ?? '') : '';
+        const formato = t.formato ? (n) => `${n}${resto}` : num;
+        if (!t.formato || /^\d/.test(t.valor.textContent)) countUp(t.valor, a, b, { dur: RODAR_MS, format: formato });
+      }
+      let flash = t.flash;
+      if (!flash && t.caja) {
+        // la caja de la tira no trae un lugar para el ▲▼ (o trae el del año): este lo cubre hasta `soltar()`
+        for (const viejo of t.caja.querySelectorAll('.fj-delta:not([data-flash])')) { viejo.hidden = true; escondidos.push(viejo); }
+        flash = nodo('span', 'fj-delta');
+        flash.dataset.flash = 'si';
+        t.caja.append(flash);
         flashes.push(flash);
-      }
+        flash.dataset.propio = 'si';
+      } else if (flash) flashes.push(flash);
+      if (!flash) continue;
+      flash.classList.toggle('sube', d > 0);
+      flash.classList.toggle('baja', d < 0);
+      flash.replaceChildren(triangulos('baja', d > 0 ? '+' : '-'), document.createTextNode(String(Math.abs(d))));
+      flash.dataset.signo = d > 0 ? 'sube' : 'baja';
+      flash.setAttribute('aria-label', `${id} ${d > 0 ? 'subió' : 'bajó'} ${Math.abs(d)}`);
+      animarNodo(flash, [{ opacity: 0.25, transform: PULSO_DESDE }, { opacity: 1, transform: 'none' }], { dur: DUR.entra, easing: RESORTE });
     }
     e.detail.soltar = () => {
-      for (const f of flashes) { f.replaceChildren(); delete f.dataset.signo; f.removeAttribute('aria-label'); }
+      for (const f of flashes) {
+        if (f.dataset.propio) { f.remove(); continue; }
+        f.replaceChildren(); delete f.dataset.signo; f.removeAttribute('aria-label');
+      }
+      for (const v of escondidos) v.hidden = false;
     };
   });
   // I1c (D161): la tira no recorta a ningún ancho. Si no entra, se esconden los ítems de menos prioridad, el último primero
@@ -491,10 +521,17 @@ export function crearFichaFija(seccion) {
   function ajustar() {
     const items = [...tira.querySelectorAll('.fj-item')];
     for (const i of items) delete i.dataset.oculto;
+    delete tira.dataset.sinProx;
     if (!tira.clientWidth) return;
+    const cabe = () => tira.scrollWidth <= tira.clientWidth;
     const candidatos = items.filter((i) => i.getClientRects().length > 0 && Number(i.dataset.prio) > 1).sort((a, b) => Number(b.dataset.prio) - Number(a.dataset.prio));
     for (const i of candidatos) {
-      if (tira.scrollWidth <= tira.clientWidth) break;
+      if (cabe()) break;
+      // antes de esconder la jerarquía, el hype, los títulos o lo que sigue, se les saca el "→ próximo" (sigue en la hoja)
+      if (Number(i.dataset.prio) < PRIO_PROXIMOS && !tira.dataset.sinProx) {
+        tira.dataset.sinProx = 'si';
+        if (cabe()) break;
+      }
       i.dataset.oculto = 'si';
     }
   }

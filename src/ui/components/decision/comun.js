@@ -21,7 +21,7 @@ export const ETIQUETAS = {
 };
 // Los números que la tarjeta del resultado puede mostrar (lo demás que mueve una respuesta es maquinaria: la deuda de
 // sueño, los contadores, el LP suelto, que va en el rango).
-export const VISIBLES = /^(player\.stats\.\w+|player\.(studies|sleep|familyTrust)|career\.(jerarquia|arraigo|sinergia)|nivel|ranked)$/;
+export const VISIBLES = /^(player\.stats\.\w+|player\.(studies|sleep|familyTrust)|career\.(jerarquia|arraigo|sinergia)|player\.ranked\.lp|nivel|ranked)$/;
 export const RIESGO = { seguro: 'seguro', incierto: 'incierto', ruleta: 'ruleta', alto: 'alto', peligroso: 'alto' };
 export const CORTO = { 'Confianza familiar': 'Casa', Consistencia: 'Cabeza', Adaptabilidad: 'Adapt.', Shotcalling: 'Calls' };
 // El orden de "lo que pasó" (ganaste / te costó): por magnitud (▲▲▲ antes que ▲) y, a igual magnitud, SoloQ primero y

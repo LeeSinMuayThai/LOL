@@ -965,49 +965,17 @@ export function desdeDeUltimosBeats(logs, limite = LIMITE_FEED) {
 // con elección primero, el mundo al final (`franjaDelTramo`, ui/core/momentos.js). `tramoDesde` (por defecto `desde`) es
 // donde arrancó el tramo: la última respuesta del jugador. Clic o L la abren como un cajón sobre la parada con la página
 // entera del tramo (`renderPagina`, con scroll); Esc o L lo cierran y el foco vuelve a la franja.
-function bloqueDeEleccion(e) {
-  const bloque = document.createElement('section');
-  bloque.className = 'mt-eleccion';
-  bloque.setAttribute('aria-label', `Lo que elegiste: ${e.decision}`);
-  const rotulo = document.createElement('span');
-  rotulo.className = 'mt-eleccion-rotulo';
-  rotulo.textContent = 'Lo que elegiste';
-  const titulo = document.createElement('h3');
-  titulo.className = 'mt-eleccion-titulo';
-  titulo.textContent = e.decision;
-  const opcion = document.createElement('p');
-  opcion.className = 'mt-eleccion-opcion';
-  opcion.textContent = e.opcion;
-  const salio = document.createElement('p');
-  salio.className = 'mt-eleccion-salio';
-  salio.textContent = e.salio;
-  bloque.append(rotulo, titulo, opcion, salio);
-  if (e.ejes.length > 0) {
-    const ejes = document.createElement('span');
-    ejes.className = 'eje-chips mt-eleccion-ejes';
-    for (const x of e.ejes) ejes.append(chipEje({ eje: x.eje, valor: x.valor, cambio: true, sufijo: x.sufijo, grande: true }));
-    bloque.append(ejes);
-  }
-  return bloque;
-}
-
 export function renderParadaAntes(contenedor, state, { desde = 0, cierreDelAnio = null, tramoDesde = desde } = {}) {
   const inicio = Math.max(0, Math.min(tramoDesde ?? desde, state.logs.length));
   const franja = franjaDelTramo(state.logs, inicio);
   contenedor.replaceChildren();
   const cartelDelAnio = cierreDelAnio?.anio ? `Cierre de ${cierreDelAnio.anio}` : null;
-  const conElecciones = (franja.elecciones ?? []).length > 0;
-  if (franja.cuantas === 0 && !cartelDelAnio && !conElecciones) {
+  if (franja.cuantas === 0 && !cartelDelAnio) {
     contenedor.hidden = true;
     return;
   }
-  // F3 (PLANUI §0.8, punto 6): lo que elegiste y lo que salió, arriba y aparte, más grande que las líneas comunes.
-  for (const e of franja.elecciones ?? []) contenedor.append(bloqueDeEleccion(e));
-  // F3: si lo único que pasó en el tramo es lo que elegiste, el bloque alcanza: no hay franja "Mientras tanto" vacía.
-  if (franja.cuantas === 0 && !cartelDelAnio) {
-    contenedor.hidden = false;
-    return;
-  }
+  // I1c (D164): lo que elegiste ya se mostró al elegir (la consecuencia rodó en la ficha y la línea quedó bajo la carta): acá no
+  // se repite como banda de texto.
   const rotulo = document.createElement('span');
   rotulo.className = 'mt-rotulo';
   rotulo.append(icono(cartelDelAnio ? 'temporada' : 'serie'), cartelDelAnio ? `${cartelDelAnio} · Mientras tanto` : 'Mientras tanto');
