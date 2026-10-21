@@ -34,6 +34,58 @@ documento es el changelog: qué se hizo, por qué, y con qué números medidos.
 
 ## Changelog
 
+### 2026-10-21 — Ola I, entrega 1: lo roto (D154-D165) y la vitrina
+
+El usuario dijo "dale" y salieron cinco workers en paralelo: tres Sonnet high (la carrera, la serie, la decisión con la
+ficha y la mano) y dos Opus high para la vitrina. Después hubo un revisor Sonnet y dos Sonnet de arreglos (motor y
+pantalla). Al final, el supervisor hizo dos cambios chicos y jugó en Chromium los caminos que nombró el usuario.
+
+**Lo que cambió para el jugador:**
+- **El banco (D154).** Si rendís, se levanta al cierre del año: campeón, o en la mitad de arriba de la tabla. El aviso
+  es una parada (`te_mandan_al_banco`) que dice la razón y que el año todavía se puede salvar. El banco ya no se marca
+  en el split del cierre, porque ahí no hay parada y la pretemporada te cedía sin aviso. Era el "de la nada me iba a la
+  Academy".
+- **Las pruebas de ingreso (D155, D156).** Desde tier 2 no hay pruebas y la firma es directa. Queda la del amateur, que
+  pide la vara real (ya no "9 de 14" siempre) y dispara un 15% más rápido.
+- **La serie (D157-D160):**
+  - el tablero del Swiss se ve entre las rondas de la tanda;
+  - con minijuego, el sello es el resultado: sin un segundo VICTORIA, sin suspenso y sin "tenías X%";
+  - el retrato es el campeón de ese mapa;
+  - el rótulo dice "LCS · SPLIT 3 · FINAL".
+- **La decisión y la ficha (D161, D163, D164):**
+  - fuera la tarjeta "Lo que pasó" y la banda "Lo que elegiste" de los cierres;
+  - la consecuencia rueda en la ficha con ▲▼ (stats, hype, arraigo y LP) y deja una línea bajo la opción hasta Enter;
+  - fuera "de piso": el número es el resultado de más peso, con ⚠ si puede salir al revés;
+  - la ficha no recorta a ningún ancho y desde 1536 px no esconde nada;
+  - en el amateur, el rango de soloQ es lo primero que se ve.
+- **La mano del año (D162).** Sale boca arriba de una y no ofrece cartas topadas (el "+0"). Que "Otra mano" gaste las
+  raras se queda: es la regla de H2a, y sacarla dio 39 raras repetidas en 771 manos.
+- **Atakhan (D165)** salió: Riot lo sacó en 2026. En `robar_baron` y `la_llamada` su lugar lo toma el Heraldo.
+
+**La vitrina (I4).** `vitrina/ola-i/` sobre el contrato `CONTRATO.md`. Son dos direcciones con el mismo contenido
+recortado:
+- **A · Cliente:** el cliente de LoL, con el marco biselado, el loot hextech y el HUD con la barra de vida y el Flash.
+- **B · Transmisión:** el paquete gráfico de LCK y Worlds, con el marcador, los zócalos y las placas de pick.
+
+Se corre con `node vitrina/servir.mjs` y se abre `/ola-i/index.html`. El usuario elige.
+
+**Medido:**
+- `validate --rapido`: 378 OK y 3 FAIL, los de la base (K1 puntaje, K1 D75, K6b-M (b)). "K4c VERSION 10" y "K6c el
+  mismo club" pasan ahora.
+- `simulate.js 1000`: 0 crashes, y dos corridas idénticas (determinismo).
+- Guardado VERSION 23 (`migrarDe22`, identidad: `flags.saltosConPrueba` ya no se llena).
+- Huella `VERSION_JUEGO` 'I' = 797996517, un corrimiento declarado.
+- La recorrida del supervisor (Chromium con GPU: `evento`, `mudanza`, `final`, `serie`, `plan`, `eleccion` y la ficha
+  a 1920): 0 `pageerror`, y no aparece "de piso", "+0", "tenías", "Lo que pasó" ni "Lo que elegiste".
+
+**Quedó para la entrega 2** (`PLANUI.md`, D178-D181):
+- el código muerto de las pruebas del mercado;
+- dos checks que el rápido saltea y ya fallaban (D179, se resuelven con el minijuego por serie);
+- los recuadros de la previa de la tanda y el 3-1 repetido del cierre;
+- un mínimo de K6b-F que bajó.
+
+**Costo:** 8 workers, unos 1,53M tokens (155-218K cada uno).
+
 ### 2026-10-21 — Ola I, el diagnóstico: "que tenga sentido" (el usuario jugó la ola H)
 
 PLANUI §0.11. Solo documentos; no se tocó código.

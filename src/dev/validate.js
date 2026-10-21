@@ -971,8 +971,8 @@ const FORMAS_CONOCIDAS = {
   21: '64ffe12313bc',
   // H5 (ola H, entrega 3): las claves de los arcos de lo raro en `flags.caminos` (`ARCOS_DE_LO_RARO`, 60). Carga con `migrarDe21`.
   22: 'f4330d3e59ee',
-  // Ola I (entrega 1, D156): desde tier 2 no hay pruebas de ingreso, `flags.saltosConPrueba` ya no se llena. Carga con `migrarDe22`.
-  23: '361854898a8f'
+  // Ola I (entrega 1, D156): desde tier 2 no hay pruebas de ingreso, `flags.saltosConPrueba` ya no se llena. Con el banco que ya no se marca en el cierre, la muestra recorre otros caminos (la 23 no llegó a publicarse con el hash anterior). Carga con `migrarDe22`.
+  23: 'ce833677a379'
 };
 
 // La muestra. Son carreras reales (`avanzarSplitAuto`, el mismo camino que
