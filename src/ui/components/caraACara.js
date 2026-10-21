@@ -41,6 +41,8 @@ import { tanCercaDeLaFinal } from '../core/momentos.js';
 import { tanCerca, reglaDeVara } from './varaG1.js';
 import { selloDeRiesgo } from './finales.js';
 
+// D158: con el minijuego, lo que espera la placa de cierre después del quemado (no hay mapa que contar)
+const TX_ASIENTO_MJ = 300;
 const TX = {
   t0: 360, // el primer mapa, después de fijar el plan
   presentar: 1100, // solo para narrar (el decisivo jugado como minijuego): la transmisión entra antes de que arranque el mapa
@@ -96,7 +98,9 @@ export function logsDeLaFecha(logs) {
 // jugado como minijuego): sin el plan, ya elegido; en el lugar del plan, la chance del mapa (`pMapa`).
 export function crearCaraACara(contenedor, decision, { estado, previa = null, mundo, sonido = null, responder, modo = 'serie', internacional = false, soloNarrar = false, pMapa = null }) {
   const fecha = modo === 'fecha';
-  const comp = competicionDeEstado(estado, { internacional });
+  // D160: la fase que dice el rótulo, de lo que ya está en los datos: la fecha es de la fase regular; la serie, playoffs (o la final)
+  const faseDe = fecha ? 'regular' : (estado.serie?.ronda ?? estado.serie?.etapa) === 'final' ? 'final' : 'playoffs';
+  const comp = competicionDeEstado(estado, { internacional, fase: faseDe });
   const fx = () => mundo?.fx?.() ?? null;
   const ops = soloNarrar ? [] : decision.opciones ?? [];
   const pg = previa ?? {};
@@ -107,6 +111,9 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
   const formato = fecha ? 1 : se.formato ?? 5;
   const replan = !fecha && Boolean(se.replanUsado && se.rivalJuega && decision.datos?.motivo === 'plan' && (se.mapas ?? []).length > 0);
   const decisivo = decision.datos?.motivo === 'decisivo';
+  // D158 (PLANUI §0.11): el decisivo que se jugó con las manos ya tuvo su sello (PASÓ) en la parada: la transmisión es solo la
+  // placa de cierre (el marcador y una línea), sin suspenso, sin un segundo VICTORIA y sin "tenías X%".
+  const conMinijuego = soloNarrar && Boolean(decision.datos?.minijuego);
   const ronda = fecha ? (decision.datos?.etiqueta ?? 'Fecha marcada') : RONDAS[se.ronda] ?? se.etapa ?? 'La serie';
   const nos = estado.career?.currentOrg ?? pg.propio?.nombre ?? '';
   const ellos = fecha ? (fechaEnCurso?.rival ?? pg.rival?.nombre ?? '') : (se.rival?.org ?? pg.rival?.nombre ?? '');
@@ -209,7 +216,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
   // ---------- abajo: la franja de transmisión ----------
   const rotulo = fecha
     ? [comp.rotulo, decision.datos?.etiqueta ?? 'Fecha marcada', fechaEnCurso?.local === false ? 'de visita' : fechaEnCurso?.local ? 'de local' : null]
-    : [comp.rotulo, ronda, `Bo${formato} · Fearless`, decisivo ? `Van ${marcadorAhora[0]}–${marcadorAhora[1]}` : replan ? `Van ${marcadorAhora[0]}–${marcadorAhora[1]}` : 'cada pick se quema'];
+    : [comp.rotulo, faseDe === 'final' ? null : ronda, `Bo${formato} · Fearless`, decisivo ? `Van ${marcadorAhora[0]}–${marcadorAhora[1]}` : replan ? `Van ${marcadorAhora[0]}–${marcadorAhora[1]}` : 'cada pick se quema'];
   const cab = cabeceraTx({ rotulo, titulo: decision.titulo, descripcion: decision.descripcion, alerta: replan ? 'Replan' : decisivo ? 'Decisivo' : null, logo: logoComp(comp, { clase: 'rot-logo' }) });
 
   // tus libres: cartas de carga (el arte de carga en el bitono de tu org)
@@ -320,14 +327,14 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       el('b', { text: o.g1.riesgo === 'arriesgado' ? '🎲 Arriesgado' : '🧊 Seguro' }), el('span', { text: reglaDelEncare(o) ?? '' })
     ]))
   ]) : null;
-  const secP = secRegla ?? (fecha || soloNarrar ? el('section', { class: 'tx-chance', 'aria-label': `${soloNarrar ? 'Tu chance en el mapa decisivo' : 'Tu chance en esta fecha'}: ${pct(pFecha)}` }, [
+  const secP = secRegla ?? (fecha || (soloNarrar && !conMinijuego) ? el('section', { class: 'tx-chance', 'aria-label': `${soloNarrar ? 'Tu chance en el mapa decisivo' : 'Tu chance en esta fecha'}: ${pct(pFecha)}` }, [
     el('p', { class: 'eq-kicker' }, [el('span', { text: soloNarrar ? 'Tu chance en el mapa' : 'Tu chance' })]),
     el('p', { class: 'tx-chance-p' }, [el('b', { class: 'num', text: pct(pFecha) }), el('small', { text: soloNarrar ? 'con lo del minijuego' : 'así como llegan' })]),
     el('i', { class: 'tx-chance-barra', style: { '--v': String(pFecha ?? 0) } })
   ]) : null);
   const secPorque = fecha && pg.porQue ? el('section', { class: 'tx-porque' }, [el('p', { class: 'eq-kicker' }, [el('span', { text: 'Lo que se juega' })]), el('p', { class: 'tx-porque-t', text: pg.porQue })]) : null;
 
-  const cuerpo = el('div', { class: 'tx-cuerpo' }, fecha ? [secP, secPlan, secPorque] : soloNarrar ? [secLibres, secP, secFearless] : [secLibres, secPlan, secFearless]);
+  const cuerpo = el('div', { class: 'tx-cuerpo' }, fecha ? [secP, secPlan, secPorque] : soloNarrar ? [secLibres, secP, secFearless].filter(Boolean) : [secLibres, secPlan, secFearless]);
   const franjaTx = el('div', { class: 'tx-franja panel' }, [cab.nodo, cuerpo, ocultas, vs]);
   raiz.append(arriba, escenario, franjaTx);
   contenedor.replaceChildren(raiz);
@@ -500,12 +507,12 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     const primero = iMapas[0] ?? -1;
     const mapasT = [];
     const charlas = [];
-    let tt = TX.t0 + (soloNarrar ? TX.presentar : 0);
+    let tt = TX.t0 + (soloNarrar && !conMinijuego ? TX.presentar : 0);
     logs.forEach((l, i) => {
       if (l.mapa) {
-        const s = esDecisivo(l, formato) && !quieto() ? TX_SUS.dura : 0;
+        const s = esDecisivo(l, formato) && !quieto() && !conMinijuego ? TX_SUS.dura : 0;
         mapasT.push({ l, t0: tt, k: claveDe(l.campeon), rk: claveDe(l.rivalJuega), s });
-        tt += TX.mapa + s;
+        tt += conMinijuego ? TX.quema + TX_ASIENTO_MJ : TX.mapa + s;
       } else if (!l.postSerie && (i < primero ? !l.adjunto : true)) {
         charlas.push({ l, t0: tt });
         tt += TX.charla;
@@ -539,7 +546,8 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
     const cuentaQ = [];
     mapasT.forEach((mp, j) => {
       const tSig = mapasT[j + 1]?.t0 ?? (charlas.find((c) => c.t0 > mp.t0)?.t0 ?? tFin);
-      jugarMapa(b, mp, tSig, j === mapasT.length - 1);
+      if (conMinijuego) pipYQuema(b, mp);
+      else jugarMapa(b, mp, tSig, j === mapasT.length - 1);
       cuentaQ.push({ t: mp.t0 + TX.quema + mp.s, n: qi });
     });
     charlas.forEach((ch) => {
@@ -605,6 +613,12 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       if (td != null && gano) fx()?.pulso?.('logro', td);
       bb.esperar(tR + 60).then((ok) => ok && (gano ? sonido?.victoria?.() : sonido?.derrota?.()));
       if (s) suspenso(bb, { l, tS: t0 + TX.resultado, cA, cB, capa });
+      pipYQuema(bb, mp);
+    }
+
+    // el pip del mapa en la tira y el quemado de Fearless: lo único que queda del mapa cuando el sello ya dijo quién ganó
+    function pipYQuema(bb, mp) {
+      const { l, t0, s } = mp;
       const pin = pipsMapa[l.mapa - 1]?.firstElementChild;
       if (pin) {
         pin.dataset.res = l.resultado;
@@ -709,7 +723,7 @@ export function crearCaraACara(contenedor, decision, { estado, previa = null, mu
       ? tanCercaDeLaFinal({ perdioLaFinal: true, decisivo: esDecisivo(ultimoMp, formato), pFinal: ultimoMp?.p, ...faltanteDelMapa(ultimoMp) })
       : null;
     esperaCerca = Boolean(cerca);
-    placaCierre(b, { a, b: bb, t0, titular, texto, cerca, gana: sigue ? null : gano, sub: `${sNos} ${a ?? ''}–${bb ?? ''} ${sEllos}${sigue ? ' · la serie sigue' : ''}`, rotulo: `${comp.rotulo} · ${ronda} · Bo${formato}` });
+    placaCierre(b, { a, b: bb, t0, titular, texto, cerca, gana: sigue ? null : gano, sub: `${sNos} ${a ?? ''}–${bb ?? ''} ${sEllos}${sigue ? ' · la serie sigue' : ''}`, rotulo: [comp.rotulo, faseDe === 'final' ? null : ronda, `Bo${formato}`].filter(Boolean).join(' · ') });
   }
   // G1: el mapa decisivo con minijuego lo decidió la vara, así que la placa dice lo que faltó en las unidades del minijuego, con
   // la misma cuenta que el veredicto de la parada (`varaG1.tanCerca`): la vara efectiva y lo que sacaste vienen en el log del

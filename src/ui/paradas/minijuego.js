@@ -25,8 +25,10 @@ import { fichajeDe, narrarFichaje } from '../components/fichaje.js';
 import { narrarContratoFirmado, firmaDeLaPrueba } from '../components/mercado.js';
 import { crearCaraACaraDeNarracion } from '../components/caraACara.js';
 import { fundirCuadro } from '../narracion.js';
+import { vistaConCampeon } from '../core/mundo.js';
 import { crearCaminoG1, crearMesaG1, marcarMapaG1, crearVeredictoG1, marcarPartidoSwiss, crearTandaG1 } from '../components/finales.js';
-import { ganaElClic } from '../../core/internacional.js';
+import { ganaElClic, jugarRondaSwiss, tableroDelSwiss } from '../../core/internacional.js';
+import { crearTableroSwiss } from '../components/swiss.js';
 import { tension } from '../sonido.js';
 
 // La tecla de "¡Vamos!". Ningún minijuego la usa (Enter y Espacio sí, y un Enter sostenido se contaría como jugada).
@@ -84,6 +86,24 @@ function suspenso(widget, resultado, vara, alSellar) {
   };
   requestAnimationFrame(cuadro);
   setTimeout(sellar, dura + SUSPENSO_REDUCIDO_MS);
+}
+
+// D157 (PLANUI §0.11): el tablero del Swiss entre las rondas de la tanda. El motor no resuelve la ronda siguiente hasta que
+// la tanda termina, pero ya dejó los cruces de cada una en `partidoEnCurso.tanda` (suponiendo que ganás las anteriores, que
+// es la única forma de llegar a ellas): se juegan las rondas anteriores con la misma función del motor (los cruces ajenos
+// son por hash, así que salen los de verdad) y se pinta el tablero de la ronda que viene. `ganados`: lo que fuiste ganando.
+// `null` si no hay datos del Swiss (el Play-In no tiene).
+function tableroDeLaTanda(estado, i, ganados) {
+  const t = estado?.internacional;
+  const partidos = t?.partidoEnCurso?.tanda;
+  if (!t?.swiss || !t.participantes || !partidos?.[i]?.cruces) return null;
+  try {
+    let hasta = t;
+    for (let k = 0; k < i; k += 1) hasta = jugarRondaSwiss(hasta, partidos[k].cruces, { gano: ganados[k] !== false, p: null });
+    return tableroDelSwiss({ ...hasta, partidoEnCurso: { cruces: partidos[i].cruces } });
+  } catch {
+    return null;
+  }
 }
 
 // H3k: la página del arcade (`arcade.html`, `ui/arcade/pagina.js`) monta la parada con el marco real: esta es su puerta, así
@@ -212,6 +232,8 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
   const minijuegoApuesta = nodos?.apuesta ?? contenedor.querySelector('#minijuegoApuesta');
   const minijuegoWidget = nodos?.widget ?? contenedor.querySelector('#minijuegoWidget');
   const g1 = decision.datos?.g1 ?? null;
+  // D159: el minijuego se pinta con el campeón de este mapa (Fearless), no con tu main
+  const estadoJuego = vistaConCampeon(estadoActual, decision.datos?.campeonElegido);
   let poderActivo = false;
   // G1: la charla del coach elegida para este mapa (baja la vara; el juicio de la UI cuenta con ella, como el motor)
   let charlaElegida = false;
@@ -343,7 +365,7 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
     mesa?.alJugar?.();
     // el widget recibe `decision.datos` (el tono de la prensa, la `g1` de la final); con el poder activado, una copia que
     // lo dice (`poderActivo`: el VOD hace la ronda más lenta, `dificultadDe`)
-    const jugar = (decision) => montar(minijuegoWidget, estadoActual, (resultado, detalle) => {
+    const jugar = (decision) => montar(minijuegoWidget, estadoJuego, (resultado, detalle) => {
       if (resuelto) {
         return;
       }
@@ -415,7 +437,9 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
     let victorias = 0;
     let derrotas = 0;
     let resuelto = false;
+    const ganados = [];
     const anotar = (i, gano) => {
+      ganados[i] = gano;
       if (gano) victorias += 1;
       else derrotas += 1;
       return victorias >= victoriasParaPasar || derrotas >= derrotasParaQuedarAfuera || i === partidos.length - 1;
@@ -423,7 +447,7 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
     mesa?.alJugar?.();
     mesa?.fijarVara?.(partidos[0].vara);
     tandaVista.actual(0);
-    montadorDe(decision.datos.minijuego)(minijuegoWidget, estadoActual, (resultado, detalle) => {
+    montadorDe(decision.datos.minijuego)(minijuegoWidget, estadoJuego, (resultado, detalle) => {
       if (resuelto) return;
       resuelto = true;
       if (registro) registro.detalle = detalle ?? null;
@@ -455,7 +479,10 @@ export function montarParada(contenedor, decision, { estado, rngUi, responder, r
       caja.append(nodo('span', 'mj-transicion-sig', `Partido ${i + 1} de ${partidos.length} · vs ${rival}`), boton);
       contenedor.dataset.fase = 'juego';
       tandaVista.actual(i);
-      minijuegoWidget.replaceChildren(caja);
+      // D157: entre una ronda y la otra, el tablero del Swiss (los cruces, los otros equipos y tu récord)
+      const tablero = etapa === 'swiss' ? tableroDeLaTanda(estadoActual, i, ganados) : null;
+      minijuegoWidget.replaceChildren(caja, ...(tablero ? [nodo('div', 'mj-swiss')] : []));
+      if (tablero) minijuegoWidget.lastElementChild.append(crearTableroSwiss(tablero, { compacto: window.matchMedia?.('(max-width: 720px)').matches ?? false }));
       boton.focus?.();
       boton.addEventListener('click', () => {
         boton.disabled = true;

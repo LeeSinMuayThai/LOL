@@ -13,6 +13,7 @@ import { partirDescripcion } from './decision/comun.js';
 import { primeraDe } from '../core/bisagra.js';
 import { nombreVisibleDeLiga } from '../formatoUi.js';
 import { porcentaje } from '../../core/previaDePartido.js';
+import { BALANCE } from '../../data/balance.js';
 
 // La p en porcentaje entero (la del motor: nunca 0 % ni 100 % si no lo es).
 export const pct = (p) => (Number.isFinite(p) ? `${porcentaje(p)}%` : '—');
@@ -111,22 +112,31 @@ export function cabeceraTx({ rotulo, titulo, descripcion, alerta = null, logo = 
 // primera de su región y su propio logo).
 const DE_LIGA = { CBLOL: 'cblol', LEC: 'lec', LCK: 'lck', LPL: 'lpl', LCS: 'lcs', LCP: 'lcp' };
 const DE_INTERNACIONAL = { mundial: 'worlds', msi: 'msi', firststand: 'firststand', first_stand: 'firststand' };
-export function competicionDeEstado(estado, { internacional = false } = {}) {
+// D160 (PLANUI §0.11): el rótulo dice en qué split del año y en qué fase está el partido ("LCS · SPLIT 2 · PLAYOFFS"). El
+// split es la posición en la temporada que calcula el motor (`core/contexto.js`, `splitCount % splitsPorEdad`), contado desde 1.
+const FASES = { regular: 'REGULAR', playoffs: 'PLAYOFFS', final: 'FINAL', playin: 'PLAY-IN', swiss: 'SWISS' };
+export function splitDelAnio(estado) {
+  const n = estado?.player?.splitCount;
+  return Number.isFinite(n) ? (n % BALANCE.edad.splitsPorEdad) + 1 : null;
+}
+export function competicionDeEstado(estado, { internacional = false, fase = null } = {}) {
+  const faseTxt = FASES[fase] ?? null;
   const it = estado?.internacional ?? null;
   if (internacional && it) {
     const tipo = String(it.clave ?? '').split('|')[1] ?? 'mundial';
     const id = DE_INTERNACIONAL[tipo.toLowerCase()] ?? 'worlds';
     const c = COMPETICIONES[id];
     const anio = it.anio ?? estado.calendario?.anio ?? null;
-    return { id, nombre: c.nombre, rotulo: `${c.nombre} ${anio ?? ''}`.trim(), largo: c.largo, anio, logo: logoLiga(tipo === 'msi' ? 'msi' : 'mundial').src, tokens: tokensDe(id) };
+    return { id, nombre: c.nombre, rotulo: [`${c.nombre} ${anio ?? ''}`.trim(), faseTxt].filter(Boolean).join(' · '), largo: c.largo, anio, logo: logoLiga(tipo === 'msi' ? 'msi' : 'mundial').src, tokens: tokensDe(id) };
   }
   const carrera = estado?.career ?? {};
   const id = DE_LIGA[primeraDe(carrera.liga)] ?? 'cblol';
   const c = COMPETICIONES[id];
   const anio = estado?.calendario?.anio ?? null;
   const nombre = carrera.liga ? nombreVisibleDeLiga(carrera.liga) : c.nombre;
-  // El rótulo de la transmisión: la liga por su nombre visible (nunca el id) y el año.
-  const rotulo = `${carrera.liga ? nombreVisibleDeLiga(carrera.liga) : c.nombre} ${anio ?? ''}`.trim();
+  // El rótulo de la transmisión: la liga por su nombre visible (nunca el id), el split del año y la fase.
+  const split = splitDelAnio(estado);
+  const rotulo = [carrera.liga ? nombreVisibleDeLiga(carrera.liga) : c.nombre, split ? `SPLIT ${split}` : anio, faseTxt].filter(Boolean).join(' · ');
   return { id, nombre, rotulo, largo: carrera.liga && primeraDe(carrera.liga) === carrera.liga ? c.largo : nombre, anio, logo: logoLiga(nombre).src, tokens: tokensDe(id) };
 }
 const tokensDe = (id) => ({ luz: `--comp-${id}-luz`, contra: `--comp-${id}-contra`, acento: `--comp-${id}-acento` });
