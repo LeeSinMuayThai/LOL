@@ -159,6 +159,21 @@
 .fj-tira:focus-visible { outline: 1px solid var(--luz-fuerte); outline-offset: -3px; }
 .fj-item { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; min-width: 0; }
 .fj-item + .fj-item { padding-left: var(--s-4); box-shadow: inset 1px 0 0 var(--linea); }
+.fj-item[data-oculto] { display: none; }
+/* I1c (D161): el rango de soloQ del amateur, lo primero de la ficha y lo más grande, con el color de su escalón. */
+.fj-rango { --rango: var(--ink); gap: 10px; }
+.fj-rango-escalon { font: 800 28px / 1 var(--f-display); font-stretch: var(--ancho-numero); letter-spacing: 0; text-transform: none; color: var(--rango); }
+.fj-rango-lp { font: 600 13px / 1 var(--f-mono); letter-spacing: 0; color: var(--ink-dim); }
+.fj-rango[data-tier="iron"] { --rango: #8a8a93; }
+.fj-rango[data-tier="bronze"] { --rango: #b8794a; }
+.fj-rango[data-tier="silver"] { --rango: #aeb9c6; }
+.fj-rango[data-tier="gold"] { --rango: #e6b84a; }
+.fj-rango[data-tier="platinum"] { --rango: #4fc3b0; }
+.fj-rango[data-tier="emerald"] { --rango: #3fcf7a; }
+.fj-rango[data-tier="diamond"] { --rango: #6aa7ff; }
+.fj-rango[data-tier="master"] { --rango: #c06cf0; }
+.fj-rango[data-tier="grandmaster"] { --rango: #f0615a; }
+.fj-rango[data-tier="challenger"] { --rango: #f5d572; }
 .fj-rot { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-mute); }
 .fj-rot .ln-ico { width: 12px; height: 12px; }
 .fj-num {

@@ -232,7 +232,8 @@ export function crearFranja({ franja, estadoEl, trayectoriaEl = null, etiquetaRo
     const pips = estado.phase === 'retirado' ? null : crearPips(estado);
     if (pips) cuando.append(pips);
 
-    const numeroEnLaFicha = ficha && hayFicha(estado) && estado.phase === 'profesional';
+    // I1c (D161): el rango del amateur es de la ficha (lo primero que dice); la franja no lo repite
+    const numeroEnLaFicha = ficha && hayFicha(estado) && (estado.phase === 'profesional' || (estado.phase === 'amateur' && Boolean(estado.player?.ranked?.tier)));
     const numero = estado.terminado ? crearPico(estado) : numeroEnLaFicha ? null : crearNumero(estado, fotoDeLaPagina?.() ?? null, movimiento);
     estadoEl.replaceChildren(...[quien, club, cuando, numero].filter(Boolean));
   }

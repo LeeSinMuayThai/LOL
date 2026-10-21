@@ -11,18 +11,18 @@
 //
 // El contrato está en la cabecera de `decision/comun.js`: las mismas opciones, el mismo retorno, la costura, el teclado.
 // La coreografía:
-//   entrar   las cartas se reparten desde abajo, de a una; el emblema (o el medallón) hace pop y los chips caen;
+//   entrar   las cartas se reparten desde abajo, de a una (la mano del año, boca arriba y de una, I1c); el emblema (o el medallón) hace pop y los chips caen;
 //   apuntar  la carta sube, crece y se inclina siguiendo el puntero; un brillo la cruza, un halo de su eje abajo, las
 //            otras se apagan y la prosa de la apuntada va en la banda de abajo (una por vez, sin saltos de alto);
 //   elegir   la elegida destella y salta, las otras se queman (`quemar`, el de Fearless);
-//   narrar   las quemadas se disuelven hacia abajo, la elegida viaja al centro y gira: su dorso es la tarjeta de "lo
-//            que pasó", que se abre a lo ancho y corre `animarResultado`.
+//   narrar   I1c (D164): sin tarjeta. Los stats que cambiaron ruedan en la ficha con su ▲▼, una línea (el texto del
+//            resultado) queda bajo la opción elegida y todo se sostiene hasta que el jugador sigue (clic o Enter).
 // La planilla (el plan del año) son cuatro cartas con un mini gráfico por eje en el cuerpo y una leyenda arriba.
 //
 // Nada del texto del motor se pierde (§7.5): la descripción, los efectos, el riesgo, la propuesta y el plan van en la
 // banda (el inspector) y, para los lectores, en la descripción de cada carta; con `html[data-textos="completos"]` la
 // descripción va también en la carta.
-import { el, animar, quieto, reducido, celular, EXPO, SALE, RESORTE, DUR } from '../../fx/util.js';
+import { el, animar, quieto, celular, EXPO, RESORTE, DUR } from '../../fx/util.js';
 import { entrar, esperar, lineasConMascara, num } from '../../fx/movimiento.js';
 import { icono, glifoDeCampo } from '../../fx/iconos.js';
 import { urlCentrada } from '../../fx/arte.js';
@@ -36,8 +36,9 @@ import { albumCompartido, NOMBRE_RAREZA } from '../../core/album.js';
 import { ejeDe } from '../../core/ejes.js';
 import { rotuloDeDecision } from '../../formatoUi.js';
 import { crearCostura, equiposDelMundo } from '../costura.js';
-import { crearNarracion, FUNDIDO_MS } from '../../narracion.js';
-import { leerDecision, partirDescripcion, estiloEje, conSigno, campoCorto, RIESGO, T_RESULTADO, tarjetaDelResultado, animarResultado, pulsoDelResultado, porcentaje } from './comun.js';
+import { crearNarracion } from '../../narracion.js';
+import { rodarEnLaFicha } from '../../fichaFija.js';
+import { leerDecision, partirDescripcion, estiloEje, conSigno, campoCorto, RIESGO, consecuenciaDelResultado, pulsoDelResultado, porcentaje } from './comun.js';
 
 // Los tiempos (ms). La entrada: la cabecera, las cartas de a una (cada `paso`), el medallón y los chips después de su
 // carta. La narración: el viaje de la elegida (con la primera mitad del giro), la segunda mitad y la apertura a lo ancho.
@@ -58,28 +59,19 @@ const T = {
   destello: 120,
   salto: 340,
   quema: 70,
+  // I1c (D162): la mano del año entra boca arriba, de una
+  mano: 220,
   disolver: 420,
   viaje: 340,
   giro: 300,
   abre: 420,
-  contenido: 160,
-  // H2b: la vuelta de las cartas de la mano (boca abajo, de a una; la legendaria, última y con pausa)
-  vuelta: 380,
-  pausaVuelta: 260,
-  pausaLegendaria: 640,
-  vueltaLegendaria: 900,
-  giroDorso: 170,
-  brote: 700,
-  chispas: 14,
-  chispaDist: 90
+  contenido: 160
 };
 // El vuelo de la carta al repartirse y la inclinación máxima al apuntar (grados).
 const REPARTO = { y: 70, rotX: 22, escala: 0.9 };
 const INCLINACION = 9;
 // Cuántas gemas enciende cada riesgo.
 const GEMAS = { seguro: 1, incierto: 2, ruleta: 3, alto: 3 };
-// La perspectiva del giro de la carta a la tarjeta (px).
-const PERSPECTIVA_GIRO = 1200;
 
 // G2a (PLANUI §0.9): el rótulo de la carta de un evento, con el formato de El Ídolo: GOLPE DURO (la categoría), DECISIÓN
 // DIFÍCIL (una bifurcación de carrera) o PASAN COSAS (el resto). Solo los eventos del split (y los de la ventana del retiro);
@@ -223,10 +215,10 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
     const s = o.seguro;
     if (!s || !Number.isFinite(s.valor)) return null;
     const nombre = lector.nombreDeEje(s.campo);
-    return el('span', { class: 'cv-seguro', 'data-signo': s.valor > 0 ? 'sube' : s.valor < 0 ? 'baja' : 'cero', style: estiloEje(ejeDe(s.campo)), title: `${s.etiqueta}: ${s.valor > 0 ? 'lo mínimo que te llevás' : 'lo peor que te puede dejar'}` }, [
+    return el('span', { class: 'cv-seguro', 'data-signo': s.valor > 0 ? 'sube' : s.valor < 0 ? 'baja' : 'cero', style: estiloEje(ejeDe(s.campo)), title: `${s.etiqueta}: ${s.alReves ? 'lo que más probablemente pasa; puede salir al revés' : 'lo que más probablemente pasa'}` }, [
       icono(glifoDeCampo(s.campo)),
-      el('b', { text: `${conSigno(s.valor)}${s.unidad ? ` ${s.unidad}` : ''}` }),
-      el('span', { text: esMano ? nombre : `${nombre} ${s.valor > 0 ? 'seguro' : 'de piso'}` })
+      el('b', { text: `${s.alReves ? '⚠ ' : ''}${conSigno(s.valor)}${s.unidad ? ` ${s.unidad}` : ''}` }),
+      el('span', { text: nombre })
     ]);
   };
   // G2b (una carta por año): el costo a la vista, otro stat de la ficha que la carta seguro te baja ("−2 Cabeza").
@@ -277,9 +269,6 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
   const mano = el('div', { class: 'cv-mano', id: 'decisionOptions', role: 'group', 'aria-label': esMatriz ? 'El plan del año: opciones por eje' : 'Opciones', style: { '--cv-n': String(Math.max(1, total)) } });
   const cartas = [];
   const ranuras = [];
-  // H2b: la mano se reparte boca abajo y las cartas se dan vuelta de a una (sin movimiento, nacen boca arriba)
-  let repartiendo = esMano && !quieto();
-  const timersVuelta = [];
   // dos emblemas iguales en la misma mano (mismo eje y misma stat): el repetido cambia de composición y lleva acento
   const vistos = new Map();
   disponibles.forEach((o, i) => {
@@ -320,7 +309,6 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
     ]);
     cartas.push(b);
     const ranura = el('div', { class: `cv-ranura${esMano ? ` cv-r-${o.rareza ?? 'comun'}` : ''}` }, [el('i', { class: 'cv-halo', 'aria-hidden': 'true', style: estiloEje(eje) }), b]);
-    if (repartiendo) ranura.append(el('span', { class: 'cv-reverso', 'aria-hidden': 'true' }, el('i')));
     ranuras.push(ranura);
     mano.append(ranura);
   });
@@ -494,8 +482,7 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
   if (otra) {
     const botonOtra = el('button', { type: 'button', class: 'cv-otra', text: `${otra.label} (quedan ${otra.quedan})` });
     botonOtra.addEventListener('click', () => {
-      if (repartiendo) { terminarReparto(); return; }
-      if (elegido) return;
+        if (elegido) return;
       elegido = true;
       raiz.classList.add('eligiendo');
       sonido?.clic?.();
@@ -556,6 +543,11 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
       leyenda.querySelectorAll('.cv-leyenda-eje').forEach((x, k) => animar(x, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { delay: T.leyenda + 60 + d + k * T.chipPaso, dur: DUR.entra }));
     }
     ranuras.forEach((r, i) => {
+      // I1c (D162): la mano del año entra boca arriba y de una (sin paso tapado ni escalera de cartas)
+      if (esMano) {
+        animar(r, [{ opacity: 0.7, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { delay: d, dur: T.mano, easing: EXPO });
+        return;
+      }
       const t = T.cartas + d + i * T.paso;
       animar(r, [
         { opacity: 0, transform: `perspective(900px) translateY(${REPARTO.y}px) rotateX(${REPARTO.rotX}deg) scale(${REPARTO.escala})` },
@@ -568,66 +560,11 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
       r.querySelectorAll('.cv-chips .eje-chip, .cv-mx-fila, .cv-gemas, .cv-p, .cv-tag').forEach((g, k) => animar(g, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { delay: t + T.chips + k * T.chipPaso, dur: DUR.entra }));
       r.querySelectorAll('.cv-mx-riel i').forEach((b, k) => animar(b, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: t + T.chips + k * T.chipPaso, dur: T.carta }));
     });
-    entrar(inspector, T.inspector + d + ranuras.length * T.paso, 8);
-    if (repartiendo) programarVueltas(d);
-  }
-  // H2b: cada carta se da vuelta con el brillo de su rareza (rara azul, épica violeta, legendaria dorada con chispas); la
-  // legendaria va última, después de una pausa. Cualquier clic o tecla antes de que termine las da vuelta a todas de golpe.
-  const rarezaDe = (i) => disponibles[i]?.rareza ?? 'comun';
-  function voltear(i) {
-    const r = ranuras[i];
-    const rev = r?.querySelector('.cv-reverso');
-    if (!rev) return;
-    const rz = rarezaDe(i);
-    animar(rev, [{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { dur: T.giroDorso, easing: 'ease-in', fill: 'forwards' });
-    animar(cartas[i], [{ transform: 'scaleX(0)' }, { transform: 'none' }], { delay: T.giroDorso, dur: T.giroDorso * 1.6, easing: EXPO });
-    timersVuelta.push(setTimeout(() => {
-      rev.remove();
-      if (rz === 'comun') return;
-      const brote = el('i', { class: 'cv-brote', 'aria-hidden': 'true' });
-      r.append(brote);
-      animar(brote, [{ opacity: 0.9, transform: 'scale(0.7)' }, { opacity: 0, transform: 'scale(1.35)' }], { dur: T.brote, easing: 'ease-out', forzar: true });
-      timersVuelta.push(setTimeout(() => brote.remove(), T.brote));
-      if (rz === 'legendaria') {
-        for (let c = 0; c < T.chispas; c++) {
-          const ang = (c / T.chispas) * Math.PI * 2 + 0.4;
-          const dist = T.chispaDist * (c % 2 ? 1 : 0.6);
-          const chispa = el('i', { class: 'cv-chispa', 'aria-hidden': 'true' });
-          r.append(chispa);
-          animar(chispa, [{ opacity: 1, transform: 'translate(-50%, -50%) scale(1)' }, { opacity: 0, transform: `translate(calc(-50% + ${Math.cos(ang) * dist}px), calc(-50% + ${Math.sin(ang) * dist}px)) scale(0.2)` }], { dur: T.brote, easing: 'ease-out', forzar: true });
-          timersVuelta.push(setTimeout(() => chispa.remove(), T.brote));
-        }
-      }
-    }, T.giroDorso));
-    if (rz === 'legendaria') {
-      sonido?.golpe?.();
-      timersVuelta.push(setTimeout(() => sonido?.flash?.(), T.giroDorso));
-    } else sonido?.[rz === 'comun' ? 'clic' : 'ding']?.();
-  }
-  function terminarReparto() {
-    if (!repartiendo) return;
-    repartiendo = false;
-    timersVuelta.splice(0).forEach(clearTimeout);
-    ranuras.forEach((r) => {
-      r.querySelectorAll('.cv-reverso, .cv-brote, .cv-chispa').forEach((x) => x.remove());
-    });
-    cartas.forEach((c) => c.getAnimations?.().forEach((a) => a.finish?.()));
-  }
-  function programarVueltas(d) {
-    const orden = ranuras.map((_, i) => i).sort((a, b) => (rarezaDe(a) === 'legendaria') - (rarezaDe(b) === 'legendaria') || a - b);
-    let t = T.cartas + d + ranuras.length * T.paso + T.carta + T.pausaVuelta;
-    orden.forEach((i, k) => {
-      const leg = rarezaDe(i) === 'legendaria';
-      if (leg && k > 0) t += T.pausaLegendaria;
-      timersVuelta.push(setTimeout(() => { if (raiz.isConnected) voltear(i); }, t));
-      t += leg ? T.vueltaLegendaria : T.vuelta;
-    });
-    timersVuelta.push(setTimeout(() => { repartiendo = false; }, t));
+    entrar(inspector, esMano ? d : T.inspector + d + ranuras.length * T.paso, 8);
   }
   function abrirPanel({ instantaneo = false } = {}) {
     raiz.classList.remove('dc-espera');
     if (quieto() || instantaneo) {
-      terminarReparto();
       if (!elegido) titulo.focus({ preventScroll: true });
       return;
     }
@@ -651,7 +588,6 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
   let respuesta = null;
   function elegir(i) {
     if (elegido) return;
-    if (repartiendo) { terminarReparto(); return; }
     const o = disponibles[i];
     const carta = cartas[i];
     if (!o || !carta || carta.classList.contains('bloqueada')) return;
@@ -694,95 +630,59 @@ export function crear(contenedor, decisionCompleta, { estado, previa = null, mun
     apuntar(apuntada + paso, true, true);
   });
 
-  // ------------------------------------------------------------------ narrar: la carta gira y su dorso es "lo que pasó"
+  // ------------------------------------------------------------------ narrar: la consecuencia, en la ficha y bajo la opción
+  // I1c (D164): sin tarjeta. Los stats que cambiaron ruedan en la ficha con su ▲▼ (~600 ms) y el texto del resultado queda en
+  // una línea bajo la opción elegida (las otras ya están apagadas). Todo se queda en pantalla, también en rápido, hasta que el
+  // jugador sigue: clic, Enter o Espacio.
   async function narrar(ctx) {
     if (!respuesta || !raiz.isConnected) return 0;
-    const { i, o } = respuesta;
+    const { i } = respuesta;
     const inm = ctx.inmediato?.() ?? null;
-    const { tarjeta, cambios, contados } = tarjetaDelResultado(o, i + 1, inm, ctx.logs ?? [], { estado, lector });
-    const eje = cartas[i].dataset.eje || null;
-    tarjeta.classList.add('cv-resultado');
-    if (eje) {
-      tarjeta.dataset.eje = eje;
-      for (const [k, v] of Object.entries(estiloEje(eje))) tarjeta.style.setProperty(k, v);
-    }
-    const dorso = medallon(dominante(o));
-    dorso.classList.add('cv-dorso');
-    const narracion = crearNarracion(ctx, [raiz]);
+    const { linea, cambios, contados } = consecuenciaDelResultado(inm, ctx.logs ?? []);
+    let seguir = () => {};
+    const sigue = new Promise((resolver) => { seguir = resolver; });
+    const narracion = crearNarracion(ctx, [raiz], { reloj: { saltar: () => seguir(), pausar() {}, reanudar() {} }, adelantar: false });
+    const desde = typeof performance !== 'undefined' ? performance.now() : 0;
+    const INTERACTIVO = 'button, a[href], input, select, textarea, summary, [role="button"]';
+    // lo que llegó antes de que la narración empezara (el Enter o el clic que eligió) no cuenta
+    const vino = (e) => !(e.timeStamp <= desde) && !document.querySelector('dialog[open]');
+    const alTeclado = (e) => {
+      if (e.defaultPrevented || e.repeat || e.altKey || e.ctrlKey || e.metaKey || e.key !== 'Enter' || !vino(e)) return;
+      const activo = document.activeElement;
+      if (activo && activo !== document.body && !mano.contains(activo) && activo.matches?.(INTERACTIVO) && activo.checkVisibility?.() !== false) return;
+      e.preventDefault();
+      seguir();
+    };
+    const alClic = (e) => {
+      if (!vino(e)) return;
+      if (e.target?.closest?.(INTERACTIVO) && !mano.contains(e.target)) return;
+      seguir();
+    };
+    let soltarFicha = () => {};
     try {
-      // lo que se va: un fantasma de la mano y de la banda (en su lugar) y lo real se pliega ya
-      const c0 = col.getBoundingClientRect();
-      const r0 = ranuras[i].getBoundingClientRect();
-      const capaFantasma = el('div', { class: 'cv-fantasma', 'aria-hidden': 'true' });
-      const fantasmaDe = (n) => {
-        const r = n.getBoundingClientRect();
-        const c = n.cloneNode(true);
-        c.removeAttribute('id');
-        c.removeAttribute('aria-live');
-        c.querySelectorAll('[id]').forEach((x) => x.removeAttribute('id'));
-        Object.assign(c.style, { position: 'absolute', left: `${r.left - c0.left}px`, top: `${r.top - c0.top}px`, width: `${r.width}px`, height: `${r.height}px`, margin: '0' });
-        capaFantasma.append(c);
-        return c;
-      };
-      const scroll = mano.scrollLeft;
-      const fMano = fantasmaDe(mano);
-      const fOtros = [inspector, leyenda].filter(Boolean).map(fantasmaDe);
-      mano.replaceWith(tarjeta);
       inspector.classList.add('cv-plegado');
       leyenda?.classList.add('cv-plegado');
-      rotuloTexto.textContent = 'Lo que pasó';
-      col.append(capaFantasma);
-      fMano.scrollLeft = scroll;
-      // El escenario está apoyado abajo: la columna conserva su alto mientras la carta gira (nada salta debajo del
-      // fantasma) y se acomoda a la tarjeta cuando se abre.
-      const natural = col.offsetHeight;
-      animar(col, [{ minHeight: `${c0.height}px` }, { minHeight: `${c0.height}px`, offset: (T.viaje + T.giro) / (T.viaje + T.giro + T.abre) }, { minHeight: `${natural}px` }], { dur: T.viaje + T.giro + T.abre, easing: 'linear' });
-      const c1 = col.getBoundingClientRect();
-      Object.assign(capaFantasma.style, { left: `${c0.left - c1.left}px`, top: `${c0.top - c1.top}px` });
-      const r1 = tarjeta.getBoundingClientRect();
-
-      const vivas = [];
-      [...fMano.children].forEach((r, k) => {
-        if (k === i) {
-          const dx = r1.left + r1.width / 2 - (r0.left + r0.width / 2);
-          // la tarjeta gira desde su borde de arriba (`transform-origin` en la hoja): la carta llega ahí y nunca pisa el planteo
-          const dy = r1.top - r0.top;
-          vivas.push(animar(r, [
-            { transform: `perspective(${PERSPECTIVA_GIRO}px) translate(0, 0) rotateY(0deg)` },
-            { transform: `perspective(${PERSPECTIVA_GIRO}px) translate(${dx}px, ${dy}px) rotateY(90deg)` }
-          ], { dur: T.viaje, easing: SALE, fill: 'forwards' }));
-          return;
-        }
-        vivas.push(animar(r, [{ opacity: 1, transform: 'none', filter: 'none' }, { opacity: 0, transform: 'translateY(48px) scale(.94)', filter: 'blur(8px)' }], { dur: T.disolver, easing: SALE, fill: 'forwards' }));
-      });
-      fOtros.forEach((f) => vivas.push(animar(f, [{ opacity: 1 }, { opacity: 0 }], { dur: DUR.sale, easing: 'linear', fill: 'forwards' })));
-      const sigue = vivas.filter(Boolean);
-      if (sigue.length) Promise.allSettled(sigue.map((a) => a.finished)).then(() => capaFantasma.remove());
-      else capaFantasma.remove();
-
-      // el dorso: la tarjeta entra de canto, del tamaño de la carta, termina el giro y se abre a lo ancho
-      const sx = r1.width > 0 ? r0.width / r1.width : 1;
-      const sy = r1.height > 0 ? r0.height / r1.height : 1;
-      const p = `perspective(${PERSPECTIVA_GIRO}px)`;
-      const total = T.giro + T.abre;
-      animar(tarjeta, [
-        { transform: `${p} rotateY(-90deg) scale(${sx}, ${sy})`, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' },
-        { transform: `${p} rotateY(0deg) scale(${sx}, ${sy})`, offset: T.giro / total, easing: EXPO },
-        { transform: `${p} rotateY(0deg) scale(1, 1)` }
-      ], { delay: T.viaje, dur: total, easing: 'linear' });
-      animarResultado(tarjeta, { desde: T.viaje + T.giro + T.contenido });
-      // el dorso entra después de `animarResultado` (que anima la entrada de cada hijo de la tarjeta): solo se ve en el giro
-      tarjeta.append(dorso);
-      animar(dorso, [{ opacity: 1 }, { opacity: 1, offset: 0.55 }, { opacity: 0 }], { delay: T.viaje, dur: total, easing: 'linear' });
-      const desde = T.viaje + T.giro + T.contenido;
-      animar(tarjeta.querySelector('.res-cab'), [{ opacity: 0 }, { opacity: 1 }], { delay: desde - T.giro / 2, dur: DUR.entra });
-      if (reducido()) animar(tarjeta, [{ opacity: 0 }, { opacity: 1 }], { dur: FUNDIDO_MS, easing: 'linear', forzar: true });
-      for (const nodo of ctx.rodarPlaca?.(cambios, desde + T_RESULTADO.numeros + 100) ?? []) narracion.incluir(nodo);
-      narracion.esperar(desde + T_RESULTADO.pulso).then(() => fx()?.pulso?.(pulsoDelResultado(cambios)));
-      tarjeta.focus({ preventScroll: true });
-      await narracion.vistazo();
-      await narracion.esperar(desde + T_RESULTADO.sostener);
+      if (linea) {
+        const texto = el('p', { class: 'cv-consecuencia', role: 'status', 'data-eje': cartas[i].dataset.eje || null }, [
+          el('span', { class: 'cv-consecuencia-texto', text: linea }),
+          el('small', { class: 'cv-consecuencia-sigue', 'aria-hidden': 'true', text: 'Enter para seguir' })
+        ]);
+        ranuras[i].append(texto);
+        if (!quieto()) animar(texto, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { dur: DUR.entra, easing: EXPO });
+        texto.scrollIntoView?.({ block: 'nearest' });
+      }
+      soltarFicha = rodarEnLaFicha(cambios);
+      for (const nodo of ctx.rodarPlaca?.(cambios, 100) ?? []) narracion.incluir(nodo);
+      fx()?.pulso?.(pulsoDelResultado(cambios));
+      document.addEventListener('keydown', alTeclado);
+      document.addEventListener('click', alClic);
+      cartas[i].blur?.();
+      await sigue;
     } finally {
+      document.removeEventListener('keydown', alTeclado);
+      document.removeEventListener('click', alClic);
+      soltarFicha();
+      raiz.querySelector('.cv-consecuencia-sigue')?.remove();
       narracion.fin();
     }
     return contados;
