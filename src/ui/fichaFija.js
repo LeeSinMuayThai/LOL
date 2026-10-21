@@ -19,9 +19,11 @@ import {
   estadoInternacional, statsQueMuevenLasCartas, promesaAbierta, ROTULO_DE_BANDA
 } from '../core/ficha.js';
 import { plata, faltan } from '../core/formato.js';
+import { etiquetaDeRanked, servidorDeLaPartida } from '../core/ranked.js';
 import { moverNumero } from './core/delta.js';
 import { icono, triangulos } from './fx/iconos.js';
 import { num } from './fx/movimiento.js';
+import { countUp } from './components/countUp.js';
 import { animar as animarNodo, DUR, RESORTE, EXPO } from './fx/util.js';
 
 const LABEL_BANDA = ROTULO_DE_BANDA;
@@ -108,11 +110,20 @@ function proximo(siguiente) {
   return p;
 }
 
+// I1c (D161): el rango de soloQ del amateur es lo primero que dice la ficha: el escalón en grande y el LP al lado.
+function rangoDeLaFicha(estado) {
+  const ranked = estado.player?.ranked;
+  if (!ranked?.tier) return null;
+  const [escalon, ...resto] = etiquetaDeRanked(ranked, servidorDeLaPartida(estado)).split(' · ');
+  return { tier: ranked.tier, escalon, lp: resto.join(' · ') };
+}
+
 // Todo lo que la ficha dice, leído una sola vez de la `vista`.
 export function datosDeLaFicha(estado) {
   const amateur = estado.phase === 'amateur';
   return {
     amateur,
+    rango: amateur ? rangoDeLaFicha(estado) : null,
     nivel: nivelDelAnio(estado),
     juego: statsQueMuevenLasCartas(estado),
     promesa: promesaAbierta(estado),
@@ -131,6 +142,18 @@ export function hayFicha(estado) {
   return Boolean(estado?.player && !estado.terminado && (estado.phase === 'amateur' || estado.phase === 'profesional'));
 }
 
+// I1c (D164): la consecuencia de una decisión rueda ACÁ, en la ficha, y se queda hasta que el jugador sigue. La decisión no
+// conoce la ficha: pide (`ficha:rodar`) y la ficha, si está a la vista, rueda los stats que cambiaron con su ▲▼ y devuelve cómo
+// soltarlos (`detail.soltar`). `cambios`: los de `ui/core/inmediato.js` ({ campo, antes, despues }).
+export const EVENTO_RODAR = 'ficha:rodar';
+export const RODAR_MS = 600;
+export function rodarEnLaFicha(cambios) {
+  if (typeof document === 'undefined') return () => {};
+  const detail = { cambios, soltar: null };
+  document.dispatchEvent(new CustomEvent(EVENTO_RODAR, { detail }));
+  return detail.soltar ?? (() => {});
+}
+
 // --- La tira -------------------------------------------------------------------------------------------------------------
 
 function item(clase, prio, rotulo, ico = null) {
@@ -140,6 +163,16 @@ function item(clase, prio, rotulo, ico = null) {
   if (ico) rot.append(icono(ico));
   rot.append(nodo('span', 'fj-rot-txt', rotulo));
   caja.append(rot);
+  return caja;
+}
+
+function tiraRango(r) {
+  const caja = item('fj-rango', 0, 'SoloQ', 'ranked');
+  caja.dataset.tier = r.tier;
+  caja.dataset.campo = 'ranked';
+  caja.append(nodo('b', 'fj-rango-escalon', r.escalon));
+  if (r.lp) caja.append(nodo('span', 'fj-rango-lp', r.lp));
+  caja.title = `SoloQ: ${r.escalon}${r.lp ? ` · ${r.lp}` : ''}`;
   return caja;
 }
 
@@ -417,6 +450,59 @@ export function crearFichaFija(seccion) {
     seccion.dataset.abierta = si ? 'si' : '';
     if (si) animarNodo(hoja, [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { dur: DUR.entra });
   }
+  // I1c: rueda lo que cambió una decisión y deja el ▲▼ a la vista hasta `soltar()`; lo que ya mostró no vuelve a rodar cuando la
+  // `vista` se repinte (`antes` queda en el valor nuevo).
+  document.addEventListener(EVENTO_RODAR, (e) => {
+    const flashes = [];
+    if (seccion.hidden) { e.detail.soltar = () => {}; return; }
+    for (const c of e.detail.cambios ?? []) {
+      const a = Math.round(c.antes);
+      const b = Math.round(c.despues);
+      if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) continue;
+      const id = c.campo.split('.').pop();
+      let valor = null;
+      let flash = null;
+      if (c.campo.startsWith('player.stats.')) {
+        const celda = seccion.querySelector(`.fj-stat[data-stat="${id}"]`);
+        valor = celda?.querySelector('.fj-stat-valor') ?? null;
+        flash = celda?.querySelector('.fj-stat-flash') ?? null;
+        if (antes?.juego && id in antes.juego) antes.juego[id] = b;
+      } else if (c.campo === 'career.jerarquia' || c.campo === 'nivel') {
+        valor = c.campo === 'nivel' ? tira.querySelector('.fj-num[data-campo="nivel"]') : tira.querySelector('.fj-item[data-campo="jerarquia"] .fj-num');
+        if (antes && valor) antes[id] = b;
+      }
+      if (!valor) continue;
+      countUp(valor, a, b, { dur: RODAR_MS, format: num });
+      if (flash) {
+        const d = b - a;
+        flash.replaceChildren(triangulos('baja', d > 0 ? '+' : '-'), document.createTextNode(String(Math.abs(d))));
+        flash.dataset.signo = d > 0 ? 'sube' : 'baja';
+        flash.setAttribute('aria-label', `${id} ${d > 0 ? 'subió' : 'bajó'} ${Math.abs(d)}`);
+        animarNodo(flash, [{ opacity: 0.25, transform: PULSO_DESDE }, { opacity: 1, transform: 'none' }], { dur: DUR.entra, easing: RESORTE });
+        flashes.push(flash);
+      }
+    }
+    e.detail.soltar = () => {
+      for (const f of flashes) { f.replaceChildren(); delete f.dataset.signo; f.removeAttribute('aria-label'); }
+    };
+  });
+  // I1c (D161): la tira no recorta a ningún ancho. Si no entra, se esconden los ítems de menos prioridad, el último primero
+  // (`data-prio`: 7 la plata … 2 el arraigo; el rango y el nivel quedan siempre; todo sigue en la hoja).
+  function ajustar() {
+    const items = [...tira.querySelectorAll('.fj-item')];
+    for (const i of items) delete i.dataset.oculto;
+    if (!tira.clientWidth) return;
+    const candidatos = items.filter((i) => i.getClientRects().length > 0 && Number(i.dataset.prio) > 1).sort((a, b) => Number(b.dataset.prio) - Number(a.dataset.prio));
+    for (const i of candidatos) {
+      if (tira.scrollWidth <= tira.clientWidth) break;
+      i.dataset.oculto = 'si';
+    }
+  }
+  if (typeof ResizeObserver === 'function') {
+    let ancho = 0;
+    new ResizeObserver(() => { if (seccion.clientWidth !== ancho) { ancho = seccion.clientWidth; ajustar(); } }).observe(seccion);
+  }
+  document.fonts?.ready?.then(ajustar, () => {});
   tira.addEventListener('click', () => abrir(hoja.hidden));
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !hoja.hidden) abrir(false);
@@ -451,6 +537,7 @@ export function crearFichaFija(seccion) {
     seccion.dataset.fase = d.amateur ? 'amateur' : 'pro';
 
     const items = [];
+    if (d.rango) items.push(tiraRango(d.rango));
     const nivel = tiraNivel(d);
     items.push(nivel.caja);
     const arraigo = d.arraigo ? tiraArraigo(d.arraigo) : null;
@@ -466,11 +553,13 @@ export function crearFichaFija(seccion) {
     if (!d.amateur && d.dinero > 0) items.push(tiraPlata(d.dinero));
     // La tira del celular: el nivel, el arraigo (o el escalón de la carrera, sin club) y los títulos (o el hype, amateur).
     for (const el of [nivel.caja, arraigo ?? carrera.caja, titulos ?? hype]) el.dataset.tira = 'si';
+    tira.querySelector('.fj-rango')?.setAttribute('data-tira', 'si');
 
     const abre = nodo('span', 'fj-abre');
     abre.setAttribute('aria-hidden', 'true');
     tira.setAttribute('aria-label', `Tu ficha: nivel ${d.nivel.valor}${d.arraigo ? `, ${d.arraigo.label} en ${d.arraigo.org}` : ''}${d.amateur ? '' : `, ${d.vitrina.total} títulos`}. Abrir el detalle`);
     tira.replaceChildren(...items, abre);
+    ajustar();
 
     const dur = duraciones(rapido);
     const conPlata = (n) => `US${plata(n)}`;

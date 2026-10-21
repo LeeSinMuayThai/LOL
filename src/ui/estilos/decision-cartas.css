@@ -18,8 +18,6 @@
 .cv-raiz.dc-espera > .cv-col { visibility: hidden; }
 .cv-col { position: relative; min-width: 0; }
 .cv-plegado { display: none !important; }
-.cv-fantasma { position: absolute; left: 0; top: 0; width: 100%; height: 0; pointer-events: none; z-index: 3; }
-.cv-fantasma .cv-mano { overflow: visible; }
 
 /* --- la cabecera: compacta, arriba a la izquierda --- */
 .cv-cab { max-width: 780px; margin: 0 0 6px; }
@@ -173,7 +171,6 @@
 .cv-fondo .cv-emb { top: 0; height: 100%; }
 .cv-fondo .cv-emb-glifo { filter: none; }
 @media (min-width: 1100px) { .cv-fondo { display: block; } }
-.cv-raiz:has(.cv-resultado) .cv-fondo { opacity: 0.08; transition: opacity 600ms ease; }
 
 /* el logo adonde lleva la opción, grande, sobre el color de ese equipo o esa liga (--tono-*: fx/tono.js) */
 .cv-arte-logo {
@@ -352,18 +349,13 @@ html[data-textos='completos'] .cv-raiz .cv-pista { display: none; }
 .cv-insp-perfil svg { color: var(--gold); }
 .cv-insp-lista .cv-insp-plan, .cv-insp-lista .cv-insp-perfil { grid-column: 1 / -1; }
 
-/* --- "lo que pasó": el dorso de la carta --- */
-.cv-raiz .resultado.cv-resultado {
-  position: relative; margin: 18px 0 22px; padding: 20px 24px 22px; border-radius: var(--cv-radio, 14px);
-  transform-origin: 50% 0; backface-visibility: hidden;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--eje, var(--luz)) 12%, var(--panel-opaco)), var(--panel-opaco) 70%);
-  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--eje, var(--luz)) 70%, transparent), 0 26px 60px var(--sombra), 0 0 50px color-mix(in srgb, var(--eje, var(--luz)) 22%, transparent);
+/* --- I1c (D164): la consecuencia, UNA línea bajo la opción elegida (sin tarjeta); queda hasta que el jugador sigue --- */
+.cv-consecuencia {
+  position: absolute; left: 0; right: 0; top: calc(100% + 10px); margin: 0; display: grid; gap: 4px; scroll-margin-bottom: 110px; scroll-margin-bottom: 110px;
+  font: 500 15px/1.4 var(--f-texto, inherit); color: var(--ink); text-align: center; text-wrap: balance;
 }
-.cv-raiz .resultado.cv-resultado::before {
-  top: 0; bottom: auto; left: 18px; right: 18px; width: auto; height: 3px; border-radius: 0 0 3px 3px;
-  background: var(--eje, var(--luz)); box-shadow: 0 0 14px var(--eje, var(--luz));
-}
-.cv-dorso { --cv-med: 92px; position: absolute; left: 50%; top: 120px; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; z-index: 2; }
+.cv-consecuencia-sigue { font: 600 11px/1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
+.cv-raiz.eligiendo .cv-mano { padding-bottom: 96px; }
 
 /* --- el celular: un carrusel con scroll-snap, la carta al 78% --- */
 @media (max-width: 640px) {
@@ -387,7 +379,6 @@ html[data-textos='completos'] .cv-raiz .cv-pista { display: none; }
   .cv-inspector .cv-insp-kicker { display: none; }
   .cv-insp-texto { margin: 0; font-size: 13px; }
   .cv-insp-lista li { font-size: 12px; }
-  .cv-raiz .resultado.cv-resultado { padding: 16px 16px 18px; }
 }
 
 /* --- movimiento reducido: cuadros fijos, nada gira ni late --- */
@@ -461,24 +452,8 @@ html[data-reducido] .cv-rara .cv-marco, html[data-reducido] .cv-gemas .on, html[
 .cv-raiz[data-mano] .cv-seguro b { font-size: 34px; }
 .cv-raiz[data-mano] .cv-costo b { font-size: 22px; }
 
-/* El reparto: las cartas llegan boca abajo (el dorso) y se dan vuelta de a una con el brillo de su rareza. */
+/* La mano del año entra boca arriba y de una (I1c, D162). */
 .cv-ranura { position: relative; }
-.cv-reverso {
-  position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none; display: grid; place-items: center;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--ink) 7%, var(--bg-void)), color-mix(in srgb, var(--ink) 3%, var(--bg-void)));
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 18%, transparent), 0 18px 40px var(--sombra);
-}
-.cv-reverso i { width: 34%; aspect-ratio: 1; transform: rotate(45deg); border-radius: 12%; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 30%, transparent); }
-.cv-brote {
-  position: absolute; inset: -6px; z-index: 4; border-radius: 22px; pointer-events: none;
-  box-shadow: 0 0 0 2px var(--cv-rz), 0 0 46px 8px color-mix(in srgb, var(--cv-rz) 65%, transparent);
-}
-.cv-r-legendaria .cv-brote { box-shadow: 0 0 0 3px var(--cv-rz), 0 0 70px 16px color-mix(in srgb, var(--cv-rz) 75%, transparent); }
-.cv-chispa {
-  position: absolute; left: 50%; top: 50%; z-index: 5; width: 7px; height: 7px; border-radius: 50%; pointer-events: none;
-  background: var(--gold); box-shadow: 0 0 10px 2px var(--gold);
-}
-@media (prefers-reduced-motion: reduce) { .cv-reverso, .cv-brote, .cv-chispa { display: none; } }
 
 /* H6 (la rareza del evento a la vista): el evento raro, épico o legendario lleva el color de las cartas (gris, azul, violeta,
    dorado; los `--rz-*` de H2a) en la cabecera y en el halo de sus cartas. El común no marca nada. */

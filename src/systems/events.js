@@ -558,9 +558,10 @@ export function opcionDelPerfilPara(state, evento) {
   return opcionDelPerfil(state.player.perfil, opcionesConPrevia(state, evento)).id;
 }
 
-// G2a (la carta de El Ídolo, regla de F4): el número seguro de una opción. El efecto principal es el de la fila de previa
-// más pesada (cada familia en su escala, `payoffNormalizado`); su piso es lo mínimo que puede dar entre todos los
-// outcomes (el que no lo trae, 0). `{ campo, etiqueta, valor, unidad }`, o `null` si la opción no mueve ningún número.
+// G2a (la carta de El Ídolo): el número de una opción. El efecto principal es el de la fila de previa más pesada (cada familia
+// en su escala, `payoffNormalizado`). I1c (D163): el número es lo que MÁS PROBABLEMENTE pasa (el resultado de más peso, con la
+// media de su rango), no el peor caso; si algún otro resultado mueve ese stat al revés, `alReves` (la carta lo marca con ⚠).
+// `{ campo, etiqueta, valor, unidad, alReves }`, o `null` si la opción no mueve ningún número.
 const FAMILIAS_CON_NUMERO = new Set(['stat', 'ladder']);
 //
 // G-fix-copa: con el `state`, el número no promete más de lo que deja el clamp del efecto: min(efecto, tope − actual)
@@ -582,15 +583,18 @@ export function seguroDeOpcion(opcion, pesos, state = null) {
     return null;
   }
   const [campo] = [...medias.entries()].reduce((mejor, entrada) => (Math.abs(entrada[1]) > Math.abs(mejor[1]) ? entrada : mejor));
-  const piso = Math.min(...opcion.outcomes.map((outcome) => {
+  const sumas = opcion.outcomes.map((outcome) => {
     const efectos = outcome.effects.filter((effect) => effect.path === campo && FAMILIAS_CON_NUMERO.has(effect.type));
-    const suma = efectos.reduce((total, effect) => total + Math.min(effect.min, effect.max), 0);
+    const suma = efectos.reduce((total, effect) => total + (effect.min + effect.max) / 2, 0);
     const tope = efectos.find((effect) => effect.clamp)?.clamp;
     const actual = state && tope ? getPath(state, campo) : null;
     return typeof actual === 'number' ? Math.min(tope[1] - actual, Math.max(tope[0] - actual, suma)) : suma;
-  }));
+  });
+  const probable = pesos.reduce((mejor, peso, i) => (peso > pesos[mejor] ? i : mejor), 0);
+  const valor = Math.round(sumas[probable]);
+  const alReves = valor !== 0 && sumas.some((suma, i) => i !== probable && pesos[i] > 0 && Math.round(suma) !== 0 && Math.sign(Math.round(suma)) !== Math.sign(valor));
   const ladder = opcion.outcomes.some((outcome) => outcome.effects.some((effect) => effect.path === campo && effect.type === 'ladder'));
-  return { campo, etiqueta: etiquetaCampo(campo), valor: piso, unidad: ladder ? 'LP' : '' };
+  return { campo, etiqueta: etiquetaCampo(campo), valor, unidad: ladder ? 'LP' : '', alReves };
 }
 
 // G2a: el riesgo en palabras (⚠). El `aviso` del dato si la opción lo trae; si no, el peor resultado de su distribución
